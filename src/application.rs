@@ -1,5 +1,6 @@
 use crate::config;
 use crate::widgets::FrctlWindow;
+use gettextrs::gettext;
 use gio::ApplicationFlags;
 use glib::clone;
 use glib::WeakRef;
@@ -141,14 +142,31 @@ impl FrctlApplication {
         let dialog = gtk::AboutDialogBuilder::new()
             .program_name("Fractal")
             .logo_icon_name(config::APP_ID)
-            .license_type(gtk::License::MitX11)
+            .license_type(gtk::License::Gpl30)
             .website("https://gitlab.gnome.org/GNOME/fractal/")
+            .website_label(gettext("Learn more about Fractal").as_str())
             .version(config::VERSION)
             .transient_for(&self.get_main_window())
             .modal(true)
-            .authors(vec!["Daniel García Moreno".into()])
-            .artists(vec!["Daniel García Moreno".into()])
+            .comments(gettext("A Matrix.org client for GNOME").as_str())
+            .copyright(gettext("© 2017-2021 The Fractal Team").as_str())
+            .authors(vec![
+                "Alejandro Domínguez".to_string(),
+                "Alexandre Franke".to_string(),
+                "Bilal Elmoussaoui".to_string(),
+                "Christopher Davis".to_string(),
+                "Daniel García Moreno".to_string(),
+                "Eisha Chen-yen-su".to_string(),
+                "Jordan Petridis".to_string(),
+                "Julian Sparber".to_string(),
+                "Saurav Sachidanand".to_string(),
+            ])
+            .artists(vec!["Tobias Bernard".to_string()])
+            .translator_credits(gettext("translator-credits").as_str())
             .build();
+
+        // This can't be added via the builder
+        dialog.add_credit_section(gettext("Name by").as_str(), &["Regina Bíró"]);
 
         dialog.show();
     }
