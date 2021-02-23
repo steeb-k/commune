@@ -48,7 +48,12 @@
           </object>
         </child>
         <child>
-          <object class="GtkListView" id="listview" />
+          <object class="GtkScrolledWindow">
+          <property name="vexpand">True</property>
+            <property name="child">
+              <object class="GtkListView" id="listview" />
+            </property>
+          </object>
         </child>
       </object>
     </child>
