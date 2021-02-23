@@ -1,8 +1,20 @@
+mod category;
+mod category_list;
+mod category_row;
+mod room;
+mod room_row;
+
+use self::category::{CategoryName, FrctlCategory};
+use self::category_list::FrctlCategoryList;
+use self::category_row::FrctlSidebarCategoryRow;
+use self::room::{FrctlRoom, HighlightFlags};
+use self::room_row::FrctlSidebarRoomRow;
+
 use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{glib, glib::SyncSender, CompositeTemplate};
+use gtk::{glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use matrix_sdk::{identifiers::RoomId, Client};
 
 mod imp {
@@ -35,6 +47,9 @@ mod imp {
         }
 
         fn class_init(klass: &mut Self::Class) {
+            FrctlCategoryList::static_type();
+            FrctlSidebarRoomRow::static_type();
+            FrctlSidebarCategoryRow::static_type();
             Self::bind_template(klass);
         }
 
@@ -107,10 +122,42 @@ impl FrctlSidebar {
     /// Sets up the required channel to recive async updates from the `Client`
     pub fn setup_channel(&self) -> SyncSender<RoomId> {
         let (sender, receiver) = glib::MainContext::sync_channel::<RoomId>(Default::default(), 100);
-        receiver.attach(None, move |_room_id| {
-            //TODO: actually do something: update the message GListModel
-            glib::Continue(true)
-        });
+
+        receiver.attach(
+            None,
+            clone!(@weak self as obj => move |room_id| {
+                obj.get_list_model().update(&room_id);
+                glib::Continue(true)
+            }),
+        );
         sender
+    }
+
+    /// Loads the state from the `Store`
+    pub fn load(&self, client: &Client) {
+        let list = self.get_list_model();
+        // TODO: Add list for user defined categories e.g. favorite
+        let invited = FrctlCategory::new(client.clone(), CategoryName::Invited);
+        let joined = FrctlCategory::new(client.clone(), CategoryName::Normal);
+        let left = FrctlCategory::new(client.clone(), CategoryName::Left);
+
+        invited.append_batch(client.invited_rooms().into_iter().map(Into::into).collect());
+        joined.append_batch(client.joined_rooms().into_iter().map(Into::into).collect());
+        left.append_batch(client.left_rooms().into_iter().map(Into::into).collect());
+
+        list.append_batch(&[invited, joined, left]);
+    }
+
+    fn get_list_model(&self) -> FrctlCategoryList {
+        imp::FrctlSidebar::from_instance(self)
+            .listview
+            .get_model()
+            .unwrap()
+            .downcast::<gtk::NoSelection>()
+            .unwrap()
+            .get_model()
+            .unwrap()
+            .downcast::<FrctlCategoryList>()
+            .unwrap()
     }
 }

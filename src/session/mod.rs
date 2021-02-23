@@ -39,6 +39,7 @@ mod imp {
         pub homeserver: OnceCell<String>,
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
+        pub client: OnceCell<Client>,
     }
 
     #[glib::object_subclass]
@@ -53,6 +54,7 @@ mod imp {
                 content: TemplateChild::default(),
                 homeserver: OnceCell::new(),
                 error: RefCell::new(None),
+                client: OnceCell::new(),
             }
         }
 
@@ -171,6 +173,8 @@ impl FrctlSession {
 
         let client = client.unwrap();
 
+        priv_.client.set(client.clone()).unwrap();
+
         let sidebar_sender = priv_.sidebar.get().setup_channel();
         let content_sender = priv_.content.get().setup_channel();
 
@@ -257,12 +261,22 @@ impl FrctlSession {
                     Ok(None) => {}
                 }
 
+                obj.load();
+
                 obj.emit_by_name("ready", &[]).unwrap();
 
                 glib::Continue(false)
             }),
         );
         sender
+    }
+
+    /// Loads the state from the `Store`
+    /// Note that the `Store` currently doesn't store all events, therefore, we arn't really
+    /// loading much via this function.
+    pub fn load(&self) {
+        let priv_ = imp::FrctlSession::from_instance(self);
+        priv_.sidebar.load(&priv_.client.get().unwrap());
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,

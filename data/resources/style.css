@@ -19,3 +19,40 @@
 .send-message-area {
   margin: 6px;
 }
+
+/* Sidebar */
+.sidebar .navigation-sidebar row {  
+  padding: 6px 12px;
+}
+
+.sidebar row .dim-label {  
+  padding: 6px 12px;
+  font-size: 0.8em;
+  font-weight: bold;
+}
+
+.sidebar row .bold {
+  font-weight: bold;
+}
+
+.sidebar .view {
+  padding: 0px;
+}
+
+.sidebar row .notification_count {
+  /* TODO: use correct color variable */
+  background-color: #555;
+  color: white;
+  font-weight: bold;
+  font-size: 0.8em;
+  border-radius: 10px;
+  min-width: 0.7em;
+  padding: 2px 5px;
+}
+
+.sidebar row .highlight {
+  /* TODO: use correct color variable */
+  background-color: @theme_selected_bg_color;
+}
+
+

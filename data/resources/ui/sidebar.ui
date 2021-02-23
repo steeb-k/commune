@@ -25,7 +25,7 @@
         <property name="orientation">vertical</property>
         <child>
           <object class="AdwHeaderBar" id="headerbar">
-            <property name="show-end-title-buttons" bind-source="FrctlSidebar" bind-property="compact" bind-flags="sync-create" />
+            <property name="show-end-title-buttons" bind-source="FrctlSidebar" bind-property="compact" bind-flags="sync-create"/>
             <child type="start">
               <object class="GtkToggleButton" id="search_button">
                 <property name="icon-name">system-search-symbolic</property>
@@ -41,7 +41,7 @@
         </child>
         <child>
           <object class="GtkSearchBar" id="room_search">
-            <property name="search-mode-enabled" bind-source="search_button" bind-property="active" />
+            <property name="search-mode-enabled" bind-source="search_button" bind-property="active"/>
             <property name="child">
               <object class="GtkSearchEntry"/>
             </property>
@@ -49,9 +49,26 @@
         </child>
         <child>
           <object class="GtkScrolledWindow">
-          <property name="vexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="hscrollbar-policy">never</property>
             <property name="child">
-              <object class="GtkListView" id="listview" />
+	      <object class="GtkListView" id="listview">
+		<property name="model">
+		  <object class="GtkNoSelection">
+		    <property name="model">
+		      <object class="FrctlCategoryList" />
+		    </property>
+		  </object>
+		</property>
+		<property name="factory">
+		  <object class="GtkBuilderListItemFactory">
+		    <property name="resource">/org/gnome/FractalNext/sidebar-category-item.ui</property>
+		  </object>
+                </property>
+                <accessibility>
+                  <property name="label" translatable="yes">Sidebar</property>
+                </accessibility>
+              </object>
             </property>
           </object>
         </child>
@@ -59,3 +76,4 @@
     </child>
   </template>
 </interface>
+
