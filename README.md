@@ -41,13 +41,13 @@ flatpak install --user gnome-nightly org.gnome.Sdk org.gnome.Platform
 # Install the required rust-stable extension from Flathub
 flatpak install --user flathub org.freedesktop.Sdk.Extension.rust-stable//20.08
 ```
-
-Then you go ahead and build Fractal.
+**Inside** the `build-aux` folder run:
 
 ```
-flatpak-builder --user --install fractal flatpak/org.gnome.FractalNext.json
+flatpak-builder --user --install app org.gnome.FractalNext.Devel.json
 ```
-
+to compile and build fractalNext.Devel via flatpak. \
+(If flatpak is used, FractalNext.Devel can be entirely removed from your system with: `flatpak remove org.gnome.FractalNext.Devel.json`)
 ### Snap
 
 To build as a snap simply install snapcraft
