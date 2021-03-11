@@ -1,5 +1,5 @@
 use crate::config;
-use crate::widgets::FrctlWindow;
+use crate::FrctlWindow;
 use gettextrs::gettext;
 use gio::ApplicationFlags;
 use glib::clone;

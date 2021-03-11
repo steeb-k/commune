@@ -1,5 +1,8 @@
-use crate::widgets::FrctlContent;
-use crate::widgets::FrctlSidebar;
+mod content;
+mod sidebar;
+
+use self::content::FrctlContent;
+use self::sidebar::FrctlSidebar;
 use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;

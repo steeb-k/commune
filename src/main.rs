@@ -1,10 +1,16 @@
 mod application;
 #[rustfmt::skip]
 mod config;
-mod widgets;
+mod login;
+mod session;
+mod window;
+
+use self::application::FrctlApplication;
+use self::login::FrctlLogin;
+use self::session::FrctlSession;
+use self::window::FrctlWindow;
 
 use adw;
-use application::FrctlApplication;
 use config::{GETTEXT_PACKAGE, LOCALEDIR, RESOURCES_FILE};
 use gettextrs::*;
 use gtk::gdk::Display;

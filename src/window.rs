@@ -1,7 +1,7 @@
-use crate::application::FrctlApplication;
 use crate::config::{APP_ID, PROFILE};
-use crate::widgets::FrctlLogin;
-use crate::widgets::FrctlSession;
+use crate::FrctlApplication;
+use crate::FrctlLogin;
+use crate::FrctlSession;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use glib::signal::Inhibit;
 use gtk::subclass::prelude::*;
