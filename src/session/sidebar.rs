@@ -6,7 +6,7 @@ use gtk::{glib, CompositeTemplate};
 
 mod imp {
     use super::*;
-    use glib::subclass;
+    use glib::subclass::InitializingObject;
     use std::cell::Cell;
 
     #[derive(Debug, CompositeTemplate)]
@@ -19,15 +19,11 @@ mod imp {
         pub listview: TemplateChild<gtk::ListView>,
     }
 
+    #[glib::object_subclass]
     impl ObjectSubclass for FrctlSidebar {
         const NAME: &'static str = "FrctlSidebar";
         type Type = super::FrctlSidebar;
         type ParentType = adw::Bin;
-        type Interfaces = ();
-        type Instance = subclass::simple::InstanceStruct<Self>;
-        type Class = subclass::simple::ClassStruct<Self>;
-
-        glib::object_subclass!();
 
         fn new() -> Self {
             Self {
@@ -41,8 +37,7 @@ mod imp {
             Self::bind_template(klass);
         }
 
-        // You must call `Widget`'s `init_template()` within `instance_init()`.
-        fn instance_init(obj: &glib::subclass::InitializingObject<Self::Type>) {
+        fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
     }

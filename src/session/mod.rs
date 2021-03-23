@@ -11,7 +11,7 @@ use gtk::{glib, CompositeTemplate};
 
 mod imp {
     use super::*;
-    use glib::subclass;
+    use glib::subclass::InitializingObject;
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
@@ -22,15 +22,11 @@ mod imp {
         pub content: TemplateChild<FrctlContent>,
     }
 
+    #[glib::object_subclass]
     impl ObjectSubclass for FrctlSession {
         const NAME: &'static str = "FrctlSession";
         type Type = super::FrctlSession;
         type ParentType = adw::Bin;
-        type Interfaces = ();
-        type Instance = subclass::simple::InstanceStruct<Self>;
-        type Class = subclass::simple::ClassStruct<Self>;
-
-        glib::object_subclass!();
 
         fn new() -> Self {
             Self {
@@ -43,8 +39,7 @@ mod imp {
             Self::bind_template(klass);
         }
 
-        // You must call `Widget`'s `init_template()` within `instance_init()`.
-        fn instance_init(obj: &glib::subclass::InitializingObject<Self::Type>) {
+        fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
     }

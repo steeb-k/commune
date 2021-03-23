@@ -14,22 +14,17 @@ use std::env;
 
 mod imp {
     use super::*;
-    use glib::subclass;
 
     #[derive(Debug)]
     pub struct FrctlApplication {
         pub window: OnceCell<WeakRef<FrctlWindow>>,
     }
 
+    #[glib::object_subclass]
     impl ObjectSubclass for FrctlApplication {
         const NAME: &'static str = "FrctlApplication";
         type Type = super::FrctlApplication;
         type ParentType = gtk::Application;
-        type Interfaces = ();
-        type Instance = subclass::simple::InstanceStruct<Self>;
-        type Class = subclass::simple::ClassStruct<Self>;
-
-        glib::object_subclass!();
 
         fn new() -> Self {
             Self {
@@ -40,7 +35,7 @@ mod imp {
 
     impl ObjectImpl for FrctlApplication {}
 
-    impl gio::subclass::prelude::ApplicationImpl for FrctlApplication {
+    impl ApplicationImpl for FrctlApplication {
         fn activate(&self, app: &Self::Type) {
             debug!("GtkApplication<FrctlApplication>::activate");
 
