@@ -1,8 +1,10 @@
 mod content;
 mod sidebar;
+mod supervisor;
 
 use self::content::FrctlContent;
 use self::sidebar::FrctlSidebar;
+use self::supervisor::Supervisor;
 
 use crate::secret;
 use crate::RUNTIME;
@@ -169,8 +171,15 @@ impl FrctlSession {
 
         let client = client.unwrap();
 
+        let sidebar_sender = priv_.sidebar.get().setup_channel();
+        let content_sender = priv_.content.get().setup_channel();
+
+        let handler = Supervisor::new(sidebar_sender, content_sender);
+
         RUNTIME.block_on(async {
             tokio::spawn(async move {
+                client.set_event_handler(Box::new(handler)).await;
+
                 let success = match method {
                     CreationMethod::SessionRestore(session) => {
                         let res = client.restore_login(session).await;

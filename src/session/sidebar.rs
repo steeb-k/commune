@@ -2,7 +2,8 @@ use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{glib, glib::SyncSender, CompositeTemplate};
+use matrix_sdk::{identifiers::RoomId, Client};
 
 mod imp {
     use super::*;
@@ -101,5 +102,15 @@ glib::wrapper! {
 impl FrctlSidebar {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create FrctlSidebar")
+    }
+
+    /// Sets up the required channel to recive async updates from the `Client`
+    pub fn setup_channel(&self) -> SyncSender<RoomId> {
+        let (sender, receiver) = glib::MainContext::sync_channel::<RoomId>(Default::default(), 100);
+        receiver.attach(None, move |_room_id| {
+            //TODO: actually do something: update the message GListModel
+            glib::Continue(true)
+        });
+        sender
     }
 }
