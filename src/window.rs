@@ -6,7 +6,7 @@ use adw::subclass::prelude::AdwApplicationWindowImpl;
 use glib::signal::Inhibit;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{gio, glib, CompositeTemplate};
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use log::warn;
 
 mod imp {
@@ -20,10 +20,6 @@ mod imp {
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub login: TemplateChild<FrctlLogin>,
-        // Eventually we want to create the session dynamically, since we want multi account
-        // support
-        #[template_child]
-        pub session: TemplateChild<FrctlSession>,
         pub settings: gio::Settings,
     }
 
@@ -37,7 +33,6 @@ mod imp {
             Self {
                 main_stack: TemplateChild::default(),
                 login: TemplateChild::default(),
-                session: TemplateChild::default(),
                 settings: gio::Settings::new(APP_ID),
             }
         }
@@ -66,6 +61,9 @@ mod imp {
 
             // load latest window state
             obj.load_window_size();
+            self.login.connect_new_session(
+                clone!(@weak obj => move |_login, session| obj.add_session(session)),
+            );
         }
     }
 
@@ -93,6 +91,12 @@ impl FrctlWindow {
     pub fn new(app: &FrctlApplication) -> Self {
         glib::Object::new(&[("application", &Some(app)), ("icon-name", &Some(APP_ID))])
             .expect("Failed to create FrctlWindow")
+    }
+
+    pub fn add_session(&self, session: &FrctlSession) {
+        let priv_ = &imp::FrctlWindow::from_instance(self);
+        priv_.main_stack.add_child(session);
+        priv_.main_stack.set_visible_child(session);
     }
 
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {

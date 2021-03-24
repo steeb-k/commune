@@ -5,14 +5,10 @@
     <property name="default-height">400</property>
     <child>
       <object class="GtkStack" id="main_stack">
-        <property name="visible-child">session</property>
+        <property name="visible-child">login</property>
         <property name="transition-type">crossfade</property>
         <child>
           <object class="FrctlLogin" id="login" />
-        </child>
-        <!-- We currently only support one session, add other sessions to the main_Stack -->
-        <child>
-          <object class="FrctlSession" id="session" />
         </child>
       </object>
     </child>

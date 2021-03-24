@@ -9,5 +9,6 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="window.ui">ui/window.ui</file>
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
   </gresource>
 </gresources>
