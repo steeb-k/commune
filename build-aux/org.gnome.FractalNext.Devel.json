@@ -11,6 +11,7 @@
         "--share=network",
         "--device=dri",
         "--talk-name=org.a11y.Bus",
+	"--talk-name=org.freedesktop.secrets",
         "--env=RUST_LOG=fractal=debug",
         "--env=G_MESSAGES_DEBUG=none"
     ],

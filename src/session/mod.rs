@@ -4,6 +4,7 @@ mod sidebar;
 use self::content::FrctlContent;
 use self::sidebar::FrctlSidebar;
 
+use crate::secret;
 use crate::RUNTIME;
 
 use adw;
@@ -171,8 +172,11 @@ impl FrctlSession {
         RUNTIME.block_on(async {
             tokio::spawn(async move {
                 let success = match method {
-                    CreationMethod::SessionRestore(_session) => {
-                        todo!("Implement session restore")
+                    CreationMethod::SessionRestore(session) => {
+                        let res = client.restore_login(session).await;
+                        let success = res.is_ok();
+                        send!(sender, res.map(|_| None));
+                        success
                     }
                     CreationMethod::Password(username, password) => {
                         // FIXME: client won't return if the homeserver isn't any real domain, I think
@@ -197,7 +201,7 @@ impl FrctlSession {
                         let response = response.unwrap();
 
                         let success = response.is_ok();
-                        send!(sender, response);
+                        send!(sender, response.map(|r| Some(r)));
                         success
                     }
                 };
@@ -220,9 +224,9 @@ impl FrctlSession {
         });
     }
 
-    fn setup(&self) -> glib::SyncSender<matrix_sdk::Result<login::Response>> {
+    fn setup(&self) -> glib::SyncSender<matrix_sdk::Result<Option<login::Response>>> {
         let (sender, receiver) = glib::MainContext::sync_channel::<
-            matrix_sdk::Result<login::Response>,
+            matrix_sdk::Result<Option<login::Response>>,
         >(Default::default(), 100);
         receiver.attach(
             None,
@@ -232,14 +236,16 @@ impl FrctlSession {
                         let priv_ = &imp::FrctlSession::from_instance(&obj);
                         priv_.error.replace(Some(error));
                     }
-                    Ok(response) => {
-                        // TODO: store this session to the SecretService so we can use it for the next login
-                        let _session = matrix_sdk::Session {
+                    Ok(Some(response)) => {
+                        let session = matrix_sdk::Session {
                             access_token: response.access_token,
                             user_id: response.user_id,
                             device_id: response.device_id,
                         };
+                        //TODO: set error to this error
+                        obj.store_session(session).unwrap();
                     }
+                    Ok(None) => {}
                 }
 
                 obj.emit_by_name("ready", &[]).unwrap();
@@ -267,5 +273,11 @@ impl FrctlSession {
             None
         })
         .unwrap()
+    }
+
+    fn store_session(&self, session: matrix_sdk::Session) -> Result<(), secret_service::Error> {
+        let priv_ = &imp::FrctlSession::from_instance(self);
+        let homeserver = priv_.homeserver.get().unwrap();
+        secret::store_session(homeserver, session)
     }
 }

@@ -24,6 +24,7 @@ sources = files(
   'main.rs',
   'window.rs',
   'login.rs',
+  'secret.rs',
   'session/mod.rs',
   'session/content.rs',
   'session/sidebar.rs',

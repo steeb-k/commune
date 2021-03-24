@@ -61,6 +61,12 @@ mod imp {
 
             // load latest window state
             obj.load_window_size();
+
+            // TODO: tell user that a stored session couldn't be restored
+            let result = self.login.restore_sessions();
+            if let Err(error) = result {
+                warn!("Failed to restore a session: {:?}", error);
+            }
             self.login.connect_new_session(
                 clone!(@weak obj => move |_login, session| obj.add_session(session)),
             );

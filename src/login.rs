@@ -1,3 +1,4 @@
+use crate::secret;
 use crate::FrctlSession;
 
 use adw;
@@ -121,7 +122,23 @@ impl FrctlLogin {
         self.freeze();
 
         let session = FrctlSession::new(homeserver);
+        self.setup_session(&session);
+        session.login_with_password(username, password);
+    }
 
+    pub fn restore_sessions(&self) -> Result<(), secret_service::Error> {
+        let sessions = secret::restore_sessions()?;
+
+        for (homeserver, stored_session) in sessions {
+            let session = FrctlSession::new(homeserver.to_string());
+            self.setup_session(&session);
+            session.login_with_previous_session(stored_session);
+        }
+
+        Ok(())
+    }
+
+    fn setup_session(&self, session: &FrctlSession) {
         session.connect_ready(clone!(@weak self as obj, @strong session => move |_| {
             if let Some(error) = session.get_error() {
                 let error_message = &imp::FrctlLogin::from_instance(&obj).error_message;
@@ -137,8 +154,6 @@ impl FrctlLogin {
                 obj.clean();
             }
         }));
-
-        session.login_with_password(username, password);
     }
 
     fn clean(&self) {

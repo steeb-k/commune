@@ -3,6 +3,7 @@ mod application;
 mod config;
 
 mod login;
+mod secret;
 mod session;
 mod window;
 
