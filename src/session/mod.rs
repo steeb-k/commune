@@ -20,7 +20,7 @@ use matrix_sdk::api::r0::{
     filter::{FilterDefinition, RoomFilter},
     session::login,
 };
-use matrix_sdk::{self, Client, ClientConfig, SyncSettings};
+use matrix_sdk::{self, Client, ClientConfig, RequestConfig, SyncSettings};
 use std::time::Duration;
 
 mod imp {
@@ -162,7 +162,7 @@ impl FrctlSession {
 
         let sender = self.setup();
 
-        let config = ClientConfig::new().timeout(Duration::from_secs(15));
+        let config = ClientConfig::new().request_config(RequestConfig::new().retry_limit(2));
         // Please note the homeserver needs to be a valid url or the client will panic!
         let client = Client::new_with_config(homeserver.as_str(), config);
 
@@ -192,27 +192,9 @@ impl FrctlSession {
                         success
                     }
                     CreationMethod::Password(username, password) => {
-                        // FIXME: client won't return if the homeserver isn't any real domain, I think
-                        // it has to do something with the dns lookup, therefore, we add a timeout of
-                        // 15s for the login and return a mocked Error.
-                        let response = tokio::time::timeout(
-                            Duration::from_secs(15),
-                            client.login(&username, &password, None, Some("Fractal Next")),
-                        )
-                        .await;
-
-                        if let Err(_) = response {
-                            send!(
-                                sender,
-                                Err(matrix_sdk::Error::Http(
-                                    matrix_sdk::HttpError::NotClientRequest
-                                ))
-                            );
-                            return;
-                        }
-
-                        let response = response.unwrap();
-
+                        let response = client
+                            .login(&username, &password, None, Some("Fractal Next"))
+                            .await;
                         let success = response.is_ok();
                         send!(sender, response.map(|r| Some(r)));
                         success

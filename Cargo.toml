@@ -27,5 +27,5 @@ git = "https://gitlab.gnome.org/bilelmoussaoui/libadwaita-rs.git"
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "ef6e481860d9b6028efb51cfff2a6850b0ced502"
+rev = "b5de20349945afcde13a78f023b906f421bb9764"
 features = ["unstable-synapse-quirks", "socks", "encryption", "sled_cryptostore", "sled_state_store"]
