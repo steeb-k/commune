@@ -1,5 +1,5 @@
 use crate::secret;
-use crate::FrctlSession;
+use crate::Session;
 
 use adw;
 use adw::subclass::prelude::BinImpl;
@@ -16,7 +16,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/login.ui")]
-    pub struct FrctlLogin {
+    pub struct Login {
         #[template_child]
         pub next_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -36,9 +36,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlLogin {
-        const NAME: &'static str = "FrctlLogin";
-        type Type = super::FrctlLogin;
+    impl ObjectSubclass for Login {
+        const NAME: &'static str = "Login";
+        type Type = super::Login;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -52,12 +52,12 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlLogin {
+    impl ObjectImpl for Login {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
                 vec![Signal::builder(
                     "new-session",
-                    &[FrctlSession::static_type().into()],
+                    &[Session::static_type().into()],
                     <()>::static_type().into(),
                 )
                 .build()]
@@ -79,23 +79,23 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for FrctlLogin {}
+    impl WidgetImpl for Login {}
 
-    impl BinImpl for FrctlLogin {}
+    impl BinImpl for Login {}
 }
 
 glib::wrapper! {
-    pub struct FrctlLogin(ObjectSubclass<imp::FrctlLogin>)
+    pub struct Login(ObjectSubclass<imp::Login>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl FrctlLogin {
+impl Login {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create FrctlLogin")
+        glib::Object::new(&[]).expect("Failed to create Login")
     }
 
     fn enable_next_action(&self) {
-        let priv_ = imp::FrctlLogin::from_instance(&self);
+        let priv_ = imp::Login::from_instance(&self);
         let homeserver = priv_.homeserver_entry.get_text();
         let username = priv_.username_entry.get_text_length();
         let password = priv_.password_entry.get_text().len();
@@ -114,14 +114,14 @@ impl FrctlLogin {
     }
 
     fn login(&self) {
-        let priv_ = imp::FrctlLogin::from_instance(&self);
+        let priv_ = imp::Login::from_instance(&self);
         let homeserver = priv_.homeserver_entry.get_text().to_string();
         let username = priv_.username_entry.get_text().to_string();
         let password = priv_.password_entry.get_text().to_string();
 
         self.freeze();
 
-        let session = FrctlSession::new(homeserver);
+        let session = Session::new(homeserver);
         self.setup_session(&session);
         session.login_with_password(username, password);
     }
@@ -130,7 +130,7 @@ impl FrctlLogin {
         let sessions = secret::restore_sessions()?;
 
         for (homeserver, stored_session) in sessions {
-            let session = FrctlSession::new(homeserver.to_string());
+            let session = Session::new(homeserver.to_string());
             self.setup_session(&session);
             session.login_with_previous_session(stored_session);
         }
@@ -138,10 +138,10 @@ impl FrctlLogin {
         Ok(())
     }
 
-    fn setup_session(&self, session: &FrctlSession) {
+    fn setup_session(&self, session: &Session) {
         session.connect_ready(clone!(@weak self as obj, @strong session => move |_| {
             if let Some(error) = session.get_error() {
-                let error_message = &imp::FrctlLogin::from_instance(&obj).error_message;
+                let error_message = &imp::Login::from_instance(&obj).error_message;
                 // TODO: show more specific error
                 error_message.set_text(&gettext("⚠️ The Login failed."));
                 error_message.show();
@@ -157,7 +157,7 @@ impl FrctlLogin {
     }
 
     fn clean(&self) {
-        let priv_ = imp::FrctlLogin::from_instance(&self);
+        let priv_ = imp::Login::from_instance(&self);
         priv_.homeserver_entry.set_text("");
         priv_.username_entry.set_text("");
         priv_.password_entry.set_text("");
@@ -165,7 +165,7 @@ impl FrctlLogin {
     }
 
     fn freeze(&self) {
-        let priv_ = imp::FrctlLogin::from_instance(&self);
+        let priv_ = imp::Login::from_instance(&self);
 
         self.action_set_enabled("login.next", false);
         priv_
@@ -175,20 +175,20 @@ impl FrctlLogin {
     }
 
     fn unfreeze(&self) {
-        let priv_ = imp::FrctlLogin::from_instance(&self);
+        let priv_ = imp::Login::from_instance(&self);
 
         self.action_set_enabled("login.next", true);
         priv_.next_stack.set_visible_child(&priv_.next_label.get());
         priv_.main_stack.set_sensitive(true);
     }
 
-    pub fn connect_new_session<F: Fn(&Self, &FrctlSession) + 'static>(
+    pub fn connect_new_session<F: Fn(&Self, &Session) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
         self.connect_local("new-session", true, move |values| {
             let obj = values[0].get::<Self>().unwrap().unwrap();
-            let session = values[1].get::<FrctlSession>().unwrap().unwrap();
+            let session = values[1].get::<Session>().unwrap().unwrap();
 
             f(&obj, &session);
 

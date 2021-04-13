@@ -1,9 +1,9 @@
-use crate::session::sidebar::FrctlRoom;
+use crate::session::sidebar::Room;
 use gettextrs::gettext;
 use gtk::subclass::prelude::*;
 use gtk::{self, gio, glib, prelude::*};
 use matrix_sdk::{identifiers::RoomId, Client};
-use matrix_sdk::{room::Room, RoomType};
+use matrix_sdk::{room::Room as MatrixRoom, RoomType};
 
 // TODO: do we also want the categorie `People` and a custom categorie support?
 #[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
@@ -55,9 +55,9 @@ mod imp {
     use std::collections::HashMap;
 
     #[derive(Debug)]
-    pub struct FrctlCategory {
+    pub struct Category {
         pub client: OnceCell<Client>,
-        pub map: RefCell<HashMap<RoomId, (u32, FrctlRoom)>>,
+        pub map: RefCell<HashMap<RoomId, (u32, Room)>>,
         pub list: RefCell<Vec<RoomId>>,
         pub name: Cell<CategoryName>,
         pub expanded: Cell<bool>,
@@ -65,9 +65,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlCategory {
-        const NAME: &'static str = "FrctlCategory";
-        type Type = super::FrctlCategory;
+    impl ObjectSubclass for Category {
+        const NAME: &'static str = "Category";
+        type Type = super::Category;
         type ParentType = glib::Object;
         type Interfaces = (gio::ListModel, gtk::SelectionModel);
 
@@ -83,7 +83,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlCategory {
+    impl ObjectImpl for Category {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -147,9 +147,9 @@ mod imp {
         }
     }
 
-    impl ListModelImpl for FrctlCategory {
+    impl ListModelImpl for Category {
         fn get_item_type(&self, _list_model: &Self::Type) -> glib::Type {
-            FrctlRoom::static_type()
+            Room::static_type()
         }
         fn get_n_items(&self, _list_model: &Self::Type) -> u32 {
             self.list.borrow().len() as u32
@@ -167,7 +167,7 @@ mod imp {
             }
         }
     }
-    impl SelectionModelImpl for FrctlCategory {
+    impl SelectionModelImpl for Category {
         fn get_selection_in_range(
             &self,
             _model: &Self::Type,
@@ -193,23 +193,22 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct FrctlCategory(ObjectSubclass<imp::FrctlCategory>)
+    pub struct Category(ObjectSubclass<imp::Category>)
         @implements gio::ListModel, gtk::SelectionModel;
 }
 
-// TODO: sort the rooms in FrctlCategory, i guess we want last active room first
-impl FrctlCategory {
+// TODO: sort the rooms in Category, i guess we want last active room first
+impl Category {
     pub fn new(client: Client, name: CategoryName) -> Self {
-        let obj =
-            glib::Object::new(&[("display-name", &name)]).expect("Failed to create FrctlCategory");
+        let obj = glib::Object::new(&[("display-name", &name)]).expect("Failed to create Category");
         // We don't need to set the client as a GObject property since it's used only internally
-        let priv_ = imp::FrctlCategory::from_instance(&obj);
+        let priv_ = imp::Category::from_instance(&obj);
         priv_.client.set(client).unwrap();
         obj
     }
 
     pub fn select(&self, position: u32) {
-        let priv_ = imp::FrctlCategory::from_instance(self);
+        let priv_ = imp::Category::from_instance(self);
         let old_position = priv_.selected.get();
 
         if position == old_position {
@@ -234,10 +233,10 @@ impl FrctlCategory {
     }
 
     pub fn update(&self, room_id: &RoomId) {
-        let priv_ = imp::FrctlCategory::from_instance(self);
+        let priv_ = imp::Category::from_instance(self);
         let category_type = priv_.name.get().get_room_type();
         let client = priv_.client.get().unwrap();
-        let room: Option<Room> = match category_type {
+        let room: Option<MatrixRoom> = match category_type {
             RoomType::Invited => client.get_invited_room(room_id).map(Into::into),
             RoomType::Joined => client.get_joined_room(room_id).map(Into::into),
             RoomType::Left => client.get_left_room(room_id).map(Into::into),
@@ -263,10 +262,10 @@ impl FrctlCategory {
         }
     }
 
-    pub fn append(&self, room: &Room) {
-        let priv_ = imp::FrctlCategory::from_instance(self);
+    pub fn append(&self, room: &MatrixRoom) {
+        let priv_ = imp::Category::from_instance(self);
         let room_id = room.room_id();
-        let room_obj = FrctlRoom::new(room);
+        let room_obj = Room::new(room);
         let index = {
             let mut map = priv_.map.borrow_mut();
             let mut list = priv_.list.borrow_mut();
@@ -278,8 +277,8 @@ impl FrctlCategory {
         self.items_changed(index as u32, 0, 1);
     }
 
-    pub fn append_batch(&self, rooms: Vec<Room>) {
-        let priv_ = imp::FrctlCategory::from_instance(self);
+    pub fn append_batch(&self, rooms: Vec<MatrixRoom>) {
+        let priv_ = imp::Category::from_instance(self);
         let index = {
             let mut map = priv_.map.borrow_mut();
             let mut list = priv_.list.borrow_mut();
@@ -287,7 +286,7 @@ impl FrctlCategory {
             let mut position = index;
             for room in &rooms {
                 let room_id = room.room_id();
-                let room_obj = FrctlRoom::new(room);
+                let room_obj = Room::new(room);
                 map.insert(room_id.clone(), (position as u32, room_obj));
                 list.push(room_id.clone());
                 position += 1;

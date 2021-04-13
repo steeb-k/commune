@@ -1,4 +1,4 @@
-use crate::session::sidebar::FrctlCategory;
+use crate::session::sidebar::Category;
 use gtk::subclass::prelude::*;
 use gtk::{self, gio, glib, glib::clone, prelude::*};
 use matrix_sdk::identifiers::RoomId;
@@ -9,23 +9,23 @@ mod imp {
     use std::cell::RefCell;
 
     #[derive(Debug, Default)]
-    pub struct FrctlCategoryList {
-        pub list: RefCell<Vec<FrctlCategory>>,
+    pub struct CategoryList {
+        pub list: RefCell<Vec<Category>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlCategoryList {
-        const NAME: &'static str = "FrctlCategoryList";
-        type Type = super::FrctlCategoryList;
+    impl ObjectSubclass for CategoryList {
+        const NAME: &'static str = "CategoryList";
+        type Type = super::CategoryList;
         type ParentType = glib::Object;
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for FrctlCategoryList {}
+    impl ObjectImpl for CategoryList {}
 
-    impl ListModelImpl for FrctlCategoryList {
+    impl ListModelImpl for CategoryList {
         fn get_item_type(&self, _list_model: &Self::Type) -> glib::Type {
-            FrctlCategory::static_type()
+            Category::static_type()
         }
         fn get_n_items(&self, _list_model: &Self::Type) -> u32 {
             self.list.borrow().len() as u32
@@ -41,27 +41,27 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct FrctlCategoryList(ObjectSubclass<imp::FrctlCategoryList>)
+    pub struct CategoryList(ObjectSubclass<imp::CategoryList>)
         @implements gio::ListModel;
 }
 // TODO allow moving between categories
 // TODO allow selection only in one category
 
-impl FrctlCategoryList {
+impl CategoryList {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create FrctlCategoryList")
+        glib::Object::new(&[]).expect("Failed to create CategoryList")
     }
 
     pub fn update(&self, room_id: &RoomId) {
-        let priv_ = imp::FrctlCategoryList::from_instance(self);
+        let priv_ = imp::CategoryList::from_instance(self);
         let list = priv_.list.borrow();
         for category in list.iter() {
             category.update(room_id);
         }
     }
 
-    pub fn append(&self, category: FrctlCategory) {
-        let priv_ = imp::FrctlCategoryList::from_instance(self);
+    pub fn append(&self, category: Category) {
+        let priv_ = imp::CategoryList::from_instance(self);
         let index = {
             let mut list = priv_.list.borrow_mut();
             category.connect_selection_changed(
@@ -77,8 +77,8 @@ impl FrctlCategoryList {
         self.items_changed(index as u32, 0, 1);
     }
 
-    fn unselect_other_lists(&self, category: &FrctlCategory) {
-        let priv_ = imp::FrctlCategoryList::from_instance(self);
+    fn unselect_other_lists(&self, category: &Category) {
+        let priv_ = imp::CategoryList::from_instance(self);
         let list = priv_.list.borrow();
 
         for item in list.iter() {
@@ -88,8 +88,8 @@ impl FrctlCategoryList {
         }
     }
 
-    pub fn append_batch(&self, batch: &[FrctlCategory]) {
-        let priv_ = imp::FrctlCategoryList::from_instance(self);
+    pub fn append_batch(&self, batch: &[Category]) {
+        let priv_ = imp::CategoryList::from_instance(self);
         let index = {
             let mut list = priv_.list.borrow_mut();
             let index = list.len();

@@ -7,10 +7,10 @@ mod secret;
 mod session;
 mod window;
 
-use self::application::FrctlApplication;
-use self::login::FrctlLogin;
-use self::session::FrctlSession;
-use self::window::FrctlWindow;
+use self::application::Application;
+use self::login::Login;
+use self::session::Session;
+use self::window::Window;
 
 use adw;
 use config::{GETTEXT_PACKAGE, LOCALEDIR, RESOURCES_FILE};
@@ -47,6 +47,6 @@ fn main() {
         .unwrap()
         .add_resource_path("/org/gnome/FractalNext/icons");
 
-    let app = FrctlApplication::new();
+    let app = Application::new();
     app.run();
 }

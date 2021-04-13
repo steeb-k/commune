@@ -12,7 +12,7 @@ mod imp {
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content.ui")]
-    pub struct FrctlContent {
+    pub struct Content {
         pub compact: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
@@ -21,9 +21,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlContent {
-        const NAME: &'static str = "FrctlContent";
-        type Type = super::FrctlContent;
+    impl ObjectSubclass for Content {
+        const NAME: &'static str = "Content";
+        type Type = super::Content;
         type ParentType = adw::Bin;
 
         fn new() -> Self {
@@ -43,7 +43,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlContent {
+    impl ObjectImpl for Content {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -90,18 +90,18 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for FrctlContent {}
-    impl BinImpl for FrctlContent {}
+    impl WidgetImpl for Content {}
+    impl BinImpl for Content {}
 }
 
 glib::wrapper! {
-    pub struct FrctlContent(ObjectSubclass<imp::FrctlContent>)
+    pub struct Content(ObjectSubclass<imp::Content>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl FrctlContent {
+impl Content {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create FrctlContent")
+        glib::Object::new(&[]).expect("Failed to create Content")
     }
 
     /// Sets up the required channel to recive async updates from the `Client`

@@ -11,7 +11,7 @@ mod imp {
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-room-row.ui")]
-    pub struct FrctlSidebarRoomRow {
+    pub struct SidebarRoomRow {
         #[template_child]
         pub avatar: TemplateChild<adw::Avatar>,
         #[template_child]
@@ -21,9 +21,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlSidebarRoomRow {
-        const NAME: &'static str = "FrctlSidebarRoomRow";
-        type Type = super::FrctlSidebarRoomRow;
+    impl ObjectSubclass for SidebarRoomRow {
+        const NAME: &'static str = "SidebarRoomRow";
+        type Type = super::SidebarRoomRow;
         type ParentType = adw::Bin;
 
         fn new() -> Self {
@@ -43,7 +43,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlSidebarRoomRow {
+    impl ObjectImpl for SidebarRoomRow {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -148,17 +148,17 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for FrctlSidebarRoomRow {}
-    impl BinImpl for FrctlSidebarRoomRow {}
+    impl WidgetImpl for SidebarRoomRow {}
+    impl BinImpl for SidebarRoomRow {}
 }
 
 glib::wrapper! {
-    pub struct FrctlSidebarRoomRow(ObjectSubclass<imp::FrctlSidebarRoomRow>)
+    pub struct SidebarRoomRow(ObjectSubclass<imp::SidebarRoomRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl FrctlSidebarRoomRow {
+impl SidebarRoomRow {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create FrctlSidebarRoomRow")
+        glib::Object::new(&[]).expect("Failed to create SidebarRoomRow")
     }
 }

@@ -1,5 +1,5 @@
 use crate::config;
-use crate::FrctlWindow;
+use crate::Window;
 use gettextrs::gettext;
 use gio::ApplicationFlags;
 use glib::clone;
@@ -16,14 +16,14 @@ mod imp {
     use super::*;
 
     #[derive(Debug)]
-    pub struct FrctlApplication {
-        pub window: OnceCell<WeakRef<FrctlWindow>>,
+    pub struct Application {
+        pub window: OnceCell<WeakRef<Window>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlApplication {
-        const NAME: &'static str = "FrctlApplication";
-        type Type = super::FrctlApplication;
+    impl ObjectSubclass for Application {
+        const NAME: &'static str = "Application";
+        type Type = super::Application;
         type ParentType = gtk::Application;
 
         fn new() -> Self {
@@ -33,11 +33,11 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlApplication {}
+    impl ObjectImpl for Application {}
 
-    impl ApplicationImpl for FrctlApplication {
+    impl ApplicationImpl for Application {
         fn activate(&self, app: &Self::Type) {
-            debug!("GtkApplication<FrctlApplication>::activate");
+            debug!("GtkApplication<Application>::activate");
 
             if let Some(window) = self.window.get() {
                 let window = window.upgrade().unwrap();
@@ -49,7 +49,7 @@ mod imp {
             app.set_resource_base_path(Some("/org/gnome/FractalNext/"));
             app.setup_css();
 
-            let window = FrctlWindow::new(app);
+            let window = Window::new(app);
             self.window
                 .set(window.downgrade())
                 .expect("Window already set.");
@@ -61,20 +61,20 @@ mod imp {
         }
 
         fn startup(&self, app: &Self::Type) {
-            debug!("GtkApplication<FrctlApplication>::startup");
+            debug!("GtkApplication<Application>::startup");
             self.parent_startup(app);
         }
     }
 
-    impl GtkApplicationImpl for FrctlApplication {}
+    impl GtkApplicationImpl for Application {}
 }
 
 glib::wrapper! {
-    pub struct FrctlApplication(ObjectSubclass<imp::FrctlApplication>)
+    pub struct Application(ObjectSubclass<imp::Application>)
         @extends gio::Application, gtk::Application, @implements gio::ActionMap, gio::ActionGroup;
 }
 
-impl FrctlApplication {
+impl Application {
     pub fn new() -> Self {
         glib::Object::new(&[
             ("application-id", &Some(config::APP_ID)),
@@ -83,8 +83,8 @@ impl FrctlApplication {
         .expect("Application initialization failed...")
     }
 
-    fn get_main_window(&self) -> FrctlWindow {
-        imp::FrctlApplication::from_instance(self)
+    fn get_main_window(&self) -> Window {
+        imp::Application::from_instance(self)
             .window
             .get()
             .unwrap()

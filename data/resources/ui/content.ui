@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="FrctlContent" parent="AdwBin">
+  <template class="Content" parent="AdwBin">
     <property name="vexpand">True</property>
     <property name="hexpand">True</property>
     <child>
@@ -8,7 +8,7 @@
         <property name="orientation">vertical</property>
         <child>
           <object class="AdwHeaderBar" id="headerbar">
-            <property name="show-start-title-buttons" bind-source="FrctlContent" bind-property="compact" bind-flags="sync-create" />
+            <property name="show-start-title-buttons" bind-source="Content" bind-property="compact" bind-flags="sync-create" />
             <child type="end">
               <object class="GtkMenuButton" id="room_menu">
                 <property name="icon-name">view-more-symbolic</property>

@@ -2,7 +2,7 @@ use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{gio, glib};
 use gtk_macros::spawn;
-use matrix_sdk::room::Room;
+use matrix_sdk::room::Room as MatrixRoom;
 
 #[glib::gflags("HighlightFlags")]
 pub enum HighlightFlags {
@@ -28,16 +28,16 @@ mod imp {
     use std::cell::RefCell;
 
     #[derive(Debug)]
-    pub struct FrctlRoom {
-        pub room: OnceCell<Room>,
+    pub struct Room {
+        pub room: OnceCell<MatrixRoom>,
         pub name: RefCell<Option<String>>,
         pub avatar: RefCell<Option<gio::LoadableIcon>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlRoom {
-        const NAME: &'static str = "FrctlRoom";
-        type Type = super::FrctlRoom;
+    impl ObjectSubclass for Room {
+        const NAME: &'static str = "Room";
+        type Type = super::Room;
         type ParentType = glib::Object;
 
         fn new() -> Self {
@@ -49,7 +49,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlRoom {
+    impl ObjectImpl for Room {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -157,17 +157,16 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct FrctlRoom(ObjectSubclass<imp::FrctlRoom>);
+    pub struct Room(ObjectSubclass<imp::Room>);
 }
 
 #[derive(Clone, Debug, glib::GBoxed)]
 #[gboxed(type_name = "BoxedRoom")]
-struct BoxedRoom(Room);
+struct BoxedRoom(MatrixRoom);
 
-impl FrctlRoom {
-    pub fn new(room: &Room) -> Self {
-        glib::Object::new(&[("room", &BoxedRoom(room.clone()))])
-            .expect("Failed to create FrctlRoom")
+impl Room {
+    pub fn new(room: &MatrixRoom) -> Self {
+        glib::Object::new(&[("room", &BoxedRoom(room.clone()))]).expect("Failed to create Room")
     }
 
     /// This should be called when any field on the Room has changed
@@ -182,7 +181,7 @@ impl FrctlRoom {
         let obj = self.downgrade();
         spawn!(async move {
             if let Some(obj) = obj.upgrade() {
-                let priv_ = imp::FrctlRoom::from_instance(&obj);
+                let priv_ = imp::Room::from_instance(&obj);
                 let name = &priv_.name;
                 let new_name = priv_.room.get().unwrap().display_name().await.ok();
 

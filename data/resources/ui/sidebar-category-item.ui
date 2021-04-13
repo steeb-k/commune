@@ -7,14 +7,14 @@
         <property name="orientation">vertical</property>
         <property name="focusable">False</property>
         <child>
-          <object class="FrctlSidebarCategoryRow">
+          <object class="SidebarCategoryRow">
             <binding name="display-name">
-              <lookup type="FrctlCategory" name="display-name">
+              <lookup type="Category" name="display-name">
                 <lookup name="item">GtkListItem</lookup>
               </lookup>
             </binding>
             <binding name="expanded">
-              <lookup type="FrctlCategory" name="expanded">
+              <lookup type="Category" name="expanded">
                 <lookup name="item">GtkListItem</lookup>
               </lookup>
             </binding>
@@ -23,7 +23,7 @@
         <child>
           <object class="GtkRevealer">
             <binding name="reveal-child">
-              <lookup type="FrctlCategory" name="expanded">
+              <lookup type="Category" name="expanded">
                 <lookup name="item">GtkListItem</lookup>
               </lookup>
             </binding>

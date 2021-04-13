@@ -1,7 +1,7 @@
 use crate::config::{APP_ID, PROFILE};
-use crate::FrctlApplication;
-use crate::FrctlLogin;
-use crate::FrctlSession;
+use crate::Application;
+use crate::Login;
+use crate::Session;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use glib::signal::Inhibit;
 use gtk::subclass::prelude::*;
@@ -15,18 +15,18 @@ mod imp {
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/window.ui")]
-    pub struct FrctlWindow {
+    pub struct Window {
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub login: TemplateChild<FrctlLogin>,
+        pub login: TemplateChild<Login>,
         pub settings: gio::Settings,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlWindow {
-        const NAME: &'static str = "FrctlWindow";
-        type Type = super::FrctlWindow;
+    impl ObjectSubclass for Window {
+        const NAME: &'static str = "Window";
+        type Type = super::Window;
         type ParentType = adw::ApplicationWindow;
 
         fn new() -> Self {
@@ -46,7 +46,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlWindow {
+    impl ObjectImpl for Window {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
@@ -73,7 +73,7 @@ mod imp {
         }
     }
 
-    impl WindowImpl for FrctlWindow {
+    impl WindowImpl for Window {
         // save window state on delete event
         fn close_request(&self, obj: &Self::Type) -> Inhibit {
             if let Err(err) = obj.save_window_size() {
@@ -83,30 +83,30 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for FrctlWindow {}
-    impl ApplicationWindowImpl for FrctlWindow {}
-    impl AdwApplicationWindowImpl for FrctlWindow {}
+    impl WidgetImpl for Window {}
+    impl ApplicationWindowImpl for Window {}
+    impl AdwApplicationWindowImpl for Window {}
 }
 
 glib::wrapper! {
-    pub struct FrctlWindow(ObjectSubclass<imp::FrctlWindow>)
+    pub struct Window(ObjectSubclass<imp::Window>)
         @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow, @implements gio::ActionMap, gio::ActionGroup;
 }
 
-impl FrctlWindow {
-    pub fn new(app: &FrctlApplication) -> Self {
+impl Window {
+    pub fn new(app: &Application) -> Self {
         glib::Object::new(&[("application", &Some(app)), ("icon-name", &Some(APP_ID))])
-            .expect("Failed to create FrctlWindow")
+            .expect("Failed to create Window")
     }
 
-    pub fn add_session(&self, session: &FrctlSession) {
-        let priv_ = &imp::FrctlWindow::from_instance(self);
+    pub fn add_session(&self, session: &Session) {
+        let priv_ = &imp::Window::from_instance(self);
         priv_.main_stack.add_child(session);
         priv_.main_stack.set_visible_child(session);
     }
 
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
-        let settings = &imp::FrctlWindow::from_instance(self).settings;
+        let settings = &imp::Window::from_instance(self).settings;
 
         let size = self.get_default_size();
 
@@ -119,7 +119,7 @@ impl FrctlWindow {
     }
 
     fn load_window_size(&self) {
-        let settings = &imp::FrctlWindow::from_instance(self).settings;
+        let settings = &imp::Window::from_instance(self).settings;
 
         let width = settings.get_int("window-width");
         let height = settings.get_int("window-height");

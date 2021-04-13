@@ -2,24 +2,24 @@
 <interface>
   <template class="GtkListItem">
     <property name="child">
-      <object class="FrctlSidebarRoomRow">
+      <object class="SidebarRoomRow">
         <binding name="avatar">
-          <lookup type="FrctlRoom" name="avatar">
+          <lookup type="Room" name="avatar">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
         <binding name="display-name">
-          <lookup type="FrctlRoom" name="display-name">
+          <lookup type="Room" name="display-name">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
         <binding name="notification-count">
-          <lookup type="FrctlRoom" name="notification-count">
+          <lookup type="Room" name="notification-count">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
         <binding name="highlight">
-          <lookup type="FrctlRoom" name="highlight">
+          <lookup type="Room" name="highlight">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>

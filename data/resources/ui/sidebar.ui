@@ -16,7 +16,7 @@
       </item>
     </section>
   </menu>
-  <template class="FrctlSidebar" parent="AdwBin">
+  <template class="Sidebar" parent="AdwBin">
     <style>
       <class name="sidebar"/>
     </style>
@@ -25,7 +25,7 @@
         <property name="orientation">vertical</property>
         <child>
           <object class="AdwHeaderBar" id="headerbar">
-            <property name="show-end-title-buttons" bind-source="FrctlSidebar" bind-property="compact" bind-flags="sync-create"/>
+            <property name="show-end-title-buttons" bind-source="Sidebar" bind-property="compact" bind-flags="sync-create"/>
             <child type="start">
               <object class="GtkToggleButton" id="search_button">
                 <property name="icon-name">system-search-symbolic</property>
@@ -56,7 +56,7 @@
 		<property name="model">
 		  <object class="GtkNoSelection">
 		    <property name="model">
-		      <object class="FrctlCategoryList" />
+		      <object class="CategoryList" />
 		    </property>
 		  </object>
 		</property>

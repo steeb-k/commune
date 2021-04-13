@@ -4,11 +4,11 @@ mod category_row;
 mod room;
 mod room_row;
 
-use self::category::{CategoryName, FrctlCategory};
-use self::category_list::FrctlCategoryList;
-use self::category_row::FrctlSidebarCategoryRow;
-use self::room::{FrctlRoom, HighlightFlags};
-use self::room_row::FrctlSidebarRoomRow;
+use self::category::{Category, CategoryName};
+use self::category_list::CategoryList;
+use self::category_row::SidebarCategoryRow;
+use self::room::{HighlightFlags, Room};
+use self::room_row::SidebarRoomRow;
 
 use adw;
 use adw::subclass::prelude::BinImpl;
@@ -24,7 +24,7 @@ mod imp {
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar.ui")]
-    pub struct FrctlSidebar {
+    pub struct Sidebar {
         pub compact: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
@@ -33,9 +33,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlSidebar {
-        const NAME: &'static str = "FrctlSidebar";
-        type Type = super::FrctlSidebar;
+    impl ObjectSubclass for Sidebar {
+        const NAME: &'static str = "Sidebar";
+        type Type = super::Sidebar;
         type ParentType = adw::Bin;
 
         fn new() -> Self {
@@ -47,9 +47,9 @@ mod imp {
         }
 
         fn class_init(klass: &mut Self::Class) {
-            FrctlCategoryList::static_type();
-            FrctlSidebarRoomRow::static_type();
-            FrctlSidebarCategoryRow::static_type();
+            CategoryList::static_type();
+            SidebarRoomRow::static_type();
+            SidebarCategoryRow::static_type();
             Self::bind_template(klass);
         }
 
@@ -58,7 +58,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlSidebar {
+    impl ObjectImpl for Sidebar {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -105,18 +105,18 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for FrctlSidebar {}
-    impl BinImpl for FrctlSidebar {}
+    impl WidgetImpl for Sidebar {}
+    impl BinImpl for Sidebar {}
 }
 
 glib::wrapper! {
-    pub struct FrctlSidebar(ObjectSubclass<imp::FrctlSidebar>)
+    pub struct Sidebar(ObjectSubclass<imp::Sidebar>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl FrctlSidebar {
+impl Sidebar {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create FrctlSidebar")
+        glib::Object::new(&[]).expect("Failed to create Sidebar")
     }
 
     /// Sets up the required channel to recive async updates from the `Client`
@@ -137,9 +137,9 @@ impl FrctlSidebar {
     pub fn load(&self, client: &Client) {
         let list = self.get_list_model();
         // TODO: Add list for user defined categories e.g. favorite
-        let invited = FrctlCategory::new(client.clone(), CategoryName::Invited);
-        let joined = FrctlCategory::new(client.clone(), CategoryName::Normal);
-        let left = FrctlCategory::new(client.clone(), CategoryName::Left);
+        let invited = Category::new(client.clone(), CategoryName::Invited);
+        let joined = Category::new(client.clone(), CategoryName::Normal);
+        let left = Category::new(client.clone(), CategoryName::Left);
 
         invited.append_batch(client.invited_rooms().into_iter().map(Into::into).collect());
         joined.append_batch(client.joined_rooms().into_iter().map(Into::into).collect());
@@ -148,8 +148,8 @@ impl FrctlSidebar {
         list.append_batch(&[invited, joined, left]);
     }
 
-    fn get_list_model(&self) -> FrctlCategoryList {
-        imp::FrctlSidebar::from_instance(self)
+    fn get_list_model(&self) -> CategoryList {
+        imp::Sidebar::from_instance(self)
             .listview
             .get_model()
             .unwrap()
@@ -157,7 +157,7 @@ impl FrctlSidebar {
             .unwrap()
             .get_model()
             .unwrap()
-            .downcast::<FrctlCategoryList>()
+            .downcast::<CategoryList>()
             .unwrap()
     }
 }

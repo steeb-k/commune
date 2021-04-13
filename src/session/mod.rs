@@ -2,8 +2,8 @@ mod content;
 mod sidebar;
 mod supervisor;
 
-use self::content::FrctlContent;
-use self::sidebar::FrctlSidebar;
+use self::content::Content;
+use self::sidebar::Sidebar;
 use self::supervisor::Supervisor;
 
 use crate::secret;
@@ -31,11 +31,11 @@ mod imp {
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
-    pub struct FrctlSession {
+    pub struct Session {
         #[template_child]
-        pub sidebar: TemplateChild<FrctlSidebar>,
+        pub sidebar: TemplateChild<Sidebar>,
         #[template_child]
-        pub content: TemplateChild<FrctlContent>,
+        pub content: TemplateChild<Content>,
         pub homeserver: OnceCell<String>,
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
@@ -43,9 +43,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for FrctlSession {
-        const NAME: &'static str = "FrctlSession";
-        type Type = super::FrctlSession;
+    impl ObjectSubclass for Session {
+        const NAME: &'static str = "Session";
+        type Type = super::Session;
         type ParentType = adw::Bin;
 
         fn new() -> Self {
@@ -67,7 +67,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FrctlSession {
+    impl ObjectImpl for Session {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![glib::ParamSpec::string(
@@ -123,11 +123,11 @@ mod imp {
             self.parent_constructed(obj);
         }
     }
-    impl WidgetImpl for FrctlSession {}
-    impl BinImpl for FrctlSession {}
+    impl WidgetImpl for Session {}
+    impl BinImpl for Session {}
 }
 
-/// Enum containing the supported methods to create a `FrctlSession`.
+/// Enum containing the supported methods to create a `Session`.
 #[derive(Clone, Debug)]
 enum CreationMethod {
     /// Restore a previous session: `matrix_sdk::Session`
@@ -137,13 +137,13 @@ enum CreationMethod {
 }
 
 glib::wrapper! {
-    pub struct FrctlSession(ObjectSubclass<imp::FrctlSession>)
+    pub struct Session(ObjectSubclass<imp::Session>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl FrctlSession {
+impl Session {
     pub fn new(homeserver: String) -> Self {
-        glib::Object::new(&[("homeserver", &homeserver)]).expect("Failed to create FrctlSession")
+        glib::Object::new(&[("homeserver", &homeserver)]).expect("Failed to create Session")
     }
 
     pub fn login_with_password(&self, username: String, password: String) {
@@ -157,7 +157,7 @@ impl FrctlSession {
     }
 
     fn login(&self, method: CreationMethod) {
-        let priv_ = &imp::FrctlSession::from_instance(self);
+        let priv_ = &imp::Session::from_instance(self);
         let homeserver = priv_.homeserver.get().unwrap();
 
         let sender = self.setup();
@@ -228,7 +228,7 @@ impl FrctlSession {
             clone!(@weak self as obj => move |result| {
                 match result {
                     Err(error) => {
-                        let priv_ = &imp::FrctlSession::from_instance(&obj);
+                        let priv_ = &imp::Session::from_instance(&obj);
                         priv_.error.replace(Some(error));
                     }
                     Ok(Some(response)) => {
@@ -257,7 +257,7 @@ impl FrctlSession {
     /// Note that the `Store` currently doesn't store all events, therefore, we arn't really
     /// loading much via this function.
     pub fn load(&self) {
-        let priv_ = imp::FrctlSession::from_instance(self);
+        let priv_ = imp::Session::from_instance(self);
         priv_.sidebar.load(&priv_.client.get().unwrap());
     }
 
@@ -265,7 +265,7 @@ impl FrctlSession {
     /// on a successful login this will be `None`.
     /// Unfortunatly it's not possible to connect the Error direclty to the `ready` signals.
     pub fn get_error(&self) -> Option<matrix_sdk::Error> {
-        let priv_ = &imp::FrctlSession::from_instance(self);
+        let priv_ = &imp::Session::from_instance(self);
         priv_.error.take()
     }
 
@@ -281,7 +281,7 @@ impl FrctlSession {
     }
 
     fn store_session(&self, session: matrix_sdk::Session) -> Result<(), secret_service::Error> {
-        let priv_ = &imp::FrctlSession::from_instance(self);
+        let priv_ = &imp::Session::from_instance(self);
         let homeserver = priv_.homeserver.get().unwrap();
         secret::store_session(homeserver, session)
     }

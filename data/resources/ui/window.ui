@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="FrctlWindow" parent="AdwApplicationWindow">
+  <template class="Window" parent="AdwApplicationWindow">
     <property name="default-width">600</property>
     <property name="default-height">400</property>
     <child>
@@ -8,7 +8,7 @@
         <property name="visible-child">login</property>
         <property name="transition-type">crossfade</property>
         <child>
-          <object class="FrctlLogin" id="login" />
+          <object class="Login" id="login" />
         </child>
       </object>
     </child>
