@@ -4,22 +4,22 @@
     <property name="child">
       <object class="SidebarRoomRow">
         <binding name="avatar">
-          <lookup type="Room" name="avatar">
+          <lookup type="SidebarRoom" name="avatar">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
         <binding name="display-name">
-          <lookup type="Room" name="display-name">
+          <lookup type="SidebarRoom" name="display-name">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
         <binding name="notification-count">
-          <lookup type="Room" name="notification-count">
+          <lookup type="SidebarRoom" name="notification-count">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>
         <binding name="highlight">
-          <lookup type="Room" name="highlight">
+          <lookup type="SidebarRoom" name="highlight">
             <lookup name="item">GtkListItem</lookup>
           </lookup>
         </binding>

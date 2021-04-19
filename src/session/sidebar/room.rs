@@ -36,7 +36,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for Room {
-        const NAME: &'static str = "Room";
+        const NAME: &'static str = "SidebarRoom";
         type Type = super::Room;
         type ParentType = glib::Object;
 
