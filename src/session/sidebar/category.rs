@@ -88,7 +88,7 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::enum_(
+                    glib::ParamSpec::new_enum(
                         "display-name",
                         "Display Name",
                         "The name of this category",
@@ -96,7 +96,7 @@ mod imp {
                         CategoryName::default() as i32,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::boolean(
+                    glib::ParamSpec::new_boolean(
                         "expanded",
                         "Expanded",
                         "Wheter this category is expanded or not",
@@ -116,7 +116,7 @@ mod imp {
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
-            match pspec.get_name() {
+            match pspec.name() {
                 "expanded" => {
                     let expanded: Option<bool> = value
                         .get()
@@ -133,13 +133,8 @@ mod imp {
             }
         }
 
-        fn get_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            pspec: &glib::ParamSpec,
-        ) -> glib::Value {
-            match pspec.get_name() {
+        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
                 "display-name" => self.name.get().to_value(),
                 "expanded" => self.expanded.get().to_value(),
                 _ => unimplemented!(),
@@ -148,13 +143,13 @@ mod imp {
     }
 
     impl ListModelImpl for Category {
-        fn get_item_type(&self, _list_model: &Self::Type) -> glib::Type {
+        fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
             Room::static_type()
         }
-        fn get_n_items(&self, _list_model: &Self::Type) -> u32 {
+        fn n_items(&self, _list_model: &Self::Type) -> u32 {
             self.list.borrow().len() as u32
         }
-        fn get_item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
+        fn item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
             let list = self.list.borrow();
             let room_id = list.get(position as usize);
             if let Some(room_id) = room_id {
@@ -168,7 +163,7 @@ mod imp {
         }
     }
     impl SelectionModelImpl for Category {
-        fn get_selection_in_range(
+        fn selection_in_range(
             &self,
             _model: &Self::Type,
             _position: u32,

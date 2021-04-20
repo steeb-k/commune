@@ -51,7 +51,7 @@ mod imp {
             self.parent_constructed(obj);
 
             let builder = gtk::Builder::from_resource("/org/gnome/FractalNext/shortcuts.ui");
-            let shortcuts = builder.get_object("shortcuts").unwrap();
+            let shortcuts = builder.object("shortcuts").unwrap();
             obj.set_help_overlay(Some(&shortcuts));
 
             // Devel Profile
@@ -108,7 +108,7 @@ impl Window {
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
         let settings = &imp::Window::from_instance(self).settings;
 
-        let size = self.get_default_size();
+        let size = self.default_size();
 
         settings.set_int("window-width", size.0)?;
         settings.set_int("window-height", size.1)?;
@@ -121,11 +121,11 @@ impl Window {
     fn load_window_size(&self) {
         let settings = &imp::Window::from_instance(self).settings;
 
-        let width = settings.get_int("window-width");
-        let height = settings.get_int("window-height");
-        let is_maximized = settings.get_boolean("is-maximized");
+        let width = settings.int("window-width");
+        let height = settings.int("window-height");
+        let is_maximized = settings.boolean("is-maximized");
 
         self.set_default_size(width, height);
-        self.set_property_maximized(is_maximized);
+        self.set_property("maximized", &is_maximized).unwrap();
     }
 }

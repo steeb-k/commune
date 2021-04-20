@@ -70,7 +70,7 @@ mod imp {
     impl ObjectImpl for Session {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::string(
+                vec![glib::ParamSpec::new_string(
                     "homeserver",
                     "Homeserver",
                     "The matrix homeserver of this session",
@@ -89,7 +89,7 @@ mod imp {
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
-            match pspec.get_name() {
+            match pspec.name() {
                 "homeserver" => {
                     let homeserver = value
                         .get()
@@ -100,13 +100,8 @@ mod imp {
             }
         }
 
-        fn get_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            pspec: &glib::ParamSpec,
-        ) -> glib::Value {
-            match pspec.get_name() {
+        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
                 "homeserver" => self.homeserver.get().to_value(),
                 _ => unimplemented!(),
             }
@@ -225,7 +220,7 @@ impl Session {
         >(Default::default(), 100);
         receiver.attach(
             None,
-            clone!(@weak self as obj => move |result| {
+            clone!(@weak self as obj => @default-return glib::Continue(false), move |result| {
                 match result {
                     Err(error) => {
                         let priv_ = &imp::Session::from_instance(&obj);

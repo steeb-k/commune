@@ -24,13 +24,13 @@ mod imp {
     impl ObjectImpl for CategoryList {}
 
     impl ListModelImpl for CategoryList {
-        fn get_item_type(&self, _list_model: &Self::Type) -> glib::Type {
+        fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
             Category::static_type()
         }
-        fn get_n_items(&self, _list_model: &Self::Type) -> u32 {
+        fn n_items(&self, _list_model: &Self::Type) -> u32 {
             self.list.borrow().len() as u32
         }
-        fn get_item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
+        fn item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
                 .get(position as usize)

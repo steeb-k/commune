@@ -45,7 +45,7 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::enum_(
+                    glib::ParamSpec::new_enum(
                         "display-name",
                         "Display Name",
                         "The display name of this category",
@@ -53,7 +53,7 @@ mod imp {
                         CategoryName::default() as i32,
                         glib::ParamFlags::WRITABLE,
                     ),
-                    glib::ParamSpec::boolean(
+                    glib::ParamSpec::new_boolean(
                         "expanded",
                         "Expanded",
                         "Wheter this category is expanded or not",
@@ -73,7 +73,7 @@ mod imp {
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
-            match pspec.get_name() {
+            match pspec.name() {
                 "display-name" => {
                     let display_name: CategoryName = value
                         .get()

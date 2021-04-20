@@ -47,7 +47,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::boolean(
+                vec![glib::ParamSpec::new_boolean(
                     "compact",
                     "Compact",
                     "Wheter a compact view is used or not",
@@ -66,7 +66,7 @@ mod imp {
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
-            match pspec.get_name() {
+            match pspec.name() {
                 "compact" => {
                     let compact = value
                         .get()
@@ -77,13 +77,8 @@ mod imp {
             }
         }
 
-        fn get_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            pspec: &glib::ParamSpec,
-        ) -> glib::Value {
-            match pspec.get_name() {
+        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
                 "compact" => self.compact.get().to_value(),
                 _ => unimplemented!(),
             }

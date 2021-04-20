@@ -96,9 +96,9 @@ impl Login {
 
     fn enable_next_action(&self) {
         let priv_ = imp::Login::from_instance(&self);
-        let homeserver = priv_.homeserver_entry.get_text();
-        let username = priv_.username_entry.get_text_length();
-        let password = priv_.password_entry.get_text().len();
+        let homeserver = priv_.homeserver_entry.text();
+        let username = priv_.username_entry.text_length();
+        let password = priv_.password_entry.text().len();
 
         self.action_set_enabled(
             "login.next",
@@ -115,9 +115,9 @@ impl Login {
 
     fn login(&self) {
         let priv_ = imp::Login::from_instance(&self);
-        let homeserver = priv_.homeserver_entry.get_text().to_string();
-        let username = priv_.username_entry.get_text().to_string();
-        let password = priv_.password_entry.get_text().to_string();
+        let homeserver = priv_.homeserver_entry.text().to_string();
+        let username = priv_.username_entry.text().to_string();
+        let password = priv_.password_entry.text().to_string();
 
         self.freeze();
 

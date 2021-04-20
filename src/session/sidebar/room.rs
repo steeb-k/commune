@@ -54,28 +54,28 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::boxed(
+                    glib::ParamSpec::new_boxed(
                         "room",
                         "Room",
                         "The matrix room",
                         BoxedRoom::static_type(),
                         glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::string(
+                    glib::ParamSpec::new_string(
                         "display-name",
                         "Display Name",
                         "The display name of this room",
                         None,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::object(
+                    glib::ParamSpec::new_object(
                         "avatar",
                         "Avatar",
                         "The url of the avatar of this room",
                         gio::LoadableIcon::static_type(),
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::flags(
+                    glib::ParamSpec::new_flags(
                         "highlight",
                         "Highlight",
                         "How this room is highlighted",
@@ -83,7 +83,7 @@ mod imp {
                         HighlightFlags::default().bits(),
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::uint64(
+                    glib::ParamSpec::new_uint64(
                         "notification-count",
                         "Notification count",
                         "The notification count of this room",
@@ -106,7 +106,7 @@ mod imp {
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
-            match pspec.get_name() {
+            match pspec.name() {
                 "room" => {
                     let room = value
                         .get_some::<&BoxedRoom>()
@@ -118,14 +118,9 @@ mod imp {
             }
         }
 
-        fn get_property(
-            &self,
-            _obj: &Self::Type,
-            _id: usize,
-            pspec: &glib::ParamSpec,
-        ) -> glib::Value {
+        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             let room = self.room.get().unwrap();
-            match pspec.get_name() {
+            match pspec.name() {
                 "display-name" => self.name.borrow().to_value(),
                 "avatar" => self.avatar.borrow().to_value(),
                 "highlight" => {

@@ -48,21 +48,21 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::object(
+                    glib::ParamSpec::new_object(
                         "avatar",
                         "Avatar",
                         "The url of the avatar of this room",
                         gio::LoadableIcon::static_type(),
                         glib::ParamFlags::WRITABLE,
                     ),
-                    glib::ParamSpec::string(
+                    glib::ParamSpec::new_string(
                         "display-name",
                         "Display Name",
                         "The display name of this room",
                         None,
                         glib::ParamFlags::WRITABLE,
                     ),
-                    glib::ParamSpec::flags(
+                    glib::ParamSpec::new_flags(
                         "highlight",
                         "Highlight",
                         "What type of highligh this room needs",
@@ -70,7 +70,7 @@ mod imp {
                         HighlightFlags::default().bits(),
                         glib::ParamFlags::WRITABLE,
                     ),
-                    glib::ParamSpec::uint64(
+                    glib::ParamSpec::new_uint64(
                         "notification-count",
                         "Notification count",
                         "The notification count of this room",
@@ -92,7 +92,7 @@ mod imp {
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
-            match pspec.get_name() {
+            match pspec.name() {
                 "avatar" => {
                     let _avatar = value
                         .get::<gio::LoadableIcon>()

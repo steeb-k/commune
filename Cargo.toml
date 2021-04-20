@@ -21,6 +21,9 @@ git = "https://github.com/gtk-rs/gtk4-rs"
 # We need to use the same version as libadwaita does
 #rev = "abea0c9980bc083494eceb30dfab5eeb99a73118"
 
+[dependencies.glib]
+git = "https://github.com/gtk-rs/gtk-rs"
+
 [dependencies.adw]
 package = "libadwaita"
 git = "https://gitlab.gnome.org/bilelmoussaoui/libadwaita-rs.git"
