@@ -17,6 +17,11 @@ secret-service = "2.0"
 html2pango = "0.4"
 chrono = "0.4"
 
+[dependencies.sourceview]
+branch = "main"
+package = "sourceview5"
+git = "https://gitlab.gnome.org/World/Rust/sourceview5-rs.git"
+
 [dependencies.gtk]
 package = "gtk4"
 git = "https://github.com/gtk-rs/gtk4-rs"

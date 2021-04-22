@@ -2,7 +2,7 @@ project('fractal',
         'rust',
         version: '0.0.1',
         license: 'MIT',
-  meson_version: '>= 0.50')
+  meson_version: '>= 0.53')
 
 i18n = import('i18n')
 gnome = import('gnome')
@@ -12,6 +12,7 @@ base_id = 'org.gnome.FractalNext'
 dependency('glib-2.0', version: '>= 2.66')
 dependency('gio-2.0', version: '>= 2.66')
 dependency('gtk4', version: '>= 4.0.0')
+dependency('gtksourceview-5', version: '>= 5.0.0' )
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)
 glib_compile_schemas = find_program('glib-compile-schemas', required: true)

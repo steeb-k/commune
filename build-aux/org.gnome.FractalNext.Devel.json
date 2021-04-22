@@ -48,6 +48,24 @@
             ]
         },
         {
+            "name" : "gtksourceview",
+            "buildsystem" : "meson",
+            "builddir" : true,
+            "config-opts" : [
+                "-Dgtk_doc=false",
+                "-Dsysprof=false",
+                "-Dgir=false",
+                "-Dvapi=false",
+                "-Dinstall_tests=false"
+            ],
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/GNOME/gtksourceview.git"
+                }
+            ]
+        },
+        {
             "name": "fractal",
             "buildsystem": "meson",
             "run-tests": true,

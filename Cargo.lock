@@ -582,6 +582,7 @@ dependencies = [
  "once_cell",
  "secret-service",
  "serde_json",
+ "sourceview5",
  "tokio",
  "tracing-subscriber",
  "url",
@@ -2687,6 +2688,38 @@ checksum = "9e3dfc207c526015c632472a77be09cf1b6e46866581aecae5cc38fb4235dea2"
 dependencies = [
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "sourceview5"
+version = "0.1.0"
+source = "git+https://gitlab.gnome.org/World/Rust/sourceview5-rs.git?branch=main#85fd0d9ed2c6a00b8540a330310e521817ab27c7"
+dependencies = [
+ "bitflags",
+ "gdk-pixbuf",
+ "gdk4",
+ "gio",
+ "glib",
+ "gtk4",
+ "libc",
+ "pango",
+ "sourceview5-sys",
+]
+
+[[package]]
+name = "sourceview5-sys"
+version = "0.1.0"
+source = "git+https://gitlab.gnome.org/World/Rust/sourceview5-rs.git?branch=main#85fd0d9ed2c6a00b8540a330310e521817ab27c7"
+dependencies = [
+ "gdk-pixbuf-sys",
+ "gdk4-sys",
+ "gio-sys",
+ "glib-sys",
+ "gobject-sys",
+ "gtk4-sys",
+ "libc",
+ "pango-sys",
+ "system-deps",
 ]
 
 [[package]]
