@@ -37,3 +37,36 @@ rustfmt:
     - rustc -Vv && cargo -Vv
     - cargo fmt --version
     - cargo fmt --all -- --color=always --check
+
+pages:
+  image: "ghcr.io/gtk-rs/gtk4-rs/gtk4:latest"
+  variables:
+    RUSTDOCFLAGS: >
+      -Z unstable-options
+      --extern-html-root-url=gio=https://gtk-rs.org/gtk-rs/git/docs
+      --extern-html-root-url=gsk4=https://gtk-rs.org/gtk4-rs/git/docs
+      --extern-html-root-url=gdk4=https://gtk-rs.org/gtk4-rs/git/docs
+      --extern-html-root-url=gtk4=https://gtk-rs.org/gtk4-rs/git/docs
+      --extern-html-root-url=glib=https://gtk-rs.org/gtk-rs/git/docs
+      --extern-html-root-url=libadwaita=https://world.pages.gitlab.gnome.org/Rust/libadwaita-rs/libadwaita/
+      --extern-html-root-url=matrix-sdk=https://docs.rs/matrix-sdk
+  script:
+    # generate the docs
+    - dnf update -y
+    - dnf install -y openssl-devel cmake
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
+    - git clone https://gitlab.gnome.org/GNOME/libadwaita.git
+    - cd libadwaita
+    - meson _build --prefix=/usr -Dvapi=false
+    - ninja -C _build install
+    - cd ..
+    - source $HOME/.cargo/env
+    - meson _build --prefix=/usr
+    - cargo doc -p fractal --no-deps
+    - mv target/doc/ public
+  artifacts:
+    paths:
+      - public
+  only:
+    refs:
+      - fractal-next
