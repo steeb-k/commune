@@ -6,6 +6,7 @@ mod application;
 #[rustfmt::skip]
 mod config;
 
+mod components;
 mod login;
 mod secret;
 mod session;

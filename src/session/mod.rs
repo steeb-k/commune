@@ -326,9 +326,13 @@ impl Session {
         secret::store_session(homeserver, session)
     }
 
-    // TODO: handle show room
     fn handle_show_room_action(&self, room_id: RoomId) {
-        warn!("TODO: implement room action: {:?}", room_id);
+        let priv_ = imp::Session::from_instance(self);
+        if let Some(room) = priv_.rooms.borrow().get(&room_id) {
+            priv_.content.set_room(room);
+        } else {
+            warn!("No room with {} was found", room_id);
+        }
     }
 
     fn handle_sync_reposne(&self, response: SyncResponse) {

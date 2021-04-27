@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="GtkListItem">
+    <property name="activatable">False</property>
+    <binding name="selectable">
+      <lookup type="RoomItem" name="selectable">
+        <lookup name="item">GtkListItem</lookup>
+      </lookup>
+    </binding>
+    <property name="child">
+      <object class="ContentItemRow">
+        <binding name="item">
+            <lookup name="item">GtkListItem</lookup>
+        </binding>
+      </object>
+    </property>
+  </template>
+</interface>

@@ -1,23 +1,26 @@
-use adw;
-use adw::subclass::prelude::BinImpl;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
-use gtk::{glib, glib::SyncSender, CompositeTemplate};
-use matrix_sdk::identifiers::RoomId;
+use adw::subclass::prelude::*;
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+
+use crate::session::{
+    content::ItemRow,
+    room::{Room, Timeline},
+};
 
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
     use std::cell::Cell;
 
-    #[derive(Debug, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content.ui")]
     pub struct Content {
         pub compact: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
-        pub room_history: TemplateChild<gtk::ListView>,
+        pub listview: TemplateChild<gtk::ListView>,
+        #[template_child]
+        pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
     }
 
     #[glib::object_subclass]
@@ -26,16 +29,10 @@ mod imp {
         type Type = super::Content;
         type ParentType = adw::Bin;
 
-        fn new() -> Self {
-            Self {
-                compact: Cell::new(false),
-                headerbar: TemplateChild::default(),
-                room_history: TemplateChild::default(),
-            }
-        }
-
         fn class_init(klass: &mut Self::Class) {
+            ItemRow::static_type();
             Self::bind_template(klass);
+            klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -68,9 +65,7 @@ mod imp {
         ) {
             match pspec.name() {
                 "compact" => {
-                    let compact = value
-                        .get()
-                        .expect("type conformity checked by `Object::set_property`");
+                    let compact = value.get().unwrap();
                     self.compact.set(compact);
                 }
                 _ => unimplemented!(),
@@ -82,6 +77,23 @@ mod imp {
                 "compact" => self.compact.get().to_value(),
                 _ => unimplemented!(),
             }
+        }
+
+        fn constructed(&self, obj: &Self::Type) {
+            let adj = self.scrolled_window.vadjustment().unwrap();
+            // TODO: make sure that we have enough messages to fill at least to scroll pages, if the room history is long enough
+
+            adj.connect_value_changed(clone!(@weak obj => move |adj| {
+                // Load more message when the user gets close to the end of the known room history
+                // Use the page size twice to detect if the user gets close the end
+                if adj.value() < adj.page_size() * 2.0 {
+                    if let Some(room) = obj.room() {
+                        room.load_previous_events();
+                        }
+                }
+            }));
+
+            self.parent_constructed(obj);
         }
     }
 
@@ -99,13 +111,22 @@ impl Content {
         glib::Object::new(&[]).expect("Failed to create Content")
     }
 
-    /// Sets up the required channel to recive async updates from the `Client`
-    pub fn setup_channel(&self) -> SyncSender<RoomId> {
-        let (sender, receiver) = glib::MainContext::sync_channel::<RoomId>(Default::default(), 100);
-        receiver.attach(None, move |_room_id| {
-            //TODO: actually do something: update the message GListModel
-            glib::Continue(true)
-        });
-        sender
+    pub fn set_room(&self, room: &Room) {
+        let priv_ = imp::Content::from_instance(self);
+        // TODO: use gtk::MultiSelection to allow selection
+        priv_
+            .listview
+            .set_model(Some(&gtk::NoSelection::new(Some(room.timeline()))));
+    }
+
+    fn room(&self) -> Option<Room> {
+        let priv_ = imp::Content::from_instance(self);
+        priv_
+            .listview
+            .model()
+            .and_then(|model| model.downcast::<gtk::NoSelection>().ok())
+            .and_then(|model| model.model())
+            .and_then(|model| model.downcast::<Timeline>().ok())
+            .map(|timeline| timeline.room().to_owned())
     }
 }
