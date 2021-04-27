@@ -1,9 +1,14 @@
+mod categories;
 mod content;
+mod room;
 mod sidebar;
+mod user;
 
 use self::content::Content;
 use self::sidebar::Sidebar;
+use self::user::User;
 
+use crate::event_from_sync_event;
 use crate::secret;
 use crate::RUNTIME;
 
@@ -11,23 +16,32 @@ use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use gtk_macros::send;
-use log::error;
+use log::{error, warn};
 use matrix_sdk::api::r0::{
     filter::{FilterDefinition, RoomFilter},
     session::login,
 };
-use matrix_sdk::{self, Client, ClientConfig, RequestConfig, SyncSettings};
+use matrix_sdk::{
+    self,
+    deserialized_responses::SyncResponse,
+    events::{AnyRoomEvent, AnySyncRoomEvent},
+    identifiers::RoomId,
+    Client, ClientConfig, RequestConfig, SyncSettings,
+};
 use std::time::Duration;
+
+use crate::session::categories::Categories;
 
 mod imp {
     use super::*;
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
+    use std::collections::HashMap;
 
-    #[derive(Debug, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
     pub struct Session {
         #[template_child]
@@ -38,6 +52,8 @@ mod imp {
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
+        pub rooms: RefCell<HashMap<RoomId, room::Room>>,
+        pub categories: Categories,
     }
 
     #[glib::object_subclass]
@@ -46,18 +62,23 @@ mod imp {
         type Type = super::Session;
         type ParentType = adw::Bin;
 
-        fn new() -> Self {
-            Self {
-                sidebar: TemplateChild::default(),
-                content: TemplateChild::default(),
-                homeserver: OnceCell::new(),
-                error: RefCell::new(None),
-                client: OnceCell::new(),
-            }
-        }
-
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            klass.install_action(
+                "session.show-room",
+                Some("s"),
+                move |widget, _, parameter| {
+                    use std::convert::TryInto;
+                    if let Some(room_id) = parameter
+                        .and_then(|p| p.str())
+                        .and_then(|s| s.try_into().ok())
+                    {
+                        widget.handle_show_room_action(room_id);
+                    } else {
+                        warn!("Not a valid room id: {:?}", parameter);
+                    }
+                },
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -68,13 +89,22 @@ mod imp {
     impl ObjectImpl for Session {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_string(
-                    "homeserver",
-                    "Homeserver",
-                    "The matrix homeserver of this session",
-                    None,
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                )]
+                vec![
+                    glib::ParamSpec::new_string(
+                        "homeserver",
+                        "Homeserver",
+                        "The matrix homeserver of this session",
+                        None,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "categories",
+                        "Categories",
+                        "A list of rooms grouped into categories",
+                        Categories::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -101,6 +131,7 @@ mod imp {
         fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "homeserver" => self.homeserver.get().to_value(),
+                "categories" => self.categories.to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -150,7 +181,7 @@ impl Session {
     }
 
     fn login(&self, method: CreationMethod) {
-        let priv_ = &imp::Session::from_instance(self);
+        let priv_ = imp::Session::from_instance(self);
         let homeserver = priv_.homeserver.get().unwrap();
 
         let sender = self.setup();
@@ -167,41 +198,50 @@ impl Session {
         let client = client.unwrap();
 
         priv_.client.set(client.clone()).unwrap();
+        let room_sender = self.create_new_sync_response_sender();
 
-        RUNTIME.block_on(async {
-            tokio::spawn(async move {
-                let success = match method {
-                    CreationMethod::SessionRestore(session) => {
-                        let res = client.restore_login(session).await;
-                        let success = res.is_ok();
-                        send!(sender, res.map(|_| None));
-                        success
-                    }
-                    CreationMethod::Password(username, password) => {
-                        let response = client
-                            .login(&username, &password, None, Some("Fractal Next"))
-                            .await;
-                        let success = response.is_ok();
-                        send!(sender, response.map(|r| Some(r)));
-                        success
-                    }
-                };
-
-                if success {
-                    // We need the filter or else left rooms won't be shown
-                    let mut room_filter = RoomFilter::empty();
-                    room_filter.include_leave = true;
-
-                    let mut filter = FilterDefinition::empty();
-                    filter.room = room_filter;
-
-                    let sync_settings = SyncSettings::new()
-                        .timeout(Duration::from_secs(30))
-                        .full_state(true)
-                        .filter(filter.into());
-                    client.sync(sync_settings).await;
+        RUNTIME.spawn(async move {
+            let success = match method {
+                CreationMethod::SessionRestore(session) => {
+                    let res = client.restore_login(session).await;
+                    let success = res.is_ok();
+                    send!(sender, res.map(|_| None));
+                    success
                 }
-            });
+                CreationMethod::Password(username, password) => {
+                    let response = client
+                        .login(&username, &password, None, Some("Fractal Next"))
+                        .await;
+                    let success = response.is_ok();
+                    send!(sender, response.map(|r| Some(r)));
+                    success
+                }
+            };
+
+            if success {
+                // We need the filter or else left rooms won't be shown
+                let mut room_filter = RoomFilter::empty();
+                room_filter.include_leave = true;
+
+                let mut filter = FilterDefinition::empty();
+                filter.room = room_filter;
+
+                let sync_settings = SyncSettings::new()
+                    .timeout(Duration::from_secs(30))
+                    .filter(filter.into());
+                client
+                    .sync_with_callback(sync_settings, |response| {
+                        let room_sender = room_sender.clone();
+                        async move {
+                            // Using the event hanlder doesn't make a lot of sense for us since we want every room event
+                            // Eventually we should contribute a better EventHandler interface so that it makes sense to use it.
+                            room_sender.send(response).unwrap();
+
+                            matrix_sdk::LoopCtrl::Continue
+                        }
+                    })
+                    .await;
+            }
         });
     }
 
@@ -239,6 +279,21 @@ impl Session {
         sender
     }
 
+    /// Sets up the required channel to receive new room events
+    fn create_new_sync_response_sender(&self) -> SyncSender<SyncResponse> {
+        let (sender, receiver) =
+            glib::MainContext::sync_channel::<SyncResponse>(Default::default(), 100);
+        receiver.attach(
+            None,
+            clone!(@weak self as obj => @default-return glib::Continue(false), move |response| {
+                obj.handle_sync_reposne(response);
+                glib::Continue(true)
+            }),
+        );
+
+        sender
+    }
+
     /// Loads the state from the `Store`
     /// Note that the `Store` currently doesn't store all events, therefore, we arn't really
     /// loading much via this function.
@@ -270,5 +325,83 @@ impl Session {
         let priv_ = &imp::Session::from_instance(self);
         let homeserver = priv_.homeserver.get().unwrap();
         secret::store_session(homeserver, session)
+    }
+
+    // TODO: handle show room
+    fn handle_show_room_action(&self, room_id: RoomId) {
+        warn!("TODO: implement room action: {:?}", room_id);
+    }
+
+    fn handle_sync_reposne(&self, response: SyncResponse) {
+        let priv_ = imp::Session::from_instance(self);
+
+        let new_rooms_id: Vec<RoomId> = {
+            let rooms_map = priv_.rooms.borrow();
+
+            let new_joined_rooms = response.rooms.leave.iter().filter_map(|(room_id, _)| {
+                if rooms_map.contains_key(room_id) {
+                    Some(room_id)
+                } else {
+                    None
+                }
+            });
+
+            let new_left_rooms = response.rooms.join.iter().filter_map(|(room_id, _)| {
+                if rooms_map.contains_key(room_id) {
+                    Some(room_id)
+                } else {
+                    None
+                }
+            });
+            new_joined_rooms.chain(new_left_rooms).cloned().collect()
+        };
+
+        let mut new_rooms = Vec::new();
+        let mut rooms_map = priv_.rooms.borrow_mut();
+
+        for room_id in new_rooms_id {
+            if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
+                let room = room::Room::new(matrix_room);
+                rooms_map.insert(room_id.clone(), room.clone());
+                new_rooms.push(room.clone());
+            }
+        }
+
+        priv_.categories.append(new_rooms);
+
+        for (room_id, matrix_room) in response.rooms.leave {
+            if matrix_room.timeline.events.is_empty() {
+                continue;
+            }
+            if let Some(room) = rooms_map.get(&room_id) {
+                room.append_events(
+                    matrix_room
+                        .timeline
+                        .events
+                        .into_iter()
+                        .map(|event| event_from_sync_event!(event, room_id))
+                        .collect(),
+                );
+            }
+        }
+
+        for (room_id, matrix_room) in response.rooms.join {
+            if matrix_room.timeline.events.is_empty() {
+                continue;
+            }
+
+            if let Some(room) = rooms_map.get(&room_id) {
+                room.append_events(
+                    matrix_room
+                        .timeline
+                        .events
+                        .into_iter()
+                        .map(|event| event_from_sync_event!(event, room_id))
+                        .collect(),
+                );
+            }
+        }
+
+        // TODO: handle StrippedStateEvents for invited rooms
     }
 }

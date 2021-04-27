@@ -9,6 +9,7 @@ mod config;
 mod login;
 mod secret;
 mod session;
+mod utils;
 mod window;
 
 use self::application::Application;

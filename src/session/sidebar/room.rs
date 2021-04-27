@@ -4,7 +4,7 @@ use gtk::{gio, glib};
 use gtk_macros::spawn;
 use matrix_sdk::room::Room as MatrixRoom;
 
-#[glib::gflags("HighlightFlags")]
+#[glib::gflags("SidebarHighlightFlags")]
 pub enum HighlightFlags {
     #[glib::gflags(name = "NONE")]
     NONE = 0b00000000,

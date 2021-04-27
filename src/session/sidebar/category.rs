@@ -8,7 +8,7 @@ use matrix_sdk::{room::Room as MatrixRoom, RoomType};
 // TODO: do we also want the categorie `People` and a custom categorie support?
 #[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
 #[repr(u32)]
-#[genum(type_name = "CategoryName")]
+#[genum(type_name = "SidebarCategoryName")]
 pub enum CategoryName {
     Invited = 0,
     Favorite = 1,
@@ -66,7 +66,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for Category {
-        const NAME: &'static str = "Category";
+        const NAME: &'static str = "SidebarCategory";
         type Type = super::Category;
         type ParentType = glib::Object;
         type Interfaces = (gio::ListModel, gtk::SelectionModel);
