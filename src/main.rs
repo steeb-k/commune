@@ -1,3 +1,7 @@
+#![doc(
+    html_logo_url = "https://gitlab.gnome.org/GNOME/fractal/-/raw/fractal-next/data/icons/org.gnome.FractalNext.svg?inline=false"
+)]
+
 mod application;
 #[rustfmt::skip]
 mod config;
