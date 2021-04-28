@@ -40,11 +40,9 @@ sources = files(
   'session/room/room.rs',
   'session/room/timeline.rs',
   'session/sidebar/mod.rs',
-  'session/sidebar/category_row.rs',
+  'session/sidebar/row.rs',
   'session/sidebar/room_row.rs',
-  'session/sidebar/category.rs',
-  'session/sidebar/category_list.rs',
-  'session/sidebar/room.rs',
+  'session/sidebar/sidebar.rs',
 )
 
 custom_target(

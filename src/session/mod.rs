@@ -298,8 +298,7 @@ impl Session {
     /// Note that the `Store` currently doesn't store all events, therefore, we arn't really
     /// loading much via this function.
     pub fn load(&self) {
-        let priv_ = imp::Session::from_instance(self);
-        priv_.sidebar.load(&priv_.client.get().unwrap());
+        // TODO: load rooms from the store before the sync completes
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,

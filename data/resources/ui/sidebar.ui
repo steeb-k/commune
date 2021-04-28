@@ -52,18 +52,14 @@
             <property name="vexpand">True</property>
             <property name="hscrollbar-policy">never</property>
             <property name="child">
-	      <object class="GtkListView" id="listview">
-		<property name="model">
-		  <object class="GtkNoSelection">
-		    <property name="model">
-		      <object class="CategoryList" />
-		    </property>
-		  </object>
-		</property>
-		<property name="factory">
-		  <object class="GtkBuilderListItemFactory">
-		    <property name="resource">/org/gnome/FractalNext/sidebar-category-item.ui</property>
-		  </object>
+              <object class="GtkListView" id="listview">
+                <style>
+                  <class name="navigation-sidebar"/>
+                </style>
+                <property name="factory">
+                  <object class="GtkBuilderListItemFactory">
+                    <property name="resource">/org/gnome/FractalNext/sidebar-item.ui</property>
+                  </object>
                 </property>
                 <accessibility>
                   <property name="label" translatable="yes">Sidebar</property>

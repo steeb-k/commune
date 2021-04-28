@@ -1,17 +1,20 @@
-use crate::session::sidebar::HighlightFlags;
-use adw;
 use adw::subclass::prelude::BinImpl;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
-use gtk::{gio, glib, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+
+use crate::session::room::{HighlightFlags, Room};
 
 mod imp {
     use super::*;
-    use glib::subclass::InitializingObject;
+    use glib::{subclass::InitializingObject, SignalHandlerId};
+    use once_cell::sync::Lazy;
+    use std::cell::RefCell;
 
-    #[derive(Debug, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-room-row.ui")]
-    pub struct SidebarRoomRow {
+    pub struct RoomRow {
+        pub room: RefCell<Option<Room>>,
+        pub bindings: RefCell<Vec<glib::Binding>>,
+        pub signal_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub avatar: TemplateChild<adw::Avatar>,
         #[template_child]
@@ -21,18 +24,10 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for SidebarRoomRow {
+    impl ObjectSubclass for RoomRow {
         const NAME: &'static str = "SidebarRoomRow";
-        type Type = super::SidebarRoomRow;
+        type Type = super::RoomRow;
         type ParentType = adw::Bin;
-
-        fn new() -> Self {
-            Self {
-                avatar: TemplateChild::default(),
-                display_name: TemplateChild::default(),
-                notification_count: TemplateChild::default(),
-            }
-        }
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -43,43 +38,16 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for SidebarRoomRow {
+    impl ObjectImpl for RoomRow {
         fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpec::new_object(
-                        "avatar",
-                        "Avatar",
-                        "The url of the avatar of this room",
-                        gio::LoadableIcon::static_type(),
-                        glib::ParamFlags::WRITABLE,
-                    ),
-                    glib::ParamSpec::new_string(
-                        "display-name",
-                        "Display Name",
-                        "The display name of this room",
-                        None,
-                        glib::ParamFlags::WRITABLE,
-                    ),
-                    glib::ParamSpec::new_flags(
-                        "highlight",
-                        "Highlight",
-                        "What type of highligh this room needs",
-                        HighlightFlags::static_type(),
-                        HighlightFlags::default().bits(),
-                        glib::ParamFlags::WRITABLE,
-                    ),
-                    glib::ParamSpec::new_uint64(
-                        "notification-count",
-                        "Notification count",
-                        "The notification count of this room",
-                        std::u64::MIN,
-                        std::u64::MAX,
-                        0,
-                        glib::ParamFlags::WRITABLE,
-                    ),
-                ]
+                vec![glib::ParamSpec::new_object(
+                    "room",
+                    "Room",
+                    "The room of this row",
+                    Room::static_type(),
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                )]
             });
 
             PROPERTIES.as_ref()
@@ -87,75 +55,136 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "avatar" => {
-                    let _avatar = value
-                        .get::<Option<gio::LoadableIcon>>()
-                        .expect("type conformity checked by `Object::set_property`");
-                    // TODO: set custom avatar https://gitlab.gnome.org/exalm/libadwaita/-/issues/29
-                }
-                "display-name" => {
-                    let display_name = value
-                        .get()
-                        .expect("type conformity checked by `Object::set_property`");
-                    self.display_name.set_label(display_name);
-                }
-                "highlight" => {
-                    let flags = value
-                        .get::<HighlightFlags>()
-                        .expect("type conformity checked by `Object::set_property`");
-                    match flags {
-                        HighlightFlags::NONE => {
-                            self.notification_count.remove_css_class("highlight");
-                            self.display_name.remove_css_class("bold");
-                        }
-                        HighlightFlags::HIGHLIGHT => {
-                            self.notification_count.add_css_class("highlight");
-                            self.display_name.remove_css_class("bold");
-                        }
-                        HighlightFlags::BOLD => {
-                            self.display_name.add_css_class("bold");
-                            self.notification_count.remove_css_class("highlight");
-                        }
-                        HighlightFlags::HIGHLIGHT_BOLD => {
-                            self.notification_count.add_css_class("highlight");
-                            self.display_name.add_css_class("bold");
-                        }
-                        _ => {}
-                    }
-                }
-                "notification-count" => {
-                    let count = value
-                        .get::<u64>()
-                        .expect("type conformity checked by `Object::set_property`");
-                    self.notification_count.set_label(&count.to_string());
-                    self.notification_count.set_visible(count > 0);
+                "room" => {
+                    let room = value.get().unwrap();
+                    obj.set_room(room);
                 }
                 _ => unimplemented!(),
             }
         }
 
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "room" => obj.room().to_value(),
+                _ => unimplemented!(),
+            }
         }
     }
 
-    impl WidgetImpl for SidebarRoomRow {}
-    impl BinImpl for SidebarRoomRow {}
+    impl WidgetImpl for RoomRow {}
+    impl BinImpl for RoomRow {}
 }
 
 glib::wrapper! {
-    pub struct SidebarRoomRow(ObjectSubclass<imp::SidebarRoomRow>)
+    pub struct RoomRow(ObjectSubclass<imp::RoomRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl SidebarRoomRow {
+impl RoomRow {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create SidebarRoomRow")
+        glib::Object::new(&[]).expect("Failed to create RoomRow")
+    }
+
+    pub fn room(&self) -> Option<Room> {
+        let priv_ = imp::RoomRow::from_instance(&self);
+        priv_.room.borrow().clone()
+    }
+
+    pub fn set_room(&self, room: Option<Room>) {
+        let priv_ = imp::RoomRow::from_instance(&self);
+
+        if self.room() == room {
+            return;
+        }
+
+        if let Some(room) = priv_.room.take() {
+            if let Some(id) = priv_.signal_handler.take() {
+                room.disconnect(id);
+            }
+        }
+
+        let mut bindings = priv_.bindings.borrow_mut();
+        while let Some(binding) = bindings.pop() {
+            binding.unbind();
+        }
+
+        if let Some(ref room) = room {
+            // TODO: set custom avatar https://gitlab.gnome.org/exalm/libadwaita/-/issues/29
+
+            let display_name_binding = room
+                .bind_property("display-name", &priv_.display_name.get(), "label")
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build()
+                .unwrap();
+
+            let notification_count_binding = room
+                .bind_property(
+                    "notification-count",
+                    &priv_.notification_count.get(),
+                    "label",
+                )
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build()
+                .unwrap();
+            let notification_count_vislbe_binding = room
+                .bind_property(
+                    "notification-count",
+                    &priv_.notification_count.get(),
+                    "visible",
+                )
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .transform_from(|_, value| Some((value.get::<u64>().unwrap() > 0).to_value()))
+                .build()
+                .unwrap();
+
+            priv_.signal_handler.replace(Some(room.connect_notify_local(
+                Some("highlight"),
+                clone!(@weak self as obj => move |_, _| {
+                        obj.set_highlight();
+                }),
+            )));
+
+            self.set_highlight();
+
+            bindings.append(&mut vec![
+                display_name_binding,
+                notification_count_binding,
+                notification_count_vislbe_binding,
+            ]);
+        }
+
+        priv_.room.replace(room);
+        self.notify("room");
+    }
+
+    fn set_highlight(&self) {
+        let priv_ = imp::RoomRow::from_instance(&self);
+        if let Some(room) = &*priv_.room.borrow() {
+            match room.highlight() {
+                HighlightFlags::NONE => {
+                    priv_.notification_count.remove_css_class("highlight");
+                    priv_.display_name.remove_css_class("bold");
+                }
+                HighlightFlags::HIGHLIGHT => {
+                    priv_.notification_count.add_css_class("highlight");
+                    priv_.display_name.remove_css_class("bold");
+                }
+                HighlightFlags::BOLD => {
+                    priv_.display_name.add_css_class("bold");
+                    priv_.notification_count.remove_css_class("highlight");
+                }
+                HighlightFlags::HIGHLIGHT_BOLD => {
+                    priv_.notification_count.add_css_class("highlight");
+                    priv_.display_name.add_css_class("bold");
+                }
+                _ => {}
+            };
+        }
     }
 }

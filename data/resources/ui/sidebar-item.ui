@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="GtkListItem">
+    <property name="child">
+      <!-- TODO: we need to implement our own Expander: https://gitlab.gnome.org/GNOME/fractal/-/issues/749-->
+      <object class="GtkTreeExpander" id="expander">
+        <binding name="list-row">
+          <lookup name="item">GtkListItem</lookup>
+        </binding>
+        <property name="child">
+          <object class="SidebarRow">
+            <property name="hexpand">True</property>
+            <binding name="item">
+                <lookup name="item">expander</lookup>
+            </binding>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+</interface>
