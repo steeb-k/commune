@@ -27,7 +27,6 @@ sources = files(
   'secret.rs',
   'session/mod.rs',
   'session/content.rs',
-  'session/supervisor.rs',
   'session/sidebar/mod.rs',
   'session/sidebar/category_row.rs',
   'session/sidebar/room_row.rs',
