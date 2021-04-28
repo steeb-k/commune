@@ -109,9 +109,9 @@ mod imp {
             match pspec.name() {
                 "room" => {
                     let room = value
-                        .get_some::<&BoxedRoom>()
+                        .get::<BoxedRoom>()
                         .expect("type conformity checked by `Object::set_property`");
-                    let _ = self.room.set(room.clone().0);
+                    let _ = self.room.set(room.0);
                     obj.update();
                 }
                 _ => unimplemented!(),

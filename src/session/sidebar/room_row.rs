@@ -95,22 +95,20 @@ mod imp {
             match pspec.name() {
                 "avatar" => {
                     let _avatar = value
-                        .get::<gio::LoadableIcon>()
+                        .get::<Option<gio::LoadableIcon>>()
                         .expect("type conformity checked by `Object::set_property`");
                     // TODO: set custom avatar https://gitlab.gnome.org/exalm/libadwaita/-/issues/29
                 }
                 "display-name" => {
                     let display_name = value
                         .get()
-                        .expect("type conformity checked by `Object::set_property`")
-                        .expect("A room always needs a display name");
+                        .expect("type conformity checked by `Object::set_property`");
                     self.display_name.set_label(display_name);
                 }
                 "highlight" => {
                     let flags = value
                         .get::<HighlightFlags>()
-                        .expect("type conformity checked by `Object::set_property`")
-                        .unwrap();
+                        .expect("type conformity checked by `Object::set_property`");
                     match flags {
                         HighlightFlags::NONE => {
                             self.notification_count.remove_css_class("highlight");
@@ -134,8 +132,7 @@ mod imp {
                 "notification-count" => {
                     let count = value
                         .get::<u64>()
-                        .expect("type conformity checked by `Object::set_property`")
-                        .unwrap();
+                        .expect("type conformity checked by `Object::set_property`");
                     self.notification_count.set_label(&count.to_string());
                     self.notification_count.set_visible(count > 0);
                 }

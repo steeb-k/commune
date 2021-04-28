@@ -86,7 +86,7 @@ mod imp {
                     let compact = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
-                    self.compact.set(compact.unwrap());
+                    self.compact.set(compact);
                 }
                 _ => unimplemented!(),
             }

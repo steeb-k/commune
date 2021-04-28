@@ -118,16 +118,16 @@ mod imp {
         ) {
             match pspec.name() {
                 "expanded" => {
-                    let expanded: Option<bool> = value
+                    let expanded = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
-                    self.expanded.set(expanded.unwrap());
+                    self.expanded.set(expanded);
                 }
                 "display-name" => {
                     let name = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
-                    self.name.set(name.unwrap());
+                    self.name.set(name);
                 }
                 _ => unimplemented!(),
             }

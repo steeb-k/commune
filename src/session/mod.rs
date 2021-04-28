@@ -94,7 +94,7 @@ mod imp {
                     let homeserver = value
                         .get()
                         .expect("type conformity checked by `Object::set_property`");
-                    let _ = self.homeserver.set(homeserver.unwrap());
+                    let _ = self.homeserver.set(homeserver);
                 }
                 _ => unimplemented!(),
             }
@@ -266,7 +266,7 @@ impl Session {
 
     pub fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_local("ready", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap().unwrap();
+            let obj = values[0].get::<Self>().unwrap();
 
             f(&obj);
 

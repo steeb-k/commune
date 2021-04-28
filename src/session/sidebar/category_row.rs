@@ -77,15 +77,13 @@ mod imp {
                 "display-name" => {
                     let display_name: CategoryName = value
                         .get()
-                        .expect("type conformity checked by `Object::set_property`")
-                        .expect("A room always needs a display name");
+                        .expect("type conformity checked by `Object::set_property`");
                     self.display_name.set_label(&display_name.to_string());
                 }
                 "expanded" => {
                     let expanded = value
                         .get()
-                        .expect("type conformity checked by `Object::set_property`")
-                        .unwrap();
+                        .expect("type conformity checked by `Object::set_property`");
                     if expanded {
                         //self.add_css_class("expanded");
                     } else {

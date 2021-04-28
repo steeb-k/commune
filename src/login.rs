@@ -187,8 +187,8 @@ impl Login {
         f: F,
     ) -> glib::SignalHandlerId {
         self.connect_local("new-session", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap().unwrap();
-            let session = values[1].get::<Session>().unwrap().unwrap();
+            let obj = values[0].get::<Self>().unwrap();
+            let session = values[1].get::<Session>().unwrap();
 
             f(&obj, &session);
 
