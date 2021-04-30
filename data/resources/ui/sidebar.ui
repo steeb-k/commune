@@ -43,7 +43,7 @@
           <object class="GtkSearchBar" id="room_search">
             <property name="search-mode-enabled" bind-source="search_button" bind-property="active"/>
             <property name="child">
-              <object class="GtkSearchEntry"/>
+              <object class="GtkSearchEntry" id="room_search_entry"/>
             </property>
           </object>
         </child>

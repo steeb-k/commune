@@ -21,6 +21,8 @@ mod imp {
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         pub listview: TemplateChild<gtk::ListView>,
+        #[template_child]
+        pub room_search_entry: TemplateChild<gtk::SearchEntry>,
     }
 
     #[glib::object_subclass]
@@ -115,8 +117,32 @@ impl Sidebar {
                 item.clone().downcast::<gio::ListModel>().ok()
             });
 
-            // TODO: set filter based on the text in the search entry
-            let filter_model = gtk::FilterListModel::new(Some(&tree_model), gtk::NONE_FILTER);
+            let room_expression = gtk::ClosureExpression::new(
+                String::static_type(),
+                |value| {
+                    Some(
+                        value[0]
+                            .get::<gtk::TreeListRow>()
+                            .unwrap()
+                            .item()
+                            .and_then(|o| o.downcast::<Room>().ok())
+                            .map_or(String::new(), |o| o.display_name())
+                            .to_value(),
+                    )
+                },
+                &[],
+            );
+            let filter = gtk::StringFilterBuilder::new()
+                .match_mode(gtk::StringFilterMatchMode::Substring)
+                .expression(&room_expression)
+                .ignore_case(true)
+                .build();
+            let filter_model = gtk::FilterListModel::new(Some(&tree_model), Some(&filter));
+            priv_
+                .room_search_entry
+                .bind_property("text", &filter, "search")
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build();
 
             let selection = gtk::SingleSelection::new(Some(&filter_model));
             selection.connect_notify_local(Some("selected-item"), clone!(@weak self as obj => move |model, _| {
