@@ -286,7 +286,7 @@ impl Session {
         receiver.attach(
             None,
             clone!(@weak self as obj => @default-return glib::Continue(false), move |response| {
-                obj.handle_sync_reposne(response);
+                obj.handle_sync_response(response);
                 glib::Continue(true)
             }),
         );
@@ -335,22 +335,22 @@ impl Session {
         }
     }
 
-    fn handle_sync_reposne(&self, response: SyncResponse) {
+    fn handle_sync_response(&self, response: SyncResponse) {
         let priv_ = imp::Session::from_instance(self);
 
         let new_rooms_id: Vec<RoomId> = {
             let rooms_map = priv_.rooms.borrow();
 
-            let new_joined_rooms = response.rooms.leave.iter().filter_map(|(room_id, _)| {
-                if rooms_map.contains_key(room_id) {
+            let new_left_rooms = response.rooms.leave.iter().filter_map(|(room_id, _)| {
+                if !rooms_map.contains_key(room_id) {
                     Some(room_id)
                 } else {
                     None
                 }
             });
 
-            let new_left_rooms = response.rooms.join.iter().filter_map(|(room_id, _)| {
-                if rooms_map.contains_key(room_id) {
+            let new_joined_rooms = response.rooms.join.iter().filter_map(|(room_id, _)| {
+                if !rooms_map.contains_key(room_id) {
                     Some(room_id)
                 } else {
                     None
