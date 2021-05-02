@@ -43,6 +43,7 @@ pages:
   variables:
     RUSTDOCFLAGS: >
       -Z unstable-options
+      --enable-index-page
       --extern-html-root-url=gio=https://gtk-rs.org/gtk-rs/git/docs
       --extern-html-root-url=gsk4=https://gtk-rs.org/gtk4-rs/git/docs
       --extern-html-root-url=gdk4=https://gtk-rs.org/gtk4-rs/git/docs
@@ -56,8 +57,13 @@ pages:
     - dnf install -y openssl-devel cmake
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
     - git clone https://gitlab.gnome.org/GNOME/libadwaita.git
+    - git clone https://gitlab.gnome.org/GNOME/gtksourceview.git
     - cd libadwaita
-    - meson _build --prefix=/usr -Dvapi=false
+    - meson _build --prefix=/usr -Dtests=false -Dexamples=false -Dvapi=false
+    - ninja -C _build install
+    - cd ..
+    - cd gtksourceview
+    - meson _build --prefix=/usr -Dgtk_doc=false -Dsysprof=false -Dgir=false -Dvapi=false -Dinstall_tests=false
     - ninja -C _build install
     - cd ..
     - source $HOME/.cargo/env
