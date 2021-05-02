@@ -12,6 +12,7 @@ base_id = 'org.gnome.FractalNext'
 dependency('glib-2.0', version: '>= 2.66')
 dependency('gio-2.0', version: '>= 2.66')
 dependency('gtk4', version: '>= 4.0.0')
+dependency('libadwaita-1', version: '>= 1.1.0' )
 dependency('gtksourceview-5', version: '>= 5.0.0' )
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)
