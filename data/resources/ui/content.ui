@@ -8,7 +8,7 @@
         <property name="orientation">vertical</property>
         <child>
           <object class="AdwHeaderBar" id="headerbar">
-            <property name="show-start-title-buttons" bind-source="Content" bind-property="compact" bind-flags="sync-create" />
+            <property name="show-start-title-buttons" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
             <child type="end">
               <object class="GtkMenuButton" id="room_menu">
                 <property name="icon-name">view-more-symbolic</property>
@@ -78,6 +78,7 @@
                 <child>
                   <object class="GtkButton">
                     <property name="icon-name">mail-attachment-symbolic</property>
+                    <property name="action-name">content.select-file</property>
                   </object>
                 </child>
                 <child>
@@ -86,13 +87,30 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="message_entry">
+                  <object class="GtkScrolledWindow" id="scrolled_window">
+                    <property name="vexpand">True</property>
                     <property name="hexpand">True</property>
+                    <property name="vscrollbar-policy">external</property>
+                    <property name="max-content-height">200</property>
+                    <property name="propagate-natural-height">True</property>
+                    <property name="child">
+                      <object class="GtkSourceView" id="message_entry">
+                        <property name="hexpand">True</property>
+                      </object>
+                    </property>
+                    <style>
+                      <class name="message-entry"/>
+                    </style>
                   </object>
                 </child>
                 <child>
                   <object class="GtkButton">
                     <property name="icon-name">send-symbolic</property>
+                    <property name="focus-on-click">False</property>
+                    <property name="action-name">content.send-text-message</property>
+                    <style>
+                      <class name="suggested-action"/>
+                    </style>
                   </object>
                 </child>
               </object>

@@ -11,6 +11,7 @@ use matrix_sdk::{
 
 use crate::fn_event;
 use crate::session::User;
+use std::cell::RefCell;
 
 #[derive(Clone, Debug, glib::GBoxed)]
 #[gboxed(type_name = "BoxedAnyRoomEvent")]
@@ -24,7 +25,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct Event {
-        pub event: OnceCell<AnyRoomEvent>,
+        pub event: OnceCell<RefCell<AnyRoomEvent>>,
         pub relates_to: RefCell<Vec<super::Event>>,
         pub show_header: Cell<bool>,
         pub sender: OnceCell<User>,
@@ -53,7 +54,7 @@ mod imp {
                         "event",
                         "The matrix event of this Event",
                         BoxedAnyRoomEvent::static_type(),
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT,
                     ),
                     glib::ParamSpec::new_boolean(
                         "show-header",
@@ -92,7 +93,7 @@ mod imp {
             match pspec.name() {
                 "event" => {
                     let event = value.get::<BoxedAnyRoomEvent>().unwrap();
-                    self.event.set(event.0).unwrap();
+                    obj.set_matrix_event(event.0);
                 }
                 "show-header" => {
                     let show_header = value.get().unwrap();
@@ -139,32 +140,45 @@ impl Event {
         priv_.sender.get().unwrap()
     }
 
-    pub fn matrix_event(&self) -> &AnyRoomEvent {
+    pub fn matrix_event(&self) -> AnyRoomEvent {
         let priv_ = imp::Event::from_instance(&self);
-        priv_.event.get().unwrap()
+        priv_.event.get().unwrap().borrow().clone()
     }
 
-    pub fn matrix_sender(&self) -> &UserId {
+    pub fn set_matrix_event(&self, event: AnyRoomEvent) {
         let priv_ = imp::Event::from_instance(&self);
-        let event = priv_.event.get().unwrap();
-        fn_event!(event, sender)
+        if let Some(value) = priv_.event.get() {
+            value.replace(event);
+        } else {
+            priv_.event.set(RefCell::new(event)).unwrap();
+        }
+        self.notify("event");
     }
 
-    pub fn matrix_event_id(&self) -> &EventId {
+    pub fn matrix_sender(&self) -> UserId {
         let priv_ = imp::Event::from_instance(&self);
-        let event = priv_.event.get().unwrap();
-        fn_event!(event, event_id)
+        let event = &*priv_.event.get().unwrap().borrow();
+        fn_event!(event, sender).clone()
+    }
+
+    pub fn matrix_event_id(&self) -> EventId {
+        let priv_ = imp::Event::from_instance(&self);
+        let event = &*priv_.event.get().unwrap().borrow();
+        fn_event!(event, event_id).clone()
     }
 
     pub fn timestamp(&self) -> DateTime<Local> {
         let priv_ = imp::Event::from_instance(&self);
-        let event = priv_.event.get().unwrap();
+        let event = &*priv_.event.get().unwrap().borrow();
+
         fn_event!(event, origin_server_ts).clone().into()
     }
 
     /// Find the related event if any
     pub fn related_matrix_event(&self) -> Option<EventId> {
-        match self.matrix_event() {
+        let priv_ = imp::Event::from_instance(&self);
+
+        match *priv_.event.get().unwrap().borrow() {
             AnyRoomEvent::Message(ref message) => match message {
                 AnyMessageEvent::RoomRedaction(event) => Some(event.redacts.clone()),
                 _ => match message.content() {
@@ -189,11 +203,13 @@ impl Event {
 
     /// Whether this event is hidden from the user or displayed in the room history.
     pub fn is_hidden_event(&self) -> bool {
+        let priv_ = imp::Event::from_instance(&self);
+
         if self.related_matrix_event().is_some() {
             return true;
         }
 
-        match self.matrix_event() {
+        match &*priv_.event.get().unwrap().borrow() {
             AnyRoomEvent::Message(message) => match message {
                 AnyMessageEvent::CallAnswer(_) => true,
                 AnyMessageEvent::CallInvite(_) => true,
@@ -286,7 +302,8 @@ impl Event {
 
     pub fn can_hide_header(&self) -> bool {
         let priv_ = imp::Event::from_instance(&self);
-        match priv_.event.get().unwrap() {
+
+        match &*priv_.event.get().unwrap().borrow() {
             AnyRoomEvent::Message(ref message) => match message.content() {
                 AnyMessageEventContent::RoomMessage(message) => match message.msgtype {
                     MessageType::Audio(_) => true,

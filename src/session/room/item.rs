@@ -142,7 +142,7 @@ impl Item {
         }
     }
 
-    pub fn matrix_event(&self) -> Option<&AnyRoomEvent> {
+    pub fn matrix_event(&self) -> Option<AnyRoomEvent> {
         let priv_ = imp::Item::from_instance(&self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event.matrix_event())
@@ -163,7 +163,7 @@ impl Item {
     pub fn matrix_sender(&self) -> Option<UserId> {
         let priv_ = imp::Item::from_instance(&self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
-            Some(event.matrix_sender().clone())
+            Some(event.matrix_sender())
         } else {
             None
         }
@@ -173,7 +173,7 @@ impl Item {
         let priv_ = imp::Item::from_instance(&self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
-            Some(event.matrix_event_id().clone())
+            Some(event.matrix_event_id())
         } else {
             None
         }

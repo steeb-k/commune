@@ -1,5 +1,8 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{
+    gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
+    CompositeTemplate,
+};
 
 use crate::session::{content::ItemRow, room::Room};
 
@@ -13,12 +16,15 @@ mod imp {
     pub struct Content {
         pub compact: Cell<bool>,
         pub room: RefCell<Option<Room>>,
+        pub md_enabled: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         pub listview: TemplateChild<gtk::ListView>,
         #[template_child]
         pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
+        #[template_child]
+        pub message_entry: TemplateChild<sourceview::View>,
     }
 
     #[glib::object_subclass]
@@ -31,6 +37,10 @@ mod imp {
             ItemRow::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
+
+            klass.install_action("content.send-text-message", None, move |widget, _, _| {
+                widget.send_text_message();
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -105,6 +115,28 @@ mod imp {
                 }
             }));
 
+            let key_events = gtk::EventControllerKey::new();
+            self.message_entry.add_controller(&key_events);
+
+            key_events
+                .connect_key_pressed(clone!(@weak obj => @default-return Inhibit(false), move |_, key, _, modifier| {
+                if !modifier.contains(gdk::ModifierType::SHIFT_MASK) && (key == gdk::keys::constants::Return || key == gdk::keys::constants::KP_Enter) {
+                    obj.activate_action("content.send-text-message", None);
+                    Inhibit(true)
+                } else {
+                    Inhibit(false)
+                }
+            }));
+            self.message_entry.buffer().connect_property_text_notify(
+                clone!(@weak obj => move |buffer| {
+                   let (start_iter, end_iter) = buffer.bounds();
+                   obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+                }),
+            );
+
+            let (start_iter, end_iter) = self.message_entry.buffer().bounds();
+            obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+
             self.parent_constructed(obj);
         }
     }
@@ -143,5 +175,18 @@ impl Content {
     pub fn room(&self) -> Option<Room> {
         let priv_ = imp::Content::from_instance(self);
         priv_.room.borrow().clone()
+    }
+
+    pub fn send_text_message(&self) {
+        let priv_ = imp::Content::from_instance(self);
+        let buffer = priv_.message_entry.buffer();
+        let (start_iter, end_iter) = buffer.bounds();
+        let body = buffer.text(&start_iter, &end_iter, true);
+
+        if let Some(room) = &*priv_.room.borrow() {
+            room.send_text_message(body.as_str(), priv_.md_enabled.get());
+        }
+
+        buffer.set_text("");
     }
 }

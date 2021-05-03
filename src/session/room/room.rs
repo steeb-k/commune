@@ -1,12 +1,24 @@
+use comrak::{markdown_to_html, ComrakOptions};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{error, warn};
 use matrix_sdk::{
-    events::{room::member::MemberEventContent, AnyRoomEvent, AnyStateEvent, StateEvent},
-    identifiers::UserId,
+    events::{
+        room::{
+            member::MemberEventContent,
+            message::{
+                EmoteMessageEventContent, FormattedBody, MessageEventContent, MessageType,
+                TextMessageEventContent,
+            },
+        },
+        AnyMessageEvent, AnyRoomEvent, AnyStateEvent, MessageEvent, StateEvent, Unsigned,
+    },
+    identifiers::{EventId, UserId},
     room::Room as MatrixRoom,
+    uuid::Uuid,
     RoomMember,
 };
+use std::time::SystemTime;
 
 use crate::session::{
     categories::CategoryType,
@@ -30,6 +42,8 @@ mod imp {
         pub category: Cell<CategoryType>,
         pub timeline: OnceCell<Timeline>,
         pub room_members: RefCell<HashMap<UserId, User>>,
+        /// The user of this room
+        pub user_id: OnceCell<UserId>,
     }
 
     #[glib::object_subclass]
@@ -365,5 +379,88 @@ impl Room {
             }),
         );
         */
+    }
+
+    pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
+        use std::convert::TryFrom;
+        let priv_ = imp::Room::from_instance(self);
+        if let MatrixRoom::Joined(matrix_room) = priv_.matrix_room.get().unwrap().clone() {
+            let is_emote = body.starts_with("/me ");
+
+            // Don't use markdown for emotes
+            let body = if is_emote {
+                body.trim_start_matches("/me ")
+            } else {
+                body
+            };
+
+            let formatted = if markdown_enabled {
+                let mut md_options = ComrakOptions::default();
+                md_options.render.hardbreaks = true;
+                Some(markdown_to_html(&body, &md_options))
+            } else {
+                None
+            };
+
+            let content = if is_emote {
+                let emote = EmoteMessageEventContent {
+                    body: body.to_string(),
+                    formatted: formatted
+                        .filter(|formatted| formatted.as_str() == body)
+                        .map(|f| FormattedBody::html(f)),
+                };
+                MessageEventContent::new(MessageType::Emote(emote))
+            } else {
+                let text = if let Some(formatted) =
+                    formatted.filter(|formatted| formatted.as_str() == body)
+                {
+                    TextMessageEventContent::html(body, formatted)
+                } else {
+                    TextMessageEventContent::plain(body)
+                };
+                MessageEventContent::new(MessageType::Text(text))
+            };
+
+            let txn_id = Uuid::new_v4();
+
+            let pending_event = AnyMessageEvent::RoomMessage(MessageEvent {
+                content,
+                event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
+                sender: self.user().user_id().clone(),
+                origin_server_ts: SystemTime::now(),
+                room_id: matrix_room.room_id().clone(),
+                unsigned: Unsigned::default(),
+            });
+
+            self.send_message(txn_id, pending_event);
+        }
+    }
+
+    pub fn send_message(&self, txn_id: Uuid, event: AnyMessageEvent) {
+        let priv_ = imp::Room::from_instance(self);
+        let content = event.content();
+
+        if let MatrixRoom::Joined(matrix_room) = priv_.matrix_room.get().unwrap().clone() {
+            let pending_id = event.event_id().clone();
+            priv_
+                .timeline
+                .get()
+                .unwrap()
+                .append_pending(AnyRoomEvent::Message(event));
+
+            do_async(
+                async move { matrix_room.send(content, Some(txn_id)).await },
+                clone!(@weak self as obj => move |result| async move {
+                    // FIXME: We should retry the request if it fails
+                    match result {
+                            Ok(result) => {
+                                    let priv_ = imp::Room::from_instance(&obj);
+                                    priv_.timeline.get().unwrap().set_event_id_for_pending(pending_id, result.event_id)
+                            },
+                            Err(error) => error!("Couldn't send message: {}", error),
+                    };
+                }),
+            );
+        }
     }
 }

@@ -19,6 +19,8 @@ mod imp {
         pub list: RefCell<VecDeque<Item>>,
         /// A Hashmap linking `EventId` to correspondenting `Event`
         pub event_map: RefCell<HashMap<EventId, Event>>,
+        /// Maps the temporary `EventId` of the pending Event to the real `EventId`
+        pub pending_events: RefCell<HashMap<EventId, EventId>>,
     }
 
     #[glib::object_subclass]
@@ -198,7 +200,7 @@ impl Timeline {
                     }
                 }
 
-                if let Some(relates_to) = relates_to_events.remove(event.matrix_event_id()) {
+                if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
                     event.add_relates_to(
                         relates_to
                             .into_iter()
@@ -233,7 +235,7 @@ impl Timeline {
             }
         }
 
-        if let Some(relates_to) = relates_to_events.remove(event.matrix_event_id()) {
+        if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
             event.add_relates_to(
                 relates_to
                     .into_iter()
@@ -264,18 +266,28 @@ impl Timeline {
                 list.len()
             };
 
+            let mut pending_events = priv_.pending_events.borrow_mut();
+
             for event in batch.into_iter() {
                 let event_id = fn_event!(event, event_id).clone();
                 let user = self.room().member_by_id(fn_event!(event, sender));
-                let event = Event::new(&event, &user);
 
-                priv_.event_map.borrow_mut().insert(event_id, event.clone());
-
-                if event.is_hidden_event() {
-                    self.add_hidden_event(event);
+                if let Some(pending_id) = pending_events.remove(&event_id) {
+                    if let Some(event_obj) = priv_.event_map.borrow_mut().remove(&pending_id) {
+                        event_obj.set_matrix_event(event);
+                        priv_.event_map.borrow_mut().insert(event_id, event_obj);
+                    }
                     added -= 1;
                 } else {
-                    priv_.list.borrow_mut().push_back(Item::for_event(event));
+                    let event = Event::new(&event, &user);
+
+                    priv_.event_map.borrow_mut().insert(event_id, event.clone());
+                    if event.is_hidden_event() {
+                        self.add_hidden_event(event);
+                        added -= 1;
+                    } else {
+                        priv_.list.borrow_mut().push_back(Item::for_event(event));
+                    }
                 }
             }
 
@@ -283,6 +295,39 @@ impl Timeline {
         };
 
         self.items_changed(index as u32, 0, added as u32);
+    }
+
+    /// Append an event that wasn't yet fully send and received via a sync
+    pub fn append_pending(&self, event: AnyRoomEvent) {
+        let priv_ = imp::Timeline::from_instance(self);
+
+        let index = {
+            let mut list = priv_.list.borrow_mut();
+            let index = list.len();
+
+            let user = self.room().member_by_id(fn_event!(event, sender));
+            let event = Event::new(&event, &user);
+
+            if event.is_hidden_event() {
+                self.add_hidden_event(event);
+                None
+            } else {
+                list.push_back(Item::for_event(event));
+                Some(index)
+            }
+        };
+
+        if let Some(index) = index {
+            self.items_changed(index as u32, 0, 1);
+        }
+    }
+
+    pub fn set_event_id_for_pending(&self, pending_event_id: EventId, event_id: EventId) {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_
+            .pending_events
+            .borrow_mut()
+            .insert(event_id, pending_event_id);
     }
 
     /// Returns the event with the given id
