@@ -20,11 +20,11 @@ use gtk::{glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use gtk_macros::send;
 use log::{error, warn};
 use matrix_sdk::api::r0::{
-    filter::{FilterDefinition, RoomFilter},
+    filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
     session::login,
 };
 use matrix_sdk::{
-    self,
+    self, assign,
     deserialized_responses::SyncResponse,
     events::{AnyRoomEvent, AnySyncRoomEvent},
     identifiers::RoomId,
@@ -219,12 +219,15 @@ impl Session {
             };
 
             if success {
-                // We need the filter or else left rooms won't be shown
-                let mut room_filter = RoomFilter::empty();
-                room_filter.include_leave = true;
-
-                let mut filter = FilterDefinition::empty();
-                filter.room = room_filter;
+                // TODO: only create the filter once and reuse it in the future
+                let filter = assign!(FilterDefinition::default(), {
+                    room: assign!(RoomFilter::empty(), {
+                        include_leave: true,
+                        timeline: assign!(RoomEventFilter::default(), {
+                            lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
+                        }),
+                    }),
+                });
 
                 let sync_settings = SyncSettings::new()
                     .timeout(Duration::from_secs(30))
