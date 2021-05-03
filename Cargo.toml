@@ -17,6 +17,7 @@ secret-service = "2.0"
 html2pango = "0.4"
 chrono = "0.4"
 futures = "0.3"
+comrak = "0.10"
 
 [dependencies.sourceview]
 branch = "main"
