@@ -1,20 +1,18 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::{
-    content::ItemRow,
-    room::{Room, Timeline},
-};
+use crate::session::{content::ItemRow, room::Room};
 
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content.ui")]
     pub struct Content {
         pub compact: Cell<bool>,
+        pub room: RefCell<Option<Room>>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -44,13 +42,22 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_boolean(
-                    "compact",
-                    "Compact",
-                    "Wheter a compact view is used or not",
-                    false,
-                    glib::ParamFlags::READWRITE,
-                )]
+                vec![
+                    glib::ParamSpec::new_boolean(
+                        "compact",
+                        "Compact",
+                        "Wheter a compact view is used or not",
+                        false,
+                        glib::ParamFlags::READWRITE,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "room",
+                        "Room",
+                        "The room currently shown",
+                        Room::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -58,7 +65,7 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
@@ -68,13 +75,18 @@ mod imp {
                     let compact = value.get().unwrap();
                     self.compact.set(compact);
                 }
+                "room" => {
+                    let room = value.get().unwrap();
+                    obj.set_room(room);
+                }
                 _ => unimplemented!(),
             }
         }
 
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
+                "room" => obj.room().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -111,22 +123,25 @@ impl Content {
         glib::Object::new(&[]).expect("Failed to create Content")
     }
 
-    pub fn set_room(&self, room: &Room) {
+    pub fn set_room(&self, room: Option<Room>) {
         let priv_ = imp::Content::from_instance(self);
+
+        if self.room() == room {
+            return;
+        }
+
         // TODO: use gtk::MultiSelection to allow selection
-        priv_
-            .listview
-            .set_model(Some(&gtk::NoSelection::new(Some(room.timeline()))));
+        let model = room
+            .as_ref()
+            .and_then(|room| Some(gtk::NoSelection::new(Some(room.timeline()))));
+
+        priv_.listview.set_model(model.as_ref());
+        priv_.room.replace(room);
+        self.notify("room");
     }
 
-    fn room(&self) -> Option<Room> {
+    pub fn room(&self) -> Option<Room> {
         let priv_ = imp::Content::from_instance(self);
-        priv_
-            .listview
-            .model()
-            .and_then(|model| model.downcast::<gtk::NoSelection>().ok())
-            .and_then(|model| model.model())
-            .and_then(|model| model.downcast::<Timeline>().ok())
-            .map(|timeline| timeline.room().to_owned())
+        priv_.room.borrow().clone()
     }
 }

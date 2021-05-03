@@ -331,11 +331,8 @@ impl Session {
 
     fn handle_show_room_action(&self, room_id: RoomId) {
         let priv_ = imp::Session::from_instance(self);
-        if let Some(room) = priv_.rooms.borrow().get(&room_id) {
-            priv_.content.set_room(room);
-        } else {
-            warn!("No room with {} was found", room_id);
-        }
+        let room = priv_.rooms.borrow().get(&room_id).cloned();
+        priv_.content.set_room(room);
     }
 
     fn handle_sync_response(&self, response: SyncResponse) {
