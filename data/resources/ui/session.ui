@@ -12,6 +12,7 @@
         <child>
           <object class="Content" id="content">
             <property name="compact" bind-source="session" bind-property="folded" bind-flags="sync-create" />
+            <property name="room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create" />
           </object>
         </child>
       </object>

@@ -5,6 +5,7 @@ mod sidebar;
 mod user;
 
 use self::content::Content;
+use self::room::Room;
 use self::sidebar::Sidebar;
 use self::user::User;
 
@@ -52,9 +53,10 @@ mod imp {
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
-        pub rooms: RefCell<HashMap<RoomId, room::Room>>,
+        pub rooms: RefCell<HashMap<RoomId, Room>>,
         pub categories: Categories,
         pub user: OnceCell<User>,
+        pub selected_room: RefCell<Option<Room>>,
     }
 
     #[glib::object_subclass]
@@ -105,6 +107,13 @@ mod imp {
                         Categories::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_object(
+                        "selected-room",
+                        "Selected Room",
+                        "The selected room in this session",
+                        Room::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -113,7 +122,7 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
@@ -125,14 +134,19 @@ mod imp {
                         .expect("type conformity checked by `Object::set_property`");
                     let _ = self.homeserver.set(homeserver);
                 }
+                "selected-room" => {
+                    let selected_room = value.get().unwrap();
+                    obj.set_selected_room(selected_room);
+                }
                 _ => unimplemented!(),
             }
         }
 
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "homeserver" => self.homeserver.get().to_value(),
                 "categories" => self.categories.to_value(),
+                "selected-room" => obj.selected_room().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -169,6 +183,23 @@ glib::wrapper! {
 impl Session {
     pub fn new(homeserver: String) -> Self {
         glib::Object::new(&[("homeserver", &homeserver)]).expect("Failed to create Session")
+    }
+
+    pub fn selected_room(&self) -> Option<Room> {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.selected_room.borrow().clone()
+    }
+
+    fn set_selected_room(&self, selected_room: Option<Room>) {
+        let priv_ = imp::Session::from_instance(self);
+
+        if self.selected_room() == selected_room {
+            return;
+        }
+
+        priv_.selected_room.replace(selected_room);
+
+        self.notify("selected-room");
     }
 
     pub fn login_with_password(&self, username: String, password: String) {
@@ -349,7 +380,7 @@ impl Session {
     fn handle_show_room_action(&self, room_id: RoomId) {
         let priv_ = imp::Session::from_instance(self);
         let room = priv_.rooms.borrow().get(&room_id).cloned();
-        priv_.content.set_room(room);
+        self.set_selected_room(room);
     }
 
     fn handle_sync_response(&self, response: SyncResponse) {
@@ -381,7 +412,7 @@ impl Session {
 
         for room_id in new_rooms_id {
             if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
-                let room = room::Room::new(matrix_room, self.user());
+                let room = Room::new(matrix_room, self.user());
                 rooms_map.insert(room_id.clone(), room.clone());
                 new_rooms.push(room.clone());
             }
