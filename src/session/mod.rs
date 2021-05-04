@@ -27,7 +27,7 @@ use matrix_sdk::{
     self, assign,
     deserialized_responses::SyncResponse,
     events::{AnyRoomEvent, AnySyncRoomEvent},
-    identifiers::RoomId,
+    identifiers::{RoomId, UserId},
     Client, ClientConfig, RequestConfig, SyncSettings,
 };
 use std::time::Duration;
@@ -54,6 +54,7 @@ mod imp {
         pub client: OnceCell<Client>,
         pub rooms: RefCell<HashMap<RoomId, room::Room>>,
         pub categories: Categories,
+        pub user: OnceCell<User>,
     }
 
     #[glib::object_subclass]
@@ -205,7 +206,8 @@ impl Session {
                 CreationMethod::SessionRestore(session) => {
                     let res = client.restore_login(session).await;
                     let success = res.is_ok();
-                    send!(sender, res.map(|_| None));
+                    let user_id = client.user_id().await.unwrap();
+                    send!(sender, res.map(|_| (user_id, None)));
                     success
                 }
                 CreationMethod::Password(username, password) => {
@@ -213,7 +215,8 @@ impl Session {
                         .login(&username, &password, None, Some("Fractal Next"))
                         .await;
                     let success = response.is_ok();
-                    send!(sender, response.map(|r| Some(r)));
+                    let user_id = client.user_id().await.unwrap();
+                    send!(sender, response.map(|r| (user_id, Some(r))));
                     success
                 }
             };
@@ -248,9 +251,9 @@ impl Session {
         });
     }
 
-    fn setup(&self) -> glib::SyncSender<matrix_sdk::Result<Option<login::Response>>> {
+    fn setup(&self) -> glib::SyncSender<matrix_sdk::Result<(UserId, Option<login::Response>)>> {
         let (sender, receiver) = glib::MainContext::sync_channel::<
-            matrix_sdk::Result<Option<login::Response>>,
+            matrix_sdk::Result<(UserId, Option<login::Response>)>,
         >(Default::default(), 100);
         receiver.attach(
             None,
@@ -260,16 +263,20 @@ impl Session {
                         let priv_ = &imp::Session::from_instance(&obj);
                         priv_.error.replace(Some(error));
                     }
-                    Ok(Some(response)) => {
+                    Ok((user_id, Some(response))) => {
                         let session = matrix_sdk::Session {
                             access_token: response.access_token,
                             user_id: response.user_id,
                             device_id: response.device_id,
                         };
+                        obj.set_user(User::new(&user_id));
+
                         //TODO: set error to this error
                         obj.store_session(session).unwrap();
                     }
-                    Ok(None) => {}
+                    Ok((user_id, None)) => {
+                        obj.set_user(User::new(&user_id));
+                    }
                 }
 
                 obj.load();
@@ -280,6 +287,16 @@ impl Session {
             }),
         );
         sender
+    }
+
+    fn set_user(&self, user: User) {
+        let priv_ = &imp::Session::from_instance(self);
+        priv_.user.set(user).unwrap();
+    }
+
+    fn user(&self) -> &User {
+        let priv_ = &imp::Session::from_instance(self);
+        priv_.user.get().unwrap()
     }
 
     /// Sets up the required channel to receive new room events
@@ -364,7 +381,7 @@ impl Session {
 
         for room_id in new_rooms_id {
             if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
-                let room = room::Room::new(matrix_room);
+                let room = room::Room::new(matrix_room, self.user());
                 rooms_map.insert(room_id.clone(), room.clone());
                 new_rooms.push(room.clone());
             }

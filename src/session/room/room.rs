@@ -24,6 +24,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Room {
         pub matrix_room: OnceCell<MatrixRoom>,
+        pub user: OnceCell<User>,
         pub name: RefCell<Option<String>>,
         pub avatar: RefCell<Option<gio::LoadableIcon>>,
         pub category: Cell<CategoryType>,
@@ -55,6 +56,13 @@ mod imp {
                         "The display name of this room",
                         None,
                         glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "user",
+                        "User",
+                        "The user of the session that owns this room",
+                        User::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_object(
                         "avatar",
@@ -113,6 +121,10 @@ mod imp {
                     let matrix_room = value.get::<BoxedMatrixRoom>().unwrap();
                     obj.set_matrix_room(matrix_room.0);
                 }
+                "user" => {
+                    let user = value.get().unwrap();
+                    self.user.set(user).unwrap();
+                }
                 _ => unimplemented!(),
             }
         }
@@ -120,6 +132,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             let matrix_room = self.matrix_room.get().unwrap();
             match pspec.name() {
+                "user" => obj.user().to_value(),
                 "display-name" => obj.display_name().to_value(),
                 "avatar" => self.avatar.borrow().to_value(),
                 "timeline" => self.timeline.get().unwrap().to_value(),
@@ -151,8 +164,8 @@ glib::wrapper! {
 struct BoxedMatrixRoom(MatrixRoom);
 
 impl Room {
-    pub fn new(room: MatrixRoom) -> Self {
-        glib::Object::new(&[("matrix-room", &BoxedMatrixRoom(room))])
+    pub fn new(room: MatrixRoom, user: &User) -> Self {
+        glib::Object::new(&[("matrix-room", &BoxedMatrixRoom(room)), ("user", user)])
             .expect("Failed to create Room")
     }
 
@@ -178,6 +191,11 @@ impl Room {
         self.load_display_name();
         // TODO: change category when room type changes
         self.set_category(category);
+    }
+
+    pub fn user(&self) -> &User {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.user.get().unwrap()
     }
 
     pub fn category(&self) -> CategoryType {
