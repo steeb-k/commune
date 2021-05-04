@@ -13,13 +13,12 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Timeline {
         pub room: OnceCell<Room>,
-        pub position_map: RefCell<HashMap<EventId, u32>>,
         /// A store to keep track of related events that arn't known
         pub relates_to_events: RefCell<HashMap<EventId, Vec<EventId>>>,
         /// All events Tilshown in the room history
         pub list: RefCell<VecDeque<Item>>,
-        /// Events we don't show in the room history
-        pub hidden_events: RefCell<HashMap<EventId, Event>>,
+        /// A Hashmap linking `EventId` to correspondenting `Event`
+        pub event_map: RefCell<HashMap<EventId, Event>>,
     }
 
     #[glib::object_subclass]
@@ -133,19 +132,6 @@ impl Timeline {
             (added + divider_len) as u32
         };
 
-        // Update the position stored in the `position_map`
-        {
-            let list = priv_.list.borrow();
-            let mut position_map = priv_.position_map.borrow_mut();
-            let mut index = position;
-            for item in list.range((position as usize)..) {
-                if let Some(event_id) = item.matrix_event_id() {
-                    position_map.insert(event_id, index);
-                }
-                index += 1;
-            }
-        }
-
         // Update the header for events that are allowed to hide the header
         {
             let position = position as usize;
@@ -232,10 +218,6 @@ impl Timeline {
 
     fn add_hidden_event(&self, event: Event) {
         let priv_ = imp::Timeline::from_instance(self);
-        priv_
-            .hidden_events
-            .borrow_mut()
-            .insert(event.matrix_event_id().to_owned(), event.clone());
 
         let mut relates_to_events = priv_.relates_to_events.borrow_mut();
 
@@ -283,8 +265,12 @@ impl Timeline {
             };
 
             for event in batch.into_iter() {
+                let event_id = fn_event!(event, event_id).clone();
                 let user = self.room().member_by_id(fn_event!(event, sender));
                 let event = Event::new(&event, &user);
+
+                priv_.event_map.borrow_mut().insert(event_id, event.clone());
+
                 if event.is_hidden_event() {
                     self.add_hidden_event(event);
                     added -= 1;
@@ -304,14 +290,7 @@ impl Timeline {
         // TODO: if the referenced event isn't known to us we will need to request it
         // from the sdk or the matrix homeserver
         let priv_ = imp::Timeline::from_instance(self);
-        let position_map = priv_.position_map.borrow();
-        let hidden_events_map = priv_.hidden_events.borrow();
-        let list = priv_.list.borrow();
-        position_map
-            .get(event_id)
-            .and_then(|position| list.get(*position as usize))
-            .and_then(|item| item.event().cloned())
-            .or(hidden_events_map.get(event_id).cloned())
+        priv_.event_map.borrow().get(event_id).cloned()
     }
 
     /// Prepends a batch of events
@@ -320,18 +299,23 @@ impl Timeline {
         let priv_ = imp::Timeline::from_instance(self);
         let mut added = batch.len();
 
-        // Extened the size of the list so that rust doesn't need to realocate memory multiple times
-        priv_.list.borrow_mut().reserve(added);
+        {
+            // Extened the size of the list so that rust doesn't need to realocate memory multiple times
+            priv_.list.borrow_mut().reserve(added);
 
-        for event in batch {
-            let user = self.room().member_by_id(fn_event!(event, sender));
-            let event = Event::new(&event, &user);
+            for event in batch {
+                let user = self.room().member_by_id(fn_event!(event, sender));
+                let event_id = fn_event!(event, event_id).clone();
+                let event = Event::new(&event, &user);
 
-            if event.is_hidden_event() {
-                self.add_hidden_event(event);
-                added -= 1;
-            } else {
-                priv_.list.borrow_mut().push_front(Item::for_event(event));
+                priv_.event_map.borrow_mut().insert(event_id, event.clone());
+
+                if event.is_hidden_event() {
+                    self.add_hidden_event(event);
+                    added -= 1;
+                } else {
+                    priv_.list.borrow_mut().push_front(Item::for_event(event));
+                }
             }
         }
 
