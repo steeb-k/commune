@@ -11,12 +11,13 @@ mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar.ui")]
     pub struct Sidebar {
         pub compact: Cell<bool>,
+        pub selected_room: RefCell<Option<Room>>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -60,6 +61,13 @@ mod imp {
                         Categories::static_type(),
                         glib::ParamFlags::WRITABLE,
                     ),
+                    glib::ParamSpec::new_object(
+                        "selected-room",
+                        "Selected Room",
+                        "The selected room in this sidebar",
+                        Room::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -82,13 +90,18 @@ mod imp {
                     let categories = value.get().unwrap();
                     obj.set_categories(categories);
                 }
+                "selected-room" => {
+                    let selected_room = value.get().unwrap();
+                    obj.set_selected_room(selected_room);
+                }
                 _ => unimplemented!(),
             }
         }
 
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
+                "selected-room" => obj.selected_room().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -106,6 +119,11 @@ glib::wrapper! {
 impl Sidebar {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create Sidebar")
+    }
+
+    pub fn selected_room(&self) -> Option<Room> {
+        let priv_ = imp::Sidebar::from_instance(self);
+        priv_.selected_room.borrow().clone()
     }
 
     pub fn set_categories(&self, categories: Option<Categories>) {
@@ -147,7 +165,7 @@ impl Sidebar {
             let selection = gtk::SingleSelection::new(Some(&filter_model));
             selection.connect_notify_local(Some("selected-item"), clone!(@weak self as obj => move |model, _| {
                 if let Some(room) = model.selected_item().and_then(|row| row.downcast_ref::<gtk::TreeListRow>().unwrap().item()).and_then(|o| o.downcast::<Room>().ok()) {
-                        obj.activate_action("session.show-room", Some(&room.matrix_room().room_id().as_str().to_variant()));
+                        obj.set_selected_room(Some(room));
                 }
             }));
 
@@ -155,5 +173,17 @@ impl Sidebar {
         } else {
             priv_.listview.set_model(gtk::NONE_SELECTION_MODEL);
         }
+    }
+
+    fn set_selected_room(&self, selected_room: Option<Room>) {
+        let priv_ = imp::Sidebar::from_instance(self);
+
+        if self.selected_room() == selected_room {
+            return;
+        }
+
+        priv_.selected_room.replace(selected_room);
+
+        self.notify("selected-room");
     }
 }
