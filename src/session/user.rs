@@ -93,6 +93,12 @@ impl User {
         glib::Object::new(&[("user-id", &user_id.to_string())]).expect("Failed to create User")
     }
 
+    pub fn user_id(&self) -> UserId {
+        use std::convert::TryFrom;
+        let priv_ = imp::User::from_instance(&self);
+        UserId::try_from(priv_.user_id.get().unwrap().as_str()).unwrap()
+    }
+
     pub fn display_name(&self) -> String {
         let priv_ = imp::User::from_instance(&self);
 
