@@ -52,7 +52,7 @@ sources = files(
 
 custom_target(
   'cargo-build',
-  build_by_default: true,
+  build_by_default: not get_option('skip-cargo-build'),
   input: sources,
   output: meson.project_name(),
   console: true,
