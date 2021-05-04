@@ -2,7 +2,7 @@ use adw::subclass::prelude::BinImpl;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::{
-    categories::Categories,
+    categories::{Categories, Category},
     room::Room,
     sidebar::{RoomRow, Row},
 };
@@ -104,6 +104,27 @@ mod imp {
                 "selected-room" => obj.selected_room().to_value(),
                 _ => unimplemented!(),
             }
+        }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            self.listview.get().connect_activate(move |listview, pos| {
+                if let Some(row) = listview
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::SingleSelection>().ok())
+                    .and_then(|m| m.item(pos))
+                    .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
+                {
+                    if row
+                        .item()
+                        .and_then(|o| o.downcast::<Category>().ok())
+                        .is_some()
+                    {
+                        row.set_expanded(!row.is_expanded());
+                    }
+                }
+            });
         }
     }
 

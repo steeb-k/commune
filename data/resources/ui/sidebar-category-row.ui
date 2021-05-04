@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="SidebarCategoryRow" parent="AdwBin">
+    <style>
+      <class name="category-row"/>
+    </style>
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">12</property>
+        <child>
+          <object class="GtkLabel" id="display_name">
+            <property name="halign">start</property>
+            <property name="hexpand">True</property>
+            <property name="ellipsize">end</property>
+            <style>
+              <class name="dim-label"/>
+            </style>
+          </object>
+        </child>
+        <child type="end">
+          <object class="GtkImage" id="arrow">
+            <property name="icon-name">adw-expander-arrow-symbolic</property>
+            <style>
+              <class name="arrow"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+

@@ -3,7 +3,7 @@
   <template class="SidebarRoomRow" parent="AdwBin">
     <child>
       <object class="GtkBox">
-        <property name="spacing">6</property>
+        <property name="spacing">12</property>
         <child>
           <object class="AdwAvatar" id="avatar">
             <property name="show-initials">True</property>
