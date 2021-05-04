@@ -19,7 +19,7 @@ use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use gtk_macros::send;
-use log::{error, warn};
+use log::error;
 use matrix_sdk::api::r0::{
     filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
     session::login,
@@ -67,21 +67,6 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            klass.install_action(
-                "session.show-room",
-                Some("s"),
-                move |widget, _, parameter| {
-                    use std::convert::TryInto;
-                    if let Some(room_id) = parameter
-                        .and_then(|p| p.str())
-                        .and_then(|s| s.try_into().ok())
-                    {
-                        widget.handle_show_room_action(room_id);
-                    } else {
-                        warn!("Not a valid room id: {:?}", parameter);
-                    }
-                },
-            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -375,12 +360,6 @@ impl Session {
         let priv_ = &imp::Session::from_instance(self);
         let homeserver = priv_.homeserver.get().unwrap();
         secret::store_session(homeserver, session)
-    }
-
-    fn handle_show_room_action(&self, room_id: RoomId) {
-        let priv_ = imp::Session::from_instance(self);
-        let room = priv_.rooms.borrow().get(&room_id).cloned();
-        self.set_selected_room(room);
     }
 
     fn handle_sync_response(&self, response: SyncResponse) {
