@@ -54,20 +54,11 @@ pages:
   script:
     # generate the docs
     - dnf update -y
-    - dnf install -y openssl-devel cmake
+    - dnf install -y openssl-devel cmake gtk-update-icon-cache
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
-    - git clone https://gitlab.gnome.org/GNOME/libadwaita.git
-    - git clone https://gitlab.gnome.org/GNOME/gtksourceview.git
-    - cd libadwaita
-    - meson _build --prefix=/usr -Dtests=false -Dexamples=false -Dvapi=false
-    - ninja -C _build install
-    - cd ..
-    - cd gtksourceview
-    - meson _build --prefix=/usr -Dgtk_doc=false -Dsysprof=false -Dgir=false -Dvapi=false -Dinstall_tests=false
-    - ninja -C _build install
-    - cd ..
     - source $HOME/.cargo/env
-    - meson _build --prefix=/usr
+    - meson _build --prefix=/usr -Dskip-cargo-build=true
+    - ninja -C _build install
     - cargo doc -p fractal --no-deps
     - mv target/doc/ public
   artifacts:
