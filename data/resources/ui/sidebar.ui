@@ -56,6 +56,7 @@
                 <style>
                   <class name="navigation-sidebar"/>
                 </style>
+                <property name="single-click-activate">true</property>
                 <property name="factory">
                   <object class="GtkBuilderListItemFactory">
                     <property name="resource">/org/gnome/FractalNext/sidebar-item.ui</property>

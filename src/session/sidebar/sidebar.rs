@@ -1,10 +1,10 @@
 use adw::subclass::prelude::BinImpl;
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::{
     categories::{Categories, Category},
     room::Room,
-    sidebar::{RoomRow, Row},
+    sidebar::{RoomRow, Row, Selection},
 };
 
 mod imp {
@@ -110,18 +110,23 @@ mod imp {
             self.parent_constructed(obj);
 
             self.listview.get().connect_activate(move |listview, pos| {
-                if let Some(row) = listview
+                if let Some(model) = listview
                     .model()
-                    .and_then(|m| m.downcast::<gtk::SingleSelection>().ok())
-                    .and_then(|m| m.item(pos))
-                    .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
+                    .and_then(|m| m.downcast::<Selection>().ok())
                 {
-                    if row
-                        .item()
-                        .and_then(|o| o.downcast::<Category>().ok())
-                        .is_some()
+                    if let Some(row) = model
+                        .item(pos)
+                        .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
                     {
-                        row.set_expanded(!row.is_expanded());
+                        if row
+                            .item()
+                            .and_then(|o| o.downcast::<Category>().ok())
+                            .is_some()
+                        {
+                            row.set_expanded(!row.is_expanded());
+                        } else if row.item().and_then(|o| o.downcast::<Room>().ok()).is_some() {
+                            model.set_selected(pos);
+                        }
                     }
                 }
             });
@@ -183,12 +188,10 @@ impl Sidebar {
                 .flags(glib::BindingFlags::SYNC_CREATE)
                 .build();
 
-            let selection = gtk::SingleSelection::new(Some(&filter_model));
-            selection.connect_notify_local(Some("selected-item"), clone!(@weak self as obj => move |model, _| {
-                if let Some(room) = model.selected_item().and_then(|row| row.downcast_ref::<gtk::TreeListRow>().unwrap().item()).and_then(|o| o.downcast::<Room>().ok()) {
-                        obj.set_selected_room(Some(room));
-                }
-            }));
+            let selection = Selection::new(Some(&filter_model));
+            self.bind_property("selected-room", &selection, "selected-room")
+                .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+                .build();
 
             priv_.listview.set_model(Some(&selection));
         } else {
