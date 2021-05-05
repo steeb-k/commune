@@ -1,5 +1,5 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use std::collections::{hash_map::Entry, HashMap};
+use std::collections::HashMap;
 
 use crate::session::{
     categories::{Category, CategoryType},
@@ -74,58 +74,50 @@ impl Categories {
     pub fn append(&self, rooms: Vec<Room>) {
         let priv_ = imp::Categories::from_instance(&self);
 
-        for room in rooms {
-            if priv_.room_map.borrow().contains_key(&room) {
-                return;
+        let rooms: Vec<Room> = {
+            let room_map = priv_.room_map.borrow();
+            rooms
+                .into_iter()
+                .filter(|room| !room_map.contains_key(&room))
+                .collect()
+        };
+
+        let rooms_by_category = rooms.into_iter().fold(HashMap::new(), |mut acc, room| {
+            acc.entry(room.category()).or_insert(vec![]).push(room);
+            acc
+        });
+        let mut room_map = priv_.room_map.borrow_mut();
+        for (category_type, rooms) in rooms_by_category {
+            for room in &rooms {
+                room_map.insert(room.clone(), category_type);
+                room.connect_notify_local(
+                    Some("category"),
+                    clone!(@weak self as obj => move |room, _| {
+                        obj.move_room(room);
+                    }),
+                );
             }
 
-            room.connect_notify_local(
-                Some("category"),
-                clone!(@weak self as obj => move |room, _| {
-                    obj.move_room(room);
-                }),
-            );
-            // TODO: Add all rooms at once
-            self.move_room(&room);
+            self.find_category_by_type(category_type)
+                .append_batch(rooms);
         }
+    }
+
+    fn find_category_by_type(&self, type_: CategoryType) -> &Category {
+        let priv_ = imp::Categories::from_instance(&self);
+        let position = priv_.list.iter().position(|item| item.type_() == type_);
+        priv_.list.get(position.unwrap()).unwrap()
     }
 
     fn move_room(&self, room: &Room) {
         let priv_ = imp::Categories::from_instance(&self);
         let mut room_map = priv_.room_map.borrow_mut();
 
-        let entry = room_map.entry(room.clone());
-
-        match entry {
-            Entry::Occupied(mut entry) => {
-                if entry.get() != &room.category() {
-                    entry.insert(room.category());
-                    self.remove_from_category(entry.get(), room);
-                    self.add_to_category(entry.get(), room);
-                }
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(room.category());
-                self.add_to_category(&room.category(), room);
-            }
+        if let Some(old_category_type) = room_map.remove(&room) {
+            self.find_category_by_type(old_category_type).remove(room);
         }
-    }
 
-    fn add_to_category(&self, type_: &CategoryType, room: &Room) {
-        let priv_ = imp::Categories::from_instance(&self);
-
-        let position = priv_.list.iter().position(|item| item.type_() == *type_);
-        if let Some(position) = position {
-            priv_.list.get(position).unwrap().append(room);
-        }
-    }
-
-    fn remove_from_category(&self, type_: &CategoryType, room: &Room) {
-        let priv_ = imp::Categories::from_instance(&self);
-
-        let position = priv_.list.iter().position(|item| item.type_() == *type_);
-        if let Some(position) = position {
-            priv_.list.get(position).unwrap().remove(room);
-        }
+        room_map.insert(room.clone(), room.category());
+        self.find_category_by_type(room.category()).append(room);
     }
 }

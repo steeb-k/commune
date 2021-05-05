@@ -113,6 +113,21 @@ impl Category {
         self.items_changed(index as u32, 0, 1);
     }
 
+    pub fn append_batch(&self, rooms: Vec<Room>) {
+        let priv_ = imp::Category::from_instance(self);
+        let added = rooms.len();
+        let index = {
+            let mut list = priv_.list.borrow_mut();
+            let index = list.len();
+            list.reserve(added);
+            for room in rooms {
+                list.push(room);
+            }
+            index
+        };
+        self.items_changed(index as u32, 0, added as u32);
+    }
+
     pub fn remove(&self, room: &Room) {
         let priv_ = imp::Category::from_instance(self);
 
