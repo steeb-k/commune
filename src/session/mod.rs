@@ -11,6 +11,7 @@ use self::user::User;
 
 use crate::event_from_sync_event;
 use crate::secret;
+use crate::utils::do_async;
 use crate::RUNTIME;
 
 use adw;
@@ -20,15 +21,12 @@ use gtk::{self, prelude::*};
 use gtk::{glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use gtk_macros::send;
 use log::error;
-use matrix_sdk::api::r0::{
-    filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
-    session::login,
-};
+use matrix_sdk::api::r0::filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter};
 use matrix_sdk::{
     self, assign,
     deserialized_responses::SyncResponse,
     events::{AnyRoomEvent, AnySyncRoomEvent},
-    identifiers::{RoomId, UserId},
+    identifiers::RoomId,
     Client, ClientConfig, RequestConfig, SyncSettings,
 };
 use std::time::Duration;
@@ -114,10 +112,8 @@ mod imp {
         ) {
             match pspec.name() {
                 "homeserver" => {
-                    let homeserver = value
-                        .get()
-                        .expect("type conformity checked by `Object::set_property`");
-                    let _ = self.homeserver.set(homeserver);
+                    let homeserver = value.get().unwrap();
+                    let _ = obj.set_homeserver(homeserver);
                 }
                 "selected-room" => {
                     let selected_room = value.get().unwrap();
@@ -151,15 +147,6 @@ mod imp {
     impl BinImpl for Session {}
 }
 
-/// Enum containing the supported methods to create a `Session`.
-#[derive(Clone, Debug)]
-enum CreationMethod {
-    /// Restore a previous session: `matrix_sdk::Session`
-    SessionRestore(matrix_sdk::Session),
-    /// Password Login: `username`, 'password`
-    Password(String, String),
-}
-
 glib::wrapper! {
     pub struct Session(ObjectSubclass<imp::Session>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
@@ -187,123 +174,106 @@ impl Session {
         self.notify("selected-room");
     }
 
-    pub fn login_with_password(&self, username: String, password: String) {
-        let method = CreationMethod::Password(username, password);
-        self.login(method);
-    }
-
-    pub fn login_with_previous_session(&self, session: matrix_sdk::Session) {
-        let method = CreationMethod::SessionRestore(session);
-        self.login(method);
-    }
-
-    fn login(&self, method: CreationMethod) {
+    fn set_homeserver(&self, homeserver: String) {
         let priv_ = imp::Session::from_instance(self);
-        let homeserver = priv_.homeserver.get().unwrap();
-
-        let sender = self.setup();
 
         let config = ClientConfig::new().request_config(RequestConfig::new().retry_limit(2));
         // Please note the homeserver needs to be a valid url or the client will panic!
-        let client = Client::new_with_config(homeserver.as_str(), config);
+        let client = Client::new_with_config(homeserver.as_str(), config).unwrap();
 
-        if let Err(error) = client {
-            send!(sender, Err(error));
-            return;
-        }
-
-        let client = client.unwrap();
-
-        priv_.client.set(client.clone()).unwrap();
-        let room_sender = self.create_new_sync_response_sender();
-
-        RUNTIME.spawn(async move {
-            let success = match method {
-                CreationMethod::SessionRestore(session) => {
-                    let res = client.restore_login(session).await;
-                    let success = res.is_ok();
-                    let user_id = client.user_id().await.unwrap();
-                    send!(sender, res.map(|_| (user_id, None)));
-                    success
-                }
-                CreationMethod::Password(username, password) => {
-                    let response = client
-                        .login(&username, &password, None, Some("Fractal Next"))
-                        .await;
-                    let success = response.is_ok();
-                    let user_id = client.user_id().await.unwrap();
-                    send!(sender, response.map(|r| (user_id, Some(r))));
-                    success
-                }
-            };
-
-            if success {
-                // TODO: only create the filter once and reuse it in the future
-                let room_event_filter = assign!(RoomEventFilter::default(), {
-                    lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
-                });
-                let filter = assign!(FilterDefinition::default(), {
-                    room: assign!(RoomFilter::empty(), {
-                        include_leave: true,
-                        state: room_event_filter,
-                    }),
-                });
-
-                let sync_settings = SyncSettings::new()
-                    .timeout(Duration::from_secs(30))
-                    .filter(filter.into());
-                client
-                    .sync_with_callback(sync_settings, |response| {
-                        let room_sender = room_sender.clone();
-                        async move {
-                            // Using the event hanlder doesn't make a lot of sense for us since we want every room event
-                            // Eventually we should contribute a better EventHandler interface so that it makes sense to use it.
-                            room_sender.send(response).unwrap();
-
-                            matrix_sdk::LoopCtrl::Continue
-                        }
-                    })
-                    .await;
-            }
-        });
+        priv_.homeserver.set(homeserver).unwrap();
+        priv_.client.set(client).unwrap();
     }
 
-    fn setup(&self) -> glib::SyncSender<matrix_sdk::Result<(UserId, Option<login::Response>)>> {
-        let (sender, receiver) = glib::MainContext::sync_channel::<
-            matrix_sdk::Result<(UserId, Option<login::Response>)>,
-        >(Default::default(), 100);
-        receiver.attach(
-            None,
-            clone!(@weak self as obj => @default-return glib::Continue(false), move |result| {
-                match result {
-                    Err(error) => {
-                        let priv_ = &imp::Session::from_instance(&obj);
-                        priv_.error.replace(Some(error));
-                    }
-                    Ok((user_id, Some(response))) => {
-                        let session = matrix_sdk::Session {
-                            access_token: response.access_token,
-                            user_id: response.user_id,
-                            device_id: response.device_id,
-                        };
-                        obj.set_user(User::new(&user_id));
+    fn client(&self) -> Client {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.client.get().unwrap().clone()
+    }
 
-                        //TODO: set error to this error
-                        obj.store_session(session).unwrap();
-                    }
-                    Ok((user_id, None)) => {
-                        obj.set_user(User::new(&user_id));
-                    }
-                }
+    pub fn login_with_password(&self, username: String, password: String) {
+        let client = self.client();
 
-                obj.load();
-
-                obj.emit_by_name("ready", &[]).unwrap();
-
-                glib::Continue(false)
+        do_async(
+            async move {
+                client
+                    .login(&username, &password, None, Some("Fractal Next"))
+                    .await
+                    .map(|response| matrix_sdk::Session {
+                        access_token: response.access_token,
+                        user_id: response.user_id,
+                        device_id: response.device_id,
+                    })
+            },
+            clone!(@weak self as obj => move |result| async move {
+                obj.handle_login_result(result, true);
             }),
         );
-        sender
+    }
+
+    pub fn login_with_previous_session(&self, session: matrix_sdk::Session) {
+        let client = self.client();
+
+        do_async(
+            async move { client.restore_login(session.clone()).await.map(|_| session) },
+            clone!(@weak self as obj => move |result| async move {
+                obj.handle_login_result(result, false);
+            }),
+        );
+    }
+
+    fn handle_login_result(
+        &self,
+        result: Result<matrix_sdk::Session, matrix_sdk::Error>,
+        store_session: bool,
+    ) {
+        let priv_ = &imp::Session::from_instance(self);
+        match result {
+            Ok(session) => {
+                self.set_user(User::new(&session.user_id));
+                if store_session {
+                    self.store_session(session).unwrap();
+                }
+                self.load();
+                self.sync();
+            }
+            Err(error) => {
+                priv_.error.replace(Some(error));
+            }
+        }
+        self.emit_by_name("ready", &[]).unwrap();
+    }
+
+    fn sync(&self) {
+        let sender = self.create_new_sync_response_sender();
+        let client = self.client();
+        RUNTIME.spawn(async move {
+            // TODO: only create the filter once and reuse it in the future
+            let room_event_filter = assign!(RoomEventFilter::default(), {
+                lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
+            });
+            let filter = assign!(FilterDefinition::default(), {
+                room: assign!(RoomFilter::empty(), {
+                    include_leave: true,
+                    state: room_event_filter,
+                }),
+            });
+
+            let sync_settings = SyncSettings::new()
+                .timeout(Duration::from_secs(30))
+                .filter(filter.into());
+            client
+                .sync_with_callback(sync_settings, |response| {
+                    let sender = sender.clone();
+                    async move {
+                        // Using the event hanlder doesn't make a lot of sense for us since we want every room event
+                        // Eventually we should contribute a better EventHandler interface so that it makes sense to use it.
+                        send!(sender, response);
+
+                        matrix_sdk::LoopCtrl::Continue
+                    }
+                })
+                .await;
+        });
     }
 
     fn set_user(&self, user: User) {
