@@ -239,12 +239,13 @@ impl Session {
 
             if success {
                 // TODO: only create the filter once and reuse it in the future
+                let room_event_filter = assign!(RoomEventFilter::default(), {
+                    lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
+                });
                 let filter = assign!(FilterDefinition::default(), {
                     room: assign!(RoomFilter::empty(), {
                         include_leave: true,
-                        timeline: assign!(RoomEventFilter::default(), {
-                            lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
-                        }),
+                        state: room_event_filter,
                     }),
                 });
 
