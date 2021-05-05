@@ -118,6 +118,13 @@ mod imp {
                         CategoryType::default() as i32,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_string(
+                        "topic",
+                        "Topic",
+                        "The topic of this room",
+                        None,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -153,6 +160,7 @@ mod imp {
                 "timeline" => self.timeline.get().unwrap().to_value(),
                 "category" => obj.category().to_value(),
                 "highlight" => obj.highlight().to_value(),
+                "topic" => obj.topic().to_value(),
                 "notification-count" => {
                     let highlight = matrix_room.unread_notification_counts().highlight_count;
                     let notification = matrix_room.unread_notification_counts().notification_count;
@@ -310,6 +318,12 @@ impl Room {
         );
     }
 
+    pub fn topic(&self) -> Option<String> {
+        self.matrix_room()
+            .topic()
+            .filter(|topic| !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some())
+    }
+
     /// Returns the room member `User` object
     ///
     /// The returned `User` is specific to this room
@@ -338,6 +352,9 @@ impl Room {
                 AnyRoomEvent::State(AnyStateEvent::RoomName(_)) => {
                     // FIXME: this doesn't take in account changes in the calculated name
                     self.load_display_name()
+                }
+                AnyRoomEvent::State(AnyStateEvent::RoomTopic(_)) => {
+                    self.notify("topic");
                 }
                 _ => {}
             }

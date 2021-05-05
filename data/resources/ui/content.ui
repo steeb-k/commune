@@ -16,6 +16,20 @@
                 <property name="action-name">content.go-back</property>
               </object>
             </child>
+            <child type="title">
+              <object class="AdwWindowTitle">
+                <binding name="title">
+                  <lookup name="display-name">
+                    <lookup name="room">Content</lookup>
+                  </lookup>
+                </binding>
+                <binding name="subtitle">
+                  <lookup name="topic">
+                    <lookup name="room">Content</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
             <child type="end">
               <object class="GtkMenuButton" id="room_menu">
                 <property name="icon-name">view-more-symbolic</property>
