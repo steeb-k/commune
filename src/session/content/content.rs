@@ -127,12 +127,12 @@ mod imp {
                     Inhibit(false)
                 }
             }));
-            self.message_entry.buffer().connect_property_text_notify(
-                clone!(@weak obj => move |buffer| {
+            self.message_entry
+                .buffer()
+                .connect_text_notify(clone!(@weak obj => move |buffer| {
                    let (start_iter, end_iter) = buffer.bounds();
                    obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
-                }),
-            );
+                }));
 
             let (start_iter, end_iter) = self.message_entry.buffer().bounds();
             obj.action_set_enabled("content.send-text-message", start_iter != end_iter);

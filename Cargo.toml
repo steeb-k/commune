@@ -27,8 +27,6 @@ git = "https://gitlab.gnome.org/World/Rust/sourceview5-rs.git"
 [dependencies.gtk]
 package = "gtk4"
 git = "https://github.com/gtk-rs/gtk4-rs"
-# We need to use the same version as libadwaita does
-#rev = "abea0c9980bc083494eceb30dfab5eeb99a73118"
 
 [dependencies.glib]
 git = "https://github.com/gtk-rs/gtk-rs"
@@ -39,5 +37,4 @@ git = "https://gitlab.gnome.org/bilelmoussaoui/libadwaita-rs.git"
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "b5de20349945afcde13a78f023b906f421bb9764"
-features = ["unstable-synapse-quirks", "socks", "encryption", "sled_cryptostore", "sled_state_store"]
+features = ["socks", "encryption", "sled_cryptostore", "sled_state_store"]

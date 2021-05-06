@@ -162,17 +162,13 @@ impl Sidebar {
             });
 
             let room_expression = gtk::ClosureExpression::new(
-                String::static_type(),
                 |value| {
-                    Some(
-                        value[0]
-                            .get::<gtk::TreeListRow>()
-                            .unwrap()
-                            .item()
-                            .and_then(|o| o.downcast::<Room>().ok())
-                            .map_or(String::new(), |o| o.display_name())
-                            .to_value(),
-                    )
+                    value[0]
+                        .get::<gtk::TreeListRow>()
+                        .unwrap()
+                        .item()
+                        .and_then(|o| o.downcast::<Room>().ok())
+                        .map_or(String::new(), |o| o.display_name())
                 },
                 &[],
             );
@@ -181,6 +177,7 @@ impl Sidebar {
                 .expression(&room_expression)
                 .ignore_case(true)
                 .build();
+
             let filter_model = gtk::FilterListModel::new(Some(&tree_model), Some(&filter));
             priv_
                 .room_search_entry

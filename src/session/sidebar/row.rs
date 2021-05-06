@@ -1,4 +1,4 @@
-use adw::{subclass::prelude::BinImpl, BinExt};
+use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::session::sidebar::{CategoryRow, RoomRow};

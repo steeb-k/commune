@@ -30,6 +30,7 @@ use matrix_sdk::{
     Client, ClientConfig, RequestConfig, SyncSettings,
 };
 use std::time::Duration;
+use url::Url;
 
 use crate::session::categories::Categories;
 
@@ -177,11 +178,18 @@ impl Session {
     fn set_homeserver(&self, homeserver: String) {
         let priv_ = imp::Session::from_instance(self);
 
-        let config = ClientConfig::new().request_config(RequestConfig::new().retry_limit(2));
-        // Please note the homeserver needs to be a valid url or the client will panic!
-        let client = Client::new_with_config(homeserver.as_str(), config).unwrap();
+        priv_.homeserver.set(homeserver.clone()).unwrap();
 
-        priv_.homeserver.set(homeserver).unwrap();
+        let config = ClientConfig::new().request_config(RequestConfig::new().retry_limit(2));
+        let homeserver = match Url::parse(homeserver.as_str()) {
+            Ok(homeserver) => homeserver,
+            Err(_error) => {
+                // TODO: hanlde parse error
+                panic!();
+            }
+        };
+
+        let client = Client::new_with_config(homeserver, config).unwrap();
         priv_.client.set(client).unwrap();
     }
 
@@ -380,6 +388,14 @@ impl Session {
                         .timeline
                         .events
                         .into_iter()
+                        .filter_map(|event| {
+                            if let Ok(event) = event.event.deserialize() {
+                                Some(event)
+                            } else {
+                                error!("Couldn't deserialize event: {:?}", event);
+                                None
+                            }
+                        })
                         .map(|event| event_from_sync_event!(event, room_id))
                         .collect(),
                 );
@@ -397,6 +413,14 @@ impl Session {
                         .timeline
                         .events
                         .into_iter()
+                        .filter_map(|event| {
+                            if let Ok(event) = event.event.deserialize() {
+                                Some(event)
+                            } else {
+                                error!("Couldn't deserialize event: {:?}", event);
+                                None
+                            }
+                        })
                         .map(|event| event_from_sync_event!(event, room_id))
                         .collect(),
                 );

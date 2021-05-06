@@ -14,6 +14,7 @@ use matrix_sdk::events::{
     room::redaction::RedactionEventContent,
     AnyMessageEvent, AnyMessageEventContent, AnyRoomEvent,
 };
+use sourceview::prelude::*;
 
 use crate::session::room::Event;
 
@@ -385,7 +386,6 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
             bx.upcast::<gtk::Widget>()
         }
         HtmlBlock::Code(s) => {
-            use sourceview::BufferExt;
             let scrolled = gtk::ScrolledWindow::new();
             scrolled.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Never);
             let buffer = sourceview::Buffer::new(None);
