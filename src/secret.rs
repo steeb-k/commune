@@ -1,38 +1,74 @@
+use matrix_sdk::identifiers::{DeviceIdBox, UserId};
 use secret_service::EncryptionType;
 use secret_service::SecretService;
 use std::collections::HashMap;
+use std::convert::TryFrom;
+use std::path::PathBuf;
+use url::Url;
+
+pub struct StoredSession {
+    pub homeserver: Url,
+    pub path: PathBuf,
+    pub passphrase: String,
+    pub user_id: UserId,
+    pub access_token: String,
+    pub device_id: DeviceIdBox,
+}
 
 /// Retrives all sessions stored to the `SecretService`
-pub fn restore_sessions() -> Result<Vec<(String, matrix_sdk::Session)>, secret_service::Error> {
-    use std::convert::TryInto;
-
+pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
     let ss = SecretService::new(EncryptionType::Dh)?;
     let collection = ss.get_default_collection()?;
 
     // Sessions that contain or produce errors are ignored.
     // TODO: Return error for corrupt sessions
+
     let res = collection
         .get_all_items()?
         .iter()
-        .filter_map(|item| {
-            let attr = item.get_attributes().ok()?;
-            if let (Some(homeserver), Some(access_token), Some(user_id), Some(device_id)) = (
-                attr.get("homeserver"),
-                String::from_utf8(item.get_secret().ok()?).ok(),
-                attr.get("user-id")
-                    .and_then(|s| s.to_string().try_into().ok()),
-                attr.get("device-id")
-                    .and_then(|s| Some(s.to_string().into())),
-            ) {
-                let session = matrix_sdk::Session {
-                    access_token,
-                    user_id,
-                    device_id,
-                };
-                Some((homeserver.to_string(), session))
-            } else {
-                None
+        .fold(HashMap::new(), |mut acc, item| {
+            let finder = move || -> Option<((String, String, String), (String, Option<String>))> {
+                let attr = item.get_attributes().ok()?;
+
+                let homeserver = attr.get("homeserver")?.to_string();
+                let user_id = attr.get("user-id")?.to_string();
+                let device_id = attr.get("device-id")?.to_string();
+                let secret = String::from_utf8(item.get_secret().ok()?).ok()?;
+                let path = attr.get("path").map(|s| s.to_string());
+                Some(((homeserver, user_id, device_id), (secret, path)))
+            };
+
+            if let Some((key, value)) = finder() {
+                acc.entry(key).or_insert(vec![]).push(value);
             }
+
+            acc
+        })
+        .into_iter()
+        .filter_map(|((homeserver, user_id, device_id), mut items)| {
+            if items.len() != 2 {
+                return None;
+            }
+            let (access_token, passphrase, path) = match items.pop()? {
+                (secret, Some(path)) => (items.pop()?.0, secret, PathBuf::from(path)),
+                (secret, None) => {
+                    let item = items.pop()?;
+                    (secret, item.0, PathBuf::from(item.1?))
+                }
+            };
+
+            let homeserver = Url::parse(&homeserver).ok()?;
+            let user_id = UserId::try_from(user_id).ok()?;
+            let device_id = DeviceIdBox::try_from(device_id).ok()?;
+
+            Some(StoredSession {
+                homeserver,
+                path,
+                passphrase,
+                user_id,
+                access_token,
+                device_id,
+            })
         })
         .collect();
 
@@ -41,16 +77,14 @@ pub fn restore_sessions() -> Result<Vec<(String, matrix_sdk::Session)>, secret_s
 
 /// Writes a sessions to the `SecretService`, overwriting any previously stored session with the
 /// same `homeserver`, `username` and `device-id`.
-pub fn store_session(
-    homeserver: &str,
-    session: matrix_sdk::Session,
-) -> Result<(), secret_service::Error> {
+pub fn store_session(session: StoredSession) -> Result<(), secret_service::Error> {
     let ss = SecretService::new(EncryptionType::Dh)?;
     let collection = ss.get_default_collection()?;
 
+    // Store the infromation for the login
     let attributes: HashMap<&str, &str> = [
         ("user-id", session.user_id.as_str()),
-        ("homeserver", homeserver),
+        ("homeserver", session.homeserver.as_str()),
         ("device-id", session.device_id.as_str()),
     ]
     .iter()
@@ -61,6 +95,25 @@ pub fn store_session(
         "Fractal",
         attributes,
         session.access_token.as_bytes(),
+        true,
+        "text/plain",
+    )?;
+
+    // Store the infromation for the crypto store
+    let attributes: HashMap<&str, &str> = [
+        ("path", session.path.to_str().unwrap()),
+        ("user-id", session.user_id.as_str()),
+        ("homeserver", session.homeserver.as_str()),
+        ("device-id", session.device_id.as_str()),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    collection.create_item(
+        "Fractal (Encrypted local database)",
+        attributes,
+        session.passphrase.as_bytes(),
         true,
         "text/plain",
     )?;

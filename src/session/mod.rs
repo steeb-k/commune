@@ -11,9 +11,11 @@ use self::user::User;
 
 use crate::event_from_sync_event;
 use crate::secret;
+use crate::secret::StoredSession;
 use crate::utils::do_async;
 use crate::RUNTIME;
 
+use crate::session::categories::Categories;
 use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
@@ -27,12 +29,13 @@ use matrix_sdk::{
     deserialized_responses::SyncResponse,
     events::{AnyRoomEvent, AnySyncRoomEvent},
     identifiers::RoomId,
+    uuid::Uuid,
     Client, ClientConfig, RequestConfig, SyncSettings,
 };
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use std::fs;
 use std::time::Duration;
 use url::Url;
-
-use crate::session::categories::Categories;
 
 mod imp {
     use super::*;
@@ -50,7 +53,6 @@ mod imp {
         pub sidebar: TemplateChild<Sidebar>,
         #[template_child]
         pub content: TemplateChild<Content>,
-        pub homeserver: OnceCell<String>,
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
@@ -79,13 +81,6 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_string(
-                        "homeserver",
-                        "Homeserver",
-                        "The matrix homeserver of this session",
-                        None,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
                     glib::ParamSpec::new_object(
                         "categories",
                         "Categories",
@@ -114,10 +109,6 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "homeserver" => {
-                    let homeserver = value.get().unwrap();
-                    let _ = obj.set_homeserver(homeserver);
-                }
                 "selected-room" => {
                     let selected_room = value.get().unwrap();
                     obj.set_selected_room(selected_room);
@@ -128,7 +119,6 @@ mod imp {
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "homeserver" => self.homeserver.get().to_value(),
                 "categories" => self.categories.to_value(),
                 "selected-room" => obj.selected_room().to_value(),
                 _ => unimplemented!(),
@@ -156,8 +146,8 @@ glib::wrapper! {
 }
 
 impl Session {
-    pub fn new(homeserver: String) -> Self {
-        glib::Object::new(&[("homeserver", &homeserver)]).expect("Failed to create Session")
+    pub fn new() -> Self {
+        glib::Object::new(&[]).expect("Failed to create Session")
     }
 
     pub fn selected_room(&self) -> Option<Room> {
@@ -184,42 +174,51 @@ impl Session {
         self.notify("selected-room");
     }
 
-    fn set_homeserver(&self, homeserver: String) {
-        let priv_ = imp::Session::from_instance(self);
-
-        priv_.homeserver.set(homeserver.clone()).unwrap();
-
-        let config = ClientConfig::new().request_config(RequestConfig::new().retry_limit(2));
-        let homeserver = match Url::parse(homeserver.as_str()) {
-            Ok(homeserver) => homeserver,
-            Err(_error) => {
-                // TODO: hanlde parse error
-                panic!();
-            }
-        };
-
-        let client = Client::new_with_config(homeserver, config).unwrap();
-        priv_.client.set(client).unwrap();
-    }
-
-    fn client(&self) -> Client {
-        let priv_ = imp::Session::from_instance(self);
-        priv_.client.get().unwrap().clone()
-    }
-
-    pub fn login_with_password(&self, username: String, password: String) {
-        let client = self.client();
+    pub fn login_with_password(&self, homeserver: Url, username: String, password: String) {
+        let mut path = glib::user_data_dir();
+        path.push(
+            &Uuid::new_v4()
+                .to_hyphenated()
+                .encode_lower(&mut Uuid::encode_buffer()),
+        );
 
         do_async(
             async move {
-                client
+                let passphrase: String = {
+                    let mut rng = thread_rng();
+                    (&mut rng)
+                        .sample_iter(Alphanumeric)
+                        .take(30)
+                        .map(char::from)
+                        .collect()
+                };
+                let config = ClientConfig::new()
+                    .request_config(RequestConfig::new().retry_limit(2))
+                    .passphrase(passphrase.clone())
+                    .store_path(path.clone());
+
+                let client = Client::new_with_config(homeserver.clone(), config).unwrap();
+                let response = client
                     .login(&username, &password, None, Some("Fractal Next"))
-                    .await
-                    .map(|response| matrix_sdk::Session {
-                        access_token: response.access_token,
-                        user_id: response.user_id,
-                        device_id: response.device_id,
-                    })
+                    .await;
+                match response {
+                    Ok(response) => Ok((
+                        client,
+                        StoredSession {
+                            homeserver: homeserver,
+                            path: path,
+                            passphrase: passphrase,
+                            access_token: response.access_token,
+                            user_id: response.user_id,
+                            device_id: response.device_id,
+                        },
+                    )),
+                    Err(error) => {
+                        // Remove the store created by Client::new()
+                        fs::remove_dir_all(path).unwrap();
+                        Err(error)
+                    }
+                }
             },
             clone!(@weak self as obj => move |result| async move {
                 obj.handle_login_result(result, true);
@@ -227,11 +226,24 @@ impl Session {
         );
     }
 
-    pub fn login_with_previous_session(&self, session: matrix_sdk::Session) {
-        let client = self.client();
-
+    pub fn login_with_previous_session(&self, session: StoredSession) {
         do_async(
-            async move { client.restore_login(session.clone()).await.map(|_| session) },
+            async move {
+                let config = ClientConfig::new()
+                    .request_config(RequestConfig::new().retry_limit(2))
+                    .passphrase(session.passphrase.clone())
+                    .store_path(session.path.clone());
+
+                let client = Client::new_with_config(session.homeserver.clone(), config).unwrap();
+                client
+                    .restore_login(matrix_sdk::Session {
+                        user_id: session.user_id.clone(),
+                        device_id: session.device_id.clone(),
+                        access_token: session.access_token.clone(),
+                    })
+                    .await
+                    .map(|_| (client, session))
+            },
             clone!(@weak self as obj => move |result| async move {
                 obj.handle_login_result(result, false);
             }),
@@ -240,15 +252,17 @@ impl Session {
 
     fn handle_login_result(
         &self,
-        result: Result<matrix_sdk::Session, matrix_sdk::Error>,
+        result: Result<(Client, StoredSession), matrix_sdk::Error>,
         store_session: bool,
     ) {
-        let priv_ = &imp::Session::from_instance(self);
+        let priv_ = imp::Session::from_instance(self);
         match result {
-            Ok(session) => {
+            Ok((client, session)) => {
+                priv_.client.set(client).unwrap();
                 self.set_user(User::new(&session.user_id));
                 if store_session {
-                    self.store_session(session).unwrap();
+                    // TODO: report secret service errors
+                    secret::store_session(session).unwrap();
                 }
                 self.load();
                 self.sync();
@@ -261,8 +275,9 @@ impl Session {
     }
 
     fn sync(&self) {
+        let priv_ = imp::Session::from_instance(self);
         let sender = self.create_new_sync_response_sender();
-        let client = self.client();
+        let client = priv_.client.get().unwrap().clone();
         RUNTIME.spawn(async move {
             // TODO: only create the filter once and reuse it in the future
             let room_event_filter = assign!(RoomEventFilter::default(), {
@@ -342,12 +357,6 @@ impl Session {
             None
         })
         .unwrap()
-    }
-
-    fn store_session(&self, session: matrix_sdk::Session) -> Result<(), secret_service::Error> {
-        let priv_ = &imp::Session::from_instance(self);
-        let homeserver = priv_.homeserver.get().unwrap();
-        secret::store_session(homeserver, session)
     }
 
     fn handle_sync_response(&self, response: SyncResponse) {

@@ -121,16 +121,20 @@ impl Login {
 
         self.freeze();
 
-        let session = Session::new(homeserver);
+        let session = Session::new();
         self.setup_session(&session);
-        session.login_with_password(username, password);
+        session.login_with_password(
+            url::Url::parse(homeserver.as_str()).unwrap(),
+            username,
+            password,
+        );
     }
 
     pub fn restore_sessions(&self) -> Result<(), secret_service::Error> {
         let sessions = secret::restore_sessions()?;
 
-        for (homeserver, stored_session) in sessions {
-            let session = Session::new(homeserver.to_string());
+        for stored_session in sessions {
+            let session = Session::new();
             self.setup_session(&session);
             session.login_with_previous_session(stored_session);
         }
