@@ -45,6 +45,8 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
     pub struct Session {
         #[template_child]
+        pub leaflet: TemplateChild<adw::Leaflet>,
+        #[template_child]
         pub sidebar: TemplateChild<Sidebar>,
         #[template_child]
         pub content: TemplateChild<Content>,
@@ -168,6 +170,13 @@ impl Session {
 
         if self.selected_room() == selected_room {
             return;
+        }
+
+        let leaflet = priv_.leaflet.get();
+        if selected_room.is_some() {
+            leaflet.navigate(adw::NavigationDirection::Forward);
+        } else {
+            leaflet.navigate(adw::NavigationDirection::Back);
         }
 
         priv_.selected_room.replace(selected_room);

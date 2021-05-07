@@ -38,6 +38,9 @@ mod imp {
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
+            klass.install_action("content.go-back", None, move |widget, _, _| {
+                widget.set_room(None);
+            });
             klass.install_action("content.send-text-message", None, move |widget, _, _| {
                 widget.send_text_message();
             });

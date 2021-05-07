@@ -2,18 +2,18 @@
 <interface>
   <template class="Session" parent="AdwBin">
     <child>
-      <object class="AdwLeaflet" id="session">
+      <object class="AdwLeaflet" id="leaflet">
         <child>
           <object class="Sidebar" id="sidebar">
-            <property name="compact" bind-source="session" bind-property="folded" bind-flags="sync-create" />
+            <property name="compact" bind-source="leaflet" bind-property="folded" bind-flags="sync-create" />
             <property name="categories" bind-source="Session" bind-property="categories" bind-flags="sync-create" />
             <property name="selected-room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create | bidirectional" />
           </object>
         </child>
         <child>
           <object class="Content" id="content">
-            <property name="compact" bind-source="session" bind-property="folded" bind-flags="sync-create" />
-            <property name="room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create" />
+            <property name="compact" bind-source="leaflet" bind-property="folded" bind-flags="sync-create" />
+            <property name="room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create | bidirectional" />
           </object>
         </child>
       </object>

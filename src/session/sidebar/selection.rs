@@ -267,21 +267,23 @@ impl Selection {
 
         let mut selected = GTK_INVALID_LIST_POSITION;
 
-        if let Some(model) = self.model() {
-            for i in 0..=model.n_items() {
-                let room = model
-                    .item(i)
-                    .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
-                    .and_then(|r| r.item())
-                    .and_then(|o| o.downcast::<Room>().ok());
-                if room == selected_room {
-                    selected = i;
-                    break;
+        if room.is_some() {
+            if let Some(model) = self.model() {
+                for i in 0..model.n_items() {
+                    let r = model
+                        .item(i)
+                        .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
+                        .and_then(|r| r.item())
+                        .and_then(|o| o.downcast::<Room>().ok());
+                    if r == room {
+                        selected = i;
+                        break;
+                    }
                 }
             }
         }
 
-        priv_.selected_room.replace(selected_room);
+        priv_.selected_room.replace(room);
 
         if old_selected != selected {
             priv_.selected.replace(selected);
