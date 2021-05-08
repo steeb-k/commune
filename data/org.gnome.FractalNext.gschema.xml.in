@@ -16,5 +16,10 @@
       <summary>Default window maximized behaviour</summary>
       <description></description>
     </key>
+    <key name="markdown-enabled" type="b">
+      <default>true</default>
+      <summary>Enable markdown formatting</summary>
+      <description>Whether or not to do markdown formatting when sending messages</description>
+    </key>
   </schema>
 </schemalist>

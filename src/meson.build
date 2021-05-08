@@ -35,6 +35,7 @@ sources = files(
   'session/content/content.rs',
   'session/content/divider_row.rs',
   'session/content/item_row.rs',
+  'session/content/markdown_popover.rs',
   'session/content/message_row.rs',
   'session/content/mod.rs',
   'session/content/state_row.rs',

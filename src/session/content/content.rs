@@ -1,13 +1,13 @@
+use crate::session::{content::ItemRow, content::MarkdownPopover, room::Room};
 use adw::subclass::prelude::*;
 use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
     CompositeTemplate,
 };
 
-use crate::session::{content::ItemRow, room::Room};
-
 mod imp {
     use super::*;
+    use crate::Application;
     use glib::subclass::InitializingObject;
     use std::cell::{Cell, RefCell};
 
@@ -25,6 +25,8 @@ mod imp {
         pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
         #[template_child]
         pub message_entry: TemplateChild<sourceview::View>,
+        #[template_child]
+        pub markdown_button: TemplateChild<gtk::MenuButton>,
     }
 
     #[glib::object_subclass]
@@ -35,6 +37,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             ItemRow::static_type();
+            MarkdownPopover::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
@@ -70,6 +73,13 @@ mod imp {
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "markdown-enabled",
+                        "Markdown enabled",
+                        "Whether or not to do markdown formatting when sending messages",
+                        false,
+                        glib::ParamFlags::READWRITE,
+                    ),
                 ]
             });
 
@@ -92,6 +102,15 @@ mod imp {
                     let room = value.get().unwrap();
                     obj.set_room(room);
                 }
+                "markdown-enabled" => {
+                    let md_enabled = value.get().unwrap();
+                    self.md_enabled.set(md_enabled);
+                    self.markdown_button.set_icon_name(if md_enabled {
+                        "format-indent-more-symbolic"
+                    } else {
+                        "format-justify-left-symbolic"
+                    });
+                }
                 _ => unimplemented!(),
             }
         }
@@ -100,6 +119,7 @@ mod imp {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
                 "room" => obj.room().to_value(),
+                "markdown-enabled" => self.md_enabled.get().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -139,6 +159,11 @@ mod imp {
 
             let (start_iter, end_iter) = self.message_entry.buffer().bounds();
             obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+
+            let settings = Application::default().settings();
+            settings
+                .bind("markdown-enabled", obj, "markdown-enabled")
+                .build();
 
             self.parent_constructed(obj);
         }

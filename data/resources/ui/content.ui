@@ -89,8 +89,14 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkButton">
+                  <object class="GtkMenuButton" id="markdown_button">
+                    <property name="direction">up</property>
                     <property name="icon-name">format-justify-left-symbolic</property>
+                    <property name="popover">
+                      <object class="MarkdownPopover">
+                        <property name="markdown-enabled" bind-source="Content" bind-property="markdown-enabled" bind-flags="sync-create | bidirectional"/>
+                      </object>
+                    </property>
                   </object>
                 </child>
                 <child>
