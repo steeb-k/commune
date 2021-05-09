@@ -77,6 +77,13 @@ mod imp {
                         User::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
+                    glib::ParamSpec::new_string(
+                        "time",
+                        "Time",
+                        "The locally formatted time of this matrix event",
+                        None,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -114,6 +121,7 @@ mod imp {
                 "sender" => self.sender.get().to_value(),
                 "show-header" => obj.show_header().to_value(),
                 "can-hide-header" => obj.can_hide_header().to_value(),
+                "time" => obj.time().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -172,6 +180,21 @@ impl Event {
         let event = &*priv_.event.get().unwrap().borrow();
 
         fn_event!(event, origin_server_ts).clone().into()
+    }
+
+    pub fn time(&self) -> String {
+        let datetime = self.timestamp();
+
+        // FIXME Is there a cleaner way to do that?
+        let local_time = datetime.format("%X").to_string().to_ascii_lowercase();
+
+        if local_time.ends_with("am") || local_time.ends_with("pm") {
+            // Use 12h time format (AM/PM)
+            datetime.format("%l∶%M %p").to_string()
+        } else {
+            // Use 24 time format
+            datetime.format("%R").to_string()
+        }
     }
 
     /// Find the related event if any

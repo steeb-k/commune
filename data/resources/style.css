@@ -1,23 +1,11 @@
-/* Login */
-.login {
-  min-width: 250px;
-}
-
 .title-header {
   font-size: 36px;
   font-weight: bold;
 }
 
-.content {
-  background-color: @theme_base_color;
-}
-
-.content:backdrop {
-  background-color: @theme_unfocused_base_color;
-}
-
-.send-message-area {
-  margin: 6px;
+/* Login */
+.login {
+  min-width: 250px;
 }
 
 /* Sidebar */
@@ -70,12 +58,58 @@
 }
 
 /* Content */
+.content {
+  background-color: @theme_base_color;
+}
+
+.content:backdrop {
+  background-color: @theme_unfocused_base_color;
+}
+
+.content row {
+  min-height: 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.content row.has-header {
+  margin-top: 6px;
+}
+
+.content .event-content {
+  margin-right: 46px;
+}
+
+.content row:not(.has-header) .event-content {
+  margin-left: 46px;
+}
+
+.divider-row {
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.displayname {
+  font-size: 0.9em;
+  font-weight: bold;
+  color: @theme_selected_bg_color;
+}
+
+.timestamp {
+  font-size: 0.9em;
+  min-width: 36px;
+}
+
 .codeview {
   border-radius: 5px;
   padding: 6px;
   font-family: monospace;
   background-color: @text_view_bg;
   color: @theme_text_color;
+}
+
+.send-message-area {
+  margin: 6px;
 }
 
 .message-entry > .view {

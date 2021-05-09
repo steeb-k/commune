@@ -3,23 +3,26 @@
   <template class="ContentMessageRow" parent="AdwBin">
     <child>
       <object class="GtkBox">
-        <property name="spacing">6</property>
+        <property name="spacing">10</property>
         <child>
           <object class="AdwAvatar" id="avatar">
             <property name="show-initials">True</property>
-            <property name="size">24</property>
+            <property name="size">36</property>
+            <property name="valign">start</property>
             <property name="text" bind-source="display_name" bind-property="label" bind-flags="sync-create"/>
           </object>
         </child>
         <child>
           <object class="GtkBox">
-            <property name="spacing">6</property>
             <property name="orientation">vertical</property>
+            <property name="spacing">2</property>
             <child>
               <object class="GtkBox" id="header">
-                <property name="spacing">6</property>
+                <property name="spacing">10</property>
                 <child>
                   <object class="GtkLabel" id="display_name">
+                    <property name="hexpand">true</property>
+                    <property name="halign">start</property>
                     <property name="ellipsize">end</property>
                     <property name="selectable">True</property>
                     <style>
@@ -31,6 +34,7 @@
                   <object class="GtkLabel" id="timestamp">
                     <style>
                       <class name="timestamp"/>
+                      <class name="dim-label"/>
                     </style>
                   </object>
                 </child>
@@ -40,6 +44,9 @@
               <object class="AdwBin" id="content">
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
+                <style>
+                  <class name="event-content"/>
+                </style>
               </object>
             </child>
           </object>

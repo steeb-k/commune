@@ -74,6 +74,7 @@ impl StateRow {
             child.set_text(&message);
         } else {
             let child = gtk::Label::new(Some(&message));
+            child.set_css_classes(&["event-content"]);
             self.set_child(Some(&child));
         };
     }

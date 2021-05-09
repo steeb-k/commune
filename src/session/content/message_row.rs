@@ -122,6 +122,15 @@ impl MessageRow {
         let priv_ = imp::MessageRow::from_instance(self);
         priv_.avatar.set_visible(visible);
         priv_.header.set_visible(visible);
+
+        if let Some(list_item) = self.parent().and_then(|w| w.parent()) {
+            if visible {
+                list_item.set_css_classes(&["has-header"]);
+            } else {
+                list_item.remove_css_class("has-header");
+            }
+        }
+
         self.notify("show-header");
     }
 
@@ -152,10 +161,17 @@ impl MessageRow {
             .build()
             .unwrap();
 
-        priv_
-            .bindings
-            .borrow_mut()
-            .append(&mut vec![display_name_binding, show_header_binding]);
+        let timestamp_binding = event
+            .bind_property("time", &*priv_.timestamp, "label")
+            .flags(glib::BindingFlags::SYNC_CREATE)
+            .build()
+            .unwrap();
+
+        priv_.bindings.borrow_mut().append(&mut vec![
+            display_name_binding,
+            show_header_binding,
+            timestamp_binding,
+        ]);
 
         priv_
             .relates_to_changed_handler
