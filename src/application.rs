@@ -1,7 +1,7 @@
 use crate::config;
 use crate::Window;
 use gettextrs::gettext;
-use gio::ApplicationFlags;
+use gio::{ApplicationFlags, Settings};
 use glib::clone;
 use glib::WeakRef;
 use gtk::prelude::*;
@@ -17,6 +17,7 @@ mod imp {
     #[derive(Debug)]
     pub struct Application {
         pub window: OnceCell<WeakRef<Window>>,
+        pub settings: Settings,
     }
 
     #[glib::object_subclass]
@@ -28,6 +29,7 @@ mod imp {
         fn new() -> Self {
             Self {
                 window: OnceCell::new(),
+                settings: Settings::new(config::APP_ID),
             }
         }
     }
@@ -89,6 +91,10 @@ impl Application {
             .unwrap()
             .upgrade()
             .unwrap()
+    }
+
+    pub fn settings(&self) -> Settings {
+        imp::Application::from_instance(self).settings.clone()
     }
 
     fn setup_gactions(&self) {
@@ -171,5 +177,14 @@ impl Application {
         info!("Datadir: {}", config::PKGDATADIR);
 
         ApplicationExtManual::run(self);
+    }
+}
+
+impl Default for Application {
+    fn default() -> Self {
+        gio::Application::default()
+            .unwrap()
+            .downcast::<Application>()
+            .unwrap()
     }
 }

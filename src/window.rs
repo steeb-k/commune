@@ -21,7 +21,6 @@ mod imp {
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub login: TemplateChild<Login>,
-        pub settings: gio::Settings,
     }
 
     #[glib::object_subclass]
@@ -34,7 +33,6 @@ mod imp {
             Self {
                 main_stack: TemplateChild::default(),
                 login: TemplateChild::default(),
-                settings: gio::Settings::new(APP_ID),
             }
         }
 
@@ -115,7 +113,7 @@ impl Window {
     }
 
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
-        let settings = &imp::Window::from_instance(self).settings;
+        let settings = Application::default().settings();
 
         let size = self.default_size();
 
@@ -128,7 +126,7 @@ impl Window {
     }
 
     fn load_window_size(&self) {
-        let settings = &imp::Window::from_instance(self).settings;
+        let settings = Application::default().settings();
 
         let width = settings.int("window-width");
         let height = settings.int("window-height");
