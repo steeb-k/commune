@@ -11,6 +11,7 @@ use matrix_sdk::{
                 TextMessageEventContent,
             },
         },
+        tag::TagName,
         AnyMessageEvent, AnyRoomEvent, AnyStateEvent, MessageEvent, StateEvent, Unsigned,
     },
     identifiers::{EventId, UserId},
@@ -191,12 +192,6 @@ impl Room {
     fn set_matrix_room(&self, matrix_room: MatrixRoom) {
         let priv_ = imp::Room::from_instance(self);
 
-        let category = match matrix_room {
-            MatrixRoom::Joined(_) => CategoryType::Normal,
-            MatrixRoom::Invited(_) => CategoryType::Invited,
-            MatrixRoom::Left(_) => CategoryType::Left,
-        };
-
         priv_.matrix_room.set(matrix_room).unwrap();
         priv_.timeline.set(Timeline::new(self)).unwrap();
 
@@ -204,7 +199,7 @@ impl Room {
         self.load_members();
         self.load_display_name();
         // TODO: change category when room type changes
-        self.set_category(category);
+        self.load_category();
     }
 
     pub fn user(&self) -> &User {
@@ -226,6 +221,33 @@ impl Room {
 
         priv_.category.set(category);
         self.notify("category");
+    }
+
+    pub fn load_category(&self) {
+        let matrix_room = self.matrix_room().clone();
+
+        match matrix_room {
+            MatrixRoom::Joined(_) => {
+                do_async(
+                    async move { matrix_room.tags().await },
+                    clone!(@weak self as obj => move |tags_result| async move {
+                        let mut category = CategoryType::Normal;
+
+                        if let Ok(Some(tags)) = tags_result {
+                            if tags.get(&TagName::Favorite).is_some() {
+                                category = CategoryType::Favorite;
+                            } else if tags.get(&TagName::LowPriority).is_some() {
+                                category = CategoryType::LowPriority;
+                            }
+                        }
+
+                        obj.set_category(category);
+                    }),
+                );
+            }
+            MatrixRoom::Invited(_) => self.set_category(CategoryType::Invited),
+            MatrixRoom::Left(_) => self.set_category(CategoryType::Left),
+        };
     }
 
     pub fn timeline(&self) -> &Timeline {
