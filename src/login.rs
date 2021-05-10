@@ -1,4 +1,3 @@
-use crate::secret;
 use crate::Session;
 
 use adw;
@@ -122,28 +121,8 @@ impl Login {
         self.freeze();
 
         let session = Session::new();
-        self.setup_session(&session);
-        session.login_with_password(
-            url::Url::parse(homeserver.as_str()).unwrap(),
-            username,
-            password,
-        );
-    }
 
-    pub fn restore_sessions(&self) -> Result<(), secret_service::Error> {
-        let sessions = secret::restore_sessions()?;
-
-        for stored_session in sessions {
-            let session = Session::new();
-            self.setup_session(&session);
-            session.login_with_previous_session(stored_session);
-        }
-
-        Ok(())
-    }
-
-    fn setup_session(&self, session: &Session) {
-        session.connect_ready(clone!(@weak self as obj, @strong session => move |_| {
+        session.connect_prepared(clone!(@weak self as obj, @strong session => move |_| {
             if let Some(error) = session.get_error() {
                 let error_message = &imp::Login::from_instance(&obj).error_message;
                 // TODO: show more specific error
@@ -153,11 +132,17 @@ impl Login {
 
                 obj.unfreeze();
             } else {
-                debug!("A new session is ready");
+                debug!("A new session was prepared");
                 obj.emit_by_name("new-session", &[&session]).unwrap();
                 obj.clean();
             }
         }));
+
+        session.login_with_password(
+            url::Url::parse(homeserver.as_str()).unwrap(),
+            username,
+            password,
+        );
     }
 
     fn clean(&self) {

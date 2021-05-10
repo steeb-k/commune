@@ -8,6 +8,17 @@
   min-width: 250px;
 }
 
+/* Session */
+.session-loading-spinner {
+ min-width: 32px;
+ min-height: 32px;
+}
+
+headerbar.flat {
+  background: none;
+  border: none;
+}
+
 /* Sidebar */
 .sidebar row {
   padding-left: 10px;

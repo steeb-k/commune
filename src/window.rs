@@ -1,4 +1,5 @@
 use crate::config::{APP_ID, PROFILE};
+use crate::secret;
 use crate::Application;
 use crate::Login;
 use crate::Session;
@@ -59,14 +60,9 @@ mod imp {
                 obj.add_css_class("devel");
             }
 
-            // load latest window state
             obj.load_window_size();
+            obj.restore_sessions();
 
-            // TODO: tell user that a stored session couldn't be restored
-            let result = self.login.restore_sessions();
-            if let Err(error) = result {
-                warn!("Failed to restore a session: {:?}", error);
-            }
             self.login.connect_new_session(
                 clone!(@weak obj => move |_login, session| obj.add_session(session)),
             );
@@ -99,10 +95,23 @@ impl Window {
             .expect("Failed to create Window")
     }
 
-    pub fn add_session(&self, session: &Session) {
+    fn add_session(&self, session: &Session) {
         let priv_ = &imp::Window::from_instance(self);
         priv_.main_stack.add_child(session);
         priv_.main_stack.set_visible_child(session);
+    }
+
+    fn restore_sessions(&self) {
+        match secret::restore_sessions() {
+            Ok(sessions) => {
+                for stored_session in sessions {
+                    let session = Session::new();
+                    session.login_with_previous_session(stored_session);
+                    self.add_session(&session);
+                }
+            }
+            Err(error) => warn!("Failed to restore previous sessions: {:?}", error),
+        }
     }
 
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {

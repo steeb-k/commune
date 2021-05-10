@@ -48,11 +48,9 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
     pub struct Session {
         #[template_child]
-        pub leaflet: TemplateChild<adw::Leaflet>,
+        pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub sidebar: TemplateChild<Sidebar>,
-        #[template_child]
-        pub content: TemplateChild<Content>,
+        pub content: TemplateChild<adw::Leaflet>,
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
@@ -60,6 +58,7 @@ mod imp {
         pub categories: Categories,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
+        pub is_ready: OnceCell<bool>,
     }
 
     #[glib::object_subclass]
@@ -73,6 +72,8 @@ mod imp {
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
+            Sidebar::static_type();
+            Content::static_type();
             obj.init_template();
         }
     }
@@ -127,7 +128,7 @@ mod imp {
 
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder("ready", &[], <()>::static_type().into()).build()]
+                vec![Signal::builder("prepared", &[], <()>::static_type().into()).build()]
             });
             SIGNALS.as_ref()
         }
@@ -162,11 +163,10 @@ impl Session {
             return;
         }
 
-        let leaflet = priv_.leaflet.get();
         if selected_room.is_some() {
-            leaflet.navigate(adw::NavigationDirection::Forward);
+            priv_.content.navigate(adw::NavigationDirection::Forward);
         } else {
-            leaflet.navigate(adw::NavigationDirection::Back);
+            priv_.content.navigate(adw::NavigationDirection::Back);
         }
 
         priv_.selected_room.replace(selected_room);
@@ -271,7 +271,7 @@ impl Session {
                 priv_.error.replace(Some(error));
             }
         }
-        self.emit_by_name("ready", &[]).unwrap();
+        self.emit_by_name("prepared", &[]).unwrap();
     }
 
     fn sync(&self) {
@@ -308,6 +308,17 @@ impl Session {
         });
     }
 
+    fn mark_ready(&self) {
+        let priv_ = &imp::Session::from_instance(self);
+        priv_.stack.set_visible_child(&*priv_.content);
+        priv_.is_ready.set(true).unwrap();
+    }
+
+    fn is_ready(&self) -> bool {
+        let priv_ = &imp::Session::from_instance(self);
+        priv_.is_ready.get().copied().unwrap_or_default()
+    }
+
     fn set_user(&self, user: User) {
         let priv_ = &imp::Session::from_instance(self);
         priv_.user.set(user).unwrap();
@@ -325,7 +336,11 @@ impl Session {
         receiver.attach(
             None,
             clone!(@weak self as obj => @default-return glib::Continue(false), move |response| {
+                if !obj.is_ready() {
+                        obj.mark_ready();
+                }
                 obj.handle_sync_response(response);
+
                 glib::Continue(true)
             }),
         );
@@ -342,14 +357,14 @@ impl Session {
 
     /// Returns and consumes the `error` that was generated when the session failed to login,
     /// on a successful login this will be `None`.
-    /// Unfortunatly it's not possible to connect the Error direclty to the `ready` signals.
+    /// Unfortunatly it's not possible to connect the Error direclty to the `prepared` signals.
     pub fn get_error(&self) -> Option<matrix_sdk::Error> {
         let priv_ = &imp::Session::from_instance(self);
         priv_.error.take()
     }
 
-    pub fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("ready", true, move |values| {
+    pub fn connect_prepared<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("prepared", true, move |values| {
             let obj = values[0].get::<Self>().unwrap();
 
             f(&obj);
