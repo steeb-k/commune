@@ -1,6 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
-use matrix_sdk::events::{AnyStateEvent, AnyStateEventContent};
+use log::warn;
+use matrix_sdk::events::{room::member::MembershipState, AnyStateEvent, AnyStateEventContent};
 
 mod imp {
     use super::*;
@@ -53,28 +55,123 @@ impl StateRow {
         // For a full list of state events see:
         // https://matrix-org.github.io/matrix-rust-sdk/matrix_sdk/events/enum.AnyStateEventContent.html
         let message = match state.content() {
-            AnyStateEventContent::RoomCreate(_event) => format!("The beginning of this room."),
-            AnyStateEventContent::RoomEncryption(_event) => format!("This room is now encrypted."),
-            AnyStateEventContent::RoomMember(_event) => {
-                // TODO: fully implement this state event
-                format!("A member did change something: state, avatar, name ...")
+            AnyStateEventContent::RoomCreate(_event) => gettext("The beginning of this room."),
+            AnyStateEventContent::RoomEncryption(_event) => gettext("This room is now encrypted."),
+            AnyStateEventContent::RoomMember(event) => {
+                let display_name = event
+                    .displayname
+                    .clone()
+                    .unwrap_or(state.state_key().into());
+
+                match event.membership {
+                    MembershipState::Join => {
+                        let message = match state.prev_content() {
+                            Some(AnyStateEventContent::RoomMember(prev))
+                                if event.membership != prev.membership =>
+                            {
+                                None
+                            }
+                            Some(AnyStateEventContent::RoomMember(prev))
+                                if event.displayname != prev.displayname =>
+                            {
+                                if prev.displayname == None {
+                                    Some(gettext!(
+                                        "{} set their display name to {}.",
+                                        state.state_key(),
+                                        display_name
+                                    ))
+                                } else if event.displayname == None {
+                                    Some(gettext!(
+                                        "{} removed their display name.",
+                                        prev.displayname.unwrap()
+                                    ))
+                                } else {
+                                    Some(gettext!(
+                                        "{} changed their display name to {}.",
+                                        prev.displayname.unwrap(),
+                                        display_name
+                                    ))
+                                }
+                            }
+                            Some(AnyStateEventContent::RoomMember(prev))
+                                if event.avatar_url != prev.avatar_url =>
+                            {
+                                if prev.displayname == None {
+                                    Some(gettext!("{} set their avatar.", display_name))
+                                } else if event.displayname == None {
+                                    Some(gettext!("{} removed their avatar.", display_name))
+                                } else {
+                                    Some(gettext!("{} changed their avatar.", display_name))
+                                }
+                            }
+                            _ => None,
+                        };
+
+                        message.unwrap_or(gettext!("{} joined this room.", display_name))
+                    }
+                    MembershipState::Invite => {
+                        gettext!("{} was invited to this room.", display_name)
+                    }
+                    MembershipState::Knock => {
+                        gettext!("{} requested to be invited to this room.", display_name)
+                    }
+                    MembershipState::Leave => {
+                        let message = match state.prev_content() {
+                            Some(AnyStateEventContent::RoomMember(prev))
+                                if prev.membership == MembershipState::Invite =>
+                            {
+                                if state.state_key() == state.sender() {
+                                    Some(gettext!("{} rejected the invite.", display_name))
+                                } else {
+                                    Some(gettext!("{}'s invite was revoked'.", display_name))
+                                }
+                            }
+                            Some(AnyStateEventContent::RoomMember(prev))
+                                if prev.membership == MembershipState::Ban =>
+                            {
+                                Some(gettext!("{} was unbanned.", display_name))
+                            }
+                            _ => None,
+                        };
+
+                        message.unwrap_or_else(|| {
+                            if state.state_key() == state.sender() {
+                                gettext!("{} left the room.", display_name)
+                            } else {
+                                gettext!("{} was kicked of the room.", display_name)
+                            }
+                        })
+                    }
+                    MembershipState::Ban => gettext!("{} was banned.", display_name),
+                    _ => {
+                        warn!("Unsupported room member event: {:?}", state);
+                        gettext("An unsupported room member event was received.")
+                    }
+                }
             }
             AnyStateEventContent::RoomThirdPartyInvite(event) => {
-                format!("{} was invited.", event.display_name)
+                let display_name = match event.display_name {
+                    s if s.is_empty() => state.state_key().into(),
+                    s => s,
+                };
+                gettext!("{} was invited to this room.", display_name)
             }
             AnyStateEventContent::RoomTombstone(event) => {
-                format!("The room was upgraded: {}", event.body)
+                gettext!("The room was upgraded: {}", event.body)
                 // Todo: add button for new room with acction session.show_room::room_id
             }
             _ => {
-                format!("Unsupported Event: this shouldn't be shown.")
+                warn!("Unsupported state event: {}", state.event_type());
+                gettext("An unsupported state event was received.")
             }
         };
         if let Some(Ok(child)) = self.child().map(|w| w.downcast::<gtk::Label>()) {
             child.set_text(&message);
         } else {
             let child = gtk::Label::new(Some(&message));
-            child.set_css_classes(&["event-content"]);
+            child.set_css_classes(&["event-content", "dim-label"]);
+            child.set_wrap(true);
+            child.set_wrap_mode(gtk::pango::WrapMode::WordChar);
             self.set_child(Some(&child));
         };
     }
