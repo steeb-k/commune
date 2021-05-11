@@ -118,8 +118,9 @@ impl Timeline {
             let mut index = position;
             for current in list.range(position..position + added) {
                 if let Some(current_timestamp) = current.event_timestamp() {
-                    if Some(current_timestamp.date()) != previous_timestamp.map(|t| t.date()) {
-                        divider.push((index, Item::for_day_divider(current_timestamp)));
+                    if Some(current_timestamp.ymd()) != previous_timestamp.as_ref().map(|t| t.ymd())
+                    {
+                        divider.push((index, Item::for_day_divider(current_timestamp.clone())));
                         previous_timestamp = Some(current_timestamp);
                     }
                 }

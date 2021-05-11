@@ -374,7 +374,6 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
- "time 0.1.43",
  "winapi",
 ]
 
@@ -672,7 +671,6 @@ dependencies = [
 name = "fractal"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "comrak",
  "futures",
  "gettext-rs",

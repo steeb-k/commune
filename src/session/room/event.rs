@@ -1,5 +1,4 @@
-use chrono::{offset::Local, DateTime};
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
     events::{
         room::message::MessageType, room::message::Relation, AnyMessageEvent,
@@ -11,7 +10,7 @@ use matrix_sdk::{
 
 use crate::fn_event;
 use crate::session::User;
-use std::cell::RefCell;
+use std::{cell::RefCell, time::SystemTime};
 
 #[derive(Clone, Debug, glib::GBoxed)]
 #[gboxed(type_name = "BoxedAnyRoomEvent")]
@@ -175,25 +174,29 @@ impl Event {
         fn_event!(event, event_id).clone()
     }
 
-    pub fn timestamp(&self) -> DateTime<Local> {
+    pub fn timestamp(&self) -> DateTime {
         let priv_ = imp::Event::from_instance(&self);
         let event = &*priv_.event.get().unwrap().borrow();
 
-        fn_event!(event, origin_server_ts).clone().into()
+        let ts = fn_event!(event, origin_server_ts).clone();
+
+        DateTime::from_unix_utc(ts.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as i64)
+            .and_then(|t| t.to_local())
+            .unwrap()
     }
 
     pub fn time(&self) -> String {
         let datetime = self.timestamp();
 
         // FIXME Is there a cleaner way to do that?
-        let local_time = datetime.format("%X").to_string().to_ascii_lowercase();
+        let local_time = datetime.format("%X").unwrap().as_str().to_ascii_lowercase();
 
         if local_time.ends_with("am") || local_time.ends_with("pm") {
             // Use 12h time format (AM/PM)
-            datetime.format("%l∶%M %p").to_string()
+            datetime.format("%l∶%M %p").unwrap().to_string()
         } else {
             // Use 24 time format
-            datetime.format("%R").to_string()
+            datetime.format("%R").unwrap().to_string()
         }
     }
 

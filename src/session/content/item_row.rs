@@ -1,5 +1,4 @@
 use adw::{prelude::*, subclass::prelude::*};
-use chrono::{offset::Local, Datelike};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
@@ -147,14 +146,14 @@ impl ItemRow {
                     }
                 },
                 ItemType::DayDivider(date) => {
-                    let fmt = if date.year() == Local::today().year() {
+                    let fmt = if date.year() == glib::DateTime::new_now_local().unwrap().year() {
                         // Translators: This is a date format in the day divider without the year
                         gettext("%A, %B %e")
                     } else {
                         // Translators: This is a date format in the day divider with the year
                         gettext("%A, %B %e, %Y")
                     };
-                    let date = date.format(&fmt).to_string();
+                    let date = date.format(&fmt).unwrap().to_string();
 
                     if let Some(Ok(child)) = self.child().map(|w| w.downcast::<DividerRow>()) {
                         child.set_label(&date);

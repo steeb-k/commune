@@ -1,5 +1,4 @@
-use chrono::{offset::Local, DateTime};
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
     events::AnyRoomEvent,
     identifiers::{EventId, UserId},
@@ -12,7 +11,7 @@ use crate::session::room::Event;
 pub enum ItemType {
     Event(Event),
     // TODO: Add item type for grouped events
-    DayDivider(DateTime<Local>),
+    DayDivider(DateTime),
     NewMessageDivider,
 }
 
@@ -123,7 +122,7 @@ impl Item {
         glib::Object::new(&[("type", &type_)]).expect("Failed to create Item")
     }
 
-    pub fn for_day_divider(day: DateTime<Local>) -> Self {
+    pub fn for_day_divider(day: DateTime) -> Self {
         let type_ = BoxedItemType(ItemType::DayDivider(day));
         glib::Object::new(&[("type", &type_)]).expect("Failed to create Item")
     }
@@ -179,7 +178,7 @@ impl Item {
         }
     }
 
-    pub fn event_timestamp(&self) -> Option<DateTime<Local>> {
+    pub fn event_timestamp(&self) -> Option<DateTime> {
         let priv_ = imp::Item::from_instance(&self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
