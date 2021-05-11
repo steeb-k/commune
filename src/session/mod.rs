@@ -183,6 +183,7 @@ impl Session {
         );
 
         do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
             async move {
                 let passphrase: String = {
                     let mut rng = thread_rng();
@@ -228,6 +229,7 @@ impl Session {
 
     pub fn login_with_previous_session(&self, session: StoredSession) {
         do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
             async move {
                 let config = ClientConfig::new()
                     .request_config(RequestConfig::new().retry_limit(2))

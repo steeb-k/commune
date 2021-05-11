@@ -229,6 +229,7 @@ impl Room {
         match matrix_room {
             MatrixRoom::Joined(_) => {
                 do_async(
+                    glib::PRIORITY_DEFAULT_IDLE,
                     async move { matrix_room.tags().await },
                     clone!(@weak self as obj => move |tags_result| async move {
                         let mut category = CategoryType::Normal;
@@ -297,6 +298,7 @@ impl Room {
         let priv_ = imp::Room::from_instance(&self);
         let matrix_room = priv_.matrix_room.get().unwrap().clone();
         do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
             async move { matrix_room.display_name().await },
             clone!(@weak self as obj => move |display_name| async move {
                 // FIXME: We should retry to if the request failed
@@ -375,6 +377,7 @@ impl Room {
 
         let matrix_room = priv_.matrix_room.get().unwrap().clone();
         do_async(
+            glib::PRIORITY_LOW,
             async move { matrix_room.active_members().await },
             clone!(@weak self as obj => move |members| async move {
                 // FIXME: We should retry to load the room members if the request failed
@@ -471,6 +474,7 @@ impl Room {
                 .append_pending(AnyRoomEvent::Message(event));
 
             do_async(
+                glib::PRIORITY_DEFAULT_IDLE,
                 async move { matrix_room.send(content, Some(txn_id)).await },
                 clone!(@weak self as obj => move |result| async move {
                     // FIXME: We should retry the request if it fails
