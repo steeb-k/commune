@@ -354,7 +354,20 @@ impl Session {
     /// Note that the `Store` currently doesn't store all events, therefore, we arn't really
     /// loading much via this function.
     pub fn load(&self) {
-        // TODO: load rooms from the store before the sync completes
+        let priv_ = imp::Session::from_instance(self);
+        let rooms = priv_.client.get().unwrap().rooms();
+
+        let mut new_rooms = Vec::with_capacity(rooms.len());
+        let mut rooms_map = priv_.rooms.borrow_mut();
+
+        for matrix_room in rooms {
+            let room_id = matrix_room.room_id().clone();
+            let room = Room::new(matrix_room, self.user());
+            rooms_map.insert(room_id, room.clone());
+            new_rooms.push(room.clone());
+        }
+
+        priv_.categories.append(new_rooms);
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,
