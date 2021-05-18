@@ -33,6 +33,7 @@ macro_rules! event_from_sync_event {
 }
 
 use crate::RUNTIME;
+use gtk::glib;
 use std::future::Future;
 /// Exexcute a future on a tokio runtime and spawn a future on the local thread to handle the result
 pub fn do_async<

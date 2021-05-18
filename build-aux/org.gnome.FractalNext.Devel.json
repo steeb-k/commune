@@ -1,17 +1,19 @@
 {
-    "app-id": "org.gnome.FractalNext.Devel",
-    "runtime": "org.gnome.Platform",
-    "runtime-version": "master",
-    "sdk": "org.gnome.Sdk",
-    "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
-    "command": "fractal",
+    "app-id" : "org.gnome.FractalNext.Devel",
+    "runtime" : "org.gnome.Platform",
+    "runtime-version" : "master",
+    "sdk" : "org.gnome.Sdk",
+    "sdk-extensions" : [
+        "org.freedesktop.Sdk.Extension.rust-stable"
+    ],
+    "command" : "fractal",
     "finish-args" : [
         "--socket=fallback-x11",
         "--socket=wayland",
         "--share=network",
         "--device=dri",
         "--talk-name=org.a11y.Bus",
-	"--talk-name=org.freedesktop.secrets",
+        "--talk-name=org.freedesktop.secrets",
         "--env=RUST_LOG=fractal=debug",
         "--env=G_MESSAGES_DEBUG=none"
     ],
@@ -20,28 +22,28 @@
         "build-args" : [
             "--share=network"
         ],
-        "test-args": [
+        "test-args" : [
             "--socket=x11",
             "--share=network"
         ],
         "env" : {
-            "RUST_BACKTRACE": "1"
+            "RUST_BACKTRACE" : "1"
         }
     },
-    "modules": [
+    "modules" : [
         {
-            "name": "libadwaita",
-            "buildsystem": "meson",
-            "config-opts": [
+            "name" : "libadwaita",
+            "buildsystem" : "meson",
+            "config-opts" : [
                 "-Dlibadwaita:tests=false",
                 "-Dlibadwaita:examples=false",
                 "-Dlibadwaita:vapi=false"
             ],
-            "sources": [
+            "sources" : [
                 {
-                    "type": "git",
-                    "url": "https://gitlab.gnome.org/exalm/libadwaita.git",
-                    "branch": "main"
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/exalm/libadwaita.git",
+                    "branch" : "main"
                 }
             ]
         },
@@ -64,14 +66,16 @@
             ]
         },
         {
-            "name": "fractal",
-            "buildsystem": "meson",
-            "run-tests": true,
-            "config-opts": ["-Dprofile=development"],
-            "sources": [
+            "name" : "fractal",
+            "buildsystem" : "meson",
+            "run-tests" : true,
+            "config-opts" : [
+                "-Dprofile=development"
+            ],
+            "sources" : [
                 {
-                    "type": "dir",
-                    "path": "../"
+                    "type" : "dir",
+                    "path" : "../"
                 }
             ]
         }

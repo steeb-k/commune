@@ -7,8 +7,7 @@ use matrix_sdk::{
         room::{
             member::MemberEventContent,
             message::{
-                EmoteMessageEventContent, FormattedBody, MessageEventContent, MessageType,
-                TextMessageEventContent,
+                EmoteMessageEventContent, MessageEventContent, MessageType, TextMessageEventContent,
             },
         },
         tag::TagName,
@@ -17,10 +16,9 @@ use matrix_sdk::{
     identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
     uuid::Uuid,
-    RoomMember,
+    MilliSecondsSinceUnixEpoch, RoomMember,
 };
 use std::cell::RefCell;
-use std::time::SystemTime;
 
 use crate::session::{
     categories::CategoryType,
@@ -469,11 +467,12 @@ impl Room {
             };
 
             let content = if is_emote {
-                let emote = EmoteMessageEventContent {
-                    body: body.to_string(),
-                    formatted: formatted
-                        .filter(|formatted| formatted.as_str() == body)
-                        .map(|f| FormattedBody::html(f)),
+                let emote = if let Some(formatted) =
+                    formatted.filter(|formatted| formatted.as_str() == body)
+                {
+                    EmoteMessageEventContent::html(body, formatted)
+                } else {
+                    EmoteMessageEventContent::plain(body)
                 };
                 MessageEventContent::new(MessageType::Emote(emote))
             } else {
@@ -493,7 +492,7 @@ impl Room {
                 content,
                 event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
                 sender: self.user().user_id().clone(),
-                origin_server_ts: SystemTime::now(),
+                origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
                 room_id: matrix_room.room_id().clone(),
                 unsigned: Unsigned::default(),
             });

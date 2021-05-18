@@ -10,7 +10,7 @@ use matrix_sdk::{
 
 use crate::fn_event;
 use crate::session::User;
-use std::{cell::RefCell, time::SystemTime};
+use std::cell::RefCell;
 
 #[derive(Clone, Debug, glib::GBoxed)]
 #[gboxed(type_name = "BoxedAnyRoomEvent")]
@@ -180,7 +180,8 @@ impl Event {
 
         let ts = fn_event!(event, origin_server_ts).clone();
 
-        DateTime::from_unix_utc(ts.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as i64)
+        // FIXME: we need to add `as_secs()` to `MilliSecondsSinceUnixEpoch`
+        DateTime::from_unix_utc(i64::from(ts.0) / 1000)
             .and_then(|t| t.to_local())
             .unwrap()
     }

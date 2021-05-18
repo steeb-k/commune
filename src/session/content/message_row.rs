@@ -210,16 +210,16 @@ impl MessageRow {
             AnyRoomEvent::Message(message) => message.content(),
             AnyRoomEvent::RedactedMessage(message) => {
                 if let Some(ref redaction_event) = message.unsigned().redacted_because {
-                    AnyMessageEvent::RoomRedaction(*redaction_event.clone()).content()
+                    AnyMessageEventContent::RoomRedaction(redaction_event.content.clone())
                 } else {
-                    AnyMessageEventContent::RoomRedaction(RedactionEventContent { reason: None })
+                    AnyMessageEventContent::RoomRedaction(RedactionEventContent::new())
                 }
             }
             AnyRoomEvent::RedactedState(state) => {
                 if let Some(ref redaction_event) = state.unsigned().redacted_because {
-                    AnyMessageEvent::RoomRedaction(*redaction_event.clone()).content()
+                    AnyMessageEventContent::RoomRedaction(redaction_event.content.clone())
                 } else {
-                    AnyMessageEventContent::RoomRedaction(RedactionEventContent { reason: None })
+                    AnyMessageEventContent::RoomRedaction(RedactionEventContent::new())
                 }
             }
             _ => panic!("This event isn't a room message event or redacted event"),
