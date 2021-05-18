@@ -4,6 +4,7 @@ use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
     CompositeTemplate,
 };
+use sourceview::prelude::*;
 
 mod imp {
     use super::*;
@@ -150,15 +151,27 @@ mod imp {
                     Inhibit(false)
                 }
             }));
-            self.message_entry
-                .buffer()
-                .connect_text_notify(clone!(@weak obj => move |buffer| {
-                   let (start_iter, end_iter) = buffer.bounds();
-                   obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
-                }));
 
-            let (start_iter, end_iter) = self.message_entry.buffer().bounds();
+            let buffer = self
+                .message_entry
+                .buffer()
+                .downcast::<sourceview::Buffer>()
+                .unwrap();
+
+            buffer.connect_text_notify(clone!(@weak obj => move |buffer| {
+               let (start_iter, end_iter) = buffer.bounds();
+               obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+            }));
+
+            let (start_iter, end_iter) = buffer.bounds();
             obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+
+            let md_lang =
+                sourceview::LanguageManager::default().and_then(|lm| lm.language("markdown"));
+            buffer.set_language(md_lang.as_ref());
+            obj.bind_property("markdown-enabled", &buffer, "highlight-syntax")
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build();
 
             let settings = Application::default().settings();
             settings
