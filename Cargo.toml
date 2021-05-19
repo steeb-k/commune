@@ -21,6 +21,7 @@ html2pango = "0.4"
 futures = "0.3"
 comrak = "0.10"
 rand = "0.8"
+indexmap = "1.6.2"
 
 [dependencies.sourceview]
 branch = "main"

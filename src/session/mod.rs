@@ -4,6 +4,7 @@ mod room;
 mod sidebar;
 mod user;
 
+use self::categories::Categories;
 use self::content::Content;
 use self::room::Room;
 use self::sidebar::Sidebar;
@@ -15,7 +16,6 @@ use crate::secret::StoredSession;
 use crate::utils::do_async;
 use crate::RUNTIME;
 
-use crate::session::categories::Categories;
 use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
@@ -42,7 +42,6 @@ mod imp {
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
-    use std::collections::HashMap;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
@@ -54,7 +53,6 @@ mod imp {
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
-        pub rooms: RefCell<HashMap<RoomId, Room>>,
         pub categories: Categories,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
@@ -358,16 +356,15 @@ impl Session {
         let rooms = priv_.client.get().unwrap().rooms();
 
         let mut new_rooms = Vec::with_capacity(rooms.len());
-        let mut rooms_map = priv_.rooms.borrow_mut();
 
         for matrix_room in rooms {
-            let room_id = matrix_room.room_id().clone();
-            let room = Room::new(matrix_room, self.user());
-            rooms_map.insert(room_id, room.clone());
-            new_rooms.push(room.clone());
+            new_rooms.push((
+                matrix_room.room_id().clone(),
+                Room::new(matrix_room, self.user()),
+            ));
         }
 
-        priv_.categories.append(new_rooms);
+        priv_.categories.room_list().insert(new_rooms);
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,
@@ -391,10 +388,9 @@ impl Session {
 
     fn handle_sync_response(&self, response: SyncResponse) {
         let priv_ = imp::Session::from_instance(self);
+        let rooms_map = priv_.categories.room_list();
 
         let new_rooms_id: Vec<RoomId> = {
-            let rooms_map = priv_.rooms.borrow();
-
             let new_left_rooms = response.rooms.leave.iter().filter_map(|(room_id, _)| {
                 if !rooms_map.contains_key(room_id) {
                     Some(room_id)
@@ -414,17 +410,14 @@ impl Session {
         };
 
         let mut new_rooms = Vec::new();
-        let mut rooms_map = priv_.rooms.borrow_mut();
 
         for room_id in new_rooms_id {
             if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
-                let room = Room::new(matrix_room, self.user());
-                rooms_map.insert(room_id.clone(), room.clone());
-                new_rooms.push(room.clone());
+                new_rooms.push((room_id, Room::new(matrix_room, self.user())));
             }
         }
 
-        priv_.categories.append(new_rooms);
+        rooms_map.insert(new_rooms);
 
         for (room_id, matrix_room) in response.rooms.leave {
             if matrix_room.timeline.events.is_empty() {

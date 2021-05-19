@@ -1,14 +1,19 @@
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::{categories::CategoryType, room::Room};
+use crate::session::{
+    categories::{CategoryType, RoomList},
+    room::Room,
+};
 
 mod imp {
+    use once_cell::unsync::OnceCell;
+    use std::cell::Cell;
+
     use super::*;
-    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default)]
     pub struct Category {
-        pub list: RefCell<Vec<Room>>,
+        pub model: OnceCell<gtk::FilterListModel>,
         pub type_: Cell<CategoryType>,
     }
 
@@ -40,6 +45,13 @@ mod imp {
                         None,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_object(
+                        "model",
+                        "Model",
+                        "The filter list model in that category",
+                        gio::ListModel::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
                 ]
             });
 
@@ -48,7 +60,7 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
@@ -58,6 +70,10 @@ mod imp {
                     let type_ = value.get().unwrap();
                     self.type_.set(type_);
                 }
+                "model" => {
+                    let model = value.get().unwrap();
+                    obj.set_model(model);
+                }
                 _ => unimplemented!(),
             }
         }
@@ -66,6 +82,7 @@ mod imp {
             match pspec.name() {
                 "type" => obj.type_().to_value(),
                 "display-name" => obj.type_().to_string().to_value(),
+                "model" => self.model.get().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -76,13 +93,10 @@ mod imp {
             Room::static_type()
         }
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
-            self.list.borrow().len() as u32
+            self.model.get().map(|l| l.n_items()).unwrap_or(0)
         }
         fn item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
-            self.list
-                .borrow()
-                .get(position as usize)
-                .map(|o| o.clone().upcast::<glib::Object>())
+            self.model.get().and_then(|l| l.item(position))
         }
     }
 }
@@ -93,8 +107,8 @@ glib::wrapper! {
 }
 
 impl Category {
-    pub fn new(type_: CategoryType) -> Self {
-        glib::Object::new(&[("type", &type_)]).expect("Failed to create Category")
+    pub fn new(type_: CategoryType, model: &RoomList) -> Self {
+        glib::Object::new(&[("type", &type_), ("model", model)]).expect("Failed to create Category")
     }
 
     pub fn type_(&self) -> CategoryType {
@@ -102,47 +116,23 @@ impl Category {
         priv_.type_.get()
     }
 
-    pub fn append(&self, room: &Room) {
+    fn set_model(&self, model: gio::ListModel) {
         let priv_ = imp::Category::from_instance(self);
-        let index = {
-            let mut list = priv_.list.borrow_mut();
-            let index = list.len();
-            list.push(room.clone());
-            index
-        };
-        self.items_changed(index as u32, 0, 1);
-    }
+        let type_ = self.type_();
 
-    pub fn append_batch(&self, rooms: Vec<Room>) {
-        let priv_ = imp::Category::from_instance(self);
-        let added = rooms.len();
-        let index = {
-            let mut list = priv_.list.borrow_mut();
-            let index = list.len();
-            list.reserve(added);
-            for room in rooms {
-                list.push(room);
-            }
-            index
-        };
-        self.items_changed(index as u32, 0, added as u32);
-    }
+        let filter = gtk::CustomFilter::new(move |o| {
+            o.downcast_ref::<Room>()
+                .filter(|r| r.category() == type_)
+                .is_some()
+        });
+        let filter_model = gtk::FilterListModel::new(Some(&model), Some(&filter));
 
-    pub fn remove(&self, room: &Room) {
-        let priv_ = imp::Category::from_instance(self);
+        filter_model.connect_items_changed(
+            clone!(@weak self as obj => move |_, pos, added, removed| {
+                obj.items_changed(pos, added, removed);
+            }),
+        );
 
-        let index = {
-            let mut list = priv_.list.borrow_mut();
-
-            let index = list.iter().position(|item| item == room);
-            if let Some(index) = index {
-                list.remove(index);
-            }
-            index
-        };
-
-        if let Some(index) = index {
-            self.items_changed(index as u32, 1, 0);
-        }
+        let _ = priv_.model.set(filter_model);
     }
 }

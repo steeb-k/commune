@@ -678,6 +678,7 @@ dependencies = [
  "gtk-macros",
  "gtk4",
  "html2pango",
+ "indexmap",
  "libadwaita",
  "log",
  "matrix-sdk",
