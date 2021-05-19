@@ -10,6 +10,7 @@ data/resources/ui/content-item-row-menu.ui
 data/resources/ui/content-item.ui
 data/resources/ui/content-markdown-popover.ui
 data/resources/ui/content-message-row.ui
+data/resources/ui/content-room-history.ui
 data/resources/ui/content-state-row.ui
 data/resources/ui/content.ui
 data/resources/ui/context-menu-bin.ui
@@ -39,6 +40,7 @@ src/session/content/item_row.rs
 src/session/content/markdown_popover.rs
 src/session/content/message_row.rs
 src/session/content/mod.rs
+src/session/content/room_history.rs
 src/session/content/state_row.rs
 src/session/mod.rs
 src/session/room/event.rs
