@@ -103,7 +103,7 @@ impl RoomList {
                     room.connect_notify_local(
                         Some("category"),
                         clone!(@weak self as obj => move |r, _| {
-                            if let Some((position, _, _)) = obj.get_full(r.matrix_room().room_id()) {
+                            if let Some((position, _, _)) = obj.get_full(&r.matrix_room_id()) {
                                 obj.items_changed(position as u32, 1, 1);
                             }
                         }),

@@ -1,7 +1,7 @@
 use comrak::{markdown_to_html, ComrakOptions};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use log::{error, warn};
+use log::{debug, error, warn};
 use matrix_sdk::{
     events::{
         room::{
@@ -14,11 +14,12 @@ use matrix_sdk::{
         tag::TagName,
         AnyMessageEvent, AnyRoomEvent, AnyStateEvent, MessageEvent, StateEvent, Unsigned,
     },
-    identifiers::{EventId, UserId},
+    identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
     uuid::Uuid,
     RoomMember,
 };
+use std::cell::RefCell;
 use std::time::SystemTime;
 
 use crate::session::{
@@ -31,12 +32,12 @@ use crate::utils::do_async;
 mod imp {
     use super::*;
     use once_cell::sync::{Lazy, OnceCell};
-    use std::cell::{Cell, RefCell};
+    use std::cell::Cell;
     use std::collections::HashMap;
 
     #[derive(Debug, Default)]
     pub struct Room {
-        pub matrix_room: OnceCell<MatrixRoom>,
+        pub matrix_room: RefCell<Option<MatrixRoom>>,
         pub user: OnceCell<User>,
         pub name: RefCell<Option<String>>,
         pub avatar: RefCell<Option<gio::LoadableIcon>>,
@@ -63,7 +64,7 @@ mod imp {
                         "Matrix room",
                         "The underlaying matrix room.",
                         BoxedMatrixRoom::static_type(),
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT,
                     ),
                     glib::ParamSpec::new_string(
                         "display-name",
@@ -152,7 +153,8 @@ mod imp {
         }
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let matrix_room = self.matrix_room.get().unwrap();
+            let matrix_room = self.matrix_room.borrow();
+            let matrix_room = matrix_room.as_ref().unwrap();
             match pspec.name() {
                 "user" => obj.user().to_value(),
                 "display-name" => obj.display_name().to_value(),
@@ -192,21 +194,46 @@ impl Room {
             .expect("Failed to create Room")
     }
 
-    pub fn matrix_room(&self) -> &MatrixRoom {
+    pub fn matrix_room_id(&self) -> RoomId {
         let priv_ = imp::Room::from_instance(self);
-        priv_.matrix_room.get().unwrap()
+        priv_
+            .matrix_room
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .room_id()
+            .clone()
     }
 
-    fn set_matrix_room(&self, matrix_room: MatrixRoom) {
+    fn matrix_room(&self) -> MatrixRoom {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.matrix_room.borrow().as_ref().unwrap().clone()
+    }
+
+    /// Set the new sdk room struct represented by this `Room`
+    pub fn set_matrix_room(&self, matrix_room: MatrixRoom) {
         let priv_ = imp::Room::from_instance(self);
 
-        priv_.matrix_room.set(matrix_room).unwrap();
-        priv_.timeline.set(Timeline::new(self)).unwrap();
+        // Check if the previous type was different
+        if let Some(ref old_matrix_room) = *priv_.matrix_room.borrow() {
+            let changed = match old_matrix_room {
+                MatrixRoom::Joined(_) => !matches!(matrix_room, MatrixRoom::Joined(_)),
+                MatrixRoom::Left(_) => !matches!(matrix_room, MatrixRoom::Left(_)),
+                MatrixRoom::Invited(_) => !matches!(matrix_room, MatrixRoom::Invited(_)),
+            };
+            if changed {
+                debug!("The matrix room struct for `Room` changed");
+            } else {
+                return;
+            }
+        }
 
-        // We only need to load the room members once, because updates we will receive via state events
+        priv_.matrix_room.replace(Some(matrix_room));
+        // We create the timeline once
+        priv_.timeline.get_or_init(|| Timeline::new(self));
+
         self.load_members();
         self.load_display_name();
-        // TODO: change category when room type changes
         self.load_category();
     }
 
@@ -232,7 +259,7 @@ impl Room {
     }
 
     pub fn load_category(&self) {
-        let matrix_room = self.matrix_room().clone();
+        let matrix_room = self.matrix_room();
 
         match matrix_room {
             MatrixRoom::Joined(_) => {
@@ -273,7 +300,8 @@ impl Room {
         let priv_ = imp::Room::from_instance(&self);
         let count = priv_
             .matrix_room
-            .get()
+            .borrow()
+            .as_ref()
             .unwrap()
             .unread_notification_counts()
             .highlight_count;
@@ -303,8 +331,7 @@ impl Room {
     }
 
     fn load_display_name(&self) {
-        let priv_ = imp::Room::from_instance(&self);
-        let matrix_room = priv_.matrix_room.get().unwrap().clone();
+        let matrix_room = self.matrix_room();
         do_async(
             glib::PRIORITY_DEFAULT_IDLE,
             async move { matrix_room.display_name().await },
@@ -390,9 +417,7 @@ impl Room {
     }
 
     fn load_members(&self) {
-        let priv_ = imp::Room::from_instance(self);
-
-        let matrix_room = priv_.matrix_room.get().unwrap().clone();
+        let matrix_room = self.matrix_room();
         do_async(
             glib::PRIORITY_LOW,
             async move { matrix_room.active_members().await },
@@ -425,8 +450,7 @@ impl Room {
 
     pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
         use std::convert::TryFrom;
-        let priv_ = imp::Room::from_instance(self);
-        if let MatrixRoom::Joined(matrix_room) = priv_.matrix_room.get().unwrap().clone() {
+        if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let is_emote = body.starts_with("/me ");
 
             // Don't use markdown for emotes
@@ -482,7 +506,7 @@ impl Room {
         let priv_ = imp::Room::from_instance(self);
         let content = event.content();
 
-        if let MatrixRoom::Joined(matrix_room) = priv_.matrix_room.get().unwrap().clone() {
+        if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let pending_id = event.event_id().clone();
             priv_
                 .timeline

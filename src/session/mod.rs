@@ -390,30 +390,29 @@ impl Session {
         let priv_ = imp::Session::from_instance(self);
         let rooms_map = priv_.categories.room_list();
 
-        let new_rooms_id: Vec<RoomId> = {
-            let new_left_rooms = response.rooms.leave.iter().filter_map(|(room_id, _)| {
-                if !rooms_map.contains_key(room_id) {
-                    Some(room_id)
-                } else {
-                    None
-                }
-            });
-
-            let new_joined_rooms = response.rooms.join.iter().filter_map(|(room_id, _)| {
-                if !rooms_map.contains_key(room_id) {
-                    Some(room_id)
-                } else {
-                    None
-                }
-            });
-            new_joined_rooms.chain(new_left_rooms).cloned().collect()
-        };
+        let rooms_id = response
+            .rooms
+            .join
+            .iter()
+            .map(|(room_id, _)| room_id)
+            .chain(response.rooms.leave.iter().map(|(room_id, _)| room_id))
+            .chain(response.rooms.invite.iter().map(|(room_id, _)| room_id));
+        let (old_rooms_id, new_rooms_id): (Vec<RoomId>, Vec<RoomId>) = rooms_id
+            .cloned()
+            .partition(|room_id| rooms_map.contains_key(room_id));
 
         let mut new_rooms = Vec::new();
 
         for room_id in new_rooms_id {
             if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
                 new_rooms.push((room_id, Room::new(matrix_room, self.user())));
+            }
+        }
+
+        for room_id in old_rooms_id {
+            let room = rooms_map.get(&room_id).unwrap();
+            if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
+                room.set_matrix_room(matrix_room);
             }
         }
 
@@ -467,7 +466,6 @@ impl Session {
                 );
             }
         }
-
         // TODO: handle StrippedStateEvents for invited rooms
     }
 }
