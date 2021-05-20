@@ -8,7 +8,7 @@ use self::categories::Categories;
 use self::content::Content;
 use self::room::Room;
 use self::sidebar::Sidebar;
-use self::user::User;
+pub use self::user::User;
 
 use crate::event_from_sync_event;
 use crate::secret;

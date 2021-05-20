@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="UserPill" parent="AdwBin">
+    <property name="focusable">True</property>
+    <style>
+      <class name="user-pill"/>
+    </style>
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">6</property>
+        <child>
+          <object class="AdwAvatar" id="avatar">
+            <property name="show-initials">True</property>
+            <property name="size">24</property>
+            <property name="text" bind-source="display_name" bind-property="label" bind-flags="sync-create" />
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="display_name">
+            <property name="ellipsize">middle</property>
+            <property name="max-width-chars">30</property>
+            <binding name="label">
+              <lookup name="display-name">
+                <lookup name="user">UserPill</lookup>
+              </lookup>
+            </binding>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

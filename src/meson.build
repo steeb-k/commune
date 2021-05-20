@@ -22,6 +22,7 @@ sources = files(
   'application.rs',
   'components/context_menu_bin.rs',
   'components/mod.rs',
+  'components/user_pill.rs',
   'config.rs',
   'main.rs',
   'window.rs',

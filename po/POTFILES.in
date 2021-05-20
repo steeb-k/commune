@@ -21,12 +21,14 @@ data/resources/ui/sidebar-category-row.ui
 data/resources/ui/sidebar-item.ui
 data/resources/ui/sidebar-room-row.ui
 data/resources/ui/sidebar.ui
+data/resources/ui/user-pill.ui
 data/resources/ui/window.ui
 
 # Rust files
 src/application.rs
 src/components/context_menu_bin.rs
 src/components/mod.rs
+src/components/user_pill.rs
 src/login.rs
 src/main.rs
 src/secret.rs

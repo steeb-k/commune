@@ -3,6 +3,12 @@
   font-weight: bold;
 }
 
+.user-pill {
+  border-radius: 9999px;
+  background-color: alpha(@theme_text_color, 0.1);
+  padding-right: 6px;
+}
+
 /* Login */
 .login {
   min-width: 250px;

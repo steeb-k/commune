@@ -17,6 +17,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-room-row.ui">ui/sidebar-room-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="window.ui">ui/window.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="context-menu-bin.ui">ui/context-menu-bin.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="user-pill.ui">ui/user-pill.ui</file>
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
