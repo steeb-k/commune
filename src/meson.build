@@ -23,6 +23,7 @@ sources = files(
   'components/context_menu_bin.rs',
   'components/mod.rs',
   'components/user_pill.rs',
+  'components/spinner_button.rs',
   'config.rs',
   'main.rs',
   'window.rs',

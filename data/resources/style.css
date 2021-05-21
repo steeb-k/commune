@@ -3,6 +3,11 @@
   font-weight: bold;
 }
 
+.pill-button {
+  border-radius: 9999px;
+  padding: 12px 40px;
+}
+
 .user-pill {
   border-radius: 9999px;
   background-color: alpha(@theme_text_color, 0.1);

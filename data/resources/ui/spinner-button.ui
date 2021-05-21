@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="SpinnerButton" parent="GtkButton">
+    <property name="child">
+      <object class="GtkStack" id="stack">
+        <child>
+          <object class="GtkLabel" id="label">
+            <property name="use_underline">True</property>
+            <property name="mnemonic_widget">SpinnerButton</property>
+            <style>
+              <class name="text-button"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSpinner" id="spinner">
+            <property name="spinning">True</property>
+            <property name="valign">center</property>
+            <property name="halign">center</property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
+
