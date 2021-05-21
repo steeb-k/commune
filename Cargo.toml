@@ -34,7 +34,7 @@ git = "https://github.com/gtk-rs/gtk4-rs"
 
 [dependencies.adw]
 package = "libadwaita"
-git = "https://gitlab.gnome.org/bilelmoussaoui/libadwaita-rs.git"
+git = "https://gitlab.gnome.org/World/Rust/libadwaita-rs.git"
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
