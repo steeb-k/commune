@@ -19,7 +19,6 @@ url = "2.2"
 secret-service = "2.0"
 html2pango = "0.4"
 futures = "0.3"
-comrak = "0.10"
 rand = "0.8"
 indexmap = "1.6.2"
 
@@ -38,4 +37,4 @@ git = "https://gitlab.gnome.org/World/Rust/libadwaita-rs.git"
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-features = ["socks", "encryption", "sled_cryptostore", "sled_state_store"]
+features = ["socks", "encryption", "sled_cryptostore", "sled_state_store", "markdown"]

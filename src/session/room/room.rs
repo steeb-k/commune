@@ -1,4 +1,3 @@
-use comrak::{markdown_to_html, ComrakOptions};
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, error, warn};
@@ -449,37 +448,16 @@ impl Room {
     pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
         use std::convert::TryFrom;
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
-            let is_emote = body.starts_with("/me ");
-
-            // Don't use markdown for emotes
-            let body = if is_emote {
-                body.trim_start_matches("/me ")
-            } else {
-                body
-            };
-
-            let formatted = if markdown_enabled {
-                let mut md_options = ComrakOptions::default();
-                md_options.render.hardbreaks = true;
-                Some(markdown_to_html(&body, &md_options))
-            } else {
-                None
-            };
-
-            let content = if is_emote {
-                let emote = if let Some(formatted) =
-                    formatted.filter(|formatted| formatted.as_str() == body)
-                {
-                    EmoteMessageEventContent::html(body, formatted)
+            let content = if let Some(body) = body.strip_prefix("/me ") {
+                let emote = if markdown_enabled {
+                    EmoteMessageEventContent::markdown(body)
                 } else {
                     EmoteMessageEventContent::plain(body)
                 };
                 MessageEventContent::new(MessageType::Emote(emote))
             } else {
-                let text = if let Some(formatted) =
-                    formatted.filter(|formatted| formatted.as_str() == body)
-                {
-                    TextMessageEventContent::html(body, formatted)
+                let text = if markdown_enabled {
+                    TextMessageEventContent::markdown(body)
                 } else {
                     TextMessageEventContent::plain(body)
                 };
