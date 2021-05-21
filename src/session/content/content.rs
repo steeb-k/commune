@@ -1,10 +1,10 @@
-use crate::session::{content::RoomHistory, room::Room};
+use crate::session::{categories::CategoryType, content::Invite, content::RoomHistory, room::Room};
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use super::*;
-    use glib::subclass::InitializingObject;
+    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
     use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
@@ -12,6 +12,13 @@ mod imp {
     pub struct Content {
         pub compact: Cell<bool>,
         pub room: RefCell<Option<Room>>,
+        pub category_handler: RefCell<Option<SignalHandlerId>>,
+        #[template_child]
+        pub stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        pub room_history: TemplateChild<RoomHistory>,
+        #[template_child]
+        pub invite: TemplateChild<Invite>,
     }
 
     #[glib::object_subclass]
@@ -22,6 +29,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             RoomHistory::static_type();
+            Invite::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
@@ -110,12 +118,41 @@ impl Content {
             return;
         }
 
+        if let Some(category_handler) = priv_.category_handler.take() {
+            if let Some(room) = self.room() {
+                room.disconnect(category_handler);
+            }
+        }
+
+        if let Some(ref room) = room {
+            let handler_id = room.connect_notify_local(
+                Some("category"),
+                clone!(@weak self as obj => move |room, _| {
+                        obj.set_visible_child(room);
+                }),
+            );
+
+            self.set_visible_child(&room);
+            priv_.category_handler.replace(Some(handler_id));
+        }
+
         priv_.room.replace(room);
+
         self.notify("room");
     }
 
     pub fn room(&self) -> Option<Room> {
         let priv_ = imp::Content::from_instance(self);
         priv_.room.borrow().clone()
+    }
+
+    fn set_visible_child(&self, room: &Room) {
+        let priv_ = imp::Content::from_instance(self);
+
+        if room.category() == CategoryType::Invited {
+            priv_.stack.set_visible_child(&*priv_.invite);
+        } else {
+            priv_.stack.set_visible_child(&*priv_.room_history);
+        }
     }
 }

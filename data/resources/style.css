@@ -145,3 +145,7 @@ headerbar.flat {
   border: 2px solid @theme_selected_bg_color;
   padding: 5px;
 }
+
+.invite-room-name {
+  font-size: 24px;
+}

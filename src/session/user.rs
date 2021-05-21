@@ -1,7 +1,7 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
 use matrix_sdk::{
-    events::{room::member::MemberEventContent, StateEvent},
+    events::{room::member::MemberEventContent, StateEvent, StrippedStateEvent},
     identifiers::UserId,
     RoomMember,
 };
@@ -144,6 +144,43 @@ impl User {
     /// Update the user based on the the room member state event
     //TODO: create the GLoadableIcon and set `avatar`
     pub fn update_from_member_event(&self, event: &StateEvent<MemberEventContent>) {
+        let changed = {
+            let priv_ = imp::User::from_instance(&self);
+            let user_id = priv_.user_id.get().unwrap();
+            if event.sender.as_str() != user_id {
+                return;
+            };
+
+            let display_name = if let Some(display_name) = &event.content.displayname {
+                Some(display_name.to_owned())
+            } else {
+                event
+                    .content
+                    .third_party_invite
+                    .as_ref()
+                    .map(|i| i.display_name.to_owned())
+            };
+
+            let mut current_display_name = priv_.display_name.borrow_mut();
+            if *current_display_name != display_name {
+                *current_display_name = display_name;
+                true
+            } else {
+                false
+            }
+        };
+
+        if changed {
+            self.notify("display-name");
+        }
+    }
+
+    /// Update the user based on the the stripped room member state event
+    //TODO: create the GLoadableIcon and set `avatar`
+    pub fn update_from_stripped_member_event(
+        &self,
+        event: &StrippedStateEvent<MemberEventContent>,
+    ) {
         let changed = {
             let priv_ = imp::User::from_instance(&self);
             let user_id = priv_.user_id.get().unwrap();

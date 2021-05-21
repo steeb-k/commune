@@ -466,6 +466,25 @@ impl Session {
                 );
             }
         }
-        // TODO: handle StrippedStateEvents for invited rooms
+
+        for (room_id, matrix_room) in response.rooms.invite {
+            if let Some(room) = rooms_map.get(&room_id) {
+                room.handle_invite_events(
+                    matrix_room
+                        .invite_state
+                        .events
+                        .into_iter()
+                        .filter_map(|event| {
+                            if let Ok(event) = event.deserialize() {
+                                Some(event)
+                            } else {
+                                error!("Couldn't deserialize event: {:?}", event);
+                                None
+                            }
+                        })
+                        .collect(),
+                )
+            }
+        }
     }
 }

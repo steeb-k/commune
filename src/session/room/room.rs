@@ -4,13 +4,14 @@ use log::{debug, error, warn};
 use matrix_sdk::{
     events::{
         room::{
-            member::MemberEventContent,
+            member::{MemberEventContent, MembershipState},
             message::{
                 EmoteMessageEventContent, MessageEventContent, MessageType, TextMessageEventContent,
             },
         },
         tag::TagName,
-        AnyMessageEvent, AnyRoomEvent, AnyStateEvent, MessageEvent, StateEvent, Unsigned,
+        AnyMessageEvent, AnyRoomEvent, AnyStateEvent, AnyStrippedStateEvent, MessageEvent,
+        StateEvent, Unsigned,
     },
     identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
@@ -25,6 +26,7 @@ use crate::session::{
     User,
 };
 use crate::utils::do_async;
+use crate::RUNTIME;
 
 mod imp {
     use super::*;
@@ -43,6 +45,8 @@ mod imp {
         pub room_members: RefCell<HashMap<UserId, User>>,
         /// The user of this room
         pub user_id: OnceCell<UserId>,
+        /// The user who send the invite to this room. This is only set when this room is an invitiation.
+        pub inviter: RefCell<Option<User>>,
     }
 
     #[glib::object_subclass]
@@ -76,6 +80,13 @@ mod imp {
                         "The user of the session that owns this room",
                         User::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "inviter",
+                        "Inviter",
+                        "The user who send the invite to this room, this is only set when this room rapresents an invite",
+                        User::static_type(),
+                        glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_object(
                         "avatar",
@@ -154,6 +165,7 @@ mod imp {
             let matrix_room = matrix_room.as_ref().unwrap();
             match pspec.name() {
                 "user" => obj.user().to_value(),
+                "inviter" => obj.inviter().to_value(),
                 "display-name" => obj.display_name().to_value(),
                 "avatar" => self.avatar.borrow().to_value(),
                 "timeline" => self.timeline.get().unwrap().to_value(),
@@ -348,6 +360,11 @@ impl Room {
             .filter(|topic| !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some())
     }
 
+    pub fn inviter(&self) -> Option<User> {
+        let priv_ = imp::Room::from_instance(&self);
+        priv_.inviter.borrow().clone()
+    }
+
     /// Returns the room member `User` object
     ///
     /// The returned `User` is specific to this room
@@ -359,6 +376,42 @@ impl Room {
             .entry(user_id.clone())
             .or_insert(User::new(&user_id))
             .clone()
+    }
+
+    /// Handle stripped state events.
+    ///
+    /// Events passed to this function arn't added to the timeline.
+    pub fn handle_invite_events(&self, events: Vec<AnyStrippedStateEvent>) {
+        let priv_ = imp::Room::from_instance(self);
+        let invite_event = events
+            .iter()
+            .find(|event| {
+                if let AnyStrippedStateEvent::RoomMember(event) = event {
+                    event.content.membership == MembershipState::Invite
+                        && event.state_key == self.user().user_id().as_str()
+                } else {
+                    false
+                }
+            })
+            .unwrap();
+
+        let inviter_id = invite_event.sender();
+
+        let inviter_event = events.iter().find(|event| {
+            if let AnyStrippedStateEvent::RoomMember(event) = event {
+                &event.sender == inviter_id
+            } else {
+                false
+            }
+        });
+
+        let inviter = User::new(inviter_id);
+        if let Some(AnyStrippedStateEvent::RoomMember(event)) = inviter_event {
+            inviter.update_from_stripped_member_event(event);
+        }
+
+        priv_.inviter.replace(Some(inviter));
+        self.notify("inviter");
     }
 
     /// Add new events to the timeline
@@ -505,6 +558,32 @@ impl Room {
                     };
                 }),
             );
+        }
+    }
+
+    pub async fn accept_invite(&self) -> matrix_sdk::Result<()> {
+        let matrix_room = self.matrix_room();
+
+        if let MatrixRoom::Invited(matrix_room) = matrix_room {
+            let (sender, receiver) = futures::channel::oneshot::channel();
+            RUNTIME.spawn(async move { sender.send(matrix_room.accept_invitation().await) });
+            receiver.await.unwrap()
+        } else {
+            error!("Can't accept invite, because this room isn't an invited room");
+            Ok(())
+        }
+    }
+
+    pub async fn reject_invite(&self) -> matrix_sdk::Result<()> {
+        let matrix_room = self.matrix_room();
+
+        if let MatrixRoom::Invited(matrix_room) = matrix_room {
+            let (sender, receiver) = futures::channel::oneshot::channel();
+            RUNTIME.spawn(async move { sender.send(matrix_room.reject_invitation().await) });
+            receiver.await.unwrap()
+        } else {
+            error!("Can't reject invite, because this room isn't an invited room");
+            Ok(())
         }
     }
 }

@@ -8,6 +8,7 @@ data/org.gnome.FractalNext.metainfo.xml.in.in
 data/resources/ui/content-divider-row.ui
 data/resources/ui/content-item-row-menu.ui
 data/resources/ui/content-item.ui
+data/resources/ui/content-invite.ui
 data/resources/ui/content-markdown-popover.ui
 data/resources/ui/content-message-row.ui
 data/resources/ui/content-room-history.ui
@@ -41,6 +42,7 @@ src/session/categories/mod.rs
 src/session/content/content.rs
 src/session/content/divider_row.rs
 src/session/content/item_row.rs
+src/session/content/invite.rs
 src/session/content/markdown_popover.rs
 src/session/content/message_row.rs
 src/session/content/mod.rs

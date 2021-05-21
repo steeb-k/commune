@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentInvite" parent="AdwBin">
+    <property name="vexpand">True</property>
+    <property name="hexpand">True</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="AdwHeaderBar" id="headerbar">
+            <property name="show-start-title-buttons" bind-source="ContentInvite" bind-property="compact" bind-flags="sync-create"/>
+            <child type="start">
+              <object class="GtkButton" id="back">
+                <property name="visible" bind-source="ContentInvite" bind-property="compact" bind-flags="sync-create"/>
+                <property name="icon-name">go-previous-symbolic</property>
+                <property name="action-name">content.go-back</property>
+              </object>
+            </child>
+            <child type="title">
+              <object class="AdwWindowTitle">
+                <property name="title" translatable="yes">Invite</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="vexpand">True</property>
+            <property name="hscrollbar-policy">never</property>
+            <property name="child">
+              <object class="AdwClamp">
+                <property name="maximum-size">400</property>
+                <property name="tightening-threshold">200</property>
+                <property name="vexpand">True</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <property name="spacing">24</property>
+                    <property name="orientation">vertical</property>
+                    <accessibility>
+                      <property name="label" translatable="yes">Invite</property>
+                    </accessibility>
+                    <child>
+                      <object class="AdwAvatar">
+                        <property name="show-initials">True</property>
+                        <property name="size">150</property>
+                        <property name="text" bind-source="display_name" bind-property="label" bind-flags="sync-create"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="display_name">
+                        <property name="ellipsize">end</property>
+                        <binding name="label">
+                          <lookup name="display-name">
+                            <lookup name="room">ContentInvite</lookup>
+                          </lookup>
+                        </binding>
+                        <style>
+                          <class name="invite-room-name"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="room_topic">
+                        <property name="wrap">True</property>
+                        <property name="justify">center</property>
+                        <binding name="label">
+                          <lookup name="topic">
+                            <lookup name="room">ContentInvite</lookup>
+                          </lookup>
+                        </binding>
+                        <style>
+                          <class name="dim-label"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="UserPill" id="inviter">
+                            <binding name="user">
+                              <lookup name="inviter">
+                                <lookup name="room">ContentInvite</lookup>
+                              </lookup>
+                            </binding>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <!-- Translators: the space at the beginning is there on purpose -->
+                            <property name="label" translatable="yes"> invited you</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="halign">center</property>
+                        <property name="spacing">24</property>
+                        <property name="margin-top">24</property>
+                        <child>
+                          <object class="SpinnerButton" id="reject_button">
+                            <property name="label" translatable="yes">_Reject</property>
+                            <property name="action-name">invite.reject</property>
+                            <style>
+                              <class name="pill-button"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="accept_button">
+                            <property name="label" translatable="yes">_Accept</property>
+                            <property name="action-name">invite.accept</property>
+                            <style>
+                              <class name="suggested-action"/>
+                              <class name="pill-button"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+
