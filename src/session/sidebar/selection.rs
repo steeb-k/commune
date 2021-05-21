@@ -2,9 +2,6 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::session::room::Room;
 
-// FIXME Could not find it in gtk
-pub const GTK_INVALID_LIST_POSITION: u32 = u32::MAX;
-
 mod imp {
     use super::*;
     use once_cell::sync::Lazy;
@@ -27,7 +24,7 @@ mod imp {
 
         fn new() -> Self {
             Self {
-                selected: Cell::new(GTK_INVALID_LIST_POSITION),
+                selected: Cell::new(gtk::INVALID_LIST_POSITION),
                 ..Default::default()
             }
         }
@@ -50,7 +47,7 @@ mod imp {
                         "The position of the selected item",
                         0,
                         u32::MAX,
-                        GTK_INVALID_LIST_POSITION,
+                        gtk::INVALID_LIST_POSITION,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
@@ -126,7 +123,7 @@ mod imp {
             let bitset = gtk::Bitset::new_empty();
             let selected = self.selected.get();
 
-            if selected != GTK_INVALID_LIST_POSITION {
+            if selected != gtk::INVALID_LIST_POSITION {
                 bitset.add(selected);
             }
 
@@ -201,8 +198,8 @@ impl Selection {
         } else {
             priv_.model.replace(None);
 
-            if self.selected() != GTK_INVALID_LIST_POSITION {
-                priv_.selected.replace(GTK_INVALID_LIST_POSITION);
+            if self.selected() != gtk::INVALID_LIST_POSITION {
+                priv_.selected.replace(gtk::INVALID_LIST_POSITION);
                 self.notify("selected");
             }
             if self.selected_room().is_some() {
@@ -231,7 +228,7 @@ impl Selection {
             .and_then(|r| r.item())
             .and_then(|o| o.downcast::<Room>().ok());
         let selected = if selected_room.is_none() {
-            GTK_INVALID_LIST_POSITION
+            gtk::INVALID_LIST_POSITION
         } else {
             position
         };
@@ -243,9 +240,9 @@ impl Selection {
         priv_.selected.replace(selected);
         priv_.selected_room.replace(selected_room);
 
-        if old_selected == GTK_INVALID_LIST_POSITION {
+        if old_selected == gtk::INVALID_LIST_POSITION {
             self.selection_changed(selected, 1);
-        } else if selected == GTK_INVALID_LIST_POSITION {
+        } else if selected == gtk::INVALID_LIST_POSITION {
             self.selection_changed(old_selected, 1);
         } else if selected < old_selected {
             self.selection_changed(selected, old_selected - selected + 1);
@@ -267,7 +264,7 @@ impl Selection {
 
         let old_selected = self.selected();
 
-        let mut selected = GTK_INVALID_LIST_POSITION;
+        let mut selected = gtk::INVALID_LIST_POSITION;
 
         if room.is_some() {
             if let Some(model) = self.model() {
@@ -290,9 +287,9 @@ impl Selection {
         if old_selected != selected {
             priv_.selected.replace(selected);
 
-            if old_selected == GTK_INVALID_LIST_POSITION {
+            if old_selected == gtk::INVALID_LIST_POSITION {
                 self.selection_changed(selected, 1);
-            } else if selected == GTK_INVALID_LIST_POSITION {
+            } else if selected == gtk::INVALID_LIST_POSITION {
                 self.selection_changed(old_selected, 1);
             } else if selected < old_selected {
                 self.selection_changed(selected, old_selected - selected + 1);
@@ -315,14 +312,14 @@ impl Selection {
 
         if selected_room.is_none() || selected < position {
             // unchanged
-        } else if selected != GTK_INVALID_LIST_POSITION && selected >= position + removed {
+        } else if selected != gtk::INVALID_LIST_POSITION && selected >= position + removed {
             priv_.selected.replace(selected + added - removed);
             self.notify("selected");
         } else {
             for i in 0..=added {
                 if i == added {
                     // the item really was deleted
-                    priv_.selected.replace(GTK_INVALID_LIST_POSITION);
+                    priv_.selected.replace(gtk::INVALID_LIST_POSITION);
                     self.notify("selected");
                 } else {
                     let room = model
