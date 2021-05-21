@@ -16,6 +16,7 @@ data/resources/ui/content-state-row.ui
 data/resources/ui/content.ui
 data/resources/ui/context-menu-bin.ui
 data/resources/ui/login.ui
+data/resources/ui/in-app-notification.ui
 data/resources/ui/session.ui
 data/resources/ui/shortcuts.ui
 data/resources/ui/sidebar-category-row.ui
@@ -30,6 +31,7 @@ data/resources/ui/window.ui
 src/application.rs
 src/components/context_menu_bin.rs
 src/components/label_with_widgets.rs
+src/components/in_app_notification.rs
 src/components/mod.rs
 src/components/spinner_button.rs
 src/components/pill.rs

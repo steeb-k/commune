@@ -24,6 +24,7 @@ sources = files(
   'components/label_with_widgets.rs',
   'components/mod.rs',
   'components/pill.rs',
+  'components/in_app_notification.rs',
   'components/spinner_button.rs',
   'config.rs',
   'error.rs',
