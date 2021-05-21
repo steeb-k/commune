@@ -168,6 +168,8 @@ impl Selection {
     pub fn set_model<P: IsA<gio::ListModel>>(&self, model: Option<&P>) {
         let priv_ = imp::Selection::from_instance(self);
 
+        let _guard = self.freeze_notify();
+
         let model = model.map(|m| m.clone().upcast::<gio::ListModel>());
 
         let old_model = self.model();
@@ -305,6 +307,8 @@ impl Selection {
 
     fn items_changed_cb(&self, model: &gio::ListModel, position: u32, removed: u32, added: u32) {
         let priv_ = imp::Selection::from_instance(self);
+
+        let _guard = self.freeze_notify();
 
         let selected = self.selected();
         let selected_room = self.selected_room();
