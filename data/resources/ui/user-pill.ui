@@ -2,6 +2,7 @@
 <interface>
   <template class="UserPill" parent="AdwBin">
     <property name="focusable">True</property>
+    <property name="valign">center</property>
     <style>
       <class name="user-pill"/>
     </style>
@@ -19,11 +20,6 @@
           <object class="GtkLabel" id="display_name">
             <property name="ellipsize">middle</property>
             <property name="max-width-chars">30</property>
-            <binding name="label">
-              <lookup name="display-name">
-                <lookup name="user">UserPill</lookup>
-              </lookup>
-            </binding>
           </object>
         </child>
       </object>

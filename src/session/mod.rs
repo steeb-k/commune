@@ -7,7 +7,7 @@ mod user;
 
 use self::categories::Categories;
 use self::content::Content;
-use self::room::Room;
+pub use self::room::Room;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::User;
