@@ -258,8 +258,13 @@ impl Session {
         let priv_ = imp::Session::from_instance(self);
         match result {
             Ok((client, session)) => {
-                priv_.client.set(client).unwrap();
-                self.set_user(User::new(&session.user_id));
+                priv_.client.set(client.clone()).unwrap();
+                priv_.categories.room_list().set_client(client).unwrap();
+
+                let user = User::new(&session.user_id);
+                self.set_user(user.clone());
+                priv_.categories.room_list().set_user(user).unwrap();
+
                 if store_session {
                     // TODO: report secret service errors
                     secret::store_session(session).unwrap();

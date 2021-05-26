@@ -1,16 +1,20 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
-use matrix_sdk::identifiers::RoomId;
+use matrix_sdk::{identifiers::RoomId, Client};
 
-use crate::session::room::Room;
+use crate::session::{room::Room, user::User};
 
 mod imp {
-    use super::*;
+    use once_cell::unsync::OnceCell;
     use std::cell::RefCell;
 
-    #[derive(Debug)]
+    use super::*;
+
+    #[derive(Debug, Default)]
     pub struct RoomList {
         pub list: RefCell<IndexMap<RoomId, Room>>,
+        pub client: OnceCell<Client>,
+        pub user: OnceCell<User>,
     }
 
     #[glib::object_subclass]
@@ -19,12 +23,6 @@ mod imp {
         type Type = super::RoomList;
         type ParentType = glib::Object;
         type Interfaces = (gio::ListModel,);
-
-        fn new() -> Self {
-            Self {
-                list: Default::default(),
-            }
-        }
     }
 
     impl ObjectImpl for RoomList {}
@@ -52,15 +50,19 @@ glib::wrapper! {
         @implements gio::ListModel;
 }
 
-impl Default for RoomList {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RoomList {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create RoomList")
+    }
+
+    pub fn set_client(&self, client: Client) -> Result<(), Client> {
+        let priv_ = imp::RoomList::from_instance(&self);
+        priv_.client.set(client)
+    }
+
+    pub fn set_user(&self, user: User) -> Result<(), User> {
+        let priv_ = imp::RoomList::from_instance(&self);
+        priv_.user.set(user)
     }
 
     pub fn get(&self, room_id: &RoomId) -> Option<Room> {
