@@ -50,6 +50,12 @@ glib::wrapper! {
         @implements gio::ListModel;
 }
 
+impl Default for RoomList {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RoomList {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create RoomList")
@@ -119,6 +125,10 @@ impl RoomList {
         self.items_changed(position as u32, 0, added as u32);
     }
 
+    /// Loads the state from the `Store`.
+    ///
+    /// Note that the `Store` currently doesn't store all events, therefore, we aren't really
+    /// loading much via this function.
     pub fn load(&self) {
         let priv_ = imp::RoomList::from_instance(&self);
 

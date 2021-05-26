@@ -1,14 +1,18 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::session::categories::{Category, CategoryType, RoomList};
+use crate::session::{
+    categories::{Category, CategoryType},
+    room_list::RoomList,
+};
 
 mod imp {
+    use once_cell::unsync::OnceCell;
+
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct Categories {
-        pub list: [Category; 5],
-        pub room_list: RoomList,
+        pub list: OnceCell<[Category; 5]>,
     }
 
     #[glib::object_subclass]
@@ -17,21 +21,6 @@ mod imp {
         type Type = super::Categories;
         type ParentType = glib::Object;
         type Interfaces = (gio::ListModel,);
-
-        fn new() -> Self {
-            let room_list = RoomList::new();
-
-            Self {
-                list: [
-                    Category::new(CategoryType::Invited, &room_list),
-                    Category::new(CategoryType::Favorite, &room_list),
-                    Category::new(CategoryType::Normal, &room_list),
-                    Category::new(CategoryType::LowPriority, &room_list),
-                    Category::new(CategoryType::Left, &room_list),
-                ],
-                room_list,
-            }
-        }
     }
 
     impl ObjectImpl for Categories {}
@@ -41,11 +30,12 @@ mod imp {
             Category::static_type()
         }
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
-            self.list.len() as u32
+            self.list.get().map(|l| l.len()).unwrap_or(0) as u32
         }
         fn item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
             self.list
-                .get(position as usize)
+                .get()
+                .and_then(|l| l.get(position as usize))
                 .map(glib::object::Cast::upcast_ref::<glib::Object>)
                 .cloned()
         }
@@ -68,8 +58,20 @@ impl Categories {
         glib::Object::new(&[]).expect("Failed to create Categories")
     }
 
-    pub fn room_list(&self) -> &RoomList {
+    pub fn set_room_list(&self, room_list: &RoomList) {
         let priv_ = imp::Categories::from_instance(&self);
-        &priv_.room_list
+
+        priv_
+            .list
+            .set([
+                Category::new(CategoryType::Invited, room_list),
+                Category::new(CategoryType::Favorite, room_list),
+                Category::new(CategoryType::Normal, room_list),
+                Category::new(CategoryType::LowPriority, room_list),
+                Category::new(CategoryType::Left, room_list),
+            ])
+            .unwrap();
+
+        self.items_changed(0, 0, 5);
     }
 }

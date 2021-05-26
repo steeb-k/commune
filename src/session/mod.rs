@@ -1,12 +1,14 @@
 mod categories;
 mod content;
 mod room;
+mod room_list;
 mod sidebar;
 mod user;
 
 use self::categories::Categories;
 use self::content::Content;
 use self::room::Room;
+use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::User;
 
@@ -48,6 +50,7 @@ mod imp {
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
+        pub room_list: RoomList,
         pub categories: Categories,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
@@ -128,6 +131,8 @@ mod imp {
 
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
+
+            self.categories.set_room_list(&self.room_list);
         }
     }
     impl WidgetImpl for Session {}
@@ -254,17 +259,19 @@ impl Session {
         match result {
             Ok((client, session)) => {
                 priv_.client.set(client.clone()).unwrap();
-                priv_.categories.room_list().set_client(client).unwrap();
 
                 let user = User::new(&session.user_id);
                 self.set_user(user.clone());
-                priv_.categories.room_list().set_user(user).unwrap();
 
                 if store_session {
                     // TODO: report secret service errors
                     secret::store_session(session).unwrap();
                 }
-                self.load();
+
+                priv_.room_list.set_client(client).unwrap();
+                priv_.room_list.set_user(user).unwrap();
+                priv_.room_list.load();
+
                 self.sync();
             }
             Err(error) => {
@@ -324,13 +331,6 @@ impl Session {
         priv_.user.set(user).unwrap();
     }
 
-    // FIXME: Leaving this method for now, if it's never used it should be removed at some point.
-    #[allow(dead_code)]
-    fn user(&self) -> &User {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_.user.get().unwrap()
-    }
-
     /// Sets up the required channel to receive new room events
     fn create_new_sync_response_sender(&self) -> SyncSender<SyncResponse> {
         let (sender, receiver) =
@@ -348,15 +348,6 @@ impl Session {
         );
 
         sender
-    }
-
-    /// Loads the state from the `Store`
-    /// Note that the `Store` currently doesn't store all events, therefore, we arn't really
-    /// loading much via this function.
-    pub fn load(&self) {
-        let priv_ = imp::Session::from_instance(self);
-
-        priv_.categories.room_list().load();
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,
@@ -381,9 +372,6 @@ impl Session {
     fn handle_sync_response(&self, response: SyncResponse) {
         let priv_ = imp::Session::from_instance(self);
 
-        priv_
-            .categories
-            .room_list()
-            .handle_response_rooms(response.rooms);
+        priv_.room_list.handle_response_rooms(response.rooms);
     }
 }

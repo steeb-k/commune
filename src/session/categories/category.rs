@@ -1,9 +1,6 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::{
-    categories::{CategoryType, RoomList},
-    room::Room,
-};
+use crate::session::{categories::CategoryType, room::Room, room_list::RoomList};
 
 mod imp {
     use once_cell::unsync::OnceCell;
