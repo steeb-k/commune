@@ -21,6 +21,7 @@ run_command(
 sources = files(
   'application.rs',
   'components/context_menu_bin.rs',
+  'components/label_with_widgets.rs',
   'components/mod.rs',
   'components/pill.rs',
   'components/spinner_button.rs',
