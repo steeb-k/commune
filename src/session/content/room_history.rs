@@ -145,7 +145,7 @@ mod imp {
             key_events
                 .connect_key_pressed(clone!(@weak obj => @default-return Inhibit(false), move |_, key, _, modifier| {
                 if !modifier.contains(gdk::ModifierType::SHIFT_MASK) && (key == gdk::keys::constants::Return || key == gdk::keys::constants::KP_Enter) {
-                    obj.activate_action("content.send-text-message", None);
+                    obj.activate_action("room-history.send-text-message", None);
                     Inhibit(true)
                 } else {
                     Inhibit(false)
@@ -160,11 +160,11 @@ mod imp {
 
             buffer.connect_text_notify(clone!(@weak obj => move |buffer| {
                let (start_iter, end_iter) = buffer.bounds();
-               obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+               obj.action_set_enabled("room-history.send-text-message", start_iter != end_iter);
             }));
 
             let (start_iter, end_iter) = buffer.bounds();
-            obj.action_set_enabled("content.send-text-message", start_iter != end_iter);
+            obj.action_set_enabled("room-history.send-text-message", start_iter != end_iter);
 
             let md_lang =
                 sourceview::LanguageManager::default().and_then(|lm| lm.language("markdown"));
