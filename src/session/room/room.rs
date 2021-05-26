@@ -2,6 +2,8 @@ use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, error, warn};
 use matrix_sdk::{
+    api::r0::sync::sync_events::InvitedRoom,
+    deserialized_responses::{JoinedRoom, LeftRoom},
     events::{
         room::{
             member::{MemberEventContent, MembershipState},
@@ -10,8 +12,8 @@ use matrix_sdk::{
             },
         },
         tag::TagName,
-        AnyMessageEvent, AnyRoomEvent, AnyStateEvent, AnyStrippedStateEvent, MessageEvent,
-        StateEvent, Unsigned,
+        AnyMessageEvent, AnyRoomEvent, AnyStateEvent, AnyStrippedStateEvent, AnySyncRoomEvent,
+        MessageEvent, StateEvent, Unsigned,
     },
     identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
@@ -20,6 +22,7 @@ use matrix_sdk::{
 };
 use std::cell::RefCell;
 
+use crate::event_from_sync_event;
 use crate::session::{
     categories::CategoryType,
     room::{HighlightFlags, Timeline},
@@ -585,5 +588,71 @@ impl Room {
             error!("Can't reject invite, because this room isn't an invited room");
             Ok(())
         }
+    }
+
+    pub fn handle_left_response(&self, response_room: LeftRoom, matrix_room: MatrixRoom) {
+        self.set_matrix_room(matrix_room);
+
+        let room_id = self.matrix_room_id();
+
+        self.append_events(
+            response_room
+                .timeline
+                .events
+                .into_iter()
+                .filter_map(|event| {
+                    if let Ok(event) = event.event.deserialize() {
+                        Some(event)
+                    } else {
+                        error!("Couldn't deserialize event: {:?}", event);
+                        None
+                    }
+                })
+                .map(|event| event_from_sync_event!(event, room_id))
+                .collect(),
+        );
+    }
+
+    pub fn handle_joined_response(&self, response_room: JoinedRoom, matrix_room: MatrixRoom) {
+        self.set_matrix_room(matrix_room);
+
+        let room_id = self.matrix_room_id();
+
+        self.append_events(
+            response_room
+                .timeline
+                .events
+                .into_iter()
+                .filter_map(|event| {
+                    if let Ok(event) = event.event.deserialize() {
+                        Some(event)
+                    } else {
+                        error!("Couldn't deserialize event: {:?}", event);
+                        None
+                    }
+                })
+                .map(|event| event_from_sync_event!(event, room_id))
+                .collect(),
+        );
+    }
+
+    pub fn handle_invited_response(&self, response_room: InvitedRoom, matrix_room: MatrixRoom) {
+        self.set_matrix_room(matrix_room);
+
+        self.handle_invite_events(
+            response_room
+                .invite_state
+                .events
+                .into_iter()
+                .filter_map(|event| {
+                    if let Ok(event) = event.deserialize() {
+                        Some(event)
+                    } else {
+                        error!("Couldn't deserialize event: {:?}", event);
+                        None
+                    }
+                })
+                .collect(),
+        )
     }
 }

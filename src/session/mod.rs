@@ -10,7 +10,6 @@ use self::room::Room;
 use self::sidebar::Sidebar;
 pub use self::user::User;
 
-use crate::event_from_sync_event;
 use crate::secret;
 use crate::secret::StoredSession;
 use crate::utils::do_async;
@@ -25,12 +24,8 @@ use gtk_macros::send;
 use log::error;
 use matrix_sdk::api::r0::filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter};
 use matrix_sdk::{
-    self, assign,
-    deserialized_responses::SyncResponse,
-    events::{AnyRoomEvent, AnySyncRoomEvent},
-    identifiers::RoomId,
-    uuid::Uuid,
-    Client, ClientConfig, RequestConfig, SyncSettings,
+    self, assign, deserialized_responses::SyncResponse, uuid::Uuid, Client, ClientConfig,
+    RequestConfig, SyncSettings,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::fs;
@@ -329,6 +324,8 @@ impl Session {
         priv_.user.set(user).unwrap();
     }
 
+    // FIXME: Leaving this method for now, if it's never used it should be removed at some point.
+    #[allow(dead_code)]
     fn user(&self) -> &User {
         let priv_ = &imp::Session::from_instance(self);
         priv_.user.get().unwrap()
@@ -358,18 +355,8 @@ impl Session {
     /// loading much via this function.
     pub fn load(&self) {
         let priv_ = imp::Session::from_instance(self);
-        let rooms = priv_.client.get().unwrap().rooms();
 
-        let mut new_rooms = Vec::with_capacity(rooms.len());
-
-        for matrix_room in rooms {
-            new_rooms.push((
-                matrix_room.room_id().clone(),
-                Room::new(matrix_room, self.user()),
-            ));
-        }
-
-        priv_.categories.room_list().insert(new_rooms);
+        priv_.categories.room_list().load();
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,
@@ -393,103 +380,10 @@ impl Session {
 
     fn handle_sync_response(&self, response: SyncResponse) {
         let priv_ = imp::Session::from_instance(self);
-        let rooms_map = priv_.categories.room_list();
 
-        let rooms_id = response
-            .rooms
-            .join
-            .iter()
-            .map(|(room_id, _)| room_id)
-            .chain(response.rooms.leave.iter().map(|(room_id, _)| room_id))
-            .chain(response.rooms.invite.iter().map(|(room_id, _)| room_id));
-        let (old_rooms_id, new_rooms_id): (Vec<RoomId>, Vec<RoomId>) = rooms_id
-            .cloned()
-            .partition(|room_id| rooms_map.contains_key(room_id));
-
-        let mut new_rooms = Vec::new();
-
-        for room_id in new_rooms_id {
-            if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
-                new_rooms.push((room_id, Room::new(matrix_room, self.user())));
-            }
-        }
-
-        for room_id in old_rooms_id {
-            let room = rooms_map.get(&room_id).unwrap();
-            if let Some(matrix_room) = priv_.client.get().unwrap().get_room(&room_id) {
-                room.set_matrix_room(matrix_room);
-            }
-        }
-
-        rooms_map.insert(new_rooms);
-
-        for (room_id, matrix_room) in response.rooms.leave {
-            if matrix_room.timeline.events.is_empty() {
-                continue;
-            }
-            if let Some(room) = rooms_map.get(&room_id) {
-                room.append_events(
-                    matrix_room
-                        .timeline
-                        .events
-                        .into_iter()
-                        .filter_map(|event| {
-                            if let Ok(event) = event.event.deserialize() {
-                                Some(event)
-                            } else {
-                                error!("Couldn't deserialize event: {:?}", event);
-                                None
-                            }
-                        })
-                        .map(|event| event_from_sync_event!(event, room_id))
-                        .collect(),
-                );
-            }
-        }
-
-        for (room_id, matrix_room) in response.rooms.join {
-            if matrix_room.timeline.events.is_empty() {
-                continue;
-            }
-
-            if let Some(room) = rooms_map.get(&room_id) {
-                room.append_events(
-                    matrix_room
-                        .timeline
-                        .events
-                        .into_iter()
-                        .filter_map(|event| {
-                            if let Ok(event) = event.event.deserialize() {
-                                Some(event)
-                            } else {
-                                error!("Couldn't deserialize event: {:?}", event);
-                                None
-                            }
-                        })
-                        .map(|event| event_from_sync_event!(event, room_id))
-                        .collect(),
-                );
-            }
-        }
-
-        for (room_id, matrix_room) in response.rooms.invite {
-            if let Some(room) = rooms_map.get(&room_id) {
-                room.handle_invite_events(
-                    matrix_room
-                        .invite_state
-                        .events
-                        .into_iter()
-                        .filter_map(|event| {
-                            if let Ok(event) = event.deserialize() {
-                                Some(event)
-                            } else {
-                                error!("Couldn't deserialize event: {:?}", event);
-                                None
-                            }
-                        })
-                        .collect(),
-                )
-            }
-        }
+        priv_
+            .categories
+            .room_list()
+            .handle_response_rooms(response.rooms);
     }
 }
