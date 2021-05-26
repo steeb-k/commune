@@ -12,8 +12,8 @@ use matrix_sdk::{
             },
         },
         tag::TagName,
-        AnyMessageEvent, AnyRoomEvent, AnyStateEvent, AnyStrippedStateEvent, AnySyncRoomEvent,
-        MessageEvent, StateEvent, Unsigned,
+        AnyMessageEvent, AnyRoomAccountDataEvent, AnyRoomEvent, AnyStateEvent,
+        AnyStrippedStateEvent, AnySyncRoomEvent, MessageEvent, StateEvent, Unsigned,
     },
     identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
@@ -615,6 +615,15 @@ impl Room {
 
     pub fn handle_joined_response(&self, response_room: JoinedRoom, matrix_room: MatrixRoom) {
         self.set_matrix_room(matrix_room);
+
+        if response_room
+            .account_data
+            .events
+            .iter()
+            .any(|e| matches!(e.deserialize(), Ok(AnyRoomAccountDataEvent::Tag(_))))
+        {
+            self.load_category();
+        }
 
         let room_id = self.matrix_room_id();
 
