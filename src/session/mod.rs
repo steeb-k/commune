@@ -15,13 +15,14 @@ pub use self::user::User;
 use crate::secret;
 use crate::secret::StoredSession;
 use crate::utils::do_async;
+use crate::Error;
 use crate::RUNTIME;
 
 use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{glib, glib::clone, glib::SyncSender, CompositeTemplate};
+use gtk::{gio, glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use gtk_macros::send;
 use log::error;
 use matrix_sdk::api::r0::filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter};
@@ -43,6 +44,8 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
     pub struct Session {
+        #[template_child]
+        pub error_list: TemplateChild<gio::ListStore>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -70,6 +73,7 @@ mod imp {
         fn instance_init(obj: &InitializingObject<Self>) {
             Sidebar::static_type();
             Content::static_type();
+            Error::static_type();
             obj.init_template();
         }
     }
@@ -133,6 +137,12 @@ mod imp {
             self.parent_constructed(obj);
 
             self.categories.set_room_list(&self.room_list);
+
+            self.room_list
+                .connect_error(clone!(@weak obj => move |_, error| {
+                        let priv_ = imp::Session::from_instance(&obj);
+                        priv_.error_list.append(&error);
+                }));
         }
     }
     impl WidgetImpl for Session {}

@@ -2,10 +2,14 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
 use matrix_sdk::{deserialized_responses::Rooms as ResponseRooms, identifiers::RoomId, Client};
 
-use crate::session::{room::Room, user::User};
+use crate::{
+    session::{room::Room, user::User},
+    Error,
+};
 
 mod imp {
-    use once_cell::unsync::OnceCell;
+    use glib::subclass::Signal;
+    use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
 
     use super::*;
@@ -25,7 +29,19 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for RoomList {}
+    impl ObjectImpl for RoomList {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![Signal::builder(
+                    "error",
+                    &[Error::static_type().into()],
+                    <()>::static_type().into(),
+                )
+                .build()]
+            });
+            SIGNALS.as_ref()
+        }
+    }
 
     impl ListModelImpl for RoomList {
         fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
@@ -120,6 +136,10 @@ impl RoomList {
                     }
                 }),
             );
+
+            room.connect_error(clone!(@weak self as obj => move |_, error| {
+                obj.emit_by_name("error", &[&error]).unwrap();
+            }));
         }
 
         self.items_changed(position as u32, 0, added as u32);
@@ -205,5 +225,17 @@ impl RoomList {
         if added > 0 {
             self.items_added(added);
         }
+    }
+
+    pub fn connect_error<F: Fn(&Self, Error) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("error", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+            let error = values[1].get::<Error>().unwrap();
+
+            f(&obj, error);
+
+            None
+        })
+        .unwrap()
     }
 }

@@ -46,6 +46,11 @@
               <object class="Content">
                 <property name="compact" bind-source="content" bind-property="folded" bind-flags="sync-create"/>
                 <property name="room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create | bidirectional"/>
+                <property name="error-list">
+                  <object class="GListStore" id="error_list">
+                    <property name="item-type">Error</property>
+                  </object>
+                </property>
               </object>
             </child>
           </object>

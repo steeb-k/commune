@@ -29,10 +29,12 @@ use crate::session::{
     User,
 };
 use crate::utils::do_async;
+use crate::Error;
 use crate::RUNTIME;
 
 mod imp {
     use super::*;
+    use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::Cell;
     use std::collections::HashMap;
@@ -188,6 +190,18 @@ mod imp {
                 }
                 _ => unimplemented!(),
             }
+        }
+
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![Signal::builder(
+                    "error",
+                    &[Error::static_type().into()],
+                    <()>::static_type().into(),
+                )
+                .build()]
+            });
+            SIGNALS.as_ref()
         }
     }
 }
@@ -663,5 +677,17 @@ impl Room {
                 })
                 .collect(),
         )
+    }
+
+    pub fn connect_error<F: Fn(&Self, Error) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("error", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+            let error = values[1].get::<Error>().unwrap();
+
+            f(&obj, error);
+
+            None
+        })
+        .unwrap()
     }
 }
