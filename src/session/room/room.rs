@@ -132,7 +132,7 @@ mod imp {
                         "The category of this room",
                         CategoryType::static_type(),
                         CategoryType::default() as i32,
-                        glib::ParamFlags::READABLE,
+                        glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_string(
                         "topic",
@@ -162,6 +162,10 @@ mod imp {
                 "user" => {
                     let user = value.get().unwrap();
                     self.user.set(user).unwrap();
+                }
+                "category" => {
+                    let category = value.get().unwrap();
+                    obj.set_category(category);
                 }
                 _ => unimplemented!(),
             }
@@ -275,15 +279,119 @@ impl Room {
         priv_.category.get()
     }
 
-    // TODO: makes this method public and propagate the category to the homeserver via the sdk
-    fn set_category(&self, category: CategoryType) {
+    fn set_category_internal(&self, category: CategoryType) {
         let priv_ = imp::Room::from_instance(self);
+
         if self.category() == category {
             return;
         }
 
         priv_.category.set(category);
         self.notify("category");
+    }
+
+    /// Set the category of this room.
+    ///
+    /// This makes the necessary to propagate the category to the homeserver.
+    /// Note: Rooms can't be moved to the invite category.
+    pub fn set_category(&self, category: CategoryType) {
+        let matrix_room = self.matrix_room();
+        let previous_category = self.category();
+
+        if previous_category == category {
+            return;
+        }
+
+        if category == CategoryType::Invited {
+            warn!("Rooms can't be moved to the invite Category");
+            return;
+        }
+
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move {
+                match matrix_room {
+                    MatrixRoom::Invited(room) => {
+                        match category {
+                            CategoryType::Invited => Ok(()),
+                            CategoryType::Favorite => {
+                                room.accept_invitation().await
+                                // TODO: set favorite tag
+                            }
+                            CategoryType::Normal => room.accept_invitation().await,
+                            CategoryType::LowPriority => {
+                                room.accept_invitation().await
+                                // TODO: set low priority tag
+                            }
+                            CategoryType::Left => room.reject_invitation().await,
+                        }
+                    }
+                    MatrixRoom::Joined(room) => {
+                        match category {
+                            CategoryType::Invited => Ok(()),
+                            CategoryType::Favorite => {
+                                // TODO: set favorite tag
+                                Ok(())
+                            }
+                            CategoryType::Normal => {
+                                // TODO: remove tags
+                                Ok(())
+                            }
+                            CategoryType::LowPriority => {
+                                // TODO: set low priority tag
+                                Ok(())
+                            }
+                            CategoryType::Left => room.leave().await,
+                        }
+                    }
+                    MatrixRoom::Left(room) => {
+                        match category {
+                            CategoryType::Invited => Ok(()),
+                            CategoryType::Favorite => {
+                                room.join().await
+                                // TODO: set favorite tag
+                            }
+                            CategoryType::Normal => {
+                                room.join().await
+                                // TODO: remove tags
+                            }
+                            CategoryType::LowPriority => {
+                                room.join().await
+                                // TODO: set low priority tag
+                            }
+                            CategoryType::Left => Ok(()),
+                        }
+                    }
+                }
+            },
+            clone!(@weak self as obj => move |result| async move {
+                match result {
+                        Ok(_) => {},
+                        Err(error) => {
+                                error!("Couldn't set the room category: {}", error);
+                                let error = Error::new(
+                                        error,
+                                        clone!(@weak obj => @default-return None, move |_| {
+                                                let error_message = gettext(format!("Failed to move <widget> from {} to {}.", previous_category.to_string(), category.to_string()));
+                                                let room_pill = Pill::new();
+                                                room_pill.set_room(Some(obj.clone()));
+                                                let label = LabelWithWidgets::new(&error_message, vec![room_pill]);
+
+                                                Some(label.upcast())
+                                        }),
+                                );
+
+                                obj.emit_by_name("error", &[&error]).unwrap();
+
+                                // Load the previous category
+                                obj.load_category();
+                        },
+                };
+
+            }),
+        );
+
+        self.set_category_internal(category);
     }
 
     pub fn load_category(&self) {
@@ -305,12 +413,12 @@ impl Room {
                             }
                         }
 
-                        obj.set_category(category);
+                        obj.set_category_internal(category);
                     }),
                 );
             }
-            MatrixRoom::Invited(_) => self.set_category(CategoryType::Invited),
-            MatrixRoom::Left(_) => self.set_category(CategoryType::Left),
+            MatrixRoom::Invited(_) => self.set_category_internal(CategoryType::Invited),
+            MatrixRoom::Left(_) => self.set_category_internal(CategoryType::Left),
         };
     }
 
