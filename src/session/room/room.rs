@@ -22,6 +22,7 @@ use matrix_sdk::{
 };
 use std::cell::RefCell;
 
+use crate::components::{LabelWithWidgets, UserPill};
 use crate::event_from_sync_event;
 use crate::session::{
     categories::CategoryType,
@@ -578,26 +579,60 @@ impl Room {
         }
     }
 
-    pub async fn accept_invite(&self) -> matrix_sdk::Result<()> {
+    pub async fn accept_invite(&self) -> Result<(), Error> {
         let matrix_room = self.matrix_room();
 
         if let MatrixRoom::Invited(matrix_room) = matrix_room {
             let (sender, receiver) = futures::channel::oneshot::channel();
             RUNTIME.spawn(async move { sender.send(matrix_room.accept_invitation().await) });
-            receiver.await.unwrap()
+            match receiver.await.unwrap() {
+                Ok(result) => Ok(result),
+                Err(error) => {
+                    error!("Accepting invitation failed: {}", error);
+                    let error = Error::new(
+                        error,
+                        clone!(@strong self as room => move |_| {
+                                let error_message = gettext("Failed to accept invitation for <widget>. Try again later.");
+                                let room_pill = UserPill::new();
+                                room_pill.set_room(Some(room.clone()));
+                                let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
+                                Some(error_label.upcast())
+                        }),
+                    );
+                    self.emit_by_name("error", &[&error]).unwrap();
+                    Err(error)
+                }
+            }
         } else {
             error!("Can't accept invite, because this room isn't an invited room");
             Ok(())
         }
     }
 
-    pub async fn reject_invite(&self) -> matrix_sdk::Result<()> {
+    pub async fn reject_invite(&self) -> Result<(), Error> {
         let matrix_room = self.matrix_room();
 
         if let MatrixRoom::Invited(matrix_room) = matrix_room {
             let (sender, receiver) = futures::channel::oneshot::channel();
             RUNTIME.spawn(async move { sender.send(matrix_room.reject_invitation().await) });
-            receiver.await.unwrap()
+            match receiver.await.unwrap() {
+                Ok(result) => Ok(result),
+                Err(error) => {
+                    error!("Rejecting invitation failed: {}", error);
+                    let error = Error::new(
+                        error,
+                        clone!(@strong self as room => move |_| {
+                                let error_message = gettext("Failed to reject invitation for <widget>. Try again later.");
+                                let room_pill = UserPill::new();
+                                room_pill.set_room(Some(room.clone()));
+                                let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
+                                Some(error_label.upcast())
+                        }),
+                    );
+                    self.emit_by_name("error", &[&error]).unwrap();
+                    Err(error)
+                }
+            }
         } else {
             error!("Can't reject invite, because this room isn't an invited room");
             Ok(())
