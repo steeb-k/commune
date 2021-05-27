@@ -12,6 +12,7 @@ use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::User;
 
+use crate::components::InAppNotification;
 use crate::secret;
 use crate::secret::StoredSession;
 use crate::utils::do_async;
@@ -74,6 +75,7 @@ mod imp {
             Sidebar::static_type();
             Content::static_type();
             Error::static_type();
+            InAppNotification::static_type();
             obj.init_template();
         }
     }

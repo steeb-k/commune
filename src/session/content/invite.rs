@@ -5,7 +5,6 @@ use crate::{
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use gtk_macros::spawn;
-use log::error;
 
 mod imp {
     use super::*;
@@ -216,14 +215,9 @@ impl Invite {
             clone!(@weak self as obj, @strong room => move || async move {
                     let priv_ = imp::Invite::from_instance(&obj);
                     let result = room.accept_invite().await;
-                    match result {
-                            Ok(_) => {},
-                            Err(error) => {
-                                // FIXME: display an error to the user
-                                error!("Accepting invitiation failed: {}", error);
-                                priv_.accept_requests.borrow_mut().remove(&room);
-                                obj.reset();
-                            },
+                    if result.is_err() {
+                        priv_.accept_requests.borrow_mut().remove(&room);
+                        obj.reset();
                     }
             })()
         );
@@ -244,14 +238,9 @@ impl Invite {
             clone!(@weak self as obj, @strong room => move || async move {
                     let priv_ = imp::Invite::from_instance(&obj);
                     let result = room.reject_invite().await;
-                    match result {
-                            Ok(_) => {},
-                            Err(error) => {
-                                // FIXME: display an error to the user
-                                error!("Rejecting invitiation failed: {}", error);
-                                priv_.reject_requests.borrow_mut().remove(&room);
-                                obj.reset();
-                            },
+                    if result.is_err() {
+                        priv_.reject_requests.borrow_mut().remove(&room);
+                        obj.reset();
                     }
             })()
         );

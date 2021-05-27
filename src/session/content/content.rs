@@ -1,6 +1,6 @@
 use crate::session::{categories::CategoryType, content::Invite, content::RoomHistory, room::Room};
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use super::*;
@@ -12,6 +12,7 @@ mod imp {
     pub struct Content {
         pub compact: Cell<bool>,
         pub room: RefCell<Option<Room>>,
+        pub error_list: RefCell<Option<gio::ListStore>>,
         pub category_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -62,6 +63,13 @@ mod imp {
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_object(
+                        "error-list",
+                        "Error List",
+                        "A list of errors shown as in-app-notification",
+                        gio::ListStore::static_type(),
+                        glib::ParamFlags::READWRITE,
+                    ),
                 ]
             });
 
@@ -84,6 +92,9 @@ mod imp {
                     let room = value.get().unwrap();
                     obj.set_room(room);
                 }
+                "error-list" => {
+                    self.error_list.replace(value.get().unwrap());
+                }
                 _ => unimplemented!(),
             }
         }
@@ -92,6 +103,7 @@ mod imp {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
                 "room" => obj.room().to_value(),
+                "error-list" => self.error_list.borrow().to_value(),
                 _ => unimplemented!(),
             }
         }

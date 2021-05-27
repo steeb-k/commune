@@ -22,7 +22,7 @@ use matrix_sdk::{
 };
 use std::cell::RefCell;
 
-use crate::components::{LabelWithWidgets, UserPill};
+use crate::components::{LabelWithWidgets, Pill};
 use crate::event_from_sync_event;
 use crate::session::{
     categories::CategoryType,
@@ -593,7 +593,7 @@ impl Room {
                         error,
                         clone!(@strong self as room => move |_| {
                                 let error_message = gettext("Failed to accept invitation for <widget>. Try again later.");
-                                let room_pill = UserPill::new();
+                                let room_pill = Pill::new();
                                 room_pill.set_room(Some(room.clone()));
                                 let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
                                 Some(error_label.upcast())
@@ -623,7 +623,7 @@ impl Room {
                         error,
                         clone!(@strong self as room => move |_| {
                                 let error_message = gettext("Failed to reject invitation for <widget>. Try again later.");
-                                let room_pill = UserPill::new();
+                                let room_pill = Pill::new();
                                 room_pill.set_room(Some(room.clone()));
                                 let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
                                 Some(error_label.upcast())
