@@ -33,6 +33,7 @@ src/components/label_with_widgets.rs
 src/components/mod.rs
 src/components/spinner_button.rs
 src/components/pill.rs
+src/error.rs
 src/login.rs
 src/main.rs
 src/secret.rs

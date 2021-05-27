@@ -7,6 +7,7 @@ mod application;
 mod config;
 
 mod components;
+mod error;
 mod login;
 mod secret;
 mod session;
@@ -14,6 +15,7 @@ mod utils;
 mod window;
 
 use self::application::Application;
+use self::error::Error;
 use self::login::Login;
 use self::session::Session;
 use self::window::Window;

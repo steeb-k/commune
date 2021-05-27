@@ -26,6 +26,7 @@ sources = files(
   'components/pill.rs',
   'components/spinner_button.rs',
   'config.rs',
+  'error.rs',
   'main.rs',
   'window.rs',
   'login.rs',
