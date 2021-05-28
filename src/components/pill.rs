@@ -11,8 +11,8 @@ mod imp {
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/FractalNext/user-pill.ui")]
-    pub struct UserPill {
+    #[template(resource = "/org/gnome/FractalNext/pill.ui")]
+    pub struct Pill {
         /// The user displayed by this widget
         pub user: RefCell<Option<User>>,
         /// The room displayed by this widget
@@ -25,9 +25,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for UserPill {
-        const NAME: &'static str = "UserPill";
-        type Type = super::UserPill;
+    impl ObjectSubclass for Pill {
+        const NAME: &'static str = "Pill";
+        type Type = super::Pill;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -39,7 +39,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for UserPill {
+    impl ObjectImpl for Pill {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -87,24 +87,24 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for UserPill {}
+    impl WidgetImpl for Pill {}
 
-    impl BinImpl for UserPill {}
+    impl BinImpl for Pill {}
 }
 
 glib::wrapper! {
-    pub struct UserPill(ObjectSubclass<imp::UserPill>)
+    pub struct Pill(ObjectSubclass<imp::Pill>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 /// A widget displaying a `User`
-impl UserPill {
+impl Pill {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create UserPill")
+        glib::Object::new(&[]).expect("Failed to create Pill")
     }
 
     pub fn set_user(&self, user: Option<User>) {
-        let priv_ = imp::UserPill::from_instance(self);
+        let priv_ = imp::Pill::from_instance(self);
 
         if *priv_.user.borrow() == user {
             return;
@@ -130,12 +130,12 @@ impl UserPill {
     }
 
     pub fn user(&self) -> Option<User> {
-        let priv_ = imp::UserPill::from_instance(self);
+        let priv_ = imp::Pill::from_instance(self);
         priv_.user.borrow().clone()
     }
 
     pub fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::UserPill::from_instance(self);
+        let priv_ = imp::Pill::from_instance(self);
 
         if *priv_.room.borrow() == room {
             return;
@@ -161,7 +161,7 @@ impl UserPill {
     }
 
     pub fn room(&self) -> Option<Room> {
-        let priv_ = imp::UserPill::from_instance(self);
+        let priv_ = imp::Pill::from_instance(self);
         priv_.room.borrow().clone()
     }
 }

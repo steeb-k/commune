@@ -83,7 +83,7 @@
                       <object class="GtkBox">
                         <property name="halign">center</property>
                         <child>
-                          <object class="UserPill" id="inviter">
+                          <object class="Pill" id="inviter">
                             <binding name="user">
                               <lookup name="inviter">
                                 <lookup name="room">ContentInvite</lookup>

@@ -1,5 +1,5 @@
 use crate::{
-    components::{SpinnerButton, UserPill},
+    components::{Pill, SpinnerButton},
     session::{categories::CategoryType, room::Room},
 };
 use adw::subclass::prelude::*;
@@ -40,7 +40,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            UserPill::static_type();
+            Pill::static_type();
             SpinnerButton::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);

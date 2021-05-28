@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="UserPill" parent="AdwBin">
+  <template class="Pill" parent="AdwBin">
     <property name="focusable">True</property>
     <property name="valign">center</property>
     <style>
-      <class name="user-pill"/>
+      <class name="pill"/>
     </style>
     <child>
       <object class="GtkBox">
