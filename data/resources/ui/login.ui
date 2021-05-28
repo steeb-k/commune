@@ -48,10 +48,13 @@
 		    <property name="icon-name">welcome</property>
 		    <property name="title" translatable="yes">Welcome to Fractal</property>
 		    <child>
+		      <object class="AdwClamp">
+			<property name="maximum-size">400</property>
+			<property name="tightening-threshold">300</property>
+		    <child>
 		      <object class="GtkBox">
 			<property name="orientation">vertical</property>
 			<property name="spacing">18</property>
-			<property name="halign">center</property>
 			<child>
 			  <object class="GtkLabel" id="error_message">
 			    <property name="visible">False</property>
@@ -126,6 +129,8 @@
 			  </object>
 			</child>
 		      </object>
+		    </child>
+		  </object>
 		    </child>
 		  </object>
 		</property>
