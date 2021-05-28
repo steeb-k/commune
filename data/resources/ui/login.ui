@@ -51,86 +51,86 @@
 		      <object class="AdwClamp">
 			<property name="maximum-size">400</property>
 			<property name="tightening-threshold">300</property>
-		    <child>
-		      <object class="GtkBox">
-			<property name="orientation">vertical</property>
-			<property name="spacing">18</property>
 			<child>
-			  <object class="GtkLabel" id="error_message">
-			    <property name="visible">False</property>
-			  </object>
-			</child>
-			<child>
-			  <object class="GtkListBox">
+			  <object class="GtkBox">
+			    <property name="orientation">vertical</property>
+			    <property name="spacing">18</property>
 			    <child>
-			      <object class="GtkListBoxRow">
-				<property name="focusable">False</property>
-				<property name="selectable">False</property>
-				<property name="activatable">False</property>
-				<property name="child">
-				  <object class="GtkEntry" id="homeserver_entry">
-				    <property name="activates-default">True</property>
-				    <property name="input_purpose">GTK_INPUT_PURPOSE_URL</property>
-				    <property name="placeholder-text">Homeserver</property>
-				    <property name="margin-top">6</property>
-				    <property name="margin-bottom">6</property>
-				    <property name="margin-start">6</property>
-				    <property name="margin-end">6</property>
-				  </object>
-				</property>
+			      <object class="GtkLabel" id="error_message">
+				<property name="visible">False</property>
 			      </object>
 			    </child>
 			    <child>
-			      <object class="GtkListBoxRow">
-				<property name="focusable">False</property>
-				<property name="selectable">False</property>
-				<property name="activatable">False</property>
-				<property name="child">
-				  <object class="GtkEntry" id="username_entry">
-				    <property name="activates-default">True</property>
-				    <property name="placeholder-text">Matrix Username</property>
-				    <property name="margin-top">6</property>
-				    <property name="margin-bottom">6</property>
-				    <property name="margin-start">6</property>
-				    <property name="margin-end">6</property>
+			      <object class="GtkListBox">
+				<child>
+				  <object class="GtkListBoxRow">
+				    <property name="focusable">False</property>
+				    <property name="selectable">False</property>
+				    <property name="activatable">False</property>
+				    <property name="child">
+				      <object class="GtkEntry" id="homeserver_entry">
+					<property name="activates-default">True</property>
+					<property name="input_purpose">GTK_INPUT_PURPOSE_URL</property>
+					<property name="placeholder-text">Homeserver</property>
+					<property name="margin-top">6</property>
+					<property name="margin-bottom">6</property>
+					<property name="margin-start">6</property>
+					<property name="margin-end">6</property>
+				      </object>
+				    </property>
 				  </object>
-				</property>
+				</child>
+				<child>
+				  <object class="GtkListBoxRow">
+				    <property name="focusable">False</property>
+				    <property name="selectable">False</property>
+				    <property name="activatable">False</property>
+				    <property name="child">
+				      <object class="GtkEntry" id="username_entry">
+					<property name="activates-default">True</property>
+					<property name="placeholder-text">Matrix Username</property>
+					<property name="margin-top">6</property>
+					<property name="margin-bottom">6</property>
+					<property name="margin-start">6</property>
+					<property name="margin-end">6</property>
+				      </object>
+				    </property>
+				  </object>
+				</child>
+				<child>
+				  <object class="GtkListBoxRow">
+				    <property name="focusable">False</property>
+				    <property name="selectable">False</property>
+				    <property name="activatable">False</property>
+				    <property name="child">
+				      <object class="GtkPasswordEntry" id="password_entry">
+					<property name="activates-default">True</property>
+					<property name="show-peek-icon">True</property>
+					<property name="placeholder-text">Password</property>
+					<property name="margin-top">6</property>
+					<property name="margin-bottom">6</property>
+					<property name="margin-start">6</property>
+					<property name="margin-end">6</property>
+				      </object>
+				    </property>
+				  </object>
+				</child>
+				<style>
+				  <class name="content"/>
+				  <class name="login"/>
+				</style>
 			      </object>
 			    </child>
 			    <child>
-			      <object class="GtkListBoxRow">
-				<property name="focusable">False</property>
-				<property name="selectable">False</property>
-				<property name="activatable">False</property>
-				<property name="child">
-				  <object class="GtkPasswordEntry" id="password_entry">
-				    <property name="activates-default">True</property>
-				    <property name="show-peek-icon">True</property>
-				    <property name="placeholder-text">Password</property>
-				    <property name="margin-top">6</property>
-				    <property name="margin-bottom">6</property>
-				    <property name="margin-start">6</property>
-				    <property name="margin-end">6</property>
-				  </object>
-				</property>
+			      <object class="GtkLinkButton" id="forgot_password">
+				<property name="use_underline">True</property>
+				<property name="label" translatable="yes">_Forgot Password?</property>
+				<property name="uri">https://app.element.io/#/forgot_password</property>
 			      </object>
 			    </child>
-			    <style>
-			      <class name="content"/>
-			      <class name="login"/>
-			    </style>
-			  </object>
-			</child>
-			<child>
-			  <object class="GtkLinkButton" id="forgot_password">
-			    <property name="use_underline">True</property>
-			    <property name="label" translatable="yes">_Forgot Password?</property>
-			    <property name="uri">https://app.element.io/#/forgot_password</property>
 			  </object>
 			</child>
 		      </object>
-		    </child>
-		  </object>
 		    </child>
 		  </object>
 		</property>
