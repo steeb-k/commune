@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::components::{ContextMenuBin, ContextMenuBinImpl};
+use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 use crate::session::content::{DividerRow, MessageRow, StateRow};
 use crate::session::room::{Item, ItemType};
 use matrix_sdk::events::AnyRoomEvent;
@@ -14,6 +14,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct ItemRow {
         pub item: RefCell<Option<Item>>,
+        pub menu_model: RefCell<Option<gio::MenuModel>>,
     }
 
     #[glib::object_subclass]
@@ -21,6 +22,16 @@ mod imp {
         const NAME: &'static str = "ContentItemRow";
         type Type = super::ItemRow;
         type ParentType = ContextMenuBin;
+
+        fn class_init(klass: &mut Self::Class) {
+            // View Event Source
+            klass.install_action("item-row.view-source", None, move |widget, _, _| {
+                let window = widget.root().unwrap().downcast().unwrap();
+                let dialog =
+                    EventSourceDialog::new(&window, widget.item().unwrap().event().unwrap());
+                dialog.show();
+            });
+        }
     }
 
     impl ObjectImpl for ItemRow {
@@ -61,10 +72,6 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
-        }
     }
 
     impl WidgetImpl for ItemRow {}
@@ -74,15 +81,28 @@ mod imp {
 
 glib::wrapper! {
     pub struct ItemRow(ObjectSubclass<imp::ItemRow>)
-        @extends gtk::Widget, ContextMenuBin, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
 }
 
 // TODO:
-// - [ ] Add context menu for operations
 // - [ ] Don't show rows for items that don't have a visible UI
 impl ItemRow {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create ItemRow")
+    }
+
+    /// Get the row's `Item`.
+    pub fn item(&self) -> Option<Item> {
+        let priv_ = imp::ItemRow::from_instance(&self);
+        priv_.item.borrow().clone()
+    }
+
+    fn enable_gactions(&self) {
+        self.action_set_enabled("item-row.view-source", true);
+    }
+
+    fn disable_gactions(&self) {
+        self.action_set_enabled("item-row.view-source", false);
     }
 
     /// This method sets this row to a new `Item`.
@@ -94,58 +114,75 @@ impl ItemRow {
 
         if let Some(ref item) = item {
             match item.type_() {
-                ItemType::Event(event) => match event.matrix_event() {
-                    AnyRoomEvent::Message(_message) => {
-                        let child = if let Some(Ok(child)) =
-                            self.child().map(|w| w.downcast::<MessageRow>())
-                        {
-                            child
-                        } else {
-                            let child = MessageRow::new();
-                            self.set_child(Some(&child));
-                            child
-                        };
-                        child.set_event(event.clone());
-                    }
-                    AnyRoomEvent::State(state) => {
-                        let child = if let Some(Ok(child)) =
-                            self.child().map(|w| w.downcast::<StateRow>())
-                        {
-                            child
-                        } else {
-                            let child = StateRow::new();
-                            self.set_child(Some(&child));
-                            child
-                        };
+                ItemType::Event(event) => {
+                    if self.context_menu().is_none() {
+                        let menu_model = gtk::Builder::from_resource(
+                            "/org/gnome/FractalNext/content-item-row-menu.ui",
+                        )
+                        .object("menu_model");
+                        self.set_context_menu(menu_model);
 
-                        child.update(&state);
+                        self.enable_gactions();
                     }
-                    AnyRoomEvent::RedactedMessage(_) => {
-                        let child = if let Some(Ok(child)) =
-                            self.child().map(|w| w.downcast::<MessageRow>())
-                        {
-                            child
-                        } else {
-                            let child = MessageRow::new();
-                            self.set_child(Some(&child));
-                            child
-                        };
-                        child.set_event(event.clone());
+
+                    match event.matrix_event() {
+                        AnyRoomEvent::Message(_message) => {
+                            let child = if let Some(Ok(child)) =
+                                self.child().map(|w| w.downcast::<MessageRow>())
+                            {
+                                child
+                            } else {
+                                let child = MessageRow::new();
+                                self.set_child(Some(&child));
+                                child
+                            };
+                            child.set_event(event.clone());
+                        }
+                        AnyRoomEvent::State(state) => {
+                            let child = if let Some(Ok(child)) =
+                                self.child().map(|w| w.downcast::<StateRow>())
+                            {
+                                child
+                            } else {
+                                let child = StateRow::new();
+                                self.set_child(Some(&child));
+                                child
+                            };
+
+                            child.update(&state);
+                        }
+                        AnyRoomEvent::RedactedMessage(_) => {
+                            let child = if let Some(Ok(child)) =
+                                self.child().map(|w| w.downcast::<MessageRow>())
+                            {
+                                child
+                            } else {
+                                let child = MessageRow::new();
+                                self.set_child(Some(&child));
+                                child
+                            };
+                            child.set_event(event.clone());
+                        }
+                        AnyRoomEvent::RedactedState(_) => {
+                            let child = if let Some(Ok(child)) =
+                                self.child().map(|w| w.downcast::<MessageRow>())
+                            {
+                                child
+                            } else {
+                                let child = MessageRow::new();
+                                self.set_child(Some(&child));
+                                child
+                            };
+                            child.set_event(event.clone());
+                        }
                     }
-                    AnyRoomEvent::RedactedState(_) => {
-                        let child = if let Some(Ok(child)) =
-                            self.child().map(|w| w.downcast::<MessageRow>())
-                        {
-                            child
-                        } else {
-                            let child = MessageRow::new();
-                            self.set_child(Some(&child));
-                            child
-                        };
-                        child.set_event(event.clone());
-                    }
-                },
+                }
                 ItemType::DayDivider(date) => {
+                    if self.context_menu().is_some() {
+                        self.set_context_menu(None);
+                        self.disable_gactions();
+                    }
+
                     let fmt = if date.year() == glib::DateTime::new_now_local().unwrap().year() {
                         // Translators: This is a date format in the day divider without the year
                         gettext("%A, %B %e")
@@ -163,6 +200,11 @@ impl ItemRow {
                     };
                 }
                 ItemType::NewMessageDivider => {
+                    if self.context_menu().is_some() {
+                        self.set_context_menu(None);
+                        self.disable_gactions();
+                    }
+
                     let label = gettext("New Messages");
 
                     if let Some(Ok(child)) = self.child().map(|w| w.downcast::<DividerRow>()) {

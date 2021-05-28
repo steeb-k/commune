@@ -1,102 +1,67 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <object class="GtkPopoverMenu" id="message_menu_popover">
-    <property name="can_focus">False</property>
-    <child>
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="margin_start">6</property>
-        <property name="margin_end">6</property>
-        <property name="margin_top">6</property>
-        <property name="margin_bottom">6</property>
-        <property name="orientation">vertical</property>
-        <child>
-          <object class="GtkModelButton" id="reply_button">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="action_name">message.reply</property>
-            <property name="text" translatable="yes">Reply</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="open_with_button">
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Open With…</property>
-            <property name="action_name">message.open_with</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="save_image_as_button">
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Save Image As…</property>
-            <property name="action_name">message.save_as</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="save_video_as_button">
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Save Video As…</property>
-            <property name="action_name">message.save_as</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="copy_image_button">
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Copy Image</property>
-            <property name="action_name">message.copy_image</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="copy_selected_text_button">
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Copy Selection</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="copy_text_button">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Copy Text</property>
-            <property name="action_name">message.copy_text</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="view_source_button">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="action_name">message.show_source</property>
-            <property name="text" translatable="yes">View Source</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator" id="message_menu_separator">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="delete_message_button">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="action_name">message.delete</property>
-            <property name="text" translatable="yes">Delete Message</property>
-          </object>
-        </child>
-      </object>
-      <packing>
-        <property name="submenu">main</property>
-        <property name="position">1</property>
-      </packing>
-    </child>
-  </object>
+  <menu id="menu_model">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Reply</attribute>
+        <attribute name="action">item-row.reply</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Edit</attribute>
+        <attribute name="action">item-row.edit</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Forward</attribute>
+        <attribute name="action">item-row.forward</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Select</attribute>
+        <attribute name="action">item-row.select</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Copy Text</attribute>
+        <attribute name="action">item-row.copy-text</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Copy Image</attribute>
+        <attribute name="action">item-row.copy-image</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">S_ave Image</attribute>
+        <attribute name="action">item-row.save-image</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Permalink</attribute>
+        <attribute name="action">item-row.permalink</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_View Source</attribute>
+        <attribute name="action">item-row.view-source</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Re_move</attribute>
+        <attribute name="action">item-row.remove</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+  </menu>
 </interface>
+
