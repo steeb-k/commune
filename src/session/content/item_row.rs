@@ -4,6 +4,7 @@ use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
 use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 use crate::session::content::{DividerRow, MessageRow, StateRow};
+use crate::session::event_source_dialog::EventSourceDialog;
 use crate::session::room::{Item, ItemType};
 use matrix_sdk::events::AnyRoomEvent;
 

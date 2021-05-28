@@ -1,5 +1,6 @@
 mod categories;
 mod content;
+mod event_source_dialog;
 mod room;
 mod room_list;
 mod sidebar;

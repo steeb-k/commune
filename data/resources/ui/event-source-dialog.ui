@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="EventSourceDialog" parent="AdwWindow">
+    <property name="modal">True</property>
+    <property name="title" translatable="yes">Event Source</property>
+    <property name="destroy-with-parent">True</property>
+    <property name="default-width">500</property>
+    <property name="default-height">300</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkHeaderBar">
+            <child type="start">
+              <object class="GtkButton">
+                <property name="icon-name">edit-copy-symbolic</property>
+                <property name="focus-on-click">False</property>
+                <property name="action-name">event-source-dialog.copy</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+            <style>
+              <class name="event-source-dialog"/>
+            </style>
+            <property name="child">
+              <object class="GtkSourceView" id="source_view">
+                <property name="can_focus">False</property>
+                <property name="editable">False</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="wrap_mode">word-char</property>
+                <property name="buffer">
+                  <object class="GtkSourceBuffer">
+                    <binding name="text">
+                      <lookup name="source">
+                        <lookup name="event">EventSourceDialog</lookup>
+                      </lookup>
+                    </binding>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

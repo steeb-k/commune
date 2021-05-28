@@ -33,6 +33,7 @@ sources = files(
   'login.rs',
   'secret.rs',
   'utils.rs',
+  'session/event_source_dialog.rs',
   'session/user.rs',
   'session/mod.rs',
   'session/categories/categories.rs',

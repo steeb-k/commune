@@ -15,6 +15,7 @@ data/resources/ui/content-room-history.ui
 data/resources/ui/content-state-row.ui
 data/resources/ui/content.ui
 data/resources/ui/context-menu-bin.ui
+data/resources/ui/event-source-dialog.ui
 data/resources/ui/login.ui
 data/resources/ui/in-app-notification.ui
 data/resources/ui/session.ui
