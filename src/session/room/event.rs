@@ -25,6 +25,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Event {
         pub event: OnceCell<RefCell<AnyRoomEvent>>,
+        pub source: RefCell<Option<String>>,
         pub relates_to: RefCell<Vec<super::Event>>,
         pub show_header: Cell<bool>,
         pub sender: OnceCell<User>,
@@ -54,6 +55,13 @@ mod imp {
                         "The matrix event of this Event",
                         BoxedAnyRoomEvent::static_type(),
                         glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT,
+                    ),
+                    glib::ParamSpec::new_string(
+                        "source",
+                        "Source",
+                        "The source (JSON) of this Event",
+                        None,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_boolean(
                         "show-header",
@@ -101,6 +109,10 @@ mod imp {
                     let event = value.get::<BoxedAnyRoomEvent>().unwrap();
                     obj.set_matrix_event(event.0);
                 }
+                "source" => {
+                    let source = value.get().unwrap();
+                    obj.set_source(source);
+                }
                 "show-header" => {
                     let show_header = value.get().unwrap();
                     let _ = obj.set_show_header(show_header);
@@ -117,6 +129,7 @@ mod imp {
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
+                "source" => obj.source().to_value(),
                 "sender" => self.sender.get().to_value(),
                 "show-header" => obj.show_header().to_value(),
                 "can-hide-header" => obj.can_hide_header().to_value(),
@@ -136,9 +149,9 @@ glib::wrapper! {
 
 /// This is the GObject represatation of a matrix room event
 impl Event {
-    pub fn new(event: &AnyRoomEvent, sender: &User) -> Self {
+    pub fn new(event: &AnyRoomEvent, source: &String, sender: &User) -> Self {
         let event = BoxedAnyRoomEvent(event.to_owned());
-        glib::Object::new(&[("event", &event), ("sender", &sender)])
+        glib::Object::new(&[("event", &event), ("source", source), ("sender", sender)])
             .expect("Failed to create Event")
     }
 
@@ -172,6 +185,22 @@ impl Event {
         let priv_ = imp::Event::from_instance(&self);
         let event = &*priv_.event.get().unwrap().borrow();
         fn_event!(event, event_id).clone()
+    }
+
+    pub fn source(&self) -> String {
+        let priv_ = imp::Event::from_instance(&self);
+        priv_.source.borrow().clone().unwrap_or("".into())
+    }
+
+    pub fn set_source(&self, source: Option<String>) {
+        let priv_ = imp::Event::from_instance(&self);
+
+        if Some(self.source()) == source {
+            return;
+        }
+
+        priv_.source.replace(source);
+        self.notify("source");
     }
 
     pub fn timestamp(&self) -> DateTime {

@@ -5,6 +5,7 @@ use matrix_sdk::{
     api::r0::sync::sync_events::InvitedRoom,
     deserialized_responses::{JoinedRoom, LeftRoom},
     events::{
+        exports::serde::de::DeserializeOwned,
         room::{
             member::{MemberEventContent, MembershipState},
             message::{
@@ -18,7 +19,7 @@ use matrix_sdk::{
     identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
     uuid::Uuid,
-    MilliSecondsSinceUnixEpoch, RoomMember,
+    MilliSecondsSinceUnixEpoch, Raw, RoomMember,
 };
 use std::cell::RefCell;
 
@@ -433,13 +434,13 @@ impl Room {
     }
 
     /// Add new events to the timeline
-    pub fn append_events(&self, batch: Vec<AnyRoomEvent>) {
+    pub fn append_events<T: DeserializeOwned>(&self, batch: Vec<(AnyRoomEvent, Raw<T>)>) {
         let priv_ = imp::Room::from_instance(self);
 
         //FIXME: notify only when the count has changed
         self.notify_notification_count();
 
-        for event in batch.iter() {
+        for (event, _) in batch.iter() {
             match event {
                 AnyRoomEvent::State(AnyStateEvent::RoomMember(ref event)) => {
                     self.update_member_for_member_event(event)
@@ -649,15 +650,15 @@ impl Room {
                 .timeline
                 .events
                 .into_iter()
-                .filter_map(|event| {
-                    if let Ok(event) = event.event.deserialize() {
-                        Some(event)
+                .filter_map(|raw_event| {
+                    if let Ok(event) = raw_event.event.deserialize() {
+                        Some((event, raw_event.event))
                     } else {
-                        error!("Couldn't deserialize event: {:?}", event);
+                        error!("Couldn't deserialize event: {:?}", raw_event);
                         None
                     }
                 })
-                .map(|event| event_from_sync_event!(event, room_id))
+                .map(|(event, source)| (event_from_sync_event!(event, room_id), source))
                 .collect(),
         );
     }
@@ -681,15 +682,15 @@ impl Room {
                 .timeline
                 .events
                 .into_iter()
-                .filter_map(|event| {
-                    if let Ok(event) = event.event.deserialize() {
-                        Some(event)
+                .filter_map(|raw_event| {
+                    if let Ok(event) = raw_event.event.deserialize() {
+                        Some((event, raw_event.event))
                     } else {
-                        error!("Couldn't deserialize event: {:?}", event);
+                        error!("Couldn't deserialize event: {:?}", raw_event);
                         None
                     }
                 })
-                .map(|event| event_from_sync_event!(event, room_id))
+                .map(|(event, source)| (event_from_sync_event!(event, room_id), source))
                 .collect(),
         );
     }
