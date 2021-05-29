@@ -140,20 +140,10 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-/// A Bin widget that adds a conext menu
+/// A Bin widget that adds a context menu
 impl ContextMenuBin {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create ContextMenuBin")
-    }
-
-    pub fn set_context_menu(&self, menu: Option<gio::MenuModel>) {
-        let priv_ = imp::ContextMenuBin::from_instance(self);
-        priv_.popover.set_menu_model(menu.as_ref());
-    }
-
-    pub fn context_menu(&self) -> Option<gio::MenuModel> {
-        let priv_ = imp::ContextMenuBin::from_instance(self);
-        priv_.popover.menu_model()
     }
 
     fn open_menu_at(&self, x: i32, y: i32) {
@@ -176,13 +166,33 @@ impl ContextMenuBin {
     }
 }
 
-unsafe impl<T: ContextMenuBinImpl> IsSubclassable<T> for ContextMenuBin {
-    fn class_init(class: &mut glib::Class<Self>) {
-        <glib::Object as IsSubclassable<T>>::class_init(class);
+pub trait ContextMenuBinExt: 'static {
+    /// Set the `MenuModel` used in the context menu.
+    fn set_context_menu(&self, menu: Option<gio::MenuModel>);
+
+    /// Get the `MenuModel` used in the context menu.
+    fn context_menu(&self) -> Option<gio::MenuModel>;
+}
+
+impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
+    fn set_context_menu(&self, menu: Option<gio::MenuModel>) {
+        let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
+        priv_.popover.set_menu_model(menu.as_ref());
     }
-    fn instance_init(instance: &mut glib::subclass::InitializingObject<T>) {
-        <glib::Object as IsSubclassable<T>>::instance_init(instance);
+
+    fn context_menu(&self) -> Option<gio::MenuModel> {
+        let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
+        priv_.popover.menu_model()
     }
 }
 
 pub trait ContextMenuBinImpl: BinImpl {}
+
+unsafe impl<T: ContextMenuBinImpl> IsSubclassable<T> for ContextMenuBin {
+    fn class_init(class: &mut glib::Class<Self>) {
+        <gtk::Widget as IsSubclassable<T>>::class_init(class);
+    }
+    fn instance_init(instance: &mut glib::subclass::InitializingObject<T>) {
+        <gtk::Widget as IsSubclassable<T>>::instance_init(instance);
+    }
+}
