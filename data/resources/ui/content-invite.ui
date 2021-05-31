@@ -80,21 +80,15 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox">
-                        <property name="halign">center</property>
+                      <object class="LabelWithWidgets">
+                        <property name="label" translatable="yes">&lt;widget&gt; invited you</property>
                         <child>
-                          <object class="Pill" id="inviter">
+                          <object class="Pill">
                             <binding name="user">
                               <lookup name="inviter">
                                 <lookup name="room">ContentInvite</lookup>
                               </lookup>
                             </binding>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <!-- Translators: the space at the beginning is there on purpose -->
-                            <property name="label" translatable="yes"> invited you</property>
                           </object>
                         </child>
                       </object>

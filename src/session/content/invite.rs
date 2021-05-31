@@ -1,5 +1,5 @@
 use crate::{
-    components::{Pill, SpinnerButton},
+    components::{LabelWithWidgets, Pill, SpinnerButton},
     session::{categories::CategoryType, room::Room},
 };
 use adw::subclass::prelude::*;
@@ -23,8 +23,6 @@ mod imp {
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
-        pub inviter: TemplateChild<adw::HeaderBar>,
-        #[template_child]
         pub room_topic: TemplateChild<gtk::Label>,
         #[template_child]
         pub accept_button: TemplateChild<SpinnerButton>,
@@ -41,6 +39,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Pill::static_type();
             SpinnerButton::static_type();
+            LabelWithWidgets::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
