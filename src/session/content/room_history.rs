@@ -1,4 +1,6 @@
-use crate::session::{content::ItemRow, content::MarkdownPopover, room::Room};
+use crate::session::{
+    categories::CategoryType, content::ItemRow, content::MarkdownPopover, room::Room,
+};
 use adw::subclass::prelude::*;
 use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
@@ -9,7 +11,7 @@ use sourceview::prelude::*;
 mod imp {
     use super::*;
     use crate::Application;
-    use glib::subclass::InitializingObject;
+    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
     use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
@@ -17,9 +19,12 @@ mod imp {
     pub struct RoomHistory {
         pub compact: Cell<bool>,
         pub room: RefCell<Option<Room>>,
+        pub category_handler: RefCell<Option<SignalHandlerId>>,
         pub md_enabled: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        pub room_menu: TemplateChild<gtk::MenuButton>,
         #[template_child]
         pub listview: TemplateChild<gtk::ListView>,
         #[template_child]
@@ -48,6 +53,9 @@ mod imp {
                     widget.send_text_message();
                 },
             );
+            klass.install_action("room-history.leave", None, move |widget, _, _| {
+                widget.leave();
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -203,6 +211,23 @@ impl RoomHistory {
             return;
         }
 
+        if let Some(category_handler) = priv_.category_handler.take() {
+            if let Some(room) = self.room() {
+                room.disconnect(category_handler);
+            }
+        }
+
+        if let Some(ref room) = room {
+            let handler_id = room.connect_notify_local(
+                Some("category"),
+                clone!(@weak self as obj => move |_, _| {
+                        obj.update_room_state();
+                }),
+            );
+
+            priv_.category_handler.replace(Some(handler_id));
+        }
+
         // TODO: use gtk::MultiSelection to allow selection
         let model = room
             .as_ref()
@@ -210,6 +235,7 @@ impl RoomHistory {
 
         priv_.listview.set_model(model.as_ref());
         priv_.room.replace(room);
+        self.update_room_state();
         self.notify("room");
     }
 
@@ -229,5 +255,27 @@ impl RoomHistory {
         }
 
         buffer.set_text("");
+    }
+
+    pub fn leave(&self) {
+        let priv_ = imp::RoomHistory::from_instance(self);
+
+        if let Some(room) = &*priv_.room.borrow() {
+            room.set_category(CategoryType::Left);
+        }
+    }
+
+    fn update_room_state(&self) {
+        let priv_ = imp::RoomHistory::from_instance(self);
+
+        if let Some(room) = &*priv_.room.borrow() {
+            if room.category() == CategoryType::Left {
+                self.action_set_enabled("room-history.leave", false);
+                priv_.room_menu.hide();
+            } else {
+                self.action_set_enabled("room-history.leave", true);
+                priv_.room_menu.show();
+            }
+        }
     }
 }

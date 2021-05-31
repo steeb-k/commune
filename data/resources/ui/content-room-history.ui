@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
+  <menu id="room-menu-model">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Leave Room</attribute>
+        <attribute name="action">room-history.leave</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+  </menu>
   <template class="ContentRoomHistory" parent="AdwBin">
     <property name="vexpand">True</property>
     <property name="hexpand">True</property>
@@ -33,6 +42,7 @@
             <child type="end">
               <object class="GtkMenuButton" id="room_menu">
                 <property name="icon-name">view-more-symbolic</property>
+                <property name="menu-model">room-menu-model</property>
               </object>
             </child>
             <child type="end">
