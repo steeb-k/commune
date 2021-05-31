@@ -50,10 +50,13 @@ sources = files(
   'session/room/item.rs',
   'session/room/mod.rs',
   'session/room/room.rs',
+  'session/room_list.rs',
   'session/room/timeline.rs',
+  'session/sidebar/category_row.rs',
   'session/sidebar/mod.rs',
   'session/sidebar/row.rs',
   'session/sidebar/room_row.rs',
+  'session/sidebar/selection.rs',
   'session/sidebar/sidebar.rs',
 )
 

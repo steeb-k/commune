@@ -49,6 +49,7 @@ src/session/content/mod.rs
 src/session/content/room_history.rs
 src/session/content/state_row.rs
 src/session/mod.rs
+src/session/room_list.rs
 src/session/room/event.rs
 src/session/room/highlight_flags.rs
 src/session/room/item.rs
