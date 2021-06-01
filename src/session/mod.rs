@@ -55,7 +55,7 @@ mod imp {
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
-        pub room_list: RoomList,
+        pub room_list: OnceCell<RoomList>,
         pub categories: Categories,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
@@ -99,6 +99,13 @@ mod imp {
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_object(
+                        "user",
+                        "User",
+                        "The user of this session",
+                        User::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -125,6 +132,7 @@ mod imp {
             match pspec.name() {
                 "categories" => self.categories.to_value(),
                 "selected-room" => obj.selected_room().to_value(),
+                "user" => obj.user().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -134,18 +142,6 @@ mod imp {
                 vec![Signal::builder("prepared", &[], <()>::static_type().into()).build()]
             });
             SIGNALS.as_ref()
-        }
-
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
-
-            self.categories.set_room_list(&self.room_list);
-
-            self.room_list
-                .connect_error(clone!(@weak obj => move |_, error| {
-                        let priv_ = imp::Session::from_instance(&obj);
-                        priv_.error_list.append(&error);
-                }));
         }
     }
     impl WidgetImpl for Session {}
@@ -271,19 +267,19 @@ impl Session {
         let priv_ = imp::Session::from_instance(self);
         match result {
             Ok((client, session)) => {
-                priv_.client.set(client.clone()).unwrap();
-
-                let user = User::new(&session.user_id);
-                self.set_user(user.clone());
+                priv_.client.set(client).unwrap();
+                let user = User::new(self, &session.user_id);
+                priv_.user.set(user).unwrap();
 
                 if store_session {
                     // TODO: report secret service errors
                     secret::store_session(session).unwrap();
                 }
 
-                priv_.room_list.set_client(client).unwrap();
-                priv_.room_list.set_user(user).unwrap();
-                priv_.room_list.load();
+                let room_list = RoomList::new(self);
+                priv_.categories.set_room_list(&room_list);
+                room_list.load();
+                priv_.room_list.set(room_list).unwrap();
 
                 self.sync();
             }
@@ -339,9 +335,14 @@ impl Session {
         priv_.is_ready.get().copied().unwrap_or_default()
     }
 
-    fn set_user(&self, user: User) {
+    pub fn user(&self) -> &User {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.user.set(user).unwrap();
+        priv_.user.get().unwrap()
+    }
+
+    pub fn client(&self) -> &Client {
+        let priv_ = &imp::Session::from_instance(self);
+        priv_.client.get().unwrap()
     }
 
     /// Sets up the required channel to receive new room events
@@ -361,6 +362,12 @@ impl Session {
         );
 
         sender
+    }
+
+    /// This appends a new error to the list of errors
+    pub fn append_error(&self, error: &Error) {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.error_list.append(error);
     }
 
     /// Returns and consumes the `error` that was generated when the session failed to login,
@@ -385,6 +392,10 @@ impl Session {
     fn handle_sync_response(&self, response: SyncResponse) {
         let priv_ = imp::Session::from_instance(self);
 
-        priv_.room_list.handle_response_rooms(response.rooms);
+        priv_
+            .room_list
+            .get()
+            .unwrap()
+            .handle_response_rooms(response.rooms);
     }
 }

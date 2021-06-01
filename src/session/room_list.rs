@@ -1,14 +1,10 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
-use matrix_sdk::{deserialized_responses::Rooms as ResponseRooms, identifiers::RoomId, Client};
+use matrix_sdk::{deserialized_responses::Rooms as ResponseRooms, identifiers::RoomId};
 
-use crate::{
-    session::{room::Room, user::User},
-    Error,
-};
+use crate::session::{room::Room, Session};
 
 mod imp {
-    use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
 
@@ -17,8 +13,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct RoomList {
         pub list: RefCell<IndexMap<RoomId, Room>>,
-        pub client: OnceCell<Client>,
-        pub user: OnceCell<User>,
+        pub session: OnceCell<Session>,
     }
 
     #[glib::object_subclass]
@@ -30,16 +25,38 @@ mod imp {
     }
 
     impl ObjectImpl for RoomList {
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder(
-                    "error",
-                    &[Error::static_type().into()],
-                    <()>::static_type().into(),
-                )
-                .build()]
+        fn properties() -> &'static [glib::ParamSpec] {
+            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
+                vec![glib::ParamSpec::new_object(
+                    "session",
+                    "Session",
+                    "The session",
+                    Session::static_type(),
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                )]
             });
-            SIGNALS.as_ref()
+
+            PROPERTIES.as_ref()
+        }
+
+        fn set_property(
+            &self,
+            _obj: &Self::Type,
+            _id: usize,
+            value: &glib::Value,
+            pspec: &glib::ParamSpec,
+        ) {
+            match pspec.name() {
+                "session" => self.session.set(value.get().unwrap()).unwrap(),
+                _ => unimplemented!(),
+            }
+        }
+
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "session" => obj.session().to_value(),
+                _ => unimplemented!(),
+            }
         }
     }
 
@@ -66,25 +83,14 @@ glib::wrapper! {
         @implements gio::ListModel;
 }
 
-impl Default for RoomList {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl RoomList {
-    pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create RoomList")
+    pub fn new(session: &Session) -> Self {
+        glib::Object::new(&[("session", session)]).expect("Failed to create RoomList")
     }
 
-    pub fn set_client(&self, client: Client) -> Result<(), Client> {
+    pub fn session(&self) -> &Session {
         let priv_ = imp::RoomList::from_instance(&self);
-        priv_.client.set(client)
-    }
-
-    pub fn set_user(&self, user: User) -> Result<(), User> {
-        let priv_ = imp::RoomList::from_instance(&self);
-        priv_.user.set(user)
+        priv_.session.get().unwrap()
     }
 
     pub fn get(&self, room_id: &RoomId) -> Option<Room> {
@@ -131,15 +137,11 @@ impl RoomList {
             room.connect_notify_local(
                 Some("category"),
                 clone!(@weak self as obj => move |r, _| {
-                    if let Some((position, _, _)) = obj.get_full(&r.matrix_room_id()) {
+                    if let Some((position, _, _)) = obj.get_full(&r.room_id()) {
                         obj.items_changed(position as u32, 1, 1);
                     }
                 }),
             );
-
-            room.connect_error(clone!(@weak self as obj => move |_, error| {
-                obj.emit_by_name("error", &[&error]).unwrap();
-            }));
         }
 
         self.items_changed(position as u32, 0, added as u32);
@@ -151,17 +153,18 @@ impl RoomList {
     /// loading much via this function.
     pub fn load(&self) {
         let priv_ = imp::RoomList::from_instance(&self);
-
-        let matrix_rooms = priv_.client.get().unwrap().rooms();
+        let session = self.session();
+        let client = session.client();
+        let matrix_rooms = client.rooms();
         let added = matrix_rooms.len();
 
         if added > 0 {
             {
                 let mut list = priv_.list.borrow_mut();
                 for matrix_room in matrix_rooms {
-                    let room = Room::new(matrix_room, priv_.user.get().unwrap());
-
-                    list.insert(room.matrix_room_id(), room);
+                    let room_id = matrix_room.room_id().to_owned();
+                    let room = Room::new(session, &room_id);
+                    list.insert(room_id, room);
                 }
             }
 
@@ -171,71 +174,54 @@ impl RoomList {
 
     pub fn handle_response_rooms(&self, rooms: ResponseRooms) {
         let priv_ = imp::RoomList::from_instance(&self);
+        let session = self.session();
 
         let mut added = 0;
 
         for (room_id, left_room) in rooms.leave {
-            let matrix_room = priv_.client.get().unwrap().get_room(&room_id).unwrap();
-
             let room = priv_
                 .list
                 .borrow_mut()
-                .entry(room_id)
+                .entry(room_id.clone())
                 .or_insert_with(|| {
                     added += 1;
-                    Room::new(matrix_room.clone(), priv_.user.get().unwrap())
+                    Room::new(session, &room_id)
                 })
                 .clone();
 
-            room.handle_left_response(left_room, matrix_room);
+            room.handle_left_response(left_room);
         }
 
         for (room_id, joined_room) in rooms.join {
-            let matrix_room = priv_.client.get().unwrap().get_room(&room_id).unwrap();
-
             let room = priv_
                 .list
                 .borrow_mut()
-                .entry(room_id)
+                .entry(room_id.clone())
                 .or_insert_with(|| {
                     added += 1;
-                    Room::new(matrix_room.clone(), priv_.user.get().unwrap())
+                    Room::new(session, &room_id)
                 })
                 .clone();
 
-            room.handle_joined_response(joined_room, matrix_room);
+            room.handle_joined_response(joined_room);
         }
 
         for (room_id, invited_room) in rooms.invite {
-            let matrix_room = priv_.client.get().unwrap().get_room(&room_id).unwrap();
-
             let room = priv_
                 .list
                 .borrow_mut()
-                .entry(room_id)
+                .entry(room_id.clone())
                 .or_insert_with(|| {
                     added += 1;
-                    Room::new(matrix_room.clone(), priv_.user.get().unwrap())
+                    Room::new(session, &room_id)
                 })
                 .clone();
 
-            room.handle_invited_response(invited_room, matrix_room);
+            room.handle_invited_response(invited_room);
         }
 
         if added > 0 {
             self.items_added(added);
         }
-    }
-
-    pub fn connect_error<F: Fn(&Self, Error) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("error", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            let error = values[1].get::<Error>().unwrap();
-
-            f(&obj, error);
-
-            None
-        })
-        .unwrap()
     }
 }

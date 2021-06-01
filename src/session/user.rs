@@ -1,5 +1,6 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
+use crate::session::Session;
 use matrix_sdk::{
     events::{room::member::MemberEventContent, StateEvent, StrippedStateEvent},
     identifiers::UserId,
@@ -16,6 +17,7 @@ mod imp {
         pub user_id: OnceCell<String>,
         pub display_name: RefCell<Option<String>>,
         pub avatar: RefCell<Option<gio::LoadableIcon>>,
+        pub session: OnceCell<Session>,
     }
 
     #[glib::object_subclass]
@@ -50,6 +52,13 @@ mod imp {
                         gio::LoadableIcon::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_object(
+                        "session",
+                        "Session",
+                        "The session",
+                        Session::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
                 ]
             });
 
@@ -68,6 +77,7 @@ mod imp {
                     let user_id = value.get().unwrap();
                     self.user_id.set(user_id).unwrap();
                 }
+                "session" => self.session.set(value.get().unwrap()).unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -77,6 +87,7 @@ mod imp {
                 "display-name" => obj.display_name().to_value(),
                 "user-id" => self.user_id.get().to_value(),
                 "avatar" => self.avatar.borrow().to_value(),
+                "session" => obj.session().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -89,8 +100,14 @@ glib::wrapper! {
 
 /// This is a `glib::Object` rapresentation of matrix users.
 impl User {
-    pub fn new(user_id: &UserId) -> Self {
-        glib::Object::new(&[("user-id", &user_id.to_string())]).expect("Failed to create User")
+    pub fn new(session: &Session, user_id: &UserId) -> Self {
+        glib::Object::new(&[("session", session), ("user-id", &user_id.to_string())])
+            .expect("Failed to create User")
+    }
+
+    pub fn session(&self) -> &Session {
+        let priv_ = imp::User::from_instance(&self);
+        priv_.session.get().unwrap()
     }
 
     pub fn user_id(&self) -> UserId {

@@ -22,13 +22,14 @@ use matrix_sdk::{
     MilliSecondsSinceUnixEpoch, Raw, RoomMember,
 };
 use std::cell::RefCell;
+use std::convert::TryFrom;
 
 use crate::components::{LabelWithWidgets, Pill};
 use crate::event_from_sync_event;
 use crate::session::{
     categories::CategoryType,
     room::{HighlightFlags, Timeline},
-    User,
+    Session, User,
 };
 use crate::utils::do_async;
 use crate::Error;
@@ -36,22 +37,20 @@ use crate::RUNTIME;
 
 mod imp {
     use super::*;
-    use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::Cell;
     use std::collections::HashMap;
 
     #[derive(Debug, Default)]
     pub struct Room {
+        pub room_id: OnceCell<RoomId>,
         pub matrix_room: RefCell<Option<MatrixRoom>>,
-        pub user: OnceCell<User>,
+        pub session: OnceCell<Session>,
         pub name: RefCell<Option<String>>,
         pub avatar: RefCell<Option<gio::LoadableIcon>>,
         pub category: Cell<CategoryType>,
         pub timeline: OnceCell<Timeline>,
         pub room_members: RefCell<HashMap<UserId, User>>,
-        /// The user of this room
-        pub user_id: OnceCell<UserId>,
         /// The user who send the invite to this room. This is only set when this room is an invitiation.
         pub inviter: RefCell<Option<User>>,
     }
@@ -67,12 +66,19 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boxed(
-                        "matrix-room",
-                        "Matrix room",
-                        "The underlaying matrix room.",
-                        BoxedMatrixRoom::static_type(),
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT,
+                    glib::ParamSpec::new_string(
+                        "room-id",
+                        "Room id",
+                        "The room id of this Room",
+                        None,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "session",
+                        "Session",
+                        "The session",
+                        Session::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_string(
                         "display-name",
@@ -80,13 +86,6 @@ mod imp {
                         "The display name of this room",
                         None,
                         glib::ParamFlags::READABLE,
-                    ),
-                    glib::ParamSpec::new_object(
-                        "user",
-                        "User",
-                        "The user of the session that owns this room",
-                        User::static_type(),
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_object(
                         "inviter",
@@ -155,18 +154,15 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "matrix-room" => {
-                    let matrix_room = value.get::<BoxedMatrixRoom>().unwrap();
-                    obj.set_matrix_room(matrix_room.0);
-                }
-                "user" => {
-                    let user = value.get().unwrap();
-                    self.user.set(user).unwrap();
-                }
+                "session" => self.session.set(value.get().unwrap()).unwrap(),
                 "category" => {
                     let category = value.get().unwrap();
                     obj.set_category(category);
                 }
+                "room-id" => self
+                    .room_id
+                    .set(RoomId::try_from(value.get::<String>().unwrap()).unwrap())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -175,7 +171,8 @@ mod imp {
             let matrix_room = self.matrix_room.borrow();
             let matrix_room = matrix_room.as_ref().unwrap();
             match pspec.name() {
-                "user" => obj.user().to_value(),
+                "room-id" => obj.room_id().as_str().to_value(),
+                "session" => obj.session().to_value(),
                 "inviter" => obj.inviter().to_value(),
                 "display-name" => obj.display_name().to_value(),
                 "avatar" => self.avatar.borrow().to_value(),
@@ -198,16 +195,11 @@ mod imp {
             }
         }
 
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder(
-                    "error",
-                    &[Error::static_type().into()],
-                    <()>::static_type().into(),
-                )
-                .build()]
-            });
-            SIGNALS.as_ref()
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            obj.set_matrix_room(obj.session().client().get_room(obj.room_id()).unwrap());
+            self.timeline.set(Timeline::new(obj)).unwrap();
         }
     }
 }
@@ -216,25 +208,20 @@ glib::wrapper! {
     pub struct Room(ObjectSubclass<imp::Room>);
 }
 
-#[derive(Clone, Debug, glib::GBoxed)]
-#[gboxed(type_name = "BoxedMatrixRoom")]
-struct BoxedMatrixRoom(MatrixRoom);
-
 impl Room {
-    pub fn new(room: MatrixRoom, user: &User) -> Self {
-        glib::Object::new(&[("matrix-room", &BoxedMatrixRoom(room)), ("user", user)])
+    pub fn new(session: &Session, room_id: &RoomId) -> Self {
+        glib::Object::new(&[("session", session), ("room-id", &room_id.to_string())])
             .expect("Failed to create Room")
     }
 
-    pub fn matrix_room_id(&self) -> RoomId {
+    pub fn session(&self) -> &Session {
+        let priv_ = imp::Room::from_instance(&self);
+        priv_.session.get().unwrap()
+    }
+
+    pub fn room_id(&self) -> &RoomId {
         let priv_ = imp::Room::from_instance(self);
-        priv_
-            .matrix_room
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .room_id()
-            .clone()
+        priv_.room_id.get().unwrap().into()
     }
 
     fn matrix_room(&self) -> MatrixRoom {
@@ -243,7 +230,7 @@ impl Room {
     }
 
     /// Set the new sdk room struct represented by this `Room`
-    pub fn set_matrix_room(&self, matrix_room: MatrixRoom) {
+    fn set_matrix_room(&self, matrix_room: MatrixRoom) {
         let priv_ = imp::Room::from_instance(self);
 
         // Check if the previous type was different
@@ -261,17 +248,10 @@ impl Room {
         }
 
         priv_.matrix_room.replace(Some(matrix_room));
-        // We create the timeline once
-        priv_.timeline.get_or_init(|| Timeline::new(self));
 
         self.load_members();
         self.load_display_name();
         self.load_category();
-    }
-
-    pub fn user(&self) -> &User {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.user.get().unwrap()
     }
 
     pub fn category(&self) -> CategoryType {
@@ -381,7 +361,7 @@ impl Room {
                                         }),
                                 );
 
-                                obj.emit_by_name("error", &[&error]).unwrap();
+                                obj.session().append_error(&error);
 
                                 // Load the previous category
                                 obj.load_category();
@@ -501,7 +481,7 @@ impl Room {
 
         room_members
             .entry(user_id.clone())
-            .or_insert(User::new(&user_id))
+            .or_insert(User::new(self.session(), &user_id))
             .clone()
     }
 
@@ -515,7 +495,7 @@ impl Room {
             .find(|event| {
                 if let AnyStrippedStateEvent::RoomMember(event) = event {
                     event.content.membership == MembershipState::Invite
-                        && event.state_key == self.user().user_id().as_str()
+                        && event.state_key == self.session().user().user_id().as_str()
                 } else {
                     false
                 }
@@ -532,7 +512,7 @@ impl Room {
             }
         });
 
-        let inviter = User::new(inviter_id);
+        let inviter = User::new(self.session(), inviter_id);
         if let Some(AnyStrippedStateEvent::RoomMember(event)) = inviter_event {
             inviter.update_from_stripped_member_event(event);
         }
@@ -577,7 +557,7 @@ impl Room {
             let user_id = member.user_id();
             let user = room_members
                 .entry(user_id.clone())
-                .or_insert(User::new(user_id));
+                .or_insert(User::new(self.session(), user_id));
             user.update_from_room_member(&member);
         }
     }
@@ -589,7 +569,7 @@ impl Room {
         let user_id = &event.sender;
         let user = room_members
             .entry(user_id.clone())
-            .or_insert(User::new(user_id));
+            .or_insert(User::new(self.session(), user_id));
         user.update_from_member_event(event);
     }
 
@@ -626,7 +606,6 @@ impl Room {
     }
 
     pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
-        use std::convert::TryFrom;
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let content = if let Some(body) = body.strip_prefix("/me ") {
                 let emote = if markdown_enabled {
@@ -649,7 +628,7 @@ impl Room {
             let pending_event = AnyMessageEvent::RoomMessage(MessageEvent {
                 content,
                 event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
-                sender: self.user().user_id().clone(),
+                sender: self.session().user().user_id().clone(),
                 origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
                 room_id: matrix_room.room_id().clone(),
                 unsigned: Unsigned::default(),
@@ -708,7 +687,7 @@ impl Room {
                                 Some(error_label.upcast())
                         }),
                     );
-                    self.emit_by_name("error", &[&error]).unwrap();
+                    self.session().append_error(&error);
                     Err(error)
                 }
             }
@@ -738,7 +717,7 @@ impl Room {
                                 Some(error_label.upcast())
                         }),
                     );
-                    self.emit_by_name("error", &[&error]).unwrap();
+                    self.session().append_error(&error);
                     Err(error)
                 }
             }
@@ -748,10 +727,10 @@ impl Room {
         }
     }
 
-    pub fn handle_left_response(&self, response_room: LeftRoom, matrix_room: MatrixRoom) {
-        self.set_matrix_room(matrix_room);
+    pub fn handle_left_response(&self, response_room: LeftRoom) {
+        self.set_matrix_room(self.session().client().get_room(self.room_id()).unwrap());
 
-        let room_id = self.matrix_room_id();
+        let room_id = self.room_id();
 
         self.append_events(
             response_room
@@ -771,8 +750,8 @@ impl Room {
         );
     }
 
-    pub fn handle_joined_response(&self, response_room: JoinedRoom, matrix_room: MatrixRoom) {
-        self.set_matrix_room(matrix_room);
+    pub fn handle_joined_response(&self, response_room: JoinedRoom) {
+        self.set_matrix_room(self.session().client().get_room(self.room_id()).unwrap());
 
         if response_room
             .account_data
@@ -783,7 +762,7 @@ impl Room {
             self.load_category();
         }
 
-        let room_id = self.matrix_room_id();
+        let room_id = self.room_id();
 
         self.append_events(
             response_room
@@ -803,8 +782,8 @@ impl Room {
         );
     }
 
-    pub fn handle_invited_response(&self, response_room: InvitedRoom, matrix_room: MatrixRoom) {
-        self.set_matrix_room(matrix_room);
+    pub fn handle_invited_response(&self, response_room: InvitedRoom) {
+        self.set_matrix_room(self.session().client().get_room(self.room_id()).unwrap());
 
         self.handle_invite_events(
             response_room
@@ -821,17 +800,5 @@ impl Room {
                 })
                 .collect(),
         )
-    }
-
-    pub fn connect_error<F: Fn(&Self, Error) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("error", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            let error = values[1].get::<Error>().unwrap();
-
-            f(&obj, error);
-
-            None
-        })
-        .unwrap()
     }
 }
