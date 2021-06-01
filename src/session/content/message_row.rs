@@ -1,3 +1,4 @@
+use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{
     gio, glib, glib::clone, glib::signal::SignalHandlerId, prelude::*, subclass::prelude::*,
@@ -28,7 +29,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/content-message-row.ui")]
     pub struct MessageRow {
         #[template_child]
-        pub avatar: TemplateChild<adw::Avatar>,
+        pub avatar: TemplateChild<Avatar>,
         #[template_child]
         pub header: TemplateChild<gtk::Box>,
         #[template_child]
@@ -49,6 +50,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            Avatar::static_type();
             Self::bind_template(klass);
         }
 
@@ -147,7 +149,8 @@ impl MessageRow {
             }
         }
 
-        //TODO: bind the user's avatar to the message row
+        priv_.avatar.set_user(Some(event.sender().clone()));
+
         let display_name_binding = event
             .sender()
             .bind_property("display-name", &priv_.display_name.get(), "label")

@@ -1,3 +1,4 @@
+use crate::components::Avatar;
 use adw::subclass::prelude::*;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
@@ -20,7 +21,7 @@ mod imp {
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
-        pub avatar: TemplateChild<adw::Avatar>,
+        pub avatar: TemplateChild<Avatar>,
         pub bindings: RefCell<Vec<glib::Binding>>,
     }
 
@@ -124,6 +125,7 @@ impl Pill {
             priv_.bindings.borrow_mut().push(display_name_binding);
         }
 
+        priv_.avatar.set_user(user.clone());
         priv_.user.replace(user);
 
         self.notify("user");
@@ -155,6 +157,7 @@ impl Pill {
             priv_.bindings.borrow_mut().push(display_name_binding);
         }
 
+        priv_.avatar.set_room(room.clone());
         priv_.room.replace(room);
 
         self.notify("room");

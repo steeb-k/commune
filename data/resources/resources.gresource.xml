@@ -23,6 +23,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="pill.ui">ui/pill.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="spinner-button.ui">ui/spinner-button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="in-app-notification.ui">ui/in-app-notification.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-avatar.ui">ui/components-avatar.ui</file>
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>

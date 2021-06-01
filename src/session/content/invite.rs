@@ -1,5 +1,5 @@
 use crate::{
-    components::{LabelWithWidgets, Pill, SpinnerButton},
+    components::{Avatar, LabelWithWidgets, Pill, SpinnerButton},
     session::{categories::CategoryType, room::Room},
 };
 use adw::subclass::prelude::*;
@@ -40,6 +40,7 @@ mod imp {
             Pill::static_type();
             SpinnerButton::static_type();
             LabelWithWidgets::static_type();
+            Avatar::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ComponentsAvatar" parent="AdwBin">
+    <property name="child">
+      <object class="AdwAvatar" id="avatar">
+        <property name="show-initials">True</property>
+        <binding name="text">
+          <lookup name="display-name" type="Room">
+            <lookup name="item">ComponentsAvatar</lookup>
+          </lookup>
+        </binding>
+        <binding name="text">
+          <lookup name="display-name" type="User">
+            <lookup name="item">ComponentsAvatar</lookup>
+          </lookup>
+        </binding>
+        <binding name="custom-image">
+          <lookup name="image" type="Avatar">
+            <lookup name="avatar" type="Room">
+              <lookup name="item">ComponentsAvatar</lookup>
+            </lookup>
+          </lookup>
+        </binding>
+        <binding name="custom-image">
+          <lookup name="image" type="Avatar">
+            <lookup name="avatar" type="User">
+              <lookup name="item">ComponentsAvatar</lookup>
+            </lookup>
+          </lookup>
+        </binding>
+      </object>
+    </property>
+  </template>
+</interface>
+

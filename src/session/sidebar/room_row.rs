@@ -1,3 +1,4 @@
+use crate::components::Avatar;
 use adw::subclass::prelude::BinImpl;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
@@ -16,7 +17,7 @@ mod imp {
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub signal_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
-        pub avatar: TemplateChild<adw::Avatar>,
+        pub avatar: TemplateChild<Avatar>,
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
@@ -30,6 +31,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            Avatar::static_type();
             Self::bind_template(klass);
         }
 
@@ -115,8 +117,6 @@ impl RoomRow {
         }
 
         if let Some(ref room) = room {
-            // TODO: set custom avatar https://gitlab.gnome.org/exalm/libadwaita/-/issues/29
-
             let display_name_binding = room
                 .bind_property("display-name", &priv_.display_name.get(), "label")
                 .flags(glib::BindingFlags::SYNC_CREATE)
@@ -158,7 +158,7 @@ impl RoomRow {
                 notification_count_vislbe_binding,
             ]);
         }
-
+        priv_.avatar.set_room(room.clone());
         priv_.room.replace(room);
         self.notify("room");
     }

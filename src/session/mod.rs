@@ -1,3 +1,4 @@
+mod avatar;
 mod categories;
 mod content;
 mod event_source_dialog;
@@ -6,6 +7,7 @@ mod room_list;
 mod sidebar;
 mod user;
 
+pub use self::avatar::Avatar;
 use self::categories::Categories;
 use self::content::Content;
 pub use self::room::Room;

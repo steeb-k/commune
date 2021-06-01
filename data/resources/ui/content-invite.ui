@@ -46,10 +46,11 @@
                       <property name="label" translatable="yes">Invite</property>
                     </accessibility>
                     <child>
-                      <object class="AdwAvatar">
-                        <property name="show-initials">True</property>
+                      <object class="ComponentsAvatar">
                         <property name="size">150</property>
-                        <property name="text" bind-source="display_name" bind-property="label" bind-flags="sync-create"/>
+                        <binding name="item">
+                            <lookup name="room">ContentInvite</lookup>
+                        </binding>
                       </object>
                     </child>
                     <child>

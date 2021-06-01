@@ -5,6 +5,7 @@ data/org.gnome.FractalNext.gschema.xml.in
 data/org.gnome.FractalNext.metainfo.xml.in.in
 
 # UI files
+data/resources/ui/components-avatar.ui
 data/resources/ui/content-divider-row.ui
 data/resources/ui/content-item-row-menu.ui
 data/resources/ui/content-item.ui
@@ -30,6 +31,7 @@ data/resources/ui/window.ui
 
 # Rust files
 src/application.rs
+src/components/avatar.rs
 src/components/context_menu_bin.rs
 src/components/label_with_widgets.rs
 src/components/in_app_notification.rs

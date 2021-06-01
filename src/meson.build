@@ -20,6 +20,7 @@ run_command(
 
 sources = files(
   'application.rs',
+  'components/avatar.rs',
   'components/context_menu_bin.rs',
   'components/label_with_widgets.rs',
   'components/mod.rs',
@@ -33,6 +34,7 @@ sources = files(
   'login.rs',
   'secret.rs',
   'utils.rs',
+  'session/avatar.rs',
   'session/event_source_dialog.rs',
   'session/user.rs',
   'session/mod.rs',

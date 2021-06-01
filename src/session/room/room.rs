@@ -1,5 +1,5 @@
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, error, warn};
 use matrix_sdk::{
     api::r0::sync::sync_events::InvitedRoom,
@@ -29,7 +29,7 @@ use crate::event_from_sync_event;
 use crate::session::{
     categories::CategoryType,
     room::{HighlightFlags, Timeline},
-    Session, User,
+    Avatar, Session, User,
 };
 use crate::utils::do_async;
 use crate::Error;
@@ -47,7 +47,7 @@ mod imp {
         pub matrix_room: RefCell<Option<MatrixRoom>>,
         pub session: OnceCell<Session>,
         pub name: RefCell<Option<String>>,
-        pub avatar: RefCell<Option<gio::LoadableIcon>>,
+        pub avatar: OnceCell<Avatar>,
         pub category: Cell<CategoryType>,
         pub timeline: OnceCell<Timeline>,
         pub room_members: RefCell<HashMap<UserId, User>>,
@@ -97,8 +97,8 @@ mod imp {
                     glib::ParamSpec::new_object(
                         "avatar",
                         "Avatar",
-                        "The url of the avatar of this room",
-                        gio::LoadableIcon::static_type(),
+                        "The Avatar of this room",
+                        Avatar::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_object(
@@ -161,7 +161,7 @@ mod imp {
                 }
                 "room-id" => self
                     .room_id
-                    .set(RoomId::try_from(value.get::<String>().unwrap()).unwrap())
+                    .set(RoomId::try_from(value.get::<&str>().unwrap()).unwrap())
                     .unwrap(),
                 _ => unimplemented!(),
             }
@@ -175,7 +175,7 @@ mod imp {
                 "session" => obj.session().to_value(),
                 "inviter" => obj.inviter().to_value(),
                 "display-name" => obj.display_name().to_value(),
-                "avatar" => self.avatar.borrow().to_value(),
+                "avatar" => obj.avatar().to_value(),
                 "timeline" => self.timeline.get().unwrap().to_value(),
                 "category" => obj.category().to_value(),
                 "highlight" => obj.highlight().to_value(),
@@ -200,6 +200,9 @@ mod imp {
 
             obj.set_matrix_room(obj.session().client().get_room(obj.room_id()).unwrap());
             self.timeline.set(Timeline::new(obj)).unwrap();
+            self.avatar
+                .set(Avatar::new(obj.session(), obj.matrix_room().avatar_url()))
+                .unwrap();
         }
     }
 }
@@ -461,6 +464,11 @@ impl Room {
         );
     }
 
+    pub fn avatar(&self) -> &Avatar {
+        let priv_ = imp::Room::from_instance(&self);
+        priv_.avatar.get().unwrap()
+    }
+
     pub fn topic(&self) -> Option<String> {
         self.matrix_room()
             .topic()
@@ -532,6 +540,9 @@ impl Room {
             match event {
                 AnyRoomEvent::State(AnyStateEvent::RoomMember(ref event)) => {
                     self.update_member_for_member_event(event)
+                }
+                AnyRoomEvent::State(AnyStateEvent::RoomAvatar(event)) => {
+                    self.avatar().set_url(event.content.url.to_owned());
                 }
                 AnyRoomEvent::State(AnyStateEvent::RoomName(_)) => {
                     // FIXME: this doesn't take in account changes in the calculated name

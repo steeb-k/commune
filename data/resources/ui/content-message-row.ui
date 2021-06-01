@@ -5,11 +5,9 @@
       <object class="GtkBox">
         <property name="spacing">10</property>
         <child>
-          <object class="AdwAvatar" id="avatar">
-            <property name="show-initials">True</property>
+          <object class="ComponentsAvatar" id="avatar">
             <property name="size">36</property>
             <property name="valign">start</property>
-            <property name="text" bind-source="display_name" bind-property="label" bind-flags="sync-create"/>
           </object>
         </child>
         <child>
@@ -55,3 +53,4 @@
     </child>
   </template>
 </interface>
+

@@ -1,4 +1,4 @@
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::session::Session;
 use matrix_sdk::{
@@ -6,6 +6,8 @@ use matrix_sdk::{
     identifiers::UserId,
     RoomMember,
 };
+
+use crate::session::Avatar;
 
 mod imp {
     use super::*;
@@ -16,8 +18,8 @@ mod imp {
     pub struct User {
         pub user_id: OnceCell<String>,
         pub display_name: RefCell<Option<String>>,
-        pub avatar: RefCell<Option<gio::LoadableIcon>>,
         pub session: OnceCell<Session>,
+        pub avatar: OnceCell<Avatar>,
     }
 
     #[glib::object_subclass]
@@ -49,7 +51,7 @@ mod imp {
                         "avatar",
                         "Avatar",
                         "The avatar of this user",
-                        gio::LoadableIcon::static_type(),
+                        Avatar::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_object(
@@ -86,10 +88,17 @@ mod imp {
             match pspec.name() {
                 "display-name" => obj.display_name().to_value(),
                 "user-id" => self.user_id.get().to_value(),
-                "avatar" => self.avatar.borrow().to_value(),
                 "session" => obj.session().to_value(),
+                "avatar" => obj.avatar().to_value(),
                 _ => unimplemented!(),
             }
+        }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            let avatar = Avatar::new(obj.session(), None);
+            self.avatar.set(avatar).unwrap();
         }
     }
 }
@@ -131,11 +140,16 @@ impl User {
         }
     }
 
+    pub fn avatar(&self) -> &Avatar {
+        let priv_ = imp::User::from_instance(&self);
+        priv_.avatar.get().unwrap()
+    }
+
     /// Update the user based on the the room member state event
-    //TODO: create the GLoadableIcon and set `avatar`
     pub fn update_from_room_member(&self, member: &RoomMember) {
         let changed = {
             let priv_ = imp::User::from_instance(&self);
+
             let user_id = priv_.user_id.get().unwrap();
             if member.user_id().as_str() != user_id {
                 return;
@@ -143,6 +157,7 @@ impl User {
 
             //let content = event.content;
             let display_name = member.display_name().map(|name| name.to_owned());
+            self.avatar().set_url(member.avatar_url().cloned());
 
             let mut current_display_name = priv_.display_name.borrow_mut();
             if *current_display_name != display_name {
@@ -159,7 +174,6 @@ impl User {
     }
 
     /// Update the user based on the the room member state event
-    //TODO: create the GLoadableIcon and set `avatar`
     pub fn update_from_member_event(&self, event: &StateEvent<MemberEventContent>) {
         let changed = {
             let priv_ = imp::User::from_instance(&self);
@@ -178,6 +192,8 @@ impl User {
                     .map(|i| i.display_name.to_owned())
             };
 
+            self.avatar().set_url(event.content.avatar_url.to_owned());
+
             let mut current_display_name = priv_.display_name.borrow_mut();
             if *current_display_name != display_name {
                 *current_display_name = display_name;
@@ -193,7 +209,6 @@ impl User {
     }
 
     /// Update the user based on the the stripped room member state event
-    //TODO: create the GLoadableIcon and set `avatar`
     pub fn update_from_stripped_member_event(
         &self,
         event: &StrippedStateEvent<MemberEventContent>,
@@ -214,6 +229,8 @@ impl User {
                     .as_ref()
                     .map(|i| i.display_name.to_owned())
             };
+
+            self.avatar().set_url(event.content.avatar_url.to_owned());
 
             let mut current_display_name = priv_.display_name.borrow_mut();
             if *current_display_name != display_name {
