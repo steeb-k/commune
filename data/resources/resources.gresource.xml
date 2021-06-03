@@ -17,6 +17,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar.ui">ui/sidebar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-item.ui">ui/sidebar-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-category-row.ui">ui/sidebar-category-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-entry-row.ui">ui/sidebar-entry-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-room-row.ui">ui/sidebar-room-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="window.ui">ui/window.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="context-menu-bin.ui">ui/context-menu-bin.ui</file>
@@ -27,6 +28,7 @@
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
   </gresource>
 </gresources>
 

@@ -1,6 +1,6 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::room::Room;
+use crate::session::{content::ContentType, room::Room, sidebar::Entry};
 
 mod imp {
     use super::*;
@@ -11,7 +11,7 @@ mod imp {
     pub struct Selection {
         pub model: RefCell<Option<gio::ListModel>>,
         pub selected: Cell<u32>,
-        pub selected_room: RefCell<Option<Room>>,
+        pub selected_item: RefCell<Option<glib::Object>>,
         pub signal_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -51,10 +51,18 @@ mod imp {
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
-                        "selected-room",
-                        "Selected Room",
-                        "The selected room",
-                        Room::static_type(),
+                        "selected-item",
+                        "Selected Item",
+                        "The selected item",
+                        glib::Object::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
+                    glib::ParamSpec::new_enum(
+                        "selected-type",
+                        "Selected Type",
+                        "The currently selected content type",
+                        ContentType::static_type(),
+                        ContentType::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                 ]
@@ -79,10 +87,8 @@ mod imp {
                     let selected = value.get().unwrap();
                     obj.set_selected(selected);
                 }
-                "selected-room" => {
-                    let selected_room = value.get().unwrap();
-                    obj.set_selected_room(selected_room);
-                }
+                "selected-item" => obj.set_selected_item(value.get().unwrap()),
+                "selected-type" => obj.set_selected_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -91,7 +97,8 @@ mod imp {
             match pspec.name() {
                 "model" => obj.model().to_value(),
                 "selected" => obj.selected().to_value(),
-                "selected-room" => obj.selected_room().to_value(),
+                "selected-item" => obj.selected_item().to_value(),
+                "selected-type" => obj.selected_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -157,9 +164,77 @@ impl Selection {
         priv_.selected.get()
     }
 
-    pub fn selected_room(&self) -> Option<Room> {
+    pub fn selected_item(&self) -> Option<glib::Object> {
         let priv_ = imp::Selection::from_instance(self);
-        priv_.selected_room.borrow().clone()
+        priv_.selected_item.borrow().clone()
+    }
+
+    pub fn selected_type(&self) -> ContentType {
+        if let Some(item) = self.selected_item() {
+            if item.is::<Room>() {
+                return ContentType::Room;
+            } else if let Ok(entry) = item.downcast::<Entry>() {
+                return entry.type_();
+            }
+        }
+
+        ContentType::None
+    }
+
+    pub fn set_selected_type(&self, selected_type: ContentType) {
+        let priv_ = imp::Selection::from_instance(self);
+
+        if self.selected_type() == selected_type {
+            return;
+        }
+
+        match selected_type {
+            ContentType::None => self.set_selected_item(None),
+            ContentType::Room => {
+                if self
+                    .selected_item()
+                    .and_then(|item| item.downcast::<Room>().ok())
+                    .is_none()
+                {
+                    if let Some(model) = &*priv_.model.borrow() {
+                        for i in 0..model.n_items() {
+                            if let Some(room) = model
+                                .item(i)
+                                .and_then(|item| item.downcast::<gtk::TreeListRow>().ok())
+                                .and_then(|i| i.item())
+                                .and_then(|o| o.downcast::<Room>().ok())
+                            {
+                                self.set_selected_item(Some(room.upcast()));
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            ContentType::Explore => {
+                if !self
+                    .selected_item()
+                    .and_then(|item| item.downcast::<Entry>().ok())
+                    .map_or(false, |entry| entry.type_() == selected_type)
+                {
+                    if let Some(model) = &*priv_.model.borrow() {
+                        for i in 0..model.n_items() {
+                            if let Some(entry) = model
+                                .item(i)
+                                .and_then(|item| item.downcast::<gtk::TreeListRow>().ok())
+                                .and_then(|i| i.item())
+                                .and_then(|o| o.downcast::<Entry>().ok())
+                            {
+                                if entry.type_() == selected_type {
+                                    self.set_selected_item(Some(entry.upcast()));
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
     }
 
     pub fn set_model<P: IsA<gio::ListModel>>(&self, model: Option<&P>) {
@@ -202,9 +277,10 @@ impl Selection {
                 priv_.selected.replace(gtk::INVALID_LIST_POSITION);
                 self.notify("selected");
             }
-            if self.selected_room().is_some() {
-                priv_.selected_room.replace(None);
-                self.notify("selected-room");
+            if self.selected_item().is_some() {
+                priv_.selected_item.replace(None);
+                self.notify("selected-type");
+                self.notify("selected-item");
             }
 
             self.items_changed(0, n_items_before, 0);
@@ -221,13 +297,13 @@ impl Selection {
             return;
         }
 
-        let selected_room = self
+        let selected_item = self
             .model()
             .and_then(|m| m.item(position))
             .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
-            .and_then(|r| r.item())
-            .and_then(|o| o.downcast::<Room>().ok());
-        let selected = if selected_room.is_none() {
+            .and_then(|r| r.item());
+
+        let selected = if selected_item.is_none() {
             gtk::INVALID_LIST_POSITION
         } else {
             position
@@ -238,7 +314,7 @@ impl Selection {
         }
 
         priv_.selected.replace(selected);
-        priv_.selected_room.replace(selected_room);
+        priv_.selected_item.replace(selected_item);
 
         if old_selected == gtk::INVALID_LIST_POSITION {
             self.selection_changed(selected, 1);
@@ -251,14 +327,15 @@ impl Selection {
         }
 
         self.notify("selected");
-        self.notify("selected-room");
+        self.notify("selected-item");
+        self.notify("selected-type");
     }
 
-    pub fn set_selected_room(&self, room: Option<Room>) {
+    fn set_selected_item(&self, item: Option<glib::Object>) {
         let priv_ = imp::Selection::from_instance(self);
 
-        let selected_room = self.selected_room();
-        if selected_room == room {
+        let selected_item = self.selected_item();
+        if selected_item == item {
             return;
         }
 
@@ -266,15 +343,14 @@ impl Selection {
 
         let mut selected = gtk::INVALID_LIST_POSITION;
 
-        if room.is_some() {
+        if item.is_some() {
             if let Some(model) = self.model() {
                 for i in 0..model.n_items() {
-                    let r = model
+                    let current_item = model
                         .item(i)
                         .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
-                        .and_then(|r| r.item())
-                        .and_then(|o| o.downcast::<Room>().ok());
-                    if r == room {
+                        .and_then(|r| r.item());
+                    if current_item == item {
                         selected = i;
                         break;
                     }
@@ -282,7 +358,7 @@ impl Selection {
             }
         }
 
-        priv_.selected_room.replace(room);
+        priv_.selected_item.replace(item);
 
         if old_selected != selected {
             priv_.selected.replace(selected);
@@ -299,7 +375,8 @@ impl Selection {
             self.notify("selected");
         }
 
-        self.notify("selected-room");
+        self.notify("selected-item");
+        self.notify("selected-type");
     }
 
     fn items_changed_cb(&self, model: &gio::ListModel, position: u32, removed: u32, added: u32) {
@@ -308,9 +385,9 @@ impl Selection {
         let _guard = self.freeze_notify();
 
         let selected = self.selected();
-        let selected_room = self.selected_room();
+        let selected_item = self.selected_item();
 
-        if selected_room.is_none() || selected < position {
+        if selected_item.is_none() || selected < position {
             // unchanged
         } else if selected != gtk::INVALID_LIST_POSITION && selected >= position + removed {
             priv_.selected.replace(selected + added - removed);
@@ -322,12 +399,11 @@ impl Selection {
                     priv_.selected.replace(gtk::INVALID_LIST_POSITION);
                     self.notify("selected");
                 } else {
-                    let room = model
+                    let item = model
                         .item(position + i)
                         .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
-                        .and_then(|r| r.item())
-                        .and_then(|o| o.downcast::<Room>().ok());
-                    if room == selected_room {
+                        .and_then(|r| r.item());
+                    if item == selected_item {
                         // the item moved
                         if selected != position + i {
                             priv_.selected.replace(position + i);

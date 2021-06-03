@@ -1,6 +1,11 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::session::{room::RoomType, room_list::RoomList, sidebar::Category};
+use crate::session::{
+    content::ContentType,
+    room::RoomType,
+    room_list::RoomList,
+    sidebar::{Category, Entry},
+};
 
 mod imp {
     use once_cell::unsync::OnceCell;
@@ -9,7 +14,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct ItemList {
-        pub list: OnceCell<[Category; 5]>,
+        pub list: OnceCell<[glib::Object; 6]>,
     }
 
     #[glib::object_subclass]
@@ -24,7 +29,7 @@ mod imp {
 
     impl ListModelImpl for ItemList {
         fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
-            Category::static_type()
+            glib::Object::static_type()
         }
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
             self.list.get().map(|l| l.len()).unwrap_or(0) as u32
@@ -61,14 +66,15 @@ impl ItemList {
         priv_
             .list
             .set([
-                Category::new(RoomType::Invited, room_list),
-                Category::new(RoomType::Favorite, room_list),
-                Category::new(RoomType::Normal, room_list),
-                Category::new(RoomType::LowPriority, room_list),
-                Category::new(RoomType::Left, room_list),
+                Entry::new(ContentType::Explore).upcast::<glib::Object>(),
+                Category::new(RoomType::Invited, room_list).upcast::<glib::Object>(),
+                Category::new(RoomType::Favorite, room_list).upcast::<glib::Object>(),
+                Category::new(RoomType::Normal, room_list).upcast::<glib::Object>(),
+                Category::new(RoomType::LowPriority, room_list).upcast::<glib::Object>(),
+                Category::new(RoomType::Left, room_list).upcast::<glib::Object>(),
             ])
             .unwrap();
 
-        self.items_changed(0, 0, 5);
+        self.items_changed(0, 0, 6);
     }
 }

@@ -20,6 +20,7 @@ use crate::utils::do_async;
 use crate::Error;
 use crate::RUNTIME;
 
+use crate::session::content::ContentType;
 use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
@@ -41,7 +42,7 @@ mod imp {
     use super::*;
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::{Lazy, OnceCell};
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
@@ -58,6 +59,7 @@ mod imp {
         pub room_list: OnceCell<RoomList>,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
+        pub selected_content_type: Cell<ContentType>,
         pub is_ready: OnceCell<bool>,
     }
 
@@ -98,6 +100,14 @@ mod imp {
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_enum(
+                        "selected-content-type",
+                        "Selected Content Type",
+                        "The current content type selected",
+                        ContentType::static_type(),
+                        ContentType::default() as i32,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                     glib::ParamSpec::new_object(
                         "user",
                         "User",
@@ -123,6 +133,7 @@ mod imp {
                     let selected_room = value.get().unwrap();
                     obj.set_selected_room(selected_room);
                 }
+                "selected-content-type" => obj.set_selected_content_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -132,6 +143,7 @@ mod imp {
                 "room-list" => obj.room_list().to_value(),
                 "selected-room" => obj.selected_room().to_value(),
                 "user" => obj.user().to_value(),
+                "selected-content-type" => obj.selected_content_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -157,6 +169,29 @@ impl Session {
         glib::Object::new(&[]).expect("Failed to create Session")
     }
 
+    pub fn selected_content_type(&self) -> ContentType {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.selected_content_type.get()
+    }
+
+    pub fn set_selected_content_type(&self, selected_type: ContentType) {
+        let priv_ = imp::Session::from_instance(self);
+
+        if self.selected_content_type() == selected_type {
+            return;
+        }
+
+        if selected_type == ContentType::None {
+            priv_.content.navigate(adw::NavigationDirection::Back);
+        } else {
+            priv_.content.navigate(adw::NavigationDirection::Forward);
+        }
+
+        priv_.selected_content_type.set(selected_type);
+
+        self.notify("selected-content-type");
+    }
+
     pub fn selected_room(&self) -> Option<Room> {
         let priv_ = imp::Session::from_instance(self);
         priv_.selected_room.borrow().clone()
@@ -167,12 +202,6 @@ impl Session {
 
         if self.selected_room() == selected_room {
             return;
-        }
-
-        if selected_room.is_some() {
-            priv_.content.navigate(adw::NavigationDirection::Forward);
-        } else {
-            priv_.content.navigate(adw::NavigationDirection::Back);
         }
 
         priv_.selected_room.replace(selected_room);

@@ -22,6 +22,7 @@ data/resources/ui/in-app-notification.ui
 data/resources/ui/session.ui
 data/resources/ui/shortcuts.ui
 data/resources/ui/sidebar-category-row.ui
+data/resources/ui/sidebar-entry-row.ui
 data/resources/ui/sidebar-item.ui
 data/resources/ui/sidebar-room-row.ui
 data/resources/ui/sidebar.ui
@@ -64,6 +65,7 @@ src/session/room/mod.rs
 src/session/room/room.rs
 src/session/room/timeline.rs
 src/session/sidebar/category_row.rs
+src/session/sidebar/entry.rs
 src/session/sidebar/mod.rs
 src/session/sidebar/room_row.rs
 src/session/sidebar/row.rs

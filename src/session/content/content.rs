@@ -1,4 +1,5 @@
 use crate::session::{
+    content::ContentType,
     content::Invite,
     content::RoomHistory,
     room::{Room, RoomType},
@@ -16,6 +17,7 @@ mod imp {
     pub struct Content {
         pub compact: Cell<bool>,
         pub room: RefCell<Option<Room>>,
+        pub content_type: Cell<ContentType>,
         pub error_list: RefCell<Option<gio::ListStore>>,
         pub category_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
@@ -39,7 +41,7 @@ mod imp {
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
             klass.install_action("content.go-back", None, move |widget, _, _| {
-                widget.set_room(None);
+                widget.set_content_type(ContentType::None);
             });
         }
 
@@ -74,6 +76,14 @@ mod imp {
                         gio::ListStore::static_type(),
                         glib::ParamFlags::READWRITE,
                     ),
+                    glib::ParamSpec::new_enum(
+                        "content-type",
+                        "Content Type",
+                        "The type of content currently displayed",
+                        ContentType::static_type(),
+                        ContentType::default() as i32,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -99,6 +109,7 @@ mod imp {
                 "error-list" => {
                     self.error_list.replace(value.get().unwrap());
                 }
+                "content-type" => obj.set_content_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -108,6 +119,7 @@ mod imp {
                 "compact" => self.compact.get().to_value(),
                 "room" => obj.room().to_value(),
                 "error-list" => self.error_list.borrow().to_value(),
+                "content-type" => obj.content_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -127,6 +139,24 @@ impl Content {
         glib::Object::new(&[]).expect("Failed to create Content")
     }
 
+    pub fn content_type(&self) -> ContentType {
+        let priv_ = imp::Content::from_instance(self);
+        priv_.content_type.get()
+    }
+
+    pub fn set_content_type(&self, content_type: ContentType) {
+        let priv_ = imp::Content::from_instance(self);
+
+        if self.content_type() == content_type {
+            return;
+        }
+
+        priv_.content_type.set(content_type);
+        self.set_visible_child();
+
+        self.notify("content-type");
+    }
+
     pub fn set_room(&self, room: Option<Room>) {
         let priv_ = imp::Content::from_instance(self);
 
@@ -143,17 +173,16 @@ impl Content {
         if let Some(ref room) = room {
             let handler_id = room.connect_notify_local(
                 Some("category"),
-                clone!(@weak self as obj => move |room, _| {
-                        obj.set_visible_child(room);
+                clone!(@weak self as obj => move |_, _| {
+                        obj.set_visible_child();
                 }),
             );
 
-            self.set_visible_child(&room);
             priv_.category_handler.replace(Some(handler_id));
         }
 
         priv_.room.replace(room);
-
+        self.set_visible_child();
         self.notify("room");
     }
 
@@ -162,13 +191,25 @@ impl Content {
         priv_.room.borrow().clone()
     }
 
-    fn set_visible_child(&self, room: &Room) {
+    fn set_visible_child(&self) {
         let priv_ = imp::Content::from_instance(self);
 
-        if room.category() == RoomType::Invited {
-            priv_.stack.set_visible_child(&*priv_.invite);
-        } else {
-            priv_.stack.set_visible_child(&*priv_.room_history);
+        match self.content_type() {
+            ContentType::None => {
+                //TODO: display an empty state
+            }
+            ContentType::Room => {
+                if let Some(room) = &*priv_.room.borrow() {
+                    if room.category() == RoomType::Invited {
+                        priv_.stack.set_visible_child(&*priv_.invite);
+                    } else {
+                        priv_.stack.set_visible_child(&*priv_.room_history);
+                    }
+                }
+            }
+            ContentType::Explore => {
+                todo!("Display explore");
+            }
         }
     }
 }

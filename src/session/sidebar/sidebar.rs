@@ -2,8 +2,9 @@ use adw::subclass::prelude::BinImpl;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::{
+    content::ContentType,
     room::Room,
-    sidebar::{Category, ItemList, RoomRow, Row, Selection},
+    sidebar::{Category, Entry, ItemList, RoomRow, Row, Selection},
     RoomList,
 };
 
@@ -18,6 +19,7 @@ mod imp {
     pub struct Sidebar {
         pub compact: Cell<bool>,
         pub selected_room: RefCell<Option<Room>>,
+        pub selected_type: Cell<ContentType>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -68,6 +70,14 @@ mod imp {
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_enum(
+                        "selected-type",
+                        "Selected",
+                        "The type of item that is selected",
+                        ContentType::static_type(),
+                        ContentType::default() as i32,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -94,6 +104,7 @@ mod imp {
                     let selected_room = value.get().unwrap();
                     obj.set_selected_room(selected_room);
                 }
+                "selected-type" => obj.set_selected_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -102,6 +113,7 @@ mod imp {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
                 "selected-room" => obj.selected_room().to_value(),
+                "selected-type" => obj.selected_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -126,6 +138,12 @@ mod imp {
                             row.set_expanded(!row.is_expanded());
                         } else if row.item().and_then(|o| o.downcast::<Room>().ok()).is_some() {
                             model.set_selected(pos);
+                        } else if row
+                            .item()
+                            .and_then(|o| o.downcast::<Entry>().ok())
+                            .is_some()
+                        {
+                            model.set_selected(pos);
                         }
                     }
                 }
@@ -145,6 +163,23 @@ glib::wrapper! {
 impl Sidebar {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create Sidebar")
+    }
+
+    pub fn selected_type(&self) -> ContentType {
+        let priv_ = imp::Sidebar::from_instance(self);
+        priv_.selected_type.get()
+    }
+
+    fn set_selected_type(&self, selected_type: ContentType) {
+        let priv_ = imp::Sidebar::from_instance(self);
+
+        if self.selected_type() == selected_type {
+            return;
+        }
+
+        priv_.selected_type.set(selected_type);
+
+        self.notify("selected-type");
     }
 
     pub fn selected_room(&self) -> Option<Room> {
@@ -188,7 +223,11 @@ impl Sidebar {
                 .build();
 
             let selection = Selection::new(Some(&filter_model));
-            self.bind_property("selected-room", &selection, "selected-room")
+            self.bind_property("selected-room", &selection, "selected-item")
+                .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+                .build();
+
+            self.bind_property("selected-type", &selection, "selected-type")
                 .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
                 .build();
 
@@ -206,7 +245,6 @@ impl Sidebar {
         }
 
         priv_.selected_room.replace(selected_room);
-
         self.notify("selected-room");
     }
 }

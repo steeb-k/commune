@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::session::{
     room::Room,
-    sidebar::{Category, CategoryRow, RoomRow},
+    sidebar::{Category, CategoryRow, Entry, EntryRow, RoomRow},
 };
 
 mod imp {
@@ -150,6 +150,21 @@ impl Row {
 
                 if let Some(list_item) = self.parent() {
                     list_item.set_css_classes(&["room"]);
+                }
+            } else if let Some(entry) = item.downcast_ref::<Entry>() {
+                let child = if let Some(Ok(child)) = self.child().map(|w| w.downcast::<EntryRow>())
+                {
+                    child
+                } else {
+                    let child = EntryRow::new();
+                    self.set_child(Some(&child));
+                    child
+                };
+
+                child.set_entry(Some(entry.clone()));
+
+                if let Some(list_item) = self.parent() {
+                    list_item.set_css_classes(&["entry"]);
                 }
             } else {
                 panic!("Wrong row item: {:?}", item);
