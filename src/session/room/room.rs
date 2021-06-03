@@ -27,8 +27,7 @@ use std::convert::TryFrom;
 use crate::components::{LabelWithWidgets, Pill};
 use crate::event_from_sync_event;
 use crate::session::{
-    categories::CategoryType,
-    room::{HighlightFlags, Timeline},
+    room::{HighlightFlags, RoomType, Timeline},
     Avatar, Session, User,
 };
 use crate::utils::do_async;
@@ -48,7 +47,7 @@ mod imp {
         pub session: OnceCell<Session>,
         pub name: RefCell<Option<String>>,
         pub avatar: OnceCell<Avatar>,
-        pub category: Cell<CategoryType>,
+        pub category: Cell<RoomType>,
         pub timeline: OnceCell<Timeline>,
         pub room_members: RefCell<HashMap<UserId, User>>,
         /// The user who send the invite to this room. This is only set when this room is an invitiation.
@@ -129,8 +128,8 @@ mod imp {
                         "category",
                         "Category",
                         "The category of this room",
-                        CategoryType::static_type(),
-                        CategoryType::default() as i32,
+                        RoomType::static_type(),
+                        RoomType::default() as i32,
                         glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_string(
@@ -257,12 +256,12 @@ impl Room {
         self.load_category();
     }
 
-    pub fn category(&self) -> CategoryType {
+    pub fn category(&self) -> RoomType {
         let priv_ = imp::Room::from_instance(self);
         priv_.category.get()
     }
 
-    fn set_category_internal(&self, category: CategoryType) {
+    fn set_category_internal(&self, category: RoomType) {
         let priv_ = imp::Room::from_instance(self);
 
         if self.category() == category {
@@ -277,7 +276,7 @@ impl Room {
     ///
     /// This makes the necessary to propagate the category to the homeserver.
     /// Note: Rooms can't be moved to the invite category.
-    pub fn set_category(&self, category: CategoryType) {
+    pub fn set_category(&self, category: RoomType) {
         let matrix_room = self.matrix_room();
         let previous_category = self.category();
 
@@ -285,7 +284,7 @@ impl Room {
             return;
         }
 
-        if category == CategoryType::Invited {
+        if category == RoomType::Invited {
             warn!("Rooms can't be moved to the invite Category");
             return;
         }
@@ -296,53 +295,53 @@ impl Room {
                 match matrix_room {
                     MatrixRoom::Invited(room) => {
                         match category {
-                            CategoryType::Invited => Ok(()),
-                            CategoryType::Favorite => {
+                            RoomType::Invited => Ok(()),
+                            RoomType::Favorite => {
                                 room.accept_invitation().await
                                 // TODO: set favorite tag
                             }
-                            CategoryType::Normal => room.accept_invitation().await,
-                            CategoryType::LowPriority => {
+                            RoomType::Normal => room.accept_invitation().await,
+                            RoomType::LowPriority => {
                                 room.accept_invitation().await
                                 // TODO: set low priority tag
                             }
-                            CategoryType::Left => room.reject_invitation().await,
+                            RoomType::Left => room.reject_invitation().await,
                         }
                     }
                     MatrixRoom::Joined(room) => {
                         match category {
-                            CategoryType::Invited => Ok(()),
-                            CategoryType::Favorite => {
+                            RoomType::Invited => Ok(()),
+                            RoomType::Favorite => {
                                 // TODO: set favorite tag
                                 Ok(())
                             }
-                            CategoryType::Normal => {
+                            RoomType::Normal => {
                                 // TODO: remove tags
                                 Ok(())
                             }
-                            CategoryType::LowPriority => {
+                            RoomType::LowPriority => {
                                 // TODO: set low priority tag
                                 Ok(())
                             }
-                            CategoryType::Left => room.leave().await,
+                            RoomType::Left => room.leave().await,
                         }
                     }
                     MatrixRoom::Left(room) => {
                         match category {
-                            CategoryType::Invited => Ok(()),
-                            CategoryType::Favorite => {
+                            RoomType::Invited => Ok(()),
+                            RoomType::Favorite => {
                                 room.join().await
                                 // TODO: set favorite tag
                             }
-                            CategoryType::Normal => {
+                            RoomType::Normal => {
                                 room.join().await
                                 // TODO: remove tags
                             }
-                            CategoryType::LowPriority => {
+                            RoomType::LowPriority => {
                                 room.join().await
                                 // TODO: set low priority tag
                             }
-                            CategoryType::Left => Ok(()),
+                            RoomType::Left => Ok(()),
                         }
                     }
                 }
@@ -386,13 +385,13 @@ impl Room {
                     glib::PRIORITY_DEFAULT_IDLE,
                     async move { matrix_room.tags().await },
                     clone!(@weak self as obj => move |tags_result| async move {
-                        let mut category = CategoryType::Normal;
+                        let mut category = RoomType::Normal;
 
                         if let Ok(Some(tags)) = tags_result {
                             if tags.get(&TagName::Favorite).is_some() {
-                                category = CategoryType::Favorite;
+                                category = RoomType::Favorite;
                             } else if tags.get(&TagName::LowPriority).is_some() {
-                                category = CategoryType::LowPriority;
+                                category = RoomType::LowPriority;
                             }
                         }
 
@@ -400,8 +399,8 @@ impl Room {
                     }),
                 );
             }
-            MatrixRoom::Invited(_) => self.set_category_internal(CategoryType::Invited),
-            MatrixRoom::Left(_) => self.set_category_internal(CategoryType::Left),
+            MatrixRoom::Invited(_) => self.set_category_internal(RoomType::Invited),
+            MatrixRoom::Left(_) => self.set_category_internal(RoomType::Left),
         };
     }
 

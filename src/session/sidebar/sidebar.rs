@@ -2,9 +2,8 @@ use adw::subclass::prelude::BinImpl;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::{
-    categories::{Categories, Category},
     room::Room,
-    sidebar::{RoomRow, Row, Selection},
+    sidebar::{Categories, Category, RoomRow, Row, Selection},
 };
 
 mod imp {

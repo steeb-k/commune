@@ -1,5 +1,4 @@
 mod avatar;
-mod categories;
 mod content;
 mod event_source_dialog;
 mod room;
@@ -8,10 +7,10 @@ mod sidebar;
 mod user;
 
 pub use self::avatar::Avatar;
-use self::categories::Categories;
 use self::content::Content;
 pub use self::room::Room;
 use self::room_list::RoomList;
+use self::sidebar::Categories;
 use self::sidebar::Sidebar;
 pub use self::user::User;
 

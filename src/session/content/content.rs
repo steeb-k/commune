@@ -1,4 +1,8 @@
-use crate::session::{categories::CategoryType, content::Invite, content::RoomHistory, room::Room};
+use crate::session::{
+    content::Invite,
+    content::RoomHistory,
+    room::{Room, RoomType},
+};
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
@@ -161,7 +165,7 @@ impl Content {
     fn set_visible_child(&self, room: &Room) {
         let priv_ = imp::Content::from_instance(self);
 
-        if room.category() == CategoryType::Invited {
+        if room.category() == RoomType::Invited {
             priv_.stack.set_visible_child(&*priv_.invite);
         } else {
             priv_.stack.set_visible_child(&*priv_.room_history);

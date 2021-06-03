@@ -1,8 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use crate::session::sidebar::{CategoryRow, RoomRow};
-use crate::session::{categories::Category, room::Room};
+use crate::session::{
+    room::Room,
+    sidebar::{Category, CategoryRow, RoomRow},
+};
 
 mod imp {
     use super::*;

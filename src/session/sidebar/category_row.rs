@@ -4,7 +4,7 @@ use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{glib, CompositeTemplate};
 
-use crate::session::categories::Category;
+use crate::session::sidebar::Category;
 
 mod imp {
     use super::*;

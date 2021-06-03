@@ -1,6 +1,4 @@
-use crate::session::{
-    categories::CategoryType, content::ItemRow, content::MarkdownPopover, room::Room,
-};
+use crate::session::{content::ItemRow, content::MarkdownPopover, room::Room, room::RoomType};
 use adw::subclass::prelude::*;
 use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
@@ -261,7 +259,7 @@ impl RoomHistory {
         let priv_ = imp::RoomHistory::from_instance(self);
 
         if let Some(room) = &*priv_.room.borrow() {
-            room.set_category(CategoryType::Left);
+            room.set_category(RoomType::Left);
         }
     }
 
@@ -269,7 +267,7 @@ impl RoomHistory {
         let priv_ = imp::RoomHistory::from_instance(self);
 
         if let Some(room) = &*priv_.room.borrow() {
-            if room.category() == CategoryType::Left {
+            if room.category() == RoomType::Left {
                 self.action_set_enabled("room-history.leave", false);
                 priv_.room_menu.hide();
             } else {

@@ -1,9 +1,6 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 
-use crate::session::{
-    categories::{Category, CategoryType},
-    room_list::RoomList,
-};
+use crate::session::{room::RoomType, room_list::RoomList, sidebar::Category};
 
 mod imp {
     use once_cell::unsync::OnceCell;
@@ -64,11 +61,11 @@ impl Categories {
         priv_
             .list
             .set([
-                Category::new(CategoryType::Invited, room_list),
-                Category::new(CategoryType::Favorite, room_list),
-                Category::new(CategoryType::Normal, room_list),
-                Category::new(CategoryType::LowPriority, room_list),
-                Category::new(CategoryType::Left, room_list),
+                Category::new(RoomType::Invited, room_list),
+                Category::new(RoomType::Favorite, room_list),
+                Category::new(RoomType::Normal, room_list),
+                Category::new(RoomType::LowPriority, room_list),
+                Category::new(RoomType::Left, room_list),
             ])
             .unwrap();
 

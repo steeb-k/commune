@@ -1,6 +1,9 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::{categories::CategoryType, room::Room, room_list::RoomList};
+use crate::session::{
+    room::{Room, RoomType},
+    room_list::RoomList,
+};
 
 mod imp {
     use once_cell::unsync::OnceCell;
@@ -11,7 +14,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Category {
         pub model: OnceCell<gtk::FilterListModel>,
-        pub type_: Cell<CategoryType>,
+        pub type_: Cell<RoomType>,
     }
 
     #[glib::object_subclass]
@@ -31,8 +34,8 @@ mod imp {
                         "type",
                         "Type",
                         "The type of this category",
-                        CategoryType::static_type(),
-                        CategoryType::default() as i32,
+                        RoomType::static_type(),
+                        RoomType::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_string(
@@ -104,11 +107,11 @@ glib::wrapper! {
 }
 
 impl Category {
-    pub fn new(type_: CategoryType, model: &RoomList) -> Self {
+    pub fn new(type_: RoomType, model: &RoomList) -> Self {
         glib::Object::new(&[("type", &type_), ("model", model)]).expect("Failed to create Category")
     }
 
-    pub fn type_(&self) -> CategoryType {
+    pub fn type_(&self) -> RoomType {
         let priv_ = imp::Category::from_instance(self);
         priv_.type_.get()
     }

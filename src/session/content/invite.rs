@@ -1,6 +1,6 @@
 use crate::{
     components::{Avatar, LabelWithWidgets, Pill, SpinnerButton},
-    session::{categories::CategoryType, room::Room},
+    session::room::{Room, RoomType},
 };
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -170,7 +170,7 @@ impl Invite {
             let handler_id = room.connect_notify_local(
                 Some("category"),
                 clone!(@weak self as obj => move |room, _| {
-                        if room.category() != CategoryType::Invited {
+                        if room.category() != RoomType::Invited {
                                 let priv_ = imp::Invite::from_instance(&obj);
                                 priv_.reject_requests.borrow_mut().remove(&room);
                                 priv_.accept_requests.borrow_mut().remove(&room);
