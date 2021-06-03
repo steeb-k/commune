@@ -3,7 +3,8 @@ use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::{
     room::Room,
-    sidebar::{Categories, Category, RoomRow, Row, Selection},
+    sidebar::{Category, ItemList, RoomRow, Row, Selection},
+    RoomList,
 };
 
 mod imp {
@@ -54,10 +55,10 @@ mod imp {
                         glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_object(
-                        "categories",
-                        "Categories",
-                        "A list of rooms grouped into categories",
-                        Categories::static_type(),
+                        "room-list",
+                        "Room List",
+                        "The list of rooms",
+                        RoomList::static_type(),
                         glib::ParamFlags::WRITABLE,
                     ),
                     glib::ParamSpec::new_object(
@@ -85,9 +86,9 @@ mod imp {
                     let compact = value.get().unwrap();
                     self.compact.set(compact);
                 }
-                "categories" => {
-                    let categories = value.get().unwrap();
-                    obj.set_categories(categories);
+                "room-list" => {
+                    let room_list = value.get().unwrap();
+                    obj.set_room_list(room_list);
                 }
                 "selected-room" => {
                     let selected_room = value.get().unwrap();
@@ -151,12 +152,14 @@ impl Sidebar {
         priv_.selected_room.borrow().clone()
     }
 
-    pub fn set_categories(&self, categories: Option<Categories>) {
+    pub fn set_room_list(&self, room_list: Option<RoomList>) {
         let priv_ = imp::Sidebar::from_instance(self);
 
-        if let Some(categories) = categories {
+        if let Some(room_list) = room_list {
             // TODO: hide empty categories
-            let tree_model = gtk::TreeListModel::new(&categories, false, true, |item| {
+            let item_list = ItemList::new();
+            item_list.set_room_list(&room_list);
+            let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
                 item.clone().downcast::<gio::ListModel>().ok()
             });
 

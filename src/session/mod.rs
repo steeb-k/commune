@@ -10,7 +10,6 @@ pub use self::avatar::Avatar;
 use self::content::Content;
 pub use self::room::Room;
 use self::room_list::RoomList;
-use self::sidebar::Categories;
 use self::sidebar::Sidebar;
 pub use self::user::User;
 
@@ -57,7 +56,6 @@ mod imp {
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
         pub room_list: OnceCell<RoomList>,
-        pub categories: Categories,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
         pub is_ready: OnceCell<bool>,
@@ -87,10 +85,10 @@ mod imp {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
                     glib::ParamSpec::new_object(
-                        "categories",
-                        "Categories",
-                        "A list of rooms grouped into categories",
-                        Categories::static_type(),
+                        "room-list",
+                        "Room List",
+                        "The list of rooms",
+                        RoomList::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_object(
@@ -131,7 +129,7 @@ mod imp {
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "categories" => self.categories.to_value(),
+                "room-list" => obj.room_list().to_value(),
                 "selected-room" => obj.selected_room().to_value(),
                 "user" => obj.user().to_value(),
                 _ => unimplemented!(),
@@ -277,11 +275,7 @@ impl Session {
                     secret::store_session(session).unwrap();
                 }
 
-                let room_list = RoomList::new(self);
-                priv_.categories.set_room_list(&room_list);
-                room_list.load();
-                priv_.room_list.set(room_list).unwrap();
-
+                self.room_list().load();
                 self.sync();
             }
             Err(error) => {
@@ -334,6 +328,11 @@ impl Session {
     fn is_ready(&self) -> bool {
         let priv_ = &imp::Session::from_instance(self);
         priv_.is_ready.get().copied().unwrap_or_default()
+    }
+
+    pub fn room_list(&self) -> &RoomList {
+        let priv_ = &imp::Session::from_instance(self);
+        priv_.room_list.get_or_init(|| RoomList::new(self))
     }
 
     pub fn user(&self) -> &User {
@@ -391,12 +390,6 @@ impl Session {
     }
 
     fn handle_sync_response(&self, response: SyncResponse) {
-        let priv_ = imp::Session::from_instance(self);
-
-        priv_
-            .room_list
-            .get()
-            .unwrap()
-            .handle_response_rooms(response.rooms);
+        self.room_list().handle_response_rooms(response.rooms);
     }
 }

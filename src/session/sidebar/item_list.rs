@@ -8,21 +8,21 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default)]
-    pub struct Categories {
+    pub struct ItemList {
         pub list: OnceCell<[Category; 5]>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Categories {
-        const NAME: &'static str = "Categories";
-        type Type = super::Categories;
+    impl ObjectSubclass for ItemList {
+        const NAME: &'static str = "ItemList";
+        type Type = super::ItemList;
         type ParentType = glib::Object;
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for Categories {}
+    impl ObjectImpl for ItemList {}
 
-    impl ListModelImpl for Categories {
+    impl ListModelImpl for ItemList {
         fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
             Category::static_type()
         }
@@ -40,23 +40,23 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct Categories(ObjectSubclass<imp::Categories>)
+    pub struct ItemList(ObjectSubclass<imp::ItemList>)
         @implements gio::ListModel;
 }
 
-impl Default for Categories {
+impl Default for ItemList {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Categories {
+impl ItemList {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create Categories")
+        glib::Object::new(&[]).expect("Failed to create ItemList")
     }
 
     pub fn set_room_list(&self, room_list: &RoomList) {
-        let priv_ = imp::Categories::from_instance(&self);
+        let priv_ = imp::ItemList::from_instance(&self);
 
         priv_
             .list
