@@ -38,3 +38,6 @@ git = "https://gitlab.gnome.org/World/Rust/libadwaita-rs.git"
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
 features = ["socks", "encryption", "sled_cryptostore", "sled_state_store", "markdown"]
+
+[patch.crates-io]
+ruma = { git = 'https://github.com/jsparber/ruma.git', branch = 'instance_id' }
