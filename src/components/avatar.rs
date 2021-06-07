@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::{Room, User};
+use crate::session::Avatar as AvatarItem;
 
 mod imp {
     use super::*;
@@ -12,7 +12,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/components-avatar.ui")]
     pub struct Avatar {
         /// A `Room` or `User`
-        pub item: RefCell<Option<glib::Object>>,
+        pub item: RefCell<Option<AvatarItem>>,
         #[template_child]
         pub avatar: TemplateChild<adw::Avatar>,
     }
@@ -40,8 +40,8 @@ mod imp {
                     glib::ParamSpec::new_object(
                         "item",
                         "Item",
-                        "The Room or User of this Avatar",
-                        glib::Object::static_type(),
+                        "The Avatar item displayed by this widget",
+                        AvatarItem::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_int(
@@ -105,23 +105,7 @@ impl Avatar {
         glib::Object::new(&[]).expect("Failed to create Avatar")
     }
 
-    pub fn set_room(&self, room: Option<Room>) {
-        self.set_item(room.map(glib::object::Cast::upcast));
-    }
-
-    pub fn room(&self) -> Option<Room> {
-        self.item().and_then(|item| item.downcast().ok())
-    }
-
-    pub fn set_user(&self, user: Option<User>) {
-        self.set_item(user.map(glib::object::Cast::upcast));
-    }
-
-    pub fn user(&self) -> Option<User> {
-        self.item().and_then(|item| item.downcast().ok())
-    }
-
-    fn set_item(&self, item: Option<glib::Object>) {
+    pub fn set_item(&self, item: Option<AvatarItem>) {
         let priv_ = imp::Avatar::from_instance(self);
 
         if *priv_.item.borrow() == item {
@@ -137,7 +121,7 @@ impl Avatar {
         self.notify("item");
     }
 
-    fn item(&self) -> Option<glib::Object> {
+    pub fn item(&self) -> Option<AvatarItem> {
         let priv_ = imp::Avatar::from_instance(self);
         priv_.item.borrow().clone()
     }
@@ -145,11 +129,7 @@ impl Avatar {
     fn request_custom_avatar(&self) {
         let priv_ = imp::Avatar::from_instance(self);
         if let Some(item) = &*priv_.item.borrow() {
-            if let Some(room) = item.downcast_ref::<Room>() {
-                room.avatar().set_needed(true);
-            } else if let Some(user) = item.downcast_ref::<User>() {
-                user.avatar().set_needed(true);
-            }
+            item.set_needed(true);
         }
     }
 }

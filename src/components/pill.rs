@@ -125,7 +125,9 @@ impl Pill {
             priv_.bindings.borrow_mut().push(display_name_binding);
         }
 
-        priv_.avatar.set_user(user.clone());
+        priv_
+            .avatar
+            .set_item(user.clone().map(|user| user.avatar().clone()));
         priv_.user.replace(user);
 
         self.notify("user");
@@ -157,7 +159,9 @@ impl Pill {
             priv_.bindings.borrow_mut().push(display_name_binding);
         }
 
-        priv_.avatar.set_room(room.clone());
+        priv_
+            .avatar
+            .set_item(room.clone().map(|room| room.avatar().clone()));
         priv_.room.replace(room);
 
         self.notify("room");

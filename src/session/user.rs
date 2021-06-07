@@ -99,6 +99,11 @@ mod imp {
 
             let avatar = Avatar::new(obj.session(), None);
             self.avatar.set(avatar).unwrap();
+
+            obj.bind_property("display-name", obj.avatar(), "display-name")
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build()
+                .unwrap();
         }
     }
 }

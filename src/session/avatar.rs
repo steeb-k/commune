@@ -20,6 +20,7 @@ mod imp {
         pub image: RefCell<Option<gdk::Paintable>>,
         pub needed: Cell<bool>,
         pub url: RefCell<Option<MxcUri>>,
+        pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<Session>,
     }
 
@@ -55,6 +56,13 @@ mod imp {
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_string(
+                        "display-name",
+                        "Display Name",
+                        "The display name used for this avatar",
+                        None,
+                        glib::ParamFlags::READWRITE,
+                    ),
                     glib::ParamSpec::new_object(
                         "session",
                         "Session",
@@ -79,6 +87,9 @@ mod imp {
                 "needed" => obj.set_needed(value.get().unwrap()),
                 "url" => obj.set_url(value.get::<Option<&str>>().unwrap().map(Into::into)),
                 "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "display-name" => {
+                    let _ = obj.set_display_name(value.get().unwrap());
+                }
                 _ => unimplemented!(),
             }
         }
@@ -94,6 +105,7 @@ mod imp {
                     },
                     |url| url.as_str().to_value(),
                 ),
+                "display-name" => obj.display_name().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -163,6 +175,22 @@ impl Avatar {
                 }),
             );
         }
+    }
+
+    pub fn set_display_name(&self, display_name: Option<String>) {
+        let priv_ = imp::Avatar::from_instance(self);
+        if self.display_name() == display_name {
+            return;
+        }
+
+        priv_.display_name.replace(display_name);
+
+        self.notify("display-name");
+    }
+
+    pub fn display_name(&self) -> Option<String> {
+        let priv_ = imp::Avatar::from_instance(self);
+        priv_.display_name.borrow().clone()
     }
 
     pub fn set_needed(&self, needed: bool) {

@@ -149,7 +149,7 @@ impl MessageRow {
             }
         }
 
-        priv_.avatar.set_user(Some(event.sender().clone()));
+        priv_.avatar.set_item(Some(event.sender().avatar().clone()));
 
         let display_name_binding = event
             .sender()

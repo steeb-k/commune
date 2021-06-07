@@ -202,6 +202,11 @@ mod imp {
             self.avatar
                 .set(Avatar::new(obj.session(), obj.matrix_room().avatar_url()))
                 .unwrap();
+
+            obj.bind_property("display-name", obj.avatar(), "display-name")
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build()
+                .unwrap();
         }
     }
 }

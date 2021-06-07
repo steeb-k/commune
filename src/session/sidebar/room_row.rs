@@ -158,7 +158,9 @@ impl RoomRow {
                 notification_count_vislbe_binding,
             ]);
         }
-        priv_.avatar.set_room(room.clone());
+        priv_
+            .avatar
+            .set_item(room.clone().map(|room| room.avatar().clone()));
         priv_.room.replace(room);
         self.notify("room");
     }
