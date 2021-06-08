@@ -70,7 +70,7 @@
             <property name="vexpand">True</property>
             <property name="hscrollbar-policy">never</property>
             <style>
-              <class name="content"/>
+              <class name="room-history"/>
             </style>
             <property name="child">
               <object class="AdwClampScrollable">

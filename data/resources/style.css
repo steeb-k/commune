@@ -84,29 +84,21 @@ headerbar.flat {
 }
 
 /* Content */
-.content {
-  background-color: @theme_base_color;
-}
-
-.content:backdrop {
-  background-color: @theme_unfocused_base_color;
-}
-
-.content row {
+.room-history row {
   min-height: 0;
   padding-top: 6px;
   padding-bottom: 6px;
 }
 
-.content row.has-header {
+.room-history row.has-header {
   margin-top: 6px;
 }
 
-.content .event-content {
+.room-history .event-content {
   margin-right: 46px;
 }
 
-.content row:not(.has-header) .event-content {
+.room-history row:not(.has-header) .event-content {
   margin-left: 46px;
 }
 
