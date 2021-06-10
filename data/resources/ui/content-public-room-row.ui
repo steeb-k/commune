@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentPublicRoomRow" parent="AdwBin">
+    <property name="child">
+      <object class="GtkBox">
+        <property name="spacing">12</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <child>
+          <object class="ComponentsAvatar" id="avatar">
+            <property name="size">48</property>
+            <property name="valign">start</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="hexpand">True</property>
+            <property name="halign">start</property>
+            <child>
+              <object class="GtkLabel" id="display_name">
+                <property name="halign">start</property>
+                <property name="ellipsize">end</property>
+                <property name="xalign">0</property>
+                <style>
+                  <class name="bold"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="description">
+                <property name="halign">start</property>
+                <property name="ellipsize">end</property>
+                <property name="lines">4</property>
+                <property name="wrap">True</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="xalign">0</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="alias">
+                <property name="ellipsize">end</property>
+                <property name="halign">start</property>
+                <property name="xalign">0</property>
+                <style>
+                  <class name="dim-label"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="end">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="spacing">12</property>
+            <child>
+              <object class="SpinnerButton" id="button">
+                <property name="valign">center</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="halign">center</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="icon-name">system-users-symbolic</property>
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="members_count">
+                    <style>
+                      <class name="dim-label"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
+

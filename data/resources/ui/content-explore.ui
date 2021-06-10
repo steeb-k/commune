@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentExplore" parent="AdwBin">
+    <property name="vexpand">True</property>
+    <property name="hexpand">True</property>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="AdwHeaderBar" id="headerbar">
+            <property name="show-start-title-buttons" bind-source="ContentExplore" bind-property="compact" bind-flags="sync-create"/>
+            <child type="start">
+              <object class="GtkButton" id="back">
+                <property name="visible" bind-source="ContentExplore" bind-property="compact" bind-flags="sync-create"/>
+                <property name="icon-name">go-previous-symbolic</property>
+                <property name="action-name">content.go-back</property>
+              </object>
+            </child>
+            <child type="title">
+              <object class="AdwClamp">
+                <property name="maximum-size">400</property>
+                <property name="hexpand">True</property>
+                <property name="child">
+                  <object class="GtkSearchEntry" id="search_entry">
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkComboBoxText" id="network_menu">
+                <property name="active-id">matrix</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStack" id="stack">
+            <property name="visible-child">spinner</property>
+            <property name="transition-type">crossfade</property>
+            <style>
+              <class name="explore"/>
+            </style>
+            <child>
+              <object class="GtkSpinner" id="spinner">
+                <property name="spinning">True</property>
+                <property name="valign">center</property>
+                <property name="halign">center</property>
+                <property name="vexpand">True</property>
+                <style>
+                  <class name="session-loading-spinner"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="empty_label">
+                <property name="valign">center</property>
+                <property name="halign">center</property>
+                <property name="vexpand">True</property>
+                <property name="label" translatable="yes">No rooms matching the search where found</property>
+                <style>
+                  <class name="bold"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolled_window">
+                <property name="vexpand">True</property>
+                <property name="hscrollbar-policy">never</property>
+                <property name="child">
+                  <object class="AdwClampScrollable">
+                    <property name="vexpand">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="maximum-size">800</property>
+                    <property name="child">
+                      <object class="GtkListView" id="listview">
+                        <style>
+                          <class name="content"/>
+                        </style>
+                        <property name="factory">
+                          <object class="GtkBuilderListItemFactory">
+                            <property name="resource">/org/gnome/FractalNext/content-explore-item.ui</property>
+                          </object>
+                        </property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Room List</property>
+                        </accessibility>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+

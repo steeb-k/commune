@@ -161,3 +161,11 @@ headerbar.flat {
   background-color: @theme_base_color;
   padding: 6px;
 }
+
+.explore listview {
+  padding: 12px;
+}
+
+.bold {
+  font-weight: bold;
+}

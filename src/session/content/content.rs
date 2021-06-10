@@ -1,8 +1,7 @@
 use crate::session::{
-    content::ContentType,
-    content::Invite,
-    content::RoomHistory,
+    content::{ContentType, Explore, Invite, RoomHistory},
     room::{Room, RoomType},
+    Session,
 };
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -10,12 +9,14 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTem
 mod imp {
     use super::*;
     use glib::{signal::SignalHandlerId, subclass::InitializingObject};
+    use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content.ui")]
     pub struct Content {
         pub compact: Cell<bool>,
+        pub session: RefCell<Option<Session>>,
         pub room: RefCell<Option<Room>>,
         pub content_type: Cell<ContentType>,
         pub error_list: RefCell<Option<gio::ListStore>>,
@@ -26,6 +27,8 @@ mod imp {
         pub room_history: TemplateChild<RoomHistory>,
         #[template_child]
         pub invite: TemplateChild<Invite>,
+        #[template_child]
+        pub explore: TemplateChild<Explore>,
     }
 
     #[glib::object_subclass]
@@ -37,6 +40,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             RoomHistory::static_type();
             Invite::static_type();
+            Explore::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
@@ -52,9 +56,15 @@ mod imp {
 
     impl ObjectImpl for Content {
         fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
+                    glib::ParamSpec::new_object(
+                        "session",
+                        "Session",
+                        "The session",
+                        Session::static_type(),
+                        glib::ParamFlags::READWRITE,
+                    ),
                     glib::ParamSpec::new_boolean(
                         "compact",
                         "Compact",
@@ -102,6 +112,9 @@ mod imp {
                     let compact = value.get().unwrap();
                     self.compact.set(compact);
                 }
+                "session" => {
+                    let _ = self.session.replace(value.get().unwrap());
+                }
                 "room" => {
                     let room = value.get().unwrap();
                     obj.set_room(room);
@@ -117,6 +130,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
+                "session" => obj.session().to_value(),
                 "room" => obj.room().to_value(),
                 "error-list" => self.error_list.borrow().to_value(),
                 "content-type" => obj.content_type().to_value(),
@@ -135,8 +149,13 @@ glib::wrapper! {
 }
 
 impl Content {
-    pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create Content")
+    pub fn new(session: &Session) -> Self {
+        glib::Object::new(&[("session", session)]).expect("Failed to create Content")
+    }
+
+    pub fn session(&self) -> Option<Session> {
+        let priv_ = imp::Content::from_instance(self);
+        priv_.session.borrow().to_owned()
     }
 
     pub fn content_type(&self) -> ContentType {
@@ -208,7 +227,8 @@ impl Content {
                 }
             }
             ContentType::Explore => {
-                todo!("Display explore");
+                priv_.explore.init();
+                priv_.stack.set_visible_child(&*priv_.explore);
             }
         }
     }

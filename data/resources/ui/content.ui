@@ -25,6 +25,12 @@
                 <property name="room" bind-source="Content" bind-property="room" bind-flags="sync-create"/>
               </object>
             </child>
+            <child>
+              <object class="ContentExplore" id="explore">
+                <property name="compact" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
+                <property name="session" bind-source="Content" bind-property="session" bind-flags="sync-create"/>
+              </object>
+            </child>
           </object>
         </child>
       </object>

@@ -1,6 +1,7 @@
 mod content;
 mod content_type;
 mod divider_row;
+mod explore;
 mod invite;
 mod item_row;
 mod markdown_popover;
@@ -11,6 +12,7 @@ mod state_row;
 pub use self::content::Content;
 pub use self::content_type::ContentType;
 use self::divider_row::DividerRow;
+use self::explore::Explore;
 use self::invite::Invite;
 use self::item_row::ItemRow;
 use self::markdown_popover::MarkdownPopover;

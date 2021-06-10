@@ -4,6 +4,9 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="shortcuts.ui">ui/shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content.ui">ui/content.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-room-history.ui">ui/content-room-history.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-explore.ui">ui/content-explore.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-explore-item.ui">ui/content-explore-item.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-public-room-row.ui">ui/content-public-room-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-item.ui">ui/content-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-item-row-menu.ui">ui/content-item-row-menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-row.ui">ui/content-message-row.ui</file>

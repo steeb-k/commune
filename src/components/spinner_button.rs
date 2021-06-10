@@ -89,7 +89,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct SpinnerButton(ObjectSubclass<imp::SpinnerButton>)
-        @extends gtk::Widget, gtk::Button, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Button, @implements gtk::Accessible, gtk::Actionable;
 }
 
 /// A widget displaying a `User`

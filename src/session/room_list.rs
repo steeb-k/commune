@@ -1,10 +1,22 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
-use matrix_sdk::{deserialized_responses::Rooms as ResponseRooms, identifiers::RoomId};
+use matrix_sdk::{
+    deserialized_responses::Rooms as ResponseRooms,
+    identifiers::{RoomId, RoomIdOrAliasId},
+};
 
-use crate::session::{room::Room, Session};
+use crate::{
+    session::{room::Room, Session},
+    utils::do_async,
+    Error,
+};
+use gettextrs::gettext;
+use log::error;
+use std::cell::Cell;
+use std::collections::HashSet;
 
 mod imp {
+    use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
 
@@ -13,6 +25,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct RoomList {
         pub list: RefCell<IndexMap<RoomId, Room>>,
+        pub pending_rooms: RefCell<HashSet<RoomIdOrAliasId>>,
         pub session: OnceCell<Session>,
     }
 
@@ -58,6 +71,16 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![
+                    Signal::builder("pending-rooms-changed", &[], <()>::static_type().into())
+                        .build(),
+                ]
+            });
+            SIGNALS.as_ref()
+        }
     }
 
     impl ListModelImpl for RoomList {
@@ -93,9 +116,62 @@ impl RoomList {
         priv_.session.get().unwrap()
     }
 
+    pub fn is_pending_room(&self, identifier: &RoomIdOrAliasId) -> bool {
+        let priv_ = imp::RoomList::from_instance(&self);
+        priv_.pending_rooms.borrow().contains(identifier)
+    }
+
+    fn pending_rooms_remove(&self, identifier: &RoomIdOrAliasId) {
+        let priv_ = imp::RoomList::from_instance(&self);
+        priv_.pending_rooms.borrow_mut().remove(identifier);
+        self.emit_by_name("pending-rooms-changed", &[]).unwrap();
+    }
+
+    fn pending_rooms_insert(&self, identifier: RoomIdOrAliasId) {
+        let priv_ = imp::RoomList::from_instance(&self);
+        priv_.pending_rooms.borrow_mut().insert(identifier);
+        self.emit_by_name("pending-rooms-changed", &[]).unwrap();
+    }
+
+    fn pending_rooms_replace_or_remove(&self, identifier: &RoomIdOrAliasId, room_id: RoomId) {
+        let priv_ = imp::RoomList::from_instance(&self);
+        {
+            let mut pending_rooms = priv_.pending_rooms.borrow_mut();
+            pending_rooms.remove(identifier);
+            if !self.contains_key(&room_id) {
+                pending_rooms.insert(room_id.into());
+            }
+        }
+        self.emit_by_name("pending-rooms-changed", &[]).unwrap();
+    }
+
     pub fn get(&self, room_id: &RoomId) -> Option<Room> {
         let priv_ = imp::RoomList::from_instance(&self);
         priv_.list.borrow().get(room_id).cloned()
+    }
+
+    /// Waits till the Room becomes available
+    pub async fn get_wait(&self, room_id: RoomId) -> Option<Room> {
+        let priv_ = imp::RoomList::from_instance(&self);
+        if let Some(room) = priv_.list.borrow().get(&room_id) {
+            Some(room.clone())
+        } else {
+            let (sender, receiver) = futures::channel::oneshot::channel();
+
+            let sender = Cell::new(Some(sender));
+            // FIXME: add a timeout
+            let handler_id = self.connect_items_changed(move |obj, _, _, _| {
+                if let Some(room) = obj.get(&room_id) {
+                    if let Some(sender) = sender.take() {
+                        sender.send(Some(room)).unwrap();
+                    }
+                }
+            });
+
+            let room = receiver.await.unwrap();
+            self.disconnect(handler_id);
+            room
+        }
     }
 
     fn get_full(&self, room_id: &RoomId) -> Option<(usize, RoomId, Room)> {
@@ -189,6 +265,7 @@ impl RoomList {
                 })
                 .clone();
 
+            self.pending_rooms_remove(&room_id.into());
             room.handle_left_response(left_room);
         }
 
@@ -203,6 +280,7 @@ impl RoomList {
                 })
                 .clone();
 
+            self.pending_rooms_remove(&room_id.into());
             room.handle_joined_response(joined_room);
         }
 
@@ -217,11 +295,60 @@ impl RoomList {
                 })
                 .clone();
 
+            self.pending_rooms_remove(&room_id.into());
             room.handle_invited_response(invited_room);
         }
 
         if added > 0 {
             self.items_added(added);
         }
+    }
+
+    pub fn join_by_id_or_alias(&self, identifier: RoomIdOrAliasId) {
+        let client = self.session().client().clone();
+        let identifier_clone = identifier.clone();
+
+        self.pending_rooms_insert(identifier.clone());
+
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move {
+                client
+                    .join_room_by_id_or_alias(&identifier_clone, &[])
+                    .await
+            },
+            clone!(@weak self as obj => move |response| async move {
+                match response {
+                    Ok(response) => obj.pending_rooms_replace_or_remove(&identifier, response.room_id),
+                    Err(error) => {
+                        obj.pending_rooms_remove(&identifier);
+                        error!("Joining room {} failed: {}", identifier, error);
+                        let error = Error::new(
+                            error,
+                            clone!(@strong obj => move |_| {
+                                    let error_message = gettext(format!("Failed to join room {}. Try again later.", identifier));
+                                    let error_label = gtk::LabelBuilder::new().label(&error_message).wrap(true).build();
+                                    Some(error_label.upcast())
+                            }),
+                        );
+                        obj.session().append_error(&error);
+                    }
+                }
+            }),
+        );
+    }
+
+    pub fn connect_pending_rooms_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_local("pending-rooms-changed", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+
+            f(&obj);
+
+            None
+        })
+        .unwrap()
     }
 }
