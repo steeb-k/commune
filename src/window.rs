@@ -4,6 +4,7 @@ use crate::Application;
 use crate::Login;
 use crate::Session;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
+use gio::PropertyAction;
 use glib::signal::Inhibit;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
@@ -97,6 +98,18 @@ impl Window {
         let priv_ = &imp::Window::from_instance(self);
         priv_.main_stack.add_child(session);
         priv_.main_stack.set_visible_child(session);
+        self.install_session_actions(session);
+    }
+
+    /// Installs session-related actions to the Window.
+    fn install_session_actions(&self, session: &Session) {
+        let room_search_bar = session.room_search_bar();
+        let room_search_toggle_action = PropertyAction::new(
+            "toggle-room-search",
+            &room_search_bar,
+            "search-mode-enabled",
+        );
+        self.add_action(&room_search_toggle_action);
     }
 
     fn restore_sessions(&self) {

@@ -53,6 +53,8 @@ mod imp {
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub content: TemplateChild<adw::Leaflet>,
+        #[template_child]
+        pub sidebar: TemplateChild<Sidebar>,
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: OnceCell<Client>,
@@ -260,6 +262,11 @@ impl Session {
                 obj.handle_login_result(result, true);
             }),
         );
+    }
+
+    pub fn room_search_bar(&self) -> gtk::SearchBar {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.sidebar.room_search_bar()
     }
 
     pub fn login_with_previous_session(&self, session: StoredSession) {

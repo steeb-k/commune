@@ -47,7 +47,7 @@
             <child>
               <object class="AdwLeaflet" id="content">
                 <child>
-                  <object class="Sidebar">
+                  <object class="Sidebar" id="sidebar">
                     <property name="compact" bind-source="content" bind-property="folded" bind-flags="sync-create"/>
                     <property name="room-list" bind-source="Session" bind-property="room-list" bind-flags="sync-create"/>
                     <property name="selected-room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create | bidirectional"/>

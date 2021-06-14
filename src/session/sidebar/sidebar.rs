@@ -26,6 +26,8 @@ mod imp {
         pub listview: TemplateChild<gtk::ListView>,
         #[template_child]
         pub room_search_entry: TemplateChild<gtk::SearchEntry>,
+        #[template_child]
+        pub room_search: TemplateChild<gtk::SearchBar>,
     }
 
     #[glib::object_subclass]
@@ -185,6 +187,11 @@ impl Sidebar {
     pub fn selected_room(&self) -> Option<Room> {
         let priv_ = imp::Sidebar::from_instance(self);
         priv_.selected_room.borrow().clone()
+    }
+
+    pub fn room_search_bar(&self) -> gtk::SearchBar {
+        let priv_ = imp::Sidebar::from_instance(self);
+        priv_.room_search.clone()
     }
 
     pub fn set_room_list(&self, room_list: Option<RoomList>) {

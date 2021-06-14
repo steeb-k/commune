@@ -124,6 +124,7 @@ impl Application {
     fn setup_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
         self.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
+        self.set_accels_for_action("win.toggle-room-search", &["<Control>k"]);
     }
 
     fn setup_css(&self) {
