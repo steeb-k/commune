@@ -69,6 +69,10 @@ sources = files(
   'session/sidebar/row.rs',
   'session/sidebar/room_row.rs',
   'session/sidebar/selection.rs',
+  'session/sidebar/account_switcher/add_account.rs',
+  'session/sidebar/account_switcher/item.rs',
+  'session/sidebar/account_switcher/mod.rs',
+  'session/sidebar/account_switcher/user_entry.rs',
 )
 
 custom_target(

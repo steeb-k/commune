@@ -5,6 +5,7 @@ data/org.gnome.FractalNext.gschema.xml.in
 data/org.gnome.FractalNext.metainfo.xml.in.in
 
 # UI files
+data/resources/ui/add_account.ui
 data/resources/ui/components-avatar.ui
 data/resources/ui/content-divider-row.ui
 data/resources/ui/content-item-row-menu.ui
@@ -29,6 +30,7 @@ data/resources/ui/sidebar-room-row.ui
 data/resources/ui/sidebar.ui
 data/resources/ui/spinner-button.ui
 data/resources/ui/pill.ui
+data/resources/ui/user-entry-row.ui
 data/resources/ui/window.ui
 
 # Rust files
@@ -64,6 +66,10 @@ src/session/room/highlight_flags.rs
 src/session/room/item.rs
 src/session/room/mod.rs
 src/session/room/timeline.rs
+src/session/sidebar/account_switcher/add_account.rs
+src/session/sidebar/account_switcher/item.rs
+src/session/sidebar/account_switcher/mod.rs
+src/session/sidebar/account_switcher/user_entry.rs
 src/session/sidebar/category_row.rs
 src/session/sidebar/entry.rs
 src/session/sidebar/mod.rs

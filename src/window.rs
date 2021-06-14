@@ -99,6 +99,7 @@ impl Window {
 
     fn add_session(&self, session: &Session) {
         let priv_ = &imp::Window::from_instance(self);
+        session.set_logged_in_users(&priv_.sessions.pages());
         priv_.sessions.add_child(session);
         priv_.sessions.set_visible_child(session);
         self.install_session_actions(session);
@@ -178,5 +179,10 @@ impl Window {
     fn switch_to_sessions_page(&self) {
         let priv_ = imp::Window::from_instance(self);
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
+    }
+
+    pub fn switch_to_login_page(&self) {
+        let priv_ = imp::Window::from_instance(self);
+        priv_.main_stack.set_visible_child(&priv_.login.get());
     }
 }

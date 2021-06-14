@@ -6,6 +6,7 @@ use crate::session::Avatar as AvatarItem;
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
+    use once_cell::sync::Lazy;
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
@@ -34,7 +35,6 @@ mod imp {
 
     impl ObjectImpl for Avatar {
         fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
                     glib::ParamSpec::new_object(

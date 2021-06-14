@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="UserEntryRow" parent="AdwBin">
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">10</property>
+        <child>
+          <object class="ComponentsAvatar" id="avatar_component">
+            <property name="size">40</property>
+            <binding name="item">
+              <lookup name="avatar" type="User">
+                <lookup name="user" type="Session">
+                  <lookup name="child" type="GtkStackPage">
+                    <lookup name="session-page">UserEntryRow</lookup>
+                  </lookup>
+                </lookup>
+              </lookup>
+            </binding>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">5</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkLabel" id="display_name">
+                <property name="xalign">0.0</property>
+                <binding name="label">
+                  <lookup name="display-name" type="User">
+                    <lookup name="user" type="Session">
+                      <lookup name="child" type="GtkStackPage">
+                        <lookup name="session-page">UserEntryRow</lookup>
+                      </lookup>
+                    </lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="user_id">
+                <property name="xalign">0.0</property>
+                <binding name="label">
+                  <lookup name="user-id" type="User">
+                    <lookup name="user" type="Session">
+                      <lookup name="child" type="GtkStackPage">
+                        <lookup name="session-page">UserEntryRow</lookup>
+                      </lookup>
+                    </lookup>
+                  </lookup>
+                </binding>
+                <style>
+                  <class name="dim-label" />
+                  <class name="user-id" />
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

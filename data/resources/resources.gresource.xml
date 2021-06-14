@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/FractalNext/">
+    <file compressed="true" preprocess="xml-stripblanks" alias="add-account-row.ui">ui/add-account-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="user-entry-row.ui">ui/user-entry-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="shortcuts.ui">ui/shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content.ui">ui/content.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-room-history.ui">ui/content-room-history.ui</file>
@@ -19,6 +21,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="login.ui">ui/login.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="session.ui">ui/session.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar.ui">ui/sidebar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-account-switcher.ui">ui/sidebar-account-switcher.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-item.ui">ui/sidebar-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-category-row.ui">ui/sidebar-category-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-entry-row.ui">ui/sidebar-entry-row.ui</file>
