@@ -120,7 +120,7 @@ impl Application {
         );
     }
 
-    // Sets up keyboard shortcuts
+    /// Sets up keyboard shortcuts for application and window actions.
     fn setup_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
         self.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
