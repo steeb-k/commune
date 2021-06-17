@@ -89,6 +89,10 @@ headerbar.flat {
 }
 
 /* Content */
+.room-history {
+  background: @theme_base_color;
+}
+
 .room-history row {
   min-height: 0;
   padding-top: 6px;
