@@ -23,6 +23,12 @@
   min-width: 250px;
 }
 
+#devnotice {
+  background-color: @warning_color;
+  padding: 6px;
+  border-radius: 10px;
+}
+
 /* Session */
 .session-loading-spinner {
   min-width: 32px;
