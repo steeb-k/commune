@@ -122,15 +122,9 @@ headerbar.flat {
   font-weight: bold;
 }
 
-.displayname {
-  font-size: 0.9em;
-  font-weight: bold;
-  color: @theme_selected_bg_color;
-}
-
 .timestamp {
-  font-size: 0.9em;
   min-width: 36px;
+  font-weight: normal;
 }
 
 .codeview {

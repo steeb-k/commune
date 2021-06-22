@@ -24,13 +24,15 @@
                     <property name="ellipsize">end</property>
                     <property name="selectable">True</property>
                     <style>
-                      <class name="displayname"/>
+                      <class name="heading"/>
+                      <class name="accent"/>
                     </style>
                   </object>
                 </child>
                 <child type="end">
                   <object class="GtkLabel" id="timestamp">
                     <style>
+                      <class name="heading"/>
                       <class name="timestamp"/>
                       <class name="dim-label"/>
                     </style>
