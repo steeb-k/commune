@@ -7,6 +7,7 @@ use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 use log::debug;
+use url::{ParseError, Url};
 
 mod imp {
     use super::*;
@@ -102,7 +103,7 @@ impl Login {
         self.action_set_enabled(
             "login.next",
             homeserver.len() != 0
-                && url::Url::parse(homeserver.as_str()).is_ok()
+                && build_homeserver_url(homeserver.as_str()).is_ok()
                 && username != 0
                 && password != 0,
         );
@@ -139,7 +140,7 @@ impl Login {
         }));
 
         session.login_with_password(
-            url::Url::parse(homeserver.as_str()).unwrap(),
+            build_homeserver_url(homeserver.as_str()).unwrap(),
             username,
             password,
         );
@@ -184,5 +185,13 @@ impl Login {
             None
         })
         .unwrap()
+    }
+}
+
+fn build_homeserver_url(server: &str) -> Result<Url, ParseError> {
+    if server.starts_with("http://") || server.starts_with("https://") {
+        Url::parse(server)
+    } else {
+        Url::parse(&format!("https://{}", server))
     }
 }
