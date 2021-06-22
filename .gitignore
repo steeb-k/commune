@@ -8,3 +8,5 @@ src/config.rs
 *.ui.in~
 *.ui~
 .flatpak
+subprojects/libadwaita
+subprojects/gtksourceview
