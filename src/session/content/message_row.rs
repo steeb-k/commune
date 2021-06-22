@@ -10,8 +10,7 @@ use html2pango::{
 };
 use log::warn;
 use matrix_sdk::events::{
-    room::message::MessageFormat,
-    room::message::{FormattedBody, MessageType},
+    room::message::{FormattedBody, MessageFormat, MessageType, Relation},
     room::redaction::RedactionEventContent,
     AnyMessageEvent, AnyMessageEventContent, AnyRoomEvent,
 };
@@ -192,7 +191,7 @@ impl MessageRow {
             let matrix_event = event.matrix_event();
             match matrix_event {
                 AnyRoomEvent::Message(AnyMessageEvent::RoomMessage(message)) => {
-                    message.content.new_content.is_some()
+                    message.content.relates_to.is_some()
                 }
                 AnyRoomEvent::Message(AnyMessageEvent::RoomRedaction(_)) => true,
                 _ => false,
@@ -237,8 +236,8 @@ impl MessageRow {
         // TODO: display reaction events from event.relates_to()
         match content {
             AnyMessageEventContent::RoomMessage(message) => {
-                let msgtype = if let Some(new_message) = message.new_content {
-                    new_message.msgtype
+                let msgtype = if let Some(Relation::Replacement(replacement)) = message.relates_to {
+                    replacement.new_content.msgtype
                 } else {
                     message.msgtype
                 };

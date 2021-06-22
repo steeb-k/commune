@@ -238,7 +238,7 @@ impl Event {
             AnyRoomEvent::Message(ref message) => match message {
                 AnyMessageEvent::RoomRedaction(event) => Some(event.redacts.clone()),
                 _ => match message.content() {
-                    AnyMessageEventContent::Reaction(event) => Some(event.relation.event_id),
+                    AnyMessageEventContent::Reaction(event) => Some(event.relates_to.event_id),
                     AnyMessageEventContent::RoomMessage(event) => match event.relates_to {
                         Some(relates_to) => match relates_to {
                             // TODO: Figure out Relation::Annotation(), Relation::Reference() but they are pre-specs for now
@@ -282,7 +282,6 @@ impl Event {
                 AnyMessageEvent::RoomMessageFeedback(_) => true,
                 AnyMessageEvent::RoomRedaction(_) => true,
                 AnyMessageEvent::Sticker(_) => true,
-                AnyMessageEvent::Custom(_) => true,
                 _ => false,
             },
             AnyRoomEvent::State(state) => match state {
@@ -299,7 +298,6 @@ impl Event {
                 AnyStateEvent::RoomPowerLevels(_) => true,
                 AnyStateEvent::RoomServerAcl(_) => true,
                 AnyStateEvent::RoomTopic(_) => true,
-                AnyStateEvent::Custom(_) => true,
                 _ => false,
             },
             AnyRoomEvent::RedactedMessage(message) => match message {
@@ -318,7 +316,6 @@ impl Event {
                 AnyRedactedMessageEvent::RoomMessageFeedback(_) => true,
                 AnyRedactedMessageEvent::RoomRedaction(_) => true,
                 AnyRedactedMessageEvent::Sticker(_) => true,
-                AnyRedactedMessageEvent::Custom(_) => true,
                 _ => false,
             },
             AnyRoomEvent::RedactedState(state) => match state {
@@ -335,7 +332,6 @@ impl Event {
                 AnyRedactedStateEvent::RoomPowerLevels(_) => true,
                 AnyRedactedStateEvent::RoomServerAcl(_) => true,
                 AnyRedactedStateEvent::RoomTopic(_) => true,
-                AnyRedactedStateEvent::Custom(_) => true,
                 _ => false,
             },
         }
