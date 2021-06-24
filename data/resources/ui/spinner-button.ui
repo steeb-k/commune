@@ -3,6 +3,7 @@
   <template class="SpinnerButton" parent="GtkButton">
     <property name="child">
       <object class="GtkStack" id="stack">
+        <property name="transition-type">crossfade</property>
         <child>
           <object class="GtkLabel" id="label">
             <property name="use_underline">True</property>

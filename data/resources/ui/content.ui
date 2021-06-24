@@ -13,6 +13,7 @@
         </child>
         <child>
           <object class="GtkStack" id="stack">
+            <property name="transition-type">crossfade</property>
             <child>
               <object class="ContentRoomHistory" id="room_history">
                 <property name="compact" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
