@@ -10,10 +10,15 @@
           <object class="AdwHeaderBar" id="headerbar">
             <property name="show-start-title-buttons" bind-source="ContentInvite" bind-property="compact" bind-flags="sync-create"/>
             <child type="start">
-              <object class="GtkButton" id="back">
-                <property name="visible" bind-source="ContentInvite" bind-property="compact" bind-flags="sync-create"/>
-                <property name="icon-name">go-previous-symbolic</property>
-                <property name="action-name">content.go-back</property>
+              <object class="GtkRevealer">
+                <property name="transition-type">crossfade</property>
+                <property name="reveal-child" bind-source="ContentInvite" bind-property="compact" bind-flags="sync-create"/>
+                <property name="child">
+                  <object class="GtkButton" id="back">
+                    <property name="icon-name">go-previous-symbolic</property>
+                    <property name="action-name">content.go-back</property>
+                  </object>
+                </property>
               </object>
             </child>
             <child type="title">
