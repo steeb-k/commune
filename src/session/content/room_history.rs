@@ -1,3 +1,4 @@
+use crate::components::RoomTitle;
 use crate::session::{content::ItemRow, content::MarkdownPopover, room::Room, room::RoomType};
 use adw::subclass::prelude::*;
 use gtk::{
@@ -21,6 +22,8 @@ mod imp {
         pub md_enabled: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
+        pub room_title: TemplateChild<RoomTitle>,
         #[template_child]
         pub room_menu: TemplateChild<gtk::MenuButton>,
         #[template_child]

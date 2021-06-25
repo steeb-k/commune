@@ -31,7 +31,7 @@
               </object>
             </child>
             <child type="title">
-              <object class="AdwWindowTitle">
+              <object class="RoomTitle" id="room_title">
                 <binding name="title">
                   <lookup name="display-name">
                     <lookup name="room">ContentRoomHistory</lookup>
