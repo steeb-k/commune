@@ -2,6 +2,7 @@ use adw::subclass::prelude::*;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use gtk::{glib, CompositeTemplate};
+use html2pango::markup;
 
 mod imp {
     use super::*;
@@ -104,6 +105,8 @@ impl RoomTitle {
 
     pub fn set_title(&self, title: Option<String>) {
         let priv_ = imp::RoomTitle::from_instance(self);
+        // Parse and escape markup in title
+        let title = title.map(|s| markup(&s));
         // If there's an existing title, check that current title and new title aren't equal
         if priv_.title.borrow().as_deref() != title.as_deref() {
             priv_.title.replace(title);
@@ -122,6 +125,8 @@ impl RoomTitle {
 
     pub fn set_subtitle(&self, subtitle: Option<String>) {
         let priv_ = imp::RoomTitle::from_instance(self);
+        // Parse and escape markup in subtitle
+        let subtitle = subtitle.map(|s| markup(&s));
         // If there's an existing subtitle, check that current subtitle and new subtitle aren't equal
         if priv_.subtitle.borrow().as_deref() != subtitle.as_deref() {
             priv_.subtitle.replace(subtitle);
