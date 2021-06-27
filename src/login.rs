@@ -18,6 +18,8 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/login.ui")]
     pub struct Login {
         #[template_child]
+        pub next_button: TemplateChild<gtk::Button>,
+        #[template_child]
         pub next_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub next_label: TemplateChild<gtk::Label>,
@@ -185,6 +187,10 @@ impl Login {
             None
         })
         .unwrap()
+    }
+
+    pub fn default_widget(&self) -> gtk::Widget {
+        imp::Login::from_instance(&self).next_button.get().upcast()
     }
 }
 

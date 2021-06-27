@@ -65,6 +65,11 @@ mod imp {
             self.login.connect_new_session(
                 clone!(@weak obj => move |_login, session| obj.add_session(session)),
             );
+
+            self.main_stack.connect_visible_child_notify(
+                clone!(@weak obj => move |_| obj.set_default_by_child()),
+            );
+            obj.set_default_by_child();
         }
     }
 
@@ -147,5 +152,16 @@ impl Window {
 
         self.set_default_size(width, height);
         self.set_property("maximized", &is_maximized).unwrap();
+    }
+
+    /// Change the default widget of the window based on the visible child
+    /// If the login screen is visible, its login button becomes the default widget
+    fn set_default_by_child(&self) {
+        let priv_ = imp::Window::from_instance(self);
+        if priv_.main_stack.visible_child() == Some(priv_.login.get().upcast()) {
+            self.set_default_widget(Some(&priv_.login.default_widget()));
+        } else {
+            self.set_default_widget(gtk::NONE_WIDGET);
+        }
     }
 }

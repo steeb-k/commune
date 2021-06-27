@@ -12,7 +12,7 @@
               </object>
             </property>
             <child type="end">
-              <object class="GtkButton">
+              <object class="GtkButton" id="next_button">
                 <property name="action_name">login.next</property>
                 <property name="child">
                   <object class="GtkStack" id="next_stack">
