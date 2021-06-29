@@ -1,5 +1,5 @@
 use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
+use matrix_sdk::ruma::{
     events::{
         room::message::MessageType, room::message::Relation, AnyMessageEvent,
         AnyMessageEventContent, AnyRedactedMessageEvent, AnyRedactedStateEvent, AnyRoomEvent,

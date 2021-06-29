@@ -2,8 +2,8 @@ use gtk::{gdk, gdk_pixbuf::Pixbuf, gio, glib, glib::clone, prelude::*, subclass:
 
 use log::error;
 use matrix_sdk::{
-    identifiers::MxcUri,
     media::{MediaFormat, MediaRequest, MediaType},
+    ruma::identifiers::MxcUri,
 };
 
 use crate::utils::do_async;

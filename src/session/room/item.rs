@@ -1,5 +1,5 @@
 use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
+use matrix_sdk::ruma::{
     events::AnyRoomEvent,
     identifiers::{EventId, UserId},
 };

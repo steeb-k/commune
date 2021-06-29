@@ -1,4 +1,4 @@
-use matrix_sdk::identifiers::{DeviceIdBox, UserId};
+use matrix_sdk::ruma::identifiers::{DeviceIdBox, UserId};
 use secret_service::EncryptionType;
 use secret_service::SecretService;
 use std::collections::HashMap;

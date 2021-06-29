@@ -6,7 +6,7 @@ use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 use crate::session::content::{DividerRow, MessageRow, StateRow};
 use crate::session::event_source_dialog::EventSourceDialog;
 use crate::session::room::{Item, ItemType};
-use matrix_sdk::events::AnyRoomEvent;
+use matrix_sdk::ruma::events::AnyRoomEvent;
 
 mod imp {
     use super::*;

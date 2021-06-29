@@ -28,10 +28,13 @@ use gtk::{self, prelude::*};
 use gtk::{gio, glib, glib::clone, glib::SyncSender, CompositeTemplate};
 use gtk_macros::send;
 use log::error;
-use matrix_sdk::api::r0::filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter};
+use matrix_sdk::ruma::{
+    api::client::r0::filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
+    assign,
+};
 use matrix_sdk::{
-    self, assign, deserialized_responses::SyncResponse, uuid::Uuid, Client, ClientConfig,
-    RequestConfig, SyncSettings,
+    deserialized_responses::SyncResponse, uuid::Uuid, Client, ClientConfig, RequestConfig,
+    SyncSettings,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::fs;

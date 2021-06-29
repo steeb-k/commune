@@ -1,8 +1,8 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
+use matrix_sdk::ruma::{
     events::{exports::serde::de::DeserializeOwned, AnyRoomEvent},
     identifiers::EventId,
-    Raw,
+    serde::Raw,
 };
 use serde_json::{to_string_pretty as to_json_string_pretty, to_value as to_json_value};
 

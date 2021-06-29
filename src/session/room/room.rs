@@ -2,24 +2,29 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, error, warn};
 use matrix_sdk::{
-    api::r0::sync::sync_events::InvitedRoom,
     deserialized_responses::{JoinedRoom, LeftRoom},
-    events::{
-        exports::serde::de::DeserializeOwned,
-        room::{
-            member::{MemberEventContent, MembershipState},
-            message::{
-                EmoteMessageEventContent, MessageEventContent, MessageType, TextMessageEventContent,
-            },
-        },
-        tag::TagName,
-        AnyMessageEvent, AnyRoomAccountDataEvent, AnyRoomEvent, AnyStateEvent,
-        AnyStrippedStateEvent, AnySyncRoomEvent, MessageEvent, StateEvent, Unsigned,
-    },
-    identifiers::{EventId, RoomId, UserId},
     room::Room as MatrixRoom,
+    ruma::{
+        api::client::r0::sync::sync_events::InvitedRoom,
+        events::{
+            exports::serde::de::DeserializeOwned,
+            room::{
+                member::{MemberEventContent, MembershipState},
+                message::{
+                    EmoteMessageEventContent, MessageEventContent, MessageType,
+                    TextMessageEventContent,
+                },
+            },
+            tag::TagName,
+            AnyMessageEvent, AnyRoomAccountDataEvent, AnyRoomEvent, AnyStateEvent,
+            AnyStrippedStateEvent, AnySyncRoomEvent, MessageEvent, StateEvent, Unsigned,
+        },
+        identifiers::{EventId, RoomId, UserId},
+        serde::Raw,
+        MilliSecondsSinceUnixEpoch,
+    },
     uuid::Uuid,
-    MilliSecondsSinceUnixEpoch, Raw, RoomMember,
+    RoomMember,
 };
 use std::cell::RefCell;
 use std::convert::TryFrom;

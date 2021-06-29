@@ -2,7 +2,9 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::warn;
-use matrix_sdk::events::{room::member::MembershipState, AnyStateEvent, AnyStateEventContent};
+use matrix_sdk::ruma::events::{
+    room::member::MembershipState, AnyStateEvent, AnyStateEventContent,
+};
 
 mod imp {
     use super::*;

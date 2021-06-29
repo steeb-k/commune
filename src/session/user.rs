@@ -2,8 +2,10 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use crate::session::Session;
 use matrix_sdk::{
-    events::{room::member::MemberEventContent, StateEvent, StrippedStateEvent},
-    identifiers::UserId,
+    ruma::{
+        events::{room::member::MemberEventContent, StateEvent, StrippedStateEvent},
+        identifiers::UserId,
+    },
     RoomMember,
 };
 

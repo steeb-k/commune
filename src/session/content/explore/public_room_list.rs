@@ -4,8 +4,8 @@ use crate::{
 };
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
-use matrix_sdk::{
-    api::r0::directory::{
+use matrix_sdk::ruma::{
+    api::client::r0::directory::{
         get_public_rooms_filtered::Request as PublicRoomsRequest,
         get_public_rooms_filtered::Response as PublicRoomsResponse,
     },

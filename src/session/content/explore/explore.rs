@@ -3,7 +3,7 @@ use crate::{
     session::Session,
 };
 
-use matrix_sdk::api::r0::thirdparty::get_protocols;
+use matrix_sdk::ruma::api::client::r0::thirdparty::get_protocols;
 
 use crate::utils::do_async;
 use adw::subclass::prelude::*;

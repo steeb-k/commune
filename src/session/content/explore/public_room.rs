@@ -1,5 +1,5 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::directory::PublicRoomsChunk;
+use matrix_sdk::ruma::directory::PublicRoomsChunk;
 
 use crate::session::{room::Room, Avatar, Session};
 

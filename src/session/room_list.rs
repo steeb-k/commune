@@ -2,7 +2,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
 use matrix_sdk::{
     deserialized_responses::Rooms as ResponseRooms,
-    identifiers::{RoomId, RoomIdOrAliasId},
+    ruma::identifiers::{RoomId, RoomIdOrAliasId},
 };
 
 use crate::{

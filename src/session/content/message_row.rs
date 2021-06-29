@@ -9,7 +9,7 @@ use html2pango::{
     html_escape, markup_links,
 };
 use log::warn;
-use matrix_sdk::events::{
+use matrix_sdk::ruma::events::{
     room::message::{FormattedBody, MessageFormat, MessageType, Relation},
     room::redaction::RedactionEventContent,
     AnyMessageEvent, AnyMessageEventContent, AnyRoomEvent,
