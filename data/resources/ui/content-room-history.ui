@@ -113,12 +113,14 @@
                 </style>
                 <child>
                   <object class="GtkButton">
+                    <property name="valign">end</property>
                     <property name="icon-name">mail-attachment-symbolic</property>
                     <property name="action-name">room-history.select-file</property>
                   </object>
                 </child>
                 <child>
                   <object class="GtkMenuButton" id="markdown_button">
+                    <property name="valign">end</property>
                     <property name="direction">up</property>
                     <property name="icon-name">format-justify-left-symbolic</property>
                     <property name="popover">
@@ -147,6 +149,7 @@
                 </child>
                 <child>
                   <object class="GtkButton">
+                    <property name="valign">end</property>
                     <property name="icon-name">send-symbolic</property>
                     <property name="focus-on-click">False</property>
                     <property name="action-name">room-history.send-text-message</property>
