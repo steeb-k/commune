@@ -202,7 +202,7 @@ impl Session {
         priv_.selected_room.borrow().clone()
     }
 
-    fn set_selected_room(&self, selected_room: Option<Room>) {
+    pub fn set_selected_room(&self, selected_room: Option<Room>) {
         let priv_ = imp::Session::from_instance(self);
 
         if self.selected_room() == selected_room {

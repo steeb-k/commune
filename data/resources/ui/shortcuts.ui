@@ -27,10 +27,15 @@
                 <property name="action-name">win.toggle-room-search</property>
               </object>
             </child>
+            <child>
+              <object class="GtkShortcutsShortcut">
+                <property name="title" translatable="yes" context="shortcut window">Close Room</property>
+                <property name="action-name">win.close-room</property>
+              </object>
+            </child>
           </object>
         </child>
       </object>
     </child>
   </object>
 </interface>
-

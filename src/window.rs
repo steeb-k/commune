@@ -1,4 +1,5 @@
 use crate::config::{APP_ID, PROFILE};
+use crate::gio::SimpleAction;
 use crate::secret;
 use crate::Application;
 use crate::Login;
@@ -115,6 +116,12 @@ impl Window {
             "search-mode-enabled",
         );
         self.add_action(&room_search_toggle_action);
+
+        let close_room_action = SimpleAction::new("close-room", None);
+        close_room_action.connect_activate(clone!(@weak session => move |_, _| {
+            session.set_selected_room(None);
+        }));
+        self.add_action(&close_room_action);
     }
 
     fn restore_sessions(&self) {
