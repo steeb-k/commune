@@ -39,8 +39,8 @@ fn main() {
 
     // Prepare i18n
     setlocale(LocaleCategory::LcAll, "");
-    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
-    textdomain(GETTEXT_PACKAGE);
+    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR).expect("Invalid argument passed to bindtextdomain");
+    textdomain(GETTEXT_PACKAGE).expect("Invalid string passed to textdomain");
 
     gtk::glib::set_application_name("Fractal");
     gtk::glib::set_prgname(Some("fractal"));
