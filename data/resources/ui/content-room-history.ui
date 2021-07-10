@@ -3,6 +3,11 @@
   <menu id="room-menu-model">
     <section>
       <item>
+        <attribute name="label" translatable="yes">Room _Details</attribute>
+        <attribute name="action">room-history.details</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">_Leave Room</attribute>
         <attribute name="action">room-history.leave</attribute>
         <attribute name="hidden-when">action-disabled</attribute>
@@ -182,4 +187,3 @@
     </child>
   </template>
 </interface>
-

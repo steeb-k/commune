@@ -1,4 +1,5 @@
 use crate::components::RoomTitle;
+use crate::session::content::RoomDetails;
 use crate::session::{content::ItemRow, content::MarkdownPopover, room::Room, room::RoomType};
 use adw::subclass::prelude::*;
 use gtk::{
@@ -61,6 +62,9 @@ mod imp {
             );
             klass.install_action("room-history.leave", None, move |widget, _, _| {
                 widget.leave();
+            });
+            klass.install_action("room-history.details", None, move |widget, _, _| {
+                widget.open_room_details();
             });
         }
 
@@ -292,6 +296,13 @@ impl RoomHistory {
         }
     }
 
+    pub fn open_room_details(&self) {
+        if let Some(room) = self.room() {
+            let window = RoomDetails::new(&self.parent_window(), &room);
+            window.show();
+        }
+    }
+
     fn update_room_state(&self) {
         let priv_ = imp::RoomHistory::from_instance(self);
 
@@ -326,6 +337,11 @@ impl RoomHistory {
                 room.load_previous_events();
             }
         }
+    }
+
+    /// Returns the parent GtkWindow containing this widget.
+    fn parent_window(&self) -> Option<gtk::Window> {
+        self.root()?.downcast().ok()
     }
 }
 

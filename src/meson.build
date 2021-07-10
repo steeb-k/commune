@@ -53,6 +53,8 @@ sources = files(
   'session/content/message_row.rs',
   'session/content/mod.rs',
   'session/content/room_history.rs',
+  'session/content/room_details/mod.rs',
+  'session/content/room_details/room_details.rs',
   'session/content/state_row.rs',
   'session/room/event.rs',
   'session/room/highlight_flags.rs',

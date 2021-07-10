@@ -11,6 +11,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="content-item-row-menu.ui">ui/content-item-row-menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-row.ui">ui/content-message-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-divider-row.ui">ui/content-divider-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-room-details.ui">ui/content-room-details.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-state-row.ui">ui/content-state-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-markdown-popover.ui">ui/content-markdown-popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invite.ui">ui/content-invite.ui</file>
@@ -36,4 +37,3 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
   </gresource>
 </gresources>
-

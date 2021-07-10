@@ -1,3 +1,40 @@
+.room-details-group avatar {
+  margin-bottom: 6px;
+}
+
+.room-details-group avatar * {
+  /* Undo non-sensitive style. */
+  filter: none;
+}
+
+.room-details-group entry:disabled {
+  border-color: transparent;
+  /* Undo non-sensitive style. */
+  color: @theme_text_color;
+  background: none;
+}
+
+.room-details-group entry textview {
+  /* Undo non-sensitive style. */
+  color: @theme_text_color;
+  background: none;
+}
+
+.room-details-group entry text {
+  /* Undo non-sensitive style. */
+  color: @theme_text_color;
+  background: none;
+}
+
+.room-details-name {
+  font-size: 2em;
+  margin-bottom: 6px;
+}
+
+.room-details-topic {
+  margin-bottom: 6px;
+}
+
 .title-header {
   font-size: 36px;
   font-weight: bold;

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="RoomDetails" parent="AdwPreferencesWindow">
+    <property name="title" translatable="yes">Room Details</property>
+    <property name="search-enabled">False</property>
+    <child>
+      <object class="AdwPreferencesPage">
+        <property name="icon-name">applications-system-symbolic</property>
+        <property name="title" translatable="yes">General</property>
+        <property name="name">general</property>
+        <child>
+          <object class="AdwPreferencesGroup">
+            <style>
+              <class name="room-details-group" />
+            </style>
+            <child>
+              <object class="ComponentsAvatar">
+                <property name="size">128</property>
+                <binding name="item">
+                  <lookup name="avatar">
+                    <lookup name="room">RoomDetails</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="room_name_entry">
+                <property name="has-frame">True</property>
+                <property name="sensitive" bind-source="edit_toggle" bind-property="active" bind-flags="sync-create" />
+                <property name="xalign">0.5</property>
+                <property name="buffer">
+                  <object class="GtkEntryBuffer" id="room_name_buffer">
+                    <binding name="text">
+                      <lookup name="display-name">
+                        <lookup name="room">RoomDetails</lookup>
+                      </lookup>
+                    </binding>
+                  </object>
+                </property>
+                <style>
+                  <class name="room-details-name" />
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="CustomEntry">
+                <property name="sensitive" bind-source="edit_toggle" bind-property="active" bind-flags="sync-create" />
+                <child>
+                  <object class="GtkTextView" id="room_topic_text_view">
+                    <property name="justification">center</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="accepts-tab">False</property>
+                    <property name="buffer">
+                      <object class="GtkTextBuffer" id="room_topic_buffer">
+                        <binding name="text">
+                          <lookup name="topic">
+                            <lookup name="room">RoomDetails</lookup>
+                          </lookup>
+                        </binding>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <style>
+                  <class name="room-details-topic" />
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkToggleButton" id="edit_toggle">
+                <property name="halign">center</property>
+                <property name="label" translatable="yes">Edit Details</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

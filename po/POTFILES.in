@@ -12,6 +12,7 @@ data/resources/ui/content-item.ui
 data/resources/ui/content-invite.ui
 data/resources/ui/content-markdown-popover.ui
 data/resources/ui/content-message-row.ui
+data/resources/ui/content-room-details.ui
 data/resources/ui/content-room-history.ui
 data/resources/ui/content-state-row.ui
 data/resources/ui/content.ui
@@ -55,6 +56,8 @@ src/session/content/invite.rs
 src/session/content/markdown_popover.rs
 src/session/content/message_row.rs
 src/session/content/mod.rs
+src/session/content/room_details/room_details.rs
+src/session/content/room_details/mod.rs
 src/session/content/room_history.rs
 src/session/content/state_row.rs
 src/session/mod.rs
