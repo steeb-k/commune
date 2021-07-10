@@ -69,7 +69,6 @@
             <child>
               <object class="GtkToggleButton" id="edit_toggle">
                 <property name="halign">center</property>
-                <property name="label" translatable="yes">Edit Details</property>
               </object>
             </child>
           </object>

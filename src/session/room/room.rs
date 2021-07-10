@@ -1,6 +1,6 @@
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use matrix_sdk::{
     deserialized_responses::{JoinedRoom, LeftRoom},
     room::Room as MatrixRoom,
@@ -13,10 +13,13 @@ use matrix_sdk::{
                     EmoteMessageEventContent, MessageEventContent, MessageType,
                     TextMessageEventContent,
                 },
+                name::NameEventContent,
+                topic::TopicEventContent,
             },
             tag::TagName,
-            AnyRoomAccountDataEvent, AnyStrippedStateEvent, AnySyncMessageEvent, AnySyncRoomEvent,
-            AnySyncStateEvent, SyncMessageEvent, SyncStateEvent, Unsigned,
+            AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
+            AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, SyncMessageEvent,
+            SyncStateEvent, Unsigned,
         },
         identifiers::{EventId, RoomId, UserId},
         serde::Raw,
@@ -27,7 +30,7 @@ use matrix_sdk::{
 };
 use serde_json::value::RawValue;
 use std::cell::RefCell;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
@@ -93,7 +96,7 @@ mod imp {
                         "Display Name",
                         "The display name of this room",
                         None,
-                        glib::ParamFlags::READABLE,
+                        glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_object(
                         "inviter",
@@ -146,7 +149,7 @@ mod imp {
                         "Topic",
                         "The topic of this room",
                         None,
-                        glib::ParamFlags::READABLE,
+                        glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_boxed(
                         "latest-change",
@@ -170,6 +173,10 @@ mod imp {
         ) {
             match pspec.name() {
                 "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "display-name" => {
+                    let room_name = value.get().unwrap();
+                    obj.store_room_name(room_name)
+                }
                 "category" => {
                     let category = value.get().unwrap();
                     obj.set_category(category);
@@ -178,6 +185,10 @@ mod imp {
                     .room_id
                     .set(RoomId::try_from(value.get::<&str>().unwrap()).unwrap())
                     .unwrap(),
+                "topic" => {
+                    let topic = value.get().unwrap();
+                    obj.store_topic(topic);
+                }
                 _ => unimplemented!(),
             }
         }
@@ -500,6 +511,43 @@ impl Room {
         );
     }
 
+    /// Updates the Matrix room with the given name.
+    pub fn store_room_name(&self, room_name: String) {
+        if self.display_name() == room_name {
+            return;
+        }
+
+        let joined_room = match self.matrix_room() {
+            MatrixRoom::Joined(joined_room) => joined_room,
+            _ => {
+                error!("Room name can’t be changed when not a member.");
+                return;
+            }
+        };
+        let room_name = match room_name.try_into() {
+            Ok(room_name) => room_name,
+            Err(e) => {
+                error!("Invalid room name: {}", e);
+                return;
+            }
+        };
+        let name_content = NameEventContent::new(Some(room_name));
+
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move {
+                let content = AnyStateEventContent::RoomName(name_content);
+                joined_room.send_state_event(content, "").await
+            },
+            clone!(@weak self as obj => move |room_name| async move {
+                match room_name {
+                    Ok(_room_name) => info!("Successfully updated room name"),
+                    Err(error) => error!("Couldn’t update room name: {}", error),
+                };
+            }),
+        );
+    }
+
     pub fn avatar(&self) -> &Avatar {
         let priv_ = imp::Room::from_instance(self);
         priv_.avatar.get().unwrap()
@@ -509,6 +557,35 @@ impl Room {
         self.matrix_room()
             .topic()
             .filter(|topic| !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some())
+    }
+
+    /// Updates the Matrix room with the given topic.
+    pub fn store_topic(&self, topic: String) {
+        if self.topic().as_ref() == Some(&topic) {
+            return;
+        }
+
+        let joined_room = match self.matrix_room() {
+            MatrixRoom::Joined(joined_room) => joined_room,
+            _ => {
+                error!("Room topic can’t be changed when not a member.");
+                return;
+            }
+        };
+
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move {
+                let content = AnyStateEventContent::RoomTopic(TopicEventContent::new(topic));
+                joined_room.send_state_event(content, "").await
+            },
+            clone!(@weak self as obj => move |topic| async move {
+                match topic {
+                    Ok(_topic) => info!("Successfully updated room topic"),
+                    Err(error) => error!("Couldn’t update topic: {}", error),
+                };
+            }),
+        );
     }
 
     pub fn power_levels(&self) -> PowerLevels {

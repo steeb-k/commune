@@ -1,5 +1,11 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gettextrs::gettext;
+use gtk::{
+    glib::{self, clone},
+    prelude::*,
+    subclass::prelude::*,
+    CompositeTemplate,
+};
 
 use crate::components::CustomEntry;
 use crate::session::Room;
@@ -13,6 +19,12 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/content-room-details.ui")]
     pub struct RoomDetails {
         pub room: OnceCell<Room>,
+        #[template_child]
+        pub edit_toggle: TemplateChild<gtk::ToggleButton>,
+        #[template_child]
+        pub room_name_entry: TemplateChild<gtk::Entry>,
+        #[template_child]
+        pub room_topic_text_view: TemplateChild<gtk::TextView>,
     }
 
     #[glib::object_subclass]
@@ -66,6 +78,12 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            obj.init_edit_toggle();
+        }
     }
 
     impl WidgetImpl for RoomDetails {}
@@ -95,5 +113,41 @@ impl RoomDetails {
     fn set_room(&self, room: Room) {
         let priv_ = imp::RoomDetails::from_instance(self);
         priv_.room.set(room).expect("Room already initialized");
+    }
+
+    fn init_edit_toggle(&self) {
+        let priv_ = imp::RoomDetails::from_instance(self);
+        let edit_toggle = &priv_.edit_toggle;
+        let label_enabled = gettext("Save Details");
+        let label_disabled = gettext("Edit Details");
+
+        edit_toggle.set_active(false);
+        edit_toggle.set_label(&label_disabled);
+
+        // Save changes of name and topic on toggle button release.
+        edit_toggle.connect_toggled(clone!(@weak self as this => move |button| {
+            if button.is_active() {
+                button.set_label(&label_enabled);
+                return;
+            }
+            button.set_label(&label_disabled);
+
+            let priv_ = imp::RoomDetails::from_instance(&this);
+            let room = this.room();
+
+            let room_name = priv_.room_name_entry.buffer().text();
+            let topic_buffer = priv_.room_topic_text_view.buffer();
+            let topic = topic_buffer.text(&topic_buffer.start_iter(), &topic_buffer.end_iter(), true);
+            room.store_room_name(room_name);
+            room.store_topic(topic.to_string());
+        }));
+
+        // End editing on enter.
+        priv_
+            .room_name_entry
+            .connect_activate(clone!(@weak self as this => move |_entry| {
+                let priv_ = imp::RoomDetails::from_instance(&this);
+                priv_.edit_toggle.set_active(false);
+            }));
     }
 }
