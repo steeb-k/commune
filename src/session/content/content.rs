@@ -29,6 +29,8 @@ mod imp {
         pub invite: TemplateChild<Invite>,
         #[template_child]
         pub explore: TemplateChild<Explore>,
+        #[template_child]
+        pub empty_page: TemplateChild<gtk::Box>,
     }
 
     #[glib::object_subclass]
@@ -215,7 +217,7 @@ impl Content {
 
         match self.content_type() {
             ContentType::None => {
-                //TODO: display an empty state
+                priv_.stack.set_visible_child(&*priv_.empty_page);
             }
             ContentType::Room => {
                 if let Some(room) = &*priv_.room.borrow() {

@@ -39,13 +39,22 @@ mod imp {
     impl ObjectImpl for Timeline {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
-                    "room",
-                    "Room",
-                    "The Room containing this timeline",
-                    Room::static_type(),
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                )]
+                vec![
+                    glib::ParamSpec::new_object(
+                        "room",
+                        "Room",
+                        "The Room containing this timeline",
+                        Room::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_boolean(
+                        "empty",
+                        "Empty",
+                        "Whether the timeline is empty or not",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -67,9 +76,10 @@ mod imp {
             }
         }
 
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "room" => self.room.get().unwrap().to_value(),
+                "empty" => obj.empty().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -219,6 +229,8 @@ impl Timeline {
                 }
             }
         }
+
+        self.notify("empty");
 
         self.upcast_ref::<gio::ListModel>()
             .items_changed(position, removed, added);
@@ -389,5 +401,10 @@ impl Timeline {
     pub fn room(&self) -> &Room {
         let priv_ = imp::Timeline::from_instance(self);
         priv_.room.get().unwrap()
+    }
+
+    pub fn empty(&self) -> bool {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_.list.borrow().is_empty()
     }
 }

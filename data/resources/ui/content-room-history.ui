@@ -71,33 +71,49 @@
           </object>
         </child>
         <child>
-          <object class="GtkScrolledWindow" id="scrolled_window">
-            <property name="vexpand">True</property>
-            <property name="hscrollbar-policy">never</property>
-            <style>
-              <class name="room-history"/>
-            </style>
-            <property name="child">
-              <object class="AdwClampScrollable">
+          <object class="GtkStack" id="stack">
+            <property name="transition-type">crossfade</property>
+            <child>
+              <object class="GtkSpinner" id="loading">
+                <property name="spinning">True</property>
+                <property name="valign">center</property>
+                <property name="halign">center</property>
                 <property name="vexpand">True</property>
-                <property name="hexpand">True</property>
+                <style>
+                  <class name="session-loading-spinner"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="scrolled_window">
+                <property name="vexpand">True</property>
+                <property name="hscrollbar-policy">never</property>
+                <style>
+                  <class name="room-history"/>
+                </style>
                 <property name="child">
-                  <object class="GtkListView" id="listview">
-                    <style>
-                      <class name="navigation-sidebar"/>
-                    </style>
-                    <property name="factory">
-                      <object class="GtkBuilderListItemFactory">
-                        <property name="resource">/org/gnome/FractalNext/content-item.ui</property>
+                  <object class="AdwClampScrollable">
+                    <property name="vexpand">True</property>
+                    <property name="hexpand">True</property>
+                    <property name="child">
+                      <object class="GtkListView" id="listview">
+                        <style>
+                          <class name="navigation-sidebar"/>
+                        </style>
+                        <property name="factory">
+                          <object class="GtkBuilderListItemFactory">
+                            <property name="resource">/org/gnome/FractalNext/content-item.ui</property>
+                          </object>
+                        </property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Room History</property>
+                        </accessibility>
                       </object>
                     </property>
-                    <accessibility>
-                      <property name="label" translatable="yes">Room History</property>
-                    </accessibility>
                   </object>
                 </property>
               </object>
-            </property>
+            </child>
           </object>
         </child>
         <child>
@@ -131,7 +147,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkScrolledWindow" id="scrolled_window">
+                  <object class="GtkScrolledWindow">
                     <property name="vexpand">True</property>
                     <property name="hexpand">True</property>
                     <property name="vscrollbar-policy">external</property>
