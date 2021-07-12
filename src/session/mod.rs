@@ -20,6 +20,7 @@ use crate::utils::do_async;
 use crate::Error;
 use crate::RUNTIME;
 
+use crate::login::LoginError;
 use crate::session::content::ContentType;
 use adw;
 use adw::subclass::prelude::BinImpl;
@@ -412,9 +413,9 @@ impl Session {
     /// Returns and consumes the `error` that was generated when the session failed to login,
     /// on a successful login this will be `None`.
     /// Unfortunately it's not possible to connect the Error directly to the `prepared` signals.
-    pub fn get_error(&self) -> Option<matrix_sdk::Error> {
+    pub fn get_error(&self) -> Option<LoginError> {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.error.take()
+        priv_.error.take().map(LoginError::from)
     }
 
     pub fn connect_prepared<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
