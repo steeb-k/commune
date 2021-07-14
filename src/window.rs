@@ -130,10 +130,11 @@ impl Window {
     fn restore_sessions(&self) {
         match secret::restore_sessions() {
             Ok(sessions) => {
+                let login = &imp::Window::from_instance(self).login.get();
                 for stored_session in sessions {
                     let session = Session::new();
+                    login.set_handler_for_prepared_session(&session);
                     session.login_with_previous_session(stored_session);
-                    self.add_session(&session);
                 }
 
                 self.switch_to_sessions_page();

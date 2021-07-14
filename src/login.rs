@@ -127,20 +127,7 @@ impl Login {
 
         let session = Session::new();
 
-        session.connect_prepared(clone!(@weak self as obj, @strong session => move |_| {
-            if let Some(error) = session.get_error() {
-                let error_message = &imp::Login::from_instance(&obj).error_message;
-                error_message.set_text(&error.to_string());
-                error_message.show();
-                debug!("Failed to create a new session: {:?}", error);
-
-                obj.unfreeze();
-            } else {
-                debug!("A new session was prepared");
-                obj.emit_by_name("new-session", &[&session]).unwrap();
-                obj.clean();
-            }
-        }));
+        self.set_handler_for_prepared_session(&session);
 
         session.login_with_password(
             build_homeserver_url(homeserver.as_str()).unwrap(),
@@ -192,6 +179,23 @@ impl Login {
 
     pub fn default_widget(&self) -> gtk::Widget {
         imp::Login::from_instance(&self).next_button.get().upcast()
+    }
+
+    pub fn set_handler_for_prepared_session(&self, session: &Session) {
+        session.connect_prepared(clone!(@weak self as login => move |session| {
+            if let Some(error) = session.get_error() {
+                let error_message = &imp::Login::from_instance(&login).error_message;
+                error_message.set_text(&error.to_string());
+                error_message.show();
+                debug!("Failed to create a new session: {:?}", error);
+
+                login.unfreeze();
+            } else {
+                debug!("A new session was prepared");
+                login.emit_by_name("new-session", &[&session]).unwrap();
+                login.clean();
+            }
+        }));
     }
 }
 
