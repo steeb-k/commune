@@ -57,6 +57,7 @@ mod imp {
         pub room_members: RefCell<HashMap<UserId, User>>,
         /// The user who sent the invite to this room. This is only set when this room is an invitiation.
         pub inviter: RefCell<Option<User>>,
+        pub members_loaded: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -261,7 +262,6 @@ impl Room {
 
         priv_.matrix_room.replace(Some(matrix_room));
 
-        self.load_members();
         self.load_display_name();
         self.load_category();
     }
@@ -593,16 +593,26 @@ impl Room {
         user.update_from_member_event(event);
     }
 
-    fn load_members(&self) {
+    pub fn load_members(&self) {
+        let priv_ = imp::Room::from_instance(self);
+        if priv_.members_loaded.get() {
+            return;
+        }
+
+        priv_.members_loaded.set(true);
         let matrix_room = self.matrix_room();
         do_async(
             glib::PRIORITY_LOW,
             async move { matrix_room.active_members().await },
             clone!(@weak self as obj => move |members| async move {
                 // FIXME: We should retry to load the room members if the request failed
+                let priv_ = imp::Room::from_instance(&obj);
                 match members {
                         Ok(members) => obj.add_members(members),
-                        Err(error) => error!("Couldn’t load room members: {}", error),
+                        Err(error) => {
+                            priv_.members_loaded.set(false);
+                            error!("Couldn’t load room members: {}", error)
+                        },
                 };
             }),
         );

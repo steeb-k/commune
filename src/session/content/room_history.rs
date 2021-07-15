@@ -248,6 +248,7 @@ impl RoomHistory {
             );
 
             priv_.empty_timeline_handler.replace(Some(handler_id));
+            room.load_members();
         }
 
         // TODO: use gtk::MultiSelection to allow selection
