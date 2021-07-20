@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use crate::session::Session;
 use matrix_sdk::{
     ruma::{
-        events::{room::member::MemberEventContent, StateEvent, StrippedStateEvent},
+        events::{room::member::MemberEventContent, StrippedStateEvent, SyncStateEvent},
         identifiers::UserId,
     },
     RoomMember,
@@ -181,7 +181,7 @@ impl User {
     }
 
     /// Update the user based on the the room member state event
-    pub fn update_from_member_event(&self, event: &StateEvent<MemberEventContent>) {
+    pub fn update_from_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
         let changed = {
             let priv_ = imp::User::from_instance(&self);
             let user_id = priv_.user_id.get().unwrap();

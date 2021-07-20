@@ -1,12 +1,6 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::{
-    events::{exports::serde::de::DeserializeOwned, AnyRoomEvent},
-    identifiers::EventId,
-    serde::Raw,
-};
-use serde_json::{to_string_pretty as to_json_string_pretty, to_value as to_json_value};
+use matrix_sdk::ruma::identifiers::EventId;
 
-use crate::fn_event;
 use crate::session::room::{Event, Item, Room};
 
 mod imp {
@@ -268,7 +262,7 @@ impl Timeline {
 
     /// Append the new events
     // TODO: This should be lazy, for inspiration see: https://blogs.gnome.org/ebassi/documentation/lazy-loading/
-    pub fn append<T: DeserializeOwned>(&self, batch: Vec<(AnyRoomEvent, Raw<T>)>) {
+    pub fn append(&self, batch: Vec<Event>) {
         let priv_ = imp::Timeline::from_instance(self);
 
         if batch.is_empty() {
@@ -286,24 +280,22 @@ impl Timeline {
 
             let mut pending_events = priv_.pending_events.borrow_mut();
 
-            for (event, raw) in batch.into_iter() {
-                let event_id = fn_event!(event, event_id).clone();
-                let user = self.room().member_by_id(fn_event!(event, sender));
-                let source = to_json_value(raw.into_json())
-                    .and_then(|v| to_json_string_pretty(&v))
-                    .unwrap();
+            for event in batch.into_iter() {
+                let event_id = event.matrix_event_id();
 
                 if let Some(pending_id) = pending_events.remove(&event_id) {
-                    if let Some(event_obj) = priv_.event_map.borrow_mut().remove(&pending_id) {
-                        event_obj.set_matrix_event(event);
-                        event_obj.set_source(Some(source));
-                        priv_.event_map.borrow_mut().insert(event_id, event_obj);
-                    }
+                    let mut event_map = priv_.event_map.borrow_mut();
+
+                    if let Some(pending_event) = event_map.remove(&pending_id) {
+                        pending_event.set_matrix_pure_event(event.matrix_pure_event());
+                        event_map.insert(event_id, pending_event);
+                    };
                     added -= 1;
                 } else {
-                    let event = Event::new(&event, &source, &user);
-
-                    priv_.event_map.borrow_mut().insert(event_id, event.clone());
+                    priv_
+                        .event_map
+                        .borrow_mut()
+                        .insert(event_id.to_owned(), event.clone());
                     if event.is_hidden_event() {
                         self.add_hidden_event(event);
                         added -= 1;
@@ -320,16 +312,17 @@ impl Timeline {
     }
 
     /// Append an event that wasn't yet fully sent and received via a sync
-    pub fn append_pending(&self, event: AnyRoomEvent) {
+    pub fn append_pending(&self, event: Event) {
         let priv_ = imp::Timeline::from_instance(self);
+
+        priv_
+            .event_map
+            .borrow_mut()
+            .insert(event.matrix_event_id(), event.clone());
 
         let index = {
             let mut list = priv_.list.borrow_mut();
             let index = list.len();
-
-            let user = self.room().member_by_id(fn_event!(event, sender));
-            let source = to_json_string_pretty(&event).unwrap();
-            let event = Event::new(&event, &source, &user);
 
             if event.is_hidden_event() {
                 self.add_hidden_event(event);
@@ -363,7 +356,7 @@ impl Timeline {
 
     /// Prepends a batch of events
     // TODO: This should be lazy, see: https://blogs.gnome.org/ebassi/documentation/lazy-loading/
-    pub fn prepend<T: DeserializeOwned>(&self, batch: Vec<(AnyRoomEvent, Raw<T>)>) {
+    pub fn prepend(&self, batch: Vec<Event>) {
         let priv_ = imp::Timeline::from_instance(self);
         let mut added = batch.len();
 
@@ -371,15 +364,11 @@ impl Timeline {
             // Extend the size of the list so that rust doesn't need to reallocate memory multiple times
             priv_.list.borrow_mut().reserve(added);
 
-            for (event, raw) in batch {
-                let user = self.room().member_by_id(fn_event!(event, sender));
-                let event_id = fn_event!(event, event_id).clone();
-                let source = to_json_value(raw.into_json())
-                    .and_then(|v| to_json_string_pretty(&v))
-                    .unwrap();
-                let event = Event::new(&event, &source, &user);
-
-                priv_.event_map.borrow_mut().insert(event_id, event.clone());
+            for event in batch {
+                priv_
+                    .event_map
+                    .borrow_mut()
+                    .insert(event.matrix_event_id(), event.clone());
 
                 if event.is_hidden_event() {
                     self.add_hidden_event(event);

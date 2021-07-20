@@ -1,5 +1,6 @@
 use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{
     gio, glib, glib::clone, glib::signal::SignalHandlerId, prelude::*, subclass::prelude::*,
     CompositeTemplate,
@@ -12,7 +13,7 @@ use log::warn;
 use matrix_sdk::ruma::events::{
     room::message::{FormattedBody, MessageFormat, MessageType, Relation},
     room::redaction::RedactionEventContent,
-    AnyMessageEvent, AnyMessageEventContent, AnyRoomEvent,
+    AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
 };
 use sourceview::prelude::*;
 
@@ -190,10 +191,10 @@ impl MessageRow {
         if let Some(replacement_event) = event.relates_to().iter().rev().find(|event| {
             let matrix_event = event.matrix_event();
             match matrix_event {
-                AnyRoomEvent::Message(AnyMessageEvent::RoomMessage(message)) => {
+                Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomMessage(message))) => {
                     message.content.relates_to.is_some()
                 }
-                AnyRoomEvent::Message(AnyMessageEvent::RoomRedaction(_)) => true,
+                Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomRedaction(_))) => true,
                 _ => false,
             }
         }) {
@@ -207,24 +208,32 @@ impl MessageRow {
         }
     }
     /// Find the content we need to display
-    fn find_content(&self, event: &Event) -> AnyMessageEventContent {
+    fn find_content(&self, event: &Event) -> Option<AnyMessageEventContent> {
         match self.find_last_event(event).matrix_event() {
-            AnyRoomEvent::Message(message) => message.content(),
-            AnyRoomEvent::RedactedMessage(message) => {
+            Some(AnySyncRoomEvent::Message(message)) => Some(message.content()),
+            Some(AnySyncRoomEvent::RedactedMessage(message)) => {
                 if let Some(ref redaction_event) = message.unsigned().redacted_because {
-                    AnyMessageEventContent::RoomRedaction(redaction_event.content.clone())
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        redaction_event.content.clone(),
+                    ))
                 } else {
-                    AnyMessageEventContent::RoomRedaction(RedactionEventContent::new())
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        RedactionEventContent::new(),
+                    ))
                 }
             }
-            AnyRoomEvent::RedactedState(state) => {
+            Some(AnySyncRoomEvent::RedactedState(state)) => {
                 if let Some(ref redaction_event) = state.unsigned().redacted_because {
-                    AnyMessageEventContent::RoomRedaction(redaction_event.content.clone())
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        redaction_event.content.clone(),
+                    ))
                 } else {
-                    AnyMessageEventContent::RoomRedaction(RedactionEventContent::new())
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        RedactionEventContent::new(),
+                    ))
                 }
             }
-            _ => panic!("This event isn’t a room message event or redacted event"),
+            _ => None,
         }
     }
 
@@ -234,8 +243,9 @@ impl MessageRow {
 
         // TODO: create widgets for all event types
         // TODO: display reaction events from event.relates_to()
+
         match content {
-            AnyMessageEventContent::RoomMessage(message) => {
+            Some(AnyMessageEventContent::RoomMessage(message)) => {
                 let msgtype = if let Some(Relation::Replacement(replacement)) = message.relates_to {
                     replacement.new_content.msgtype
                 } else {
@@ -300,10 +310,10 @@ impl MessageRow {
                     }
                 }
             }
-            AnyMessageEventContent::RoomRedaction(_) => {
-                self.show_label_with_text("This message was removed.");
+            Some(AnyMessageEventContent::RoomRedaction(_)) => {
+                self.show_label_with_text(&gettext("This message was removed."))
             }
-            _ => warn!("Event not supported: {:?}", content),
+            _ => self.show_label_with_text(&gettext("Unsupported event")),
         }
     }
 

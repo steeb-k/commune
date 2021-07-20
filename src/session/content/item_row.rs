@@ -1,21 +1,23 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 use crate::session::content::{DividerRow, MessageRow, StateRow};
 use crate::session::event_source_dialog::EventSourceDialog;
-use crate::session::room::{Item, ItemType};
-use matrix_sdk::ruma::events::AnyRoomEvent;
+use crate::session::room::{Event, Item, ItemType};
+use matrix_sdk::ruma::events::AnySyncRoomEvent;
 
 mod imp {
     use super::*;
+    use glib::signal::SignalHandlerId;
     use std::cell::RefCell;
 
     #[derive(Debug, Default)]
     pub struct ItemRow {
         pub item: RefCell<Option<Item>>,
         pub menu_model: RefCell<Option<gio::MenuModel>>,
+        pub event_notify_handler: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -73,6 +75,16 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn dispose(&self, _obj: &Self::Type) {
+            if let Some(ItemType::Event(event)) =
+                self.item.borrow().as_ref().map(|item| item.type_())
+            {
+                if let Some(handler) = self.event_notify_handler.borrow_mut().take() {
+                    event.disconnect(handler);
+                }
+            }
+        }
     }
 
     impl WidgetImpl for ItemRow {}
@@ -113,6 +125,13 @@ impl ItemRow {
     fn set_item(&self, item: Option<Item>) {
         let priv_ = imp::ItemRow::from_instance(&self);
 
+        if let Some(ItemType::Event(event)) = priv_.item.borrow().as_ref().map(|item| item.type_())
+        {
+            if let Some(handler) = priv_.event_notify_handler.borrow_mut().take() {
+                event.disconnect(handler);
+            }
+        }
+
         if let Some(ref item) = item {
             match item.type_() {
                 ItemType::Event(event) => {
@@ -126,57 +145,19 @@ impl ItemRow {
                         self.enable_gactions();
                     }
 
-                    match event.matrix_event() {
-                        AnyRoomEvent::Message(_message) => {
-                            let child = if let Some(Ok(child)) =
-                                self.child().map(|w| w.downcast::<MessageRow>())
-                            {
-                                child
-                            } else {
-                                let child = MessageRow::new();
-                                self.set_child(Some(&child));
-                                child
-                            };
-                            child.set_event(event.clone());
-                        }
-                        AnyRoomEvent::State(state) => {
-                            let child = if let Some(Ok(child)) =
-                                self.child().map(|w| w.downcast::<StateRow>())
-                            {
-                                child
-                            } else {
-                                let child = StateRow::new();
-                                self.set_child(Some(&child));
-                                child
-                            };
+                    let event_notify_handler = event.connect_notify_local(
+                        Some("event"),
+                        clone!(@weak self as obj => move |event, _| {
+                            obj.set_event_widget(event);
+                        }),
+                    );
 
-                            child.update(&state);
-                        }
-                        AnyRoomEvent::RedactedMessage(_) => {
-                            let child = if let Some(Ok(child)) =
-                                self.child().map(|w| w.downcast::<MessageRow>())
-                            {
-                                child
-                            } else {
-                                let child = MessageRow::new();
-                                self.set_child(Some(&child));
-                                child
-                            };
-                            child.set_event(event.clone());
-                        }
-                        AnyRoomEvent::RedactedState(_) => {
-                            let child = if let Some(Ok(child)) =
-                                self.child().map(|w| w.downcast::<MessageRow>())
-                            {
-                                child
-                            } else {
-                                let child = MessageRow::new();
-                                self.set_child(Some(&child));
-                                child
-                            };
-                            child.set_event(event.clone());
-                        }
-                    }
+                    priv_
+                        .event_notify_handler
+                        .borrow_mut()
+                        .replace(event_notify_handler);
+
+                    self.set_event_widget(event);
                 }
                 ItemType::DayDivider(date) => {
                     if self.context_menu().is_some() {
@@ -218,5 +199,32 @@ impl ItemRow {
             }
         }
         priv_.item.replace(item);
+    }
+
+    fn set_event_widget(&self, event: &Event) {
+        match event.matrix_event() {
+            Some(AnySyncRoomEvent::State(state)) => {
+                let child = if let Some(Ok(child)) = self.child().map(|w| w.downcast::<StateRow>())
+                {
+                    child
+                } else {
+                    let child = StateRow::new();
+                    self.set_child(Some(&child));
+                    child
+                };
+                child.update(&state);
+            }
+            _ => {
+                let child =
+                    if let Some(Ok(child)) = self.child().map(|w| w.downcast::<MessageRow>()) {
+                        child
+                    } else {
+                        let child = MessageRow::new();
+                        self.set_child(Some(&child));
+                        child
+                    };
+                child.set_event(event.clone());
+            }
+        }
     }
 }

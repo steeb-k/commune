@@ -7,7 +7,6 @@ use matrix_sdk::{
     ruma::{
         api::client::r0::sync::sync_events::InvitedRoom,
         events::{
-            exports::serde::de::DeserializeOwned,
             room::{
                 member::{MemberEventContent, MembershipState},
                 message::{
@@ -16,8 +15,8 @@ use matrix_sdk::{
                 },
             },
             tag::TagName,
-            AnyMessageEvent, AnyRoomAccountDataEvent, AnyRoomEvent, AnyStateEvent,
-            AnyStrippedStateEvent, AnySyncRoomEvent, MessageEvent, StateEvent, Unsigned,
+            AnyRoomAccountDataEvent, AnyStrippedStateEvent, AnySyncMessageEvent, AnySyncRoomEvent,
+            AnySyncStateEvent, SyncMessageEvent, SyncStateEvent, Unsigned,
         },
         identifiers::{EventId, RoomId, UserId},
         serde::Raw,
@@ -26,13 +25,13 @@ use matrix_sdk::{
     uuid::Uuid,
     RoomMember,
 };
+use serde_json::value::RawValue;
 use std::cell::RefCell;
 use std::convert::TryFrom;
 
 use crate::components::{LabelWithWidgets, Pill};
-use crate::event_from_sync_event;
 use crate::session::{
-    room::{HighlightFlags, RoomType, Timeline},
+    room::{Event, HighlightFlags, RoomType, Timeline},
     Avatar, Session, User,
 };
 use crate::utils::do_async;
@@ -539,28 +538,30 @@ impl Room {
     }
 
     /// Add new events to the timeline
-    pub fn append_events<T: DeserializeOwned>(&self, batch: Vec<(AnyRoomEvent, Raw<T>)>) {
+    pub fn append_events(&self, batch: Vec<Event>) {
         let priv_ = imp::Room::from_instance(self);
 
         //FIXME: notify only when the count has changed
         self.notify_notification_count();
 
-        for (event, _) in batch.iter() {
-            match event {
-                AnyRoomEvent::State(AnyStateEvent::RoomMember(ref event)) => {
-                    self.update_member_for_member_event(event)
+        for event in &batch {
+            if let Some(event) = event.matrix_event() {
+                match event {
+                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomMember(ref event)) => {
+                        self.update_member_for_member_event(event)
+                    }
+                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomAvatar(event)) => {
+                        self.avatar().set_url(event.content.url.to_owned());
+                    }
+                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomName(_)) => {
+                        // FIXME: this doesn't take into account changes in the calculated name
+                        self.load_display_name()
+                    }
+                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomTopic(_)) => {
+                        self.notify("topic");
+                    }
+                    _ => {}
                 }
-                AnyRoomEvent::State(AnyStateEvent::RoomAvatar(event)) => {
-                    self.avatar().set_url(event.content.url.to_owned());
-                }
-                AnyRoomEvent::State(AnyStateEvent::RoomName(_)) => {
-                    // FIXME: this doesn't take into account changes in the calculated name
-                    self.load_display_name()
-                }
-                AnyRoomEvent::State(AnyStateEvent::RoomTopic(_)) => {
-                    self.notify("topic");
-                }
-                _ => {}
             }
         }
 
@@ -583,7 +584,7 @@ impl Room {
     }
 
     /// Updates a room member based on the room member state event
-    fn update_member_for_member_event(&self, event: &StateEvent<MemberEventContent>) {
+    fn update_member_for_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
         let priv_ = imp::Room::from_instance(self);
         let mut room_members = priv_.room_members.borrow_mut();
         let user_id = &event.sender;
@@ -636,49 +637,46 @@ impl Room {
     }
 
     pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
-        if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
-            let content = if let Some(body) = body.strip_prefix("/me ") {
-                let emote = if markdown_enabled {
-                    EmoteMessageEventContent::markdown(body)
-                } else {
-                    EmoteMessageEventContent::plain(body)
-                };
-                MessageEventContent::new(MessageType::Emote(emote))
+        let content = if let Some(body) = body.strip_prefix("/me ") {
+            let emote = if markdown_enabled {
+                EmoteMessageEventContent::markdown(body)
             } else {
-                let text = if markdown_enabled {
-                    TextMessageEventContent::markdown(body)
-                } else {
-                    TextMessageEventContent::plain(body)
-                };
-                MessageEventContent::new(MessageType::Text(text))
+                EmoteMessageEventContent::plain(body)
             };
+            MessageEventContent::new(MessageType::Emote(emote))
+        } else {
+            let text = if markdown_enabled {
+                TextMessageEventContent::markdown(body)
+            } else {
+                TextMessageEventContent::plain(body)
+            };
+            MessageEventContent::new(MessageType::Text(text))
+        };
 
-            let txn_id = Uuid::new_v4();
+        let txn_id = Uuid::new_v4();
 
-            let pending_event = AnyMessageEvent::RoomMessage(MessageEvent {
-                content,
-                event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
-                sender: self.session().user().user_id().clone(),
-                origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
-                room_id: matrix_room.room_id().clone(),
-                unsigned: Unsigned::default(),
-            });
+        let pending_event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
+            content,
+            event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
+            sender: self.session().user().user_id().clone(),
+            origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
+            unsigned: Unsigned::default(),
+        });
 
-            self.send_message(txn_id, pending_event);
-        }
+        self.send_message(txn_id, pending_event);
     }
 
-    pub fn send_message(&self, txn_id: Uuid, event: AnyMessageEvent) {
+    pub fn send_message(&self, txn_id: Uuid, event: AnySyncMessageEvent) {
         let priv_ = imp::Room::from_instance(self);
         let content = event.content();
 
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let pending_id = event.event_id().clone();
-            priv_
-                .timeline
-                .get()
-                .unwrap()
-                .append_pending(AnyRoomEvent::Message(event));
+            let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
+            let raw_event: Raw<AnySyncRoomEvent> =
+                Raw::from_json(RawValue::from_string(json).unwrap());
+            let event = Event::new(raw_event.into(), self);
+            priv_.timeline.get().unwrap().append_pending(event);
 
             do_async(
                 glib::PRIORITY_DEFAULT_IDLE,
@@ -686,10 +684,7 @@ impl Room {
                 clone!(@weak self as obj => move |result| async move {
                     // FIXME: We should retry the request if it fails
                     match result {
-                            Ok(result) => {
-                                    let priv_ = imp::Room::from_instance(&obj);
-                                    priv_.timeline.get().unwrap().set_event_id_for_pending(pending_id, result.event_id)
-                            },
+                            Ok(result) => obj.timeline().set_event_id_for_pending(pending_id, result.event_id),
                             Err(error) => error!("Couldn’t send message: {}", error),
                     };
                 }),
@@ -760,22 +755,12 @@ impl Room {
     pub fn handle_left_response(&self, response_room: LeftRoom) {
         self.set_matrix_room(self.session().client().get_room(self.room_id()).unwrap());
 
-        let room_id = self.room_id();
-
         self.append_events(
             response_room
                 .timeline
                 .events
                 .into_iter()
-                .filter_map(|raw_event| {
-                    if let Ok(event) = raw_event.event.deserialize() {
-                        Some((event, raw_event.event))
-                    } else {
-                        error!("Couldn’t deserialize event: {:?}", raw_event);
-                        None
-                    }
-                })
-                .map(|(event, source)| (event_from_sync_event!(event, room_id), source))
+                .map(|event| Event::new(event, self))
                 .collect(),
         );
     }
@@ -792,22 +777,12 @@ impl Room {
             self.load_category();
         }
 
-        let room_id = self.room_id();
-
         self.append_events(
             response_room
                 .timeline
                 .events
                 .into_iter()
-                .filter_map(|raw_event| {
-                    if let Ok(event) = raw_event.event.deserialize() {
-                        Some((event, raw_event.event))
-                    } else {
-                        error!("Couldn’t deserialize event: {:?}", raw_event);
-                        None
-                    }
-                })
-                .map(|(event, source)| (event_from_sync_event!(event, room_id), source))
+                .map(|event| Event::new(event, self))
                 .collect(),
         );
     }

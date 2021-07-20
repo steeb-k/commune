@@ -1,6 +1,6 @@
 use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::{
-    events::AnyRoomEvent,
+    events::AnySyncRoomEvent,
     identifiers::{EventId, UserId},
 };
 
@@ -115,7 +115,7 @@ glib::wrapper! {
 }
 
 /// This represents any row inside the room history.
-/// This can be AnyRoomEvent, a day divider or new message divider.
+/// This can be AnySyncRoomEvent, a day divider or new message divider.
 impl Item {
     pub fn for_event(event: Event) -> Self {
         let type_ = BoxedItemType(ItemType::Event(event));
@@ -141,10 +141,10 @@ impl Item {
         }
     }
 
-    pub fn matrix_event(&self) -> Option<AnyRoomEvent> {
+    pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {
         let priv_ = imp::Item::from_instance(&self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
-            Some(event.matrix_event())
+            event.matrix_event()
         } else {
             None
         }

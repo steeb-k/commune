@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::warn;
 use matrix_sdk::ruma::events::{
-    room::member::MembershipState, AnyStateEvent, AnyStateEventContent,
+    room::member::MembershipState, AnyStateEventContent, AnySyncStateEvent,
 };
 
 mod imp {
@@ -51,7 +51,7 @@ impl StateRow {
         glib::Object::new(&[]).expect("Failed to create StateRow")
     }
 
-    pub fn update(&self, state: &AnyStateEvent) {
+    pub fn update(&self, state: &AnySyncStateEvent) {
         let _priv_ = imp::StateRow::from_instance(self);
         // We may want to show more state events in the future
         // For a full list of state events see:

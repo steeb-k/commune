@@ -1,20 +1,23 @@
 use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::{
-    events::{
-        room::message::MessageType, room::message::Relation, AnyMessageEvent,
-        AnyMessageEventContent, AnyRedactedMessageEvent, AnyRedactedStateEvent, AnyRoomEvent,
-        AnyStateEvent,
+use matrix_sdk::{
+    deserialized_responses::SyncRoomEvent,
+    ruma::{
+        events::{
+            room::message::MessageType, room::message::Relation, AnyMessageEventContent,
+            AnyRedactedSyncMessageEvent, AnyRedactedSyncStateEvent, AnySyncMessageEvent,
+            AnySyncRoomEvent, AnySyncStateEvent,
+        },
+        identifiers::{EventId, UserId},
+        MilliSecondsSinceUnixEpoch,
     },
-    identifiers::{EventId, UserId},
 };
 
-use crate::fn_event;
-use crate::session::User;
-use std::cell::RefCell;
+use crate::session::{Room, User};
+use log::warn;
 
 #[derive(Clone, Debug, glib::GBoxed)]
-#[gboxed(type_name = "BoxedAnyRoomEvent")]
-pub struct BoxedAnyRoomEvent(AnyRoomEvent);
+#[gboxed(type_name = "BoxedSyncRoomEvent")]
+pub struct BoxedSyncRoomEvent(SyncRoomEvent);
 
 mod imp {
     use super::*;
@@ -24,11 +27,13 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct Event {
-        pub event: OnceCell<RefCell<AnyRoomEvent>>,
-        pub source: RefCell<Option<String>>,
+        /// The deserialized matrix event
+        pub event: RefCell<Option<AnySyncRoomEvent>>,
+        /// The SDK event containing encryption information and the serialized event as `Raw`
+        pub pure_event: RefCell<Option<SyncRoomEvent>>,
         pub relates_to: RefCell<Vec<super::Event>>,
         pub show_header: Cell<bool>,
-        pub sender: OnceCell<User>,
+        pub room: OnceCell<Room>,
     }
 
     #[glib::object_subclass]
@@ -53,15 +58,15 @@ mod imp {
                         "event",
                         "event",
                         "The matrix event of this Event",
-                        BoxedAnyRoomEvent::static_type(),
-                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT,
+                        BoxedSyncRoomEvent::static_type(),
+                        glib::ParamFlags::WRITABLE,
                     ),
                     glib::ParamSpec::new_string(
                         "source",
                         "Source",
                         "The source (JSON) of this Event",
                         None,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT | glib::ParamFlags::EXPLICIT_NOTIFY,
+                        glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_boolean(
                         "show-header",
@@ -82,6 +87,13 @@ mod imp {
                         "Sender",
                         "The sender of this matrix event",
                         User::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "room",
+                        "Room",
+                        "The room containing this event",
+                        Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_string(
@@ -106,22 +118,15 @@ mod imp {
         ) {
             match pspec.name() {
                 "event" => {
-                    let event = value.get::<BoxedAnyRoomEvent>().unwrap();
-                    obj.set_matrix_event(event.0);
-                }
-                "source" => {
-                    let source = value.get().unwrap();
-                    obj.set_source(source);
+                    let event = value.get::<BoxedSyncRoomEvent>().unwrap();
+                    obj.set_matrix_pure_event(event.0);
                 }
                 "show-header" => {
                     let show_header = value.get().unwrap();
                     let _ = obj.set_show_header(show_header);
                 }
-                "sender" => {
-                    let sender = value.get().unwrap();
-                    if let Some(sender) = sender {
-                        let _ = self.sender.set(sender).unwrap();
-                    }
+                "room" => {
+                    let _ = self.room.set(value.get().unwrap());
                 }
                 _ => unimplemented!(),
             }
@@ -130,7 +135,8 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "source" => obj.source().to_value(),
-                "sender" => self.sender.get().to_value(),
+                "sender" => obj.sender().to_value(),
+                "room" => self.room.get().unwrap().to_value(),
                 "show-header" => obj.show_header().to_value(),
                 "can-hide-header" => obj.can_hide_header().to_value(),
                 "time" => obj.time().to_value(),
@@ -149,68 +155,108 @@ glib::wrapper! {
 
 /// This is the GObject representation of a matrix room event
 impl Event {
-    pub fn new(event: &AnyRoomEvent, source: &String, sender: &User) -> Self {
-        let event = BoxedAnyRoomEvent(event.to_owned());
-        glib::Object::new(&[("event", &event), ("source", source), ("sender", sender)])
-            .expect("Failed to create Event")
+    pub fn new(event: SyncRoomEvent, room: &Room) -> Self {
+        let event = BoxedSyncRoomEvent(event);
+        glib::Object::new(&[("event", &event), ("room", room)]).expect("Failed to create Event")
     }
 
-    pub fn sender(&self) -> &User {
+    pub fn sender(&self) -> User {
         let priv_ = imp::Event::from_instance(&self);
-        priv_.sender.get().unwrap()
+        priv_
+            .room
+            .get()
+            .unwrap()
+            .member_by_id(&self.matrix_sender())
     }
 
-    pub fn matrix_event(&self) -> AnyRoomEvent {
+    /// Get the matrix event
+    ///
+    /// If the `SyncRoomEvent` couldn't be deserialized this is `None`
+    pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {
         let priv_ = imp::Event::from_instance(&self);
-        priv_.event.get().unwrap().borrow().clone()
+        priv_.event.borrow().clone()
     }
 
-    pub fn set_matrix_event(&self, event: AnyRoomEvent) {
+    pub fn matrix_pure_event(&self) -> SyncRoomEvent {
         let priv_ = imp::Event::from_instance(&self);
-        if let Some(value) = priv_.event.get() {
-            value.replace(event);
+        priv_.pure_event.borrow().clone().unwrap()
+    }
+
+    pub fn set_matrix_pure_event(&self, event: SyncRoomEvent) {
+        let priv_ = imp::Event::from_instance(&self);
+
+        if let Ok(deserialized) = event.event.deserialize() {
+            priv_.event.replace(Some(deserialized));
         } else {
-            priv_.event.set(RefCell::new(event)).unwrap();
+            warn!("Failed to deserialize event: {:?}", event);
         }
+
+        priv_.pure_event.replace(Some(event));
+
         self.notify("event");
     }
 
     pub fn matrix_sender(&self) -> UserId {
         let priv_ = imp::Event::from_instance(&self);
-        let event = &*priv_.event.get().unwrap().borrow();
-        fn_event!(event, sender).clone()
+
+        if let Some(event) = priv_.event.borrow().as_ref() {
+            event.sender().to_owned()
+        } else {
+            priv_
+                .pure_event
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .event
+                .get_field::<UserId>("sender")
+                .unwrap()
+                .unwrap()
+        }
     }
 
     pub fn matrix_event_id(&self) -> EventId {
         let priv_ = imp::Event::from_instance(&self);
-        let event = &*priv_.event.get().unwrap().borrow();
-        fn_event!(event, event_id).clone()
+
+        if let Some(event) = priv_.event.borrow().as_ref() {
+            event.event_id().to_owned()
+        } else {
+            priv_
+                .pure_event
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .event
+                .get_field::<EventId>("event_id")
+                .unwrap()
+                .unwrap()
+        }
     }
 
     pub fn source(&self) -> String {
         let priv_ = imp::Event::from_instance(&self);
-        priv_.source.borrow().clone().unwrap_or("".into())
-    }
-
-    pub fn set_source(&self, source: Option<String>) {
-        let priv_ = imp::Event::from_instance(&self);
-
-        if Some(self.source()) == source {
-            return;
-        }
-
-        priv_.source.replace(source);
-        self.notify("source");
+        serde_json::to_string_pretty(priv_.pure_event.borrow().as_ref().unwrap().event.json())
+            .unwrap()
     }
 
     pub fn timestamp(&self) -> DateTime {
         let priv_ = imp::Event::from_instance(&self);
-        let event = &*priv_.event.get().unwrap().borrow();
 
-        let ts = fn_event!(event, origin_server_ts).clone();
+        let ts = if let Some(event) = priv_.event.borrow().as_ref() {
+            event.origin_server_ts().as_secs()
+        } else {
+            priv_
+                .pure_event
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .event
+                .get_field::<MilliSecondsSinceUnixEpoch>("origin_server_ts")
+                .unwrap()
+                .unwrap()
+                .as_secs()
+        };
 
-        // FIXME: we need to add `as_secs()` to `MilliSecondsSinceUnixEpoch`
-        DateTime::from_unix_utc(i64::from(ts.0) / 1000)
+        DateTime::from_unix_utc(ts.into())
             .and_then(|t| t.to_local())
             .unwrap()
     }
@@ -234,9 +280,9 @@ impl Event {
     pub fn related_matrix_event(&self) -> Option<EventId> {
         let priv_ = imp::Event::from_instance(&self);
 
-        match *priv_.event.get().unwrap().borrow() {
-            AnyRoomEvent::Message(ref message) => match message {
-                AnyMessageEvent::RoomRedaction(event) => Some(event.redacts.clone()),
+        match priv_.event.borrow().as_ref()? {
+            AnySyncRoomEvent::Message(ref message) => match message {
+                AnySyncMessageEvent::RoomRedaction(event) => Some(event.redacts.clone()),
                 _ => match message.content() {
                     AnyMessageEventContent::Reaction(event) => Some(event.relates_to.event_id),
                     AnyMessageEventContent::RoomMessage(event) => match event.relates_to {
@@ -265,75 +311,79 @@ impl Event {
             return true;
         }
 
-        match &*priv_.event.get().unwrap().borrow() {
-            AnyRoomEvent::Message(message) => match message {
-                AnyMessageEvent::CallAnswer(_) => true,
-                AnyMessageEvent::CallInvite(_) => true,
-                AnyMessageEvent::CallHangup(_) => true,
-                AnyMessageEvent::CallCandidates(_) => true,
-                AnyMessageEvent::KeyVerificationReady(_) => true,
-                AnyMessageEvent::KeyVerificationStart(_) => true,
-                AnyMessageEvent::KeyVerificationCancel(_) => true,
-                AnyMessageEvent::KeyVerificationAccept(_) => true,
-                AnyMessageEvent::KeyVerificationKey(_) => true,
-                AnyMessageEvent::KeyVerificationMac(_) => true,
-                AnyMessageEvent::KeyVerificationDone(_) => true,
-                AnyMessageEvent::RoomEncrypted(_) => true,
-                AnyMessageEvent::RoomMessageFeedback(_) => true,
-                AnyMessageEvent::RoomRedaction(_) => true,
-                AnyMessageEvent::Sticker(_) => true,
-                _ => false,
-            },
-            AnyRoomEvent::State(state) => match state {
-                AnyStateEvent::PolicyRuleRoom(_) => true,
-                AnyStateEvent::PolicyRuleServer(_) => true,
-                AnyStateEvent::PolicyRuleUser(_) => true,
-                AnyStateEvent::RoomAliases(_) => true,
-                AnyStateEvent::RoomAvatar(_) => true,
-                AnyStateEvent::RoomCanonicalAlias(_) => true,
-                AnyStateEvent::RoomEncryption(_) => true,
-                AnyStateEvent::RoomJoinRules(_) => true,
-                AnyStateEvent::RoomName(_) => true,
-                AnyStateEvent::RoomPinnedEvents(_) => true,
-                AnyStateEvent::RoomPowerLevels(_) => true,
-                AnyStateEvent::RoomServerAcl(_) => true,
-                AnyStateEvent::RoomTopic(_) => true,
-                _ => false,
-            },
-            AnyRoomEvent::RedactedMessage(message) => match message {
-                AnyRedactedMessageEvent::CallAnswer(_) => true,
-                AnyRedactedMessageEvent::CallInvite(_) => true,
-                AnyRedactedMessageEvent::CallHangup(_) => true,
-                AnyRedactedMessageEvent::CallCandidates(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationReady(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationStart(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationCancel(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationAccept(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationKey(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationMac(_) => true,
-                AnyRedactedMessageEvent::KeyVerificationDone(_) => true,
-                AnyRedactedMessageEvent::RoomEncrypted(_) => true,
-                AnyRedactedMessageEvent::RoomMessageFeedback(_) => true,
-                AnyRedactedMessageEvent::RoomRedaction(_) => true,
-                AnyRedactedMessageEvent::Sticker(_) => true,
-                _ => false,
-            },
-            AnyRoomEvent::RedactedState(state) => match state {
-                AnyRedactedStateEvent::PolicyRuleRoom(_) => true,
-                AnyRedactedStateEvent::PolicyRuleServer(_) => true,
-                AnyRedactedStateEvent::PolicyRuleUser(_) => true,
-                AnyRedactedStateEvent::RoomAliases(_) => true,
-                AnyRedactedStateEvent::RoomAvatar(_) => true,
-                AnyRedactedStateEvent::RoomCanonicalAlias(_) => true,
-                AnyRedactedStateEvent::RoomEncryption(_) => true,
-                AnyRedactedStateEvent::RoomJoinRules(_) => true,
-                AnyRedactedStateEvent::RoomName(_) => true,
-                AnyRedactedStateEvent::RoomPinnedEvents(_) => true,
-                AnyRedactedStateEvent::RoomPowerLevels(_) => true,
-                AnyRedactedStateEvent::RoomServerAcl(_) => true,
-                AnyRedactedStateEvent::RoomTopic(_) => true,
-                _ => false,
-            },
+        if let Some(event) = priv_.event.borrow().as_ref() {
+            match event {
+                AnySyncRoomEvent::Message(message) => match message {
+                    AnySyncMessageEvent::CallAnswer(_) => true,
+                    AnySyncMessageEvent::CallInvite(_) => true,
+                    AnySyncMessageEvent::CallHangup(_) => true,
+                    AnySyncMessageEvent::CallCandidates(_) => true,
+                    AnySyncMessageEvent::KeyVerificationReady(_) => true,
+                    AnySyncMessageEvent::KeyVerificationStart(_) => true,
+                    AnySyncMessageEvent::KeyVerificationCancel(_) => true,
+                    AnySyncMessageEvent::KeyVerificationAccept(_) => true,
+                    AnySyncMessageEvent::KeyVerificationKey(_) => true,
+                    AnySyncMessageEvent::KeyVerificationMac(_) => true,
+                    AnySyncMessageEvent::KeyVerificationDone(_) => true,
+                    AnySyncMessageEvent::RoomEncrypted(_) => true,
+                    AnySyncMessageEvent::RoomMessageFeedback(_) => true,
+                    AnySyncMessageEvent::RoomRedaction(_) => true,
+                    AnySyncMessageEvent::Sticker(_) => true,
+                    _ => false,
+                },
+                AnySyncRoomEvent::State(state) => match state {
+                    AnySyncStateEvent::PolicyRuleRoom(_) => true,
+                    AnySyncStateEvent::PolicyRuleServer(_) => true,
+                    AnySyncStateEvent::PolicyRuleUser(_) => true,
+                    AnySyncStateEvent::RoomAliases(_) => true,
+                    AnySyncStateEvent::RoomAvatar(_) => true,
+                    AnySyncStateEvent::RoomCanonicalAlias(_) => true,
+                    AnySyncStateEvent::RoomEncryption(_) => true,
+                    AnySyncStateEvent::RoomJoinRules(_) => true,
+                    AnySyncStateEvent::RoomName(_) => true,
+                    AnySyncStateEvent::RoomPinnedEvents(_) => true,
+                    AnySyncStateEvent::RoomPowerLevels(_) => true,
+                    AnySyncStateEvent::RoomServerAcl(_) => true,
+                    AnySyncStateEvent::RoomTopic(_) => true,
+                    _ => false,
+                },
+                AnySyncRoomEvent::RedactedMessage(message) => match message {
+                    AnyRedactedSyncMessageEvent::CallAnswer(_) => true,
+                    AnyRedactedSyncMessageEvent::CallInvite(_) => true,
+                    AnyRedactedSyncMessageEvent::CallHangup(_) => true,
+                    AnyRedactedSyncMessageEvent::CallCandidates(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationReady(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationStart(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationCancel(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationAccept(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationKey(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationMac(_) => true,
+                    AnyRedactedSyncMessageEvent::KeyVerificationDone(_) => true,
+                    AnyRedactedSyncMessageEvent::RoomEncrypted(_) => true,
+                    AnyRedactedSyncMessageEvent::RoomMessageFeedback(_) => true,
+                    AnyRedactedSyncMessageEvent::RoomRedaction(_) => true,
+                    AnyRedactedSyncMessageEvent::Sticker(_) => true,
+                    _ => false,
+                },
+                AnySyncRoomEvent::RedactedState(state) => match state {
+                    AnyRedactedSyncStateEvent::PolicyRuleRoom(_) => true,
+                    AnyRedactedSyncStateEvent::PolicyRuleServer(_) => true,
+                    AnyRedactedSyncStateEvent::PolicyRuleUser(_) => true,
+                    AnyRedactedSyncStateEvent::RoomAliases(_) => true,
+                    AnyRedactedSyncStateEvent::RoomAvatar(_) => true,
+                    AnyRedactedSyncStateEvent::RoomCanonicalAlias(_) => true,
+                    AnyRedactedSyncStateEvent::RoomEncryption(_) => true,
+                    AnyRedactedSyncStateEvent::RoomJoinRules(_) => true,
+                    AnyRedactedSyncStateEvent::RoomName(_) => true,
+                    AnyRedactedSyncStateEvent::RoomPinnedEvents(_) => true,
+                    AnyRedactedSyncStateEvent::RoomPowerLevels(_) => true,
+                    AnyRedactedSyncStateEvent::RoomServerAcl(_) => true,
+                    AnyRedactedSyncStateEvent::RoomTopic(_) => true,
+                    _ => false,
+                },
+            }
+        } else {
+            false
         }
     }
 
@@ -353,23 +403,25 @@ impl Event {
     }
 
     pub fn can_hide_header(&self) -> bool {
-        let priv_ = imp::Event::from_instance(&self);
-
-        match &*priv_.event.get().unwrap().borrow() {
-            AnyRoomEvent::Message(ref message) => match message.content() {
-                AnyMessageEventContent::RoomMessage(message) => match message.msgtype {
-                    MessageType::Audio(_) => true,
-                    MessageType::File(_) => true,
-                    MessageType::Image(_) => true,
-                    MessageType::Location(_) => true,
-                    MessageType::Notice(_) => true,
-                    MessageType::Text(_) => true,
-                    MessageType::Video(_) => true,
+        if let Some(event) = self.matrix_event() {
+            match event {
+                AnySyncRoomEvent::Message(ref message) => match message.content() {
+                    AnyMessageEventContent::RoomMessage(message) => match message.msgtype {
+                        MessageType::Audio(_) => true,
+                        MessageType::File(_) => true,
+                        MessageType::Image(_) => true,
+                        MessageType::Location(_) => true,
+                        MessageType::Notice(_) => true,
+                        MessageType::Text(_) => true,
+                        MessageType::Video(_) => true,
+                        _ => false,
+                    },
                     _ => false,
                 },
                 _ => false,
-            },
-            _ => false,
+            }
+        } else {
+            false
         }
     }
 
