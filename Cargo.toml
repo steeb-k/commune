@@ -41,5 +41,6 @@ package = "libadwaita"
 version = "0.1.0-alpha"
 
 [dependencies.matrix-sdk]
-git = "https://github.com/matrix-org/matrix-rust-sdk.git"
+git = "https://github.com/jsparber/matrix-rust-sdk.git"
+branch = "messages-api"
 features = ["socks", "encryption", "sled_cryptostore", "sled_state_store", "markdown"]

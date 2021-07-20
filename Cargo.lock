@@ -1721,7 +1721,7 @@ checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 [[package]]
 name = "matrix-qrcode"
 version = "0.1.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git#623408913c6d557c37301e560cd7f1dcf4d79841"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#153e87e197e38def344e2f05f5e0685490c5f0b6"
 dependencies = [
  "base64",
  "byteorder",
@@ -1735,7 +1735,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk"
 version = "0.3.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git#623408913c6d557c37301e560cd7f1dcf4d79841"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#153e87e197e38def344e2f05f5e0685490c5f0b6"
 dependencies = [
  "backoff",
  "bytes",
@@ -1760,7 +1760,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-base"
 version = "0.3.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git#623408913c6d557c37301e560cd7f1dcf4d79841"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#153e87e197e38def344e2f05f5e0685490c5f0b6"
 dependencies = [
  "chacha20poly1305",
  "dashmap",
@@ -1785,7 +1785,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-common"
 version = "0.3.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git#623408913c6d557c37301e560cd7f1dcf4d79841"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#153e87e197e38def344e2f05f5e0685490c5f0b6"
 dependencies = [
  "async-trait",
  "futures",
@@ -1801,7 +1801,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-crypto"
 version = "0.3.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git#623408913c6d557c37301e560cd7f1dcf4d79841"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#153e87e197e38def344e2f05f5e0685490c5f0b6"
 dependencies = [
  "aes 0.7.5",
  "aes-gcm",
