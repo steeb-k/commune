@@ -131,13 +131,16 @@ impl Window {
         match secret::restore_sessions() {
             Ok(sessions) => {
                 let login = &imp::Window::from_instance(self).login.get();
+                let n = sessions.len();
                 for stored_session in sessions {
                     let session = Session::new();
                     login.set_handler_for_prepared_session(&session);
                     session.login_with_previous_session(stored_session);
                 }
 
-                self.switch_to_sessions_page();
+                if n > 0 {
+                    self.switch_to_sessions_page();
+                }
             }
             Err(error) => warn!("Failed to restore previous sessions: {:?}", error),
         }
