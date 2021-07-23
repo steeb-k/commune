@@ -66,9 +66,11 @@ mod imp {
             obj.load_window_size();
             obj.restore_sessions();
 
-            self.login.connect_new_session(
-                clone!(@weak obj => move |_login, session| obj.add_session(session)),
-            );
+            self.login
+                .connect_new_session(clone!(@weak obj => move |_login, session| {
+                    obj.add_session(session);
+                    obj.switch_to_sessions_page();
+                }));
 
             self.main_stack.connect_visible_child_notify(
                 clone!(@weak obj => move |_| obj.set_default_by_child()),
