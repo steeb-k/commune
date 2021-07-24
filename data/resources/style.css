@@ -24,9 +24,10 @@
 }
 
 #devnotice {
-  background-color: @warning_color;
-  padding: 6px;
-  border-radius: 10px;
+  background-color: lighter(alpha(@warning_color, 0.3));
+  color: shade(@warning_color, 0.5);
+  padding: 12px 24px;
+  border-radius: 9px;
 }
 
 /* Session */
