@@ -14,11 +14,11 @@ use crate::session::Avatar;
 mod imp {
     use super::*;
     use once_cell::sync::{Lazy, OnceCell};
-    use std::cell::RefCell;
+    use std::{cell::RefCell, convert::TryInto};
 
     #[derive(Debug, Default)]
     pub struct User {
-        pub user_id: OnceCell<String>,
+        pub user_id: OnceCell<UserId>,
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<Session>,
         pub avatar: OnceCell<Avatar>,
@@ -78,7 +78,7 @@ mod imp {
         ) {
             match pspec.name() {
                 "user-id" => {
-                    let user_id = value.get().unwrap();
+                    let user_id = value.get::<&str>().unwrap().try_into().unwrap();
                     self.user_id.set(user_id).unwrap();
                 }
                 "session" => self.session.set(value.get().unwrap()).unwrap(),
@@ -89,7 +89,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "display-name" => obj.display_name().to_value(),
-                "user-id" => self.user_id.get().to_value(),
+                "user-id" => obj.user_id().as_str().to_value(),
                 "session" => obj.session().to_value(),
                 "avatar" => obj.avatar().to_value(),
                 _ => unimplemented!(),
@@ -117,7 +117,7 @@ glib::wrapper! {
 /// This is a `glib::Object` representation of matrix users.
 impl User {
     pub fn new(session: &Session, user_id: &UserId) -> Self {
-        glib::Object::new(&[("session", session), ("user-id", &user_id.to_string())])
+        glib::Object::new(&[("session", session), ("user-id", &user_id.as_str())])
             .expect("Failed to create User")
     }
 
@@ -126,10 +126,9 @@ impl User {
         priv_.session.get().unwrap()
     }
 
-    pub fn user_id(&self) -> UserId {
-        use std::convert::TryFrom;
+    pub fn user_id(&self) -> &UserId {
         let priv_ = imp::User::from_instance(&self);
-        UserId::try_from(priv_.user_id.get().unwrap().as_str()).unwrap()
+        priv_.user_id.get().unwrap()
     }
 
     pub fn display_name(&self) -> String {
@@ -138,12 +137,7 @@ impl User {
         if let Some(display_name) = priv_.display_name.borrow().to_owned() {
             display_name
         } else {
-            priv_
-                .user_id
-                .get()
-                .unwrap()
-                .trim_start_matches("@")
-                .to_owned()
+            priv_.user_id.get().unwrap().localpart().to_owned()
         }
     }
 
