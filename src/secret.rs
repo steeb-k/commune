@@ -1,5 +1,4 @@
 use matrix_sdk::ruma::identifiers::{DeviceIdBox, UserId};
-use once_cell::sync::Lazy;
 use secret_service::EncryptionType;
 use secret_service::SecretService;
 use std::collections::HashMap;
@@ -16,12 +15,10 @@ pub struct StoredSession {
     pub device_id: DeviceIdBox,
 }
 
-static SECRET_SERVICE: Lazy<Result<SecretService<'static>, secret_service::Error>> =
-    Lazy::new(|| SecretService::new(EncryptionType::Dh));
-
 /// Retrieves all sessions stored to the `SecretService`
 pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
-    let collection = get_default_collection_unlocked()?;
+    let ss = SecretService::new(EncryptionType::Dh)?;
+    let collection = get_default_collection_unlocked(&ss)?;
 
     // Sessions that contain or produce errors are ignored.
     // TODO: Return error for corrupt sessions
@@ -81,7 +78,8 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
 /// Writes a session to the `SecretService`, overwriting any previously stored session with the
 /// same `homeserver`, `username` and `device-id`.
 pub fn store_session(session: StoredSession) -> Result<(), secret_service::Error> {
-    let collection = get_default_collection_unlocked()?;
+    let ss = SecretService::new(EncryptionType::Dh)?;
+    let collection = get_default_collection_unlocked(&ss)?;
 
     // Store the information for the login
     let attributes: HashMap<&str, &str> = [
@@ -124,21 +122,15 @@ pub fn store_session(session: StoredSession) -> Result<(), secret_service::Error
 }
 
 fn get_default_collection_unlocked<'a>(
+    secret_service: &'a SecretService,
 ) -> Result<secret_service::Collection<'a>, secret_service::Error> {
-    if SECRET_SERVICE.is_ok() {
-        let ss = SECRET_SERVICE.as_ref().unwrap();
-        let collection = match ss.get_default_collection() {
-            Ok(col) => col,
-            Err(secret_service::Error::NoResult) => ss.create_collection("default", "default")?,
-            Err(x) => return Err(x),
-        };
+    let collection = match secret_service.get_default_collection() {
+        Ok(col) => col,
+        Err(secret_service::Error::NoResult) => secret_service.create_collection("default", "default")?,
+        Err(error) => return Err(error),
+    };
 
-        collection.unlock()?;
+    collection.unlock()?;
 
-        Ok(collection)
-    } else {
-        Err(secret_service::Error::Crypto(
-            "Error encountered when initiating secret service connection.".to_string(),
-        ))
-    }
+    Ok(collection)
 }
