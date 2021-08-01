@@ -306,9 +306,27 @@ impl Session {
         let priv_ = imp::Session::from_instance(self);
         match result {
             Ok((client, session)) => {
-                priv_.client.set(client).unwrap();
+                priv_.client.set(client.clone()).unwrap();
                 let user = User::new(self, &session.user_id);
-                priv_.user.set(user).unwrap();
+                priv_.user.set(user.clone()).unwrap();
+
+                do_async(
+                    glib::PRIORITY_LOW,
+                    async move {
+                        let display_name = client.display_name().await?;
+                        let avatar_url = client.avatar_url().await?;
+                        Ok((display_name, avatar_url))
+                    },
+                    move |result: matrix_sdk::Result<_>| async move {
+                        match result {
+                            Ok((display_name, avatar_url)) => {
+                                user.set_display_name(display_name);
+                                user.set_avatar_url(avatar_url);
+                            }
+                            Err(error) => error!("Couldn’t fetch account metadata: {}", error),
+                        };
+                    },
+                );
 
                 if store_session {
                     // TODO: report secret service errors

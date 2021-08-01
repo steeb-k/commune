@@ -4,7 +4,7 @@ use crate::session::Session;
 use matrix_sdk::{
     ruma::{
         events::{room::member::MemberEventContent, StrippedStateEvent, SyncStateEvent},
-        identifiers::UserId,
+        identifiers::{MxcUri, UserId},
     },
     RoomMember,
 };
@@ -141,71 +141,61 @@ impl User {
         }
     }
 
+    pub fn set_display_name(&self, display_name: Option<String>) {
+        let priv_ = imp::User::from_instance(&self);
+        priv_.display_name.replace(display_name);
+        self.notify("display-name");
+    }
+
     pub fn avatar(&self) -> &Avatar {
         let priv_ = imp::User::from_instance(&self);
         priv_.avatar.get().unwrap()
     }
 
+    pub fn set_avatar_url(&self, url: Option<MxcUri>) {
+        self.avatar().set_url(url);
+    }
+
     /// Update the user based on the the room member state event
     pub fn update_from_room_member(&self, member: &RoomMember) {
-        let changed = {
-            let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(&self);
 
-            let user_id = priv_.user_id.get().unwrap();
-            if member.user_id().as_str() != user_id {
-                return;
-            };
-
-            //let content = event.content;
-            let display_name = member.display_name().map(|name| name.to_owned());
-            self.avatar().set_url(member.avatar_url().cloned());
-
-            let mut current_display_name = priv_.display_name.borrow_mut();
-            if *current_display_name != display_name {
-                *current_display_name = display_name;
-                true
-            } else {
-                false
-            }
+        let user_id = priv_.user_id.get().unwrap();
+        if member.user_id().as_str() != user_id {
+            return;
         };
 
-        if changed {
-            self.notify("display-name");
+        //let content = event.content;
+        let display_name = member.display_name().map(|name| name.to_owned());
+        self.avatar().set_url(member.avatar_url().cloned());
+
+        if *priv_.display_name.borrow() != display_name {
+            self.set_display_name(display_name);
         }
     }
 
     /// Update the user based on the the room member state event
     pub fn update_from_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
-        let changed = {
-            let priv_ = imp::User::from_instance(&self);
-            let user_id = priv_.user_id.get().unwrap();
-            if event.sender.as_str() != user_id {
-                return;
-            };
-
-            let display_name = if let Some(display_name) = &event.content.displayname {
-                Some(display_name.to_owned())
-            } else {
-                event
-                    .content
-                    .third_party_invite
-                    .as_ref()
-                    .map(|i| i.display_name.to_owned())
-            };
-
-            self.avatar().set_url(event.content.avatar_url.to_owned());
-
-            let mut current_display_name = priv_.display_name.borrow_mut();
-            if *current_display_name != display_name {
-                *current_display_name = display_name;
-                true
-            } else {
-                false
-            }
+        let priv_ = imp::User::from_instance(&self);
+        let user_id = priv_.user_id.get().unwrap();
+        if event.sender.as_str() != user_id {
+            return;
         };
 
-        if changed {
-            self.notify("display-name");
+        let display_name = if let Some(display_name) = &event.content.displayname {
+            Some(display_name.to_owned())
+        } else {
+            event
+                .content
+                .third_party_invite
+                .as_ref()
+                .map(|i| i.display_name.to_owned())
+        };
+
+        self.avatar().set_url(event.content.avatar_url.to_owned());
+
+        if *priv_.display_name.borrow() != display_name {
+            self.set_display_name(display_name);
         }
     }
 
