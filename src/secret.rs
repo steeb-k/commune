@@ -126,7 +126,9 @@ fn get_default_collection_unlocked<'a>(
 ) -> Result<secret_service::Collection<'a>, secret_service::Error> {
     let collection = match secret_service.get_default_collection() {
         Ok(col) => col,
-        Err(secret_service::Error::NoResult) => secret_service.create_collection("default", "default")?,
+        Err(secret_service::Error::NoResult) => {
+            secret_service.create_collection("default", "default")?
+        }
         Err(error) => return Err(error),
     };
 
