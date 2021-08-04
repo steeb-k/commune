@@ -19,6 +19,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/content-room-details.ui")]
     pub struct RoomDetails {
         pub room: OnceCell<Room>,
+        pub avatar_chooser: OnceCell<gtk::FileChooserNative>,
         #[template_child]
         pub edit_toggle: TemplateChild<gtk::ToggleButton>,
         #[template_child]
@@ -36,6 +37,12 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             CustomEntry::static_type();
             Self::bind_template(klass);
+            klass.install_action("details.choose-avatar", None, move |widget, _, _| {
+                widget.open_avatar_chooser()
+            });
+            klass.install_action("details.remove-avatar", None, move |widget, _, _| {
+                widget.room().store_avatar(None)
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -83,6 +90,7 @@ mod imp {
             self.parent_constructed(obj);
 
             obj.init_edit_toggle();
+            obj.init_avatar_chooser();
         }
     }
 
@@ -149,5 +157,39 @@ impl RoomDetails {
                 let priv_ = imp::RoomDetails::from_instance(&this);
                 priv_.edit_toggle.set_active(false);
             }));
+    }
+
+    fn init_avatar_chooser(&self) {
+        let priv_ = imp::RoomDetails::from_instance(self);
+        let avatar_chooser = gtk::FileChooserNative::new(
+            Some(&gettext("Choose avatar")),
+            Some(self),
+            gtk::FileChooserAction::Open,
+            None,
+            None,
+        );
+        avatar_chooser.connect_response(clone!(@weak self as this => move |chooser, response| {
+            let file = chooser.file().and_then(|f| f.path());
+            if let (gtk::ResponseType::Accept, Some(file)) = (response, file) {
+                log::debug!("Chose file {:?}", file);
+                this.room().store_avatar(Some(file));
+            }
+        }));
+
+        // We must keep a reference to FileChooserNative around as it is not
+        // managed by GTK.
+        priv_
+            .avatar_chooser
+            .set(avatar_chooser)
+            .expect("File chooser already initialized");
+    }
+
+    fn avatar_chooser(&self) -> &gtk::FileChooserNative {
+        let priv_ = imp::RoomDetails::from_instance(self);
+        priv_.avatar_chooser.get().unwrap()
+    }
+
+    fn open_avatar_chooser(&self) {
+        self.avatar_chooser().show();
     }
 }

@@ -31,9 +31,11 @@ use matrix_sdk::{
 use serde_json::value::RawValue;
 use std::cell::RefCell;
 use std::convert::{TryFrom, TryInto};
+use std::path::PathBuf;
 
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
+use crate::session::avatar::update_room_avatar_from_file;
 use crate::session::room::{
     Event, HighlightFlags, Member, PowerLevels, RoomAction, RoomType, Timeline,
 };
@@ -820,6 +822,25 @@ impl Room {
         let user_id = self.session().user().user_id();
         let member = self.member_by_id(user_id);
         self.power_levels().new_allowed_expr(&member, room_action)
+    }
+
+    /// Uploads the given file to the server and makes it the room avatar.
+    ///
+    /// Removes the avatar if no filename is given.
+    pub fn store_avatar(&self, filename: Option<PathBuf>) {
+        let matrix_room = self.matrix_room();
+        let client = self.session().client().clone();
+
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move { update_room_avatar_from_file(&client, &matrix_room, filename.as_ref()).await },
+            clone!(@weak self as this => move |avatar_uri| async move {
+                match avatar_uri {
+                    Ok(_avatar_uri) => info!("Sucessfully updated room avatar"),
+                    Err(error) => error!("Couldn’t update room avatar: {}", error),
+                };
+            }),
+        );
     }
 
     pub async fn accept_invite(&self) -> Result<(), Error> {

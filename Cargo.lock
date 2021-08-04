@@ -729,6 +729,7 @@ dependencies = [
  "libadwaita",
  "log",
  "matrix-sdk",
+ "mime",
  "once_cell",
  "rand 0.8.4",
  "secret-service",

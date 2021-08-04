@@ -9,6 +9,7 @@ opt-level = 3
 
 [dependencies]
 log = "0.4"
+mime = "0.3.16"
 tracing-subscriber = "0.2"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
 gtk-macros = "0.3"

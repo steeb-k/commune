@@ -14,13 +14,40 @@
               <class name="room-details-group" />
             </style>
             <child>
-              <object class="ComponentsAvatar">
-                <property name="size">128</property>
-                <binding name="item">
-                  <lookup name="avatar">
-                    <lookup name="room">RoomDetails</lookup>
-                  </lookup>
-                </binding>
+              <object class="GtkOverlay">
+                <property name="halign">center</property>
+                <child>
+                  <object class="ComponentsAvatar">
+                    <property name="size">128</property>
+                    <binding name="item">
+                      <lookup name="avatar">
+                        <lookup name="room">RoomDetails</lookup>
+                      </lookup>
+                    </binding>
+                  </object>
+                </child>
+                <child type="overlay">
+                  <object class="GtkButton">
+                    <property name="icon-name">window-close-symbolic</property>
+                    <property name="action-name">details.remove-avatar</property>
+                    <property name="halign">end</property>
+                    <property name="valign">start</property>
+                    <style>
+                      <class name="circular" />
+                    </style>
+                  </object>
+                </child>
+                <child type="overlay">
+                  <object class="GtkButton">
+                    <property name="icon-name">document-edit-symbolic</property>
+                    <property name="action-name">details.choose-avatar</property>
+                    <property name="halign">end</property>
+                    <property name="valign">end</property>
+                    <style>
+                      <class name="circular" />
+                    </style>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
