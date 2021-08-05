@@ -8,6 +8,7 @@ use crate::session::{
 };
 
 mod imp {
+    use once_cell::sync::Lazy;
     use once_cell::unsync::OnceCell;
 
     use super::*;
@@ -25,7 +26,37 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for ItemList {}
+    impl ObjectImpl for ItemList {
+        fn properties() -> &'static [glib::ParamSpec] {
+            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
+                vec![glib::ParamSpec::new_object(
+                    "room-list",
+                    "Room list",
+                    "Data model for the categories",
+                    RoomList::static_type(),
+                    glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                )]
+            });
+
+            PROPERTIES.as_ref()
+        }
+
+        fn set_property(
+            &self,
+            obj: &Self::Type,
+            _id: usize,
+            value: &glib::Value,
+            pspec: &glib::ParamSpec,
+        ) {
+            match pspec.name() {
+                "room-list" => {
+                    let x = value.get().unwrap();
+                    obj.set_room_list(&x)
+                }
+                _ => unimplemented!(),
+            }
+        }
+    }
 
     impl ListModelImpl for ItemList {
         fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
@@ -53,32 +84,25 @@ glib::wrapper! {
         @implements gio::ListModel;
 }
 
-impl Default for ItemList {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl ItemList {
-    pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create ItemList")
+    pub fn new(room_list: &RoomList) -> Self {
+        glib::Object::new(&[("room-list", room_list)]).expect("Failed to create ItemList")
     }
 
-    pub fn set_room_list(&self, room_list: &RoomList) {
+    fn set_room_list(&self, room_list: &RoomList) {
         let priv_ = imp::ItemList::from_instance(self);
 
-        priv_
-            .list
-            .set([
-                Entry::new(ContentType::Explore).upcast::<glib::Object>(),
-                Category::new(RoomType::Invited, room_list).upcast::<glib::Object>(),
-                Category::new(RoomType::Favorite, room_list).upcast::<glib::Object>(),
-                Category::new(RoomType::Normal, room_list).upcast::<glib::Object>(),
-                Category::new(RoomType::LowPriority, room_list).upcast::<glib::Object>(),
-                Category::new(RoomType::Left, room_list).upcast::<glib::Object>(),
-            ])
-            .unwrap();
+        let list = [
+            Entry::new(ContentType::Explore).upcast::<glib::Object>(),
+            Category::new(RoomType::Invited, room_list).upcast::<glib::Object>(),
+            Category::new(RoomType::Favorite, room_list).upcast::<glib::Object>(),
+            Category::new(RoomType::Normal, room_list).upcast::<glib::Object>(),
+            Category::new(RoomType::LowPriority, room_list).upcast::<glib::Object>(),
+            Category::new(RoomType::Left, room_list).upcast::<glib::Object>(),
+        ];
+        let len = list.len() as u32;
 
-        self.items_changed(0, 0, 6);
+        priv_.list.set(list).unwrap();
+        self.items_changed(0, 0, len);
     }
 }
