@@ -13,7 +13,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct Category {
-        pub model: OnceCell<gtk::FilterListModel>,
+        pub model: OnceCell<gio::ListModel>,
         pub type_: Cell<RoomType>,
     }
 
@@ -136,6 +136,6 @@ impl Category {
             }),
         );
 
-        let _ = priv_.model.set(filter_model);
+        priv_.model.set(filter_model.upcast()).unwrap();
     }
 }
