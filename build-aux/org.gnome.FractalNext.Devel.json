@@ -15,7 +15,8 @@
         "--talk-name=org.a11y.Bus",
         "--talk-name=org.freedesktop.secrets",
         "--env=RUST_LOG=fractal=debug",
-        "--env=G_MESSAGES_DEBUG=none"
+        "--env=G_MESSAGES_DEBUG=none",
+        "--env=RUST_BACKTRACE=1"
     ],
     "build-options" : {
         "append-path" : "/usr/lib/sdk/rust-stable/bin",
@@ -25,10 +26,7 @@
         "test-args" : [
             "--socket=x11",
             "--share=network"
-        ],
-        "env" : {
-            "RUST_BACKTRACE" : "1"
-        }
+        ]
     },
     "modules" : [
         {
