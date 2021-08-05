@@ -124,30 +124,22 @@ mod imp {
             self.parent_constructed(obj);
 
             self.listview.get().connect_activate(move |listview, pos| {
-                if let Some(model) = listview
-                    .model()
-                    .and_then(|m| m.downcast::<Selection>().ok())
-                {
-                    if let Some(row) = model
-                        .item(pos)
-                        .and_then(|o| o.downcast::<gtk::TreeListRow>().ok())
-                    {
-                        if row
-                            .item()
-                            .and_then(|o| o.downcast::<Category>().ok())
-                            .is_some()
-                        {
-                            row.set_expanded(!row.is_expanded());
-                        } else if row.item().and_then(|o| o.downcast::<Room>().ok()).is_some() {
-                            model.set_selected(pos);
-                        } else if row
-                            .item()
-                            .and_then(|o| o.downcast::<Entry>().ok())
-                            .is_some()
-                        {
-                            model.set_selected(pos);
-                        }
-                    }
+                let model: Option<Selection> = listview.model().and_then(|o| o.downcast().ok());
+                let row: Option<gtk::TreeListRow> = model
+                    .as_ref()
+                    .and_then(|m| m.item(pos))
+                    .and_then(|o| o.downcast().ok());
+
+                let (model, row) = match (model, row) {
+                    (Some(model), Some(row)) => (model, row),
+                    _ => return,
+                };
+
+                match row.item() {
+                    Some(o) if o.is::<Category>() => row.set_expanded(!row.is_expanded()),
+                    Some(o) if o.is::<Room>() => model.set_selected(pos),
+                    Some(o) if o.is::<Entry>() => model.set_selected(pos),
+                    _ => {}
                 }
             });
         }
@@ -196,52 +188,55 @@ impl Sidebar {
 
     pub fn set_room_list(&self, room_list: Option<RoomList>) {
         let priv_ = imp::Sidebar::from_instance(self);
+        let room_list = match room_list {
+            Some(room_list) => room_list,
+            None => {
+                priv_.listview.set_model(gtk::NONE_SELECTION_MODEL);
+                return;
+            }
+        };
 
-        if let Some(room_list) = room_list {
-            // TODO: hide empty categories
-            let item_list = ItemList::new();
-            item_list.set_room_list(&room_list);
-            let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
-                item.clone().downcast::<gio::ListModel>().ok()
-            });
+        // TODO: hide empty categories
+        let item_list = ItemList::new();
+        item_list.set_room_list(&room_list);
+        let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
+            item.clone().downcast::<gio::ListModel>().ok()
+        });
 
-            let room_expression = gtk::ClosureExpression::new(
-                |value| {
-                    value[0]
-                        .get::<gtk::TreeListRow>()
-                        .unwrap()
-                        .item()
-                        .and_then(|o| o.downcast::<Room>().ok())
-                        .map_or(String::new(), |o| o.display_name())
-                },
-                &[],
-            );
-            let filter = gtk::StringFilterBuilder::new()
-                .match_mode(gtk::StringFilterMatchMode::Substring)
-                .expression(&room_expression)
-                .ignore_case(true)
-                .build();
+        let room_expression = gtk::ClosureExpression::new(
+            |value| {
+                value[0]
+                    .get::<gtk::TreeListRow>()
+                    .unwrap()
+                    .item()
+                    .and_then(|o| o.downcast::<Room>().ok())
+                    .map_or(String::new(), |o| o.display_name())
+            },
+            &[],
+        );
+        let filter = gtk::StringFilterBuilder::new()
+            .match_mode(gtk::StringFilterMatchMode::Substring)
+            .expression(&room_expression)
+            .ignore_case(true)
+            .build();
+        let filter_model = gtk::FilterListModel::new(Some(&tree_model), Some(&filter));
 
-            let filter_model = gtk::FilterListModel::new(Some(&tree_model), Some(&filter));
-            priv_
-                .room_search_entry
-                .bind_property("text", &filter, "search")
-                .flags(glib::BindingFlags::SYNC_CREATE)
-                .build();
+        priv_
+            .room_search_entry
+            .bind_property("text", &filter, "search")
+            .flags(glib::BindingFlags::SYNC_CREATE)
+            .build();
 
-            let selection = Selection::new(Some(&filter_model));
-            self.bind_property("selected-room", &selection, "selected-item")
-                .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
-                .build();
+        let selection = Selection::new(Some(&filter_model));
+        self.bind_property("selected-room", &selection, "selected-item")
+            .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+            .build();
 
-            self.bind_property("selected-type", &selection, "selected-type")
-                .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
-                .build();
+        self.bind_property("selected-type", &selection, "selected-type")
+            .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+            .build();
 
-            priv_.listview.set_model(Some(&selection));
-        } else {
-            priv_.listview.set_model(gtk::NONE_SELECTION_MODEL);
-        }
+        priv_.listview.set_model(Some(&selection));
     }
 
     fn set_selected_room(&self, selected_room: Option<Room>) {
