@@ -45,6 +45,10 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// Fixed list of all subcomponents in the sidebar.
+    ///
+    /// ItemList implements the ListModel interface and yields the subcomponents
+    /// from the sidebar, namely Entries and Categories.
     pub struct ItemList(ObjectSubclass<imp::ItemList>)
         @implements gio::ListModel;
 }

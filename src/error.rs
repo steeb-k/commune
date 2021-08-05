@@ -25,10 +25,10 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// An `Error` that can be shown in the UI.
     pub struct Error(ObjectSubclass<imp::Error>);
 }
 
-/// An `Error` that can be shown in the UI
 impl Error {
     pub fn new<F: Fn(&Self) -> Option<gtk::Widget> + 'static>(error: MatrixError, f: F) -> Self {
         let obj: Self = glib::Object::new(&[]).expect("Failed to create Error");

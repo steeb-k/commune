@@ -147,13 +147,13 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// GObject representation of a Matrix room event.
     pub struct Event(ObjectSubclass<imp::Event>);
 }
 
 // TODO:
 // - [ ] implement operations for events: forward, reply, delete...
 
-/// This is the GObject representation of a matrix room event
 impl Event {
     pub fn new(event: SyncRoomEvent, room: &Room) -> Self {
         let event = BoxedSyncRoomEvent(event);

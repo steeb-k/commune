@@ -217,6 +217,9 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// GObject representation of a Matrix room.
+    ///
+    /// Handles populating the Timeline.
     pub struct Room(ObjectSubclass<imp::Room>);
 }
 

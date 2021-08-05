@@ -171,13 +171,14 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A Label that can have multiple widgets placed inside the text.
+    ///
+    /// By default the string "<widget>" will be used as location to place the
+    /// child widgets. You can set your own placeholder if you need.
     pub struct LabelWithWidgets(ObjectSubclass<imp::LabelWithWidgets>)
         @extends gtk::Widget, @implements gtk::Accessible, gtk::Buildable;
 }
-/// A Label that can have multiple widgets placed inside the text.
-///
-/// By default the string "<widget>" will be used as location to place the child
-/// widgets. You can set your own placeholder if you need.
+
 impl LabelWithWidgets {
     pub fn new<P: IsA<gtk::Widget>>(label: &str, widgets: Vec<P>) -> Self {
         let obj: Self =

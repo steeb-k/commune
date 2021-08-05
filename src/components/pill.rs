@@ -94,11 +94,11 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// Inline widget displaying an emphasized `User` or `Room`.
     pub struct Pill(ObjectSubclass<imp::Pill>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-/// A widget displaying a `User`
 impl Pill {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create Pill")

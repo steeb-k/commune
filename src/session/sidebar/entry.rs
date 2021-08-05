@@ -87,6 +87,10 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A top-level row in the sidebar without children.
+    ///
+    /// Entry is supposed to be used in a TreeListModel, but as it does not have
+    /// any children, implementing the ListModel interface is not required.
     pub struct Entry(ObjectSubclass<imp::Entry>);
 }
 

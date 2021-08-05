@@ -111,11 +111,12 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A row inside the RoomHistory.
+    ///
+    /// This can be AnySyncRoomEvent, a day divider or new message divider.
     pub struct Item(ObjectSubclass<imp::Item>);
 }
 
-/// This represents any row inside the room history.
-/// This can be AnySyncRoomEvent, a day divider or new message divider.
 impl Item {
     pub fn for_event(event: Event) -> Self {
         let type_ = BoxedItemType(ItemType::Event(event));

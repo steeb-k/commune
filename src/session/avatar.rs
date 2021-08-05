@@ -113,10 +113,10 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// Object holding information about a User’s or Room’s `Avatar`.
     pub struct Avatar(ObjectSubclass<imp::Avatar>);
 }
 
-/// This an object that holds information about a Users or Rooms `Avatar`
 impl Avatar {
     pub fn new(session: &Session, url: Option<MxcUri>) -> Self {
         glib::Object::new(&[

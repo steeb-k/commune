@@ -102,6 +102,9 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A list of Rooms in the same category implementing ListModel.
+    ///
+    /// This struct is used in ItemList for the sidebar.
     pub struct Category(ObjectSubclass<imp::Category>)
         @implements gio::ListModel;
 }

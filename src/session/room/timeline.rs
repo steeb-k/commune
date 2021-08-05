@@ -96,6 +96,14 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// List of all loaded Events in a room. Implements ListModel.
+    ///
+    /// There is no strict message ordering enforced by the Timeline; events
+    /// will be appended/prepended to existing events in the order they are
+    /// received by the server.
+    ///
+    /// This struct additionally keeps track of pending events that have yet to
+    /// get an event ID assigned from the server.
     pub struct Timeline(ObjectSubclass<imp::Timeline>)
         @implements gio::ListModel;
 }

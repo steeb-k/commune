@@ -136,11 +136,11 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A Bin widget that adds a context menu.
     pub struct ContextMenuBin(ObjectSubclass<imp::ContextMenuBin>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-/// A Bin widget that adds a context menu
 impl ContextMenuBin {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create ContextMenuBin")

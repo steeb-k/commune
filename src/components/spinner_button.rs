@@ -88,11 +88,11 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// Button showing a spinner, revealing its label once loaded.
     pub struct SpinnerButton(ObjectSubclass<imp::SpinnerButton>)
         @extends gtk::Widget, gtk::Button, @implements gtk::Accessible, gtk::Actionable;
 }
 
-/// A widget displaying a `User`
 impl SpinnerButton {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create SpinnerButton")

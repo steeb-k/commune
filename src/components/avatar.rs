@@ -95,11 +95,11 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A widget displaying an `Avatar` for a `Room` or `User`.
     pub struct Avatar(ObjectSubclass<imp::Avatar>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-/// A widget displaying an `Avatar` for a `Room` or `User`
 impl Avatar {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create Avatar")

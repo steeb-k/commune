@@ -102,6 +102,15 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// List of all joined rooms of the user.
+    ///
+    /// This is the parent ListModel of the sidebar from which all other models
+    /// are derived. If a room is updated, use `room.notify("category")` to fix
+    /// the sorting.
+    ///
+    /// The `RoomList` also takes care of all so called *pending rooms*, i.e.
+    /// rooms the user requested to join, but received no response from the
+    /// server yet.
     pub struct RoomList(ObjectSubclass<imp::RoomList>)
         @implements gio::ListModel;
 }
