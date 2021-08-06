@@ -130,12 +130,19 @@ impl Category {
         });
         let filter_model = gtk::FilterListModel::new(Some(&model), Some(&filter));
 
-        filter_model.connect_items_changed(
+        let sorter = gtk::CustomSorter::new(|a, b| {
+            let a = a.downcast_ref::<Room>().unwrap();
+            let b = b.downcast_ref::<Room>().unwrap();
+            b.latest_change().cmp(&a.latest_change()).into()
+        });
+        let sort_model = gtk::SortListModel::new(Some(&filter_model), Some(&sorter));
+
+        sort_model.connect_items_changed(
             clone!(@weak self as obj => move |_, pos, added, removed| {
                 obj.items_changed(pos, added, removed);
             }),
         );
 
-        priv_.model.set(filter_model.upcast()).unwrap();
+        priv_.model.set(sort_model.upcast()).unwrap();
     }
 }
