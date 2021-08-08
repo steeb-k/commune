@@ -30,6 +30,7 @@ use std::cell::RefCell;
 use std::convert::TryFrom;
 
 use crate::components::{LabelWithWidgets, Pill};
+use crate::prelude::*;
 use crate::session::{
     room::{Event, HighlightFlags, RoomType, Timeline},
     Avatar, Session, User,

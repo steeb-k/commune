@@ -6,6 +6,7 @@
 mod application;
 #[rustfmt::skip]
 mod config;
+mod prelude;
 
 mod components;
 mod error;

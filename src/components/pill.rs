@@ -4,6 +4,7 @@ use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use gtk::{glib, CompositeTemplate};
 
+use crate::prelude::*;
 use crate::session::{Room, User};
 
 mod imp {

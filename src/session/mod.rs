@@ -11,7 +11,7 @@ use self::content::Content;
 pub use self::room::Room;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
-pub use self::user::User;
+pub use self::user::{User, UserExt};
 
 use crate::components::InAppNotification;
 use crate::secret;

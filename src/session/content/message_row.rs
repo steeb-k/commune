@@ -17,6 +17,7 @@ use matrix_sdk::ruma::events::{
 };
 use sourceview::prelude::*;
 
+use crate::prelude::*;
 use crate::session::room::Event;
 
 mod imp {
