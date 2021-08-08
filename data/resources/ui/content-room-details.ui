@@ -33,6 +33,7 @@
                     <property name="halign">end</property>
                     <property name="valign">start</property>
                     <style>
+                      <class name="cutout" />
                       <class name="circular" />
                     </style>
                   </object>
@@ -44,6 +45,7 @@
                     <property name="halign">end</property>
                     <property name="valign">end</property>
                     <style>
+                      <class name="cutout" />
                       <class name="circular" />
                     </style>
                   </object>

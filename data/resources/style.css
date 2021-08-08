@@ -210,3 +210,16 @@ headerbar.flat {
 .bold {
   font-weight: bold;
 }
+
+button.cutout {
+  box-shadow: 0 0 0 2px @theme_bg_color;
+  background-color: #e2e2e1;
+}
+
+button.cutout:hover {
+  background-color: #d8d8d7;
+}
+
+button.cutout:active {
+  background-color: #c4c5c4;
+}
