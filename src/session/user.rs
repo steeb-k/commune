@@ -1,15 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
+use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 
-use crate::session::Session;
-use matrix_sdk::{
-    ruma::{
-        events::{room::member::MemberEventContent, StrippedStateEvent, SyncStateEvent},
-        identifiers::{MxcUri, UserId},
-    },
-    RoomMember,
-};
-
-use crate::session::Avatar;
+use crate::session::{Avatar, Session};
 
 mod imp {
     use super::*;
@@ -156,84 +148,6 @@ pub trait UserExt: IsA<User> {
 
     fn set_avatar_url(&self, url: Option<MxcUri>) {
         self.avatar().set_url(url);
-    }
-
-    /// Update the user based on the the room member state event
-    fn update_from_room_member(&self, member: &RoomMember) {
-        let priv_ = imp::User::from_instance(self.upcast_ref());
-
-        let user_id = priv_.user_id.get().unwrap();
-        if member.user_id().as_str() != user_id {
-            return;
-        };
-
-        //let content = event.content;
-        let display_name = member.display_name().map(|name| name.to_owned());
-        self.avatar().set_url(member.avatar_url().cloned());
-
-        if *priv_.display_name.borrow() != display_name {
-            self.set_display_name(display_name);
-        }
-    }
-
-    /// Update the user based on the the room member state event
-    fn update_from_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
-        let priv_ = imp::User::from_instance(self.upcast_ref());
-        let user_id = priv_.user_id.get().unwrap();
-        if event.sender.as_str() != user_id {
-            return;
-        };
-
-        let display_name = if let Some(display_name) = &event.content.displayname {
-            Some(display_name.to_owned())
-        } else {
-            event
-                .content
-                .third_party_invite
-                .as_ref()
-                .map(|i| i.display_name.to_owned())
-        };
-
-        self.avatar().set_url(event.content.avatar_url.to_owned());
-
-        if *priv_.display_name.borrow() != display_name {
-            self.set_display_name(display_name);
-        }
-    }
-
-    /// Update the user based on the the stripped room member state event
-    fn update_from_stripped_member_event(&self, event: &StrippedStateEvent<MemberEventContent>) {
-        let changed = {
-            let priv_ = imp::User::from_instance(self.upcast_ref());
-            let user_id = priv_.user_id.get().unwrap();
-            if event.sender.as_str() != user_id {
-                return;
-            };
-
-            let display_name = if let Some(display_name) = &event.content.displayname {
-                Some(display_name.to_owned())
-            } else {
-                event
-                    .content
-                    .third_party_invite
-                    .as_ref()
-                    .map(|i| i.display_name.to_owned())
-            };
-
-            self.avatar().set_url(event.content.avatar_url.to_owned());
-
-            let mut current_display_name = priv_.display_name.borrow_mut();
-            if *current_display_name != display_name {
-                *current_display_name = display_name;
-                true
-            } else {
-                false
-            }
-        };
-
-        if changed {
-            self.notify("display-name");
-        }
     }
 }
 

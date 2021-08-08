@@ -31,10 +31,8 @@ use std::convert::TryFrom;
 
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
-use crate::session::{
-    room::{Event, HighlightFlags, RoomType, Timeline},
-    Avatar, Session, User,
-};
+use crate::session::room::{Event, HighlightFlags, Member, RoomType, Timeline};
+use crate::session::{Avatar, Session};
 use crate::utils::do_async;
 use crate::Error;
 use crate::RUNTIME;
@@ -54,9 +52,9 @@ mod imp {
         pub avatar: OnceCell<Avatar>,
         pub category: Cell<RoomType>,
         pub timeline: OnceCell<Timeline>,
-        pub room_members: RefCell<HashMap<UserId, User>>,
+        pub room_members: RefCell<HashMap<UserId, Member>>,
         /// The user who sent the invite to this room. This is only set when this room is an invitiation.
-        pub inviter: RefCell<Option<User>>,
+        pub inviter: RefCell<Option<Member>>,
         pub members_loaded: Cell<bool>,
     }
 
@@ -96,7 +94,7 @@ mod imp {
                         "inviter",
                         "Inviter",
                         "The user who sent the invite to this room, this is only set when this room represents an invite",
-                        User::static_type(),
+                        Member::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_object(
@@ -488,7 +486,7 @@ impl Room {
             .filter(|topic| !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some())
     }
 
-    pub fn inviter(&self) -> Option<User> {
+    pub fn inviter(&self) -> Option<Member> {
         let priv_ = imp::Room::from_instance(self);
         priv_.inviter.borrow().clone()
     }
@@ -496,13 +494,13 @@ impl Room {
     /// Returns the room member `User` object
     ///
     /// The returned `User` is specific to this room
-    pub fn member_by_id(&self, user_id: &UserId) -> User {
+    pub fn member_by_id(&self, user_id: &UserId) -> Member {
         let priv_ = imp::Room::from_instance(self);
         let mut room_members = priv_.room_members.borrow_mut();
 
         room_members
             .entry(user_id.clone())
-            .or_insert_with(|| User::new(self.session(), user_id))
+            .or_insert_with(|| Member::new(self, user_id))
             .clone()
     }
 
@@ -533,7 +531,7 @@ impl Room {
             }
         });
 
-        let inviter = User::new(self.session(), inviter_id);
+        let inviter = Member::new(self, inviter_id);
         if let Some(AnyStrippedStateEvent::RoomMember(event)) = inviter_event {
             inviter.update_from_stripped_member_event(event);
         }
@@ -583,7 +581,7 @@ impl Room {
             let user_id = member.user_id();
             let user = room_members
                 .entry(user_id.clone())
-                .or_insert_with(|| User::new(self.session(), user_id));
+                .or_insert_with(|| Member::new(self, user_id));
             user.update_from_room_member(&member);
         }
     }
@@ -595,7 +593,7 @@ impl Room {
         let user_id = &event.sender;
         let user = room_members
             .entry(user_id.clone())
-            .or_insert_with(|| User::new(self.session(), user_id));
+            .or_insert_with(|| Member::new(self, user_id));
         user.update_from_member_event(event);
     }
 

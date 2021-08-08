@@ -12,7 +12,8 @@ use matrix_sdk::{
     },
 };
 
-use crate::session::{Room, User};
+use crate::session::room::Member;
+use crate::session::Room;
 use log::warn;
 
 #[derive(Clone, Debug, glib::GBoxed)]
@@ -86,7 +87,7 @@ mod imp {
                         "sender",
                         "Sender",
                         "The sender of this matrix event",
-                        User::static_type(),
+                        Member::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_object(
@@ -160,7 +161,7 @@ impl Event {
         glib::Object::new(&[("event", &event), ("room", room)]).expect("Failed to create Event")
     }
 
-    pub fn sender(&self) -> User {
+    pub fn sender(&self) -> Member {
         let priv_ = imp::Event::from_instance(self);
         priv_
             .room
