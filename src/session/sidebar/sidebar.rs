@@ -255,3 +255,9 @@ impl Sidebar {
         self.notify("selected-room");
     }
 }
+
+impl Default for Sidebar {
+    fn default() -> Self {
+        Self::new()
+    }
+}

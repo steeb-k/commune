@@ -248,3 +248,9 @@ impl Invite {
         Some(())
     }
 }
+
+impl Default for Invite {
+    fn default() -> Self {
+        Self::new()
+    }
+}

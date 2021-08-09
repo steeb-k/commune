@@ -450,3 +450,9 @@ impl Session {
         self.room_list().handle_response_rooms(response.rooms);
     }
 }
+
+impl Default for Session {
+    fn default() -> Self {
+        Self::new()
+    }
+}

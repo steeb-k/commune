@@ -228,3 +228,9 @@ impl ItemRow {
         }
     }
 }
+
+impl Default for ItemRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

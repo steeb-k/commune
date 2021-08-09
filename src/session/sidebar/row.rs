@@ -175,3 +175,9 @@ impl Row {
         self.notify("list-row");
     }
 }
+
+impl Default for Row {
+    fn default() -> Self {
+        Self::new()
+    }
+}

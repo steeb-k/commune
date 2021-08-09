@@ -138,3 +138,9 @@ impl SpinnerButton {
         priv_.stack.visible_child().as_ref() == Some(priv_.spinner.upcast_ref())
     }
 }
+
+impl Default for SpinnerButton {
+    fn default() -> Self {
+        Self::new()
+    }
+}

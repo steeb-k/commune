@@ -81,3 +81,9 @@ impl MarkdownPopover {
         glib::Object::new(&[]).expect("Failed to create MarkdownPopover")
     }
 }
+
+impl Default for MarkdownPopover {
+    fn default() -> Self {
+        Self::new()
+    }
+}

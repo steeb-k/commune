@@ -446,3 +446,9 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
         }
     }
 }
+
+impl Default for MessageRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

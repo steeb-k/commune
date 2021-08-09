@@ -190,3 +190,9 @@ impl RoomRow {
         }
     }
 }
+
+impl Default for RoomRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

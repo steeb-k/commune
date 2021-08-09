@@ -133,3 +133,9 @@ impl Avatar {
         }
     }
 }
+
+impl Default for Avatar {
+    fn default() -> Self {
+        Self::new()
+    }
+}

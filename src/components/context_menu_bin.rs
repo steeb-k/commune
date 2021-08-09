@@ -196,3 +196,9 @@ unsafe impl<T: ContextMenuBinImpl> IsSubclassable<T> for ContextMenuBin {
         <gtk::Widget as IsSubclassable<T>>::instance_init(instance);
     }
 }
+
+impl Default for ContextMenuBin {
+    fn default() -> Self {
+        Self::new()
+    }
+}

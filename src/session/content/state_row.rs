@@ -178,3 +178,9 @@ impl StateRow {
         };
     }
 }
+
+impl Default for StateRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -155,3 +155,9 @@ impl CategoryRow {
         self.notify("expanded");
     }
 }
+
+impl Default for CategoryRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

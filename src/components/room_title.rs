@@ -143,3 +143,9 @@ impl RoomTitle {
         priv_.subtitle.borrow().clone()
     }
 }
+
+impl Default for RoomTitle {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -172,3 +172,9 @@ impl Pill {
         priv_.room.borrow().clone()
     }
 }
+
+impl Default for Pill {
+    fn default() -> Self {
+        Self::new()
+    }
+}

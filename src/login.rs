@@ -198,6 +198,12 @@ impl Login {
     }
 }
 
+impl Default for Login {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn build_homeserver_url(server: &str) -> Result<Url, ParseError> {
     if server.starts_with("http://") || server.starts_with("https://") {
         Url::parse(server)
