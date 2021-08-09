@@ -39,7 +39,7 @@ mod imp {
                         "Display Name",
                         "The display name of the user",
                         None,
-                        glib::ParamFlags::READWRITE,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
                         "avatar",
@@ -136,6 +136,9 @@ pub trait UserExt: IsA<User> {
     }
 
     fn set_display_name(&self, display_name: Option<String>) {
+        if Some(self.display_name()) == display_name {
+            return;
+        }
         let priv_ = imp::User::from_instance(self.upcast_ref());
         priv_.display_name.replace(display_name);
         self.notify("display-name");

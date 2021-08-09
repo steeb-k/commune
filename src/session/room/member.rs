@@ -2,7 +2,7 @@ use gtk::glib;
 use gtk::subclass::prelude::*;
 use matrix_sdk::ruma::events::room::member::MemberEventContent;
 use matrix_sdk::ruma::events::{StrippedStateEvent, SyncStateEvent};
-use matrix_sdk::ruma::identifiers::UserId;
+use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 use matrix_sdk::RoomMember;
 
 use crate::prelude::*;
@@ -39,61 +39,59 @@ impl Member {
     /// Update the user based on the the room member state event
     pub fn update_from_room_member(&self, member: &RoomMember) {
         if member.user_id() != self.user_id() {
+            log::error!("Tried Member update from RoomMember with wrong user ID.");
             return;
         };
 
-        let display_name = member.display_name().map(|name| name.to_owned());
+        self.set_display_name(member.display_name().map(String::from));
         self.avatar().set_url(member.avatar_url().cloned());
-
-        if Some(self.display_name()) != display_name {
-            self.set_display_name(display_name);
-        }
     }
 
     /// Update the user based on the the room member state event
-    pub fn update_from_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
-        if &event.sender != self.user_id() {
+    pub fn update_from_member_event(&self, event: &impl MemberEvent) {
+        if event.sender() != self.user_id() {
+            log::error!("Tried Member update from MemberEvent with wrong user ID.");
             return;
         };
 
-        let display_name = if let Some(display_name) = &event.content.displayname {
-            Some(display_name.to_owned())
-        } else {
-            event
-                .content
-                .third_party_invite
-                .as_ref()
-                .map(|i| i.display_name.to_owned())
-        };
+        self.set_display_name(event.display_name());
+        self.avatar().set_url(event.avatar_url());
+    }
+}
 
-        self.avatar().set_url(event.content.avatar_url.to_owned());
+pub trait MemberEvent {
+    fn sender(&self) -> &UserId;
+    fn content(&self) -> &MemberEventContent;
 
-        if Some(self.display_name()) != display_name {
-            self.set_display_name(display_name);
-        }
+    fn avatar_url(&self) -> Option<MxcUri> {
+        self.content().avatar_url.clone()
     }
 
-    /// Update the user based on the the stripped room member state event
-    pub fn update_from_stripped_member_event(
-        &self,
-        event: &StrippedStateEvent<MemberEventContent>,
-    ) {
-        if &event.sender != self.user_id() {
-            return;
-        };
-
-        let display_name = match &event.content.displayname {
-            Some(display_name) => Some(display_name.to_owned()),
-            None => event
-                .content
+    fn display_name(&self) -> Option<String> {
+        match &self.content().displayname {
+            Some(display_name) => Some(display_name.clone()),
+            None => self
+                .content()
                 .third_party_invite
                 .as_ref()
-                .map(|i| i.display_name.to_owned()),
-        };
-        self.avatar().set_url(event.content.avatar_url.to_owned());
-
-        if Some(self.display_name()) != display_name {
-            self.set_display_name(display_name)
+                .map(|i| i.display_name.clone()),
         }
+    }
+}
+
+impl MemberEvent for SyncStateEvent<MemberEventContent> {
+    fn sender(&self) -> &UserId {
+        &self.sender
+    }
+    fn content(&self) -> &MemberEventContent {
+        &self.content
+    }
+}
+impl MemberEvent for StrippedStateEvent<MemberEventContent> {
+    fn sender(&self) -> &UserId {
+        &self.sender
+    }
+    fn content(&self) -> &MemberEventContent {
+        &self.content
     }
 }

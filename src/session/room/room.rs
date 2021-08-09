@@ -533,7 +533,7 @@ impl Room {
 
         let inviter = Member::new(self, inviter_id);
         if let Some(AnyStrippedStateEvent::RoomMember(event)) = inviter_event {
-            inviter.update_from_stripped_member_event(event);
+            inviter.update_from_member_event(event);
         }
 
         priv_.inviter.replace(Some(inviter));
