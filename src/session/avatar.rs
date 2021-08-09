@@ -143,7 +143,7 @@ impl Avatar {
             let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(&data));
             Pixbuf::from_stream(&stream, gio::NONE_CANCELLABLE)
                 .ok()
-                .and_then(|pixbuf| Some(gdk::Texture::for_pixbuf(&pixbuf).upcast()))
+                .map(|pixbuf| gdk::Texture::for_pixbuf(&pixbuf).upcast())
         } else {
             None
         };

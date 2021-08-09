@@ -236,7 +236,7 @@ impl Room {
 
     pub fn room_id(&self) -> &RoomId {
         let priv_ = imp::Room::from_instance(self);
-        priv_.room_id.get().unwrap().into()
+        priv_.room_id.get().unwrap()
     }
 
     fn matrix_room(&self) -> MatrixRoom {
@@ -446,7 +446,8 @@ impl Room {
 
     pub fn display_name(&self) -> String {
         let priv_ = imp::Room::from_instance(&self);
-        priv_.name.borrow().to_owned().unwrap_or(gettext("Unknown"))
+        let display_name = priv_.name.borrow().clone();
+        display_name.unwrap_or_else(|| gettext("Unknown"))
     }
 
     fn set_display_name(&self, display_name: Option<String>) {
@@ -500,7 +501,7 @@ impl Room {
 
         room_members
             .entry(user_id.clone())
-            .or_insert(User::new(self.session(), &user_id))
+            .or_insert_with(|| User::new(self.session(), &user_id))
             .clone()
     }
 
@@ -581,7 +582,7 @@ impl Room {
             let user_id = member.user_id();
             let user = room_members
                 .entry(user_id.clone())
-                .or_insert(User::new(self.session(), user_id));
+                .or_insert_with(|| User::new(self.session(), user_id));
             user.update_from_room_member(&member);
         }
     }
@@ -593,7 +594,7 @@ impl Room {
         let user_id = &event.sender;
         let user = room_members
             .entry(user_id.clone())
-            .or_insert(User::new(self.session(), user_id));
+            .or_insert_with(|| User::new(self.session(), user_id));
         user.update_from_member_event(event);
     }
 

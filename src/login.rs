@@ -1,6 +1,5 @@
 use crate::Session;
 
-use adw;
 use adw::subclass::prelude::BinImpl;
 use gettextrs::gettext;
 use gtk::subclass::prelude::*;

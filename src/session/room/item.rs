@@ -134,12 +134,7 @@ impl Item {
     }
 
     pub fn selectable(&self) -> bool {
-        let priv_ = imp::Item::from_instance(&self);
-        if let ItemType::Event(_event) = priv_.type_.get().unwrap() {
-            true
-        } else {
-            false
-        }
+        matches!(self.type_(), ItemType::Event(_event))
     }
 
     pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {

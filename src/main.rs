@@ -20,14 +20,12 @@ use self::login::Login;
 use self::session::Session;
 use self::window::Window;
 
-use adw;
 use config::{GETTEXT_PACKAGE, LOCALEDIR, RESOURCES_FILE};
 use gettextrs::*;
 use gtk::gdk::Display;
 use gtk::gio;
 use gtk::IconTheme;
 use once_cell::sync::Lazy;
-use tokio;
 
 /// The default tokio runtime to be used for async tasks
 pub static RUNTIME: Lazy<tokio::runtime::Runtime> =

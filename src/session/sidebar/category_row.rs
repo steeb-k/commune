@@ -1,4 +1,3 @@
-use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};

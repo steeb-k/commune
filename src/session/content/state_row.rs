@@ -63,7 +63,7 @@ impl StateRow {
                 let display_name = event
                     .displayname
                     .clone()
-                    .unwrap_or(state.state_key().into());
+                    .unwrap_or_else(|| state.state_key().into());
 
                 match event.membership {
                     MembershipState::Join => {

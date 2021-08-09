@@ -22,7 +22,6 @@ use crate::RUNTIME;
 
 use crate::login::LoginError;
 use crate::session::content::ContentType;
-use adw;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
@@ -247,9 +246,9 @@ impl Session {
                     Ok(response) => Ok((
                         client,
                         StoredSession {
-                            homeserver: homeserver,
-                            path: path,
-                            passphrase: passphrase,
+                            homeserver,
+                            path,
+                            passphrase,
                             access_token: response.access_token,
                             user_id: response.user_id,
                             device_id: response.device_id,

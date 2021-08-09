@@ -333,8 +333,7 @@ impl LabelWithWidgets {
                     .analysis()
                     .extra_attrs()
                     .iter()
-                    .find(|attr| attr.type_() == pango::AttrType::Shape)
-                    .is_some()
+                    .any(|attr| attr.type_() == pango::AttrType::Shape)
                 {
                     if let Some(widget) = widgets.get(i) {
                         let (width, height) = widgets_sizes[i];

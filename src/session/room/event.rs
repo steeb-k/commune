@@ -311,79 +311,79 @@ impl Event {
             return true;
         }
 
-        if let Some(event) = priv_.event.borrow().as_ref() {
-            match event {
-                AnySyncRoomEvent::Message(message) => match message {
-                    AnySyncMessageEvent::CallAnswer(_) => true,
-                    AnySyncMessageEvent::CallInvite(_) => true,
-                    AnySyncMessageEvent::CallHangup(_) => true,
-                    AnySyncMessageEvent::CallCandidates(_) => true,
-                    AnySyncMessageEvent::KeyVerificationReady(_) => true,
-                    AnySyncMessageEvent::KeyVerificationStart(_) => true,
-                    AnySyncMessageEvent::KeyVerificationCancel(_) => true,
-                    AnySyncMessageEvent::KeyVerificationAccept(_) => true,
-                    AnySyncMessageEvent::KeyVerificationKey(_) => true,
-                    AnySyncMessageEvent::KeyVerificationMac(_) => true,
-                    AnySyncMessageEvent::KeyVerificationDone(_) => true,
-                    AnySyncMessageEvent::RoomEncrypted(_) => true,
-                    AnySyncMessageEvent::RoomMessageFeedback(_) => true,
-                    AnySyncMessageEvent::RoomRedaction(_) => true,
-                    AnySyncMessageEvent::Sticker(_) => true,
-                    _ => false,
-                },
-                AnySyncRoomEvent::State(state) => match state {
-                    AnySyncStateEvent::PolicyRuleRoom(_) => true,
-                    AnySyncStateEvent::PolicyRuleServer(_) => true,
-                    AnySyncStateEvent::PolicyRuleUser(_) => true,
-                    AnySyncStateEvent::RoomAliases(_) => true,
-                    AnySyncStateEvent::RoomAvatar(_) => true,
-                    AnySyncStateEvent::RoomCanonicalAlias(_) => true,
-                    AnySyncStateEvent::RoomEncryption(_) => true,
-                    AnySyncStateEvent::RoomJoinRules(_) => true,
-                    AnySyncStateEvent::RoomName(_) => true,
-                    AnySyncStateEvent::RoomPinnedEvents(_) => true,
-                    AnySyncStateEvent::RoomPowerLevels(_) => true,
-                    AnySyncStateEvent::RoomServerAcl(_) => true,
-                    AnySyncStateEvent::RoomTopic(_) => true,
-                    _ => false,
-                },
-                AnySyncRoomEvent::RedactedMessage(message) => match message {
-                    AnyRedactedSyncMessageEvent::CallAnswer(_) => true,
-                    AnyRedactedSyncMessageEvent::CallInvite(_) => true,
-                    AnyRedactedSyncMessageEvent::CallHangup(_) => true,
-                    AnyRedactedSyncMessageEvent::CallCandidates(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationReady(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationStart(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationCancel(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationAccept(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationKey(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationMac(_) => true,
-                    AnyRedactedSyncMessageEvent::KeyVerificationDone(_) => true,
-                    AnyRedactedSyncMessageEvent::RoomEncrypted(_) => true,
-                    AnyRedactedSyncMessageEvent::RoomMessageFeedback(_) => true,
-                    AnyRedactedSyncMessageEvent::RoomRedaction(_) => true,
-                    AnyRedactedSyncMessageEvent::Sticker(_) => true,
-                    _ => false,
-                },
-                AnySyncRoomEvent::RedactedState(state) => match state {
-                    AnyRedactedSyncStateEvent::PolicyRuleRoom(_) => true,
-                    AnyRedactedSyncStateEvent::PolicyRuleServer(_) => true,
-                    AnyRedactedSyncStateEvent::PolicyRuleUser(_) => true,
-                    AnyRedactedSyncStateEvent::RoomAliases(_) => true,
-                    AnyRedactedSyncStateEvent::RoomAvatar(_) => true,
-                    AnyRedactedSyncStateEvent::RoomCanonicalAlias(_) => true,
-                    AnyRedactedSyncStateEvent::RoomEncryption(_) => true,
-                    AnyRedactedSyncStateEvent::RoomJoinRules(_) => true,
-                    AnyRedactedSyncStateEvent::RoomName(_) => true,
-                    AnyRedactedSyncStateEvent::RoomPinnedEvents(_) => true,
-                    AnyRedactedSyncStateEvent::RoomPowerLevels(_) => true,
-                    AnyRedactedSyncStateEvent::RoomServerAcl(_) => true,
-                    AnyRedactedSyncStateEvent::RoomTopic(_) => true,
-                    _ => false,
-                },
-            }
-        } else {
-            false
+        let event = priv_.event.borrow();
+
+        // List of all events to be hidden.
+        match event.as_ref() {
+            Some(AnySyncRoomEvent::Message(message)) => matches!(
+                message,
+                AnySyncMessageEvent::CallAnswer(_)
+                    | AnySyncMessageEvent::CallInvite(_)
+                    | AnySyncMessageEvent::CallHangup(_)
+                    | AnySyncMessageEvent::CallCandidates(_)
+                    | AnySyncMessageEvent::KeyVerificationReady(_)
+                    | AnySyncMessageEvent::KeyVerificationStart(_)
+                    | AnySyncMessageEvent::KeyVerificationCancel(_)
+                    | AnySyncMessageEvent::KeyVerificationAccept(_)
+                    | AnySyncMessageEvent::KeyVerificationKey(_)
+                    | AnySyncMessageEvent::KeyVerificationMac(_)
+                    | AnySyncMessageEvent::KeyVerificationDone(_)
+                    | AnySyncMessageEvent::RoomEncrypted(_)
+                    | AnySyncMessageEvent::RoomMessageFeedback(_)
+                    | AnySyncMessageEvent::RoomRedaction(_)
+                    | AnySyncMessageEvent::Sticker(_)
+            ),
+            Some(AnySyncRoomEvent::State(state)) => matches!(
+                state,
+                AnySyncStateEvent::PolicyRuleRoom(_)
+                    | AnySyncStateEvent::PolicyRuleServer(_)
+                    | AnySyncStateEvent::PolicyRuleUser(_)
+                    | AnySyncStateEvent::RoomAliases(_)
+                    | AnySyncStateEvent::RoomAvatar(_)
+                    | AnySyncStateEvent::RoomCanonicalAlias(_)
+                    | AnySyncStateEvent::RoomEncryption(_)
+                    | AnySyncStateEvent::RoomJoinRules(_)
+                    | AnySyncStateEvent::RoomName(_)
+                    | AnySyncStateEvent::RoomPinnedEvents(_)
+                    | AnySyncStateEvent::RoomPowerLevels(_)
+                    | AnySyncStateEvent::RoomServerAcl(_)
+                    | AnySyncStateEvent::RoomTopic(_)
+            ),
+            Some(AnySyncRoomEvent::RedactedMessage(message)) => matches!(
+                message,
+                AnyRedactedSyncMessageEvent::CallAnswer(_)
+                    | AnyRedactedSyncMessageEvent::CallInvite(_)
+                    | AnyRedactedSyncMessageEvent::CallHangup(_)
+                    | AnyRedactedSyncMessageEvent::CallCandidates(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationReady(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationStart(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationCancel(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationAccept(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationKey(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationMac(_)
+                    | AnyRedactedSyncMessageEvent::KeyVerificationDone(_)
+                    | AnyRedactedSyncMessageEvent::RoomEncrypted(_)
+                    | AnyRedactedSyncMessageEvent::RoomMessageFeedback(_)
+                    | AnyRedactedSyncMessageEvent::RoomRedaction(_)
+                    | AnyRedactedSyncMessageEvent::Sticker(_)
+            ),
+            Some(AnySyncRoomEvent::RedactedState(state)) => matches!(
+                state,
+                AnyRedactedSyncStateEvent::PolicyRuleRoom(_)
+                    | AnyRedactedSyncStateEvent::PolicyRuleServer(_)
+                    | AnyRedactedSyncStateEvent::PolicyRuleUser(_)
+                    | AnyRedactedSyncStateEvent::RoomAliases(_)
+                    | AnyRedactedSyncStateEvent::RoomAvatar(_)
+                    | AnyRedactedSyncStateEvent::RoomCanonicalAlias(_)
+                    | AnyRedactedSyncStateEvent::RoomEncryption(_)
+                    | AnyRedactedSyncStateEvent::RoomJoinRules(_)
+                    | AnyRedactedSyncStateEvent::RoomName(_)
+                    | AnyRedactedSyncStateEvent::RoomPinnedEvents(_)
+                    | AnyRedactedSyncStateEvent::RoomPowerLevels(_)
+                    | AnyRedactedSyncStateEvent::RoomServerAcl(_)
+                    | AnyRedactedSyncStateEvent::RoomTopic(_)
+            ),
+            _ => false,
         }
     }
 
@@ -402,27 +402,28 @@ impl Event {
         priv_.show_header.get()
     }
 
-    pub fn can_hide_header(&self) -> bool {
-        if let Some(event) = self.matrix_event() {
-            match event {
-                AnySyncRoomEvent::Message(ref message) => match message.content() {
-                    AnyMessageEventContent::RoomMessage(message) => match message.msgtype {
-                        MessageType::Audio(_) => true,
-                        MessageType::File(_) => true,
-                        MessageType::Image(_) => true,
-                        MessageType::Location(_) => true,
-                        MessageType::Notice(_) => true,
-                        MessageType::Text(_) => true,
-                        MessageType::Video(_) => true,
-                        _ => false,
-                    },
-                    _ => false,
-                },
-                _ => false,
-            }
-        } else {
-            false
+    fn message_content(&self) -> Option<AnyMessageEventContent> {
+        match self.matrix_event() {
+            Some(AnySyncRoomEvent::Message(message)) => Some(message.content()),
+            _ => None,
         }
+    }
+
+    pub fn can_hide_header(&self) -> bool {
+        let msgtype = match self.message_content() {
+            Some(AnyMessageEventContent::RoomMessage(message)) => message.msgtype,
+            _ => return false,
+        };
+        matches!(
+            msgtype,
+            MessageType::Audio(_)
+                | MessageType::File(_)
+                | MessageType::Image(_)
+                | MessageType::Location(_)
+                | MessageType::Notice(_)
+                | MessageType::Text(_)
+                | MessageType::Video(_)
+        )
     }
 
     pub fn add_relates_to(&self, events: Vec<Event>) {

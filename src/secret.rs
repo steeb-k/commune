@@ -23,11 +23,14 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
     // Sessions that contain or produce errors are ignored.
     // TODO: Return error for corrupt sessions
 
+    type TmpKey = (String, String, String);
+    type TmpValue = (String, Option<String>);
+
     let res = collection
         .get_all_items()?
         .iter()
         .fold(HashMap::new(), |mut acc, item| {
-            let finder = move || -> Option<((String, String, String), (String, Option<String>))> {
+            let finder = move || -> Option<(TmpKey, TmpValue)> {
                 let attr = item.get_attributes().ok()?;
 
                 let homeserver = attr.get("homeserver")?.to_string();
@@ -39,7 +42,7 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
             };
 
             if let Some((key, value)) = finder() {
-                acc.entry(key).or_insert(vec![]).push(value);
+                acc.entry(key).or_insert_with(Vec::new).push(value);
             }
 
             acc

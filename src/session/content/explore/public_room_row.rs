@@ -199,16 +199,14 @@ impl PublicRoomRow {
                 priv_.room_handler.replace(Some(room_handler));
 
                 self.update_button(public_room);
-            } else {
-                if priv_.original_child.borrow().is_none() {
-                    let spinner = gtk::SpinnerBuilder::new()
-                        .spinning(true)
-                        .margin_top(12)
-                        .margin_bottom(12)
-                        .build();
-                    priv_.original_child.replace(self.child());
-                    self.set_child(Some(&spinner));
-                }
+            } else if priv_.original_child.borrow().is_none() {
+                let spinner = gtk::SpinnerBuilder::new()
+                    .spinning(true)
+                    .margin_top(12)
+                    .margin_bottom(12)
+                    .build();
+                priv_.original_child.replace(self.child());
+                self.set_child(Some(&spinner));
             }
         }
         priv_

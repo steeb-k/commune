@@ -2,6 +2,8 @@ use gtk::{glib, subclass::prelude::*};
 
 use matrix_sdk::Error as MatrixError;
 
+type WidgetBuilderFn = Box<dyn Fn(&super::Error) -> Option<gtk::Widget> + 'static>;
+
 mod imp {
     use super::*;
     use once_cell::sync::OnceCell;
@@ -10,8 +12,7 @@ mod imp {
     #[derive(Default)]
     pub struct Error {
         pub matrix_error: OnceCell<MatrixError>,
-        pub widget_builder:
-            RefCell<Option<Box<dyn Fn(&super::Error) -> Option<gtk::Widget> + 'static>>>,
+        pub widget_builder: RefCell<Option<WidgetBuilderFn>>,
     }
 
     #[glib::object_subclass]

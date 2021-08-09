@@ -212,7 +212,7 @@ impl PublicRoomList {
                 })
                 .collect();
 
-            let empty_row = list.pop().unwrap_or(PublicRoom::new(session));
+            let empty_row = list.pop().unwrap_or_else(|| PublicRoom::new(session));
             list.append(&mut new_rooms);
 
             if !self.complete() {

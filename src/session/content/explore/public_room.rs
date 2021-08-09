@@ -201,12 +201,10 @@ impl PublicRoom {
         let session = self.session();
         if let Some(room) = self.room() {
             session.set_selected_room(Some(room.clone()));
-        } else {
-            if let Some(matrix_public_room) = self.matrix_public_room() {
-                session
-                    .room_list()
-                    .join_by_id_or_alias(matrix_public_room.room_id.clone().into());
-            }
+        } else if let Some(matrix_public_room) = self.matrix_public_room() {
+            session
+                .room_list()
+                .join_by_id_or_alias(matrix_public_room.room_id.clone().into());
         }
     }
 }

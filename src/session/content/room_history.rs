@@ -254,7 +254,7 @@ impl RoomHistory {
         // TODO: use gtk::MultiSelection to allow selection
         let model = room
             .as_ref()
-            .and_then(|room| Some(gtk::NoSelection::new(Some(room.timeline()))));
+            .map(|room| gtk::NoSelection::new(Some(room.timeline())));
 
         priv_.listview.set_model(model.as_ref());
         priv_.room.replace(room);
