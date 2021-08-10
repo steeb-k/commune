@@ -41,6 +41,7 @@ use crate::RUNTIME;
 
 mod imp {
     use super::*;
+    use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::Cell;
     use std::collections::HashMap;
@@ -210,6 +211,13 @@ mod imp {
             }
         }
 
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![Signal::builder("order-changed", &[], <()>::static_type().into()).build()]
+            });
+            SIGNALS.as_ref()
+        }
+
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
@@ -293,6 +301,7 @@ impl Room {
 
         priv_.category.set(category);
         self.notify("category");
+        self.emit_by_name("order-changed", &[]).unwrap();
     }
 
     /// Set the category of this room.
@@ -596,6 +605,7 @@ impl Room {
         priv_.timeline.get().unwrap().append(batch);
         priv_.latest_change.replace(latest_change);
         self.notify("latest-change");
+        self.emit_by_name("order-changed", &[]).unwrap();
     }
 
     /// Returns the point in time this room received its latest event.
@@ -848,6 +858,15 @@ impl Room {
                 })
                 .collect(),
         )
+    }
+
+    pub fn connect_order_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("order-changed", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+            f(&obj);
+            None
+        })
+        .unwrap()
     }
 }
 
