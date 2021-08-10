@@ -105,8 +105,8 @@ glib::wrapper! {
     /// List of all joined rooms of the user.
     ///
     /// This is the parent ListModel of the sidebar from which all other models
-    /// are derived. If a room is updated, use `room.notify("category")` to fix
-    /// the sorting.
+    /// are derived. If a room is updated in an order-relevant manner, use
+    /// `room.emit_by_name("order-changed", &[])` to fix the sorting.
     ///
     /// The `RoomList` also takes care of all so called *pending rooms*, i.e.
     /// rooms the user requested to join, but received no response from the
@@ -219,14 +219,11 @@ impl RoomList {
         let position = list.len() - added;
 
         for (_room_id, room) in list.iter().skip(position) {
-            room.connect_notify_local(
-                Some("category"),
-                clone!(@weak self as obj => move |r, _| {
-                    if let Some((position, _, _)) = obj.get_full(r.room_id()) {
-                        obj.items_changed(position as u32, 1, 1);
-                    }
-                }),
-            );
+            room.connect_order_changed(clone!(@weak self as obj => move |room| {
+                if let Some((position, _, _)) = obj.get_full(room.room_id()) {
+                    obj.items_changed(position as u32, 1, 1);
+                }
+            }));
         }
 
         self.items_changed(position as u32, 0, added as u32);
