@@ -6,9 +6,12 @@ use gtk::{
     subclass::prelude::*,
     CompositeTemplate,
 };
+use matrix_sdk::ruma::events::EventType;
 
 use crate::components::CustomEntry;
+use crate::session::room::RoomAction;
 use crate::session::Room;
+use crate::utils::or_expr;
 
 mod imp {
     use super::*;
@@ -20,6 +23,10 @@ mod imp {
     pub struct RoomDetails {
         pub room: OnceCell<Room>,
         pub avatar_chooser: OnceCell<gtk::FileChooserNative>,
+        #[template_child]
+        pub avatar_remove_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub avatar_edit_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub edit_toggle: TemplateChild<gtk::ToggleButton>,
         #[template_child]
@@ -89,6 +96,7 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
+            obj.init_avatar();
             obj.init_edit_toggle();
             obj.init_avatar_chooser();
         }
@@ -121,6 +129,20 @@ impl RoomDetails {
     fn set_room(&self, room: Room) {
         let priv_ = imp::RoomDetails::from_instance(self);
         priv_.room.set(room).expect("Room already initialized");
+    }
+
+    fn init_avatar(&self) {
+        let priv_ = imp::RoomDetails::from_instance(self);
+        let avatar_remove_button = &priv_.avatar_remove_button;
+        let avatar_edit_button = &priv_.avatar_edit_button;
+
+        // Hide avatar controls when the user is not eligible to perform the actions.
+        let room = self.room();
+        let room_avatar_changeable =
+            room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomAvatar));
+
+        room_avatar_changeable.bind(&avatar_remove_button.get(), "visible", None);
+        room_avatar_changeable.bind(&avatar_edit_button.get(), "visible", None);
     }
 
     fn init_edit_toggle(&self) {
@@ -157,6 +179,16 @@ impl RoomDetails {
                 let priv_ = imp::RoomDetails::from_instance(&this);
                 priv_.edit_toggle.set_active(false);
             }));
+
+        // Hide edit controls when the user is not eligible to perform the actions.
+        let room = self.room();
+        let room_name_changeable =
+            room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomName));
+        let room_topic_changeable =
+            room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomTopic));
+
+        let edit_toggle_visible = or_expr(room_name_changeable, room_topic_changeable);
+        edit_toggle_visible.bind(&edit_toggle.get(), "visible", None);
     }
 
     fn init_avatar_chooser(&self) {

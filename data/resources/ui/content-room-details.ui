@@ -27,7 +27,7 @@
                   </object>
                 </child>
                 <child type="overlay">
-                  <object class="GtkButton">
+                  <object class="GtkButton" id="avatar_remove_button">
                     <property name="icon-name">window-close-symbolic</property>
                     <property name="action-name">details.remove-avatar</property>
                     <property name="halign">end</property>
@@ -39,7 +39,7 @@
                   </object>
                 </child>
                 <child type="overlay">
-                  <object class="GtkButton">
+                  <object class="GtkButton" id="avatar_edit_button">
                     <property name="icon-name">document-edit-symbolic</property>
                     <property name="action-name">details.choose-avatar</property>
                     <property name="halign">end</property>

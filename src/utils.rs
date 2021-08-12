@@ -77,7 +77,6 @@ pub fn and_expr(a_expr: gtk::Expression, b_expr: gtk::Expression) -> gtk::Expres
 }
 
 // Returns an expression that is the or’ed result of the given boolean expressions.
-#[allow(dead_code)]
 pub fn or_expr(a_expr: gtk::Expression, b_expr: gtk::Expression) -> gtk::Expression {
     gtk::ClosureExpression::new(
         move |args| {
