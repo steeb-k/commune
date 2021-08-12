@@ -33,7 +33,8 @@ macro_rules! event_from_sync_event {
 }
 
 use crate::RUNTIME;
-use gtk::glib;
+use gtk::gio::prelude::*;
+use gtk::glib::{self, Object};
 use std::future::Future;
 /// Execute a future on a tokio runtime and spawn a future on the local thread to handle the result
 pub fn do_async<
@@ -53,4 +54,10 @@ pub fn do_async<
     });
 
     RUNTIME.spawn(async move { sender.send(tokio_fut.await) });
+}
+
+/// Returns an expression looking up the given property on `object`.
+pub fn prop_expr<T: IsA<Object>>(object: &T, prop: &str) -> gtk::Expression {
+    let obj_expr = gtk::ConstantExpression::new(object).upcast();
+    gtk::PropertyExpression::new(T::static_type(), Some(&obj_expr), prop).upcast()
 }

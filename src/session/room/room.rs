@@ -31,7 +31,9 @@ use std::convert::TryFrom;
 
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
-use crate::session::room::{Event, HighlightFlags, Member, RoomType, Timeline};
+use crate::session::room::{
+    Event, HighlightFlags, Member, PowerLevels, RoomAction, RoomType, Timeline,
+};
 use crate::session::{Avatar, Session};
 use crate::utils::do_async;
 use crate::Error;
@@ -56,6 +58,7 @@ mod imp {
         /// The user who sent the invite to this room. This is only set when this room is an invitiation.
         pub inviter: RefCell<Option<Member>>,
         pub members_loaded: Cell<bool>,
+        pub power_levels: RefCell<PowerLevels>,
     }
 
     #[glib::object_subclass]
@@ -486,6 +489,11 @@ impl Room {
             .filter(|topic| !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some())
     }
 
+    pub fn power_levels(&self) -> PowerLevels {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.power_levels.borrow().clone()
+    }
+
     pub fn inviter(&self) -> Option<Member> {
         let priv_ = imp::Room::from_instance(self);
         priv_.inviter.borrow().clone()
@@ -562,6 +570,9 @@ impl Room {
                     }
                     AnySyncRoomEvent::State(AnySyncStateEvent::RoomTopic(_)) => {
                         self.notify("topic");
+                    }
+                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomPowerLevels(event)) => {
+                        self.power_levels().update_from_event(event);
                     }
                     _ => {}
                 }
@@ -693,6 +704,13 @@ impl Room {
                 }),
             );
         }
+    }
+
+    /// Creates an expression that is true when the user is allowed the given action.
+    pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::Expression {
+        let user_id = self.session().user().user_id();
+        let member = self.member_by_id(user_id);
+        self.power_levels().new_allowed_expr(&member, room_action)
     }
 
     pub async fn accept_invite(&self) -> Result<(), Error> {
