@@ -149,12 +149,13 @@ impl PublicRoomRow {
                     .avatar
                     .set_item(Some(public_room.avatar().clone().upcast()));
 
-                if let Some(ref name) = matrix_public_room.name {
-                    priv_.display_name.set_text(name);
-                } else {
+                let display_name = matrix_public_room
+                    .name
+                    .as_deref()
+                    .map(AsRef::as_ref)
                     // FIXME: display some other identification for this room
-                    priv_.display_name.set_text("Room without name");
-                }
+                    .unwrap_or("Room without name");
+                priv_.display_name.set_text(display_name);
 
                 let has_topic = if let Some(ref topic) = matrix_public_room.topic {
                     priv_.description.set_text(topic);

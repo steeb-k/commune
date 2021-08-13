@@ -161,7 +161,8 @@ impl PublicRoom {
     pub fn set_matrix_public_room(&self, room: PublicRoomsChunk) {
         let priv_ = imp::PublicRoom::from_instance(self);
 
-        self.avatar().set_display_name(room.name.clone());
+        let display_name = room.name.clone().map(Into::into);
+        self.avatar().set_display_name(display_name);
         self.avatar().set_url(room.avatar_url.clone());
 
         if let Some(room) = self.session().room_list().get(&room.room_id) {
