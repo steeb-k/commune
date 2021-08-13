@@ -230,7 +230,7 @@ impl Room {
     }
 
     pub fn session(&self) -> &Session {
-        let priv_ = imp::Room::from_instance(&self);
+        let priv_ = imp::Room::from_instance(self);
         priv_.session.get().unwrap()
     }
 
@@ -427,7 +427,7 @@ impl Room {
     }
 
     pub fn highlight(&self) -> HighlightFlags {
-        let priv_ = imp::Room::from_instance(&self);
+        let priv_ = imp::Room::from_instance(self);
         let count = priv_
             .matrix_room
             .borrow()
@@ -445,13 +445,13 @@ impl Room {
     }
 
     pub fn display_name(&self) -> String {
-        let priv_ = imp::Room::from_instance(&self);
+        let priv_ = imp::Room::from_instance(self);
         let display_name = priv_.name.borrow().clone();
         display_name.unwrap_or_else(|| gettext("Unknown"))
     }
 
     fn set_display_name(&self, display_name: Option<String>) {
-        let priv_ = imp::Room::from_instance(&self);
+        let priv_ = imp::Room::from_instance(self);
 
         if Some(self.display_name()) == display_name {
             return;
@@ -477,7 +477,7 @@ impl Room {
     }
 
     pub fn avatar(&self) -> &Avatar {
-        let priv_ = imp::Room::from_instance(&self);
+        let priv_ = imp::Room::from_instance(self);
         priv_.avatar.get().unwrap()
     }
 
@@ -488,7 +488,7 @@ impl Room {
     }
 
     pub fn inviter(&self) -> Option<User> {
-        let priv_ = imp::Room::from_instance(&self);
+        let priv_ = imp::Room::from_instance(self);
         priv_.inviter.borrow().clone()
     }
 
@@ -501,7 +501,7 @@ impl Room {
 
         room_members
             .entry(user_id.clone())
-            .or_insert_with(|| User::new(self.session(), &user_id))
+            .or_insert_with(|| User::new(self.session(), user_id))
             .clone()
     }
 

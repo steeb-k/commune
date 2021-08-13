@@ -121,7 +121,7 @@ impl PublicRoom {
     }
 
     pub fn session(&self) -> &Session {
-        let priv_ = imp::PublicRoom::from_instance(&self);
+        let priv_ = imp::PublicRoom::from_instance(self);
         priv_.session.get().unwrap()
     }
 

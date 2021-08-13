@@ -174,7 +174,7 @@ impl PublicRoomList {
         server: Option<String>,
         network: Option<String>,
     ) {
-        let priv_ = imp::PublicRoomList::from_instance(&self);
+        let priv_ = imp::PublicRoomList::from_instance(self);
 
         if priv_.search_term.borrow().as_ref() == search_term.as_ref()
             && priv_.server.borrow().as_ref() == server.as_ref()
@@ -190,7 +190,7 @@ impl PublicRoomList {
     }
 
     fn handle_public_rooms_response(&self, response: PublicRoomsResponse) {
-        let priv_ = imp::PublicRoomList::from_instance(&self);
+        let priv_ = imp::PublicRoomList::from_instance(self);
         let session = &self.session().unwrap();
 
         priv_.next_batch.replace(response.next_batch.to_owned());

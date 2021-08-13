@@ -161,7 +161,7 @@ impl Event {
     }
 
     pub fn sender(&self) -> User {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         priv_
             .room
             .get()
@@ -173,17 +173,17 @@ impl Event {
     ///
     /// If the `SyncRoomEvent` couldn't be deserialized this is `None`
     pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         priv_.event.borrow().clone()
     }
 
     pub fn matrix_pure_event(&self) -> SyncRoomEvent {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         priv_.pure_event.borrow().clone().unwrap()
     }
 
     pub fn set_matrix_pure_event(&self, event: SyncRoomEvent) {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         if let Ok(deserialized) = event.event.deserialize() {
             priv_.event.replace(Some(deserialized));
@@ -197,7 +197,7 @@ impl Event {
     }
 
     pub fn matrix_sender(&self) -> UserId {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         if let Some(event) = priv_.event.borrow().as_ref() {
             event.sender().to_owned()
@@ -215,7 +215,7 @@ impl Event {
     }
 
     pub fn matrix_event_id(&self) -> EventId {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         if let Some(event) = priv_.event.borrow().as_ref() {
             event.event_id().to_owned()
@@ -233,13 +233,13 @@ impl Event {
     }
 
     pub fn source(&self) -> String {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         serde_json::to_string_pretty(priv_.pure_event.borrow().as_ref().unwrap().event.json())
             .unwrap()
     }
 
     pub fn timestamp(&self) -> DateTime {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         let ts = if let Some(event) = priv_.event.borrow().as_ref() {
             event.origin_server_ts().as_secs()
@@ -278,7 +278,7 @@ impl Event {
 
     /// Find the related event if any
     pub fn related_matrix_event(&self) -> Option<EventId> {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         match priv_.event.borrow().as_ref()? {
             AnySyncRoomEvent::Message(ref message) => match message {
@@ -305,7 +305,7 @@ impl Event {
 
     /// Whether this event is hidden from the user or displayed in the room history.
     pub fn is_hidden_event(&self) -> bool {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         if self.related_matrix_event().is_some() {
             return true;
@@ -388,7 +388,7 @@ impl Event {
     }
 
     pub fn set_show_header(&self, visible: bool) {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         if priv_.show_header.get() == visible {
             return;
         }
@@ -397,7 +397,7 @@ impl Event {
     }
 
     pub fn show_header(&self) -> bool {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
 
         priv_.show_header.get()
     }
@@ -427,13 +427,13 @@ impl Event {
     }
 
     pub fn add_relates_to(&self, events: Vec<Event>) {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         priv_.relates_to.borrow_mut().extend(events);
         self.emit_by_name("relates-to-changed", &[]).unwrap();
     }
 
     pub fn relates_to(&self) -> Vec<Event> {
-        let priv_ = imp::Event::from_instance(&self);
+        let priv_ = imp::Event::from_instance(self);
         priv_.relates_to.borrow().clone()
     }
 

@@ -104,12 +104,12 @@ impl CategoryRow {
     }
 
     pub fn category(&self) -> Option<Category> {
-        let priv_ = imp::CategoryRow::from_instance(&self);
+        let priv_ = imp::CategoryRow::from_instance(self);
         priv_.category.borrow().clone()
     }
 
     pub fn set_category(&self, category: Option<Category>) {
-        let priv_ = imp::CategoryRow::from_instance(&self);
+        let priv_ = imp::CategoryRow::from_instance(self);
 
         if self.category() == category {
             return;
@@ -134,12 +134,12 @@ impl CategoryRow {
     }
 
     fn expanded(&self) -> bool {
-        let priv_ = imp::CategoryRow::from_instance(&self);
+        let priv_ = imp::CategoryRow::from_instance(self);
         priv_.expanded.get()
     }
 
     fn set_expanded(&self, expanded: bool) {
-        let priv_ = imp::CategoryRow::from_instance(&self);
+        let priv_ = imp::CategoryRow::from_instance(self);
 
         if self.expanded() == expanded {
             return;

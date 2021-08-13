@@ -119,12 +119,12 @@ impl PublicRoomRow {
     }
 
     pub fn public_room(&self) -> Option<PublicRoom> {
-        let priv_ = imp::PublicRoomRow::from_instance(&self);
+        let priv_ = imp::PublicRoomRow::from_instance(self);
         priv_.public_room.borrow().clone()
     }
 
     pub fn set_public_room(&self, public_room: Option<PublicRoom>) {
-        let priv_ = imp::PublicRoomRow::from_instance(&self);
+        let priv_ = imp::PublicRoomRow::from_instance(self);
         let old_public_room = self.public_room();
 
         if old_public_room == public_room {
@@ -168,8 +168,8 @@ impl PublicRoomRow {
                 let has_alias = if let Some(ref alias) = matrix_public_room.canonical_alias {
                     priv_.alias.set_text(alias.as_str());
                     true
-                } else if let Some(ref alias) = matrix_public_room.aliases.get(0) {
-                    priv_.alias.set_text(&alias.as_str());
+                } else if let Some(alias) = matrix_public_room.aliases.get(0) {
+                    priv_.alias.set_text(alias.as_str());
                     true
                 } else {
                     false
@@ -217,7 +217,7 @@ impl PublicRoomRow {
     }
 
     fn update_button(&self, public_room: &PublicRoom) {
-        let priv_ = imp::PublicRoomRow::from_instance(&self);
+        let priv_ = imp::PublicRoomRow::from_instance(self);
         if public_room.room().is_some() {
             priv_.button.set_label(&gettext("View"));
         } else {

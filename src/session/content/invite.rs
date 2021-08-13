@@ -172,8 +172,8 @@ impl Invite {
                 clone!(@weak self as obj => move |room, _| {
                         if room.category() != RoomType::Invited {
                                 let priv_ = imp::Invite::from_instance(&obj);
-                                priv_.reject_requests.borrow_mut().remove(&room);
-                                priv_.accept_requests.borrow_mut().remove(&room);
+                                priv_.reject_requests.borrow_mut().remove(room);
+                                priv_.accept_requests.borrow_mut().remove(room);
                                 obj.reset();
                                 if let Some(category_handler) = priv_.category_handler.take() {
                                     room.disconnect(category_handler);

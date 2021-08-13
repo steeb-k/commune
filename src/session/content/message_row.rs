@@ -180,7 +180,7 @@ impl MessageRow {
             .relates_to_changed_handler
             .replace(Some(event.connect_relates_to_changed(
                 clone!(@weak self as obj => move |event| {
-                    obj.update_content(&event);
+                    obj.update_content(event);
                 }),
             )));
         self.update_content(&event);
@@ -320,9 +320,9 @@ impl MessageRow {
     fn show_label_with_text(&self, text: &str) {
         let priv_ = imp::MessageRow::from_instance(self);
         if let Some(Ok(child)) = priv_.content.child().map(|w| w.downcast::<gtk::Label>()) {
-            child.set_text(&text);
+            child.set_text(text);
         } else {
-            let child = gtk::Label::new(Some(&text));
+            let child = gtk::Label::new(Some(text));
             set_label_styles(&child);
             priv_.content.set_child(Some(&child));
         }
@@ -331,10 +331,10 @@ impl MessageRow {
     fn show_label_with_markup(&self, text: &str) {
         let priv_ = imp::MessageRow::from_instance(self);
         if let Some(Ok(child)) = priv_.content.child().map(|w| w.downcast::<gtk::Label>()) {
-            child.set_markup(&text);
+            child.set_markup(text);
         } else {
             let child = gtk::Label::new(None);
-            child.set_markup(&text);
+            child.set_markup(text);
             set_label_styles(&child);
             priv_.content.set_child(Some(&child));
         }
@@ -375,7 +375,7 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
         HtmlBlock::Heading(n, s) => {
             let w = gtk::Label::new(None);
             set_label_styles(&w);
-            w.set_markup(&s);
+            w.set_markup(s);
             w.add_css_class(&format!("h{}", n));
             w.upcast::<gtk::Widget>()
         }
@@ -392,7 +392,7 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
                 set_label_styles(&w);
                 h_box.append(&bullet);
                 h_box.append(&w);
-                w.set_markup(&li);
+                w.set_markup(li);
                 bx.append(&h_box);
             }
 
@@ -411,7 +411,7 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
                 set_label_styles(&w);
                 h_box.append(&bullet);
                 h_box.append(&w);
-                w.set_markup(&ol);
+                w.set_markup(ol);
                 bx.append(&h_box);
             }
 
@@ -422,7 +422,7 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
             scrolled.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Never);
             let buffer = sourceview::Buffer::new(None);
             buffer.set_highlight_matching_brackets(false);
-            buffer.set_text(&s);
+            buffer.set_text(s);
             let view = sourceview::View::with_buffer(&buffer);
             view.set_editable(false);
             view.add_css_class("codeview");
@@ -441,7 +441,7 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
         HtmlBlock::Text(s) => {
             let w = gtk::Label::new(None);
             set_label_styles(&w);
-            w.set_markup(&s);
+            w.set_markup(s);
             w.upcast::<gtk::Widget>()
         }
     }

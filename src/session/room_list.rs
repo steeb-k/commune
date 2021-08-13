@@ -121,29 +121,29 @@ impl RoomList {
     }
 
     pub fn session(&self) -> &Session {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_.session.get().unwrap()
     }
 
     pub fn is_pending_room(&self, identifier: &RoomIdOrAliasId) -> bool {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow().contains(identifier)
     }
 
     fn pending_rooms_remove(&self, identifier: &RoomIdOrAliasId) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow_mut().remove(identifier);
         self.emit_by_name("pending-rooms-changed", &[]).unwrap();
     }
 
     fn pending_rooms_insert(&self, identifier: RoomIdOrAliasId) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow_mut().insert(identifier);
         self.emit_by_name("pending-rooms-changed", &[]).unwrap();
     }
 
     fn pending_rooms_replace_or_remove(&self, identifier: &RoomIdOrAliasId, room_id: RoomId) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         {
             let mut pending_rooms = priv_.pending_rooms.borrow_mut();
             pending_rooms.remove(identifier);
@@ -155,13 +155,13 @@ impl RoomList {
     }
 
     pub fn get(&self, room_id: &RoomId) -> Option<Room> {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_.list.borrow().get(room_id).cloned()
     }
 
     /// Waits till the Room becomes available
     pub async fn get_wait(&self, room_id: RoomId) -> Option<Room> {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         if let Some(room) = priv_.list.borrow().get(&room_id) {
             Some(room.clone())
         } else {
@@ -184,7 +184,7 @@ impl RoomList {
     }
 
     fn get_full(&self, room_id: &RoomId) -> Option<(usize, RoomId, Room)> {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_
             .list
             .borrow()
@@ -193,12 +193,12 @@ impl RoomList {
     }
 
     pub fn contains_key(&self, room_id: &RoomId) -> bool {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         priv_.list.borrow().contains_key(room_id)
     }
 
     pub fn remove(&self, room_id: &RoomId) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
 
         let removed = {
             let mut list = priv_.list.borrow_mut();
@@ -212,7 +212,7 @@ impl RoomList {
     }
 
     fn items_added(&self, added: usize) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
 
         let list = priv_.list.borrow();
 
@@ -222,7 +222,7 @@ impl RoomList {
             room.connect_notify_local(
                 Some("category"),
                 clone!(@weak self as obj => move |r, _| {
-                    if let Some((position, _, _)) = obj.get_full(&r.room_id()) {
+                    if let Some((position, _, _)) = obj.get_full(r.room_id()) {
                         obj.items_changed(position as u32, 1, 1);
                     }
                 }),
@@ -237,7 +237,7 @@ impl RoomList {
     /// Note that the `Store` currently doesn't store all events, therefore, we aren't really
     /// loading much via this function.
     pub fn load(&self) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         let session = self.session();
         let client = session.client();
         let matrix_rooms = client.rooms();
@@ -258,7 +258,7 @@ impl RoomList {
     }
 
     pub fn handle_response_rooms(&self, rooms: ResponseRooms) {
-        let priv_ = imp::RoomList::from_instance(&self);
+        let priv_ = imp::RoomList::from_instance(self);
         let session = self.session();
 
         let mut added = 0;

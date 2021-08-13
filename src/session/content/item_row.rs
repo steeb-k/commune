@@ -106,7 +106,7 @@ impl ItemRow {
 
     /// Get the row's `Item`.
     pub fn item(&self) -> Option<Item> {
-        let priv_ = imp::ItemRow::from_instance(&self);
+        let priv_ = imp::ItemRow::from_instance(self);
         priv_.item.borrow().clone()
     }
 
@@ -123,7 +123,7 @@ impl ItemRow {
     /// It tries to reuse the widget and only update the content whenever possible, but it will
     /// create a new widget and drop the old one if it has to.
     fn set_item(&self, item: Option<Item>) {
-        let priv_ = imp::ItemRow::from_instance(&self);
+        let priv_ = imp::ItemRow::from_instance(self);
 
         if let Some(ItemType::Event(event)) = priv_.item.borrow().as_ref().map(|item| item.type_())
         {

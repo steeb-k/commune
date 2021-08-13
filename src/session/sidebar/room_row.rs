@@ -94,12 +94,12 @@ impl RoomRow {
     }
 
     pub fn room(&self) -> Option<Room> {
-        let priv_ = imp::RoomRow::from_instance(&self);
+        let priv_ = imp::RoomRow::from_instance(self);
         priv_.room.borrow().clone()
     }
 
     pub fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::RoomRow::from_instance(&self);
+        let priv_ = imp::RoomRow::from_instance(self);
 
         if self.room() == room {
             return;
@@ -166,7 +166,7 @@ impl RoomRow {
     }
 
     fn set_highlight(&self) {
-        let priv_ = imp::RoomRow::from_instance(&self);
+        let priv_ = imp::RoomRow::from_instance(self);
         if let Some(room) = &*priv_.room.borrow() {
             match room.highlight() {
                 HighlightFlags::NONE => {

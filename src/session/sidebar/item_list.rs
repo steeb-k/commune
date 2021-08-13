@@ -65,7 +65,7 @@ impl ItemList {
     }
 
     pub fn set_room_list(&self, room_list: &RoomList) {
-        let priv_ = imp::ItemList::from_instance(&self);
+        let priv_ = imp::ItemList::from_instance(self);
 
         priv_
             .list

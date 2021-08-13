@@ -98,7 +98,7 @@ impl Login {
     }
 
     fn enable_next_action(&self) {
-        let priv_ = imp::Login::from_instance(&self);
+        let priv_ = imp::Login::from_instance(self);
         let homeserver = priv_.homeserver_entry.text();
         let username = priv_.username_entry.text_length();
         let password = priv_.password_entry.text().len();
@@ -117,7 +117,7 @@ impl Login {
     }
 
     fn login(&self) {
-        let priv_ = imp::Login::from_instance(&self);
+        let priv_ = imp::Login::from_instance(self);
         let homeserver = priv_.homeserver_entry.text().to_string();
         let username = priv_.username_entry.text().to_string();
         let password = priv_.password_entry.text().to_string();
@@ -136,7 +136,7 @@ impl Login {
     }
 
     fn clean(&self) {
-        let priv_ = imp::Login::from_instance(&self);
+        let priv_ = imp::Login::from_instance(self);
         priv_.homeserver_entry.set_text("");
         priv_.username_entry.set_text("");
         priv_.password_entry.set_text("");
@@ -144,7 +144,7 @@ impl Login {
     }
 
     fn freeze(&self) {
-        let priv_ = imp::Login::from_instance(&self);
+        let priv_ = imp::Login::from_instance(self);
 
         self.action_set_enabled("login.next", false);
         priv_
@@ -154,7 +154,7 @@ impl Login {
     }
 
     fn unfreeze(&self) {
-        let priv_ = imp::Login::from_instance(&self);
+        let priv_ = imp::Login::from_instance(self);
 
         self.action_set_enabled("login.next", true);
         priv_.next_stack.set_visible_child(&priv_.next_label.get());
@@ -177,7 +177,7 @@ impl Login {
     }
 
     pub fn default_widget(&self) -> gtk::Widget {
-        imp::Login::from_instance(&self).next_button.get().upcast()
+        imp::Login::from_instance(self).next_button.get().upcast()
     }
 
     pub fn set_handler_for_prepared_session(&self, session: &Session) {

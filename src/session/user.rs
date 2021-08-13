@@ -122,17 +122,17 @@ impl User {
     }
 
     pub fn session(&self) -> &Session {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
         priv_.session.get().unwrap()
     }
 
     pub fn user_id(&self) -> &UserId {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
         priv_.user_id.get().unwrap()
     }
 
     pub fn display_name(&self) -> String {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
 
         if let Some(display_name) = priv_.display_name.borrow().to_owned() {
             display_name
@@ -142,13 +142,13 @@ impl User {
     }
 
     pub fn set_display_name(&self, display_name: Option<String>) {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
         priv_.display_name.replace(display_name);
         self.notify("display-name");
     }
 
     pub fn avatar(&self) -> &Avatar {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
         priv_.avatar.get().unwrap()
     }
 
@@ -158,7 +158,7 @@ impl User {
 
     /// Update the user based on the the room member state event
     pub fn update_from_room_member(&self, member: &RoomMember) {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
 
         let user_id = priv_.user_id.get().unwrap();
         if member.user_id().as_str() != user_id {
@@ -176,7 +176,7 @@ impl User {
 
     /// Update the user based on the the room member state event
     pub fn update_from_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
-        let priv_ = imp::User::from_instance(&self);
+        let priv_ = imp::User::from_instance(self);
         let user_id = priv_.user_id.get().unwrap();
         if event.sender.as_str() != user_id {
             return;
@@ -205,7 +205,7 @@ impl User {
         event: &StrippedStateEvent<MemberEventContent>,
     ) {
         let changed = {
-            let priv_ = imp::User::from_instance(&self);
+            let priv_ = imp::User::from_instance(self);
             let user_id = priv_.user_id.get().unwrap();
             if event.sender.as_str() != user_id {
                 return;

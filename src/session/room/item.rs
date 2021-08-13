@@ -138,7 +138,7 @@ impl Item {
     }
 
     pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             event.matrix_event()
         } else {
@@ -147,7 +147,7 @@ impl Item {
     }
 
     pub fn event(&self) -> Option<&Event> {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event)
         } else {
@@ -156,7 +156,7 @@ impl Item {
     }
 
     pub fn matrix_sender(&self) -> Option<UserId> {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event.matrix_sender())
         } else {
@@ -165,7 +165,7 @@ impl Item {
     }
 
     pub fn matrix_event_id(&self) -> Option<EventId> {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event.matrix_event_id())
@@ -175,7 +175,7 @@ impl Item {
     }
 
     pub fn event_timestamp(&self) -> Option<DateTime> {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event.timestamp())
@@ -185,7 +185,7 @@ impl Item {
     }
 
     pub fn set_show_header(&self, visible: bool) {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
         if self.show_header() == visible {
             return;
         }
@@ -198,7 +198,7 @@ impl Item {
     }
 
     pub fn show_header(&self) -> bool {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             event.show_header()
@@ -208,7 +208,7 @@ impl Item {
     }
 
     pub fn can_hide_header(&self) -> bool {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             event.can_hide_header()
@@ -218,7 +218,7 @@ impl Item {
     }
 
     pub fn type_(&self) -> &ItemType {
-        let priv_ = imp::Item::from_instance(&self);
+        let priv_ = imp::Item::from_instance(self);
         priv_.type_.get().unwrap()
     }
 
