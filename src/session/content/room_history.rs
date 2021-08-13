@@ -76,7 +76,10 @@ mod imp {
             });
 
             klass.install_action("room-history.details", None, move |widget, _, _| {
-                widget.open_room_details();
+                widget.open_room_details("general");
+            });
+            klass.install_action("room-history.members", None, move |widget, _, _| {
+                widget.open_room_details("members");
             });
 
             klass.install_action("room-history.scroll-down", None, move |widget, _, _| {
@@ -363,9 +366,11 @@ impl RoomHistory {
         }
     }
 
-    pub fn open_room_details(&self) {
+    /// Opens the room details on the page with the given name.
+    pub fn open_room_details(&self, page_name: &str) {
         if let Some(room) = self.room() {
             let window = RoomDetails::new(&self.parent_window(), &room);
+            window.set_property("visible-page-name", page_name).unwrap();
             window.show();
         }
     }
