@@ -59,6 +59,7 @@ mod imp {
         pub inviter: RefCell<Option<Member>>,
         pub members_loaded: Cell<bool>,
         pub power_levels: RefCell<PowerLevels>,
+        pub latest_change: RefCell<Option<glib::DateTime>>,
     }
 
     #[glib::object_subclass]
@@ -146,6 +147,13 @@ mod imp {
                         None,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_boxed(
+                        "latest-change",
+                        "Latest Change",
+                        "Latest origin_server_ts of all loaded invents",
+                        glib::DateTime::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -197,6 +205,7 @@ mod imp {
                     }
                     .to_value()
                 }
+                "latest-change" => obj.latest_change().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -559,31 +568,40 @@ impl Room {
         //FIXME: notify only when the count has changed
         self.notify_notification_count();
 
-        for event in &batch {
-            if let Some(event) = event.matrix_event() {
-                match event {
-                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomMember(ref event)) => {
-                        self.update_member_for_member_event(event)
-                    }
-                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomAvatar(event)) => {
-                        self.avatar().set_url(event.content.url.to_owned());
-                    }
-                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomName(_)) => {
-                        // FIXME: this doesn't take into account changes in the calculated name
-                        self.load_display_name()
-                    }
-                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomTopic(_)) => {
-                        self.notify("topic");
-                    }
-                    AnySyncRoomEvent::State(AnySyncStateEvent::RoomPowerLevels(event)) => {
-                        self.power_levels().update_from_event(event);
-                    }
-                    _ => {}
+        let mut latest_change = self.latest_change();
+        for event in batch.iter().flat_map(Event::matrix_event) {
+            match &event {
+                AnySyncRoomEvent::State(AnySyncStateEvent::RoomMember(event)) => {
+                    self.update_member_for_member_event(event)
                 }
+                AnySyncRoomEvent::State(AnySyncStateEvent::RoomAvatar(event)) => {
+                    self.avatar().set_url(event.content.url.to_owned());
+                }
+                AnySyncRoomEvent::State(AnySyncStateEvent::RoomName(_)) => {
+                    // FIXME: this doesn't take into account changes in the calculated name
+                    self.load_display_name()
+                }
+                AnySyncRoomEvent::State(AnySyncStateEvent::RoomTopic(_)) => {
+                    self.notify("topic");
+                }
+                AnySyncRoomEvent::State(AnySyncStateEvent::RoomPowerLevels(event)) => {
+                    self.power_levels().update_from_event(event.clone());
+                }
+                _ => {}
             }
+            let event_ts = glib::DateTime::from_unix_millis_utc(event.origin_server_ts());
+            latest_change = latest_change.max(event_ts.ok());
         }
 
         priv_.timeline.get().unwrap().append(batch);
+        priv_.latest_change.replace(latest_change);
+        self.notify("latest-change");
+    }
+
+    /// Returns the point in time this room received its latest event.
+    pub fn latest_change(&self) -> Option<glib::DateTime> {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.latest_change.borrow().clone()
     }
 
     /// Add an initial set of members needed to display room events
@@ -832,3 +850,15 @@ impl Room {
         )
     }
 }
+
+trait GlibDateTime {
+    /// Creates a glib::DateTime from the given unix time.
+    fn from_unix_millis_utc(
+        unix_time: &MilliSecondsSinceUnixEpoch,
+    ) -> Result<glib::DateTime, glib::BoolError> {
+        let millis: f64 = unix_time.get().into();
+        let unix_epoch = glib::DateTime::from_unix_utc(0)?;
+        unix_epoch.add_seconds(millis / 1000.0)
+    }
+}
+impl GlibDateTime for glib::DateTime {}
