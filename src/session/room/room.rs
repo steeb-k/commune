@@ -14,11 +14,12 @@ use matrix_sdk::{
                     TextMessageEventContent,
                 },
                 name::NameEventContent,
+                power_levels::PowerLevelsEventContent,
                 topic::TopicEventContent,
             },
             tag::TagName,
             AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
-            AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, SyncMessageEvent,
+            AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, EventType, SyncMessageEvent,
             SyncStateEvent, Unsigned,
         },
         identifiers::{EventId, RoomId, UserId},
@@ -239,6 +240,8 @@ mod imp {
             self.avatar
                 .set(Avatar::new(obj.session(), obj.matrix_room().avatar_url()))
                 .unwrap();
+
+            obj.load_power_levels();
 
             obj.bind_property("display-name", obj.avatar(), "display-name")
                 .flags(glib::BindingFlags::SYNC_CREATE)
@@ -759,6 +762,40 @@ impl Room {
             }),
         );
         */
+    }
+
+    fn load_power_levels(&self) {
+        let matrix_room = self.matrix_room();
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move {
+                let state_event = match matrix_room
+                    .get_state_event(EventType::RoomPowerLevels, "")
+                    .await
+                {
+                    Ok(state_event) => state_event,
+                    Err(e) => {
+                        error!("Initial load of room power levels failed: {}", e);
+                        return None;
+                    }
+                };
+
+                state_event
+                    .and_then(|e| e.deserialize().ok())
+                    .and_then(|e| {
+                        if let AnySyncStateEvent::RoomPowerLevels(e) = e {
+                            Some(e)
+                        } else {
+                            None
+                        }
+                    })
+            },
+            clone!(@weak self as obj => move |event: Option<SyncStateEvent<PowerLevelsEventContent>>| async move {
+                if let Some(event) = event {
+                    obj.power_levels().update_from_event(event);
+                }
+            }),
+        );
     }
 
     pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
