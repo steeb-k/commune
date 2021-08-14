@@ -368,7 +368,11 @@ impl Room {
                                 let error = Error::new(
                                         error,
                                         clone!(@weak obj => @default-return None, move |_| {
-                                                let error_message = gettext(format!("Failed to move <widget> from {} to {}.", previous_category.to_string(), category.to_string()));
+                                                let error_message = gettext!(
+                                                    "Failed to move <widget> from {} to {}.",
+                                                    previous_category.to_string(),
+                                                    category.to_string()
+                                                );
                                                 let room_pill = Pill::new();
                                                 room_pill.set_room(Some(obj.clone()));
                                                 let label = LabelWithWidgets::new(&error_message, vec![room_pill]);

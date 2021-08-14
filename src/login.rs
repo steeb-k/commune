@@ -229,10 +229,7 @@ impl fmt::Display for LoginError {
             LoginError::UserDeactivated => gettext("⚠️ The user is deactivated."),
             LoginError::LimitExceeded(retry_ms) => {
                 if let Some(ms) = retry_ms {
-                    gettext(format!(
-                        "⚠️ Exceeded rate limit, retry in {} seconds.",
-                        ms.as_secs()
-                    ))
+                    gettext!("⚠️ Exceeded rate limit, retry in {} seconds.", ms.as_secs())
                 } else {
                     gettext("⚠️ Exceeded rate limit, try again later.")
                 }

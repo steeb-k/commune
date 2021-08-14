@@ -335,7 +335,9 @@ impl RoomList {
                         let error = Error::new(
                             error,
                             clone!(@strong obj => move |_| {
-                                    let error_message = gettext(format!("Failed to join room {}. Try again later.", identifier));
+                                    let error_message = gettext!(
+                                        "Failed to join room {}. Try again later.", identifier
+                                    );
                                     let error_label = gtk::LabelBuilder::new().label(&error_message).wrap(true).build();
                                     Some(error_label.upcast())
                             }),
