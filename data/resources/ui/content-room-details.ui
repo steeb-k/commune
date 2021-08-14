@@ -104,5 +104,6 @@
         </child>
       </object>
     </child>
+    <!-- ContentMemberPage goes here -->
   </template>
 </interface>

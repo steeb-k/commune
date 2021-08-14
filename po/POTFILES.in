@@ -48,6 +48,7 @@ data/resources/ui/window.ui
 src/application.rs
 src/components/auth_dialog.rs
 src/components/avatar.rs
+src/components/badge.rs
 src/components/context_menu_bin.rs
 src/components/custom_entry.rs
 src/components/label_with_widgets.rs
@@ -81,6 +82,7 @@ src/session/content/message_row/image.rs
 src/session/content/message_row/mod.rs
 src/session/content/message_row/text.rs
 src/session/content/mod.rs
+src/session/content/room_details/member_page.rs
 src/session/content/room_details/mod.rs
 src/session/content/room_history.rs
 src/session/content/state_row.rs

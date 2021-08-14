@@ -35,6 +35,25 @@
   margin-bottom: 6px;
 }
 
+.badge {
+  color: white;
+  background-color: lightgrey;
+  border-radius: 0.4em;
+  padding: 0.1em 0.5em;
+  font-size: 0.8em;
+  margin-left: 0.5em;
+}
+
+.admin {
+  color: white;
+  background: #cc5959;
+}
+
+.mod {
+  color: black;
+  background-color: #cea63a;
+}
+
 .title-header {
   font-size: 36px;
   font-weight: bold;
@@ -239,6 +258,16 @@ headerbar.flat {
 
 .explore listview {
   padding: 12px;
+}
+
+listview.content {
+	border-radius: 9px;
+	border-width: 1px;
+	border-style: solid;
+}
+
+listview.content row:last-child {
+	border-bottom-width: 0px;
 }
 
 .bold {

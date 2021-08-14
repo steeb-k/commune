@@ -1,5 +1,6 @@
 mod auth_dialog;
 mod avatar;
+mod badge;
 mod context_menu_bin;
 mod custom_entry;
 mod in_app_notification;
@@ -11,6 +12,7 @@ mod spinner_button;
 
 pub use self::auth_dialog::{AuthData, AuthDialog};
 pub use self::avatar::Avatar;
+pub use self::badge::Badge;
 pub use self::context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 pub use self::custom_entry::CustomEntry;
 pub use self::in_app_notification::InAppNotification;

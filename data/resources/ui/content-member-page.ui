@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMemberPage" parent="AdwPreferencesPage">
+    <property name="icon-name">system-users-symbolic</property>
+    <property name="title" translatable="yes">Members</property>
+    <property name="name">members</property>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <child>
+          <object class="GtkBox">
+            <property name="margin-bottom">12</property>
+            <child>
+              <object class="GtkLabel" id="member_count">
+                <property name="halign">start</property>
+                <property name="hexpand">True</property>
+                <style>
+                  <class name="heading"/>
+                  <class name="h4"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="invite_button">
+                <property name="label" translatable="yes">Invite new member</property>
+                <property name="halign">end</property>
+                <!-- Make the invite button invisible for now till we implement the invite dialog -->
+                <property name="visible">False</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSearchEntry" id="members_search_entry">
+            <property name="margin-bottom">12</property>
+            <property name="placeholder-text" translatable="yes">Search for room members</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="propagate-natural-height">True</property>
+            <child>
+              <object class="GtkListView" id="members_list_view">
+                <property name="show-separators">True</property>
+                <property name="factory">
+                  <object class="GtkBuilderListItemFactory">
+                    <property name="resource">/org/gnome/FractalNext/content-member-row.ui</property>
+                  </object>
+                </property>
+                <style>
+                  <class name="content"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+

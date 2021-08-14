@@ -2,7 +2,7 @@ mod account_settings;
 mod avatar;
 mod content;
 mod event_source_dialog;
-mod room;
+pub mod room;
 mod room_creation;
 mod room_list;
 mod sidebar;

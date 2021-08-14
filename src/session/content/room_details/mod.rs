@@ -1,14 +1,17 @@
+mod member_page;
+
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::gdk;
 use gtk::{
     glib::{self, clone},
-    prelude::*,
     subclass::prelude::*,
     CompositeTemplate,
 };
 use matrix_sdk::ruma::events::EventType;
 
+pub use self::member_page::MemberPage;
 use crate::components::CustomEntry;
 use crate::session::room::RoomAction;
 use crate::session::{self, Room};
@@ -96,6 +99,8 @@ mod imp {
 
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
+
+            obj.add(&MemberPage::new(obj.room()));
 
             obj.init_avatar();
             obj.init_edit_toggle();
