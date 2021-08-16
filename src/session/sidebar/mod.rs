@@ -23,6 +23,7 @@ use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate, Select
 use crate::session::content::ContentType;
 use crate::session::room::Room;
 use crate::session::RoomList;
+use crate::session::Session;
 use account_switcher::AccountSwitcher;
 
 mod imp {
@@ -268,10 +269,14 @@ impl Sidebar {
         self.notify("selected-room");
     }
 
-    pub fn set_logged_in_users(&self, sessions_stack_pages: &SelectionModel) {
+    pub fn set_logged_in_users(
+        &self,
+        sessions_stack_pages: &SelectionModel,
+        session_root: &Session,
+    ) {
         imp::Sidebar::from_instance(self)
             .account_switcher
-            .set_logged_in_users(sessions_stack_pages);
+            .set_logged_in_users(sessions_stack_pages, session_root);
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::components::Avatar;
+use super::avatar_with_selection::AvatarWithSelection;
 use adw::subclass::prelude::BinImpl;
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
@@ -12,7 +12,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/user-entry-row.ui")]
     pub struct UserEntryRow {
         #[template_child]
-        pub avatar_component: TemplateChild<Avatar>,
+        pub account_avatar: TemplateChild<AvatarWithSelection>,
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
@@ -27,7 +27,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            Avatar::static_type();
+            AvatarWithSelection::static_type();
             Self::bind_template(klass);
         }
 
@@ -39,13 +39,22 @@ mod imp {
     impl ObjectImpl for UserEntryRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
-                    "session-page",
-                    "Session StackPage",
-                    "The stack page of the session that this entry represents",
-                    gtk::StackPage::static_type(),
-                    glib::ParamFlags::READWRITE,
-                )]
+                vec![
+                    glib::ParamSpec::new_object(
+                        "session-page",
+                        "Session StackPage",
+                        "The stack page of the session that this entry represents",
+                        gtk::StackPage::static_type(),
+                        glib::ParamFlags::READWRITE,
+                    ),
+                    glib::ParamSpec::new_boolean(
+                        "hint",
+                        "Selection hint",
+                        "The hint of the session that owns the account switcher which this entry belongs to",
+                        false,
+                        glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -53,7 +62,7 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
@@ -63,6 +72,7 @@ mod imp {
                     let session_page = value.get().unwrap();
                     self.session_page.replace(Some(session_page));
                 }
+                "hint" => obj.set_hint(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -87,5 +97,14 @@ glib::wrapper! {
 impl UserEntryRow {
     pub fn new(session_page: &gtk::StackPage) -> Self {
         glib::Object::new(&[("session-page", session_page)]).expect("Failed to create UserEntryRow")
+    }
+
+    pub fn set_hint(&self, hinted: bool) {
+        let priv_ = imp::UserEntryRow::from_instance(self);
+
+        priv_.account_avatar.set_selected(hinted);
+        priv_
+            .display_name
+            .set_css_classes(if hinted { &["bold"] } else { &[] });
     }
 }

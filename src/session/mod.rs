@@ -452,7 +452,9 @@ impl Session {
 
     pub fn set_logged_in_users(&self, sessions_stack_pages: &SelectionModel) {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.sidebar.set_logged_in_users(sessions_stack_pages);
+        priv_
+            .sidebar
+            .set_logged_in_users(sessions_stack_pages, self);
     }
 }
 

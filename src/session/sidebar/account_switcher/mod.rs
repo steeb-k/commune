@@ -1,6 +1,6 @@
 use gtk::{
     gio::{self, ListModel, ListStore},
-    glib,
+    glib::{self, clone},
     prelude::*,
     subclass::prelude::*,
     CompositeTemplate, SelectionModel,
@@ -8,8 +8,10 @@ use gtk::{
 use std::convert::TryFrom;
 
 use super::account_switcher::item::{ExtraItemObj, Item as AccountSwitcherItem};
+use crate::session::Session;
 
 pub mod add_account;
+pub mod avatar_with_selection;
 pub mod item;
 pub mod user_entry;
 
@@ -50,7 +52,7 @@ mod imp {
                     .map(AccountSwitcherItem::try_from)
                     .and_then(Result::ok)
                     .map(|item| match item {
-                        AccountSwitcherItem::User(session_page) => {
+                        AccountSwitcherItem::User(session_page, _) => {
                             let session_widget = session_page.child();
                             session_widget
                                 .parent()
@@ -65,37 +67,6 @@ mod imp {
                         _ => {}
                     });
             });
-
-            // There is no permanent stuff to take care of,
-            // so only bind and unbind are connected.
-            let ref factory = gtk::SignalListItemFactory::new();
-            factory.connect_bind(|_, list_item| {
-                list_item.set_selectable(false);
-                let child = list_item
-                    .item()
-                    .map(AccountSwitcherItem::try_from)
-                    .and_then(Result::ok)
-                    .as_ref()
-                    .map(|item| {
-                        match item {
-                            AccountSwitcherItem::Separator => {
-                                list_item.set_activatable(false);
-                            }
-                            _ => {}
-                        }
-
-                        item
-                    })
-                    .map(AccountSwitcherItem::build_widget);
-
-                list_item.set_child(child.as_ref());
-            });
-
-            factory.connect_unbind(|_, list_item| {
-                list_item.set_child(gtk::NONE_WIDGET);
-            });
-
-            self.entries.set_factory(Some(factory));
         }
     }
 
@@ -109,8 +80,46 @@ glib::wrapper! {
 }
 
 impl AccountSwitcher {
-    pub fn set_logged_in_users(&self, sessions_stack_pages: &SelectionModel) {
+    pub fn set_logged_in_users(
+        &self,
+        sessions_stack_pages: &SelectionModel,
+        session_root: &Session,
+    ) {
         let entries = imp::AccountSwitcher::from_instance(self).entries.get();
+
+        // There is no permanent stuff to take care of,
+        // so only bind and unbind are connected.
+        let ref factory = gtk::SignalListItemFactory::new();
+        factory.connect_bind(clone!(@weak session_root => move |_, list_item| {
+            list_item.set_selectable(false);
+            let child = list_item
+                .item()
+                .map(AccountSwitcherItem::try_from)
+                .and_then(Result::ok)
+                .map(|item| {
+                    // Given that all the account switchers are built per-session widget
+                    // there is no need for callbacks or data bindings; just set the hint
+                    // when building the entries and they will show correctly marked in
+                    // each session widget.
+                    let item = item.set_hint(session_root);
+
+                    if item == AccountSwitcherItem::Separator {
+                        list_item.set_activatable(false);
+                    }
+
+                    item
+                })
+                .as_ref()
+                .map(AccountSwitcherItem::build_widget);
+
+            list_item.set_child(child.as_ref());
+        }));
+
+        factory.connect_unbind(|_, list_item| {
+            list_item.set_child(gtk::NONE_WIDGET);
+        });
+
+        entries.set_factory(Some(factory));
 
         let ref end_items = ExtraItemObj::list_store();
         let ref items_split = ListStore::new(ListModel::static_type());

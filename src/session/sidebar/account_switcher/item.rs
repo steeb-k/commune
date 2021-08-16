@@ -1,5 +1,6 @@
 use super::add_account::AddAccountRow;
 use super::user_entry::UserEntryRow;
+use crate::session::Session;
 use gtk::{gio::ListStore, glib, prelude::*, subclass::prelude::*};
 use std::convert::TryFrom;
 
@@ -110,9 +111,9 @@ impl ExtraItemObj {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Item {
-    User(gtk::StackPage),
+    User(gtk::StackPage, bool),
     Separator,
     AddAccount,
 }
@@ -132,15 +133,29 @@ impl TryFrom<glib::Object> for Item {
     fn try_from(object: glib::Object) -> Result<Self, Self::Error> {
         object
             .downcast::<gtk::StackPage>()
-            .map(Self::User)
+            .map(|sp| Self::User(sp, false))
             .or_else(|object| object.downcast::<ExtraItemObj>().map(|it| it.get().into()))
     }
 }
 
 impl Item {
+    pub fn set_hint(self, session_root: Session) -> Self {
+        match self {
+            Self::User(session_page, _) => {
+                let hinted = session_root == session_page.child();
+                Self::User(session_page, hinted)
+            }
+            other => other,
+        }
+    }
+
     pub fn build_widget(&self) -> gtk::Widget {
         match self {
-            Self::User(ref session_page) => UserEntryRow::new(session_page).upcast(),
+            Self::User(ref session_page, hinted) => {
+                let user_entry = UserEntryRow::new(session_page);
+                user_entry.set_hint(hinted.clone());
+                user_entry.upcast()
+            }
             Self::Separator => gtk::Separator::new(gtk::Orientation::Vertical).upcast(),
             Self::AddAccount => AddAccountRow::new().upcast(),
         }

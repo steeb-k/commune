@@ -5,7 +5,7 @@
       <object class="GtkBox">
         <property name="spacing">10</property>
         <child>
-          <object class="ComponentsAvatar" id="avatar_component">
+          <object class="AvatarWithSelection" id="account_avatar">
             <property name="size">40</property>
             <binding name="item">
               <lookup name="avatar" type="User">

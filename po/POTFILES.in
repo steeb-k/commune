@@ -7,6 +7,7 @@ data/org.gnome.FractalNext.metainfo.xml.in.in
 # UI files
 data/resources/ui/add_account.ui
 data/resources/ui/components-avatar.ui
+data/resources/ui/avatar-with-selection.ui
 data/resources/ui/content-divider-row.ui
 data/resources/ui/content-item-row-menu.ui
 data/resources/ui/content-item.ui
@@ -67,6 +68,7 @@ src/session/room/item.rs
 src/session/room/mod.rs
 src/session/room/timeline.rs
 src/session/sidebar/account_switcher/add_account.rs
+src/session/sidebar/account_switcher/avatar_with_selection.rs
 src/session/sidebar/account_switcher/item.rs
 src/session/sidebar/account_switcher/mod.rs
 src/session/sidebar/account_switcher/user_entry.rs
