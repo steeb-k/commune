@@ -36,6 +36,8 @@ mod imp {
         pub password_entry: TemplateChild<gtk::PasswordEntry>,
         #[template_child]
         pub error_message: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub back_to_session_button: TemplateChild<gtk::Button>,
     }
 
     #[glib::object_subclass]
@@ -178,6 +180,12 @@ impl Login {
 
     pub fn default_widget(&self) -> gtk::Widget {
         imp::Login::from_instance(self).next_button.get().upcast()
+    }
+
+    pub fn show_back_to_session_button(&self, show: bool) {
+        let priv_ = imp::Login::from_instance(self);
+
+        priv_.back_to_session_button.set_visible(show);
     }
 
     pub fn set_handler_for_prepared_session(&self, session: &Session) {

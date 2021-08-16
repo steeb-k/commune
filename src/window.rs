@@ -176,13 +176,17 @@ impl Window {
         }
     }
 
-    fn switch_to_sessions_page(&self) {
+    pub fn switch_to_sessions_page(&self) {
         let priv_ = imp::Window::from_instance(self);
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
     }
 
     pub fn switch_to_login_page(&self) {
         let priv_ = imp::Window::from_instance(self);
+        priv_
+            .login
+            .get()
+            .show_back_to_session_button(priv_.sessions.get().pages().n_items() > 0);
         priv_.main_stack.set_visible_child(&priv_.login.get());
     }
 }

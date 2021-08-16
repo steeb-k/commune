@@ -128,6 +128,14 @@ impl Application {
                 app.get_main_window().switch_to_login_page();
             })
         );
+
+        action!(
+            self,
+            "switch-to-sessions",
+            clone!(@weak self as app => move |_, _| {
+                app.get_main_window().switch_to_sessions_page();
+            })
+        );
     }
 
     /// Sets up keyboard shortcuts for application and window actions.

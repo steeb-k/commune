@@ -11,6 +11,13 @@
                 <property name="title">Fractal</property>
               </object>
             </property>
+            <child type="start">
+              <object class="GtkButton" id="back_to_session_button">
+                <property name="action_name">app.switch-to-sessions</property>
+                <property name="visible">false</property>
+                <property name="icon-name">go-previous-symbolic</property>
+              </object>
+            </child>
             <child type="end">
               <object class="GtkButton" id="next_button">
                 <property name="action_name">login.next</property>
