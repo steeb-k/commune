@@ -18,16 +18,11 @@ mod imp {
         pub popover: gtk::PopoverMenu,
     }
 
-    #[glib::object_subclass]
-    impl ObjectSubclass for ContextMenuBin {
-        const NAME: &'static str = "ContextMenuBin";
-        type Type = super::ContextMenuBin;
-        type ParentType = adw::Bin;
-
-        fn new() -> Self {
+    impl Default for ContextMenuBin {
+        fn default() -> Self {
             Self {
-                click_gesture: TemplateChild::default(),
-                long_press_gesture: TemplateChild::default(),
+                click_gesture: Default::default(),
+                long_press_gesture: Default::default(),
                 // WORKAROUND: there is some issue with creating the popover from the template
                 popover: gtk::PopoverMenuBuilder::new()
                     .position(gtk::PositionType::Bottom)
@@ -36,6 +31,13 @@ mod imp {
                     .build(),
             }
         }
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for ContextMenuBin {
+        const NAME: &'static str = "ContextMenuBin";
+        type Type = super::ContextMenuBin;
+        type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);

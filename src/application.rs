@@ -20,18 +20,20 @@ mod imp {
         pub settings: Settings,
     }
 
+    impl Default for Application {
+        fn default() -> Self {
+            Self {
+                window: Default::default(),
+                settings: Settings::new(config::APP_ID),
+            }
+        }
+    }
+
     #[glib::object_subclass]
     impl ObjectSubclass for Application {
         const NAME: &'static str = "Application";
         type Type = super::Application;
         type ParentType = gtk::Application;
-
-        fn new() -> Self {
-            Self {
-                window: OnceCell::new(),
-                settings: Settings::new(config::APP_ID),
-            }
-        }
     }
 
     impl ObjectImpl for Application {}

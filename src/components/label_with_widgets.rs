@@ -24,14 +24,8 @@ mod imp {
         pub text: RefCell<Option<String>>,
     }
 
-    #[glib::object_subclass]
-    impl ObjectSubclass for LabelWithWidgets {
-        const NAME: &'static str = "LabelWithWidgets";
-        type Type = super::LabelWithWidgets;
-        type ParentType = gtk::Widget;
-        type Interfaces = (gtk::Buildable,);
-
-        fn new() -> Self {
+    impl Default for LabelWithWidgets {
+        fn default() -> Self {
             Self {
                 label: gtk::LabelBuilder::new().wrap(true).build(),
                 widgets: Default::default(),
@@ -40,6 +34,14 @@ mod imp {
                 text: Default::default(),
             }
         }
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for LabelWithWidgets {
+        const NAME: &'static str = "LabelWithWidgets";
+        type Type = super::LabelWithWidgets;
+        type ParentType = gtk::Widget;
+        type Interfaces = (gtk::Buildable,);
     }
 
     impl ObjectImpl for LabelWithWidgets {

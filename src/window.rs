@@ -16,7 +16,7 @@ mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
 
-    #[derive(Debug, CompositeTemplate)]
+    #[derive(Debug, CompositeTemplate, Default)]
     #[template(resource = "/org/gnome/FractalNext/window.ui")]
     pub struct Window {
         #[template_child]
@@ -32,14 +32,6 @@ mod imp {
         const NAME: &'static str = "Window";
         type Type = super::Window;
         type ParentType = adw::ApplicationWindow;
-
-        fn new() -> Self {
-            Self {
-                main_stack: TemplateChild::default(),
-                login: TemplateChild::default(),
-                sessions: TemplateChild::default(),
-            }
-        }
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
