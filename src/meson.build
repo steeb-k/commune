@@ -73,6 +73,7 @@ sources = files(
   'session/room/item.rs',
   'session/room/member.rs',
   'session/room/member_list.rs',
+  'session/room/member_role.rs',
   'session/room/mod.rs',
   'session/room/power_levels.rs',
   'session/room/room_type.rs',

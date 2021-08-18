@@ -8,6 +8,7 @@ use matrix_sdk::RoomMember;
 
 use crate::prelude::*;
 use crate::session::room::power_levels::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN};
+use crate::session::room::MemberRole;
 use crate::session::{Room, User};
 
 mod imp {
@@ -77,6 +78,22 @@ impl Member {
         let priv_ = imp::Member::from_instance(self);
         priv_.power_level.replace(power_level);
         self.notify("power-level");
+    }
+
+    pub fn role(&self) -> MemberRole {
+        self.power_level().into()
+    }
+
+    pub fn is_admin(&self) -> bool {
+        self.role().is_admin()
+    }
+
+    pub fn is_mod(&self) -> bool {
+        self.role().is_mod()
+    }
+
+    pub fn is_peasant(&self) -> bool {
+        self.role().is_peasant()
     }
 
     /// Update the user based on the the room member state event

@@ -91,6 +91,7 @@ src/session/room/highlight_flags.rs
 src/session/room/item.rs
 src/session/room/member.rs
 src/session/room/member_list.rs
+src/session/room/member_role.rs
 src/session/room/mod.rs
 src/session/room/timeline.rs
 src/session/sidebar/account_switcher/add_account.rs

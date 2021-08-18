@@ -3,6 +3,7 @@ mod highlight_flags;
 mod item;
 mod member;
 mod member_list;
+mod member_role;
 mod power_levels;
 mod room_type;
 mod timeline;
@@ -12,6 +13,7 @@ pub use self::highlight_flags::HighlightFlags;
 pub use self::item::Item;
 pub use self::item::ItemType;
 pub use self::member::Member;
+pub use self::member_role::MemberRole;
 pub use self::power_levels::{
     PowerLevel, PowerLevels, RoomAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
 };
