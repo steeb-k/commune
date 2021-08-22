@@ -34,6 +34,7 @@ data/resources/ui/window.ui
 src/application.rs
 src/components/avatar.rs
 src/components/context_menu_bin.rs
+src/components/custom_entry.rs
 src/components/label_with_widgets.rs
 src/components/in_app_notification.rs
 src/components/mod.rs

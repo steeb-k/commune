@@ -22,6 +22,7 @@ sources = files(
   'application.rs',
   'components/avatar.rs',
   'components/context_menu_bin.rs',
+  'components/custom_entry.rs',
   'components/label_with_widgets.rs',
   'components/mod.rs',
   'components/pill.rs',
