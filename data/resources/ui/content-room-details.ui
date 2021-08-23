@@ -28,7 +28,7 @@
                 </child>
                 <child type="overlay">
                   <object class="GtkButton" id="avatar_remove_button">
-                    <property name="icon-name">window-close-symbolic</property>
+                    <property name="icon-name">user-trash-symbolic</property>
                     <property name="action-name">details.remove-avatar</property>
                     <property name="halign">end</property>
                     <property name="valign">start</property>
