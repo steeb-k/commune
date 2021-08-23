@@ -1,5 +1,6 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
+use gtk::gdk;
 use gtk::{
     glib::{self, clone},
     prelude::*,
@@ -10,8 +11,8 @@ use matrix_sdk::ruma::events::EventType;
 
 use crate::components::CustomEntry;
 use crate::session::room::RoomAction;
-use crate::session::Room;
-use crate::utils::or_expr;
+use crate::session::{self, Room};
+use crate::utils::{and_expr, or_expr, prop_expr};
 
 mod imp {
     use super::*;
@@ -138,10 +139,25 @@ impl RoomDetails {
 
         // Hide avatar controls when the user is not eligible to perform the actions.
         let room = self.room();
+
+        let avatar = prop_expr(room, "avatar");
+        let avatar_image =
+            gtk::PropertyExpression::new(session::Avatar::static_type(), Some(&avatar), "image")
+                .upcast();
+        let room_avatar_exists = gtk::ClosureExpression::new(
+            move |args| {
+                let image: Option<gdk::Paintable> = args[1].get().unwrap();
+                image.is_some()
+            },
+            &[avatar_image],
+        )
+        .upcast();
+
         let room_avatar_changeable =
             room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomAvatar));
+        let room_avatar_removable = and_expr(room_avatar_changeable.clone(), room_avatar_exists);
 
-        room_avatar_changeable.bind(&avatar_remove_button.get(), "visible", None);
+        room_avatar_removable.bind(&avatar_remove_button.get(), "visible", None);
         room_avatar_changeable.bind(&avatar_edit_button.get(), "visible", None);
     }
 
