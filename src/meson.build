@@ -40,9 +40,7 @@ sources = files(
   'session/event_source_dialog.rs',
   'session/user.rs',
   'session/mod.rs',
-  'session/content/content.rs',
   'session/content/divider_row.rs',
-  'session/content/explore/explore.rs',
   'session/content/explore/mod.rs',
   'session/content/explore/public_room.rs',
   'session/content/explore/public_room_list.rs',
@@ -54,7 +52,6 @@ sources = files(
   'session/content/mod.rs',
   'session/content/room_history.rs',
   'session/content/room_details/mod.rs',
-  'session/content/room_details/room_details.rs',
   'session/content/state_row.rs',
   'session/room/event.rs',
   'session/room/highlight_flags.rs',
@@ -62,7 +59,6 @@ sources = files(
   'session/room/member.rs',
   'session/room/mod.rs',
   'session/room/power_levels.rs',
-  'session/room/room.rs',
   'session/room/room_type.rs',
   'session/room_list.rs',
   'session/room/timeline.rs',
@@ -73,7 +69,6 @@ sources = files(
   'session/sidebar/row.rs',
   'session/sidebar/room_row.rs',
   'session/sidebar/selection.rs',
-  'session/sidebar/sidebar.rs',
 )
 
 custom_target(

@@ -1,3 +1,20 @@
+mod event;
+mod highlight_flags;
+mod item;
+mod member;
+mod power_levels;
+mod room_type;
+mod timeline;
+
+pub use self::event::Event;
+pub use self::highlight_flags::HighlightFlags;
+pub use self::item::Item;
+pub use self::item::ItemType;
+pub use self::member::Member;
+pub use self::power_levels::{PowerLevels, RoomAction};
+pub use self::room_type::RoomType;
+pub use self::timeline::Timeline;
+
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, error, info, warn};
@@ -37,9 +54,6 @@ use std::path::PathBuf;
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
 use crate::session::avatar::update_room_avatar_from_file;
-use crate::session::room::{
-    Event, HighlightFlags, Member, PowerLevels, RoomAction, RoomType, Timeline,
-};
 use crate::session::{Avatar, Session};
 use crate::utils::do_async;
 use crate::Error;

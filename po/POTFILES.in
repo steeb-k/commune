@@ -45,18 +45,15 @@ src/error.rs
 src/login.rs
 src/main.rs
 src/secret.rs
-src/session/categories/categories.rs
 src/session/categories/category.rs
 src/session/categories/category_type.rs
 src/session/categories/mod.rs
-src/session/content/content.rs
 src/session/content/divider_row.rs
 src/session/content/item_row.rs
 src/session/content/invite.rs
 src/session/content/markdown_popover.rs
 src/session/content/message_row.rs
 src/session/content/mod.rs
-src/session/content/room_details/room_details.rs
 src/session/content/room_details/mod.rs
 src/session/content/room_history.rs
 src/session/content/state_row.rs
@@ -66,7 +63,6 @@ src/session/room/event.rs
 src/session/room/highlight_flags.rs
 src/session/room/item.rs
 src/session/room/mod.rs
-src/session/room/room.rs
 src/session/room/timeline.rs
 src/session/sidebar/category_row.rs
 src/session/sidebar/entry.rs
@@ -74,7 +70,6 @@ src/session/sidebar/mod.rs
 src/session/sidebar/room_row.rs
 src/session/sidebar/row.rs
 src/session/sidebar/selection.rs
-src/session/sidebar/sidebar.rs
 src/session/user.rs
 src/utils.rs
 src/window.rs

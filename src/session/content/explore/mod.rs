@@ -1,14 +1,18 @@
-use crate::{
-    session::content::explore::{PublicRoom, PublicRoomList, PublicRoomRow},
-    session::Session,
-};
+mod public_room;
+mod public_room_list;
+mod public_room_row;
 
-use matrix_sdk::ruma::api::client::r0::thirdparty::get_protocols;
+pub use self::public_room::PublicRoom;
+pub use self::public_room_list::PublicRoomList;
+pub use self::public_room_row::PublicRoomRow;
 
-use crate::utils::do_async;
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::error;
+use matrix_sdk::ruma::api::client::r0::thirdparty::get_protocols;
+
+use crate::session::Session;
+use crate::utils::do_async;
 
 mod imp {
     use super::*;

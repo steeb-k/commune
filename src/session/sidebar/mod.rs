@@ -1,12 +1,27 @@
+mod category;
+mod category_row;
+mod entry;
+mod entry_row;
+mod item_list;
+mod room_row;
+mod row;
+mod selection;
+
+pub use self::category::Category;
+use self::category_row::CategoryRow;
+pub use self::entry::Entry;
+use self::entry_row::EntryRow;
+pub use self::item_list::ItemList;
+use self::room_row::RoomRow;
+use self::row::Row;
+use self::selection::Selection;
+
 use adw::subclass::prelude::BinImpl;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::{
-    content::ContentType,
-    room::Room,
-    sidebar::{Category, Entry, ItemList, RoomRow, Row, Selection},
-    RoomList,
-};
+use crate::session::content::ContentType;
+use crate::session::room::Room;
+use crate::session::RoomList;
 
 mod imp {
     use super::*;
