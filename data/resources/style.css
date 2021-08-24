@@ -176,16 +176,8 @@ headerbar.flat {
   margin: 6px;
 }
 
-.message-entry > .view {
-  background-color: @theme_base_color;
-  border-radius: 5px;
-  border: 1px solid @borders;
-  padding: 6px;
-}
-
-.message-entry > .view:focus {
-  border: 2px solid @accent_bg_color;
-  padding: 5px;
+.message-entry .view {
+  padding: 7px 0;
 }
 
 .invite-room-name {

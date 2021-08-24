@@ -153,20 +153,24 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkScrolledWindow">
-                    <property name="vexpand">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="vscrollbar-policy">external</property>
-                    <property name="max-content-height">200</property>
-                    <property name="propagate-natural-height">True</property>
-                    <property name="child">
-                      <object class="GtkSourceView" id="message_entry">
-                        <property name="hexpand">True</property>
-                      </object>
-                    </property>
+                  <object class="CustomEntry">
                     <style>
-                      <class name="message-entry"/>
+                      <class name="message-entry" />
                     </style>
+                    <child>
+                      <object class="GtkScrolledWindow">
+                        <property name="vexpand">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="vscrollbar-policy">external</property>
+                        <property name="max-content-height">200</property>
+                        <property name="propagate-natural-height">True</property>
+                        <property name="child">
+                          <object class="GtkSourceView" id="message_entry">
+                            <property name="hexpand">True</property>
+                          </object>
+                        </property>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>

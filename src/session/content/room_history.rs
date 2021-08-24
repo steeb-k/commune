@@ -1,12 +1,13 @@
-use crate::components::RoomTitle;
-use crate::session::content::RoomDetails;
-use crate::session::{content::ItemRow, content::MarkdownPopover, room::Room, room::RoomType};
 use adw::subclass::prelude::*;
 use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
     CompositeTemplate,
 };
 use sourceview::prelude::*;
+
+use crate::components::{CustomEntry, RoomTitle};
+use crate::session::content::{ItemRow, MarkdownPopover, RoomDetails};
+use crate::session::room::{Room, RoomType};
 
 mod imp {
     use super::*;
@@ -49,6 +50,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            CustomEntry::static_type();
             ItemRow::static_type();
             MarkdownPopover::static_type();
             Self::bind_template(klass);
