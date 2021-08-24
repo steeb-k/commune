@@ -68,7 +68,7 @@ mod imp {
         ) {
             match pspec.name() {
                 "item" => obj.set_item(value.get().unwrap()),
-                "size" => self.avatar.set_size(value.get().unwrap()),
+                "size" => obj.set_size(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -76,7 +76,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "item" => obj.item().to_value(),
-                "size" => self.avatar.size().to_value(),
+                "size" => obj.size().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -105,6 +105,11 @@ impl Avatar {
         glib::Object::new(&[]).expect("Failed to create Avatar")
     }
 
+    pub fn set_size(&self, size: i32) {
+        let priv_ = imp::Avatar::from_instance(self);
+        priv_.avatar.set_size(size);
+    }
+
     pub fn set_item(&self, item: Option<AvatarItem>) {
         let priv_ = imp::Avatar::from_instance(self);
 
@@ -119,6 +124,11 @@ impl Avatar {
         }
 
         self.notify("item");
+    }
+
+    pub fn size(&self) -> i32 {
+        let priv_ = imp::Avatar::from_instance(self);
+        priv_.avatar.size()
     }
 
     pub fn item(&self) -> Option<AvatarItem> {
