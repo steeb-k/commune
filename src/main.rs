@@ -1,7 +1,6 @@
 #![doc(
     html_logo_url = "https://gitlab.gnome.org/GNOME/fractal/-/raw/fractal-next/data/icons/org.gnome.FractalNext.svg?inline=false"
 )]
-#![allow(clippy::module_inception)]
 
 mod application;
 #[rustfmt::skip]
