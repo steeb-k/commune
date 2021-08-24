@@ -167,6 +167,7 @@
                         <property name="child">
                           <object class="GtkSourceView" id="message_entry">
                             <property name="hexpand">True</property>
+                            <property name="accepts-tab">False</property>
                           </object>
                         </property>
                       </object>
