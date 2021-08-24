@@ -126,6 +126,7 @@
         </child>
         <child>
           <object class="AdwClamp">
+            <property name="vexpand">False</property>
             <child>
               <object class="GtkBox">
                 <property name="spacing">6</property>
