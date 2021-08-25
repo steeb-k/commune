@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::Avatar as AvatarItem;
 
@@ -83,9 +83,9 @@ mod imp {
 
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
-            obj.connect_map(clone!(@weak obj => move |_| {
-                obj.request_custom_avatar();
-            }));
+            obj.connect_map(|avatar| {
+                avatar.request_custom_avatar();
+            });
         }
     }
 
