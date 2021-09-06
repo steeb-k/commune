@@ -90,33 +90,60 @@
               </object>
             </child>
             <child>
-              <object class="GtkScrolledWindow" id="scrolled_window">
-                <property name="vexpand">True</property>
-                <property name="hscrollbar-policy">never</property>
-                <style>
-                  <class name="room-history"/>
-                </style>
-                <property name="child">
-                  <object class="AdwClampScrollable">
-                    <property name="vexpand">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="child">
-                      <object class="GtkListView" id="listview">
+              <object class="GtkOverlay" id="content">
+                <child type="overlay">
+                  <object class="GtkRevealer" id="scroll_btn_revealer">
+                    <property name="transition_type">crossfade</property>
+                    <property name="reveal_child" bind-source="ContentRoomHistory" bind-property="sticky" bind-flags="sync-create | invert-boolean"/>
+                    <property name="valign">end</property>
+                    <property name="halign">end</property>
+                    <property name="margin-end">24</property>
+                    <property name="margin-bottom">24</property>
+                    <child>
+                      <object class="GtkButton" id="scroll_btn">
+                        <property name="icon-name">go-bottom-symbolic</property>
+                        <property name="action-name">room-history.scroll-down</property>
+                        <accessibility>
+                          <property name="label" translatable="yes">Scroll to bottom</property>
+                        </accessibility>
                         <style>
-                          <class name="navigation-sidebar"/>
+                          <class name="osd"/>
+                          <class name="circular"/>
                         </style>
-                        <property name="factory">
-                          <object class="GtkBuilderListItemFactory">
-                            <property name="resource">/org/gnome/FractalNext/content-item.ui</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow" id="scrolled_window">
+                    <property name="vexpand">True</property>
+                    <property name="hscrollbar-policy">never</property>
+                    <style>
+                      <class name="room-history"/>
+                    </style>
+                    <property name="child">
+                      <object class="AdwClampScrollable">
+                        <property name="vexpand">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="child">
+                          <object class="GtkListView" id="listview">
+                            <style>
+                              <class name="navigation-sidebar"/>
+                            </style>
+                            <property name="factory">
+                              <object class="GtkBuilderListItemFactory">
+                                <property name="resource">/org/gnome/FractalNext/content-item.ui</property>
+                              </object>
+                            </property>
+                            <accessibility>
+                              <property name="label" translatable="yes">Room History</property>
+                            </accessibility>
                           </object>
                         </property>
-                        <accessibility>
-                          <property name="label" translatable="yes">Room History</property>
-                        </accessibility>
                       </object>
                     </property>
                   </object>
-                </property>
+                </child>
               </object>
             </child>
           </object>
@@ -155,7 +182,7 @@
                 <child>
                   <object class="CustomEntry">
                     <style>
-                      <class name="message-entry" />
+                      <class name="message-entry"/>
                     </style>
                     <child>
                       <object class="GtkScrolledWindow">
@@ -193,3 +220,4 @@
     </child>
   </template>
 </interface>
+

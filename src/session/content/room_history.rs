@@ -23,6 +23,8 @@ mod imp {
         pub category_handler: RefCell<Option<SignalHandlerId>>,
         pub empty_timeline_handler: RefCell<Option<SignalHandlerId>>,
         pub md_enabled: Cell<bool>,
+        pub is_auto_scrolling: Cell<bool>,
+        pub sticky: Cell<bool>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -32,7 +34,13 @@ mod imp {
         #[template_child]
         pub listview: TemplateChild<gtk::ListView>,
         #[template_child]
+        pub content: TemplateChild<gtk::Widget>,
+        #[template_child]
         pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
+        #[template_child]
+        pub scroll_btn: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub scroll_btn_revealer: TemplateChild<gtk::Revealer>,
         #[template_child]
         pub message_entry: TemplateChild<sourceview::View>,
         #[template_child]
@@ -65,8 +73,13 @@ mod imp {
             klass.install_action("room-history.leave", None, move |widget, _, _| {
                 widget.leave();
             });
+
             klass.install_action("room-history.details", None, move |widget, _, _| {
                 widget.open_room_details();
+            });
+
+            klass.install_action("room-history.scroll-down", None, move |widget, _, _| {
+                widget.scroll_down();
             });
         }
 
@@ -108,6 +121,13 @@ mod imp {
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "sticky",
+                        "Sticky",
+                        "Whether the room history should stick to the newest message in the timeline",
+                        true,
+                        glib::ParamFlags::READWRITE,
+                    ),
                 ]
             });
 
@@ -139,6 +159,7 @@ mod imp {
                         "format-justify-left-symbolic"
                     });
                 }
+                "sticky" => obj.set_sticky(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -149,15 +170,32 @@ mod imp {
                 "room" => obj.room().to_value(),
                 "empty" => obj.room().is_none().to_value(),
                 "markdown-enabled" => self.md_enabled.get().to_value(),
+                "sticky" => obj.sticky().to_value(),
                 _ => unimplemented!(),
             }
         }
 
         fn constructed(&self, obj: &Self::Type) {
+            obj.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();
 
             adj.connect_value_changed(clone!(@weak obj => move |adj| {
-                obj.load_more_messages(adj);
+                let priv_ = imp::RoomHistory::from_instance(&obj);
+
+                if priv_.is_auto_scrolling.get() {
+                    if adj.value() + adj.page_size() == adj.upper() {
+                        priv_.is_auto_scrolling.set(false);
+                        obj.set_sticky(true);
+                    }
+                } else {
+                    obj.set_sticky(adj.value() + adj.page_size() == adj.upper());
+                    obj.load_more_messages(adj);
+                }
+            }));
+            adj.connect_upper_notify(clone!(@weak obj => move |_| {
+                if obj.sticky() {
+                    obj.scroll_down();
+                }
             }));
 
             let key_events = gtk::EventControllerKey::new();
@@ -326,7 +364,7 @@ impl RoomHistory {
             if room.timeline().empty() {
                 priv_.stack.set_visible_child(&*priv_.loading);
             } else {
-                priv_.stack.set_visible_child(&*priv_.scrolled_window);
+                priv_.stack.set_visible_child(&*priv_.content);
             }
         }
     }
@@ -344,6 +382,37 @@ impl RoomHistory {
     /// Returns the parent GtkWindow containing this widget.
     fn parent_window(&self) -> Option<gtk::Window> {
         self.root()?.downcast().ok()
+    }
+
+    pub fn sticky(&self) -> bool {
+        let priv_ = imp::RoomHistory::from_instance(self);
+
+        priv_.sticky.get()
+    }
+
+    pub fn set_sticky(&self, sticky: bool) {
+        let priv_ = imp::RoomHistory::from_instance(self);
+
+        if self.sticky() == sticky {
+            return;
+        }
+
+        priv_.scroll_btn_revealer.set_reveal_child(!sticky);
+
+        priv_.sticky.set(sticky);
+        self.notify("sticky");
+    }
+
+    /// Scroll to the newest message in the timeline
+    pub fn scroll_down(&self) {
+        let priv_ = imp::RoomHistory::from_instance(self);
+
+        priv_.is_auto_scrolling.set(true);
+
+        priv_
+            .scrolled_window
+            .emit_by_name("scroll-child", &[&gtk::ScrollType::End, &false])
+            .unwrap();
     }
 }
 
