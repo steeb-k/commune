@@ -13,6 +13,7 @@ pub enum ItemType {
     // TODO: Add item type for grouped events
     DayDivider(DateTime),
     NewMessageDivider,
+    LoadingSpinner,
 }
 
 #[derive(Clone, Debug, glib::GBoxed)]
@@ -130,6 +131,11 @@ impl Item {
 
     pub fn for_new_message_divider() -> Self {
         let type_ = BoxedItemType(ItemType::NewMessageDivider);
+        glib::Object::new(&[("type", &type_)]).expect("Failed to create Item")
+    }
+
+    pub fn for_loading_spinner() -> Self {
+        let type_ = BoxedItemType(ItemType::LoadingSpinner);
         glib::Object::new(&[("type", &type_)]).expect("Failed to create Item")
     }
 

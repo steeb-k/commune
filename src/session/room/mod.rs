@@ -761,23 +761,6 @@ impl Room {
         );
     }
 
-    pub fn load_previous_events(&self) {
-        warn!("Loading previous events is not yet implemented");
-        /*
-        let matrix_room = priv_.matrix_room.get().unwrap().clone();
-        do_async(
-            async move { matrix_room.messages().await },
-            clone!(@weak self as obj => move |events| async move {
-                // FIXME: We should retry to load the room members if the request failed
-                match events {
-                        Ok(events) => obj.prepend(events),
-                        Err(error) => error!("Couldn’t load room members: {}", error),
-                };
-            }),
-        );
-        */
-    }
-
     fn load_power_levels(&self) {
         let matrix_room = self.matrix_room();
         do_async(

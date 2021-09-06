@@ -1,12 +1,18 @@
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::identifiers::EventId;
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use log::error;
+use matrix_sdk::ruma::{
+    api::client::r0::message::get_message_events::Direction,
+    events::{AnySyncRoomEvent, AnySyncStateEvent},
+    identifiers::EventId,
+};
 
-use crate::session::room::{Event, Item, Room};
+use crate::session::room::{Event, Item, ItemType, Room};
+use crate::utils::do_async;
 
 mod imp {
     use super::*;
     use once_cell::sync::{Lazy, OnceCell};
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
     use std::collections::{HashMap, VecDeque};
 
     #[derive(Debug, Default)]
@@ -20,6 +26,9 @@ mod imp {
         pub event_map: RefCell<HashMap<EventId, Event>>,
         /// Maps the temporary `EventId` of the pending Event to the real `EventId`
         pub pending_events: RefCell<HashMap<EventId, EventId>>,
+        pub loading: Cell<bool>,
+        pub complete: Cell<bool>,
+        pub oldest_event: RefCell<Option<EventId>>,
     }
 
     #[glib::object_subclass]
@@ -42,9 +51,23 @@ mod imp {
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_boolean(
+                        "loading",
+                        "Loading",
+                        "Whether a response is loaded or not",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpec::new_boolean(
                         "empty",
                         "Empty",
                         "Whether the timeline is empty",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpec::new_boolean(
+                        "complete",
+                        "Complete",
+                        "Whether the full timeline is loaded",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
@@ -73,7 +96,9 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "room" => self.room.get().unwrap().to_value(),
-                "empty" => obj.empty().to_value(),
+                "loading" => obj.loading().to_value(),
+                "empty" => obj.is_empty().to_value(),
+                "complete" => obj.is_complete().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -119,6 +144,8 @@ impl Timeline {
     fn items_changed(&self, position: u32, removed: u32, added: u32) {
         let priv_ = imp::Timeline::from_instance(self);
 
+        let last_new_message_date;
+
         // Insert date divider, this needs to happen before updating the position and headers
         let added = {
             let position = position as usize;
@@ -145,11 +172,33 @@ impl Timeline {
             }
 
             let divider_len = divider.len();
+            last_new_message_date = divider.last().and_then(|item| match item.1.type_() {
+                ItemType::DayDivider(date) => Some(date.clone()),
+                _ => None,
+            });
             for (position, date) in divider {
                 list.insert(position, date);
             }
 
             (added + divider_len) as u32
+        };
+
+        // Remove first day divider if a new one is added earlier with the same day
+        let removed = {
+            let mut list = priv_.list.borrow_mut();
+            if let Some(ItemType::DayDivider(date)) = list
+                .get(position as usize + added as usize)
+                .map(|item| item.type_())
+            {
+                if Some(date.ymd()) == last_new_message_date.as_ref().map(|date| date.ymd()) {
+                    list.remove(position as usize + added as usize);
+                    removed + 1
+                } else {
+                    removed
+                }
+            } else {
+                removed
+            }
         };
 
         // Update the header for events that are allowed to hide the header
@@ -283,6 +332,13 @@ impl Timeline {
                 let mut list = priv_.list.borrow_mut();
                 // Extend the size of the list so that rust doesn't need to reallocate memory multiple times
                 list.reserve(batch.len());
+
+                if list.is_empty() {
+                    priv_
+                        .oldest_event
+                        .replace(batch.first().as_ref().map(|event| event.matrix_event_id()));
+                }
+
                 list.len()
             };
 
@@ -368,6 +424,10 @@ impl Timeline {
         let priv_ = imp::Timeline::from_instance(self);
         let mut added = batch.len();
 
+        priv_
+            .oldest_event
+            .replace(batch.last().as_ref().map(|event| event.matrix_event_id()));
+
         {
             // Extend the size of the list so that rust doesn't need to reallocate memory multiple times
             priv_.list.borrow_mut().reserve(added);
@@ -400,8 +460,110 @@ impl Timeline {
         priv_.room.get().unwrap()
     }
 
-    pub fn empty(&self) -> bool {
+    fn set_loading(&self, loading: bool) {
         let priv_ = imp::Timeline::from_instance(self);
-        priv_.list.borrow().is_empty()
+
+        if loading == priv_.loading.get() {
+            return;
+        }
+
+        priv_.loading.set(loading);
+
+        self.notify("loading");
+    }
+
+    fn set_complete(&self, complete: bool) {
+        let priv_ = imp::Timeline::from_instance(self);
+
+        if complete == priv_.complete.get() {
+            return;
+        }
+
+        priv_.complete.set(complete);
+        self.notify("complete");
+    }
+
+    // Wether the timeline is full loaded
+    pub fn is_complete(&self) -> bool {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_.complete.get()
+    }
+
+    pub fn loading(&self) -> bool {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_.loading.get()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_.list.borrow().is_empty() || (priv_.list.borrow().len() == 1 && self.loading())
+    }
+
+    fn oldest_event(&self) -> Option<EventId> {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_.oldest_event.borrow().clone()
+    }
+    fn add_loading_spinner(&self) {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_
+            .list
+            .borrow_mut()
+            .push_front(Item::for_loading_spinner());
+        self.upcast_ref::<gio::ListModel>().items_changed(0, 0, 1);
+    }
+
+    fn remove_loading_spinner(&self) {
+        let priv_ = imp::Timeline::from_instance(self);
+        priv_.list.borrow_mut().pop_front();
+        self.upcast_ref::<gio::ListModel>().items_changed(0, 1, 0);
+    }
+
+    pub fn load_previous_events(&self) {
+        if self.loading() || self.is_complete() {
+            return;
+        }
+
+        self.set_loading(true);
+        self.add_loading_spinner();
+
+        let matrix_room = self.room().matrix_room();
+        let last_event = self.oldest_event();
+        let contains_last_event = last_event.is_some();
+
+        do_async(
+            glib::PRIORITY_LOW,
+            async move {
+                matrix_room
+                    .messages(last_event.as_ref(), None, 20, Direction::Backward)
+                    .await
+            },
+            clone!(@weak self as obj => move |events| async move {
+                obj.remove_loading_spinner();
+
+                // FIXME: If the request fails it's automatically restarted because the added events (none), didn't fill the screen.
+                // We should block the loading for some time before retrying
+                match events {
+                       Ok(Some(events)) => {
+                            let events: Vec<Event> = if contains_last_event {
+                                            events
+                                           .into_iter()
+                                           .skip(1)
+                                           .map(|event| Event::new(event, obj.room())).collect()
+                            } else {
+                                            events
+                                           .into_iter()
+                                           .map(|event| Event::new(event, obj.room())).collect()
+                            };
+                            obj.set_complete(events.iter().any(|event| matches!(event.matrix_event(), Some(AnySyncRoomEvent::State(AnySyncStateEvent::RoomCreate(_))))));
+                            obj.prepend(events)
+                       },
+                       Ok(None) => {
+                           error!("The start event wasn't found in the timeline for room {}.", obj.room().room_id());
+                       },
+                       Err(error) => error!("Couldn't load previous events for room {}: {}", error, obj.room().room_id()),
+               }
+               obj.set_loading(false);
+            }),
+        );
     }
 }

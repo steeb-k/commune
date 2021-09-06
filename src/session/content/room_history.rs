@@ -22,6 +22,7 @@ mod imp {
         pub room: RefCell<Option<Room>>,
         pub category_handler: RefCell<Option<SignalHandlerId>>,
         pub empty_timeline_handler: RefCell<Option<SignalHandlerId>>,
+        pub loading_timeline_handler: RefCell<Option<SignalHandlerId>>,
         pub md_enabled: Cell<bool>,
         pub is_auto_scrolling: Cell<bool>,
         pub sticky: Cell<bool>,
@@ -189,13 +190,14 @@ mod imp {
                     }
                 } else {
                     obj.set_sticky(adj.value() + adj.page_size() == adj.upper());
-                    obj.load_more_messages(adj);
                 }
+                obj.load_more_messages(adj);
             }));
-            adj.connect_upper_notify(clone!(@weak obj => move |_| {
+            adj.connect_upper_notify(clone!(@weak obj => move |adj| {
                 if obj.sticky() {
                     obj.scroll_down();
                 }
+                obj.load_more_messages(adj);
             }));
 
             let key_events = gtk::EventControllerKey::new();
@@ -274,6 +276,12 @@ impl RoomHistory {
             }
         }
 
+        if let Some(loading_timeline_handler) = priv_.loading_timeline_handler.take() {
+            if let Some(room) = self.room() {
+                room.timeline().disconnect(loading_timeline_handler);
+            }
+        }
+
         if let Some(ref room) = room {
             let handler_id = room.connect_notify_local(
                 Some("category"),
@@ -292,6 +300,21 @@ impl RoomHistory {
             );
 
             priv_.empty_timeline_handler.replace(Some(handler_id));
+
+            let handler_id = room.timeline().connect_notify_local(
+                Some("loading"),
+                clone!(@weak self as obj => move |timeline, _| {
+                    // We need to make sure that we loaded enough events to fill the `ScrolledWindow`
+                    let priv_ = imp::RoomHistory::from_instance(&obj);
+                    if !timeline.loading() {
+                        let adj = priv_.listview.vadjustment().unwrap();
+                        obj.load_more_messages(&adj);
+                    }
+                }),
+            );
+
+            priv_.loading_timeline_handler.replace(Some(handler_id));
+
             room.load_members();
         }
 
@@ -361,7 +384,7 @@ impl RoomHistory {
         let priv_ = imp::RoomHistory::from_instance(self);
 
         if let Some(room) = &*priv_.room.borrow() {
-            if room.timeline().empty() {
+            if room.timeline().is_empty() {
                 priv_.stack.set_visible_child(&*priv_.loading);
             } else {
                 priv_.stack.set_visible_child(&*priv_.content);
@@ -372,9 +395,12 @@ impl RoomHistory {
     fn load_more_messages(&self, adj: &gtk::Adjustment) {
         // Load more messages when the user gets close to the end of the known room history
         // Use the page size twice to detect if the user gets close to the end
-        if adj.value() < adj.page_size() * 2.0 || adj.upper() <= adj.page_size() * 2.0 {
-            if let Some(room) = self.room() {
-                room.load_previous_events();
+        if let Some(room) = self.room() {
+            if adj.value() < adj.page_size() * 2.0
+                || adj.upper() <= adj.page_size() / 2.0
+                || room.timeline().is_empty()
+            {
+                room.timeline().load_previous_events();
             }
         }
     }

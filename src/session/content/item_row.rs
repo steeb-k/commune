@@ -196,6 +196,19 @@ impl ItemRow {
                         self.set_child(Some(&child));
                     };
                 }
+                ItemType::LoadingSpinner => {
+                    if !self
+                        .child()
+                        .map_or(false, |widget| widget.is::<gtk::Spinner>())
+                    {
+                        let spinner = gtk::SpinnerBuilder::new()
+                            .spinning(true)
+                            .margin_top(12)
+                            .margin_bottom(12)
+                            .build();
+                        self.set_child(Some(&spinner));
+                    }
+                }
             }
         }
         priv_.item.replace(item);
