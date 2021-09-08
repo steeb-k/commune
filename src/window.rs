@@ -25,6 +25,8 @@ mod imp {
         pub login: TemplateChild<Login>,
         #[template_child]
         pub sessions: TemplateChild<gtk::Stack>,
+        #[template_child]
+        pub loading_page: TemplateChild<gtk::WindowHandle>,
     }
 
     #[glib::object_subclass]
@@ -134,7 +136,7 @@ impl Window {
                 }
 
                 if n > 0 {
-                    self.switch_to_sessions_page();
+                    self.switch_to_loading_page();
                 }
             }
             Err(error) => warn!("Failed to restore previous sessions: {:?}", error),
@@ -179,6 +181,13 @@ impl Window {
     pub fn switch_to_sessions_page(&self) {
         let priv_ = imp::Window::from_instance(self);
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
+    }
+
+    pub fn switch_to_loading_page(&self) {
+        let priv_ = imp::Window::from_instance(self);
+        priv_
+            .main_stack
+            .set_visible_child(&priv_.loading_page.get());
     }
 
     pub fn switch_to_login_page(&self) {
