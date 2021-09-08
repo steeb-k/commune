@@ -2,7 +2,7 @@ use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gio, glib, glib::clone, glib::signal::SignalHandlerId, prelude::*, subclass::prelude::*,
+    gio, glib, glib::clone, glib::signal::SignalHandlerId, pango, prelude::*, subclass::prelude::*,
     CompositeTemplate,
 };
 use html2pango::{
@@ -360,6 +360,7 @@ fn create_widget_for_html_message(blocks: Vec<HtmlBlock>) -> gtk::Widget {
 
 fn set_label_styles(w: &gtk::Label) {
     w.set_wrap(true);
+    w.set_wrap_mode(pango::WrapMode::WordChar);
     w.set_justify(gtk::Justification::Left);
     w.set_xalign(0.0);
     w.set_valign(gtk::Align::Start);
