@@ -311,6 +311,10 @@ impl MessageRow {
                     }
                 }
             }
+            Some(AnyMessageEventContent::RoomEncrypted(content)) => {
+                warn!("Couldn't decrypt event {:?}", content);
+                self.show_label_with_text(&gettext("Fractal couldn't decrypt this message."))
+            }
             Some(AnyMessageEventContent::RoomRedaction(_)) => {
                 self.show_label_with_text(&gettext("This message was removed."))
             }
