@@ -4,6 +4,7 @@
     <property name="item-type">Error</property>
   </object>
   <template class="Session" parent="AdwBin">
+    <property name="focusable">true</property>
     <property name="child">
       <object class="GtkOverlay">
         <child type="overlay">

@@ -24,13 +24,13 @@
             <child>
               <object class="GtkShortcutsShortcut">
                 <property name="title" translatable="yes" context="shortcut window">Search Room List</property>
-                <property name="action-name">win.toggle-room-search</property>
+                <property name="action-name">session.toggle-room-search</property>
               </object>
             </child>
             <child>
               <object class="GtkShortcutsShortcut">
                 <property name="title" translatable="yes" context="shortcut window">Close Room</property>
-                <property name="action-name">win.close-room</property>
+                <property name="action-name">session.close-room</property>
               </object>
             </child>
           </object>

@@ -1,11 +1,9 @@
 use crate::config::{APP_ID, PROFILE};
-use crate::gio::SimpleAction;
 use crate::secret;
 use crate::Application;
 use crate::Login;
 use crate::Session;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
-use gio::PropertyAction;
 use glib::signal::Inhibit;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
@@ -104,24 +102,8 @@ impl Window {
         session.set_logged_in_users(&priv_.sessions.pages());
         priv_.sessions.add_child(session);
         priv_.sessions.set_visible_child(session);
-        self.install_session_actions(session);
-    }
-
-    /// Installs session-related actions to the Window.
-    fn install_session_actions(&self, session: &Session) {
-        let room_search_bar = session.room_search_bar();
-        let room_search_toggle_action = PropertyAction::new(
-            "toggle-room-search",
-            &room_search_bar,
-            "search-mode-enabled",
-        );
-        self.add_action(&room_search_toggle_action);
-
-        let close_room_action = SimpleAction::new("close-room", None);
-        close_room_action.connect_activate(clone!(@weak session => move |_, _| {
-            session.set_selected_room(None);
-        }));
-        self.add_action(&close_room_action);
+        // We need to grab the focus so that keyboard shortcuts work
+        session.grab_focus();
     }
 
     fn restore_sessions(&self) {

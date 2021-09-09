@@ -25,7 +25,7 @@ use crate::session::content::ContentType;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{gio, glib, glib::clone, glib::SyncSender, CompositeTemplate, SelectionModel};
+use gtk::{gdk, gio, glib, glib::clone, glib::SyncSender, CompositeTemplate, SelectionModel};
 use gtk_macros::send;
 use log::error;
 use matrix_sdk::ruma::{
@@ -76,6 +76,28 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.install_action("session.close-room", None, move |session, _, _| {
+                session.set_selected_room(None);
+            });
+
+            klass.add_binding_action(
+                gdk::keys::constants::Escape,
+                gdk::ModifierType::empty(),
+                "session.close-room",
+                None,
+            );
+
+            klass.install_action("session.toggle-room-search", None, move |session, _, _| {
+                session.toggle_room_search();
+            });
+
+            klass.add_binding_action(
+                gdk::keys::constants::k,
+                gdk::ModifierType::CONTROL_MASK,
+                "session.toggle-room-search",
+                None,
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -267,9 +289,10 @@ impl Session {
         );
     }
 
-    pub fn room_search_bar(&self) -> gtk::SearchBar {
+    fn toggle_room_search(&self) {
         let priv_ = imp::Session::from_instance(self);
-        priv_.sidebar.room_search_bar()
+        let room_search = priv_.sidebar.room_search_bar();
+        room_search.set_search_mode(!room_search.is_search_mode());
     }
 
     pub fn login_with_previous_session(&self, session: StoredSession) {
