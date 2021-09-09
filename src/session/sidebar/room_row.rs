@@ -77,6 +77,14 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn dispose(&self, _obj: &Self::Type) {
+            if let Some(room) = self.room.take() {
+                if let Some(id) = self.signal_handler.take() {
+                    room.disconnect(id);
+                }
+            }
+        }
     }
 
     impl WidgetImpl for RoomRow {}
