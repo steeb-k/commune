@@ -60,9 +60,10 @@
 }
 
 .blue-checkmark {
-  color: @accent_bg_color;
+  color: white;
   border-radius: 9999px;
-  background-color: white;
+  border: solid @accent_bg_color 2px;
+  background-color: @accent_bg_color;
 }
 
 /* Login */
