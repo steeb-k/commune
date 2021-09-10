@@ -640,7 +640,7 @@ impl Room {
             .find(|event| {
                 if let AnyStrippedStateEvent::RoomMember(event) = event {
                     event.content.membership == MembershipState::Invite
-                        && event.state_key == self.session().user().user_id().as_str()
+                        && event.state_key == self.session().user().unwrap().user_id().as_str()
                 } else {
                     false
                 }
@@ -817,7 +817,7 @@ impl Room {
         let pending_event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
             content,
             event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
-            sender: self.session().user().user_id().clone(),
+            sender: self.session().user().unwrap().user_id().clone(),
             origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
             unsigned: Unsigned::default(),
         });
@@ -853,7 +853,7 @@ impl Room {
 
     /// Creates an expression that is true when the user is allowed the given action.
     pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::Expression {
-        let user_id = self.session().user().user_id();
+        let user_id = self.session().user().unwrap().user_id();
         let member = self.member_by_id(user_id);
         self.power_levels().new_allowed_expr(&member, room_action)
     }

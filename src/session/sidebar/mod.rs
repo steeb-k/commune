@@ -20,10 +20,12 @@ use self::selection::Selection;
 use adw::subclass::prelude::BinImpl;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate, SelectionModel};
 
+use crate::components::Avatar;
 use crate::session::content::ContentType;
 use crate::session::room::Room;
 use crate::session::RoomList;
 use crate::session::Session;
+use crate::session::User;
 use account_switcher::AccountSwitcher;
 
 mod imp {
@@ -48,6 +50,7 @@ mod imp {
         pub room_search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
         pub room_search: TemplateChild<gtk::SearchBar>,
+        pub user: RefCell<Option<User>>,
     }
 
     #[glib::object_subclass]
@@ -59,6 +62,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             RoomRow::static_type();
             Row::static_type();
+            Avatar::static_type();
             Self::bind_template(klass);
         }
 
@@ -71,6 +75,13 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
+                    glib::ParamSpec::new_object(
+                        "user",
+                        "User",
+                        "The logged in user",
+                        User::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                     glib::ParamSpec::new_boolean(
                         "compact",
                         "Compact",
@@ -118,6 +129,9 @@ mod imp {
                     let compact = value.get().unwrap();
                     self.compact.set(compact);
                 }
+                "user" => {
+                    obj.set_user(value.get().unwrap());
+                }
                 "room-list" => {
                     let room_list = value.get().unwrap();
                     obj.set_room_list(room_list);
@@ -134,6 +148,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
+                "user" => obj.user().to_value(),
                 "selected-room" => obj.selected_room().to_value(),
                 "selected-type" => obj.selected_type().to_value(),
                 _ => unimplemented!(),
@@ -267,6 +282,22 @@ impl Sidebar {
 
         priv_.selected_room.replace(selected_room);
         self.notify("selected-room");
+    }
+
+    pub fn user(&self) -> Option<User> {
+        let priv_ = &imp::Sidebar::from_instance(self);
+        priv_.user.borrow().clone()
+    }
+
+    fn set_user(&self, user: Option<User>) {
+        let priv_ = imp::Sidebar::from_instance(self);
+
+        if self.user() == user {
+            return;
+        }
+
+        priv_.user.replace(user);
+        self.notify("user");
     }
 
     pub fn set_logged_in_users(

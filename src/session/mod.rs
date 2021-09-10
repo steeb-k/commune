@@ -331,6 +331,7 @@ impl Session {
                 priv_.client.set(client.clone()).unwrap();
                 let user = User::new(self, &session.user_id);
                 priv_.user.set(user.clone()).unwrap();
+                self.notify("user");
 
                 do_async(
                     glib::PRIORITY_LOW,
@@ -415,9 +416,9 @@ impl Session {
         priv_.room_list.get_or_init(|| RoomList::new(self))
     }
 
-    pub fn user(&self) -> &User {
+    pub fn user(&self) -> Option<&User> {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.user.get().unwrap()
+        priv_.user.get()
     }
 
     pub fn client(&self) -> &Client {

@@ -51,6 +51,7 @@
                 <child>
                   <object class="Sidebar" id="sidebar">
                     <property name="compact" bind-source="content" bind-property="folded" bind-flags="sync-create"/>
+                    <property name="user" bind-source="Session" bind-property="user" bind-flags="sync-create"/>
                     <property name="room-list" bind-source="Session" bind-property="room-list" bind-flags="sync-create"/>
                     <property name="selected-room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create | bidirectional"/>
                     <property name="selected-type" bind-source="Session" bind-property="selected-content-type" bind-flags="sync-create | bidirectional"/>

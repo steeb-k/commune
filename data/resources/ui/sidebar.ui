@@ -26,14 +26,26 @@
         <child>
           <object class="AdwHeaderBar" id="headerbar">
             <property name="title-widget">
-              <object class="AdwWindowTitle"></object>
+              <object class="AdwWindowTitle"/>
             </property>
             <property name="show-end-title-buttons" bind-source="Sidebar" bind-property="compact" bind-flags="sync-create"/>
             <child type="start">
               <object class="GtkMenuButton" id="accounts_button">
-                <property name="icon-name">system-users-symbolic</property>
                 <property name="popover">
-                  <object class="AccountSwitcher" id="account_switcher"></object>
+                  <object class="AccountSwitcher" id="account_switcher"/>
+                </property>
+                <style>
+                  <class name="image-button"/>
+                </style>
+                <property name="child">
+                  <object class="ComponentsAvatar">
+                    <property name="size">20</property>
+                    <binding name="item">
+                      <lookup name="avatar" type="User">
+                        <lookup name="user">Sidebar</lookup>
+                      </lookup>
+                    </binding>
+                  </object>
                 </property>
               </object>
             </child>
