@@ -48,6 +48,7 @@
         <child>
           <object class="GtkStack" id="main_stack">
             <property name="transition-type">crossfade</property>
+            <property name="vexpand">True</property>
             <child>
               <object class="GtkStackPage">
                 <property name="name">greeter</property>
