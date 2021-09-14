@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="AccountSettings" parent="AdwPreferencesWindow">
+    <property name="title" translatable="yes">Account Settings</property>
+    <property name="search-enabled">False</property>
+    <child>
+      <object class="DevicesPage">
+        <binding name="user">
+          <lookup name="user">AccountSettings</lookup>
+        </binding>
+      </object>
+    </child>
+  </template>
+</interface>
+

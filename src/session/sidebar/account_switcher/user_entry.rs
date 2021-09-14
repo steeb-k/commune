@@ -2,6 +2,8 @@ use super::avatar_with_selection::AvatarWithSelection;
 use adw::subclass::prelude::BinImpl;
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
+use crate::session::Session;
+
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
@@ -29,6 +31,14 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             AvatarWithSelection::static_type();
             Self::bind_template(klass);
+
+            klass.install_action(
+                "user-entry-row.open-account-settings",
+                None,
+                move |item, _, _| {
+                    item.show_account_settings();
+                },
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -106,5 +116,20 @@ impl UserEntryRow {
         priv_
             .display_name
             .set_css_classes(if hinted { &["bold"] } else { &[] });
+    }
+
+    pub fn show_account_settings(&self) {
+        let priv_ = imp::UserEntryRow::from_instance(self);
+
+        let session = priv_
+            .session_page
+            .borrow()
+            .as_ref()
+            .map(|widget| widget.child())
+            .unwrap()
+            .downcast::<Session>()
+            .unwrap();
+
+        session.activate_action("session.open-account-settings", None);
     }
 }

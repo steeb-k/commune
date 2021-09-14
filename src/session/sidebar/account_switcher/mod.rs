@@ -34,6 +34,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            klass.set_accessible_role(gtk::AccessibleRole::Dialog);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

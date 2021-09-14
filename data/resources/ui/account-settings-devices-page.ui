@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="DevicesPage" parent="AdwPreferencesPage">
+    <property name="icon-name">devices-symbolic</property>
+    <property name="title" translatable="yes">Sessions</property>
+    <property name="name">sessions</property>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Current Session</property>
+        <child>
+          <object class="GtkListBox" id="current_session">
+            <accessibility>
+              <property name="label" translatable="yes">Current Session</property>
+            </accessibility>
+            <style>
+              <class name="content"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="other_sessions_group">
+        <property name="title" translatable="yes">Other Active Sessions</property>
+        <child>
+          <object class="GtkListBox" id="other_sessions">
+            <accessibility>
+              <property name="label" translatable="yes">Other Active Sessions</property>
+            </accessibility>
+            <style>
+              <class name="content"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+

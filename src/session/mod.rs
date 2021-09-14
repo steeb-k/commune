@@ -1,3 +1,4 @@
+mod account_settings;
 mod avatar;
 mod content;
 mod event_source_dialog;
@@ -6,6 +7,7 @@ mod room_list;
 mod sidebar;
 mod user;
 
+use self::account_settings::AccountSettings;
 pub use self::avatar::Avatar;
 use self::content::Content;
 pub use self::room::Room;
@@ -99,6 +101,14 @@ mod imp {
                 gdk::ModifierType::CONTROL_MASK,
                 "session.toggle-room-search",
                 None,
+            );
+
+            klass.install_action(
+                "session.open-account-settings",
+                None,
+                move |widget, _, _| {
+                    widget.open_account_settings();
+                },
             );
         }
 
@@ -481,6 +491,18 @@ impl Session {
         priv_
             .sidebar
             .set_logged_in_users(sessions_stack_pages, self);
+    }
+
+    /// Returns the parent GtkWindow containing this widget.
+    fn parent_window(&self) -> Option<gtk::Window> {
+        self.root()?.downcast().ok()
+    }
+
+    fn open_account_settings(&self) {
+        if let Some(user) = self.user() {
+            let window = AccountSettings::new(&self.parent_window(), &user);
+            window.show();
+        }
     }
 }
 

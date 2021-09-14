@@ -35,10 +35,16 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="components-avatar.ui">ui/components-avatar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="avatar-with-selection.ui">ui/avatar-with-selection.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="components-auth-dialog.ui">ui/components-auth-dialog.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings.ui">ui/account-settings.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-device-row.ui">ui/account-settings-device-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-devices-page.ui">ui/account-settings-devices-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-loading-listbox-row.ui">ui/components-loading-listbox-row.ui</file>
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/empty-page.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/devices-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
   </gresource>
 </gresources>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="AccountSettingsDeviceRow">
+    <property name="activatable">False</property>
+    <property name="selectable">False</property>
+    <property name="child">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="halign">start</property>
+        <property name="spacing">6</property>
+        <property name="margin-top">12</property>
+        <property name="margin-bottom">12</property>
+        <property name="margin-start">12</property>
+        <property name="margin-end">12</property>
+        <child>
+          <object class="GtkBox">
+            <child>
+              <object class="GtkLabel" id="display_name">
+                <property name="xalign">0.0</property>
+                <property name="ellipsize">end</property>
+                <style>
+                  <class name="heading"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImage" id="verified_icon">
+                <property name="icon-name">verified-symbolic</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="last_seen_ts">
+            <property name="xalign">0.0</property>
+            <style>
+              <class name="caption"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="last_seen_ip">
+            <property name="xalign">0.0</property>
+            <style>
+              <class name="dim-label"/>
+              <class name="caption"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">6</property>
+            <child>
+              <object class="SpinnerButton" id="delete_button">
+                <property name="label" translatable="yes">Delete Session</property>
+              </object>
+            </child>
+            <child>
+              <object class="SpinnerButton" id="verify_button">
+                <property name="visible">False</property>
+                <property name="label" translatable="yes">Verify Session</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
+
