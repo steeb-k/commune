@@ -33,8 +33,10 @@ use matrix_sdk::ruma::{
     assign,
 };
 use matrix_sdk::{
-    deserialized_responses::SyncResponse, uuid::Uuid, Client, ClientConfig, RequestConfig,
-    SyncSettings,
+    config::{ClientConfig, RequestConfig, SyncSettings},
+    deserialized_responses::SyncResponse,
+    uuid::Uuid,
+    Client,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::fs;

@@ -329,7 +329,7 @@ impl RoomList {
                         obj.pending_rooms_remove(&identifier);
                         error!("Joining room {} failed: {}", identifier, error);
                         let error = Error::new(
-                            error,
+                            matrix_sdk::Error::Http(error),
                             clone!(@strong obj => move |_| {
                                     let error_message = gettext!(
                                         "Failed to join room {}. Try again later.", identifier

@@ -326,6 +326,12 @@ impl From<matrix_sdk::Error> for AvatarError {
     }
 }
 
+impl From<matrix_sdk::HttpError> for AvatarError {
+    fn from(err: matrix_sdk::HttpError) -> Self {
+        Self::Upload(matrix_sdk::Error::Http(err))
+    }
+}
+
 impl From<mime::FromStrError> for AvatarError {
     fn from(err: mime::FromStrError) -> Self {
         Self::UnknownFiletype(err)
