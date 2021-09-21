@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ComponentsAuthDialog" parent="AdwWindow">
+    <property name="modal">true</property>
+    <property name="hide-on-close">true</property>
+    <property name="title"/>
+    <property name="resizable">0</property>
+    <property name="default-widget">button_ok</property>
+    <style>
+      <class name="message"/>
+      <class name="dialog"/>
+    </style>
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">12</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="halign">center</property>
+            <property name="label" translatable="yes">Authentication</property>
+            <property name="margin-top">24</property>
+            <style>
+              <class name="title-2"/>
+            </style>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStack" id="stack">
+            <property name="hhomogeneous">False</property>
+            <property name="vhomogeneous">False</property>
+            <property name="margin-bottom">12</property>
+            <property name="margin-start">24</property>
+            <property name="margin-end">24</property>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">m.login.password</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Please authenticate the operation with your password</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="max-width-chars">60</property>
+                        <property name="halign">center</property>
+                        <property name="valign">start</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkPasswordEntry" id="password">
+                        <property name="activates-default">True</property>
+                        <property name="show-peek-icon">True</property>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">fallback</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">12</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Please authenticate the operation via the browser and once completed press confirm.</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="max-width-chars">60</property>
+                        <property name="halign">center</property>
+                        <property name="valign">start</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton" id="open_browser_btn">
+                        <property name="label" translatable="yes">Authenticate via Browser</property>
+                        <property name="halign">center</property>
+                        <style>
+                          <class name="suggested-action"/>
+                          <class name="pill-button"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel" id="error">
+            <property name="visible">False</property>
+            <property name="wrap">True</property>
+            <property name="wrap-mode">word-char</property>
+            <property name="max-width-chars">60</property>
+            <property name="halign">center</property>
+            <property name="valign">start</property>
+            <property name="margin-bottom">12</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="hexpand">True</property>
+            <property name="homogeneous">True</property>
+            <property name="halign">fill</property>
+            <child>
+              <object class="GtkButton" id="button_cancel">
+                <property name="label" translatable="yes">Cancel</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="button_ok">
+                <property name="label" translatable="yes">Confirm</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+            <style>
+              <class name="dialog-action-area"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+

@@ -21,6 +21,7 @@ run_command(
 sources = files(
   'application.rs',
   'components/avatar.rs',
+  'components/auth_dialog.rs',
   'components/context_menu_bin.rs',
   'components/custom_entry.rs',
   'components/label_with_widgets.rs',

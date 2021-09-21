@@ -6,6 +6,7 @@ data/org.gnome.FractalNext.metainfo.xml.in.in
 
 # UI files
 data/resources/ui/add_account.ui
+data/resources/ui/components-auth-dialog.ui
 data/resources/ui/components-avatar.ui
 data/resources/ui/avatar-with-selection.ui
 data/resources/ui/content-divider-row.ui
@@ -36,6 +37,7 @@ data/resources/ui/window.ui
 
 # Rust files
 src/application.rs
+src/components/auth_dialog.rs
 src/components/avatar.rs
 src/components/context_menu_bin.rs
 src/components/custom_entry.rs

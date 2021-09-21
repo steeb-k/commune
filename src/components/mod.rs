@@ -1,3 +1,4 @@
+mod auth_dialog;
 mod avatar;
 mod context_menu_bin;
 mod custom_entry;
@@ -7,6 +8,7 @@ mod pill;
 mod room_title;
 mod spinner_button;
 
+pub use self::auth_dialog::{AuthData, AuthDialog};
 pub use self::avatar::Avatar;
 pub use self::context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 pub use self::custom_entry::CustomEntry;
