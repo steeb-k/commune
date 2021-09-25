@@ -83,8 +83,8 @@ glib::wrapper! {
 }
 
 impl AccountSettings {
-    pub fn new(parent_window: &Option<gtk::Window>, user: &User) -> Self {
-        glib::Object::new(&[("transient-for", parent_window), ("user", user)])
+    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>, user: &User) -> Self {
+        glib::Object::new(&[("transient-for", &parent_window), ("user", user)])
             .expect("Failed to create AccountSettings")
     }
 

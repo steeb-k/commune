@@ -1,6 +1,8 @@
+use crate::components::InAppNotification;
 use crate::config::{APP_ID, PROFILE};
 use crate::secret;
 use crate::Application;
+use crate::Error;
 use crate::Login;
 use crate::Session;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
@@ -25,6 +27,8 @@ mod imp {
         pub sessions: TemplateChild<gtk::Stack>,
         #[template_child]
         pub loading_page: TemplateChild<gtk::WindowHandle>,
+        #[template_child]
+        pub error_list: TemplateChild<gio::ListStore>,
     }
 
     #[glib::object_subclass]
@@ -34,6 +38,8 @@ mod imp {
         type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
+            Error::static_type();
+            InAppNotification::static_type();
             Self::bind_template(klass);
         }
 
@@ -88,7 +94,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)
-        @extends gtk::Widget, gtk::Window, gtk::ApplicationWindow, adw::ApplicationWindow, @implements gio::ActionMap, gio::ActionGroup;
+        @extends gtk::Widget, gtk::Window, gtk::Root, gtk::ApplicationWindow, adw::ApplicationWindow, @implements gio::ActionMap, gio::ActionGroup;
 }
 
 impl Window {
@@ -179,5 +185,11 @@ impl Window {
             .get()
             .show_back_to_session_button(priv_.sessions.get().pages().n_items() > 0);
         priv_.main_stack.set_visible_child(&priv_.login.get());
+    }
+
+    /// This appends a new error to the list of errors
+    pub fn append_error(&self, error: &Error) {
+        let priv_ = imp::Window::from_instance(self);
+        priv_.error_list.append(error);
     }
 }

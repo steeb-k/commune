@@ -15,11 +15,10 @@ use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
 
-use crate::components::InAppNotification;
 use crate::secret;
 use crate::secret::StoredSession;
 use crate::utils::do_async;
-use crate::Error;
+use crate::Window;
 use crate::RUNTIME;
 
 use crate::login::LoginError;
@@ -27,7 +26,7 @@ use crate::session::content::ContentType;
 use adw::subclass::prelude::BinImpl;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
-use gtk::{gdk, gio, glib, glib::clone, glib::SyncSender, CompositeTemplate, SelectionModel};
+use gtk::{gdk, glib, glib::clone, glib::SyncSender, CompositeTemplate, SelectionModel};
 use gtk_macros::send;
 use log::error;
 use matrix_sdk::ruma::{
@@ -54,8 +53,6 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]
     pub struct Session {
-        #[template_child]
-        pub error_list: TemplateChild<gio::ListStore>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -115,8 +112,6 @@ mod imp {
         fn instance_init(obj: &InitializingObject<Self>) {
             Sidebar::static_type();
             Content::static_type();
-            Error::static_type();
-            InAppNotification::static_type();
             obj.init_template();
         }
     }
@@ -457,12 +452,6 @@ impl Session {
         sender
     }
 
-    /// This appends a new error to the list of errors
-    pub fn append_error(&self, error: &Error) {
-        let priv_ = imp::Session::from_instance(self);
-        priv_.error_list.append(error);
-    }
-
     /// Returns and consumes the `error` that was generated when the session failed to login,
     /// on a successful login this will be `None`.
     /// Unfortunately it's not possible to connect the Error directly to the `prepared` signals.
@@ -494,13 +483,13 @@ impl Session {
     }
 
     /// Returns the parent GtkWindow containing this widget.
-    fn parent_window(&self) -> Option<gtk::Window> {
+    fn parent_window(&self) -> Option<Window> {
         self.root()?.downcast().ok()
     }
 
     fn open_account_settings(&self) {
         if let Some(user) = self.user() {
-            let window = AccountSettings::new(&self.parent_window(), &user);
+            let window = AccountSettings::new(self.parent_window().as_ref(), &user);
             window.show();
         }
     }

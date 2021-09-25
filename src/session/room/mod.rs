@@ -429,7 +429,9 @@ impl Room {
                                         }),
                                 );
 
-                                obj.session().append_error(&error);
+                                if let Some(window) = obj.session().parent_window() {
+                                    window.append_error(&error);
+                                }
 
                                 // Load the previous category
                                 obj.load_category();
@@ -897,7 +899,11 @@ impl Room {
                                 Some(error_label.upcast())
                         }),
                     );
-                    self.session().append_error(&error);
+
+                    if let Some(window) = self.session().parent_window() {
+                        window.append_error(&error);
+                    }
+
                     Err(error)
                 }
             }
@@ -927,7 +933,11 @@ impl Room {
                                 Some(error_label.upcast())
                         }),
                     );
-                    self.session().append_error(&error);
+
+                    if let Some(window) = self.session().parent_window() {
+                        window.append_error(&error);
+                    }
+
                     Err(error)
                 }
             }

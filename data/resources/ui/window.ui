@@ -3,48 +3,61 @@
   <template class="Window" parent="AdwApplicationWindow">
     <property name="default-width">600</property>
     <property name="default-height">400</property>
-    <child>
-      <object class="GtkStack" id="main_stack">
-        <property name="visible-child">login</property>
-        <property name="transition-type">crossfade</property>
-        <child>
-          <object class="Login" id="login"/>
-        </child>
-        <child>
-          <object class="GtkStack" id="sessions">
-            <property name="transition-type">crossfade</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkWindowHandle" id="loading_page">
-            <property name="child">
-              <object class="GtkBox">
-                <property name="orientation">vertical</property>
-                <child>
-                  <object class="GtkHeaderBar">
-                    <property name="show-title-buttons">True</property>
-                    <style>
-                      <class name="flat"/>
-                    </style>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkSpinner">
-                    <property name="spinning">True</property>
-                    <property name="valign">center</property>
-                    <property name="halign">center</property>
-                    <property name="vexpand">True</property>
-                    <style>
-                      <class name="session-loading-spinner"/>
-                    </style>
-                  </object>
-                </child>
+    <property name="content">
+      <object class="GtkOverlay">
+        <child type="overlay">
+          <object class="InAppNotification">
+            <property name="error-list">
+              <object class="GListStore" id="error_list">
+                <property name="item-type">Error</property>
               </object>
             </property>
           </object>
         </child>
+        <child>
+          <object class="GtkStack" id="main_stack">
+            <property name="visible-child">login</property>
+            <property name="transition-type">crossfade</property>
+            <child>
+              <object class="Login" id="login"/>
+            </child>
+            <child>
+              <object class="GtkStack" id="sessions">
+                <property name="transition-type">crossfade</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkWindowHandle" id="loading_page">
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkHeaderBar">
+                        <property name="show-title-buttons">True</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSpinner">
+                        <property name="spinning">True</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <property name="vexpand">True</property>
+                        <style>
+                          <class name="session-loading-spinner"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
       </object>
-    </child>
+    </property>
   </template>
 </interface>
 

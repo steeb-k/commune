@@ -338,7 +338,10 @@ impl RoomList {
                                     Some(error_label.upcast())
                             }),
                         );
-                        obj.session().append_error(&error);
+
+                        if let Some(window) = obj.session().parent_window() {
+                            window.append_error(&error);
+                        }
                     }
                 }
             }),
