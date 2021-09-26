@@ -9,7 +9,7 @@ We only support building with [flatpak](https://flatpak.org/) using [GNOME Build
 If you insist on using any other method, they may work, but you will be on your own.
 
 You will need to manually install the latest version of the Rust extension of the FreeDesktop SDK.
-To do this, just run `flatpak install --user org.freedesktop.Sdk.Extension.rust-stable//20.08`
+To do this, just run `flatpak install --user org.freedesktop.Sdk.Extension.rust-stable//21.08`
 
 ## Merge requests
 
