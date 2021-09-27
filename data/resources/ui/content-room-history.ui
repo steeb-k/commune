@@ -156,9 +156,8 @@
             <property name="vexpand">False</property>
             <child>
               <object class="GtkBox">
-                <property name="spacing">6</property>
                 <style>
-                  <class name="send-message-area"/>
+                  <class name="toolbar"/>
                 </style>
                 <child>
                   <object class="GtkButton">
@@ -209,6 +208,7 @@
                     <property name="action-name">room-history.send-text-message</property>
                     <style>
                       <class name="suggested-action"/>
+                      <class name="circular"/>
                     </style>
                   </object>
                 </child>
