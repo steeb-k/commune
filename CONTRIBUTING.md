@@ -16,3 +16,5 @@ To do this, just run `flatpak install --user org.freedesktop.Sdk.Extension.rust-
 We expect all code contributions to be correctly formatted.
 Before submitting a merge request, please run `cargo fmt` on your branch to ensure this is the case.
 It is also recommended to run `cargo clippy` as that will catch common errors and improve the quality of your submissions.
+
+Please follow the [GNOME commit message guidelines](https://wiki.gnome.org/Git/CommitMessages).
