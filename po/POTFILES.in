@@ -27,6 +27,7 @@ data/resources/ui/context-menu-bin.ui
 data/resources/ui/event-source-dialog.ui
 data/resources/ui/login.ui
 data/resources/ui/in-app-notification.ui
+data/resources/ui/room-creation.ui
 data/resources/ui/session.ui
 data/resources/ui/shortcuts.ui
 data/resources/ui/sidebar-category-row.ui
@@ -54,6 +55,7 @@ src/components/pill.rs
 src/error.rs
 src/login.rs
 src/main.rs
+src/matrix_error.rs
 src/secret.rs
 src/session/account_settings/devices_page/device.rs
 src/session/account_settings/devices_page/device_item.rs
@@ -74,6 +76,7 @@ src/session/content/room_details/mod.rs
 src/session/content/room_history.rs
 src/session/content/state_row.rs
 src/session/mod.rs
+src/session/room_creation/mod.rs
 src/session/room_list.rs
 src/session/room/event.rs
 src/session/room/highlight_flags.rs

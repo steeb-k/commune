@@ -3,6 +3,7 @@ mod avatar;
 mod content;
 mod event_source_dialog;
 mod room;
+mod room_creation;
 mod room_list;
 mod sidebar;
 mod user;
@@ -11,6 +12,7 @@ use self::account_settings::AccountSettings;
 pub use self::avatar::Avatar;
 use self::content::Content;
 pub use self::room::Room;
+pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
@@ -80,6 +82,10 @@ mod imp {
 
             klass.install_action("session.close-room", None, move |session, _, _| {
                 session.set_selected_room(None);
+            });
+
+            klass.install_action("session.room-creation", None, move |session, _, _| {
+                session.show_room_creation_dialog();
             });
 
             klass.add_binding_action(
@@ -492,6 +498,11 @@ impl Session {
             let window = AccountSettings::new(self.parent_window().as_ref(), &user);
             window.show();
         }
+    }
+
+    fn show_room_creation_dialog(&self) {
+        let window = RoomCreation::new(self.parent_window().as_ref(), &self);
+        window.show();
     }
 }
 
