@@ -414,7 +414,6 @@ impl Room {
                         Err(error) => {
                                 error!("Couldn’t set the room category: {}", error);
                                 let error = Error::new(
-                                        error,
                                         clone!(@weak obj => @default-return None, move |_| {
                                                 let error_message = gettext!(
                                                     "Failed to move <widget> from {} to {}.",
@@ -889,16 +888,13 @@ impl Room {
                 Ok(result) => Ok(result),
                 Err(error) => {
                     error!("Accepting invitation failed: {}", error);
-                    let error = Error::new(
-                        error,
-                        clone!(@strong self as room => move |_| {
-                                let error_message = gettext("Failed to accept invitation for <widget>. Try again later.");
-                                let room_pill = Pill::new();
-                                room_pill.set_room(Some(room.clone()));
-                                let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
-                                Some(error_label.upcast())
-                        }),
-                    );
+                    let error = Error::new(clone!(@strong self as room => move |_| {
+                            let error_message = gettext("Failed to accept invitation for <widget>. Try again later.");
+                            let room_pill = Pill::new();
+                            room_pill.set_room(Some(room.clone()));
+                            let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
+                            Some(error_label.upcast())
+                    }));
 
                     if let Some(window) = self.session().parent_window() {
                         window.append_error(&error);
@@ -923,16 +919,13 @@ impl Room {
                 Ok(result) => Ok(result),
                 Err(error) => {
                     error!("Rejecting invitation failed: {}", error);
-                    let error = Error::new(
-                        error,
-                        clone!(@strong self as room => move |_| {
-                                let error_message = gettext("Failed to reject invitation for <widget>. Try again later.");
-                                let room_pill = Pill::new();
-                                room_pill.set_room(Some(room.clone()));
-                                let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
-                                Some(error_label.upcast())
-                        }),
-                    );
+                    let error = Error::new(clone!(@strong self as room => move |_| {
+                            let error_message = gettext("Failed to reject invitation for <widget>. Try again later.");
+                            let room_pill = Pill::new();
+                            room_pill.set_room(Some(room.clone()));
+                            let error_label = LabelWithWidgets::new(&error_message, vec![room_pill]);
+                            Some(error_label.upcast())
+                    }));
 
                     if let Some(window) = self.session().parent_window() {
                         window.append_error(&error);
