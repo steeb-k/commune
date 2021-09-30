@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, subclass::prelude::*};
 
 use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 use crate::session::content::{DividerRow, MessageRow, StateRow};

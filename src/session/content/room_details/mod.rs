@@ -157,8 +157,8 @@ impl RoomDetails {
             room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomAvatar));
         let room_avatar_removable = and_expr(room_avatar_changeable.clone(), room_avatar_exists);
 
-        room_avatar_removable.bind(&avatar_remove_button.get(), "visible", None);
-        room_avatar_changeable.bind(&avatar_edit_button.get(), "visible", None);
+        room_avatar_removable.bind(&avatar_remove_button.get(), "visible", gtk::NONE_WIDGET);
+        room_avatar_changeable.bind(&avatar_edit_button.get(), "visible", gtk::NONE_WIDGET);
     }
 
     fn init_edit_toggle(&self) {
@@ -204,7 +204,7 @@ impl RoomDetails {
             room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomTopic));
 
         let edit_toggle_visible = or_expr(room_name_changeable, room_topic_changeable);
-        edit_toggle_visible.bind(&edit_toggle.get(), "visible", None);
+        edit_toggle_visible.bind(&edit_toggle.get(), "visible", gtk::NONE_WIDGET);
     }
 
     fn init_avatar_chooser(&self) {

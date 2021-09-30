@@ -2,7 +2,7 @@ use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gio, glib, glib::clone, glib::signal::SignalHandlerId, pango, prelude::*, subclass::prelude::*,
+    gio, glib, glib::clone, glib::signal::SignalHandlerId, pango, subclass::prelude::*,
     CompositeTemplate,
 };
 use html2pango::{

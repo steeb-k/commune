@@ -30,15 +30,15 @@ indexmap = "1.6.2"
 
 [dependencies.sourceview]
 package = "sourceview5"
-version = "0.1.0"
+version = "0.3.0"
 
 [dependencies.gtk]
 package = "gtk4"
-version = "0.1"
+version = "0.3"
 
 [dependencies.adw]
 package = "libadwaita"
-version = "0.1.0-alpha"
+version = "0.1.0-alpha-6"
 
 [dependencies.matrix-sdk]
 git = "https://github.com/jsparber/matrix-rust-sdk.git"

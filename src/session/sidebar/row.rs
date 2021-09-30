@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, subclass::prelude::*};
 
 use crate::session::{
     room::Room,
