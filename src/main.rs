@@ -47,7 +47,6 @@ fn main() {
     gtk::glib::set_application_name("Fractal");
 
     gtk::init().expect("Unable to start GTK4");
-    adw::init();
     gst::init().expect("Failed to initalize gst");
 
     let res = gio::Resource::load(RESOURCES_FILE).expect("Could not load gresource file");

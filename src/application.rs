@@ -6,7 +6,7 @@ use glib::clone;
 use glib::WeakRef;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{gdk, gio, glib};
+use gtk::{gio, glib};
 use gtk_macros::action;
 use log::{debug, info};
 
@@ -33,7 +33,7 @@ mod imp {
     impl ObjectSubclass for Application {
         const NAME: &'static str = "Application";
         type Type = super::Application;
-        type ParentType = gtk::Application;
+        type ParentType = adw::Application;
     }
 
     impl ObjectImpl for Application {}
@@ -48,8 +48,6 @@ mod imp {
                 window.present();
                 return;
             }
-
-            app.setup_css();
 
             let window = Window::new(app);
             self.window
@@ -69,11 +67,12 @@ mod imp {
     }
 
     impl GtkApplicationImpl for Application {}
+    impl AdwApplicationImpl for Application {}
 }
 
 glib::wrapper! {
     pub struct Application(ObjectSubclass<imp::Application>)
-        @extends gio::Application, gtk::Application, @implements gio::ActionMap, gio::ActionGroup;
+        @extends gio::Application, gtk::Application, adw::Application, @implements gio::ActionMap, gio::ActionGroup;
 }
 
 impl Application {
@@ -142,18 +141,6 @@ impl Application {
     fn setup_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
         self.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
-    }
-
-    fn setup_css(&self) {
-        let provider = gtk::CssProvider::new();
-        provider.load_from_resource("/org/gnome/FractalNext/style.css");
-        if let Some(display) = gdk::Display::default() {
-            gtk::StyleContext::add_provider_for_display(
-                &display,
-                &provider,
-                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-            );
-        }
     }
 
     fn show_about_dialog(&self) {
