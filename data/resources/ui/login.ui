@@ -55,7 +55,7 @@
                 <property name="child">
                   <object class="AdwStatusPage">
                     <property name="icon-name">welcome</property>
-                    <property name="title" translatable="yes">Welcome to Fractal</property>
+                    <property name="title" translatable="yes" comments="Fractal is the application name and shouldn't be translated">Welcome to Fractal</property>
                     <child>
                       <object class="AdwClamp">
                         <property name="maximum-size">400</property>
