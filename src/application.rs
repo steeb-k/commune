@@ -49,7 +49,6 @@ mod imp {
                 return;
             }
 
-            app.set_resource_base_path(Some("/org/gnome/FractalNext/"));
             app.setup_css();
 
             let window = Window::new(app);
@@ -82,6 +81,7 @@ impl Application {
         glib::Object::new(&[
             ("application-id", &Some(config::APP_ID)),
             ("flags", &ApplicationFlags::default()),
+            ("resource-base-path", &Some("/org/gnome/FractalNext/")),
         ])
         .expect("Application initialization failed")
     }
