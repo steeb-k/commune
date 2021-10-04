@@ -12,6 +12,7 @@ use log::{debug, info};
 
 mod imp {
     use super::*;
+    use adw::subclass::prelude::AdwApplicationImpl;
     use once_cell::unsync::OnceCell;
 
     #[derive(Debug)]

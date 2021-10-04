@@ -94,11 +94,10 @@
  min-width: 200px;
 }
 
-#devnotice {
-  background-color: lighter(alpha(@warning_color, 0.3));
-  color: shade(@warning_color, 0.5);
+.devnotice {
+  background: @warning_bg_color;
+  color: @warning_fg_color;
   padding: 12px 24px;
-  border-radius: 9px;
 }
 
 /* Session */

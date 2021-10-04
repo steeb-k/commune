@@ -1,0 +1,12 @@
+#new-login-icon {
+  background-color: alpha(black, 0.8);
+}
+
+.devnotice {
+  background: @warning_bg_color;
+  color: @warning_fg_color;
+}
+
+button.cutout {
+  color: alpha(black, 0.8);
+}

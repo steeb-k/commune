@@ -259,6 +259,7 @@ mod imp {
                let (start_iter, end_iter) = buffer.bounds();
                obj.action_set_enabled("room-history.send-text-message", start_iter != end_iter);
             }));
+            crate::utils::setup_style_scheme(&buffer);
 
             let (start_iter, end_iter) = buffer.bounds();
             obj.action_set_enabled("room-history.send-text-message", start_iter != end_iter);

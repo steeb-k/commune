@@ -1,3 +1,5 @@
+use sourceview::prelude::BufferExt;
+
 /// FIXME: This should be addressed in ruma directly
 #[macro_export]
 macro_rules! fn_event {
@@ -137,4 +139,25 @@ pub fn uint_to_i32(u: Option<UInt>) -> i32 {
         Some(i)
     })
     .unwrap_or(-1)
+}
+
+pub fn setup_style_scheme(buffer: &sourceview::Buffer) {
+    let manager = adw::StyleManager::default().unwrap();
+
+    buffer.set_style_scheme(style_scheme().as_ref());
+
+    manager.connect_dark_notify(glib::clone!(@weak buffer => move |_| {
+        buffer.set_style_scheme(style_scheme().as_ref());
+    }));
+}
+
+pub fn style_scheme() -> Option<sourceview::StyleScheme> {
+    let manager = adw::StyleManager::default().unwrap();
+    let scheme_name = if manager.is_dark() {
+        "Adwaita-dark"
+    } else {
+        "Adwaita"
+    };
+
+    sourceview::StyleSchemeManager::default().and_then(|scm| scm.scheme(scheme_name))
 }
