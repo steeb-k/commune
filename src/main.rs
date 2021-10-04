@@ -44,7 +44,6 @@ fn main() {
     textdomain(GETTEXT_PACKAGE).expect("Invalid string passed to textdomain");
 
     gtk::glib::set_application_name("Fractal");
-    gtk::glib::set_prgname(Some("fractal"));
 
     gtk::init().expect("Unable to start GTK4");
     adw::init();
