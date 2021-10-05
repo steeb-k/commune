@@ -47,6 +47,18 @@
               </object>
             </child>
             <child>
+              <object class="AdwLeafletPage">
+                <property name="navigatable">False</property>
+                <property name="child">
+                  <object class="GtkSeparator">
+                    <style>
+                      <class name="sidebar"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
               <object class="Content">
                 <property name="compact" bind-source="content" bind-property="folded" bind-flags="sync-create"/>
                 <property name="room" bind-source="Session" bind-property="selected-room" bind-flags="sync-create | bidirectional"/>
