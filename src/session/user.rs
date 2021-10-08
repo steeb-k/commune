@@ -5,6 +5,7 @@ use crate::session::{Avatar, Session};
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use once_cell::sync::{Lazy, OnceCell};
     use std::{cell::RefCell, convert::TryInto};
 
@@ -12,7 +13,7 @@ mod imp {
     pub struct User {
         pub user_id: OnceCell<UserId>,
         pub display_name: RefCell<Option<String>>,
-        pub session: OnceCell<Session>,
+        pub session: OnceCell<WeakRef<Session>>,
         pub avatar: OnceCell<Avatar>,
     }
 
@@ -73,7 +74,10 @@ mod imp {
                     let user_id = value.get::<&str>().unwrap().try_into().unwrap();
                     self.user_id.set(user_id).unwrap();
                 }
-                "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -91,7 +95,7 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            let avatar = Avatar::new(obj.session(), None);
+            let avatar = Avatar::new(&obj.session(), None);
             self.avatar.set(avatar).unwrap();
 
             obj.bind_property("display-name", obj.avatar(), "display-name")
@@ -115,9 +119,9 @@ impl User {
 }
 
 pub trait UserExt: IsA<User> {
-    fn session(&self) -> &Session {
+    fn session(&self) -> Session {
         let priv_ = imp::User::from_instance(self.upcast_ref());
-        priv_.session.get().unwrap()
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     fn user_id(&self) -> &UserId {

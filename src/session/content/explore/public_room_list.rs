@@ -17,6 +17,7 @@ use matrix_sdk::ruma::{
 use std::convert::TryFrom;
 
 mod imp {
+    use glib::object::WeakRef;
     use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
 
@@ -32,7 +33,7 @@ mod imp {
         pub loading: Cell<bool>,
         pub request_sent: Cell<bool>,
         pub total_room_count_estimate: Cell<Option<u64>>,
-        pub session: RefCell<Option<Session>>,
+        pub session: RefCell<Option<WeakRef<Session>>>,
     }
 
     #[glib::object_subclass]
@@ -83,15 +84,13 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => {
-                    let _ = self.session.replace(value.get().unwrap());
-                }
+                "session" => obj.set_session(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -136,7 +135,24 @@ impl PublicRoomList {
 
     pub fn session(&self) -> Option<Session> {
         let priv_ = imp::PublicRoomList::from_instance(self);
-        priv_.session.borrow().to_owned()
+        priv_
+            .session
+            .borrow()
+            .as_ref()
+            .and_then(|session| session.upgrade())
+    }
+
+    pub fn set_session(&self, session: Option<Session>) {
+        let priv_ = imp::PublicRoomList::from_instance(self);
+
+        if session == self.session() {
+            return;
+        }
+
+        priv_
+            .session
+            .replace(session.map(|session| session.downgrade()));
+        self.notify("session");
     }
 
     pub fn loading(&self) -> bool {

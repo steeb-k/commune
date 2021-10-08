@@ -16,6 +16,7 @@ use crate::utils::do_async;
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
@@ -24,7 +25,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/content-explore.ui")]
     pub struct Explore {
         pub compact: Cell<bool>,
-        pub session: RefCell<Option<Session>>,
+        pub session: RefCell<Option<WeakRef<Session>>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -148,7 +149,11 @@ impl Explore {
 
     pub fn session(&self) -> Option<Session> {
         let priv_ = imp::Explore::from_instance(self);
-        priv_.session.borrow().to_owned()
+        priv_
+            .session
+            .borrow()
+            .as_ref()
+            .and_then(|session| session.upgrade())
     }
 
     pub fn init(&self) {
@@ -189,7 +194,9 @@ impl Explore {
             priv_.public_room_list.replace(Some(public_room_list));
         }
 
-        priv_.session.replace(session);
+        priv_
+            .session
+            .replace(session.map(|session| session.downgrade()));
         self.notify("session");
     }
 

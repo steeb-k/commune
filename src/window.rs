@@ -26,8 +26,6 @@ mod imp {
         #[template_child]
         pub sessions: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub loading_page: TemplateChild<gtk::WindowHandle>,
-        #[template_child]
         pub error_list: TemplateChild<gio::ListStore>,
     }
 
@@ -66,7 +64,7 @@ mod imp {
 
             self.login
                 .connect_new_session(clone!(@weak obj => move |_login, session| {
-                    obj.add_session(session);
+                    obj.add_session(&session);
                     obj.switch_to_sessions_page();
                 }));
 
@@ -115,16 +113,11 @@ impl Window {
     fn restore_sessions(&self) {
         match secret::restore_sessions() {
             Ok(sessions) => {
-                let login = &imp::Window::from_instance(self).login.get();
-                let n = sessions.len();
                 for stored_session in sessions {
                     let session = Session::new();
-                    login.set_handler_for_prepared_session(&session);
                     session.login_with_previous_session(stored_session);
-                }
-
-                if n > 0 {
-                    self.switch_to_loading_page();
+                    self.add_session(&session);
+                    self.switch_to_sessions_page();
                 }
             }
             Err(error) => warn!("Failed to restore previous sessions: {:?}", error),
@@ -169,13 +162,6 @@ impl Window {
     pub fn switch_to_sessions_page(&self) {
         let priv_ = imp::Window::from_instance(self);
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
-    }
-
-    pub fn switch_to_loading_page(&self) {
-        let priv_ = imp::Window::from_instance(self);
-        priv_
-            .main_stack
-            .set_visible_child(&priv_.loading_page.get());
     }
 
     pub fn switch_to_login_page(&self) {

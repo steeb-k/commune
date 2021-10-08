@@ -73,15 +73,16 @@ impl AuthData {
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::subclass::{InitializingObject, Signal};
     use glib::SignalHandlerId;
-    use once_cell::sync::Lazy;
+    use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-auth-dialog.ui")]
     pub struct AuthDialog {
-        pub session: RefCell<Option<Session>>,
+        pub session: OnceCell<WeakRef<Session>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -129,7 +130,7 @@ mod imp {
                     "Session",
                     "The session",
                     Session::static_type(),
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                 )]
             });
 
@@ -138,13 +139,16 @@ mod imp {
 
         fn set_property(
             &self,
-            obj: &Self::Type,
+            _obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -207,21 +211,9 @@ impl AuthDialog {
             .expect("Failed to create AuthDialog")
     }
 
-    pub fn session(&self) -> Option<Session> {
+    pub fn session(&self) -> Session {
         let priv_ = imp::AuthDialog::from_instance(self);
-        priv_.session.borrow().clone()
-    }
-
-    pub fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::AuthDialog::from_instance(self);
-
-        if self.session() == session {
-            return;
-        };
-
-        priv_.session.replace(session);
-
-        self.notify("session");
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     pub async fn authenticate<
@@ -266,13 +258,7 @@ impl AuthDialog {
                 "m.login.password" => {
                     priv_.stack.set_visible_child_name("m.login.password");
                     if self.show_and_wait_for_response().await {
-                        let user_id = self
-                            .session()
-                            .unwrap()
-                            .user()
-                            .unwrap()
-                            .user_id()
-                            .to_string();
+                        let user_id = self.session().user().unwrap().user_id().to_string();
                         let password = priv_.password.text().to_string();
                         let session = uiaa_info.session;
 
@@ -291,7 +277,7 @@ impl AuthDialog {
                     if let Some(session) = uiaa_info.session {
                         priv_.stack.set_visible_child_name("fallback");
 
-                        let client = self.session()?.client().clone();
+                        let client = self.session().client().clone();
                         let (sender, receiver) = futures::channel::oneshot::channel();
                         RUNTIME.spawn(async move { sender.send(client.homeserver().await) });
                         let homeserver = receiver.await.unwrap();

@@ -16,6 +16,7 @@ use std::cell::Cell;
 use std::collections::HashSet;
 
 mod imp {
+    use glib::object::WeakRef;
     use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::RefCell;
@@ -26,7 +27,7 @@ mod imp {
     pub struct RoomList {
         pub list: RefCell<IndexMap<RoomId, Room>>,
         pub pending_rooms: RefCell<HashSet<RoomIdOrAliasId>>,
-        pub session: OnceCell<Session>,
+        pub session: OnceCell<WeakRef<Session>>,
     }
 
     #[glib::object_subclass]
@@ -60,7 +61,10 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -119,9 +123,9 @@ impl RoomList {
         glib::Object::new(&[("session", session)]).expect("Failed to create RoomList")
     }
 
-    pub fn session(&self) -> &Session {
+    pub fn session(&self) -> Session {
         let priv_ = imp::RoomList::from_instance(self);
-        priv_.session.get().unwrap()
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn is_pending_room(&self, identifier: &RoomIdOrAliasId) -> bool {
@@ -244,7 +248,7 @@ impl RoomList {
                 let mut list = priv_.list.borrow_mut();
                 for matrix_room in matrix_rooms {
                     let room_id = matrix_room.room_id().to_owned();
-                    let room = Room::new(session, &room_id);
+                    let room = Room::new(&session, &room_id);
                     list.insert(room_id, room);
                 }
             }
@@ -266,7 +270,7 @@ impl RoomList {
                 .entry(room_id.clone())
                 .or_insert_with(|| {
                     added += 1;
-                    Room::new(session, &room_id)
+                    Room::new(&session, &room_id)
                 })
                 .clone();
 
@@ -281,7 +285,7 @@ impl RoomList {
                 .entry(room_id.clone())
                 .or_insert_with(|| {
                     added += 1;
-                    Room::new(session, &room_id)
+                    Room::new(&session, &room_id)
                 })
                 .clone();
 
@@ -296,7 +300,7 @@ impl RoomList {
                 .entry(room_id.clone())
                 .or_insert_with(|| {
                     added += 1;
-                    Room::new(session, &room_id)
+                    Room::new(&session, &room_id)
                 })
                 .clone();
 

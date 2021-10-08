@@ -10,7 +10,8 @@ use crate::{session::Session, utils::do_async};
 use super::{Device, DeviceItem};
 
 mod imp {
-    use once_cell::sync::Lazy;
+    use glib::object::WeakRef;
+    use once_cell::sync::{Lazy, OnceCell};
     use std::cell::{Cell, RefCell};
 
     use super::*;
@@ -18,7 +19,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct DeviceList {
         pub list: RefCell<Vec<DeviceItem>>,
-        pub session: RefCell<Option<Session>>,
+        pub session: OnceCell<WeakRef<Session>>,
         pub current_device: RefCell<Option<DeviceItem>>,
         pub loading: Cell<bool>,
     }
@@ -40,7 +41,7 @@ mod imp {
                         "Session",
                         "The session",
                         Session::static_type(),
-                        glib::ParamFlags::READWRITE,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_object(
                         "current-device",
@@ -57,13 +58,16 @@ mod imp {
 
         fn set_property(
             &self,
-            obj: &Self::Type,
+            _obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -105,23 +109,9 @@ impl DeviceList {
         glib::Object::new(&[("session", session)]).expect("Failed to create DeviceList")
     }
 
-    pub fn session(&self) -> Option<Session> {
+    pub fn session(&self) -> Session {
         let priv_ = imp::DeviceList::from_instance(self);
-        priv_.session.borrow().clone()
-    }
-
-    fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::DeviceList::from_instance(self);
-
-        if self.session() == session {
-            return;
-        };
-
-        priv_.session.replace(session);
-
-        self.load_devices();
-
-        self.notify("session");
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     fn set_loading(&self, loading: bool) {
@@ -176,7 +166,6 @@ impl DeviceList {
         response: Result<(Option<MatrixDevice>, Vec<MatrixDevice>, CryptoDevices), Error>,
     ) {
         let session = self.session();
-        let session = session.as_ref();
 
         match response {
             Ok((current_device, devices, crypto_devices)) => {
@@ -184,7 +173,7 @@ impl DeviceList {
                     .into_iter()
                     .map(|device| {
                         let crypto_device = crypto_devices.get(&device.device_id);
-                        DeviceItem::for_device(Device::new(session, device, crypto_device))
+                        DeviceItem::for_device(Device::new(&session, device, crypto_device))
                     })
                     .collect();
 
@@ -192,7 +181,7 @@ impl DeviceList {
 
                 self.set_current_device(current_device.map(|device| {
                     let crypto_device = crypto_devices.get(&device.device_id);
-                    DeviceItem::for_device(Device::new(session, device, crypto_device))
+                    DeviceItem::for_device(Device::new(&session, device, crypto_device))
                 }));
             }
             Err(error) => {
@@ -206,11 +195,7 @@ impl DeviceList {
     }
 
     pub fn load_devices(&self) {
-        let client = if let Some(session) = self.session() {
-            session.client().clone()
-        } else {
-            return;
-        };
+        let client = self.session().client().clone();
 
         self.set_loading(true);
 

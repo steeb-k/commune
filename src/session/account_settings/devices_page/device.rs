@@ -15,14 +15,14 @@ use log::error;
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use once_cell::sync::{Lazy, OnceCell};
-    use std::cell::RefCell;
 
     #[derive(Debug, Default)]
     pub struct Device {
         pub device: OnceCell<MatrixDevice>,
         pub crypto_device: OnceCell<CryptoDevice>,
-        pub session: RefCell<Option<Session>>,
+        pub session: OnceCell<WeakRef<Session>>,
     }
 
     #[glib::object_subclass]
@@ -41,7 +41,7 @@ mod imp {
                         "Session",
                         "The session",
                         Session::static_type(),
-                        glib::ParamFlags::READWRITE,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_string(
                         "device-id",
@@ -84,13 +84,16 @@ mod imp {
 
         fn set_property(
             &self,
-            obj: &Self::Type,
+            _obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -116,33 +119,21 @@ glib::wrapper! {
 
 impl Device {
     pub fn new(
-        session: Option<&Session>,
+        session: &Session,
         device: MatrixDevice,
         crypto_device: Option<CryptoDevice>,
     ) -> Self {
         let obj: Self =
-            glib::Object::new(&[("session", &session)]).expect("Failed to create Device");
+            glib::Object::new(&[("session", session)]).expect("Failed to create Device");
 
         obj.set_matrix_device(device, crypto_device);
 
         obj
     }
 
-    pub fn session(&self) -> Option<Session> {
+    pub fn session(&self) -> Session {
         let priv_ = imp::Device::from_instance(self);
-        priv_.session.borrow().clone()
-    }
-
-    fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::Device::from_instance(self);
-
-        if self.session() == session {
-            return;
-        };
-
-        priv_.session.replace(session);
-
-        self.notify("session");
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     fn set_matrix_device(&self, device: MatrixDevice, crypto_device: Option<CryptoDevice>) {
@@ -197,9 +188,7 @@ impl Device {
     ///
     /// Returns `true` for success
     pub async fn delete(&self, transient_for: Option<&impl IsA<gtk::Window>>) -> bool {
-        let session = self
-            .session()
-            .expect("Session needs to be set when removing a device");
+        let session = self.session();
         let client = session.client().clone();
         let device_id = self.device_id().to_owned();
 

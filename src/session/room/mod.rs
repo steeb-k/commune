@@ -61,6 +61,7 @@ use crate::RUNTIME;
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::subclass::Signal;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::Cell;
@@ -70,7 +71,7 @@ mod imp {
     pub struct Room {
         pub room_id: OnceCell<RoomId>,
         pub matrix_room: RefCell<Option<MatrixRoom>>,
-        pub session: OnceCell<Session>,
+        pub session: OnceCell<WeakRef<Session>>,
         pub name: RefCell<Option<String>>,
         pub avatar: OnceCell<Avatar>,
         pub category: Cell<RoomType>,
@@ -189,7 +190,10 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 "display-name" => {
                     let room_name = value.get().unwrap();
                     obj.store_room_name(room_name)
@@ -252,7 +256,7 @@ mod imp {
             obj.set_matrix_room(obj.session().client().get_room(obj.room_id()).unwrap());
             self.timeline.set(Timeline::new(obj)).unwrap();
             self.avatar
-                .set(Avatar::new(obj.session(), obj.matrix_room().avatar_url()))
+                .set(Avatar::new(&obj.session(), obj.matrix_room().avatar_url()))
                 .unwrap();
 
             obj.load_power_levels();
@@ -278,9 +282,9 @@ impl Room {
             .expect("Failed to create Room")
     }
 
-    pub fn session(&self) -> &Session {
+    pub fn session(&self) -> Session {
         let priv_ = imp::Room::from_instance(self);
-        priv_.session.get().unwrap()
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn room_id(&self) -> &RoomId {
@@ -854,7 +858,8 @@ impl Room {
 
     /// Creates an expression that is true when the user is allowed the given action.
     pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::Expression {
-        let user_id = self.session().user().unwrap().user_id();
+        let session = self.session();
+        let user_id = session.user().unwrap().user_id();
         let member = self.member_by_id(user_id);
         self.power_levels().new_allowed_expr(&member, room_action)
     }

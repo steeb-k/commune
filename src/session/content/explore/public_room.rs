@@ -5,13 +5,14 @@ use crate::session::{room::Room, Avatar, Session};
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::signal::SignalHandlerId;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default)]
     pub struct PublicRoom {
-        pub session: OnceCell<Session>,
+        pub session: OnceCell<WeakRef<Session>>,
         pub matrix_public_room: OnceCell<PublicRoomsChunk>,
         pub avatar: OnceCell<Avatar>,
         pub room: OnceCell<Room>,
@@ -72,7 +73,10 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -90,7 +94,7 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            self.avatar.set(Avatar::new(obj.session(), None)).unwrap();
+            self.avatar.set(Avatar::new(&obj.session(), None)).unwrap();
 
             obj.session()
                 .room_list()
@@ -120,9 +124,9 @@ impl PublicRoom {
         glib::Object::new(&[("session", session)]).expect("Failed to create Room")
     }
 
-    pub fn session(&self) -> &Session {
+    pub fn session(&self) -> Session {
         let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.session.get().unwrap()
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn avatar(&self) -> &Avatar {

@@ -113,7 +113,7 @@ impl DevicesPage {
         }
 
         if let Some(ref user) = user {
-            let device_list = DeviceList::new(user.session());
+            let device_list = DeviceList::new(&user.session());
             priv_.other_sessions.bind_model(
                 Some(&device_list),
                 clone!(@weak device_list => @default-panic, move |item| {

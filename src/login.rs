@@ -14,10 +14,12 @@ mod imp {
     use super::*;
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
+    use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/login.ui")]
     pub struct Login {
+        pub current_session: RefCell<Option<Session>>,
         #[template_child]
         pub next_button: TemplateChild<gtk::Button>,
         #[template_child]
@@ -135,6 +137,8 @@ impl Login {
             username,
             password,
         );
+
+        priv_.current_session.replace(Some(session));
     }
 
     fn clean(&self) {
@@ -163,7 +167,7 @@ impl Login {
         priv_.main_stack.set_sensitive(true);
     }
 
-    pub fn connect_new_session<F: Fn(&Self, &Session) + 'static>(
+    pub fn connect_new_session<F: Fn(&Self, Session) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
@@ -171,11 +175,17 @@ impl Login {
             let obj = values[0].get::<Self>().unwrap();
             let session = values[1].get::<Session>().unwrap();
 
-            f(&obj, &session);
+            f(&obj, session);
 
             None
         })
         .unwrap()
+    }
+
+    fn drop_session_reference(&self) {
+        let priv_ = imp::Login::from_instance(self);
+
+        priv_.current_session.take();
     }
 
     pub fn default_widget(&self) -> gtk::Widget {
@@ -188,7 +198,7 @@ impl Login {
         priv_.back_to_session_button.set_visible(show);
     }
 
-    pub fn set_handler_for_prepared_session(&self, session: &Session) {
+    fn set_handler_for_prepared_session(&self, session: &Session) {
         session.connect_prepared(clone!(@weak self as login => move |session| {
             if let Some(error) = session.get_error() {
                 let error_message = &imp::Login::from_instance(&login).error_message;
@@ -202,6 +212,7 @@ impl Login {
                 login.emit_by_name("new-session", &[&session]).unwrap();
                 login.clean();
             }
+            login.drop_session_reference();
         }));
     }
 }

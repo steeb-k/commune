@@ -28,6 +28,7 @@ use crate::session::Session;
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::{signal::SignalHandlerId, subclass::InitializingObject};
     use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
@@ -36,7 +37,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/content.ui")]
     pub struct Content {
         pub compact: Cell<bool>,
-        pub session: RefCell<Option<Session>>,
+        pub session: RefCell<Option<WeakRef<Session>>>,
         pub room: RefCell<Option<Room>>,
         pub content_type: Cell<ContentType>,
         pub error_list: RefCell<Option<gio::ListStore>>,
@@ -134,9 +135,7 @@ mod imp {
                     let compact = value.get().unwrap();
                     self.compact.set(compact);
                 }
-                "session" => {
-                    let _ = self.session.replace(value.get().unwrap());
-                }
+                "session" => obj.set_session(value.get().unwrap()),
                 "room" => {
                     let room = value.get().unwrap();
                     obj.set_room(room);
@@ -177,7 +176,24 @@ impl Content {
 
     pub fn session(&self) -> Option<Session> {
         let priv_ = imp::Content::from_instance(self);
-        priv_.session.borrow().to_owned()
+        priv_
+            .session
+            .borrow()
+            .as_ref()
+            .and_then(|session| session.upgrade())
+    }
+
+    pub fn set_session(&self, session: Option<Session>) {
+        let priv_ = imp::Content::from_instance(self);
+
+        if session == self.session() {
+            return;
+        }
+
+        priv_
+            .session
+            .replace(session.map(|session| session.downgrade()));
+        self.notify("session");
     }
 
     pub fn content_type(&self) -> ContentType {

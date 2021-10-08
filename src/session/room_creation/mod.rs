@@ -30,13 +30,14 @@ const MAX_BYTES: usize = 255;
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::subclass::InitializingObject;
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/room-creation.ui")]
     pub struct RoomCreation {
-        pub session: RefCell<Option<Session>>,
+        pub session: RefCell<Option<WeakRef<Session>>>,
         #[template_child]
         pub content: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -171,7 +172,11 @@ impl RoomCreation {
 
     pub fn session(&self) -> Option<Session> {
         let priv_ = imp::RoomCreation::from_instance(self);
-        priv_.session.borrow().clone()
+        priv_
+            .session
+            .borrow()
+            .as_ref()
+            .and_then(|session| session.upgrade())
     }
 
     fn set_session(&self, session: Option<Session>) {
@@ -187,7 +192,9 @@ impl RoomCreation {
                 .set_label(&[":", user.user_id().server_name().as_str()].concat());
         }
 
-        priv_.session.replace(session);
+        priv_
+            .session
+            .replace(session.map(|session| session.downgrade()));
         self.notify("session");
     }
 

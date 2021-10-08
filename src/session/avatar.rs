@@ -18,6 +18,7 @@ use crate::session::Session;
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use once_cell::sync::{Lazy, OnceCell};
     use std::cell::{Cell, RefCell};
 
@@ -27,7 +28,7 @@ mod imp {
         pub needed: Cell<bool>,
         pub url: RefCell<Option<MxcUri>>,
         pub display_name: RefCell<Option<String>>,
-        pub session: OnceCell<Session>,
+        pub session: OnceCell<WeakRef<Session>>,
     }
 
     #[glib::object_subclass]
@@ -92,7 +93,10 @@ mod imp {
             match pspec.name() {
                 "needed" => obj.set_needed(value.get().unwrap()),
                 "url" => obj.set_url(value.get::<Option<&str>>().unwrap().map(Into::into)),
-                "session" => self.session.set(value.get().unwrap()).unwrap(),
+                "session" => self
+                    .session
+                    .set(value.get::<Session>().unwrap().downgrade())
+                    .unwrap(),
                 "display-name" => {
                     let _ = obj.set_display_name(value.get().unwrap());
                 }
@@ -132,9 +136,9 @@ impl Avatar {
         .expect("Failed to create Avatar")
     }
 
-    fn session(&self) -> &Session {
+    fn session(&self) -> Session {
         let priv_ = imp::Avatar::from_instance(self);
-        priv_.session.get().unwrap()
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn image(&self) -> Option<gdk::Paintable> {
