@@ -125,7 +125,7 @@ impl Application {
             self,
             "new-login",
             clone!(@weak self as app => move |_, _| {
-                app.get_main_window().switch_to_login_page();
+                app.get_main_window().switch_to_login_page(true);
             })
         );
 

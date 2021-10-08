@@ -1,0 +1,507 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="SessionVerification" parent="AdwBin">
+    <style>
+      <class name="session-verification"/>
+    </style>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkHeaderBar">
+            <property name="show-title-buttons">True</property>
+            <style>
+              <class name="flat"/>
+            </style>
+            <child type="start">
+              <object class="GtkButton">
+                <property name="visible">True</property>
+                <property name="icon-name">go-previous-symbolic</property>
+                <property name="action-name">verification.previous</property>
+                <style>
+                  <class name="circular"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStack" id="main_stack">
+            <property name="transition-type">crossfade</property>
+            <property name="vexpand">True</property>
+            <property name="margin-top">24</property>
+            <property name="margin-bottom">24</property>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">wait-for-device</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Get Another Device</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Accept the verification request from another session or device.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkPicture">
+                            <property name="file">resource:///org/gnome/FractalNext/icons/scalable/status/other-device.svg</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">No other devices logged into this account?</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="label" translatable="yes">Recovery</property>
+                            <property name="halign">center</property>
+                            <property name="action-name">verification.show-recovery</property>
+                            <style>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">bootstrap</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Setup Encryption Identity</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">You need to setup an encryption identity, since this is the first time you logged into your account.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="bootstrap_button">
+                            <property name="label" translatable="yes">Setup</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">qrcode</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Verify Session</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Scan this code from another session logged into this account</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="TriQRCode" id="qrcode">
+                            <property name="valign">center</property>
+                            <property name="halign">center</property>
+                            <property name="margin-top">24</property>
+                            <property name="margin-bottom">24</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Can't scan QR code?</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="start_emoji_btn">
+                            <property name="label" translatable="yes">Compare Emoji</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">emoji</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Verify Session</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Check if the same emoji appear in the same order on the other device</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="emoji_row_1">
+                            <property name="valign">center</property>
+                            <property name="halign">center</property>
+                            <property name="spacing">30</property>
+                            <property name="margin-top">24</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="emoji_row_2">
+                            <property name="valign">center</property>
+                            <property name="halign">center</property>
+                            <property name="spacing">30</property>
+                            <property name="margin-bottom">24</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="emoji_not_match_btn">
+                            <property name="label" translatable="yes">Do Not Match</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="destructive-action"/>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="emoji_match_btn">
+                            <property name="label" translatable="yes">Match</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">recovery</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Recovery</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Without another device you need a recovery passphrase or key to access your messages</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="label" translatable="yes">Recovery Passphrase</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="label" translatable="yes">Recovery Key</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">If you don't have any of these you can rest your identity, but be aware this makes your old messages inacessible forever.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="halign">center</property>
+                            <property name="label" translatable="yes">Reset Identity</property>
+                            <style>
+                              <class name="destructive-action"/>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">recovery-passphrase</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Recovery Passphrase</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Your Recovery Passphrase was set up when you first created this account.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">If you opted for a Recovery Key instead go back and choose that option.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkPasswordEntry">
+                            <property name="placeholder-text" translatable="yes">Passphrase</property>
+                            <property name="show-peek-icon">True</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="label" translatable="yes">Next</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">recovery-key</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Recovery Key</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Your Recovery Key was set up when you first created this account.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">If you opted for a Recovery Passphrase instead go back and choose that option.</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkTextView">
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox">
+
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton">
+                            <property name="label" translatable="yes">Next</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">completed</property>
+                <property name="child">
+                  <object class="AdwClamp">
+                    <property name="maximum-size">400</property>
+                    <property name="tightening-threshold">300</property>
+                    <property name="child">
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">18</property>
+                        <property name="valign">center</property>
+                        <property name="halign">center</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">Setup Complete</property>
+                            <style>
+                              <class name="title-1"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkPicture">
+                            <property name="file">resource:///org/gnome/FractalNext/icons/scalable/status/setup-complete.svg</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="label" translatable="yes">This session is ready to send and receive secure messages</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="get_started_button">
+                            <property name="label" translatable="yes">Get Started</property>
+                            <property name="action-name">session.show-content</property>
+                            <property name="halign">center</property>
+                            <style>
+                              <class name="suggested-action"/>
+                              <class name="pill"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+

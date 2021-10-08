@@ -27,6 +27,7 @@ html2pango = "0.4"
 futures = "0.3"
 rand = "0.8"
 indexmap = "1.6.2"
+qrcode = "0.12.0"
 
 [dependencies.sourceview]
 package = "sourceview5"

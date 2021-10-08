@@ -40,6 +40,8 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-devices-page.ui">ui/account-settings-devices-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="components-loading-listbox-row.ui">ui/components-loading-listbox-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="room-creation.ui">ui/room-creation.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="session-verification.ui">ui/session-verification.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="verification-emoji.ui">ui/verification-emoji.ui</file>
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
@@ -47,5 +49,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/devices-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/setup-complete.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/other-device.svg</file>
   </gresource>
 </gresources>

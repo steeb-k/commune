@@ -8,6 +8,7 @@ mod config;
 mod prelude;
 
 mod components;
+mod contrib;
 mod error;
 mod login;
 mod matrix_error;

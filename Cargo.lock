@@ -740,6 +740,7 @@ dependencies = [
  "matrix-sdk",
  "mime",
  "once_cell",
+ "qrcode",
  "rand 0.8.4",
  "secret-service",
  "serde_json",

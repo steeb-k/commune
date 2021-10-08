@@ -10,6 +10,7 @@ use url::{ParseError, Url};
 mod imp {
     use super::*;
     use glib::subclass::{InitializingObject, Signal};
+    use glib::SignalHandlerId;
     use once_cell::sync::Lazy;
     use std::cell::RefCell;
 
@@ -35,6 +36,9 @@ mod imp {
         pub password_entry: TemplateChild<gtk::PasswordEntry>,
         #[template_child]
         pub back_to_session_button: TemplateChild<gtk::Button>,
+        pub prepered_source_id: RefCell<Option<SignalHandlerId>>,
+        pub logged_out_source_id: RefCell<Option<SignalHandlerId>>,
+        pub ready_source_id: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -124,7 +128,6 @@ impl Login {
         self.freeze();
 
         let session = Session::new();
-
         self.set_handler_for_prepared_session(&session);
 
         session.login_with_password(
@@ -132,16 +135,16 @@ impl Login {
             username,
             password,
         );
-
         priv_.current_session.replace(Some(session));
     }
 
-    fn clean(&self) {
+    pub fn clean(&self) {
         let priv_ = imp::Login::from_instance(self);
         priv_.homeserver_entry.set_text("");
         priv_.username_entry.set_text("");
         priv_.password_entry.set_text("");
         self.unfreeze();
+        self.drop_session_reference();
     }
 
     fn freeze(&self) {
@@ -180,7 +183,17 @@ impl Login {
     fn drop_session_reference(&self) {
         let priv_ = imp::Login::from_instance(self);
 
-        priv_.current_session.take();
+        if let Some(session) = priv_.current_session.take() {
+            if let Some(id) = priv_.prepered_source_id.take() {
+                session.disconnect(id);
+            }
+            if let Some(id) = priv_.logged_out_source_id.take() {
+                session.disconnect(id);
+            }
+            if let Some(id) = priv_.ready_source_id.take() {
+                session.disconnect(id);
+            }
+        }
     }
 
     pub fn default_widget(&self) -> gtk::Widget {
@@ -194,20 +207,39 @@ impl Login {
     }
 
     fn set_handler_for_prepared_session(&self, session: &Session) {
-        session.connect_prepared(clone!(@weak self as login => move |session, error| {
-            match error {
-                Some(e) => {
-                    login.parent_window().append_error(&e);
+        let priv_ = imp::Login::from_instance(self);
+        priv_
+            .prepered_source_id
+            .replace(Some(session.connect_prepared(
+                clone!(@weak self as login => move |session, error| {
+                    match error {
+                        Some(e) => {
+                            login.parent_window().append_error(&e);
+                            login.unfreeze();
+                        },
+                        None => {
+                            debug!("A new session was prepared");
+                            login.emit_by_name("new-session", &[&session]).unwrap();
+                        }
+                    }
+                }),
+            )));
+
+        priv_.ready_source_id.replace(Some(session.connect_ready(
+            clone!(@weak self as login => move |_| {
+                login.clean();
+            }),
+        )));
+
+        priv_
+            .logged_out_source_id
+            .replace(Some(session.connect_logged_out(
+                clone!(@weak self as login => move |_| {
+                    login.parent_window().switch_to_login_page(false);
+                    login.drop_session_reference();
                     login.unfreeze();
-                },
-                None => {
-                    debug!("A new session was prepared");
-                    login.emit_by_name("new-session", &[&session]).unwrap();
-                    login.clean();
-                }
-            }
-            login.drop_session_reference();
-        }));
+                }),
+            )));
     }
 
     fn parent_window(&self) -> crate::Window {

@@ -45,13 +45,13 @@
   padding: 12px 40px;
 }
 
-.pill {
+.inline-pill {
   border-radius: 9999px;
   background-color: alpha(@theme_text_color, 0.1);
   padding-right: 6px;
 }
 
-.app-notification .pill {
+.app-notification .inline-pill {
   background-color: alpha(@theme_bg_color, 0.2);
 }
 
@@ -69,6 +69,10 @@
 /* Login */
 .login {
   min-width: 250px;
+}
+
+.session-verification .text-button {
+ min-width: 200px;
 }
 
 #devnotice {
@@ -243,4 +247,8 @@ button.cutout:hover {
 
 button.cutout:active {
   background-color: #c4c5c4;
+}
+
+.emoji {
+  font-size: 2em;
 }

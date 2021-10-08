@@ -20,6 +20,7 @@ run_command(
 
 sources = files(
   'application.rs',
+  'contrib/qr_code.rs',
   'components/avatar.rs',
   'components/auth_dialog.rs',
   'components/context_menu_bin.rs',
@@ -83,6 +84,11 @@ sources = files(
   'session/sidebar/account_switcher/item.rs',
   'session/sidebar/account_switcher/mod.rs',
   'session/sidebar/account_switcher/user_entry.rs',
+  'session/verification/mod.rs',
+  'session/verification/emoji.rs',
+  'session/verification/identity_verification.rs',
+  'session/verification/session_verification.rs',
+  'session/verification/to_device_handler.rs',
 )
 
 custom_target(

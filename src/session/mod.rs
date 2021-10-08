@@ -7,6 +7,7 @@ mod room_creation;
 mod room_list;
 mod sidebar;
 mod user;
+mod verification;
 
 use self::account_settings::AccountSettings;
 pub use self::avatar::Avatar;
@@ -16,6 +17,7 @@ pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
+pub use self::verification::{IdentityVerification, SessionVerification, ToDeviceHandler};
 
 use crate::secret;
 use crate::secret::StoredSession;
@@ -79,9 +81,11 @@ mod imp {
         pub selected_room: RefCell<Option<Room>>,
         pub selected_content_type: Cell<ContentType>,
         pub is_ready: Cell<bool>,
+        pub logout_on_dispose: Cell<bool>,
         pub info: OnceCell<StoredSession>,
         pub source_id: RefCell<Option<SourceId>>,
         pub sync_tokio_handle: RefCell<Option<JoinHandle<()>>>,
+        pub to_device_handler: OnceCell<ToDeviceHandler>,
     }
 
     #[glib::object_subclass]
@@ -98,7 +102,15 @@ mod imp {
             });
 
             klass.install_action("session.logout", None, move |session, _, _| {
-                session.logout();
+                spawn!(clone!(@weak session => async move {
+                    let priv_ = imp::Session::from_instance(&session);
+                    priv_.logout_on_dispose.set(false);
+                    session.logout().await
+                }));
+            });
+
+            klass.install_action("session.show-content", None, move |session, _, _| {
+                session.show_content();
             });
 
             klass.install_action("session.room-creation", None, move |session, _, _| {
@@ -214,19 +226,24 @@ mod imp {
                         <()>::static_type().into(),
                     )
                     .build(),
+                    Signal::builder("ready", &[], <()>::static_type().into()).build(),
                     Signal::builder("logged-out", &[], <()>::static_type().into()).build(),
                 ]
             });
             SIGNALS.as_ref()
         }
 
-        fn dispose(&self, _obj: &Self::Type) {
+        fn dispose(&self, obj: &Self::Type) {
             if let Some(source_id) = self.source_id.take() {
                 let _ = glib::Source::remove(source_id);
             }
 
             if let Some(handle) = self.sync_tokio_handle.take() {
                 handle.abort();
+            }
+
+            if self.logout_on_dispose.get() {
+                glib::MainContext::default().block_on(obj.logout());
             }
         }
     }
@@ -285,6 +302,8 @@ impl Session {
     }
 
     pub fn login_with_password(&self, homeserver: Url, username: String, password: String) {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.logout_on_dispose.set(true);
         let mut path = glib::user_data_dir();
         path.push(
             &Uuid::new_v4()
@@ -361,6 +380,7 @@ impl Session {
                 .await
                 .map(|_| (client, session))
         });
+
         spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
             clone!(@weak self as obj => async move {
@@ -381,6 +401,11 @@ impl Session {
                 let user = User::new(self, &session.user_id);
                 priv_.user.set(user.clone()).unwrap();
                 self.notify("user");
+
+                priv_
+                    .to_device_handler
+                    .set(ToDeviceHandler::new(self))
+                    .unwrap();
 
                 let handle = spawn_tokio!(async move {
                     let display_name = client.display_name().await?;
@@ -407,6 +432,7 @@ impl Session {
                 priv_.info.set(session).unwrap();
 
                 self.room_list().load();
+
                 self.sync();
 
                 None
@@ -465,9 +491,63 @@ impl Session {
     }
 
     fn mark_ready(&self) {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_.stack.set_visible_child(&*priv_.content);
+        let priv_ = imp::Session::from_instance(self);
+        let client = self.client();
+        let user_id = self.user().unwrap().user_id().to_owned();
+
         priv_.is_ready.set(true);
+
+        let has_cross_signing_keys = spawn_tokio!(async move {
+            if let Some(cross_signing_status) = client.cross_signing_status().await {
+                cross_signing_status.has_master
+                    && cross_signing_status.has_self_signing
+                    && cross_signing_status.has_user_signing
+            } else {
+                false
+            }
+        });
+
+        let client = self.client();
+        let need_new_identity = spawn_tokio!(async move {
+            // If there is an error just assume we don't need a new identity since
+            // we will try again during the session verification
+            client
+                .get_user_identity(&user_id)
+                .await
+                .map_or(false, |identity| identity.is_none())
+        });
+
+        spawn!(clone!(@weak self as obj => async move {
+            let priv_ = imp::Session::from_instance(&obj);
+            if !has_cross_signing_keys.await.unwrap() {
+                if need_new_identity.await.unwrap() {
+                    let client = obj.client();
+                    if spawn_tokio!(async move { client.bootstrap_cross_signing(None).await }).await.is_ok() {
+                        priv_.stack.set_visible_child(&*priv_.content);
+                        return;
+                    }
+                }
+
+                priv_.logout_on_dispose.set(true);
+
+                let verification = IdentityVerification::new(obj.user().unwrap());
+                let session = SessionVerification::new(&verification, &obj);
+                priv_
+                    .to_device_handler
+                    .get()
+                    .unwrap()
+                    .add_request(verification);
+                priv_
+                    .stack
+                    .add_named(&session, Some("session-verification"));
+                priv_.stack.set_visible_child(&session);
+                session.start_verification();
+
+                return;
+            }
+
+            obj.show_content();
+        }));
     }
 
     fn is_ready(&self) -> bool {
@@ -543,13 +623,31 @@ impl Session {
         .unwrap()
     }
 
+    pub fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("ready", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+
+            f(&obj);
+
+            None
+        })
+        .unwrap()
+    }
+
     fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
+        let priv_ = imp::Session::from_instance(self);
+
         match response {
             Ok(response) => {
                 if !self.is_ready() {
                     self.mark_ready();
                 }
                 self.room_list().handle_response_rooms(response.rooms);
+                priv_
+                    .to_device_handler
+                    .get()
+                    .unwrap()
+                    .handle_response_to_device(response.to_device);
             }
             Err(error) => {
                 if let matrix_sdk::Error::Http(HttpError::ClientApi(FromHttpResponseError::Http(
@@ -592,36 +690,37 @@ impl Session {
         window.show();
     }
 
-    pub fn logout(&self) {
-        let client = self.client();
+    pub async fn logout(&self) {
+        let priv_ = imp::Session::from_instance(self);
+        self.emit_by_name("logged-out", &[]).unwrap();
 
+        debug!("The session is about to be logout");
+
+        // First stop the verification in progress
+        if let Some(session_verificiation) = priv_.stack.child_by_name("session-verification") {
+            priv_.stack.remove(&session_verificiation);
+        }
+
+        let client = self.client();
         let handle = spawn_tokio!(async move {
             let request = logout::Request::new();
             client.send(request, None).await
         });
 
-        spawn!(
-            glib::PRIORITY_DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                match handle.await.unwrap() {
-                    Ok(_) => obj.cleanup_session(),
-                    Err(error) => {
-                        error!("Couldn’t logout the session {}", error);
-                        let error = Error::new(
-                                clone!(@weak obj => @default-return None, move |_| {
-                                        let label = gtk::Label::new(Some(&gettext("Failed to logout the session.")));
+        match handle.await.unwrap() {
+            Ok(_) => self.cleanup_session(),
+            Err(error) => {
+                error!("Couldn’t logout the session {}", error);
+                let error = Error::new(move |_| {
+                    let label = gtk::Label::new(Some(&gettext("Failed to logout the session.")));
+                    Some(label.upcast())
+                });
 
-                                        Some(label.upcast())
-                                }),
-                        );
-
-                        if let Some(window) = obj.parent_window() {
-                            window.append_error(&error);
-                        }
-                    }
+                if let Some(window) = self.parent_window() {
+                    window.append_error(&error);
                 }
-            })
-        );
+            }
+        }
     }
 
     fn cleanup_session(&self) {
@@ -649,7 +748,22 @@ impl Session {
             error!("Failed to remove database after logout: {}", error);
         }
 
-        self.emit_by_name("logged-out", &[]).unwrap();
+        debug!("The logged out session was cleaned up");
+    }
+
+    /// Show the content of the session
+    pub fn show_content(&self) {
+        let priv_ = imp::Session::from_instance(self);
+
+        // FIXME: we should actually check if we have now the keys
+        priv_.stack.set_visible_child(&*priv_.content);
+        priv_.logout_on_dispose.set(false);
+
+        if let Some(session_verificiation) = priv_.stack.child_by_name("session-verification") {
+            priv_.stack.remove(&session_verificiation);
+        }
+
+        self.emit_by_name("ready", &[]).unwrap();
     }
 }
 

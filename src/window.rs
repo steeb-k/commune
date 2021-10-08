@@ -123,7 +123,7 @@ impl Window {
         if let Some(child) = priv_.sessions.first_child() {
             priv_.sessions.set_visible_child(&child);
         } else {
-            self.switch_to_login_page();
+            self.switch_to_login_page(true);
         }
     }
 
@@ -181,13 +181,15 @@ impl Window {
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
     }
 
-    pub fn switch_to_login_page(&self) {
+    pub fn switch_to_login_page(&self, clean: bool) {
         let priv_ = imp::Window::from_instance(self);
+        if clean {
+            priv_.login.clean();
+        }
         priv_
             .login
-            .get()
             .show_back_to_session_button(priv_.sessions.get().pages().n_items() > 0);
-        priv_.main_stack.set_visible_child(&priv_.login.get());
+        priv_.main_stack.set_visible_child(&*priv_.login);
     }
 
     /// This appends a new error to the list of errors

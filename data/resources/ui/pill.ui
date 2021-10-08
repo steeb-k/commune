@@ -4,7 +4,7 @@
     <property name="focusable">True</property>
     <property name="valign">center</property>
     <style>
-      <class name="pill"/>
+      <class name="inline-pill"/>
     </style>
     <child>
       <object class="GtkBox">
