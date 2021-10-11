@@ -354,8 +354,7 @@ impl AuthDialog {
 
     pub fn connect_response<F: Fn(&Self, bool) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_local("response", true, move |values| {
-            //FIXME The manuel cast is needed because of https://github.com/gtk-rs/gtk4-rs/issues/591
-            let obj: Self = values[0].get::<glib::Object>().unwrap().downcast().unwrap();
+            let obj: Self = values[0].get().unwrap();
             let response = values[1].get::<bool>().unwrap();
 
             f(&obj, response);
