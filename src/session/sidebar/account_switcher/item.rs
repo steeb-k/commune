@@ -153,7 +153,7 @@ impl Item {
         match self {
             Self::User(ref session_page, hinted) => {
                 let user_entry = UserEntryRow::new(session_page);
-                user_entry.set_hint(hinted.clone());
+                user_entry.set_hint(*hinted);
                 user_entry.upcast()
             }
             Self::Separator => gtk::Separator::new(gtk::Orientation::Vertical).upcast(),

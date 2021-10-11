@@ -108,7 +108,7 @@ impl Row {
         }
 
         let row = if let Some(row) = list_row.clone() {
-            priv_.list_row.replace(list_row.clone());
+            priv_.list_row.replace(list_row);
             row
         } else {
             return;

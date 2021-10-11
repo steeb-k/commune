@@ -59,13 +59,11 @@ impl AuthData {
                 password,
                 session,
             }) => MatrixAuthData::Password(assign!(MatrixPassword::new(
-                                UserIdentifier::MatrixId(&user_id),
-                                &password,
+                                UserIdentifier::MatrixId(user_id),
+                                password,
                             ), { session: session.as_deref() })),
             AuthData::FallbackAcknowledgement(FallbackAcknowledgement { session }) => {
-                MatrixAuthData::FallbackAcknowledgement(MatrixFallbackAcknowledgement::new(
-                    &session,
-                ))
+                MatrixAuthData::FallbackAcknowledgement(MatrixFallbackAcknowledgement::new(session))
             }
         }
     }
@@ -283,7 +281,7 @@ impl AuthDialog {
                         let homeserver = receiver.await.unwrap();
                         self.setup_fallback_page(
                             homeserver.as_str(),
-                            &flow.stages.first()?,
+                            flow.stages.first()?,
                             &session,
                         );
                         if self.show_and_wait_for_response().await {

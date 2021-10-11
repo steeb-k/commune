@@ -495,13 +495,13 @@ impl Session {
 
     fn open_account_settings(&self) {
         if let Some(user) = self.user() {
-            let window = AccountSettings::new(self.parent_window().as_ref(), &user);
+            let window = AccountSettings::new(self.parent_window().as_ref(), user);
             window.show();
         }
     }
 
     fn show_room_creation_dialog(&self) {
-        let window = RoomCreation::new(self.parent_window().as_ref(), &self);
+        let window = RoomCreation::new(self.parent_window().as_ref(), self);
         window.show();
     }
 }

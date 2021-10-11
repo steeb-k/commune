@@ -425,7 +425,7 @@ impl Room {
                                                     category.to_string()
                                                 );
                                                 let room_pill = Pill::new();
-                                                room_pill.set_room(Some(obj.clone()));
+                                                room_pill.set_room(Some(obj));
                                                 let label = LabelWithWidgets::new(&error_message, vec![room_pill]);
 
                                                 Some(label.upcast())

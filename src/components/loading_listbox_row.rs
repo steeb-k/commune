@@ -116,6 +116,12 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
+impl Default for LoadingListBoxRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LoadingListBoxRow {
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create LoadingListBoxRow")

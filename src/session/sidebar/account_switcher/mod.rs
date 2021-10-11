@@ -47,12 +47,12 @@ mod imp {
             self.parent_constructed(obj);
 
             self.entries.connect_activate(|list_view, index| {
-                list_view
+                if let Some(Ok(item)) = list_view
                     .model()
                     .and_then(|model| model.item(index))
                     .map(AccountSwitcherItem::try_from)
-                    .and_then(Result::ok)
-                    .map(|item| match item {
+                {
+                    match item {
                         AccountSwitcherItem::User(session_page, _) => {
                             let session_widget = session_page.child();
                             session_widget
@@ -66,7 +66,8 @@ mod imp {
                             list_view.activate_action("app.new-login", None);
                         }
                         _ => {}
-                    });
+                    }
+                }
             });
         }
     }
@@ -90,7 +91,7 @@ impl AccountSwitcher {
 
         // There is no permanent stuff to take care of,
         // so only bind and unbind are connected.
-        let ref factory = gtk::SignalListItemFactory::new();
+        let factory = &gtk::SignalListItemFactory::new();
         factory.connect_bind(clone!(@weak session_root => move |_, list_item| {
             list_item.set_selectable(false);
             let child = list_item
@@ -122,12 +123,12 @@ impl AccountSwitcher {
 
         entries.set_factory(Some(factory));
 
-        let ref end_items = ExtraItemObj::list_store();
-        let ref items_split = ListStore::new(ListModel::static_type());
+        let end_items = &ExtraItemObj::list_store();
+        let items_split = &ListStore::new(ListModel::static_type());
         items_split.append(sessions_stack_pages);
         items_split.append(end_items);
-        let ref items = gtk::FlattenListModel::new(Some(items_split));
-        let ref selectable_items = gtk::NoSelection::new(Some(items));
+        let items = &gtk::FlattenListModel::new(Some(items_split));
+        let selectable_items = &gtk::NoSelection::new(Some(items));
 
         entries.set_model(Some(selectable_items));
     }

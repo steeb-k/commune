@@ -162,26 +162,21 @@ impl Device {
         let priv_ = imp::Device::from_instance(self);
         // TODO: Would be nice to also show the location
         // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/700
-        priv_
-            .device
-            .get()
-            .unwrap()
-            .last_seen_ip
-            .as_ref()
-            .map(String::as_str)
+        priv_.device.get().unwrap().last_seen_ip.as_deref()
     }
 
     pub fn last_seen_ts(&self) -> Option<glib::DateTime> {
         let priv_ = imp::Device::from_instance(self);
-        if let Some(last_seen_ts) = priv_.device.get().unwrap().last_seen_ts {
-            Some(
+        priv_
+            .device
+            .get()
+            .unwrap()
+            .last_seen_ts
+            .map(|last_seen_ts| {
                 glib::DateTime::from_unix_utc(last_seen_ts.as_secs().into())
                     .and_then(|t| t.to_local())
-                    .unwrap(),
-            )
-        } else {
-            None
-        }
+                    .unwrap()
+            })
     }
 
     /// Delete the `Device`

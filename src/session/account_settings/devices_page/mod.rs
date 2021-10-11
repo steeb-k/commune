@@ -119,7 +119,7 @@ impl DevicesPage {
                 clone!(@weak device_list => @default-panic, move |item| {
                     match item.downcast_ref::<DeviceItem>().unwrap().type_() {
                         device_item::ItemType::Device(device) => {
-                            DeviceRow::new(&device).upcast::<gtk::Widget>()
+                            DeviceRow::new(device).upcast::<gtk::Widget>()
                         }
                         device_item::ItemType::Error(error) => {
                             let row = LoadingListBoxRow::new();
@@ -147,7 +147,7 @@ impl DevicesPage {
             device_list.connect_notify_local(
                 Some("current-device"),
                 clone!(@weak self as obj => move |device_list, _| {
-                    obj.set_current_device(&device_list);
+                    obj.set_current_device(device_list);
                 }),
             );
 
@@ -175,9 +175,7 @@ impl DevicesPage {
             priv_.current_session.remove(&child);
         }
         let row = match device_list.current_device().type_() {
-            device_item::ItemType::Device(device) => {
-                DeviceRow::new(&device).upcast::<gtk::Widget>()
-            }
+            device_item::ItemType::Device(device) => DeviceRow::new(device).upcast::<gtk::Widget>(),
             device_item::ItemType::Error(error) => {
                 let row = LoadingListBoxRow::new();
                 row.set_error(Some(error));

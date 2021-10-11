@@ -300,7 +300,7 @@ impl Timeline {
                 // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
                 // the `related_to` event is is added to the list
                 let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
-                relates_to_event.push(event.matrix_event_id().to_owned());
+                relates_to_event.push(event.matrix_event_id());
             }
         }
 

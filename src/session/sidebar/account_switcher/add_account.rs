@@ -41,3 +41,9 @@ impl AddAccountRow {
         glib::Object::new(&[]).expect("Failed to create AddAccountRow")
     }
 }
+
+impl Default for AddAccountRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

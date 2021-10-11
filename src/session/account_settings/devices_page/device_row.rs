@@ -124,7 +124,7 @@ impl DeviceRow {
         }
 
         if let Some(ref device) = device {
-            priv_.display_name.set_label(&device.display_name());
+            priv_.display_name.set_label(device.display_name());
             self.set_tooltip_text(Some(device.device_id().as_str()));
 
             priv_.verified_icon.set_visible(device.is_verified());
@@ -250,20 +250,18 @@ pub fn format_date_time_as_string(datetime: glib::DateTime) -> glib::GString {
             // xgettext:no-c-format
             format = gettext("Last seen %B %-e at %l:%M %p");
         }
+    } else if use_24 {
+        // Translators: this is the day number followed
+        // by the abbreviated month name followed by the year followed
+        // by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
+        // xgettext:no-c-format
+        format = gettext("Last seen %B %-e %Y at %H:%M");
     } else {
-        if use_24 {
-            // Translators: this is the day number followed
-            // by the abbreviated month name followed by the year followed
-            // by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
-            // xgettext:no-c-format
-            format = gettext("Last seen %B %-e %Y at %H:%M");
-        } else {
-            // Translators: this is the day number followed
-            // by the abbreviated month name followed by the year followed
-            // by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
-            // xgettext:no-c-format
-            format = gettext("Last seen %B %-e %Y at %l:%M %p");
-        }
+        // Translators: this is the day number followed
+        // by the abbreviated month name followed by the year followed
+        // by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
+        // xgettext:no-c-format
+        format = gettext("Last seen %B %-e %Y at %l:%M %p");
     }
 
     datetime.format(&format).unwrap()
