@@ -20,19 +20,24 @@ pub use self::user::{User, UserExt};
 use crate::secret;
 use crate::secret::StoredSession;
 use crate::utils::do_async;
+use crate::Error;
 use crate::Window;
 use crate::RUNTIME;
 
 use crate::login::LoginError;
 use crate::session::content::ContentType;
 use adw::subclass::prelude::BinImpl;
+use gettextrs::gettext;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{gdk, glib, glib::clone, glib::SyncSender, CompositeTemplate, SelectionModel};
 use gtk_macros::send;
 use log::error;
 use matrix_sdk::ruma::{
-    api::client::r0::filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
+    api::client::r0::{
+        filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
+        session::logout,
+    },
     assign,
 };
 use matrix_sdk::{
@@ -63,12 +68,13 @@ mod imp {
         pub sidebar: TemplateChild<Sidebar>,
         /// Contains the error if something went wrong
         pub error: RefCell<Option<matrix_sdk::Error>>,
-        pub client: OnceCell<Client>,
+        pub client: RefCell<Option<Client>>,
         pub room_list: OnceCell<RoomList>,
         pub user: OnceCell<User>,
         pub selected_room: RefCell<Option<Room>>,
         pub selected_content_type: Cell<ContentType>,
-        pub is_ready: OnceCell<bool>,
+        pub is_ready: Cell<bool>,
+        pub info: OnceCell<StoredSession>,
     }
 
     #[glib::object_subclass]
@@ -82,6 +88,10 @@ mod imp {
 
             klass.install_action("session.close-room", None, move |session, _, _| {
                 session.set_selected_room(None);
+            });
+
+            klass.install_action("session.logout", None, move |session, _, _| {
+                session.logout();
             });
 
             klass.install_action("session.room-creation", None, move |session, _, _| {
@@ -190,7 +200,10 @@ mod imp {
 
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder("prepared", &[], <()>::static_type().into()).build()]
+                vec![
+                    Signal::builder("prepared", &[], <()>::static_type().into()).build(),
+                    Signal::builder("logged-out", &[], <()>::static_type().into()).build(),
+                ]
             });
             SIGNALS.as_ref()
         }
@@ -341,7 +354,7 @@ impl Session {
         let priv_ = imp::Session::from_instance(self);
         match result {
             Ok((client, session)) => {
-                priv_.client.set(client.clone()).unwrap();
+                priv_.client.replace(Some(client.clone()));
                 let user = User::new(self, &session.user_id);
                 priv_.user.set(user.clone()).unwrap();
                 self.notify("user");
@@ -366,8 +379,10 @@ impl Session {
 
                 if store_session {
                     // TODO: report secret service errors
-                    secret::store_session(session).unwrap();
+                    secret::store_session(&session).unwrap();
                 }
+
+                priv_.info.set(session).unwrap();
 
                 self.room_list().load();
                 self.sync();
@@ -380,9 +395,8 @@ impl Session {
     }
 
     fn sync(&self) {
-        let priv_ = imp::Session::from_instance(self);
         let sender = self.create_new_sync_response_sender();
-        let client = priv_.client.get().unwrap().clone();
+        let client = self.client();
         RUNTIME.spawn(async move {
             // TODO: only create the filter once and reuse it in the future
             let room_event_filter = assign!(RoomEventFilter::default(), {
@@ -416,12 +430,12 @@ impl Session {
     fn mark_ready(&self) {
         let priv_ = &imp::Session::from_instance(self);
         priv_.stack.set_visible_child(&*priv_.content);
-        priv_.is_ready.set(true).unwrap();
+        priv_.is_ready.set(true);
     }
 
     fn is_ready(&self) -> bool {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.is_ready.get().copied().unwrap_or_default()
+        priv_.is_ready.get()
     }
 
     pub fn room_list(&self) -> &RoomList {
@@ -434,9 +448,13 @@ impl Session {
         priv_.user.get()
     }
 
-    pub fn client(&self) -> &Client {
+    pub fn client(&self) -> Client {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.client.get().unwrap()
+        priv_
+            .client
+            .borrow()
+            .clone()
+            .expect("The session isn't ready")
     }
 
     /// Sets up the required channel to receive new room events
@@ -477,6 +495,17 @@ impl Session {
         .unwrap()
     }
 
+    pub fn connect_logged_out<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("logged-out", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+
+            f(&obj);
+
+            None
+        })
+        .unwrap()
+    }
+
     fn handle_sync_response(&self, response: SyncResponse) {
         self.room_list().handle_response_rooms(response.rooms);
     }
@@ -503,6 +532,49 @@ impl Session {
     fn show_room_creation_dialog(&self) {
         let window = RoomCreation::new(self.parent_window().as_ref(), self);
         window.show();
+    }
+
+    pub fn logout(&self) {
+        let client = self.client();
+
+        do_async(
+            glib::PRIORITY_DEFAULT_IDLE,
+            async move {
+                let request = logout::Request::new();
+                client.send(request, None).await
+            },
+            clone!(@weak self as obj => move |result| async move {
+                match result {
+                    Ok(_) => obj.cleanup_session(),
+                    Err(error) => {
+                        error!("Couldn’t logout the session {}", error);
+                        let error = Error::new(
+                                clone!(@weak obj => @default-return None, move |_| {
+                                        let label = gtk::Label::new(Some(&gettext("Failed to logout the session.")));
+
+                                        Some(label.upcast())
+                                }),
+                        );
+
+                        if let Some(window) = obj.parent_window() {
+                            window.append_error(&error);
+                        }
+                    }
+                }
+            }),
+        );
+    }
+
+    fn cleanup_session(&self) {
+        let priv_ = &imp::Session::from_instance(self);
+        let info = priv_.info.get().unwrap();
+
+        priv_.is_ready.set(false);
+        secret::remove_session(info).unwrap();
+        priv_.client.take();
+        fs::remove_dir_all(info.path.clone()).unwrap();
+
+        self.emit_by_name("logged-out", &[]).unwrap();
     }
 }
 

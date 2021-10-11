@@ -206,7 +206,7 @@ impl RoomCreation {
         priv_.cancel_button.set_sensitive(false);
         priv_.error_label_revealer.set_reveal_child(false);
 
-        let client = self.session()?.client().clone();
+        let client = self.session()?.client();
 
         let room_name = priv_.room_name.text().to_string();
 

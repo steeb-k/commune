@@ -284,7 +284,7 @@ impl PublicRoomList {
             return;
         }
 
-        let client = self.session().unwrap().client().clone();
+        let client = self.session().unwrap().client();
         let search_term = priv_.search_term.borrow().to_owned();
         let server = priv_.server.borrow().to_owned();
         let network = priv_.network.borrow().to_owned();

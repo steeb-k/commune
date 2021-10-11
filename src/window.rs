@@ -71,6 +71,7 @@ mod imp {
             self.main_stack.connect_visible_child_notify(
                 clone!(@weak obj => move |_| obj.set_default_by_child()),
             );
+
             obj.set_default_by_child();
         }
     }
@@ -108,6 +109,22 @@ impl Window {
         priv_.sessions.set_visible_child(session);
         // We need to grab the focus so that keyboard shortcuts work
         session.grab_focus();
+
+        session.connect_logged_out(clone!(@weak self as obj => move |session| {
+            obj.remove_session(session)
+        }));
+    }
+
+    fn remove_session(&self, session: &Session) {
+        let priv_ = imp::Window::from_instance(self);
+
+        priv_.sessions.remove(session);
+
+        if let Some(child) = priv_.sessions.first_child() {
+            priv_.sessions.set_visible_child(&child);
+        } else {
+            self.switch_to_login_page();
+        }
     }
 
     fn restore_sessions(&self) {

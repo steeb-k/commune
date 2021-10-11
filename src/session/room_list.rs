@@ -314,7 +314,7 @@ impl RoomList {
     }
 
     pub fn join_by_id_or_alias(&self, identifier: RoomIdOrAliasId) {
-        let client = self.session().client().clone();
+        let client = self.session().client();
         let identifier_clone = identifier.clone();
 
         self.pending_rooms_insert(identifier.clone());

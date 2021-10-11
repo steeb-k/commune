@@ -195,7 +195,7 @@ impl DeviceList {
     }
 
     pub fn load_devices(&self) {
-        let client = self.session().client().clone();
+        let client = self.session().client();
 
         self.set_loading(true);
 

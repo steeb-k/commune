@@ -275,7 +275,7 @@ impl AuthDialog {
                     if let Some(session) = uiaa_info.session {
                         priv_.stack.set_visible_child_name("fallback");
 
-                        let client = self.session().client().clone();
+                        let client = self.session().client();
                         let (sender, receiver) = futures::channel::oneshot::channel();
                         RUNTIME.spawn(async move { sender.send(client.homeserver().await) });
                         let homeserver = receiver.await.unwrap();

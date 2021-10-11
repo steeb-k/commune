@@ -168,7 +168,7 @@ impl Avatar {
         }
 
         if let Some(url) = self.url() {
-            let client = self.session().client().clone();
+            let client = self.session().client();
             let request = MediaRequest {
                 media_type: MediaType::Uri(url),
                 format: MediaFormat::File,

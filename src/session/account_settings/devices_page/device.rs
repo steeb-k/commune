@@ -184,7 +184,7 @@ impl Device {
     /// Returns `true` for success
     pub async fn delete(&self, transient_for: Option<&impl IsA<gtk::Window>>) -> bool {
         let session = self.session();
-        let client = session.client().clone();
+        let client = session.client();
         let device_id = self.device_id().to_owned();
 
         let delete_fn = move |auth_data: Option<AuthData>| {

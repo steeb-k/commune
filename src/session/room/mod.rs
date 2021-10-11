@@ -869,7 +869,7 @@ impl Room {
     /// Removes the avatar if no filename is given.
     pub fn store_avatar(&self, filename: Option<PathBuf>) {
         let matrix_room = self.matrix_room();
-        let client = self.session().client().clone();
+        let client = self.session().client();
 
         do_async(
             glib::PRIORITY_DEFAULT_IDLE,

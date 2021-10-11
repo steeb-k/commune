@@ -229,7 +229,7 @@ impl Explore {
 
     fn load_protocols(&self) {
         let priv_ = imp::Explore::from_instance(self);
-        let client = self.session().unwrap().client().clone();
+        let client = self.session().unwrap().client();
 
         priv_.network_menu.remove_all();
         priv_.network_menu.append(Some("matrix"), "Matrix");

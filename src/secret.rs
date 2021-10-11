@@ -6,6 +6,7 @@ use std::convert::TryFrom;
 use std::path::PathBuf;
 use url::Url;
 
+#[derive(Debug, Clone)]
 pub struct StoredSession {
     pub homeserver: Url,
     pub path: PathBuf,
@@ -80,7 +81,7 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
 
 /// Writes a session to the `SecretService`, overwriting any previously stored session with the
 /// same `homeserver`, `username` and `device-id`.
-pub fn store_session(session: StoredSession) -> Result<(), secret_service::Error> {
+pub fn store_session(session: &StoredSession) -> Result<(), secret_service::Error> {
     let ss = SecretService::new(EncryptionType::Dh)?;
     let collection = get_default_collection_unlocked(&ss)?;
 
@@ -120,6 +121,47 @@ pub fn store_session(session: StoredSession) -> Result<(), secret_service::Error
         true,
         "text/plain",
     )?;
+
+    Ok(())
+}
+
+/// Removes a session from the `SecretService`
+pub fn remove_session(session: &StoredSession) -> Result<(), secret_service::Error> {
+    let ss = SecretService::new(EncryptionType::Dh)?;
+    let collection = get_default_collection_unlocked(&ss)?;
+
+    // Store the information for the login
+    let attributes: HashMap<&str, &str> = [
+        ("user-id", session.user_id.as_str()),
+        ("homeserver", session.homeserver.as_str()),
+        ("device-id", session.device_id.as_str()),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let items = collection.search_items(attributes)?;
+
+    for item in items {
+        item.delete()?;
+    }
+
+    // Store the information for the crypto store
+    let attributes: HashMap<&str, &str> = [
+        ("path", session.path.to_str().unwrap()),
+        ("user-id", session.user_id.as_str()),
+        ("homeserver", session.homeserver.as_str()),
+        ("device-id", session.device_id.as_str()),
+    ]
+    .iter()
+    .cloned()
+    .collect();
+
+    let items = collection.search_items(attributes)?;
+
+    for item in items {
+        item.delete()?;
+    }
 
     Ok(())
 }
