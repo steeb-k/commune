@@ -232,9 +232,8 @@ impl AuthDialog {
 
         loop {
             let callback_clone = callback.clone();
-            let (sender, receiver) = futures::channel::oneshot::channel();
-            RUNTIME.spawn(async move { sender.send(callback_clone(auth_data).await) });
-            let response = receiver.await.unwrap();
+            let handle = RUNTIME.spawn(async move { callback_clone(auth_data).await });
+            let response = handle.await.unwrap();
 
             let uiaa_info: UiaaInfo = match response {
                 Ok(result) => return Some(Ok(result)),
@@ -276,9 +275,10 @@ impl AuthDialog {
                         priv_.stack.set_visible_child_name("fallback");
 
                         let client = self.session().client();
-                        let (sender, receiver) = futures::channel::oneshot::channel();
-                        RUNTIME.spawn(async move { sender.send(client.homeserver().await) });
-                        let homeserver = receiver.await.unwrap();
+                        let homeserver = RUNTIME
+                            .spawn(async move { client.homeserver().await })
+                            .await
+                            .unwrap();
                         self.setup_fallback_page(
                             homeserver.as_str(),
                             flow.stages.first()?,

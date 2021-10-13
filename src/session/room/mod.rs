@@ -887,9 +887,8 @@ impl Room {
         let matrix_room = self.matrix_room();
 
         if let MatrixRoom::Invited(matrix_room) = matrix_room {
-            let (sender, receiver) = futures::channel::oneshot::channel();
-            RUNTIME.spawn(async move { sender.send(matrix_room.accept_invitation().await) });
-            match receiver.await.unwrap() {
+            let handle = RUNTIME.spawn(async move { matrix_room.accept_invitation().await });
+            match handle.await.unwrap() {
                 Ok(result) => Ok(result),
                 Err(error) => {
                     error!("Accepting invitation failed: {}", error);
@@ -918,9 +917,8 @@ impl Room {
         let matrix_room = self.matrix_room();
 
         if let MatrixRoom::Invited(matrix_room) = matrix_room {
-            let (sender, receiver) = futures::channel::oneshot::channel();
-            RUNTIME.spawn(async move { sender.send(matrix_room.reject_invitation().await) });
-            match receiver.await.unwrap() {
+            let handle = RUNTIME.spawn(async move { matrix_room.reject_invitation().await });
+            match handle.await.unwrap() {
                 Ok(result) => Ok(result),
                 Err(error) => {
                     error!("Rejecting invitation failed: {}", error);
