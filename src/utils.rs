@@ -32,27 +32,34 @@ macro_rules! event_from_sync_event {
     };
 }
 
-use crate::RUNTIME;
-use gtk::gio::prelude::*;
-use gtk::glib::{self, Object};
-use std::future::Future;
-/// Execute a future on a tokio runtime and spawn a future on the local thread to handle the result
-pub fn do_async<
-    R: Send + 'static,
-    F1: Future<Output = R> + Send + 'static,
-    F2: Future<Output = ()> + 'static,
-    FN: FnOnce(R) -> F2 + 'static,
->(
-    priority: glib::source::Priority,
-    tokio_fut: F1,
-    glib_closure: FN,
-) {
-    let handle = RUNTIME.spawn(async move { tokio_fut.await });
-
-    glib::MainContext::default().spawn_local_with_priority(priority, async move {
-        glib_closure(handle.await.unwrap()).await
-    });
+/// Spawn a future on the default `MainContext`
+///
+/// This was taken from `gtk-macors`
+/// but allows setting optionally the priority
+///
+/// FIXME: this should maybe be upstreamed
+#[macro_export]
+macro_rules! spawn {
+    ($future:expr) => {
+        let ctx = glib::MainContext::default();
+        ctx.spawn_local($future);
+    };
+    ($priority:expr, $future:expr) => {
+        let ctx = glib::MainContext::default();
+        ctx.spawn_local_with_priority($priority, $future);
+    };
 }
+
+/// Spawn a future on the tokio runtime
+#[macro_export]
+macro_rules! spawn_tokio {
+    ($future:expr) => {
+        crate::RUNTIME.spawn($future)
+    };
+}
+
+use gtk::gio::prelude::*;
+use gtk::glib::Object;
 
 /// Returns an expression looking up the given property on `object`.
 pub fn prop_expr<T: IsA<Object>>(object: &T, prop: &str) -> gtk::Expression {

@@ -7,7 +7,7 @@ use std::convert::{TryFrom, TryInto};
 use crate::components::SpinnerButton;
 use crate::session::user::UserExt;
 use crate::session::Session;
-use crate::utils::do_async;
+use crate::{spawn, spawn_tokio};
 use matrix_sdk::{
     ruma::{
         api::{
@@ -222,22 +222,23 @@ impl RoomCreation {
             None
         };
 
-        do_async(
-            glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                // We don't allow invalid room names to be entered by the user
-                let name = room_name.as_str().try_into().unwrap();
+        let handle = spawn_tokio!(async move {
+            // We don't allow invalid room names to be entered by the user
+            let name = room_name.as_str().try_into().unwrap();
 
-                let request = assign!(create_room::Request::new(),
-                {
-                    name: Some(name),
-                    visibility,
-                    room_alias_name: room_address.as_deref()
-                });
-                client.create_room(request).await
-            },
-            clone!(@weak self as obj => move |result| async move {
-                match result {
+            let request = assign!(create_room::Request::new(),
+            {
+                name: Some(name),
+                visibility,
+                room_alias_name: room_address.as_deref()
+            });
+            client.create_room(request).await
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                         Ok(response) => {
                             if let Some(session) = obj.session() {
                                 let room = session.room_list().get_wait(response.room_id).await;
@@ -250,7 +251,7 @@ impl RoomCreation {
                             obj.handle_error(error);
                         },
                 };
-            }),
+            })
         );
 
         None

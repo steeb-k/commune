@@ -12,7 +12,7 @@ use log::error;
 use matrix_sdk::ruma::api::client::r0::thirdparty::get_protocols;
 
 use crate::session::Session;
-use crate::utils::do_async;
+use crate::{spawn, spawn_tokio};
 
 mod imp {
     use super::*;
@@ -236,15 +236,17 @@ impl Explore {
         priv_.network_menu.append(Some("all"), "All rooms");
         priv_.network_menu.set_active(Some(0));
 
-        do_async(
+        let handle =
+            spawn_tokio!(async move { client.send(get_protocols::Request::new(), None).await });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move { client.send(get_protocols::Request::new(), None).await },
-            clone!(@weak self as obj => move |result| async move {
-                match result {
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                  Ok(response) => obj.set_protocols(response),
                  Err(error) => error!("Error loading supported protocols: {}", error),
                 }
-            }),
+            })
         );
     }
 }

@@ -5,7 +5,7 @@ use matrix_sdk::encryption::identities::UserDevices as CryptoDevices;
 use matrix_sdk::ruma::api::client::r0::device::Device as MatrixDevice;
 use matrix_sdk::Error;
 
-use crate::{session::Session, utils::do_async};
+use crate::{session::Session, spawn, spawn_tokio};
 
 use super::{Device, DeviceItem};
 
@@ -199,44 +199,43 @@ impl DeviceList {
 
         self.set_loading(true);
 
-        do_async(
-            glib::PRIORITY_DEFAULT,
-            async move {
-                let user_id = client.user_id().await.unwrap();
-                let crypto_devices = client.get_user_devices(&user_id).await;
+        let handle = spawn_tokio!(async move {
+            let user_id = client.user_id().await.unwrap();
+            let crypto_devices = client.get_user_devices(&user_id).await;
 
-                let crypto_devices = match crypto_devices {
-                    Ok(crypto_devices) => crypto_devices,
-                    Err(error) => return Err(Error::CryptoStoreError(error)),
-                };
+            let crypto_devices = match crypto_devices {
+                Ok(crypto_devices) => crypto_devices,
+                Err(error) => return Err(Error::CryptoStoreError(error)),
+            };
 
-                match client.devices().await {
-                    Ok(mut response) => {
-                        response
+            match client.devices().await {
+                Ok(mut response) => {
+                    response
+                        .devices
+                        .sort_unstable_by(|a, b| b.last_seen_ts.cmp(&a.last_seen_ts));
+
+                    let current_device = if let Some(current_device_id) = client.device_id().await {
+                        if let Some(index) = response
                             .devices
-                            .sort_unstable_by(|a, b| b.last_seen_ts.cmp(&a.last_seen_ts));
+                            .iter()
+                            .position(|device| *device.device_id == current_device_id.as_ref())
+                        {
+                            Some(response.devices.remove(index))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
 
-                        let current_device =
-                            if let Some(current_device_id) = client.device_id().await {
-                                if let Some(index) = response.devices.iter().position(|device| {
-                                    *device.device_id == current_device_id.as_ref()
-                                }) {
-                                    Some(response.devices.remove(index))
-                                } else {
-                                    None
-                                }
-                            } else {
-                                None
-                            };
-
-                        Ok((current_device, response.devices, crypto_devices))
-                    }
-                    Err(error) => Err(Error::Http(error)),
+                    Ok((current_device, response.devices, crypto_devices))
                 }
-            },
-            clone!(@weak self as obj => move |response| async move {
-                obj.finish_loading(response);
-            }),
-        );
+                Err(error) => Err(Error::Http(error)),
+            }
+        });
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.finish_loading(handle.await.unwrap());
+        }));
     }
 }

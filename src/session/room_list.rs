@@ -7,8 +7,7 @@ use matrix_sdk::{
 
 use crate::{
     session::{room::Room, Session},
-    utils::do_async,
-    Error,
+    spawn, spawn_tokio, Error,
 };
 use gettextrs::gettext;
 use log::error;
@@ -319,15 +318,16 @@ impl RoomList {
 
         self.pending_rooms_insert(identifier.clone());
 
-        do_async(
+        let handle = spawn_tokio!(async move {
+            client
+                .join_room_by_id_or_alias(&identifier_clone, &[])
+                .await
+        });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                client
-                    .join_room_by_id_or_alias(&identifier_clone, &[])
-                    .await
-            },
-            clone!(@weak self as obj => move |response| async move {
-                match response {
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                     Ok(response) => obj.pending_rooms_replace_or_remove(&identifier, response.room_id),
                     Err(error) => {
                         obj.pending_rooms_remove(&identifier);
@@ -347,7 +347,7 @@ impl RoomList {
                         }
                     }
                 }
-            }),
+            })
         );
     }
 

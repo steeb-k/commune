@@ -1,9 +1,9 @@
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use gtk_macros::spawn;
 
 use super::Device;
 use crate::components::SpinnerButton;
+use crate::spawn;
 
 const G_TIME_SPAN_DAY: i64 = 86400000000;
 

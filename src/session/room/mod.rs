@@ -31,7 +31,6 @@ use matrix_sdk::{
                     TextMessageEventContent,
                 },
                 name::NameEventContent,
-                power_levels::PowerLevelsEventContent,
                 topic::TopicEventContent,
             },
             tag::TagName,
@@ -55,9 +54,8 @@ use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
 use crate::session::avatar::update_room_avatar_from_file;
 use crate::session::{Avatar, Session};
-use crate::utils::do_async;
 use crate::Error;
-use crate::RUNTIME;
+use crate::{spawn, spawn_tokio};
 
 mod imp {
     use super::*;
@@ -355,65 +353,66 @@ impl Room {
             return;
         }
 
-        do_async(
-            glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                match matrix_room {
-                    MatrixRoom::Invited(room) => {
-                        match category {
-                            RoomType::Invited => Ok(()),
-                            RoomType::Favorite => {
-                                room.accept_invitation().await
-                                // TODO: set favorite tag
-                            }
-                            RoomType::Normal => room.accept_invitation().await,
-                            RoomType::LowPriority => {
-                                room.accept_invitation().await
-                                // TODO: set low priority tag
-                            }
-                            RoomType::Left => room.reject_invitation().await,
+        let handle = spawn_tokio!(async move {
+            match matrix_room {
+                MatrixRoom::Invited(room) => {
+                    match category {
+                        RoomType::Invited => Ok(()),
+                        RoomType::Favorite => {
+                            room.accept_invitation().await
+                            // TODO: set favorite tag
                         }
-                    }
-                    MatrixRoom::Joined(room) => {
-                        match category {
-                            RoomType::Invited => Ok(()),
-                            RoomType::Favorite => {
-                                // TODO: set favorite tag
-                                Ok(())
-                            }
-                            RoomType::Normal => {
-                                // TODO: remove tags
-                                Ok(())
-                            }
-                            RoomType::LowPriority => {
-                                // TODO: set low priority tag
-                                Ok(())
-                            }
-                            RoomType::Left => room.leave().await,
+                        RoomType::Normal => room.accept_invitation().await,
+                        RoomType::LowPriority => {
+                            room.accept_invitation().await
+                            // TODO: set low priority tag
                         }
-                    }
-                    MatrixRoom::Left(room) => {
-                        match category {
-                            RoomType::Invited => Ok(()),
-                            RoomType::Favorite => {
-                                room.join().await
-                                // TODO: set favorite tag
-                            }
-                            RoomType::Normal => {
-                                room.join().await
-                                // TODO: remove tags
-                            }
-                            RoomType::LowPriority => {
-                                room.join().await
-                                // TODO: set low priority tag
-                            }
-                            RoomType::Left => Ok(()),
-                        }
+                        RoomType::Left => room.reject_invitation().await,
                     }
                 }
-            },
-            clone!(@weak self as obj => move |result| async move {
-                match result {
+                MatrixRoom::Joined(room) => {
+                    match category {
+                        RoomType::Invited => Ok(()),
+                        RoomType::Favorite => {
+                            // TODO: set favorite tag
+                            Ok(())
+                        }
+                        RoomType::Normal => {
+                            // TODO: remove tags
+                            Ok(())
+                        }
+                        RoomType::LowPriority => {
+                            // TODO: set low priority tag
+                            Ok(())
+                        }
+                        RoomType::Left => room.leave().await,
+                    }
+                }
+                MatrixRoom::Left(room) => {
+                    match category {
+                        RoomType::Invited => Ok(()),
+                        RoomType::Favorite => {
+                            room.join().await
+                            // TODO: set favorite tag
+                        }
+                        RoomType::Normal => {
+                            room.join().await
+                            // TODO: remove tags
+                        }
+                        RoomType::LowPriority => {
+                            room.join().await
+                            // TODO: set low priority tag
+                        }
+                        RoomType::Left => Ok(()),
+                    }
+                }
+            }
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                         Ok(_) => {},
                         Err(error) => {
                                 error!("Couldn’t set the room category: {}", error);
@@ -440,8 +439,7 @@ impl Room {
                                 obj.load_category();
                         },
                 };
-
-            }),
+            })
         );
 
         self.set_category_internal(category);
@@ -452,13 +450,14 @@ impl Room {
 
         match matrix_room {
             MatrixRoom::Joined(_) => {
-                do_async(
+                let handle = spawn_tokio!(async move { matrix_room.tags().await });
+
+                spawn!(
                     glib::PRIORITY_DEFAULT_IDLE,
-                    async move { matrix_room.tags().await },
-                    clone!(@weak self as obj => move |tags_result| async move {
+                    clone!(@weak self as obj => async move {
                         let mut category = RoomType::Normal;
 
-                        if let Ok(Some(tags)) = tags_result {
+                        if let Ok(Some(tags)) = handle.await.unwrap() {
                             if tags.get(&TagName::Favorite).is_some() {
                                 category = RoomType::Favorite;
                             } else if tags.get(&TagName::LowPriority).is_some() {
@@ -467,7 +466,7 @@ impl Room {
                         }
 
                         obj.set_category_internal(category);
-                    }),
+                    })
                 );
             }
             MatrixRoom::Invited(_) => self.set_category_internal(RoomType::Invited),
@@ -522,16 +521,17 @@ impl Room {
 
     fn load_display_name(&self) {
         let matrix_room = self.matrix_room();
-        do_async(
+        let handle = spawn_tokio!(async move { matrix_room.display_name().await });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move { matrix_room.display_name().await },
-            clone!(@weak self as obj => move |display_name| async move {
+            clone!(@weak self as obj => async move {
                 // FIXME: We should retry to if the request failed
-                match display_name {
+                match handle.await.unwrap() {
                         Ok(display_name) => obj.set_display_name(Some(display_name)),
                         Err(error) => error!("Couldn’t fetch display name: {}", error),
                 };
-            }),
+            })
         );
     }
 
@@ -557,18 +557,19 @@ impl Room {
         };
         let name_content = NameEventContent::new(Some(room_name));
 
-        do_async(
+        let handle = spawn_tokio!(async move {
+            let content = AnyStateEventContent::RoomName(name_content);
+            joined_room.send_state_event(content, "").await
+        });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let content = AnyStateEventContent::RoomName(name_content);
-                joined_room.send_state_event(content, "").await
-            },
-            clone!(@weak self as obj => move |room_name| async move {
-                match room_name {
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                     Ok(_room_name) => info!("Successfully updated room name"),
                     Err(error) => error!("Couldn’t update room name: {}", error),
                 };
-            }),
+            })
         );
     }
 
@@ -597,18 +598,19 @@ impl Room {
             }
         };
 
-        do_async(
+        let handle = spawn_tokio!(async move {
+            let content = AnyStateEventContent::RoomTopic(TopicEventContent::new(topic));
+            joined_room.send_state_event(content, "").await
+        });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let content = AnyStateEventContent::RoomTopic(TopicEventContent::new(topic));
-                joined_room.send_state_event(content, "").await
-            },
-            clone!(@weak self as obj => move |topic| async move {
-                match topic {
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                     Ok(_topic) => info!("Successfully updated room topic"),
                     Err(error) => error!("Couldn’t update topic: {}", error),
                 };
-            }),
+            })
         );
     }
 
@@ -749,54 +751,55 @@ impl Room {
 
         priv_.members_loaded.set(true);
         let matrix_room = self.matrix_room();
-        do_async(
+        let handle = spawn_tokio!(async move { matrix_room.active_members().await });
+        spawn!(
             glib::PRIORITY_LOW,
-            async move { matrix_room.active_members().await },
-            clone!(@weak self as obj => move |members| async move {
+            clone!(@weak self as obj => async move {
                 // FIXME: We should retry to load the room members if the request failed
                 let priv_ = imp::Room::from_instance(&obj);
-                match members {
+                match handle.await.unwrap() {
                         Ok(members) => obj.add_members(members),
                         Err(error) => {
                             priv_.members_loaded.set(false);
                             error!("Couldn’t load room members: {}", error)
                         },
                 };
-            }),
+            })
         );
     }
 
     fn load_power_levels(&self) {
         let matrix_room = self.matrix_room();
-        do_async(
-            glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let state_event = match matrix_room
-                    .get_state_event(EventType::RoomPowerLevels, "")
-                    .await
-                {
-                    Ok(state_event) => state_event,
-                    Err(e) => {
-                        error!("Initial load of room power levels failed: {}", e);
-                        return None;
-                    }
-                };
+        let handle = spawn_tokio!(async move {
+            let state_event = match matrix_room
+                .get_state_event(EventType::RoomPowerLevels, "")
+                .await
+            {
+                Ok(state_event) => state_event,
+                Err(e) => {
+                    error!("Initial load of room power levels failed: {}", e);
+                    return None;
+                }
+            };
 
-                state_event
-                    .and_then(|e| e.deserialize().ok())
-                    .and_then(|e| {
-                        if let AnySyncStateEvent::RoomPowerLevels(e) = e {
-                            Some(e)
-                        } else {
-                            None
-                        }
-                    })
-            },
-            clone!(@weak self as obj => move |event: Option<SyncStateEvent<PowerLevelsEventContent>>| async move {
-                if let Some(event) = event {
+            state_event
+                .and_then(|e| e.deserialize().ok())
+                .and_then(|e| {
+                    if let AnySyncStateEvent::RoomPowerLevels(e) = e {
+                        Some(e)
+                    } else {
+                        None
+                    }
+                })
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                if let Some(event) = handle.await.unwrap() {
                     obj.power_levels().update_from_event(event);
                 }
-            }),
+            })
         );
     }
 
@@ -842,16 +845,17 @@ impl Room {
             let event = Event::new(raw_event.into(), self);
             priv_.timeline.get().unwrap().append_pending(event);
 
-            do_async(
+            let handle = spawn_tokio!(async move { matrix_room.send(content, Some(txn_id)).await });
+
+            spawn!(
                 glib::PRIORITY_DEFAULT_IDLE,
-                async move { matrix_room.send(content, Some(txn_id)).await },
-                clone!(@weak self as obj => move |result| async move {
+                clone!(@weak self as obj => async move {
                     // FIXME: We should retry the request if it fails
-                    match result {
+                    match handle.await.unwrap() {
                             Ok(result) => obj.timeline().set_event_id_for_pending(pending_id, result.event_id),
                             Err(error) => error!("Couldn’t send message: {}", error),
                     };
-                }),
+                })
             );
         }
     }
@@ -871,15 +875,18 @@ impl Room {
         let matrix_room = self.matrix_room();
         let client = self.session().client();
 
-        do_async(
+        let handle = spawn_tokio!(async move {
+            update_room_avatar_from_file(&client, &matrix_room, filename.as_ref()).await
+        });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move { update_room_avatar_from_file(&client, &matrix_room, filename.as_ref()).await },
-            clone!(@weak self as this => move |avatar_uri| async move {
-                match avatar_uri {
+            clone!(@weak self as this => async move {
+                match handle.await.unwrap() {
                     Ok(_avatar_uri) => info!("Sucessfully updated room avatar"),
                     Err(error) => error!("Couldn’t update room avatar: {}", error),
                 };
-            }),
+            })
         );
     }
 
@@ -887,7 +894,7 @@ impl Room {
         let matrix_room = self.matrix_room();
 
         if let MatrixRoom::Invited(matrix_room) = matrix_room {
-            let handle = RUNTIME.spawn(async move { matrix_room.accept_invitation().await });
+            let handle = spawn_tokio!(async move { matrix_room.accept_invitation().await });
             match handle.await.unwrap() {
                 Ok(result) => Ok(result),
                 Err(error) => {
@@ -917,7 +924,7 @@ impl Room {
         let matrix_room = self.matrix_room();
 
         if let MatrixRoom::Invited(matrix_room) = matrix_room {
-            let handle = RUNTIME.spawn(async move { matrix_room.reject_invitation().await });
+            let handle = spawn_tokio!(async move { matrix_room.reject_invitation().await });
             match handle.await.unwrap() {
                 Ok(result) => Ok(result),
                 Err(error) => {

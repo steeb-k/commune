@@ -1,10 +1,10 @@
 use crate::{
     components::{Avatar, LabelWithWidgets, Pill, SpinnerButton},
     session::room::{Room, RoomType},
+    spawn,
 };
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use gtk_macros::spawn;
 
 mod imp {
     use super::*;

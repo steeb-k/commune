@@ -12,7 +12,7 @@ use matrix_sdk::{
     ruma::identifiers::MxcUri,
 };
 
-use crate::utils::do_async;
+use crate::{spawn, spawn_tokio};
 
 use crate::session::Session;
 
@@ -173,16 +173,17 @@ impl Avatar {
                 media_type: MediaType::Uri(url),
                 format: MediaFormat::File,
             };
-            do_async(
+            let handle =
+                spawn_tokio!(async move { client.get_media_content(&request, true).await });
+
+            spawn!(
                 glib::PRIORITY_LOW,
-                async move { client.get_media_content(&request, true).await },
-                clone!(@weak self as obj => move |result| async move {
-                    // FIXME: We should retry if the request failed
-                    match result {
+                clone!(@weak self as obj => async move {
+                    match handle.await.unwrap() {
                         Ok(data) => obj.set_image_data(Some(data)),
                         Err(error) => error!("Couldn’t fetch avatar: {}", error),
                     };
-                }),
+                })
             );
         }
     }

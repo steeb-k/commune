@@ -19,10 +19,9 @@ pub use self::user::{User, UserExt};
 
 use crate::secret;
 use crate::secret::StoredSession;
-use crate::utils::do_async;
 use crate::Error;
 use crate::Window;
-use crate::RUNTIME;
+use crate::{spawn, spawn_tokio};
 
 use crate::matrix_error::UserFacingMatrixError;
 use crate::session::content::ContentType;
@@ -51,7 +50,7 @@ use matrix_sdk::{
         error::{FromHttpResponseError, ServerError},
     },
     uuid::Uuid,
-    Client, HttpError,
+    Client, Error as MatrixError, HttpError,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::fs;
@@ -293,48 +292,49 @@ impl Session {
                 .encode_lower(&mut Uuid::encode_buffer()),
         );
 
-        do_async(
-            glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let passphrase: String = {
-                    let mut rng = thread_rng();
-                    (&mut rng)
-                        .sample_iter(Alphanumeric)
-                        .take(30)
-                        .map(char::from)
-                        .collect()
-                };
-                let config = ClientConfig::new()
-                    .request_config(RequestConfig::new().retry_limit(2))
-                    .passphrase(passphrase.clone())
-                    .store_path(path.clone());
+        let handle = spawn_tokio!(async move {
+            let passphrase: String = {
+                let mut rng = thread_rng();
+                (&mut rng)
+                    .sample_iter(Alphanumeric)
+                    .take(30)
+                    .map(char::from)
+                    .collect()
+            };
+            let config = ClientConfig::new()
+                .request_config(RequestConfig::new().retry_limit(2))
+                .passphrase(passphrase.clone())
+                .store_path(path.clone());
 
-                let client = Client::new_with_config(homeserver.clone(), config).unwrap();
-                let response = client
-                    .login(&username, &password, None, Some("Fractal Next"))
-                    .await;
-                match response {
-                    Ok(response) => Ok((
-                        client,
-                        StoredSession {
-                            homeserver,
-                            path,
-                            passphrase,
-                            access_token: response.access_token,
-                            user_id: response.user_id,
-                            device_id: response.device_id,
-                        },
-                    )),
-                    Err(error) => {
-                        // Remove the store created by Client::new()
-                        fs::remove_dir_all(path).unwrap();
-                        Err(error)
-                    }
+            let client = Client::new_with_config(homeserver.clone(), config).unwrap();
+            let response = client
+                .login(&username, &password, None, Some("Fractal Next"))
+                .await;
+            match response {
+                Ok(response) => Ok((
+                    client,
+                    StoredSession {
+                        homeserver,
+                        path,
+                        passphrase,
+                        access_token: response.access_token,
+                        user_id: response.user_id,
+                        device_id: response.device_id,
+                    },
+                )),
+                Err(error) => {
+                    // Remove the store created by Client::new()
+                    fs::remove_dir_all(path).unwrap();
+                    Err(error)
                 }
-            },
-            clone!(@weak self as obj => move |result| async move {
-                obj.handle_login_result(result, true);
-            }),
+            }
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.handle_login_result(handle.await.unwrap(), true);
+            })
         );
     }
 
@@ -345,27 +345,27 @@ impl Session {
     }
 
     pub fn login_with_previous_session(&self, session: StoredSession) {
-        do_async(
-            glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let config = ClientConfig::new()
-                    .request_config(RequestConfig::new().retry_limit(2))
-                    .passphrase(session.passphrase.clone())
-                    .store_path(session.path.clone());
+        let handle = spawn_tokio!(async move {
+            let config = ClientConfig::new()
+                .request_config(RequestConfig::new().retry_limit(2))
+                .passphrase(session.passphrase.clone())
+                .store_path(session.path.clone());
 
-                let client = Client::new_with_config(session.homeserver.clone(), config).unwrap();
-                client
-                    .restore_login(matrix_sdk::Session {
-                        user_id: session.user_id.clone(),
-                        device_id: session.device_id.clone(),
-                        access_token: session.access_token.clone(),
-                    })
-                    .await
-                    .map(|_| (client, session))
-            },
-            clone!(@weak self as obj => move |result| async move {
-                obj.handle_login_result(result, false);
-            }),
+            let client = Client::new_with_config(session.homeserver.clone(), config).unwrap();
+            client
+                .restore_login(matrix_sdk::Session {
+                    user_id: session.user_id.clone(),
+                    device_id: session.device_id.clone(),
+                    access_token: session.access_token.clone(),
+                })
+                .await
+                .map(|_| (client, session))
+        });
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.handle_login_result(handle.await.unwrap(), false);
+            })
         );
     }
 
@@ -382,23 +382,22 @@ impl Session {
                 priv_.user.set(user.clone()).unwrap();
                 self.notify("user");
 
-                do_async(
-                    glib::PRIORITY_LOW,
-                    async move {
-                        let display_name = client.display_name().await?;
-                        let avatar_url = client.avatar_url().await?;
-                        Ok((display_name, avatar_url))
-                    },
-                    move |result: matrix_sdk::Result<_>| async move {
-                        match result {
-                            Ok((display_name, avatar_url)) => {
-                                user.set_display_name(display_name);
-                                user.set_avatar_url(avatar_url);
-                            }
-                            Err(error) => error!("Couldn’t fetch account metadata: {}", error),
-                        };
-                    },
-                );
+                let handle = spawn_tokio!(async move {
+                    let display_name = client.display_name().await?;
+                    let avatar_url = client.avatar_url().await?;
+                    let result: Result<_, MatrixError> = Ok((display_name, avatar_url));
+                    result
+                });
+
+                spawn!(glib::PRIORITY_LOW, async move {
+                    match handle.await.unwrap() {
+                        Ok((display_name, avatar_url)) => {
+                            user.set_display_name(display_name);
+                            user.set_avatar_url(avatar_url);
+                        }
+                        Err(error) => error!("Couldn’t fetch account metadata: {}", error),
+                    }
+                });
 
                 if store_session {
                     // TODO: report secret service errors
@@ -434,7 +433,7 @@ impl Session {
         let priv_ = imp::Session::from_instance(self);
         let sender = self.create_new_sync_response_sender();
         let client = self.client();
-        let handle = RUNTIME.spawn(async move {
+        let handle = spawn_tokio!(async move {
             // TODO: only create the filter once and reuse it in the future
             let room_event_filter = assign!(RoomEventFilter::default(), {
                 lazy_load_options: LazyLoadOptions::Enabled {include_redundant_members: false},
@@ -596,14 +595,15 @@ impl Session {
     pub fn logout(&self) {
         let client = self.client();
 
-        do_async(
+        let handle = spawn_tokio!(async move {
+            let request = logout::Request::new();
+            client.send(request, None).await
+        });
+
+        spawn!(
             glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let request = logout::Request::new();
-                client.send(request, None).await
-            },
-            clone!(@weak self as obj => move |result| async move {
-                match result {
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
                     Ok(_) => obj.cleanup_session(),
                     Err(error) => {
                         error!("Couldn’t logout the session {}", error);
@@ -620,7 +620,7 @@ impl Session {
                         }
                     }
                 }
-            }),
+            })
         );
     }
 

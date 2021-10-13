@@ -1,6 +1,6 @@
 use crate::{
     session::{content::explore::PublicRoom, Session},
-    utils::do_async,
+    spawn, spawn_tokio,
 };
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
@@ -292,30 +292,31 @@ impl PublicRoomList {
         let current_server = server.clone();
         let current_network = network.clone();
 
-        do_async(
-            glib::PRIORITY_DEFAULT_IDLE,
-            async move {
-                let room_network = match network.as_deref() {
-                    Some("matrix") => RoomNetwork::Matrix,
-                    Some("all") => RoomNetwork::All,
-                    Some(custom) => RoomNetwork::ThirdParty(custom),
-                    _ => RoomNetwork::default(),
-                };
-                let server = server.and_then(|server| ServerNameBox::try_from(server).ok());
+        let handle = spawn_tokio!(async move {
+            let room_network = match network.as_deref() {
+                Some("matrix") => RoomNetwork::Matrix,
+                Some("all") => RoomNetwork::All,
+                Some(custom) => RoomNetwork::ThirdParty(custom),
+                _ => RoomNetwork::default(),
+            };
+            let server = server.and_then(|server| ServerNameBox::try_from(server).ok());
 
-                let request = assign!(PublicRoomsRequest::new(), {
-                  limit: Some(uint!(20)),
-                  since: next_batch.as_deref(),
-                  room_network,
-                  server: server.as_deref(),
-                  filter: assign!(Filter::new(), { generic_search_term: search_term.as_deref() }),
-                });
-                client.public_rooms_filtered(request).await
-            },
-            clone!(@weak self as obj => move |result| async move {
+            let request = assign!(PublicRoomsRequest::new(), {
+              limit: Some(uint!(20)),
+              since: next_batch.as_deref(),
+              room_network,
+              server: server.as_deref(),
+              filter: assign!(Filter::new(), { generic_search_term: search_term.as_deref() }),
+            });
+            client.public_rooms_filtered(request).await
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
                 // If the search term changed we ignore the response
                 if obj.is_valid_response(current_search_term, current_server, current_network) {
-                    match result {
+                    match handle.await.unwrap() {
                      Ok(response) => obj.handle_public_rooms_response(response),
                      Err(error) => {
                         obj.set_request_sent(false);
@@ -323,7 +324,7 @@ impl PublicRoomList {
                      },
                     }
                 }
-            }),
+            })
         );
     }
 }

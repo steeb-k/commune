@@ -7,7 +7,7 @@ use matrix_sdk::ruma::{
 };
 
 use crate::session::room::{Event, Item, ItemType, Room};
-use crate::utils::do_async;
+use crate::{spawn, spawn_tokio};
 
 mod imp {
     use super::*;
@@ -530,19 +530,20 @@ impl Timeline {
         let last_event = self.oldest_event();
         let contains_last_event = last_event.is_some();
 
-        do_async(
+        let handle = spawn_tokio!(async move {
+            matrix_room
+                .messages(last_event.as_ref(), None, 20, Direction::Backward)
+                .await
+        });
+
+        spawn!(
             glib::PRIORITY_LOW,
-            async move {
-                matrix_room
-                    .messages(last_event.as_ref(), None, 20, Direction::Backward)
-                    .await
-            },
-            clone!(@weak self as obj => move |events| async move {
+            clone!(@weak self as obj => async move {
                 obj.remove_loading_spinner();
 
                 // FIXME: If the request fails it's automatically restarted because the added events (none), didn't fill the screen.
                 // We should block the loading for some time before retrying
-                match events {
+                match handle.await.unwrap() {
                        Ok(Some(events)) => {
                             let events: Vec<Event> = if contains_last_event {
                                             events
@@ -563,7 +564,7 @@ impl Timeline {
                        Err(error) => error!("Couldn't load previous events for room {}: {}", error, obj.room().room_id()),
                }
                obj.set_loading(false);
-            }),
+            })
         );
     }
 }

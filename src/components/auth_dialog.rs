@@ -10,7 +10,7 @@ use std::future::Future;
 
 use crate::session::Session;
 use crate::session::UserExt;
-use crate::RUNTIME;
+use crate::spawn_tokio;
 
 use matrix_sdk::{
     ruma::api::{
@@ -232,7 +232,7 @@ impl AuthDialog {
 
         loop {
             let callback_clone = callback.clone();
-            let handle = RUNTIME.spawn(async move { callback_clone(auth_data).await });
+            let handle = spawn_tokio!(async move { callback_clone(auth_data).await });
             let response = handle.await.unwrap();
 
             let uiaa_info: UiaaInfo = match response {
@@ -275,8 +275,7 @@ impl AuthDialog {
                         priv_.stack.set_visible_child_name("fallback");
 
                         let client = self.session().client();
-                        let homeserver = RUNTIME
-                            .spawn(async move { client.homeserver().await })
+                        let homeserver = spawn_tokio!(async move { client.homeserver().await })
                             .await
                             .unwrap();
                         self.setup_fallback_page(
