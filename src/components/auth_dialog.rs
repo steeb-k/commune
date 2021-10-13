@@ -74,7 +74,7 @@ mod imp {
     use glib::object::WeakRef;
     use glib::subclass::{InitializingObject, Signal};
     use glib::SignalHandlerId;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]

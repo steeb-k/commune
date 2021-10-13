@@ -11,7 +11,7 @@ use super::{Device, DeviceItem};
 
 mod imp {
     use glib::object::WeakRef;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
 
     use super::*;

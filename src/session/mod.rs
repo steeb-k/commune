@@ -62,7 +62,7 @@ use url::Url;
 mod imp {
     use super::*;
     use glib::subclass::{InitializingObject, Signal};
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]

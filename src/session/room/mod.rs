@@ -63,7 +63,7 @@ mod imp {
     use super::*;
     use glib::object::WeakRef;
     use glib::subclass::Signal;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::Cell;
     use std::collections::HashMap;
 

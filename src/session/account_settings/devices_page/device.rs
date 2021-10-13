@@ -16,7 +16,7 @@ use log::error;
 mod imp {
     use super::*;
     use glib::object::WeakRef;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     #[derive(Debug, Default)]
     pub struct Device {

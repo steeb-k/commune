@@ -18,7 +18,7 @@ use std::collections::HashSet;
 mod imp {
     use glib::object::WeakRef;
     use glib::subclass::Signal;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::RefCell;
 
     use super::*;

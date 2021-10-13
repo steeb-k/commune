@@ -11,7 +11,7 @@ use crate::utils::do_async;
 
 mod imp {
     use super::*;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
     use std::collections::{HashMap, VecDeque};
 

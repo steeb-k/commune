@@ -9,10 +9,10 @@ use gtk::subclass::prelude::*;
 use gtk::{gdk, gio, glib};
 use gtk_macros::action;
 use log::{debug, info};
-use once_cell::sync::OnceCell;
 
 mod imp {
     use super::*;
+    use once_cell::unsync::OnceCell;
 
     #[derive(Debug)]
     pub struct Application {
