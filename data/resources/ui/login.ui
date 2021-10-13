@@ -65,11 +65,6 @@
                             <property name="orientation">vertical</property>
                             <property name="spacing">18</property>
                             <child>
-                              <object class="GtkLabel" id="error_message">
-                                <property name="visible">False</property>
-                              </object>
-                            </child>
-                            <child>
                               <object class="GtkBox">
                                 <property name="name">devnotice</property>
                                 <property name="spacing">12</property>

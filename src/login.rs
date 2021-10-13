@@ -1,13 +1,10 @@
 use crate::Session;
 
 use adw::subclass::prelude::BinImpl;
-use gettextrs::gettext;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 use log::debug;
-use std::fmt;
-use std::time::Duration;
 use url::{ParseError, Url};
 
 mod imp {
@@ -36,8 +33,6 @@ mod imp {
         pub username_entry: TemplateChild<gtk::Entry>,
         #[template_child]
         pub password_entry: TemplateChild<gtk::PasswordEntry>,
-        #[template_child]
-        pub error_message: TemplateChild<gtk::Label>,
         #[template_child]
         pub back_to_session_button: TemplateChild<gtk::Button>,
     }
@@ -199,21 +194,26 @@ impl Login {
     }
 
     fn set_handler_for_prepared_session(&self, session: &Session) {
-        session.connect_prepared(clone!(@weak self as login => move |session| {
-            if let Some(error) = session.get_error() {
-                let error_message = &imp::Login::from_instance(&login).error_message;
-                error_message.set_text(&error.to_string());
-                error_message.show();
-                debug!("Failed to create a new session: {:?}", error);
-
-                login.unfreeze();
-            } else {
-                debug!("A new session was prepared");
-                login.emit_by_name("new-session", &[&session]).unwrap();
-                login.clean();
+        session.connect_prepared(clone!(@weak self as login => move |session, error| {
+            match error {
+                Some(e) => {
+                    login.parent_window().append_error(&e);
+                    login.unfreeze();
+                },
+                None => {
+                    debug!("A new session was prepared");
+                    login.emit_by_name("new-session", &[&session]).unwrap();
+                    login.clean();
+                }
             }
             login.drop_session_reference();
         }));
+    }
+
+    fn parent_window(&self) -> crate::Window {
+        self.root()
+            .and_then(|root| root.downcast().ok())
+            .expect("Login needs to have a parent window")
     }
 }
 
@@ -228,66 +228,5 @@ fn build_homeserver_url(server: &str) -> Result<Url, ParseError> {
         Url::parse(server)
     } else {
         Url::parse(&format!("https://{}", server))
-    }
-}
-
-#[derive(Debug)]
-pub enum LoginError {
-    ServerNotFound,
-    Forbidden,
-    UserDeactivated,
-    LimitExceeded(Option<Duration>),
-    Unknown(String),
-}
-
-impl fmt::Display for LoginError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let error_msg = match &self {
-            LoginError::ServerNotFound => gettext("⚠️ Homeserver not found."),
-            LoginError::Forbidden => gettext("⚠️ Invalid credentials."),
-            LoginError::UserDeactivated => gettext("⚠️ The user is deactivated."),
-            LoginError::LimitExceeded(retry_ms) => {
-                if let Some(ms) = retry_ms {
-                    gettext!("⚠️ Exceeded rate limit, retry in {} seconds.", ms.as_secs())
-                } else {
-                    gettext("⚠️ Exceeded rate limit, try again later.")
-                }
-            }
-            LoginError::Unknown(info) => {
-                debug!("Unknown error occurred during login: {}", info);
-                gettext("⚠️ Login Failed! Unknown error.")
-            }
-        };
-        f.write_str(&error_msg)
-    }
-}
-
-impl From<matrix_sdk::Error> for LoginError {
-    /// Transform a matrix_sdk error into a LoginError based on the login with password
-    /// Logging in can result in the following errors:
-    /// M_FORBIDDEN: The provided authentication data was incorrect.
-    /// M_USER_DEACTIVATED: The user has been deactivated.
-    /// M_LIMIT_EXCEEDED: This request was rate-limited.
-    /// M_UNKNOWN: An unknown error occurred
-    /// or the home server was not found/unavailable (a Reqwest error)
-    fn from(error: matrix_sdk::Error) -> Self {
-        use matrix_sdk::ruma::api::client::error::ErrorKind::{
-            Forbidden, LimitExceeded, UserDeactivated,
-        };
-        use matrix_sdk::ruma::api::error::{FromHttpResponseError, ServerError};
-        use matrix_sdk::Error::Http;
-        use matrix_sdk::HttpError::{ClientApi, Reqwest};
-        match error {
-            Http(Reqwest(_)) => LoginError::ServerNotFound,
-            Http(ClientApi(FromHttpResponseError::Http(ServerError::Known(server_err)))) => {
-                match server_err.kind {
-                    Forbidden => LoginError::Forbidden,
-                    UserDeactivated => LoginError::UserDeactivated,
-                    LimitExceeded { retry_after_ms } => LoginError::LimitExceeded(retry_after_ms),
-                    e => LoginError::Unknown(e.to_string()),
-                }
-            }
-            e => LoginError::Unknown(e.to_string()),
-        }
     }
 }

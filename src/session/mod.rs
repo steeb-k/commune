@@ -24,7 +24,7 @@ use crate::Error;
 use crate::Window;
 use crate::RUNTIME;
 
-use crate::login::LoginError;
+use crate::matrix_error::UserFacingMatrixError;
 use crate::session::content::ContentType;
 use adw::subclass::prelude::BinImpl;
 use futures::StreamExt;
@@ -74,8 +74,6 @@ mod imp {
         pub content: TemplateChild<adw::Leaflet>,
         #[template_child]
         pub sidebar: TemplateChild<Sidebar>,
-        /// Contains the error if something went wrong
-        pub error: RefCell<Option<matrix_sdk::Error>>,
         pub client: RefCell<Option<Client>>,
         pub room_list: OnceCell<RoomList>,
         pub user: OnceCell<User>,
@@ -211,7 +209,12 @@ mod imp {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
                 vec![
-                    Signal::builder("prepared", &[], <()>::static_type().into()).build(),
+                    Signal::builder(
+                        "prepared",
+                        &[Option::<Error>::static_type().into()],
+                        <()>::static_type().into(),
+                    )
+                    .build(),
                     Signal::builder("logged-out", &[], <()>::static_type().into()).build(),
                 ]
             });
@@ -372,7 +375,7 @@ impl Session {
         store_session: bool,
     ) {
         let priv_ = imp::Session::from_instance(self);
-        match result {
+        let error = match result {
             Ok((client, session)) => {
                 priv_.client.replace(Some(client.clone()));
                 let user = User::new(self, &session.user_id);
@@ -406,12 +409,25 @@ impl Session {
 
                 self.room_list().load();
                 self.sync();
+
+                None
             }
             Err(error) => {
-                priv_.error.replace(Some(error));
+                error!("Failed to prepare the session: {}", error);
+
+                let error_string = error.to_user_facing();
+
+                Some(Error::new(move |_| {
+                    let error_label = gtk::LabelBuilder::new()
+                        .label(&error_string)
+                        .wrap(true)
+                        .build();
+                    Some(error_label.upcast())
+                }))
             }
-        }
-        self.emit_by_name("prepared", &[]).unwrap();
+        };
+
+        self.emit_by_name("prepared", &[&error]).unwrap();
     }
 
     fn sync(&self) {
@@ -501,19 +517,16 @@ impl Session {
         sender
     }
 
-    /// Returns and consumes the `error` that was generated when the session failed to login,
-    /// on a successful login this will be `None`.
-    /// Unfortunately it's not possible to connect the Error directly to the `prepared` signals.
-    pub fn get_error(&self) -> Option<LoginError> {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_.error.take().map(LoginError::from)
-    }
-
-    pub fn connect_prepared<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+    /// Connects the prepared signals to the function f given in input
+    pub fn connect_prepared<F: Fn(&Self, Option<Error>) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
         self.connect_local("prepared", true, move |values| {
             let obj = values[0].get::<Self>().unwrap();
+            let err = values[1].get::<Option<Error>>().unwrap();
 
-            f(&obj);
+            f(&obj, err);
 
             None
         })
