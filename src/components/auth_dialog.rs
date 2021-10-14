@@ -23,12 +23,10 @@ use matrix_sdk::{
             },
         },
         error::{FromHttpResponseError, ServerError},
-        OutgoingRequest,
     },
     ruma::assign,
-    HttpError,
+    Error,
     HttpError::UiaaError,
-    HttpResult,
 };
 
 use std::fmt::Debug;
@@ -215,18 +213,13 @@ impl AuthDialog {
     }
 
     pub async fn authenticate<
-        Request: Send + 'static,
-        F1: Future<Output = HttpResult<Request::IncomingResponse>> + Send + 'static,
-        FN: Fn(Option<AuthData>) -> F1 + Send + Sync + 'static + Clone,
+        Response: Send + 'static,
+        F1: Future<Output = Result<Response, Error>> + Send + 'static,
+        FN: Fn(Option<AuthData>) -> F1 + Send + 'static + Sync + Clone,
     >(
         &self,
         callback: FN,
-    ) -> Option<HttpResult<Request::IncomingResponse>>
-    where
-        Request: OutgoingRequest + Debug,
-        Request::IncomingResponse: Send,
-        HttpError: From<FromHttpResponseError<Request::EndpointError>>,
-    {
+    ) -> Option<Result<Response, Error>> {
         let priv_ = imp::AuthDialog::from_instance(self);
         let mut auth_data = None;
 
@@ -237,9 +230,9 @@ impl AuthDialog {
 
             let uiaa_info: UiaaInfo = match response {
                 Ok(result) => return Some(Ok(result)),
-                Err(UiaaError(FromHttpResponseError::Http(ServerError::Known(
+                Err(Error::Http(UiaaError(FromHttpResponseError::Http(ServerError::Known(
                     UiaaResponse::AuthResponse(uiaa_info),
-                )))) => uiaa_info,
+                ))))) => uiaa_info,
                 Err(error) => return Some(Err(error)),
             };
 

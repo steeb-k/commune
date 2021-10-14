@@ -195,19 +195,17 @@ impl Device {
                 if let Some(auth) = auth_data {
                     let auth = Some(auth.as_matrix_auth_data());
                     let request = assign!(delete_device::Request::new(&device_id), { auth });
-                    client.send(request, None).await
+                    client.send(request, None).await.map_err(Into::into)
                 } else {
                     let request = delete_device::Request::new(&device_id);
-                    client.send(request, None).await
+                    client.send(request, None).await.map_err(Into::into)
                 }
             }
         };
 
         let dialog = AuthDialog::new(transient_for, &session);
 
-        let result = dialog
-            .authenticate::<delete_device::Request, _, _>(delete_fn)
-            .await;
+        let result = dialog.authenticate(delete_fn).await;
         match result {
             Some(Ok(_)) => true,
             Some(Err(err)) => {
