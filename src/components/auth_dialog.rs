@@ -215,17 +215,19 @@ impl AuthDialog {
     pub async fn authenticate<
         Response: Send + 'static,
         F1: Future<Output = Result<Response, Error>> + Send + 'static,
-        FN: Fn(Option<AuthData>) -> F1 + Send + 'static + Sync + Clone,
+        FN: Fn(matrix_sdk::Client, Option<AuthData>) -> F1 + Send + 'static + Sync + Clone,
     >(
         &self,
         callback: FN,
     ) -> Option<Result<Response, Error>> {
         let priv_ = imp::AuthDialog::from_instance(self);
+        let client = self.session().client();
         let mut auth_data = None;
 
         loop {
             let callback_clone = callback.clone();
-            let handle = spawn_tokio!(async move { callback_clone(auth_data).await });
+            let client_clone = client.clone();
+            let handle = spawn_tokio!(async move { callback_clone(client_clone, auth_data).await });
             let response = handle.await.unwrap();
 
             let uiaa_info: UiaaInfo = match response {
@@ -266,11 +268,11 @@ impl AuthDialog {
                 _ => {
                     if let Some(session) = uiaa_info.session {
                         priv_.stack.set_visible_child_name("fallback");
-
-                        let client = self.session().client();
-                        let homeserver = spawn_tokio!(async move { client.homeserver().await })
-                            .await
-                            .unwrap();
+                        let client_clone = client.clone();
+                        let homeserver =
+                            spawn_tokio!(async move { client_clone.homeserver().await })
+                                .await
+                                .unwrap();
                         self.setup_fallback_page(
                             homeserver.as_str(),
                             flow.stages.first()?.as_ref(),

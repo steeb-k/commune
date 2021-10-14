@@ -1,6 +1,6 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use crate::components::{AuthData, AuthDialog};
+use crate::components::AuthDialog;
 use crate::session::Session;
 use matrix_sdk::{
     encryption::identities::Device as CryptoDevice,
@@ -184,28 +184,25 @@ impl Device {
     /// Returns `true` for success
     pub async fn delete(&self, transient_for: Option<&impl IsA<gtk::Window>>) -> bool {
         let session = self.session();
-        let client = session.client();
         let device_id = self.device_id().to_owned();
-
-        let delete_fn = move |auth_data: Option<AuthData>| {
-            let device_id = device_id.clone();
-            let client = client.clone();
-
-            async move {
-                if let Some(auth) = auth_data {
-                    let auth = Some(auth.as_matrix_auth_data());
-                    let request = assign!(delete_device::Request::new(&device_id), { auth });
-                    client.send(request, None).await.map_err(Into::into)
-                } else {
-                    let request = delete_device::Request::new(&device_id);
-                    client.send(request, None).await.map_err(Into::into)
-                }
-            }
-        };
 
         let dialog = AuthDialog::new(transient_for, &session);
 
-        let result = dialog.authenticate(delete_fn).await;
+        let result = dialog
+            .authenticate(move |client, auth_data| {
+                let device_id = device_id.clone();
+                async move {
+                    if let Some(auth) = auth_data {
+                        let auth = Some(auth.as_matrix_auth_data());
+                        let request = assign!(delete_device::Request::new(&device_id), { auth });
+                        client.send(request, None).await.map_err(Into::into)
+                    } else {
+                        let request = delete_device::Request::new(&device_id);
+                        client.send(request, None).await.map_err(Into::into)
+                    }
+                }
+            })
+            .await;
         match result {
             Some(Ok(_)) => true,
             Some(Err(err)) => {
