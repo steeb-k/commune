@@ -251,7 +251,7 @@ impl AuthDialog {
                 .iter()
                 .find(|flow| flow.stages.starts_with(&uiaa_info.completed))?;
 
-            match flow.stages[uiaa_info.completed.len()].as_str() {
+            match flow.stages[uiaa_info.completed.len()].as_ref() {
                 "m.login.password" => {
                     priv_.stack.set_visible_child_name("m.login.password");
                     if self.show_and_wait_for_response().await {
@@ -280,7 +280,7 @@ impl AuthDialog {
                             .unwrap();
                         self.setup_fallback_page(
                             homeserver.as_str(),
-                            flow.stages.first()?,
+                            flow.stages.first()?.as_ref(),
                             &session,
                         );
                         if self.show_and_wait_for_response().await {
