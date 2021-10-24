@@ -85,6 +85,7 @@
               <object class="GtkListView" id="listview">
                 <style>
                   <class name="navigation-sidebar"/>
+                  <class name="sidebar-list"/>
                 </style>
                 <property name="single-click-activate">true</property>
                 <property name="factory">
