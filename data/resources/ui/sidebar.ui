@@ -23,9 +23,6 @@
     </section>
   </menu>
   <template class="Sidebar" parent="AdwBin">
-    <style>
-      <class name="sidebar"/>
-    </style>
     <child>
       <object class="GtkBox">
         <property name="orientation">vertical</property>
