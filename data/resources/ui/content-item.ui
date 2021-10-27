@@ -2,11 +2,7 @@
 <interface>
   <template class="GtkListItem">
     <property name="activatable">False</property>
-    <binding name="selectable">
-      <lookup type="RoomItem" name="selectable">
-        <lookup name="item">GtkListItem</lookup>
-      </lookup>
-    </binding>
+    <property name="selectable">False</property>
     <property name="child">
       <object class="ContentItemRow">
         <binding name="item">
