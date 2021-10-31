@@ -25,7 +25,7 @@ use crate::Error;
 use crate::Window;
 use crate::{spawn, spawn_tokio};
 
-use crate::matrix_error::UserFacingMatrixError;
+use crate::matrix_error::UserFacingError;
 use crate::session::content::ContentType;
 use adw::subclass::prelude::BinImpl;
 use futures::StreamExt;

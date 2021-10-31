@@ -23,7 +23,7 @@ use matrix_sdk::{
     HttpError,
 };
 
-use crate::UserFacingMatrixError;
+use crate::UserFacingError;
 
 // MAX length of room addresses
 const MAX_BYTES: usize = 255;

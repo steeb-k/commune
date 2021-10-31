@@ -20,7 +20,7 @@ mod window;
 use self::application::Application;
 use self::error::Error;
 use self::login::Login;
-use self::matrix_error::UserFacingMatrixError;
+use self::matrix_error::UserFacingError;
 use self::session::Session;
 use self::window::Window;
 

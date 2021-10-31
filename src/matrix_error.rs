@@ -8,11 +8,11 @@ use matrix_sdk::{
 
 use gettextrs::gettext;
 
-pub trait UserFacingMatrixError {
+pub trait UserFacingError {
     fn to_user_facing(self) -> String;
 }
 
-impl UserFacingMatrixError for HttpError {
+impl UserFacingError for HttpError {
     fn to_user_facing(self) -> String {
         match self {
             HttpError::Reqwest(_) => {
@@ -44,7 +44,7 @@ impl UserFacingMatrixError for HttpError {
     }
 }
 
-impl UserFacingMatrixError for Error {
+impl UserFacingError for Error {
     fn to_user_facing(self) -> String {
         match self {
             Error::Http(http_error) => http_error.to_user_facing(),
