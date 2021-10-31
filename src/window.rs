@@ -2,10 +2,11 @@ use crate::components::InAppNotification;
 use crate::config::{APP_ID, PROFILE};
 use crate::secret;
 use crate::Application;
-use crate::Error;
 use crate::Login;
 use crate::Session;
+use crate::{matrix_error::UserFacingError, Error};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
+use gettextrs::gettext;
 use glib::signal::Inhibit;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
@@ -137,7 +138,21 @@ impl Window {
                     self.switch_to_sessions_page();
                 }
             }
-            Err(error) => warn!("Failed to restore previous sessions: {:?}", error),
+            Err(error) => {
+                warn!("Failed to restore previous sessions: {:?}", error);
+                let error_string = error.to_user_facing();
+                self.append_error(&Error::new(move |_| {
+                    let error_label = gtk::LabelBuilder::new()
+                        .label(
+                            &(gettext("Unable to restore previous sessions")
+                                + ": "
+                                + &error_string),
+                        )
+                        .wrap(true)
+                        .build();
+                    Some(error_label.upcast())
+                }));
+            }
         }
     }
 

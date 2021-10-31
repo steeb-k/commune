@@ -36,7 +36,7 @@ use gtk::{
     gdk, glib, glib::clone, glib::source::SourceId, glib::SyncSender, CompositeTemplate,
     SelectionModel,
 };
-use log::{debug, error};
+use log::{debug, error, warn};
 use matrix_sdk::ruma::{
     api::client::r0::{
         filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
@@ -424,10 +424,28 @@ impl Session {
                     }
                 });
 
-                if store_session {
-                    // TODO: report secret service errors
-                    secret::store_session(&session).unwrap();
-                }
+                let res = if store_session {
+                    match secret::store_session(&session) {
+                        Ok(()) => None,
+                        Err(error) => {
+                            warn!("Couldn't store session: {:?}", error);
+                            let error_string = error.to_user_facing();
+                            Some(Error::new(move |_| {
+                                let error_label = gtk::LabelBuilder::new()
+                                    .label(
+                                        &(gettext("Unable to store session")
+                                            + ": "
+                                            + &error_string),
+                                    )
+                                    .wrap(true)
+                                    .build();
+                                Some(error_label.upcast())
+                            }))
+                        }
+                    }
+                } else {
+                    None
+                };
 
                 priv_.info.set(session).unwrap();
 
@@ -435,7 +453,7 @@ impl Session {
 
                 self.sync();
 
-                None
+                res
             }
             Err(error) => {
                 error!("Failed to prepare the session: {}", error);
