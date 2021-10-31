@@ -1731,7 +1731,7 @@ checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 [[package]]
 name = "matrix-qrcode"
 version = "0.2.0"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#799b02a61129a1c18fec69b56b843a46d8f671f9"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#adc4bc3d62052adaebf27e15db660b2daf4c7b70"
 dependencies = [
  "base64",
  "byteorder",
@@ -1745,7 +1745,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#799b02a61129a1c18fec69b56b843a46d8f671f9"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#adc4bc3d62052adaebf27e15db660b2daf4c7b70"
 dependencies = [
  "async-stream",
  "backoff",
@@ -1773,7 +1773,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-base"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#799b02a61129a1c18fec69b56b843a46d8f671f9"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#adc4bc3d62052adaebf27e15db660b2daf4c7b70"
 dependencies = [
  "chacha20poly1305",
  "dashmap",
@@ -1798,7 +1798,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-common"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#799b02a61129a1c18fec69b56b843a46d8f671f9"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#adc4bc3d62052adaebf27e15db660b2daf4c7b70"
 dependencies = [
  "async-trait",
  "futures",
@@ -1814,7 +1814,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-crypto"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#799b02a61129a1c18fec69b56b843a46d8f671f9"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#adc4bc3d62052adaebf27e15db660b2daf4c7b70"
 dependencies = [
  "aes 0.7.5",
  "aes-gcm",
