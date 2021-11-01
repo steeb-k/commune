@@ -235,8 +235,21 @@ impl Event {
 
     pub fn source(&self) -> String {
         let priv_ = imp::Event::from_instance(self);
-        serde_json::to_string_pretty(priv_.pure_event.borrow().as_ref().unwrap().event.json())
-            .unwrap()
+
+        // We have to convert it to a Value, because a RawValue cannot be pretty-printed.
+        let json: serde_json::Value = serde_json::from_str(
+            priv_
+                .pure_event
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .event
+                .json()
+                .get(),
+        )
+        .unwrap();
+
+        serde_json::to_string_pretty(&json).unwrap()
     }
 
     pub fn timestamp(&self) -> DateTime {
