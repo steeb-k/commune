@@ -440,6 +440,8 @@ impl Session {
             Err(error) => {
                 error!("Failed to prepare the session: {}", error);
 
+                priv_.logout_on_dispose.set(false);
+
                 let error_string = error.to_user_facing();
 
                 Some(Error::new(move |_| {
