@@ -258,13 +258,17 @@ impl MessageRow {
                             .formatted
                             .filter(|m| m.format == MessageFormat::Html)
                         {
-                            markup_links(&html_escape(&formatted.body))
+                            formatted.body
                         } else {
                             message.body
                         };
                         // TODO we need to bind the display name to the sender
                         self.show_text(
-                            &format!("<b>{}</b> {}", event.sender().display_name(), text),
+                            &format!(
+                                "<b>{}</b> {}",
+                                event.sender().display_name(),
+                                linkify(&text)
+                            ),
                             true,
                         );
                     }
@@ -277,7 +281,7 @@ impl MessageRow {
                         {
                             self.show_html(html_blocks);
                         } else {
-                            self.show_text(&message.body, true)
+                            self.show_text(&linkify(&message.body), true)
                         };
                     }
                     MessageType::ServerNotice(message) => {
@@ -289,7 +293,7 @@ impl MessageRow {
                         {
                             self.show_html(html_blocks);
                         } else {
-                            self.show_text(&message.body, false)
+                            self.show_text(&linkify(&message.body), true)
                         };
                     }
                     MessageType::Video(_message) => {}
@@ -341,6 +345,10 @@ impl MessageRow {
             child.append(&widget);
         }
     }
+}
+
+fn linkify(text: &str) -> String {
+    markup_links(&html_escape(text))
 }
 
 fn parse_formatted_body(formatted: Option<&FormattedBody>) -> Option<Vec<HtmlBlock>> {
