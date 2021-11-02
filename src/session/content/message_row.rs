@@ -254,23 +254,34 @@ impl MessageRow {
                 match msgtype {
                     MessageType::Audio(_message) => {}
                     MessageType::Emote(message) => {
-                        let text = if let Some(formatted) = message
-                            .formatted
-                            .filter(|m| m.format == MessageFormat::Html)
-                        {
-                            formatted.body
-                        } else {
-                            message.body
-                        };
                         // TODO we need to bind the display name to the sender
-                        self.show_text(
-                            &format!(
-                                "<b>{}</b> {}",
-                                event.sender().display_name(),
-                                linkify(&text)
-                            ),
-                            true,
-                        );
+                        if let Some(html_blocks) = message
+                            .formatted
+                            .filter(|formatted| is_valid_formatted_body(formatted))
+                            .and_then(|formatted| {
+                                let body = FormattedBody {
+                                    body: format!(
+                                        "<b>{}</b> {}",
+                                        event.sender().display_name(),
+                                        formatted.body
+                                    ),
+                                    format: MessageFormat::Html,
+                                };
+
+                                parse_formatted_body(Some(&body))
+                            })
+                        {
+                            self.show_html(html_blocks);
+                        } else {
+                            self.show_text(
+                                &format!(
+                                    "<b>{}</b> {}",
+                                    event.sender().display_name(),
+                                    linkify(&message.body)
+                                ),
+                                true,
+                            );
+                        }
                     }
                     MessageType::File(_message) => {}
                     MessageType::Image(_message) => {}
@@ -351,10 +362,13 @@ fn linkify(text: &str) -> String {
     markup_links(&html_escape(text))
 }
 
+fn is_valid_formatted_body(formatted: &FormattedBody) -> bool {
+    formatted.format == MessageFormat::Html && !formatted.body.contains("<!-- raw HTML omitted -->")
+}
+
 fn parse_formatted_body(formatted: Option<&FormattedBody>) -> Option<Vec<HtmlBlock>> {
     formatted
-        .filter(|m| m.format == MessageFormat::Html)
-        .filter(|formatted| !formatted.body.contains("<!-- raw HTML omitted -->"))
+        .filter(|formatted| is_valid_formatted_body(formatted))
         .and_then(|formatted| markup_html(&formatted.body).ok())
 }
 
