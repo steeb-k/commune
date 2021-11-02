@@ -239,7 +239,6 @@ impl MessageRow {
     }
 
     fn update_content(&self, event: &Event) {
-        let priv_ = imp::MessageRow::from_instance(self);
         let content = self.find_content(event);
 
         // TODO: create widgets for all event types
@@ -264,45 +263,34 @@ impl MessageRow {
                             message.body
                         };
                         // TODO we need to bind the display name to the sender
-                        self.show_label_with_markup(&format!(
-                            "<b>{}</b> {}",
-                            event.sender().display_name(),
-                            text
-                        ));
+                        self.show_text(
+                            &format!("<b>{}</b> {}", event.sender().display_name(), text),
+                            true,
+                        );
                     }
                     MessageType::File(_message) => {}
                     MessageType::Image(_message) => {}
                     MessageType::Location(_message) => {}
                     MessageType::Notice(message) => {
                         // TODO: we should reuse the already present child widgets when possible
-                        let child = if let Some(html_blocks) =
-                            parse_formatted_body(message.formatted.as_ref())
+                        if let Some(html_blocks) = parse_formatted_body(message.formatted.as_ref())
                         {
-                            create_widget_for_html_message(html_blocks)
+                            self.show_html(html_blocks);
                         } else {
-                            let child = gtk::Label::new(Some(&message.body));
-                            set_label_styles(&child);
-                            child.upcast::<gtk::Widget>()
+                            self.show_text(&message.body, true)
                         };
-
-                        priv_.content.set_child(Some(&child));
                     }
                     MessageType::ServerNotice(message) => {
-                        self.show_label_with_text(&message.body);
+                        self.show_text(&message.body, false);
                     }
                     MessageType::Text(message) => {
                         // TODO: we should reuse the already present child widgets when possible
-                        let child = if let Some(html_blocks) =
-                            parse_formatted_body(message.formatted.as_ref())
+                        if let Some(html_blocks) = parse_formatted_body(message.formatted.as_ref())
                         {
-                            create_widget_for_html_message(html_blocks)
+                            self.show_html(html_blocks);
                         } else {
-                            let child = gtk::Label::new(Some(&message.body));
-                            set_label_styles(&child);
-                            child.upcast::<gtk::Widget>()
+                            self.show_text(&message.body, false)
                         };
-
-                        priv_.content.set_child(Some(&child));
                     }
                     MessageType::Video(_message) => {}
                     MessageType::VerificationRequest(_message) => {}
@@ -313,35 +301,44 @@ impl MessageRow {
             }
             Some(AnyMessageEventContent::RoomEncrypted(content)) => {
                 warn!("Couldn't decrypt event {:?}", content);
-                self.show_label_with_text(&gettext("Fractal couldn't decrypt this message."))
+                self.show_text(&gettext("Fractal couldn't decrypt this message."), false)
             }
             Some(AnyMessageEventContent::RoomRedaction(_)) => {
-                self.show_label_with_text(&gettext("This message was removed."))
+                self.show_text(&gettext("This message was removed."), false)
             }
-            _ => self.show_label_with_text(&gettext("Unsupported event")),
+            _ => self.show_text(&gettext("Unsupported event"), false),
         }
     }
 
-    fn show_label_with_text(&self, text: &str) {
+    fn show_text(&self, text: &str, use_markup: bool) {
         let priv_ = imp::MessageRow::from_instance(self);
-        if let Some(Ok(child)) = priv_.content.child().map(|w| w.downcast::<gtk::Label>()) {
+
+        let child =
+            if let Some(Ok(child)) = priv_.content.child().map(|w| w.downcast::<gtk::Label>()) {
+                child
+            } else {
+                let child = gtk::Label::new(None);
+                set_label_styles(&child);
+                priv_.content.set_child(Some(&child));
+                child
+            };
+
+        if use_markup {
+            child.set_markup(text);
+        } else {
             child.set_text(text);
-        } else {
-            let child = gtk::Label::new(Some(text));
-            set_label_styles(&child);
-            priv_.content.set_child(Some(&child));
         }
     }
 
-    fn show_label_with_markup(&self, text: &str) {
+    fn show_html(&self, blocks: Vec<HtmlBlock>) {
         let priv_ = imp::MessageRow::from_instance(self);
-        if let Some(Ok(child)) = priv_.content.child().map(|w| w.downcast::<gtk::Label>()) {
-            child.set_markup(text);
-        } else {
-            let child = gtk::Label::new(None);
-            child.set_markup(text);
-            set_label_styles(&child);
-            priv_.content.set_child(Some(&child));
+
+        let child = gtk::Box::new(gtk::Orientation::Vertical, 6);
+        priv_.content.set_child(Some(&child));
+
+        for block in blocks {
+            let widget = create_widget_for_html_block(&block);
+            child.append(&widget);
         }
     }
 }
@@ -351,15 +348,6 @@ fn parse_formatted_body(formatted: Option<&FormattedBody>) -> Option<Vec<HtmlBlo
         .filter(|m| m.format == MessageFormat::Html)
         .filter(|formatted| !formatted.body.contains("<!-- raw HTML omitted -->"))
         .and_then(|formatted| markup_html(&formatted.body).ok())
-}
-
-fn create_widget_for_html_message(blocks: Vec<HtmlBlock>) -> gtk::Widget {
-    let container = gtk::Box::new(gtk::Orientation::Vertical, 6);
-    for block in blocks {
-        let widget = create_widget_for_html_block(&block);
-        container.append(&widget);
-    }
-    container.upcast::<gtk::Widget>()
 }
 
 fn set_label_styles(w: &gtk::Label) {
