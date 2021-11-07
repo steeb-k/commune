@@ -701,8 +701,12 @@ impl Room {
                 }
                 _ => {}
             }
-            let event_ts = glib::DateTime::from_unix_millis_utc(event.origin_server_ts());
-            latest_change = latest_change.max(event_ts.ok());
+            let event_is_join_or_leave = matches!(&event, AnySyncRoomEvent::State(AnySyncStateEvent::RoomMember(event))
+                if event.content.membership == MembershipState::Join || event.content.membership == MembershipState::Leave);
+            if !event_is_join_or_leave {
+                let event_ts = glib::DateTime::from_unix_millis_utc(event.origin_server_ts());
+                latest_change = latest_change.max(event_ts.ok());
+            }
         }
 
         priv_.timeline.get().unwrap().append(batch);
