@@ -2,6 +2,7 @@ mod event;
 mod highlight_flags;
 mod item;
 mod member;
+mod member_list;
 mod power_levels;
 mod room_type;
 mod timeline;
@@ -25,7 +26,7 @@ use matrix_sdk::{
         api::client::r0::sync::sync_events::InvitedRoom,
         events::{
             room::{
-                member::{MembershipState, RoomMemberEventContent},
+                member::MembershipState,
                 message::{
                     EmoteMessageEventContent, MessageType, RoomMessageEventContent,
                     TextMessageEventContent,
@@ -36,14 +37,13 @@ use matrix_sdk::{
             tag::TagName,
             AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
             AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, EventType, SyncMessageEvent,
-            SyncStateEvent, Unsigned,
+            Unsigned,
         },
         identifiers::{EventId, RoomId, UserId},
         serde::Raw,
         MilliSecondsSinceUnixEpoch,
     },
     uuid::Uuid,
-    RoomMember,
 };
 use serde_json::value::RawValue;
 use std::cell::RefCell;
@@ -53,6 +53,7 @@ use std::path::PathBuf;
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
 use crate::session::avatar::update_room_avatar_from_file;
+use crate::session::room::member_list::MemberList;
 use crate::session::{Avatar, Session};
 use crate::Error;
 use crate::{spawn, spawn_tokio};
@@ -63,7 +64,6 @@ mod imp {
     use glib::subclass::Signal;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::Cell;
-    use std::collections::HashMap;
 
     #[derive(Debug, Default)]
     pub struct Room {
@@ -74,7 +74,7 @@ mod imp {
         pub avatar: OnceCell<Avatar>,
         pub category: Cell<RoomType>,
         pub timeline: OnceCell<Timeline>,
-        pub room_members: RefCell<HashMap<UserId, Member>>,
+        pub members: OnceCell<MemberList>,
         /// The user who sent the invite to this room. This is only set when this room is an invitiation.
         pub inviter: RefCell<Option<Member>>,
         pub members_loaded: Cell<bool>,
@@ -174,6 +174,13 @@ mod imp {
                         glib::DateTime::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_object(
+                        "members",
+                        "Members",
+                        "Model of the room’s members",
+                        MemberList::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -225,6 +232,7 @@ mod imp {
                 "category" => obj.category().to_value(),
                 "highlight" => obj.highlight().to_value(),
                 "topic" => obj.topic().to_value(),
+                "members" => obj.members().to_value(),
                 "notification-count" => {
                     let highlight = matrix_room.unread_notification_counts().highlight_count;
                     let notification = matrix_room.unread_notification_counts().notification_count;
@@ -253,6 +261,7 @@ mod imp {
 
             obj.set_matrix_room(obj.session().client().get_room(obj.room_id()).unwrap());
             self.timeline.set(Timeline::new(obj)).unwrap();
+            self.members.set(MemberList::new(obj)).unwrap();
             self.avatar
                 .set(Avatar::new(&obj.session(), obj.matrix_room().avatar_url()))
                 .unwrap();
@@ -479,6 +488,11 @@ impl Room {
         priv_.timeline.get().unwrap()
     }
 
+    pub fn members(&self) -> &MemberList {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.members.get().unwrap()
+    }
+
     fn notify_notification_count(&self) {
         self.notify("highlight");
         self.notify("notification-count");
@@ -624,19 +638,6 @@ impl Room {
         priv_.inviter.borrow().clone()
     }
 
-    /// Returns the room member `User` object
-    ///
-    /// The returned `User` is specific to this room
-    pub fn member_by_id(&self, user_id: &UserId) -> Member {
-        let priv_ = imp::Room::from_instance(self);
-        let mut room_members = priv_.room_members.borrow_mut();
-
-        room_members
-            .entry(user_id.clone())
-            .or_insert_with(|| Member::new(self, user_id))
-            .clone()
-    }
-
     /// Handle stripped state events.
     ///
     /// Events passed to this function aren't added to the timeline.
@@ -684,7 +685,7 @@ impl Room {
         for event in batch.iter().flat_map(Event::matrix_event) {
             match &event {
                 AnySyncRoomEvent::State(AnySyncStateEvent::RoomMember(event)) => {
-                    self.update_member_for_member_event(event)
+                    self.members().update_member_for_member_event(event)
                 }
                 AnySyncRoomEvent::State(AnySyncStateEvent::RoomAvatar(event)) => {
                     self.avatar().set_url(event.content.url.to_owned());
@@ -721,32 +722,6 @@ impl Room {
         priv_.latest_change.borrow().clone()
     }
 
-    /// Add an initial set of members needed to display room events
-    ///
-    /// The `Timeline` makes sure to update the members when a member state event arrives
-    fn add_members(&self, members: Vec<RoomMember>) {
-        let priv_ = imp::Room::from_instance(self);
-        let mut room_members = priv_.room_members.borrow_mut();
-        for member in members {
-            let user_id = member.user_id();
-            let user = room_members
-                .entry(user_id.clone())
-                .or_insert_with(|| Member::new(self, user_id));
-            user.update_from_room_member(&member);
-        }
-    }
-
-    /// Updates a room member based on the room member state event
-    fn update_member_for_member_event(&self, event: &SyncStateEvent<RoomMemberEventContent>) {
-        let priv_ = imp::Room::from_instance(self);
-        let mut room_members = priv_.room_members.borrow_mut();
-        let user_id = &event.sender;
-        let user = room_members
-            .entry(user_id.clone())
-            .or_insert_with(|| Member::new(self, user_id));
-        user.update_from_member_event(event);
-    }
-
     pub fn load_members(&self) {
         let priv_ = imp::Room::from_instance(self);
         if priv_.members_loaded.get() {
@@ -762,11 +737,14 @@ impl Room {
                 // FIXME: We should retry to load the room members if the request failed
                 let priv_ = imp::Room::from_instance(&obj);
                 match handle.await.unwrap() {
-                        Ok(members) => obj.add_members(members),
-                        Err(error) => {
-                            priv_.members_loaded.set(false);
-                            error!("Couldn’t load room members: {}", error)
-                        },
+                    Ok(members) => {
+                        // Add all members needed to display room events.
+                        obj.members().update_from_room_members(&members);
+                    },
+                    Err(error) => {
+                        priv_.members_loaded.set(false);
+                        error!("Couldn’t load room members: {}", error)
+                    },
                 };
             })
         );
@@ -867,7 +845,7 @@ impl Room {
     pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::Expression {
         let session = self.session();
         let user_id = session.user().unwrap().user_id();
-        let member = self.member_by_id(user_id);
+        let member = self.members().member_by_id(user_id);
         self.power_levels().new_allowed_expr(&member, room_action)
     }
 

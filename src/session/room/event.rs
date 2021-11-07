@@ -167,6 +167,7 @@ impl Event {
             .room
             .get()
             .unwrap()
+            .members()
             .member_by_id(&self.matrix_sender())
     }
 
