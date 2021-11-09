@@ -1,7 +1,7 @@
 use gtk::glib;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use matrix_sdk::ruma::events::room::power_levels::PowerLevelsEventContent;
+use matrix_sdk::ruma::events::room::power_levels::RoomPowerLevelsEventContent;
 use matrix_sdk::ruma::events::{EventType, SyncStateEvent};
 
 use crate::session::room::Member;
@@ -9,7 +9,7 @@ use crate::utils::prop_expr;
 
 #[derive(Clone, Debug, Default, glib::GBoxed)]
 #[gboxed(type_name = "BoxedPowerLevelsEventContent")]
-pub struct BoxedPowerLevelsEventContent(PowerLevelsEventContent);
+pub struct BoxedPowerLevelsEventContent(RoomPowerLevelsEventContent);
 
 mod imp {
     use super::*;
@@ -90,7 +90,7 @@ impl PowerLevels {
     }
 
     /// Updates the power levels from the given event.
-    pub fn update_from_event(&self, event: SyncStateEvent<PowerLevelsEventContent>) {
+    pub fn update_from_event(&self, event: SyncStateEvent<RoomPowerLevelsEventContent>) {
         let priv_ = imp::PowerLevels::from_instance(self);
         let content = BoxedPowerLevelsEventContent(event.content);
         priv_.content.replace(content);
@@ -105,7 +105,10 @@ impl Default for PowerLevels {
 }
 
 /// Returns the power level minimally required to perform the given action.
-fn min_level_for_room_action(content: &PowerLevelsEventContent, room_action: &RoomAction) -> u32 {
+fn min_level_for_room_action(
+    content: &RoomPowerLevelsEventContent,
+    room_action: &RoomAction,
+) -> u32 {
     let power_level = i64::from(match room_action {
         RoomAction::Ban => content.ban,
         RoomAction::Invite => content.invite,

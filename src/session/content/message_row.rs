@@ -12,7 +12,7 @@ use html2pango::{
 use log::warn;
 use matrix_sdk::ruma::events::{
     room::message::{FormattedBody, MessageFormat, MessageType, Relation},
-    room::redaction::RedactionEventContent,
+    room::redaction::RoomRedactionEventContent,
     AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
 };
 use sourceview::prelude::*;
@@ -219,7 +219,7 @@ impl MessageRow {
                     ))
                 } else {
                     Some(AnyMessageEventContent::RoomRedaction(
-                        RedactionEventContent::new(),
+                        RoomRedactionEventContent::new(),
                     ))
                 }
             }
@@ -230,7 +230,7 @@ impl MessageRow {
                     ))
                 } else {
                     Some(AnyMessageEventContent::RoomRedaction(
-                        RedactionEventContent::new(),
+                        RoomRedactionEventContent::new(),
                     ))
                 }
             }

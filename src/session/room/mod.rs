@@ -25,13 +25,13 @@ use matrix_sdk::{
         api::client::r0::sync::sync_events::InvitedRoom,
         events::{
             room::{
-                member::{MemberEventContent, MembershipState},
+                member::{MembershipState, RoomMemberEventContent},
                 message::{
-                    EmoteMessageEventContent, MessageEventContent, MessageType,
+                    EmoteMessageEventContent, MessageType, RoomMessageEventContent,
                     TextMessageEventContent,
                 },
-                name::NameEventContent,
-                topic::TopicEventContent,
+                name::RoomNameEventContent,
+                topic::RoomTopicEventContent,
             },
             tag::TagName,
             AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
@@ -555,7 +555,7 @@ impl Room {
                 return;
             }
         };
-        let name_content = NameEventContent::new(Some(room_name));
+        let name_content = RoomNameEventContent::new(Some(room_name));
 
         let handle = spawn_tokio!(async move {
             let content = AnyStateEventContent::RoomName(name_content);
@@ -599,7 +599,7 @@ impl Room {
         };
 
         let handle = spawn_tokio!(async move {
-            let content = AnyStateEventContent::RoomTopic(TopicEventContent::new(topic));
+            let content = AnyStateEventContent::RoomTopic(RoomTopicEventContent::new(topic));
             joined_room.send_state_event(content, "").await
         });
 
@@ -737,7 +737,7 @@ impl Room {
     }
 
     /// Updates a room member based on the room member state event
-    fn update_member_for_member_event(&self, event: &SyncStateEvent<MemberEventContent>) {
+    fn update_member_for_member_event(&self, event: &SyncStateEvent<RoomMemberEventContent>) {
         let priv_ = imp::Room::from_instance(self);
         let mut room_members = priv_.room_members.borrow_mut();
         let user_id = &event.sender;
@@ -814,14 +814,14 @@ impl Room {
             } else {
                 EmoteMessageEventContent::plain(body)
             };
-            MessageEventContent::new(MessageType::Emote(emote))
+            RoomMessageEventContent::new(MessageType::Emote(emote))
         } else {
             let text = if markdown_enabled {
                 TextMessageEventContent::markdown(body)
             } else {
                 TextMessageEventContent::plain(body)
             };
-            MessageEventContent::new(MessageType::Text(text))
+            RoomMessageEventContent::new(MessageType::Text(text))
         };
 
         let txn_id = Uuid::new_v4();

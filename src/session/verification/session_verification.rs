@@ -281,9 +281,9 @@ impl SessionVerification {
                 if let Some(emoji) = request.emoji() {
                     for (index, emoji) in emoji.iter().enumerate() {
                         if index < 4 {
-                            priv_.emoji_row_1.append(&Emoji::new(*emoji));
+                            priv_.emoji_row_1.append(&Emoji::new(emoji));
                         } else {
-                            priv_.emoji_row_2.append(&Emoji::new(*emoji));
+                            priv_.emoji_row_2.append(&Emoji::new(emoji));
                         }
                     }
                     priv_.main_stack.set_visible_child_name("emoji");

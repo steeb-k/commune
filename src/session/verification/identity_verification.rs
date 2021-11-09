@@ -7,7 +7,7 @@ use matrix_sdk::{
     encryption::{
         identities::RequestVerificationError,
         verification::{
-            CancelInfo, QrVerification, SasVerification, Verification as MatrixVerification,
+            CancelInfo, Emoji, QrVerification, SasVerification, Verification as MatrixVerification,
             VerificationRequest,
         },
     },
@@ -300,7 +300,7 @@ impl IdentityVerification {
     ///
     /// This is only set once the request reached the `State::Ready`
     /// and if a Sas verification was started
-    pub fn emoji(&self) -> Option<[(&'static str, &'static str); 7]> {
+    pub fn emoji(&self) -> Option<[Emoji; 7]> {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
         match &*priv_.request.borrow() {

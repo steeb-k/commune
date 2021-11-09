@@ -4,7 +4,7 @@ use gtk::{gdk, gdk_pixbuf::Pixbuf, gio, glib, glib::clone, prelude::*, subclass:
 
 use log::{debug, error, info};
 use matrix_sdk::room::Room as MatrixRoom;
-use matrix_sdk::ruma::events::room::avatar::AvatarEventContent;
+use matrix_sdk::ruma::events::room::avatar::RoomAvatarEventContent;
 use matrix_sdk::ruma::events::AnyStateEventContent;
 use matrix_sdk::Client;
 use matrix_sdk::{
@@ -265,7 +265,7 @@ where
         _ => return Err(AvatarError::NotAMember),
     };
 
-    let mut content = AvatarEventContent::new();
+    let mut content = RoomAvatarEventContent::new();
 
     let uri = if let Some(filename) = filename {
         Some(upload_avatar(matrix_client, filename).await?)

@@ -1,7 +1,7 @@
 use gtk::glib;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use matrix_sdk::ruma::events::room::member::MemberEventContent;
+use matrix_sdk::ruma::events::room::member::RoomMemberEventContent;
 use matrix_sdk::ruma::events::{StrippedStateEvent, SyncStateEvent};
 use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 use matrix_sdk::RoomMember;
@@ -104,7 +104,7 @@ impl Member {
 
 pub trait MemberEvent {
     fn sender(&self) -> &UserId;
-    fn content(&self) -> &MemberEventContent;
+    fn content(&self) -> &RoomMemberEventContent;
 
     fn avatar_url(&self) -> Option<MxcUri> {
         self.content().avatar_url.clone()
@@ -122,19 +122,19 @@ pub trait MemberEvent {
     }
 }
 
-impl MemberEvent for SyncStateEvent<MemberEventContent> {
+impl MemberEvent for SyncStateEvent<RoomMemberEventContent> {
     fn sender(&self) -> &UserId {
         &self.sender
     }
-    fn content(&self) -> &MemberEventContent {
+    fn content(&self) -> &RoomMemberEventContent {
         &self.content
     }
 }
-impl MemberEvent for StrippedStateEvent<MemberEventContent> {
+impl MemberEvent for StrippedStateEvent<RoomMemberEventContent> {
     fn sender(&self) -> &UserId {
         &self.sender
     }
-    fn content(&self) -> &MemberEventContent {
+    fn content(&self) -> &RoomMemberEventContent {
         &self.content
     }
 }
