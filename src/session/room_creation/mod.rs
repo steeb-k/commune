@@ -242,7 +242,7 @@ impl RoomCreation {
                         Ok(response) => {
                             if let Some(session) = obj.session() {
                                 let room = session.room_list().get_wait(response.room_id).await;
-                                session.set_selected_room(room);
+                                session.select_room(room);
                             }
                             obj.close();
                         },

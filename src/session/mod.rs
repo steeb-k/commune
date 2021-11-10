@@ -7,7 +7,7 @@ mod room_creation;
 mod room_list;
 mod sidebar;
 mod user;
-mod verification;
+pub mod verification;
 
 use self::account_settings::AccountSettings;
 pub use self::avatar::Avatar;
@@ -17,7 +17,8 @@ pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
-pub use self::verification::{IdentityVerification, SessionVerification, ToDeviceHandler};
+use self::verification::{IdentityVerification, SessionVerification, VerificationList};
+use crate::session::sidebar::ItemList;
 
 use crate::secret;
 use crate::secret::StoredSession;
@@ -26,7 +27,6 @@ use crate::Window;
 use crate::{spawn, spawn_tokio};
 
 use crate::matrix_error::UserFacingError;
-use crate::session::content::ContentType;
 use adw::subclass::prelude::BinImpl;
 use futures::StreamExt;
 use gettextrs::gettext;
@@ -76,16 +76,13 @@ mod imp {
         #[template_child]
         pub sidebar: TemplateChild<Sidebar>,
         pub client: RefCell<Option<Client>>,
-        pub room_list: OnceCell<RoomList>,
+        pub item_list: OnceCell<ItemList>,
         pub user: OnceCell<User>,
-        pub selected_room: RefCell<Option<Room>>,
-        pub selected_content_type: Cell<ContentType>,
         pub is_ready: Cell<bool>,
         pub logout_on_dispose: Cell<bool>,
         pub info: OnceCell<StoredSession>,
         pub source_id: RefCell<Option<SourceId>>,
         pub sync_tokio_handle: RefCell<Option<JoinHandle<()>>>,
-        pub to_device_handler: OnceCell<ToDeviceHandler>,
     }
 
     #[glib::object_subclass]
@@ -98,7 +95,7 @@ mod imp {
             Self::bind_template(klass);
 
             klass.install_action("session.close-room", None, move |session, _, _| {
-                session.set_selected_room(None);
+                session.select_room(None);
             });
 
             klass.install_action("session.logout", None, move |session, _, _| {
@@ -156,26 +153,11 @@ mod imp {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
                     glib::ParamSpec::new_object(
-                        "room-list",
-                        "Room List",
-                        "The list of rooms",
-                        RoomList::static_type(),
+                        "item-list",
+                        "Item List",
+                        "The list of items in the sidebar",
+                        ItemList::static_type(),
                         glib::ParamFlags::READABLE,
-                    ),
-                    glib::ParamSpec::new_object(
-                        "selected-room",
-                        "Selected Room",
-                        "The selected room in this session",
-                        Room::static_type(),
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
-                    ),
-                    glib::ParamSpec::new_enum(
-                        "selected-content-type",
-                        "Selected Content Type",
-                        "The current content type selected",
-                        ContentType::static_type(),
-                        ContentType::default() as i32,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
                         "user",
@@ -190,29 +172,10 @@ mod imp {
             PROPERTIES.as_ref()
         }
 
-        fn set_property(
-            &self,
-            obj: &Self::Type,
-            _id: usize,
-            value: &glib::Value,
-            pspec: &glib::ParamSpec,
-        ) {
-            match pspec.name() {
-                "selected-room" => {
-                    let selected_room = value.get().unwrap();
-                    obj.set_selected_room(selected_room);
-                }
-                "selected-content-type" => obj.set_selected_content_type(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "room-list" => obj.room_list().to_value(),
-                "selected-room" => obj.selected_room().to_value(),
+                "item-list" => obj.item_list().to_value(),
                 "user" => obj.user().to_value(),
-                "selected-content-type" => obj.selected_content_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -231,6 +194,23 @@ mod imp {
                 ]
             });
             SIGNALS.as_ref()
+        }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            self.sidebar.connect_notify_local(
+                Some("selected-item"),
+                clone!(@weak obj => move |_, _| {
+                    let priv_ = imp::Session::from_instance(&obj);
+
+                    if priv_.sidebar.selected_item().is_none() {
+                        priv_.content.navigate(adw::NavigationDirection::Back);
+                    } else {
+                        priv_.content.navigate(adw::NavigationDirection::Forward);
+                    }
+                }),
+            );
         }
 
         fn dispose(&self, obj: &Self::Type) {
@@ -261,44 +241,11 @@ impl Session {
         glib::Object::new(&[]).expect("Failed to create Session")
     }
 
-    pub fn selected_content_type(&self) -> ContentType {
+    pub fn select_room(&self, room: Option<Room>) {
         let priv_ = imp::Session::from_instance(self);
-        priv_.selected_content_type.get()
-    }
-
-    pub fn set_selected_content_type(&self, selected_type: ContentType) {
-        let priv_ = imp::Session::from_instance(self);
-
-        if self.selected_content_type() == selected_type {
-            return;
-        }
-
-        if selected_type == ContentType::None {
-            priv_.content.navigate(adw::NavigationDirection::Back);
-        } else {
-            priv_.content.navigate(adw::NavigationDirection::Forward);
-        }
-
-        priv_.selected_content_type.set(selected_type);
-
-        self.notify("selected-content-type");
-    }
-
-    pub fn selected_room(&self) -> Option<Room> {
-        let priv_ = imp::Session::from_instance(self);
-        priv_.selected_room.borrow().clone()
-    }
-
-    pub fn set_selected_room(&self, selected_room: Option<Room>) {
-        let priv_ = imp::Session::from_instance(self);
-
-        if self.selected_room() == selected_room {
-            return;
-        }
-
-        priv_.selected_room.replace(selected_room);
-
-        self.notify("selected-room");
+        priv_
+            .sidebar
+            .set_selected_item(room.map(|item| item.upcast()));
     }
 
     pub fn login_with_password(&self, homeserver: Url, username: String, password: String) {
@@ -401,11 +348,6 @@ impl Session {
                 let user = User::new(self, &session.user_id);
                 priv_.user.set(user.clone()).unwrap();
                 self.notify("user");
-
-                priv_
-                    .to_device_handler
-                    .set(ToDeviceHandler::new(self))
-                    .unwrap();
 
                 let handle = spawn_tokio!(async move {
                     let display_name = client.display_name().await?;
@@ -552,11 +494,7 @@ impl Session {
 
                 let verification = IdentityVerification::new(obj.user().unwrap());
                 let session = SessionVerification::new(&verification, &obj);
-                priv_
-                    .to_device_handler
-                    .get()
-                    .unwrap()
-                    .add_request(verification);
+                obj.verification_list().add(verification);
                 priv_
                     .stack
                     .add_named(&session, Some("session-verification"));
@@ -576,8 +514,18 @@ impl Session {
     }
 
     pub fn room_list(&self) -> &RoomList {
+        self.item_list().room_list()
+    }
+
+    pub fn verification_list(&self) -> &VerificationList {
+        self.item_list().verification_list()
+    }
+
+    pub fn item_list(&self) -> &ItemList {
         let priv_ = &imp::Session::from_instance(self);
-        priv_.room_list.get_or_init(|| RoomList::new(self))
+        priv_
+            .item_list
+            .get_or_init(|| ItemList::new(&RoomList::new(self), &VerificationList::new(self)))
     }
 
     pub fn user(&self) -> Option<&User> {
@@ -655,18 +603,13 @@ impl Session {
     }
 
     fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
-        let priv_ = imp::Session::from_instance(self);
-
         match response {
             Ok(response) => {
                 if !self.is_ready() {
                     self.mark_ready();
                 }
                 self.room_list().handle_response_rooms(response.rooms);
-                priv_
-                    .to_device_handler
-                    .get()
-                    .unwrap()
+                self.verification_list()
                     .handle_response_to_device(response.to_device);
             }
             Err(error) => {

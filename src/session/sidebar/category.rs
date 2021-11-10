@@ -1,9 +1,7 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::{
-    room::{Room, RoomType},
-    room_list::RoomList,
-};
+use crate::session::sidebar::CategoryType;
+use crate::session::{room::Room, room_list::RoomList};
 
 mod imp {
     use once_cell::unsync::OnceCell;
@@ -14,7 +12,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Category {
         pub model: OnceCell<gio::ListModel>,
-        pub type_: Cell<RoomType>,
+        pub type_: Cell<CategoryType>,
     }
 
     #[glib::object_subclass]
@@ -34,8 +32,8 @@ mod imp {
                         "type",
                         "Type",
                         "The type of this category",
-                        RoomType::static_type(),
-                        RoomType::default() as i32,
+                        CategoryType::static_type(),
+                        CategoryType::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_string(
@@ -90,19 +88,19 @@ mod imp {
 
     impl ListModelImpl for Category {
         fn item_type(&self, _list_model: &Self::Type) -> glib::Type {
-            Room::static_type()
+            glib::Object::static_type()
         }
         fn n_items(&self, _list_model: &Self::Type) -> u32 {
-            self.model.get().map(|l| l.n_items()).unwrap_or(0)
+            self.model.get().unwrap().n_items()
         }
         fn item(&self, _list_model: &Self::Type, position: u32) -> Option<glib::Object> {
-            self.model.get().and_then(|l| l.item(position))
+            self.model.get().unwrap().item(position)
         }
     }
 }
 
 glib::wrapper! {
-    /// A list of Rooms in the same category implementing ListModel.
+    /// A list of Items in the same category implementing ListModel.
     ///
     /// This struct is used in ItemList for the sidebar.
     pub struct Category(ObjectSubclass<imp::Category>)
@@ -110,11 +108,11 @@ glib::wrapper! {
 }
 
 impl Category {
-    pub fn new(type_: RoomType, model: &RoomList) -> Self {
+    pub fn new(type_: CategoryType, model: &impl IsA<gio::ListModel>) -> Self {
         glib::Object::new(&[("type", &type_), ("model", model)]).expect("Failed to create Category")
     }
 
-    pub fn type_(&self) -> RoomType {
+    pub fn type_(&self) -> CategoryType {
         let priv_ = imp::Category::from_instance(self);
         priv_.type_.get()
     }
@@ -123,26 +121,35 @@ impl Category {
         let priv_ = imp::Category::from_instance(self);
         let type_ = self.type_();
 
-        let filter = gtk::CustomFilter::new(move |o| {
-            o.downcast_ref::<Room>()
-                .filter(|r| r.category() == type_)
-                .is_some()
-        });
-        let filter_model = gtk::FilterListModel::new(Some(&model), Some(&filter));
+        // Special case room lists so that they are sorted and in the right category
+        if model.is::<RoomList>() {
+            let filter = gtk::CustomFilter::new(move |o| {
+                o.downcast_ref::<Room>()
+                    .filter(|r| CategoryType::from(r.category()) == type_)
+                    .is_some()
+            });
+            let filter_model = gtk::FilterListModel::new(Some(&model), Some(&filter));
 
-        let sorter = gtk::CustomSorter::new(|a, b| {
-            let a = a.downcast_ref::<Room>().unwrap();
-            let b = b.downcast_ref::<Room>().unwrap();
-            b.latest_change().cmp(&a.latest_change()).into()
-        });
-        let sort_model = gtk::SortListModel::new(Some(&filter_model), Some(&sorter));
+            let sorter = gtk::CustomSorter::new(|a, b| {
+                let a = a.downcast_ref::<Room>().unwrap();
+                let b = b.downcast_ref::<Room>().unwrap();
+                b.latest_change().cmp(&a.latest_change()).into()
+            });
+            let sort_model = gtk::SortListModel::new(Some(&filter_model), Some(&sorter));
 
-        sort_model.connect_items_changed(
-            clone!(@weak self as obj => move |_, pos, added, removed| {
-                obj.items_changed(pos, added, removed);
-            }),
-        );
-
-        priv_.model.set(sort_model.upcast()).unwrap();
+            sort_model.connect_items_changed(
+                clone!(@weak self as obj => move |_, pos, removed, added| {
+                    obj.items_changed(pos, removed, added);
+                }),
+            );
+            priv_.model.set(sort_model.upcast()).unwrap();
+        } else {
+            model.connect_items_changed(
+                clone!(@weak self as obj => move |_, pos, removed, added| {
+                    obj.items_changed(pos, removed, added);
+                }),
+            );
+            priv_.model.set(model).unwrap();
+        }
     }
 }

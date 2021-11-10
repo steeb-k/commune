@@ -3,7 +3,8 @@ use gtk::{glib, subclass::prelude::*};
 
 use crate::session::{
     room::Room,
-    sidebar::{Category, CategoryRow, Entry, EntryRow, RoomRow},
+    sidebar::{Category, CategoryRow, Entry, EntryRow, RoomRow, VerificationRow},
+    verification::IdentityVerification,
 };
 
 mod imp {
@@ -165,6 +166,22 @@ impl Row {
 
                 if let Some(list_item) = self.parent() {
                     list_item.set_css_classes(&["entry"]);
+                }
+            } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+                let child = if let Some(Ok(child)) =
+                    self.child().map(|w| w.downcast::<VerificationRow>())
+                {
+                    child
+                } else {
+                    let child = VerificationRow::new();
+                    self.set_child(Some(&child));
+                    child
+                };
+
+                child.set_identity_verification(Some(verification.clone()));
+
+                if let Some(list_item) = self.parent() {
+                    list_item.set_css_classes(&["room"]);
                 }
             } else {
                 panic!("Wrong row item: {:?}", item);

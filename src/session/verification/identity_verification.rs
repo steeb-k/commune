@@ -130,6 +130,13 @@ mod imp {
                         Mode::default() as i32,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_string(
+                        "display-name",
+                        "Display name",
+                        "The display name of this verificaiton request",
+                        None,
+                        glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -153,6 +160,7 @@ mod imp {
             match pspec.name() {
                 "user" => obj.user().to_value(),
                 "mode" => obj.mode().to_value(),
+                "display-name" => obj.display_name().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -281,6 +289,11 @@ impl IdentityVerification {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
         priv_.request.replace(request);
+    }
+
+    pub fn display_name(&self) -> String {
+        // TODO: give this request a name based on the device
+        "Request".to_string()
     }
 
     /// Get the QrCode for this verification request

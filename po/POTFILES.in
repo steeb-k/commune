@@ -36,6 +36,7 @@ data/resources/ui/sidebar-category-row.ui
 data/resources/ui/sidebar-entry-row.ui
 data/resources/ui/sidebar-item.ui
 data/resources/ui/sidebar-room-row.ui
+data/resources/ui/sidebar-verification-row.ui
 data/resources/ui/sidebar.ui
 data/resources/ui/spinner-button.ui
 data/resources/ui/pill.ui
@@ -96,7 +97,11 @@ src/session/sidebar/account_switcher/item.rs
 src/session/sidebar/account_switcher/mod.rs
 src/session/sidebar/account_switcher/user_entry.rs
 src/session/sidebar/category_row.rs
+src/session/sidebar/category_type.rs
 src/session/sidebar/entry.rs
+src/session/sidebar/entry_row.rs,
+src/session/sidebar/entry_type.rs,
+src/session/sidebar/verification_row.rs,
 src/session/sidebar/mod.rs
 src/session/sidebar/room_row.rs
 src/session/sidebar/row.rs
@@ -105,7 +110,7 @@ src/session/verification/emoji.rs
 src/session/verification/identity_verification.rs
 src/session/verification/mod.rs
 src/session/verification/session_verification.rs
-src/session/verification/to_device_handler.rs
+src/session/verification/verification_list.rs
 src/session/user.rs
 src/utils.rs
 src/window.rs

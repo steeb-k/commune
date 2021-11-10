@@ -41,13 +41,11 @@
         <child>
           <object class="ContentRoomHistory" id="room_history">
             <property name="compact" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
-            <property name="room" bind-source="Content" bind-property="room" bind-flags="sync-create"/>
           </object>
         </child>
         <child>
           <object class="ContentInvite" id="invite">
             <property name="compact" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
-            <property name="room" bind-source="Content" bind-property="room" bind-flags="sync-create"/>
           </object>
         </child>
         <child>

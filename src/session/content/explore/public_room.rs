@@ -205,7 +205,7 @@ impl PublicRoom {
     pub fn join_or_view(&self) {
         let session = self.session();
         if let Some(room) = self.room() {
-            session.set_selected_room(Some(room.clone()));
+            session.select_room(Some(room.clone()));
         } else if let Some(matrix_public_room) = self.matrix_public_room() {
             session
                 .room_list()

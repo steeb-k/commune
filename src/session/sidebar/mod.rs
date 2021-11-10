@@ -1,29 +1,34 @@
 mod account_switcher;
 mod category;
 mod category_row;
+mod category_type;
 mod entry;
 mod entry_row;
+mod entry_type;
 mod item_list;
 mod room_row;
 mod row;
 mod selection;
+mod verification_row;
 
 pub use self::category::Category;
 use self::category_row::CategoryRow;
+pub use self::category_type::CategoryType;
 pub use self::entry::Entry;
 use self::entry_row::EntryRow;
+pub use self::entry_type::EntryType;
 pub use self::item_list::ItemList;
 use self::room_row::RoomRow;
 use self::row::Row;
 use self::selection::Selection;
+use self::verification_row::VerificationRow;
 
 use adw::subclass::prelude::BinImpl;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate, SelectionModel};
 
 use crate::components::Avatar;
-use crate::session::content::ContentType;
 use crate::session::room::Room;
-use crate::session::RoomList;
+use crate::session::verification::IdentityVerification;
 use crate::session::Session;
 use crate::session::User;
 use account_switcher::AccountSwitcher;
@@ -38,8 +43,7 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/sidebar.ui")]
     pub struct Sidebar {
         pub compact: Cell<bool>,
-        pub selected_room: RefCell<Option<Room>>,
-        pub selected_type: Cell<ContentType>,
+        pub selected_item: RefCell<Option<glib::Object>>,
         #[template_child]
         pub headerbar: TemplateChild<adw::HeaderBar>,
         #[template_child]
@@ -90,25 +94,17 @@ mod imp {
                         glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_object(
-                        "room-list",
-                        "Room List",
-                        "The list of rooms",
-                        RoomList::static_type(),
-                        glib::ParamFlags::WRITABLE,
-                    ),
-                    glib::ParamSpec::new_object(
-                        "selected-room",
-                        "Selected Room",
-                        "The selected room in this sidebar",
-                        Room::static_type(),
+                        "item-list",
+                        "Item List",
+                        "The list of items in the sidebar",
+                        ItemList::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_enum(
-                        "selected-type",
-                        "Selected",
-                        "The type of item that is selected",
-                        ContentType::static_type(),
-                        ContentType::default() as i32,
+                    glib::ParamSpec::new_object(
+                        "selected-item",
+                        "Selected Item",
+                        "The selected item in this sidebar",
+                        glib::Object::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                 ]
@@ -132,15 +128,13 @@ mod imp {
                 "user" => {
                     obj.set_user(value.get().unwrap());
                 }
-                "room-list" => {
-                    let room_list = value.get().unwrap();
-                    obj.set_room_list(room_list);
+                "item-list" => {
+                    obj.set_item_list(value.get().unwrap());
                 }
-                "selected-room" => {
-                    let selected_room = value.get().unwrap();
-                    obj.set_selected_room(selected_room);
+                "selected-item" => {
+                    let selected_item = value.get().unwrap();
+                    obj.set_selected_item(selected_item);
                 }
-                "selected-type" => obj.set_selected_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -149,8 +143,7 @@ mod imp {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
                 "user" => obj.user().to_value(),
-                "selected-room" => obj.selected_room().to_value(),
-                "selected-type" => obj.selected_type().to_value(),
+                "selected-item" => obj.selected_item().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -174,6 +167,7 @@ mod imp {
                     Some(o) if o.is::<Category>() => row.set_expanded(!row.is_expanded()),
                     Some(o) if o.is::<Room>() => model.set_selected(pos),
                     Some(o) if o.is::<Entry>() => model.set_selected(pos),
+                    Some(o) if o.is::<IdentityVerification>() => model.set_selected(pos),
                     _ => {}
                 }
             });
@@ -194,26 +188,9 @@ impl Sidebar {
         glib::Object::new(&[]).expect("Failed to create Sidebar")
     }
 
-    pub fn selected_type(&self) -> ContentType {
+    pub fn selected_item(&self) -> Option<glib::Object> {
         let priv_ = imp::Sidebar::from_instance(self);
-        priv_.selected_type.get()
-    }
-
-    fn set_selected_type(&self, selected_type: ContentType) {
-        let priv_ = imp::Sidebar::from_instance(self);
-
-        if self.selected_type() == selected_type {
-            return;
-        }
-
-        priv_.selected_type.set(selected_type);
-
-        self.notify("selected-type");
-    }
-
-    pub fn selected_room(&self) -> Option<Room> {
-        let priv_ = imp::Sidebar::from_instance(self);
-        priv_.selected_room.borrow().clone()
+        priv_.selected_item.borrow().clone()
     }
 
     pub fn room_search_bar(&self) -> gtk::SearchBar {
@@ -221,10 +198,10 @@ impl Sidebar {
         priv_.room_search.clone()
     }
 
-    pub fn set_room_list(&self, room_list: Option<RoomList>) {
+    pub fn set_item_list(&self, item_list: Option<ItemList>) {
         let priv_ = imp::Sidebar::from_instance(self);
-        let room_list = match room_list {
-            Some(room_list) => room_list,
+        let item_list = match item_list {
+            Some(item_list) => item_list,
             None => {
                 priv_.listview.set_model(gtk::NONE_SELECTION_MODEL);
                 return;
@@ -232,7 +209,6 @@ impl Sidebar {
         };
 
         // TODO: hide empty categories
-        let item_list = ItemList::new(&room_list);
         let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
             item.clone().downcast::<gio::ListModel>().ok()
         });
@@ -262,26 +238,22 @@ impl Sidebar {
             .build();
 
         let selection = Selection::new(Some(&filter_model));
-        self.bind_property("selected-room", &selection, "selected-item")
-            .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
-            .build();
-
-        self.bind_property("selected-type", &selection, "selected-type")
+        self.bind_property("selected-item", &selection, "selected-item")
             .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
             .build();
 
         priv_.listview.set_model(Some(&selection));
     }
 
-    fn set_selected_room(&self, selected_room: Option<Room>) {
+    pub fn set_selected_item(&self, selected_item: Option<glib::Object>) {
         let priv_ = imp::Sidebar::from_instance(self);
 
-        if self.selected_room() == selected_room {
+        if self.selected_item() == selected_item {
             return;
         }
 
-        priv_.selected_room.replace(selected_room);
-        self.notify("selected-room");
+        priv_.selected_item.replace(selected_item);
+        self.notify("selected-item");
     }
 
     pub fn user(&self) -> Option<User> {

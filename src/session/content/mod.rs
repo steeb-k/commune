@@ -1,4 +1,3 @@
-mod content_type;
 mod divider_row;
 mod explore;
 mod invite;
@@ -9,7 +8,6 @@ mod room_details;
 mod room_history;
 mod state_row;
 
-pub use self::content_type::ContentType;
 use self::divider_row::DividerRow;
 use self::explore::Explore;
 use self::invite::Invite;
@@ -18,6 +16,9 @@ use self::markdown_popover::MarkdownPopover;
 use self::room_details::RoomDetails;
 use self::room_history::RoomHistory;
 use self::state_row::StateRow;
+use crate::session::sidebar::{Entry, EntryType};
+
+use crate::session::verification::IdentityVerification;
 
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -37,8 +38,7 @@ mod imp {
     pub struct Content {
         pub compact: Cell<bool>,
         pub session: RefCell<Option<WeakRef<Session>>>,
-        pub room: RefCell<Option<Room>>,
-        pub content_type: Cell<ContentType>,
+        pub item: RefCell<Option<glib::Object>>,
         pub error_list: RefCell<Option<gio::ListStore>>,
         pub category_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
@@ -67,7 +67,7 @@ mod imp {
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
             klass.install_action("content.go-back", None, move |widget, _, _| {
-                widget.set_content_type(ContentType::None);
+                widget.set_item(None);
             });
         }
 
@@ -95,10 +95,10 @@ mod imp {
                         glib::ParamFlags::READWRITE,
                     ),
                     glib::ParamSpec::new_object(
-                        "room",
-                        "Room",
-                        "The room currently shown",
-                        Room::static_type(),
+                        "item",
+                        "Item",
+                        "The item currently shown",
+                        glib::Object::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
@@ -107,14 +107,6 @@ mod imp {
                         "A list of errors shown as in-app-notification",
                         gio::ListStore::static_type(),
                         glib::ParamFlags::READWRITE,
-                    ),
-                    glib::ParamSpec::new_enum(
-                        "content-type",
-                        "Content Type",
-                        "The type of content currently displayed",
-                        ContentType::static_type(),
-                        ContentType::default() as i32,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                 ]
             });
@@ -135,14 +127,10 @@ mod imp {
                     self.compact.set(compact);
                 }
                 "session" => obj.set_session(value.get().unwrap()),
-                "room" => {
-                    let room = value.get().unwrap();
-                    obj.set_room(room);
-                }
+                "item" => obj.set_item(value.get().unwrap()),
                 "error-list" => {
                     self.error_list.replace(value.get().unwrap());
                 }
-                "content-type" => obj.set_content_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -151,9 +139,8 @@ mod imp {
             match pspec.name() {
                 "compact" => self.compact.get().to_value(),
                 "session" => obj.session().to_value(),
-                "room" => obj.room().to_value(),
+                "item" => obj.item().to_value(),
                 "error-list" => self.error_list.borrow().to_value(),
-                "content-type" => obj.content_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -195,78 +182,76 @@ impl Content {
         self.notify("session");
     }
 
-    pub fn content_type(&self) -> ContentType {
-        let priv_ = imp::Content::from_instance(self);
-        priv_.content_type.get()
-    }
-
-    pub fn set_content_type(&self, content_type: ContentType) {
+    pub fn set_item(&self, item: Option<glib::Object>) {
         let priv_ = imp::Content::from_instance(self);
 
-        if self.content_type() == content_type {
-            return;
-        }
-
-        priv_.content_type.set(content_type);
-        self.set_visible_child();
-
-        self.notify("content-type");
-    }
-
-    pub fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::Content::from_instance(self);
-
-        if self.room() == room {
+        if self.item() == item {
             return;
         }
 
         if let Some(category_handler) = priv_.category_handler.take() {
-            if let Some(room) = self.room() {
-                room.disconnect(category_handler);
+            if let Some(item) = self.item() {
+                item.disconnect(category_handler);
             }
         }
 
-        if let Some(ref room) = room {
-            let handler_id = room.connect_notify_local(
-                Some("category"),
-                clone!(@weak self as obj => move |_, _| {
-                        obj.set_visible_child();
-                }),
-            );
+        if let Some(ref room) = item {
+            if room.is::<Room>() {
+                let handler_id = room.connect_notify_local(
+                    Some("category"),
+                    clone!(@weak self as obj => move |_, _| {
+                            obj.set_visible_child();
+                    }),
+                );
 
-            priv_.category_handler.replace(Some(handler_id));
+                priv_.category_handler.replace(Some(handler_id));
+            }
         }
 
-        priv_.room.replace(room);
+        priv_.item.replace(item);
         self.set_visible_child();
-        self.notify("room");
+        self.notify("item");
     }
 
-    pub fn room(&self) -> Option<Room> {
+    pub fn item(&self) -> Option<glib::Object> {
         let priv_ = imp::Content::from_instance(self);
-        priv_.room.borrow().clone()
+        priv_.item.borrow().clone()
     }
 
     fn set_visible_child(&self) {
         let priv_ = imp::Content::from_instance(self);
 
-        match self.content_type() {
-            ContentType::None => {
+        match self.item() {
+            None => {
                 priv_.stack.set_visible_child(&*priv_.empty_page);
             }
-            ContentType::Room => {
-                if let Some(room) = &*priv_.room.borrow() {
+            Some(o) if o.is::<Room>() => {
+                if let Some(room) = priv_
+                    .item
+                    .borrow()
+                    .as_ref()
+                    .and_then(|item| item.downcast_ref::<Room>())
+                {
                     if room.category() == RoomType::Invited {
+                        priv_.invite.set_room(Some(room.clone()));
                         priv_.stack.set_visible_child(&*priv_.invite);
                     } else {
+                        priv_.room_history.set_room(Some(room.clone()));
                         priv_.stack.set_visible_child(&*priv_.room_history);
                     }
                 }
             }
-            ContentType::Explore => {
+            Some(o)
+                if o.is::<Entry>()
+                    && o.downcast_ref::<Entry>().unwrap().type_() == EntryType::Explore =>
+            {
                 priv_.explore.init();
                 priv_.stack.set_visible_child(&*priv_.explore);
             }
+            Some(o) if o.is::<IdentityVerification>() => {
+                todo!("Incoming verifications arn't implemented yet");
+            }
+            _ => {}
         }
     }
 }

@@ -80,17 +80,22 @@ sources = files(
   'session/sidebar/mod.rs',
   'session/sidebar/row.rs',
   'session/sidebar/room_row.rs',
+  'session/sidebar/entry.rs',
+  'session/sidebar/entry_row.rs',
+  'session/sidebar/entry_type.rs',
+  'session/sidebar/verification_row.rs',
   'session/sidebar/selection.rs',
   'session/sidebar/account_switcher/add_account.rs',
   'session/sidebar/account_switcher/avatar_with_selection.rs',
   'session/sidebar/account_switcher/item.rs',
   'session/sidebar/account_switcher/mod.rs',
   'session/sidebar/account_switcher/user_entry.rs',
+  'session/sidebar/category_type.rs',
   'session/verification/mod.rs',
   'session/verification/emoji.rs',
   'session/verification/identity_verification.rs',
   'session/verification/session_verification.rs',
-  'session/verification/to_device_handler.rs',
+  'session/verification/verification_list.rs',
 )
 
 custom_target(

@@ -1,6 +1,6 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use crate::session::content::ContentType;
+use crate::session::sidebar::EntryType;
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -9,8 +9,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct Entry {
-        pub type_: Cell<ContentType>,
-        pub display_name: RefCell<Option<String>>,
+        pub type_: Cell<EntryType>,
         pub icon_name: RefCell<Option<String>>,
     }
 
@@ -30,8 +29,8 @@ mod imp {
                         "type",
                         "Type",
                         "The type of this category",
-                        ContentType::static_type(),
-                        ContentType::default() as i32,
+                        EntryType::static_type(),
+                        EntryType::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_string(
@@ -39,7 +38,7 @@ mod imp {
                         "Display Name",
                         "The display name of this Entry",
                         None,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                        glib::ParamFlags::READABLE,
                     ),
                     glib::ParamSpec::new_string(
                         "icon-name",
@@ -64,9 +63,6 @@ mod imp {
             match pspec.name() {
                 "type" => {
                     self.type_.set(value.get().unwrap());
-                }
-                "display-name" => {
-                    let _ = self.display_name.replace(value.get().unwrap());
                 }
                 "icon-name" => {
                     let _ = self.icon_name.replace(value.get().unwrap());
@@ -95,19 +91,18 @@ glib::wrapper! {
 }
 
 impl Entry {
-    pub fn new(type_: ContentType) -> Self {
+    pub fn new(type_: EntryType) -> Self {
         glib::Object::new(&[("type", &type_)]).expect("Failed to create Entry")
     }
 
-    pub fn type_(&self) -> ContentType {
+    pub fn type_(&self) -> EntryType {
         let priv_ = imp::Entry::from_instance(self);
         priv_.type_.get()
     }
 
     pub fn icon_name(&self) -> Option<&str> {
         match self.type_() {
-            ContentType::Explore => Some("explore-symbolic"),
-            _ => None,
+            EntryType::Explore => Some("explore-symbolic"),
         }
     }
 }

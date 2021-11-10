@@ -1,4 +1,4 @@
-use gettextrs::gettext;
+use crate::session::sidebar::CategoryType;
 use gtk::glib;
 
 // TODO: do we also want the category `People` and a custom category support?
@@ -21,12 +21,6 @@ impl Default for RoomType {
 
 impl ToString for RoomType {
     fn to_string(&self) -> String {
-        match self {
-            RoomType::Invited => gettext("Invited"),
-            RoomType::Favorite => gettext("Favorite"),
-            RoomType::Normal => gettext("Rooms"),
-            RoomType::LowPriority => gettext("Low Priority"),
-            RoomType::Left => gettext("Historical"),
-        }
+        CategoryType::from(self).to_string()
     }
 }

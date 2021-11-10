@@ -1,7 +1,5 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::{content::ContentType, room::Room, sidebar::Entry};
-
 mod imp {
     use super::*;
     use once_cell::sync::Lazy;
@@ -57,14 +55,6 @@ mod imp {
                         glib::Object::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_enum(
-                        "selected-type",
-                        "Selected Type",
-                        "The currently selected content type",
-                        ContentType::static_type(),
-                        ContentType::default() as i32,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
-                    ),
                 ]
             });
 
@@ -88,7 +78,6 @@ mod imp {
                     obj.set_selected(selected);
                 }
                 "selected-item" => obj.set_selected_item(value.get().unwrap()),
-                "selected-type" => obj.set_selected_type(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -98,7 +87,6 @@ mod imp {
                 "model" => obj.model().to_value(),
                 "selected" => obj.selected().to_value(),
                 "selected-item" => obj.selected_item().to_value(),
-                "selected-type" => obj.selected_type().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -169,74 +157,6 @@ impl Selection {
         priv_.selected_item.borrow().clone()
     }
 
-    pub fn selected_type(&self) -> ContentType {
-        if let Some(item) = self.selected_item() {
-            if item.is::<Room>() {
-                return ContentType::Room;
-            } else if let Ok(entry) = item.downcast::<Entry>() {
-                return entry.type_();
-            }
-        }
-
-        ContentType::None
-    }
-
-    pub fn set_selected_type(&self, selected_type: ContentType) {
-        let priv_ = imp::Selection::from_instance(self);
-
-        if self.selected_type() == selected_type {
-            return;
-        }
-
-        match selected_type {
-            ContentType::None => self.set_selected_item(None),
-            ContentType::Room => {
-                if self
-                    .selected_item()
-                    .and_then(|item| item.downcast::<Room>().ok())
-                    .is_none()
-                {
-                    if let Some(model) = &*priv_.model.borrow() {
-                        for i in 0..model.n_items() {
-                            if let Some(room) = model
-                                .item(i)
-                                .and_then(|item| item.downcast::<gtk::TreeListRow>().ok())
-                                .and_then(|i| i.item())
-                                .and_then(|o| o.downcast::<Room>().ok())
-                            {
-                                self.set_selected_item(Some(room.upcast()));
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            ContentType::Explore => {
-                if !self
-                    .selected_item()
-                    .and_then(|item| item.downcast::<Entry>().ok())
-                    .map_or(false, |entry| entry.type_() == selected_type)
-                {
-                    if let Some(model) = &*priv_.model.borrow() {
-                        for i in 0..model.n_items() {
-                            if let Some(entry) = model
-                                .item(i)
-                                .and_then(|item| item.downcast::<gtk::TreeListRow>().ok())
-                                .and_then(|i| i.item())
-                                .and_then(|o| o.downcast::<Entry>().ok())
-                            {
-                                if entry.type_() == selected_type {
-                                    self.set_selected_item(Some(entry.upcast()));
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        };
-    }
-
     pub fn set_model<P: IsA<gio::ListModel>>(&self, model: Option<&P>) {
         let priv_ = imp::Selection::from_instance(self);
 
@@ -279,7 +199,6 @@ impl Selection {
             }
             if self.selected_item().is_some() {
                 priv_.selected_item.replace(None);
-                self.notify("selected-type");
                 self.notify("selected-item");
             }
 
@@ -328,7 +247,6 @@ impl Selection {
 
         self.notify("selected");
         self.notify("selected-item");
-        self.notify("selected-type");
     }
 
     fn set_selected_item(&self, item: Option<glib::Object>) {
@@ -376,7 +294,6 @@ impl Selection {
         }
 
         self.notify("selected-item");
-        self.notify("selected-type");
     }
 
     fn items_changed_cb(&self, model: &gio::ListModel, position: u32, removed: u32, added: u32) {
