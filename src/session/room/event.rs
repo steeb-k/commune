@@ -5,7 +5,7 @@ use matrix_sdk::{
         events::{
             room::message::MessageType, room::message::Relation, AnyMessageEventContent,
             AnyRedactedSyncMessageEvent, AnyRedactedSyncStateEvent, AnySyncMessageEvent,
-            AnySyncRoomEvent, AnySyncStateEvent,
+            AnySyncRoomEvent, AnySyncStateEvent, Unsigned,
         },
         identifiers::{EventId, UserId},
         MilliSecondsSinceUnixEpoch,
@@ -231,6 +231,21 @@ impl Event {
                 .unwrap()
                 .unwrap()
         }
+    }
+
+    pub fn matrix_transaction_id(&self) -> Option<String> {
+        let priv_ = imp::Event::from_instance(self);
+
+        priv_
+            .pure_event
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .event
+            .get_field::<Unsigned>("unsigned")
+            .ok()
+            .and_then(|opt| opt)
+            .and_then(|unsigned| unsigned.transaction_id)
     }
 
     pub fn source(&self) -> String {

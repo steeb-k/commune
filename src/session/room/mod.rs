@@ -842,12 +842,11 @@ impl Room {
         let content = event.content();
 
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
-            let pending_id = event.event_id().clone();
             let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
             let raw_event: Raw<AnySyncRoomEvent> =
                 Raw::from_json(RawValue::from_string(json).unwrap());
             let event = Event::new(raw_event.into(), self);
-            priv_.timeline.get().unwrap().append_pending(event);
+            priv_.timeline.get().unwrap().append_pending(txn_id, event);
 
             let handle = spawn_tokio!(async move { matrix_room.send(content, Some(txn_id)).await });
 
@@ -856,7 +855,7 @@ impl Room {
                 clone!(@weak self as obj => async move {
                     // FIXME: We should retry the request if it fails
                     match handle.await.unwrap() {
-                            Ok(result) => obj.timeline().set_event_id_for_pending(pending_id, result.event_id),
+                            Ok(_) => {},
                             Err(error) => error!("Couldn’t send message: {}", error),
                     };
                 })

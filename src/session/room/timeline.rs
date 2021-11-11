@@ -1,9 +1,12 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
-use matrix_sdk::ruma::{
-    api::client::r0::message::get_message_events::Direction,
-    events::{AnySyncRoomEvent, AnySyncStateEvent},
-    identifiers::EventId,
+use matrix_sdk::{
+    ruma::{
+        api::client::r0::message::get_message_events::Direction,
+        events::{AnySyncRoomEvent, AnySyncStateEvent},
+        identifiers::EventId,
+    },
+    uuid::Uuid,
 };
 
 use crate::session::room::{Event, Item, ItemType, Room};
@@ -25,7 +28,7 @@ mod imp {
         /// A Hashmap linking `EventId` to corresponding `Event`
         pub event_map: RefCell<HashMap<EventId, Event>>,
         /// Maps the temporary `EventId` of the pending Event to the real `EventId`
-        pub pending_events: RefCell<HashMap<EventId, EventId>>,
+        pub pending_events: RefCell<HashMap<String, EventId>>,
         pub loading: Cell<bool>,
         pub complete: Cell<bool>,
         pub oldest_event: RefCell<Option<EventId>>,
@@ -347,7 +350,10 @@ impl Timeline {
             for event in batch.into_iter() {
                 let event_id = event.matrix_event_id();
 
-                if let Some(pending_id) = pending_events.remove(&event_id) {
+                if let Some(pending_id) = event
+                    .matrix_transaction_id()
+                    .and_then(|txn_id| pending_events.remove(&txn_id))
+                {
                     let mut event_map = priv_.event_map.borrow_mut();
 
                     if let Some(pending_event) = event_map.remove(&pending_id) {
@@ -376,13 +382,18 @@ impl Timeline {
     }
 
     /// Append an event that wasn't yet fully sent and received via a sync
-    pub fn append_pending(&self, event: Event) {
+    pub fn append_pending(&self, txn_id: Uuid, event: Event) {
         let priv_ = imp::Timeline::from_instance(self);
 
         priv_
             .event_map
             .borrow_mut()
             .insert(event.matrix_event_id(), event.clone());
+
+        priv_
+            .pending_events
+            .borrow_mut()
+            .insert(txn_id.to_string(), event.matrix_event_id());
 
         let index = {
             let mut list = priv_.list.borrow_mut();
@@ -400,14 +411,6 @@ impl Timeline {
         if let Some(index) = index {
             self.items_changed(index as u32, 0, 1);
         }
-    }
-
-    pub fn set_event_id_for_pending(&self, pending_event_id: EventId, event_id: EventId) {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_
-            .pending_events
-            .borrow_mut()
-            .insert(event_id, pending_event_id);
     }
 
     /// Returns the event with the given id
