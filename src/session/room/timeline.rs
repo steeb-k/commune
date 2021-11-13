@@ -221,7 +221,10 @@ impl Timeline {
             for current in list.range(position..position + added) {
                 let current_sender = current.matrix_sender();
 
-                if current_sender != previous_sender {
+                if !current.can_hide_header() {
+                    current.set_show_header(false);
+                    previous_sender = None;
+                } else if current_sender != previous_sender {
                     current.set_show_header(true);
                     previous_sender = current_sender;
                 } else {
