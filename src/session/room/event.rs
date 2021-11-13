@@ -337,6 +337,13 @@ impl Event {
         let priv_ = imp::Event::from_instance(self);
 
         if self.related_matrix_event().is_some() {
+            if let Some(AnySyncRoomEvent::Message(message)) = priv_.event.borrow().as_ref() {
+                if let AnyMessageEventContent::RoomMessage(content) = message.content() {
+                    if let Some(Relation::Reply { in_reply_to: _ }) = content.relates_to {
+                        return false;
+                    }
+                }
+            }
             return true;
         }
 
