@@ -193,7 +193,11 @@ impl MessageRow {
             let matrix_event = event.matrix_event();
             match matrix_event {
                 Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomMessage(message))) => {
-                    message.content.relates_to.is_some()
+                    message
+                        .content
+                        .relates_to
+                        .filter(|relation| matches!(relation, Relation::Replacement(_)))
+                        .is_some()
                 }
                 Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomRedaction(_))) => true,
                 _ => false,
