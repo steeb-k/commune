@@ -179,8 +179,8 @@ impl Timeline {
                 ItemType::DayDivider(date) => Some(date.clone()),
                 _ => None,
             });
-            for (position, date) in divider {
-                list.insert(position, date);
+            for (added, (position, date)) in divider.into_iter().enumerate() {
+                list.insert(position + added, date);
             }
 
             (added + divider_len) as u32
