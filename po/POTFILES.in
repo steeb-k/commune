@@ -75,6 +75,7 @@ src/session/content/item_row.rs
 src/session/content/invite.rs
 src/session/content/markdown_popover.rs
 src/session/content/message_row/mod.rs
+src/session/content/message_row/text.rs
 src/session/content/mod.rs
 src/session/content/room_details/mod.rs
 src/session/content/room_history.rs

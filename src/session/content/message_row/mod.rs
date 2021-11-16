@@ -1,22 +1,19 @@
+mod text;
+
 use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gio, glib, glib::clone, glib::signal::SignalHandlerId, pango, subclass::prelude::*,
-    CompositeTemplate,
-};
-use html2pango::{
-    block::{markup_html, HtmlBlock},
-    html_escape, markup_links,
+    glib, glib::clone, glib::signal::SignalHandlerId, subclass::prelude::*, CompositeTemplate,
 };
 use log::warn;
 use matrix_sdk::ruma::events::{
-    room::message::{FormattedBody, MessageFormat, MessageType, Relation},
+    room::message::{MessageType, Relation},
     room::redaction::RoomRedactionEventContent,
     AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
 };
-use sourceview::prelude::*;
 
+use self::text::MessageText;
 use crate::prelude::*;
 use crate::session::room::Event;
 
@@ -243,10 +240,12 @@ impl MessageRow {
     }
 
     fn update_content(&self, event: &Event) {
+        let priv_ = imp::MessageRow::from_instance(self);
         let content = self.find_content(event);
 
         // TODO: create widgets for all event types
         // TODO: display reaction events from event.relates_to()
+        // TODO: we should reuse the already present child widgets when possible
 
         match content {
             Some(AnyMessageEventContent::RoomMessage(message)) => {
@@ -258,58 +257,24 @@ impl MessageRow {
                 match msgtype {
                     MessageType::Audio(_message) => {}
                     MessageType::Emote(message) => {
-                        // TODO we need to bind the display name to the sender
-                        if let Some(html_blocks) = message
-                            .formatted
-                            .filter(|formatted| is_valid_formatted_body(formatted))
-                            .and_then(|formatted| {
-                                let body = FormattedBody {
-                                    body: format!(
-                                        "<b>{}</b> {}",
-                                        event.sender().display_name(),
-                                        formatted.body
-                                    ),
-                                    format: MessageFormat::Html,
-                                };
-
-                                parse_formatted_body(Some(&body))
-                            })
-                        {
-                            self.show_html(html_blocks);
-                        } else {
-                            self.show_text(
-                                &format!(
-                                    "<b>{}</b> {}",
-                                    event.sender().display_name(),
-                                    linkify(&message.body)
-                                ),
-                                true,
-                            );
-                        }
+                        let child =
+                            MessageText::emote(message.formatted, message.body, event.sender());
+                        priv_.content.set_child(Some(&child));
                     }
                     MessageType::File(_message) => {}
                     MessageType::Image(_message) => {}
                     MessageType::Location(_message) => {}
                     MessageType::Notice(message) => {
-                        // TODO: we should reuse the already present child widgets when possible
-                        if let Some(html_blocks) = parse_formatted_body(message.formatted.as_ref())
-                        {
-                            self.show_html(html_blocks);
-                        } else {
-                            self.show_text(&linkify(&message.body), true)
-                        };
+                        let child = MessageText::markup(message.formatted, message.body);
+                        priv_.content.set_child(Some(&child));
                     }
                     MessageType::ServerNotice(message) => {
-                        self.show_text(&message.body, false);
+                        let child = MessageText::text(message.body);
+                        priv_.content.set_child(Some(&child));
                     }
                     MessageType::Text(message) => {
-                        // TODO: we should reuse the already present child widgets when possible
-                        if let Some(html_blocks) = parse_formatted_body(message.formatted.as_ref())
-                        {
-                            self.show_html(html_blocks);
-                        } else {
-                            self.show_text(&linkify(&message.body), true)
-                        };
+                        let child = MessageText::markup(message.formatted, message.body);
+                        priv_.content.set_child(Some(&child));
                     }
                     MessageType::Video(_message) => {}
                     MessageType::VerificationRequest(_message) => {}
@@ -320,149 +285,17 @@ impl MessageRow {
             }
             Some(AnyMessageEventContent::RoomEncrypted(content)) => {
                 warn!("Couldn't decrypt event {:?}", content);
-                self.show_text(&gettext("Fractal couldn't decrypt this message."), false)
+                let child = MessageText::text(gettext("Fractal couldn't decrypt this message."));
+                priv_.content.set_child(Some(&child));
             }
             Some(AnyMessageEventContent::RoomRedaction(_)) => {
-                self.show_text(&gettext("This message was removed."), false)
-            }
-            _ => self.show_text(&gettext("Unsupported event"), false),
-        }
-    }
-
-    fn show_text(&self, text: &str, use_markup: bool) {
-        let priv_ = imp::MessageRow::from_instance(self);
-
-        let child =
-            if let Some(Ok(child)) = priv_.content.child().map(|w| w.downcast::<gtk::Label>()) {
-                child
-            } else {
-                let child = gtk::Label::new(None);
-                set_label_styles(&child);
+                let child = MessageText::text(gettext("This message was removed."));
                 priv_.content.set_child(Some(&child));
-                child
-            };
-
-        if use_markup {
-            child.set_markup(text);
-        } else {
-            child.set_text(text);
-        }
-    }
-
-    fn show_html(&self, blocks: Vec<HtmlBlock>) {
-        let priv_ = imp::MessageRow::from_instance(self);
-
-        let child = gtk::Box::new(gtk::Orientation::Vertical, 6);
-        priv_.content.set_child(Some(&child));
-
-        for block in blocks {
-            let widget = create_widget_for_html_block(&block);
-            child.append(&widget);
-        }
-    }
-}
-
-fn linkify(text: &str) -> String {
-    markup_links(&html_escape(text))
-}
-
-fn is_valid_formatted_body(formatted: &FormattedBody) -> bool {
-    formatted.format == MessageFormat::Html && !formatted.body.contains("<!-- raw HTML omitted -->")
-}
-
-fn parse_formatted_body(formatted: Option<&FormattedBody>) -> Option<Vec<HtmlBlock>> {
-    formatted
-        .filter(|formatted| is_valid_formatted_body(formatted))
-        .and_then(|formatted| markup_html(&formatted.body).ok())
-}
-
-fn set_label_styles(w: &gtk::Label) {
-    w.set_wrap(true);
-    w.set_wrap_mode(pango::WrapMode::WordChar);
-    w.set_justify(gtk::Justification::Left);
-    w.set_xalign(0.0);
-    w.set_valign(gtk::Align::Start);
-    w.set_halign(gtk::Align::Fill);
-    w.set_selectable(true);
-    let menu_model: Option<gio::MenuModel> =
-        gtk::Builder::from_resource("/org/gnome/FractalNext/content-item-row-menu.ui")
-            .object("menu_model");
-    w.set_extra_menu(menu_model.as_ref());
-}
-
-fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
-    match block {
-        HtmlBlock::Heading(n, s) => {
-            let w = gtk::Label::new(None);
-            set_label_styles(&w);
-            w.set_markup(s);
-            w.add_css_class(&format!("h{}", n));
-            w.upcast::<gtk::Widget>()
-        }
-        HtmlBlock::UList(elements) => {
-            let bx = gtk::Box::new(gtk::Orientation::Vertical, 6);
-            bx.set_margin_end(6);
-            bx.set_margin_start(6);
-
-            for li in elements.iter() {
-                let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
-                let bullet = gtk::Label::new(Some("•"));
-                bullet.set_valign(gtk::Align::Start);
-                let w = gtk::Label::new(None);
-                set_label_styles(&w);
-                h_box.append(&bullet);
-                h_box.append(&w);
-                w.set_markup(li);
-                bx.append(&h_box);
             }
-
-            bx.upcast::<gtk::Widget>()
-        }
-        HtmlBlock::OList(elements) => {
-            let bx = gtk::Box::new(gtk::Orientation::Vertical, 6);
-            bx.set_margin_end(6);
-            bx.set_margin_start(6);
-
-            for (i, ol) in elements.iter().enumerate() {
-                let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
-                let bullet = gtk::Label::new(Some(&format!("{}.", i + 1)));
-                bullet.set_valign(gtk::Align::Start);
-                let w = gtk::Label::new(None);
-                set_label_styles(&w);
-                h_box.append(&bullet);
-                h_box.append(&w);
-                w.set_markup(ol);
-                bx.append(&h_box);
+            _ => {
+                let child = MessageText::text(gettext("Unsupported event"));
+                priv_.content.set_child(Some(&child));
             }
-
-            bx.upcast::<gtk::Widget>()
-        }
-        HtmlBlock::Code(s) => {
-            let scrolled = gtk::ScrolledWindow::new();
-            scrolled.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Never);
-            let buffer = sourceview::Buffer::new(None);
-            buffer.set_highlight_matching_brackets(false);
-            buffer.set_text(s);
-            let view = sourceview::View::with_buffer(&buffer);
-            view.set_editable(false);
-            view.add_css_class("codeview");
-            scrolled.set_child(Some(&view));
-            scrolled.upcast::<gtk::Widget>()
-        }
-        HtmlBlock::Quote(blocks) => {
-            let bx = gtk::Box::new(gtk::Orientation::Vertical, 6);
-            bx.add_css_class("quote");
-            for block in blocks.iter() {
-                let w = create_widget_for_html_block(block);
-                bx.append(&w);
-            }
-            bx.upcast::<gtk::Widget>()
-        }
-        HtmlBlock::Text(s) => {
-            let w = gtk::Label::new(None);
-            set_label_styles(&w);
-            w.set_markup(s);
-            w.upcast::<gtk::Widget>()
         }
     }
 }
