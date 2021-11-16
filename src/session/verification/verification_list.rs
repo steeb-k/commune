@@ -1,7 +1,10 @@
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::{api::client::r0::sync::sync_events::ToDevice, events::AnyToDeviceEvent};
 
-use crate::session::{verification::IdentityVerification, Session};
+use crate::session::{
+    verification::{IdentityVerification, VerificationMode},
+    Session,
+};
 
 mod imp {
     use glib::object::WeakRef;
@@ -99,8 +102,10 @@ impl VerificationList {
         let priv_ = imp::VerificationList::from_instance(self);
 
         for event in &to_device.events {
-            if let Ok(AnyToDeviceEvent::KeyVerificationRequest(_event)) = event.deserialize() {
-                //TODO: implement handling of incomming requests
+            if let Ok(AnyToDeviceEvent::KeyVerificationRequest(event)) = event.deserialize() {
+                let request = IdentityVerification::new(self.session().user().unwrap());
+                request.set_flow_id(Some(event.content.transaction_id.to_owned()));
+                self.add(request);
             }
         }
 
@@ -115,9 +120,35 @@ impl VerificationList {
         let length = {
             let mut list = priv_.list.borrow_mut();
             let length = list.len();
+            request.connect_notify_local(Some("mode"), clone!(@weak self as obj => move |request, _| {
+                if request.mode() == VerificationMode::Error || request.mode() == VerificationMode::Cancelled || request.mode() == VerificationMode::Dismissed || request.mode() == VerificationMode::Completed {
+                    obj.remove(request);
+                }
+            }));
             list.push(request);
             length as u32
         };
         self.items_changed(length, 0, 1)
+    }
+
+    pub fn remove(&self, request: &IdentityVerification) {
+        let priv_ = imp::VerificationList::from_instance(self);
+        let position = {
+            let mut list = priv_.list.borrow_mut();
+            let mut position = None;
+            for (index, item) in list.iter().enumerate() {
+                if item == request {
+                    position = Some(index);
+                    break;
+                }
+            }
+            if let Some(position) = position {
+                list.remove(position);
+            }
+            position
+        };
+        if let Some(position) = position {
+            self.items_changed(position as u32, 1, 0);
+        }
     }
 }

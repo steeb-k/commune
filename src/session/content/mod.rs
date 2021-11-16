@@ -18,7 +18,7 @@ use self::room_history::RoomHistory;
 use self::state_row::StateRow;
 use crate::session::sidebar::{Entry, EntryType};
 
-use crate::session::verification::IdentityVerification;
+use crate::session::verification::{IdentityVerification, IncomingVerification, VerificationMode};
 
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -40,7 +40,7 @@ mod imp {
         pub session: RefCell<Option<WeakRef<Session>>>,
         pub item: RefCell<Option<glib::Object>>,
         pub error_list: RefCell<Option<gio::ListStore>>,
-        pub category_handler: RefCell<Option<SignalHandlerId>>,
+        pub signal_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -51,6 +51,10 @@ mod imp {
         pub explore: TemplateChild<Explore>,
         #[template_child]
         pub empty_page: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub verification_page: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub incoming_verification: TemplateChild<IncomingVerification>,
     }
 
     #[glib::object_subclass]
@@ -144,6 +148,17 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+            self.stack
+                .connect_visible_child_notify(clone!(@weak obj => move |stack| {
+                    let priv_ = imp::Content::from_instance(&obj);
+                    if stack.visible_child().as_ref() != Some(priv_.verification_page.upcast_ref::<gtk::Widget>()) {
+                        priv_.incoming_verification.set_request(None);
+                    }
+                }));
+        }
     }
 
     impl WidgetImpl for Content {}
@@ -189,22 +204,32 @@ impl Content {
             return;
         }
 
-        if let Some(category_handler) = priv_.category_handler.take() {
+        if let Some(signal_handler) = priv_.signal_handler.take() {
             if let Some(item) = self.item() {
-                item.disconnect(category_handler);
+                item.disconnect(signal_handler);
             }
         }
 
-        if let Some(ref room) = item {
-            if room.is::<Room>() {
-                let handler_id = room.connect_notify_local(
+        if let Some(ref item) = item {
+            if item.is::<Room>() {
+                let handler_id = item.connect_notify_local(
                     Some("category"),
                     clone!(@weak self as obj => move |_, _| {
                             obj.set_visible_child();
                     }),
                 );
 
-                priv_.category_handler.replace(Some(handler_id));
+                priv_.signal_handler.replace(Some(handler_id));
+            }
+
+            if item.is::<IdentityVerification>() {
+                let handler_id = item.connect_notify_local(Some("mode"), clone!(@weak self as obj => move |request, _| {
+                    let request = request.downcast_ref::<IdentityVerification>().unwrap();
+                    if request.mode() == VerificationMode::Cancelled || request.mode() == VerificationMode::Error || request.mode() == VerificationMode::Dismissed {
+                        obj.set_item(None);
+                    }
+                }));
+                priv_.signal_handler.replace(Some(handler_id));
             }
         }
 
@@ -249,7 +274,15 @@ impl Content {
                 priv_.stack.set_visible_child(&*priv_.explore);
             }
             Some(o) if o.is::<IdentityVerification>() => {
-                todo!("Incoming verifications arn't implemented yet");
+                if let Some(item) = priv_
+                    .item
+                    .borrow()
+                    .as_ref()
+                    .and_then(|item| item.downcast_ref::<IdentityVerification>())
+                {
+                    priv_.incoming_verification.set_request(Some(item.clone()));
+                    priv_.stack.set_visible_child(&*priv_.verification_page);
+                }
             }
             _ => {}
         }

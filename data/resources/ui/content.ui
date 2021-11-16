@@ -54,6 +54,31 @@
             <property name="session" bind-source="Content" bind-property="session" bind-flags="sync-create"/>
           </object>
         </child>
+        <child>
+          <object class="GtkBox" id="verification_page">
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="AdwHeaderBar">
+                <property name="show-start-title-buttons" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
+                <child type="start">
+                  <object class="GtkRevealer">
+                    <property name="transition-type">crossfade</property>
+                    <property name="reveal-child" bind-source="Content" bind-property="compact" bind-flags="sync-create"/>
+                    <property name="child">
+                      <object class="GtkButton">
+                        <property name="icon-name">go-previous-symbolic</property>
+                        <property name="action-name">content.go-back</property>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="IncomingVerification" id="incoming_verification"/>
+            </child>
+          </object>
+        </child>
       </object>
     </property>
   </template>

@@ -98,6 +98,7 @@ sources = files(
   'session/verification/mod.rs',
   'session/verification/emoji.rs',
   'session/verification/identity_verification.rs',
+  'session/verification/incoming_verification.rs',
   'session/verification/session_verification.rs',
   'session/verification/verification_list.rs',
 )
