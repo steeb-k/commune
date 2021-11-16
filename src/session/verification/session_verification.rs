@@ -4,14 +4,16 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate
 use log::{debug, error, warn};
 
 use crate::components::{AuthDialog, SpinnerButton};
+use crate::contrib::screenshot;
 use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
+use crate::contrib::QrCodeScanner;
 use crate::session::verification::{Emoji, IdentityVerification, VerificationMode};
 use crate::session::Session;
 use crate::spawn;
 use crate::Error;
 use crate::Window;
-use matrix_sdk::ruma::events::key::verification::cancel::CancelCode;
+use matrix_sdk::encryption::verification::QrVerificationData;
 
 mod imp {
     use super::*;
@@ -24,7 +26,7 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session-verification.ui")]
     pub struct SessionVerification {
-        pub request: OnceCell<WeakRef<IdentityVerification>>,
+        pub request: OnceCell<IdentityVerification>,
         pub session: OnceCell<WeakRef<Session>>,
         #[template_child]
         pub bootstrap_button: TemplateChild<SpinnerButton>,
@@ -41,7 +43,17 @@ mod imp {
         #[template_child]
         pub start_emoji_btn: TemplateChild<SpinnerButton>,
         #[template_child]
+        pub start_emoji_btn2: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub start_emoji_btn3: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub take_screenshot_btn2: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub take_screenshot_btn3: TemplateChild<SpinnerButton>,
+        #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        pub qr_code_scanner: TemplateChild<QrCodeScanner>,
         pub mode_handler: RefCell<Option<SignalHandlerId>>,
     }
 
@@ -145,10 +157,41 @@ mod imp {
                     obj.request().start_sas();
                 }));
 
+            self.start_emoji_btn2
+                .connect_clicked(clone!(@weak obj => move |button| {
+                    let priv_ = imp::SessionVerification::from_instance(&obj);
+                    button.set_loading(true);
+                    priv_.take_screenshot_btn2.set_sensitive(false);
+                    obj.request().start_sas();
+                }));
+            self.start_emoji_btn3
+                .connect_clicked(clone!(@weak obj => move |button| {
+                    let priv_ = imp::SessionVerification::from_instance(&obj);
+                    button.set_loading(true);
+                    priv_.take_screenshot_btn3.set_sensitive(false);
+                    obj.request().start_sas();
+                }));
+
             self.bootstrap_button
                 .connect_clicked(clone!(@weak obj => move |button| {
                 button.set_loading(true);
                 obj.bootstrap_cross_signing();
+                }));
+
+            self.take_screenshot_btn2
+                .connect_clicked(clone!(@weak obj => move |button| {
+                    let priv_ = imp::SessionVerification::from_instance(&obj);
+                    button.set_loading(true);
+                    priv_.start_emoji_btn2.set_sensitive(false);
+                    obj.take_screenshot();
+                }));
+
+            self.take_screenshot_btn3
+                .connect_clicked(clone!(@weak obj => move |button| {
+                    let priv_ = imp::SessionVerification::from_instance(&obj);
+                    button.set_loading(true);
+                    priv_.start_emoji_btn3.set_sensitive(false);
+                    obj.take_screenshot();
                 }));
         }
 
@@ -172,15 +215,15 @@ impl SessionVerification {
             .expect("Failed to create SessionVerification")
     }
 
-    pub fn request(&self) -> IdentityVerification {
+    pub fn request(&self) -> &IdentityVerification {
         let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.request.get().unwrap().upgrade().unwrap()
+        priv_.request.get().unwrap()
     }
 
     fn set_request(&self, request: IdentityVerification) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        priv_.request.set(request.downgrade()).unwrap()
+        priv_.request.set(request).unwrap();
     }
 
     pub fn session(&self) -> Session {
@@ -208,6 +251,12 @@ impl SessionVerification {
         priv_.start_emoji_btn.set_loading(false);
         priv_.start_emoji_btn.set_sensitive(true);
         priv_.bootstrap_button.set_loading(false);
+        priv_.start_emoji_btn2.set_loading(false);
+        priv_.start_emoji_btn2.set_sensitive(true);
+        priv_.take_screenshot_btn2.set_loading(false);
+        priv_.take_screenshot_btn2.set_sensitive(true);
+        priv_.take_screenshot_btn3.set_loading(false);
+        priv_.take_screenshot_btn3.set_sensitive(true);
 
         while let Some(child) = priv_.emoji_row_1.first_child() {
             priv_.emoji_row_1.remove(&child);
@@ -233,15 +282,7 @@ impl SessionVerification {
 
         priv_.mode_handler.replace(Some(handler));
 
-        let weak_obj = self.downgrade();
-        spawn!(clone!(@weak request => async move {
-            if let Err(error) = request.start().await {
-                if let Some(obj) =  weak_obj.upgrade() {
-                    obj.show_error();
-                }
-                error!("Verification failed: {}", error);
-            }
-        }));
+        request.start();
     }
 
     /// Cancel the verification request without telling the user about it
@@ -267,7 +308,7 @@ impl SessionVerification {
             VerificationMode::Requested => {
                 priv_.main_stack.set_visible_child_name("wait-for-device");
             }
-            VerificationMode::QrV1 => {
+            VerificationMode::QrV1Show => {
                 if let Some(qrcode) = request.qr_code() {
                     priv_.qrcode.set_qrcode(qrcode);
                     priv_.main_stack.set_visible_child_name("qrcode");
@@ -275,6 +316,9 @@ impl SessionVerification {
                     warn!("Failed to get qrcode for QrVerification");
                     request.start_sas();
                 }
+            }
+            VerificationMode::QrV1Scan => {
+                self.start_scanning();
             }
             VerificationMode::SasV1 => {
                 // TODO: implement sas fallback when emojis arn't supported
@@ -287,56 +331,44 @@ impl SessionVerification {
                         }
                     }
                     priv_.main_stack.set_visible_child_name("emoji");
-                } else {
-                    warn!("Failed to get emoji for SasVerification");
-                    self.show_error();
                 }
-            }
-            VerificationMode::Unavailable => {
-                self.show_error();
             }
             VerificationMode::Completed => {
                 priv_.main_stack.set_visible_child_name("completed");
             }
-            VerificationMode::Cancelled => {
-                self.show_error();
+            _ => {
+                warn!("Try to show a dismissed verification");
             }
         }
     }
 
-    fn show_error(&self) {
-        let error_message = if let Some(info) = self.request().cancel_info() {
-            match info.cancel_code() {
-                CancelCode::User => Some(gettext("You cancelled the verificaiton process.")),
-                CancelCode::Timeout => Some(gettext(
-                    "The verification process failed because it reached a timeout.",
-                )),
-                _ => match info.cancel_code().as_str() {
-                    "m.mismatched_sas" => Some(gettext("The emoji did not match.")),
-                    _ => None,
-                },
+    fn start_scanning(&self) {
+        spawn!(clone!(@weak self as obj => async move {
+            let priv_ = imp::SessionVerification::from_instance(&obj);
+            if priv_.qr_code_scanner.start().await {
+                priv_.main_stack.set_visible_child_name("scan-qr-code");
+            } else {
+                priv_.main_stack.set_visible_child_name("no-camera");
             }
-        } else {
-            None
-        };
+        }));
+    }
 
-        let error_message = error_message.unwrap_or_else(|| {
-            gettext("An unknown error occured during the verification process.")
-        });
+    fn take_screenshot(&self) {
+        spawn!(clone!(@weak self as obj => async move {
+            let root = obj.root().unwrap();
+            if let Some(code) = screenshot::capture(&root).await {
+                obj.finish_scanning(code);
+            } else {
+                obj.reset();
+            }
+        }));
+    }
 
-        let error = Error::new(move |_| {
-            let error_label = gtk::LabelBuilder::new()
-                .label(&error_message)
-                .wrap(true)
-                .build();
-            Some(error_label.upcast())
-        });
-
-        if let Some(window) = self.session().parent_window() {
-            window.append_error(&error);
-        }
-        self.silent_cancel();
-        self.start_verification();
+    fn finish_scanning(&self, data: QrVerificationData) {
+        let priv_ = imp::SessionVerification::from_instance(self);
+        priv_.qr_code_scanner.stop();
+        self.request().scanned_qr_code(data);
+        priv_.main_stack.set_visible_child_name("qr-code-scanned");
     }
 
     fn show_recovery(&self) {
@@ -362,7 +394,7 @@ impl SessionVerification {
                 self.silent_cancel();
                 self.activate_action("session.logout", None);
             }
-            "emoji" | "qrcode" => {
+            "emoji" | "qrcode" | "scan-qr-code" | "no-camera" => {
                 self.silent_cancel();
                 self.start_verification();
             }

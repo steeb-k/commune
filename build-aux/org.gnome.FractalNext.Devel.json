@@ -4,13 +4,15 @@
     "runtime-version" : "master",
     "sdk" : "org.gnome.Sdk",
     "sdk-extensions" : [
-        "org.freedesktop.Sdk.Extension.rust-stable"
+        "org.freedesktop.Sdk.Extension.rust-stable",
+        "org.freedesktop.Sdk.Extension.llvm12"
     ],
     "command" : "fractal",
     "finish-args" : [
         "--socket=fallback-x11",
         "--socket=wayland",
         "--share=network",
+        "--share=ipc",
         "--device=dri",
         "--talk-name=org.a11y.Bus",
         "--talk-name=org.freedesktop.secrets",
@@ -19,7 +21,8 @@
         "--env=RUST_BACKTRACE=1"
     ],
     "build-options" : {
-        "append-path" : "/usr/lib/sdk/rust-stable/bin",
+        "append-ld-library-path": "/usr/lib/sdk/llvm12/lib",
+        "append-path" : "/usr/lib/sdk/llvm12/bin:/usr/lib/sdk/rust-stable/bin",
         "build-args" : [
             "--share=network"
         ],

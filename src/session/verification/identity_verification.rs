@@ -1,18 +1,25 @@
 use crate::session::user::UserExt;
 use crate::session::User;
+use crate::spawn;
 use crate::spawn_tokio;
+use crate::Error;
+use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
+use log::warn;
 use matrix_sdk::{
     encryption::{
         identities::RequestVerificationError,
         verification::{
-            CancelInfo, Emoji, QrVerification, SasVerification, Verification as MatrixVerification,
-            VerificationRequest,
+            CancelInfo, Emoji, QrVerification, QrVerificationData, SasVerification,
+            Verification as MatrixVerification, VerificationRequest,
         },
     },
     ruma::{
-        api::client::r0::sync::sync_events::ToDevice, events::AnyToDeviceEvent, identifiers::UserId,
+        api::client::r0::sync::sync_events::ToDevice,
+        events::key::verification::{cancel::CancelCode, VerificationMethod},
+        events::AnyToDeviceEvent,
+        identifiers::UserId,
     },
     Client, Error as MatrixError,
 };
@@ -62,26 +69,30 @@ pub enum Mode {
     Unavailable,
     Requested,
     SasV1,
-    QrV1,
+    QrV1Show,
+    QrV1Scan,
     Completed,
     Cancelled,
+    Dismissed,
+    Error,
 }
 
 impl Default for Mode {
     fn default() -> Self {
-        Self::Unavailable
+        Self::Requested
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum UserAction {
     Match,
     NotMatch,
     Cancel,
     StartSas,
+    Scanned(QrVerificationData),
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Message {
     UserAction(UserAction),
     Sync((String, State)),
@@ -99,9 +110,10 @@ mod imp {
         pub user: OnceCell<WeakRef<User>>,
         pub mode: Cell<Mode>,
         pub sync_sender: RefCell<Option<mpsc::Sender<Message>>>,
-        pub main_sender: OnceCell<glib::SyncSender<Verification>>,
+        pub main_sender: OnceCell<glib::SyncSender<(Verification, Mode)>>,
         pub request: RefCell<Option<Verification>>,
         pub source_id: RefCell<Option<SourceId>>,
+        pub flow_id: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -137,6 +149,13 @@ mod imp {
                         None,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_string(
+                        "flow-id",
+                        "Flow Id",
+                        "The flow id of this verification request",
+                        None,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -152,6 +171,7 @@ mod imp {
         ) {
             match pspec.name() {
                 "user" => obj.set_user(value.get().unwrap()),
+                "flow-id" => obj.set_flow_id(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -161,6 +181,7 @@ mod imp {
                 "user" => obj.user().to_value(),
                 "mode" => obj.mode().to_value(),
                 "display-name" => obj.display_name().to_value(),
+                "flow-id" => obj.flow_id().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -169,16 +190,11 @@ mod imp {
             self.parent_constructed(obj);
 
             let (main_sender, main_receiver) =
-                glib::MainContext::sync_channel::<Verification>(Default::default(), 100);
+                glib::MainContext::sync_channel::<(Verification, Mode)>(Default::default(), 100);
 
             let source_id = main_receiver.attach(
                 None,
-                clone!(@weak obj => @default-return glib::Continue(false), move |verification| {
-                    let mode = match verification {
-                        Verification::QrV1(_) => Mode::QrV1,
-                        Verification::SasV1(_) => Mode::SasV1,
-                        Verification::Request(_) => Mode::Requested,
-                    };
+                clone!(@weak obj => @default-return glib::Continue(false), move |(verification, mode)| {
                     obj.set_request(Some(verification));
                     obj.set_mode(mode);
 
@@ -208,6 +224,38 @@ impl IdentityVerification {
         glib::Object::new(&[("user", user)]).expect("Failed to create IdentityVerification")
     }
 
+    pub fn accept_incoming(&self) {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        let user = self.user();
+        let client = user.session().client();
+        let user_id = user.user_id().clone();
+        let main_sender = priv_.main_sender.get().unwrap().clone();
+        let flow_id = self.flow_id().clone().unwrap();
+
+        self.set_request(None);
+        let (sync_sender, sync_receiver) = mpsc::channel(100);
+        priv_.sync_sender.replace(Some(sync_sender));
+
+        // TODO add timeout
+
+        let handle = spawn_tokio!(async move {
+            start(client, user_id, flow_id, main_sender, sync_receiver).await
+        });
+
+        let weak_obj = self.downgrade();
+        spawn!(async move {
+            let result = handle.await.unwrap();
+            if let Some(obj) = weak_obj.upgrade() {
+                let priv_ = imp::IdentityVerification::from_instance(&obj);
+                match result {
+                    Ok(result) => obj.set_mode(result),
+                    Err(error) => error!("Verification failed: {}", error),
+                }
+                priv_.sync_sender.take();
+            }
+        });
+    }
+
     pub fn user(&self) -> User {
         let priv_ = imp::IdentityVerification::from_instance(self);
         priv_.user.get().unwrap().upgrade().unwrap()
@@ -220,7 +268,7 @@ impl IdentityVerification {
 
     /// Start an interactive identity verification
     /// Already in progress verifications are cancelled before starting a new one
-    pub async fn start(&self) -> Result<(), RequestVerificationError> {
+    pub fn start(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
         let user = self.user();
         let client = user.session().client();
@@ -235,15 +283,41 @@ impl IdentityVerification {
 
         // TODO add timeout
 
-        let result =
-            spawn_tokio!(async move { start(client, user_id, main_sender, sync_receiver).await })
-                .await
-                .unwrap()?;
+        let handle = spawn_tokio!(async move {
+            let identity = if let Some(identity) =
+                client.get_user_identity(&user_id).await.map_err(|error| {
+                    RequestVerificationError::Sdk(MatrixError::CryptoStoreError(error))
+                })? {
+                identity
+            } else {
+                return Ok(Mode::IdentityNotFound);
+            };
 
-        priv_.sync_sender.take();
+            let request = identity
+                .request_verification_with_methods(vec![
+                    VerificationMethod::SasV1,
+                    VerificationMethod::QrCodeScanV1,
+                    VerificationMethod::QrCodeShowV1,
+                    VerificationMethod::ReciprocateV1,
+                ])
+                .await?;
+            let flow_id = request.flow_id().to_owned();
 
-        self.set_mode(result);
-        Ok(())
+            start(client, user_id, flow_id, main_sender, sync_receiver).await
+        });
+
+        let weak_obj = self.downgrade();
+        spawn!(async move {
+            let result = handle.await.unwrap();
+            if let Some(obj) = weak_obj.upgrade() {
+                let priv_ = imp::IdentityVerification::from_instance(&obj);
+                match result {
+                    Ok(result) => obj.set_mode(result),
+                    Err(error) => error!("Verification failed: {}", error),
+                }
+                priv_.sync_sender.take();
+            }
+        });
     }
 
     pub fn emoji_match(&self) {
@@ -281,6 +355,19 @@ impl IdentityVerification {
             return;
         }
 
+        match mode {
+            Mode::SasV1 => {
+                if self.emoji().is_none() {
+                    warn!("Failed to get emoji for SasVerification");
+                    self.show_error();
+                }
+            }
+            Mode::Unavailable | Mode::Cancelled => {
+                self.show_error();
+            }
+            _ => {}
+        }
+
         priv_.mode.set(mode);
         self.notify("mode");
     }
@@ -291,9 +378,58 @@ impl IdentityVerification {
         priv_.request.replace(request);
     }
 
+    fn show_error(&self) {
+        self.set_mode(Mode::Error);
+        let error_message = if let Some(info) = self.cancel_info() {
+            match info.cancel_code() {
+                CancelCode::User => Some(gettext("You cancelled the verificaiton process.")),
+                CancelCode::Timeout => Some(gettext(
+                    "The verification process failed because it reached a timeout.",
+                )),
+                CancelCode::Accepted => {
+                    Some(gettext("You accepted the request from an other session."))
+                }
+                _ => match info.cancel_code().as_str() {
+                    "m.mismatched_sas" => Some(gettext("The emoji did not match.")),
+                    _ => None,
+                },
+            }
+        } else {
+            None
+        };
+
+        let error_message = error_message.unwrap_or_else(|| {
+            gettext("An unknown error occured during the verification process.")
+        });
+
+        let error = Error::new(move |_| {
+            let error_label = gtk::LabelBuilder::new()
+                .label(&error_message)
+                .wrap(true)
+                .build();
+            Some(error_label.upcast())
+        });
+
+        if let Some(window) = self.user().session().parent_window() {
+            window.append_error(&error);
+        }
+    }
+
     pub fn display_name(&self) -> String {
         // TODO: give this request a name based on the device
         "Request".to_string()
+    }
+
+    pub fn flow_id(&self) -> Option<String> {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        priv_.flow_id.borrow().clone()
+    }
+
+    pub fn set_flow_id(&self, flow_id: Option<String>) {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+
+        priv_.flow_id.replace(flow_id);
+        self.notify("flow-id");
     }
 
     /// Get the QrCode for this verification request
@@ -334,6 +470,18 @@ impl IdentityVerification {
         }
     }
 
+    pub fn scanned_qr_code(&self, data: QrVerificationData) {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+
+        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+            let result = sync_sender.try_send(Message::UserAction(UserAction::Scanned(data)));
+
+            if let Err(error) = result {
+                error!("Failed to send message to tokio runtime: {}", error);
+            }
+        }
+    }
+
     pub fn cancel(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
         if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
@@ -342,6 +490,10 @@ impl IdentityVerification {
                 error!("Failed to send message to tokio runtime: {}", error);
             }
         }
+    }
+
+    pub fn dismiss(&self) {
+        self.set_mode(Mode::Dismissed);
     }
 
     /// Get information about why the request was cancelled
@@ -394,62 +546,115 @@ impl IdentityVerification {
 async fn start(
     client: Client,
     user_id: UserId,
-    main_sender: glib::SyncSender<Verification>,
+    flow_id: String,
+    main_sender: glib::SyncSender<(Verification, Mode)>,
     mut sync_receiver: mpsc::Receiver<Message>,
 ) -> Result<Mode, RequestVerificationError> {
-    let identity = if let Some(identity) = client
-        .get_user_identity(&user_id)
-        .await
-        .map_err(|error| RequestVerificationError::Sdk(MatrixError::CryptoStoreError(error)))?
-    {
-        identity
-    } else {
-        return Ok(Mode::IdentityNotFound);
-    };
+    let request =
+        if let Some(verification) = client.get_verification_request(&user_id, &flow_id).await {
+            verification
+        } else {
+            return Ok(Mode::Unavailable);
+        };
 
-    let request = identity.request_verification().await?;
-    let flow_id = request.flow_id();
-
-    let result = main_sender.send(Verification::Request(request.clone()));
+    let result = main_sender.send((Verification::Request(request.clone()), Mode::Requested));
 
     if let Err(error) = result {
         error!("Failed to send message to the main context: {}", error);
     }
 
-    if wait_for_state(flow_id, State::Ready, &mut sync_receiver).await {
-        request.cancel().await?;
-        return Ok(Mode::Cancelled);
+    if !request.we_started() {
+        request
+            .accept_with_methods(vec![
+                VerificationMethod::SasV1,
+                VerificationMethod::QrCodeScanV1,
+                VerificationMethod::QrCodeShowV1,
+                VerificationMethod::ReciprocateV1,
+            ])
+            .await?;
+    } else {
+        if wait_for_state(&flow_id, State::Ready, &mut sync_receiver).await {
+            request.cancel().await?;
+            return Ok(Mode::Cancelled);
+        }
     }
 
-    let qr_verification = request
-        .generate_qr_code()
-        .await
-        .map_err(|error| RequestVerificationError::Sdk(error))?;
+    let supports_qr_code_scanning = request.their_supported_methods().map_or(false, |methods| {
+        methods
+            .iter()
+            .any(|method| method == &VerificationMethod::QrCodeScanV1)
+    });
+
+    let qr_verification = if supports_qr_code_scanning {
+        request
+            .generate_qr_code()
+            .await
+            .map_err(|error| RequestVerificationError::Sdk(error))?
+    } else {
+        None
+    };
 
     let start_sas = if let Some(qr_verification) = qr_verification {
-        let result = main_sender.send(Verification::QrV1(qr_verification));
+        let result = main_sender.send((Verification::QrV1(qr_verification), Mode::QrV1Show));
 
         if let Err(error) = result {
             error!("Failed to send message to the main context: {}", error);
         }
 
-        let (start_sas, cancel) = loop {
+        loop {
             match sync_receiver.recv().await.unwrap() {
-                Message::Sync((id, State::Start)) if flow_id == &id => break (false, false),
-                Message::Sync((id, State::Cancel)) if flow_id == &id => break (false, true),
-                Message::UserAction(UserAction::Cancel) => break (false, true),
-                Message::UserAction(UserAction::StartSas) => break (true, false),
+                Message::Sync((id, State::Start)) if flow_id == id => break false,
+                Message::Sync((id, State::Cancel)) if flow_id == id => {
+                    request.cancel().await?;
+                    return Ok(Mode::Cancelled);
+                }
+                Message::UserAction(UserAction::Cancel) => {
+                    request.cancel().await?;
+                    return Ok(Mode::Cancelled);
+                }
+                Message::UserAction(UserAction::StartSas) => break true,
+                Message::UserAction(UserAction::Scanned(data)) => {
+                    request.scan_qr_code(data).await?;
+                    break false;
+                }
                 _ => {}
             }
-        };
-
-        if cancel {
-            request.cancel().await?;
-            return Ok(Mode::Cancelled);
         }
-        start_sas
     } else {
-        true
+        let supports_qr_code_showing = request.their_supported_methods().map_or(false, |methods| {
+            methods
+                .iter()
+                .any(|method| method == &VerificationMethod::QrCodeShowV1)
+        });
+        if supports_qr_code_showing {
+            let result = main_sender.send((Verification::Request(request.clone()), Mode::QrV1Scan));
+
+            if let Err(error) = result {
+                error!("Failed to send message to the main context: {}", error);
+            }
+
+            loop {
+                match sync_receiver.recv().await.unwrap() {
+                    Message::Sync((id, State::Start)) if flow_id == id => break false,
+                    Message::Sync((id, State::Cancel)) if flow_id == id => {
+                        request.cancel().await?;
+                        return Ok(Mode::Cancelled);
+                    }
+                    Message::UserAction(UserAction::Cancel) => {
+                        request.cancel().await?;
+                        return Ok(Mode::Cancelled);
+                    }
+                    Message::UserAction(UserAction::StartSas) => break true,
+                    Message::UserAction(UserAction::Scanned(data)) => {
+                        request.scan_qr_code(data).await?;
+                        break false;
+                    }
+                    _ => {}
+                }
+            }
+        } else {
+            true
+        }
     };
 
     if start_sas {
@@ -461,9 +666,9 @@ async fn start(
         {
             let cancel = loop {
                 match sync_receiver.recv().await {
-                    Some(Message::Sync((id, State::Start))) if flow_id == &id => break false,
-                    Some(Message::Sync((id, State::Accept))) if flow_id == &id => break false,
-                    Some(Message::Sync((id, State::Cancel))) if flow_id == &id => break true,
+                    Some(Message::Sync((id, State::Start))) if flow_id == id => break false,
+                    Some(Message::Sync((id, State::Accept))) if flow_id == id => break false,
+                    Some(Message::Sync((id, State::Cancel))) if flow_id == id => break true,
                     Some(Message::UserAction(UserAction::Cancel)) => break true,
                     None => break true,
                     _ => {}
@@ -491,7 +696,7 @@ async fn start(
         MatrixVerification::QrV1(qr_verification) => {
             qr_verification.confirm().await?;
 
-            if wait_for_state(flow_id, State::Done, &mut sync_receiver).await {
+            if wait_for_state(&flow_id, State::Done, &mut sync_receiver).await {
                 request.cancel().await?;
                 return Ok(Mode::Cancelled);
             }
@@ -499,25 +704,26 @@ async fn start(
         MatrixVerification::SasV1(sas_verification) => {
             sas_verification.accept().await?;
 
-            if wait_for_state(flow_id, State::Key, &mut sync_receiver).await {
+            if wait_for_state(&flow_id, State::Key, &mut sync_receiver).await {
                 request.cancel().await?;
                 return Ok(Mode::Cancelled);
             }
 
-            let result = main_sender.send(Verification::SasV1(sas_verification.clone()));
+            let result =
+                main_sender.send((Verification::SasV1(sas_verification.clone()), Mode::SasV1));
 
             if let Err(error) = result {
                 error!("Failed to send message to the main context: {}", error);
             }
 
-            if wait_for_match_action(flow_id, &mut sync_receiver).await {
+            if wait_for_match_action(&flow_id, &mut sync_receiver).await {
                 request.cancel().await?;
                 return Ok(Mode::Cancelled);
             }
 
             sas_verification.confirm().await?;
 
-            if wait_for_state(flow_id, State::Done, &mut sync_receiver).await {
+            if wait_for_state(&flow_id, State::Done, &mut sync_receiver).await {
                 request.cancel().await?;
                 return Ok(Mode::Cancelled);
             }

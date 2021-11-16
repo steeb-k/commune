@@ -21,6 +21,10 @@ run_command(
 sources = files(
   'application.rs',
   'contrib/qr_code.rs',
+  'contrib/qr_code_scanner/camera_paintable.rs',
+  'contrib/qr_code_scanner/mod.rs',
+  'contrib/qr_code_scanner/screenshot.rs',
+  'contrib/qr_code_scanner/qr_code_detector.rs',
   'components/avatar.rs',
   'components/auth_dialog.rs',
   'components/context_menu_bin.rs',

@@ -44,6 +44,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="room-creation.ui">ui/room-creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="session-verification.ui">ui/session-verification.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="verification-emoji.ui">ui/verification-emoji.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="qr-code-scanner.ui">ui/qr-code-scanner.ui</file>
     <file compressed="true">style.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
