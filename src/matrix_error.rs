@@ -47,6 +47,7 @@ impl UserFacingError for HttpError {
 impl UserFacingError for Error {
     fn to_user_facing(self) -> String {
         match self {
+            Error::DecryptorError(_) => gettext("Could not decrypt the event"),
             Error::Http(http_error) => http_error.to_user_facing(),
             _ => gettext("An unknown error occurred."),
         }

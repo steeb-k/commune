@@ -15,7 +15,6 @@ use self::explore::Explore;
 use self::invite::Invite;
 use self::item_row::ItemRow;
 use self::markdown_popover::MarkdownPopover;
-use self::message_row::MessageRow;
 use self::room_details::RoomDetails;
 use self::room_history::RoomHistory;
 use self::state_row::StateRow;

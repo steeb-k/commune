@@ -18,6 +18,7 @@ data/resources/ui/content-item-row-menu.ui
 data/resources/ui/content-item.ui
 data/resources/ui/content-invite.ui
 data/resources/ui/content-markdown-popover.ui
+data/resources/ui/content-message-file.ui
 data/resources/ui/content-message-row.ui
 data/resources/ui/content-room-details.ui
 data/resources/ui/content-room-history.ui
@@ -74,6 +75,7 @@ src/session/content/divider_row.rs
 src/session/content/item_row.rs
 src/session/content/invite.rs
 src/session/content/markdown_popover.rs
+src/session/content/message_row/file.rs
 src/session/content/message_row/mod.rs
 src/session/content/message_row/text.rs
 src/session/content/mod.rs

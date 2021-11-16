@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMessageFile" parent="AdwBin">
+    <property name="focusable">True</property>
+    <property name="valign">center</property>
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">6</property>
+        <child>
+          <object class="GtkLabel">
+            <property name="ellipsize">end</property>
+            <binding name="label">
+              <lookup name="filename">ContentMessageFile</lookup>
+            </binding>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+              <child>
+                <object class="GtkButton" id="open">
+                  <property name="icon-name">document-open-symbolic</property>
+                  <property name="tooltip-text" translatable="yes">Open</property>
+                  <property name="action-name">item-row.file-open</property>
+                </object>
+              </child>
+              <child>
+                <object class="GtkButton" id="save">
+                  <property name="icon-name">document-save-symbolic</property>
+                  <property name="tooltip-text" translatable="yes">Save</property>
+                  <property name="action-name">item-row.file-save</property>
+                </object>
+              </child>
+              <style>
+                <class name="linked"/>
+              </style>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

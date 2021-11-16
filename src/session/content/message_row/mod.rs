@@ -1,3 +1,4 @@
+mod file;
 mod text;
 
 use crate::components::Avatar;
@@ -13,7 +14,7 @@ use matrix_sdk::ruma::events::{
     AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
 };
 
-use self::text::MessageText;
+use self::{file::MessageFile, text::MessageText};
 use crate::prelude::*;
 use crate::session::room::Event;
 
@@ -261,7 +262,11 @@ impl MessageRow {
                             MessageText::emote(message.formatted, message.body, event.sender());
                         priv_.content.set_child(Some(&child));
                     }
-                    MessageType::File(_message) => {}
+                    MessageType::File(message) => {
+                        let filename = message.filename.unwrap_or(message.body);
+                        let child = MessageFile::new(Some(filename));
+                        priv_.content.set_child(Some(&child));
+                    }
                     MessageType::Image(_message) => {}
                     MessageType::Location(_message) => {}
                     MessageType::Notice(message) => {

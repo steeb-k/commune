@@ -58,8 +58,10 @@ macro_rules! spawn_tokio {
     };
 }
 
-use gtk::gio::prelude::*;
-use gtk::glib::Object;
+use std::path::PathBuf;
+
+use gtk::gio::{self, prelude::*};
+use gtk::glib::{self, Object};
 
 /// Returns an expression looking up the given property on `object`.
 pub fn prop_expr<T: IsA<Object>>(object: &T, prop: &str) -> gtk::Expression {
@@ -105,4 +107,17 @@ pub fn not_expr(a_expr: gtk::Expression) -> gtk::Expression {
         &[a_expr],
     )
     .upcast()
+}
+
+pub fn cache_dir() -> PathBuf {
+    let mut path = glib::user_cache_dir();
+    path.push("fractal");
+
+    if !path.exists() {
+        let dir = gio::File::for_path(path.clone());
+        dir.make_directory_with_parents(gio::NONE_CANCELLABLE)
+            .unwrap();
+    }
+
+    path
 }

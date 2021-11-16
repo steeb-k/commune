@@ -137,7 +137,7 @@ mod imp {
             match pspec.name() {
                 "source" => obj.source().to_value(),
                 "sender" => obj.sender().to_value(),
-                "room" => self.room.get().unwrap().to_value(),
+                "room" => obj.room().to_value(),
                 "show-header" => obj.show_header().to_value(),
                 "can-hide-header" => obj.can_hide_header().to_value(),
                 "time" => obj.time().to_value(),
@@ -168,6 +168,11 @@ impl Event {
             .get()
             .unwrap()
             .member_by_id(&self.matrix_sender())
+    }
+
+    pub fn room(&self) -> &Room {
+        let priv_ = imp::Event::from_instance(self);
+        priv_.room.get().unwrap()
     }
 
     /// Get the matrix event
