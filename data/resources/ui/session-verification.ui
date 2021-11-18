@@ -47,6 +47,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Get Another Device</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -68,6 +71,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">No other devices logged into this account?</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                           </object>
                         </child>
                         <child>
@@ -102,6 +108,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Setup Encryption Identity</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -147,6 +156,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Verify Session</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -171,6 +183,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Can't scan QR code?</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                           </object>
                         </child>
                         <child>
@@ -204,6 +219,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Verify Session</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -275,6 +293,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Recovery</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -283,7 +304,6 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Without another device you need a recovery passphrase or key to access your messages</property>
-                            <property name="wrap">True</property>
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
                             <property name="justify">center</property>
@@ -347,6 +367,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Recovery Passphrase</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -405,6 +428,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Recovery Key</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -466,6 +492,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">Setup Complete</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <style>
                               <class name="title-1"/>
                             </style>
@@ -479,6 +508,9 @@
                         <child>
                           <object class="GtkLabel">
                             <property name="label" translatable="yes">This session is ready to send and receive secure messages</property>
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                           </object>
                         </child>
                         <child>
