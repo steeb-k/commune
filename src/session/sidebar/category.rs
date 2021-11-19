@@ -13,6 +13,7 @@ mod imp {
     pub struct Category {
         pub model: OnceCell<gio::ListModel>,
         pub type_: Cell<CategoryType>,
+        pub is_empty: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -50,6 +51,13 @@ mod imp {
                         gio::ListModel::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "empty",
+                        "Empty",
+                        "Whether this category is empty",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -81,6 +89,7 @@ mod imp {
                 "type" => obj.type_().to_value(),
                 "display-name" => obj.type_().to_string().to_value(),
                 "model" => self.model.get().to_value(),
+                "empty" => obj.is_empty().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -122,7 +131,7 @@ impl Category {
         let type_ = self.type_();
 
         // Special case room lists so that they are sorted and in the right category
-        if model.is::<RoomList>() {
+        let model = if model.is::<RoomList>() {
             let filter = gtk::CustomFilter::new(move |o| {
                 o.downcast_ref::<Room>()
                     .filter(|r| CategoryType::from(r.category()) == type_)
@@ -136,20 +145,34 @@ impl Category {
                 b.latest_change().cmp(&a.latest_change()).into()
             });
             let sort_model = gtk::SortListModel::new(Some(&filter_model), Some(&sorter));
-
-            sort_model.connect_items_changed(
-                clone!(@weak self as obj => move |_, pos, removed, added| {
-                    obj.items_changed(pos, removed, added);
-                }),
-            );
-            priv_.model.set(sort_model.upcast()).unwrap();
+            sort_model.upcast()
         } else {
-            model.connect_items_changed(
-                clone!(@weak self as obj => move |_, pos, removed, added| {
-                    obj.items_changed(pos, removed, added);
-                }),
-            );
-            priv_.model.set(model).unwrap();
+            model
+        };
+
+        model.connect_items_changed(
+            clone!(@weak self as obj => move |model, pos, removed, added| {
+                obj.items_changed(pos, removed, added);
+                obj.set_is_empty(model.n_items() == 0);
+            }),
+        );
+
+        self.set_is_empty(model.n_items() == 0);
+        priv_.model.set(model).unwrap();
+    }
+
+    fn set_is_empty(&self, is_empty: bool) {
+        let priv_ = imp::Category::from_instance(self);
+        if is_empty == self.is_empty() {
+            return;
         }
+
+        priv_.is_empty.set(is_empty);
+        self.notify("empty");
+    }
+
+    pub fn is_empty(&self) -> bool {
+        let priv_ = imp::Category::from_instance(self);
+        priv_.is_empty.get()
     }
 }

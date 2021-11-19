@@ -208,7 +208,6 @@ impl Sidebar {
             }
         };
 
-        // TODO: hide empty categories
         let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
             item.clone().downcast::<gio::ListModel>().ok()
         });
