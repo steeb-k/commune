@@ -207,7 +207,8 @@ impl PublicRoomList {
 
     fn handle_public_rooms_response(&self, response: PublicRoomsResponse) {
         let priv_ = imp::PublicRoomList::from_instance(self);
-        let session = &self.session().unwrap();
+        let session = self.session().unwrap();
+        let room_list = session.room_list();
 
         priv_.next_batch.replace(response.next_batch.to_owned());
         priv_
@@ -222,13 +223,13 @@ impl PublicRoomList {
                 .chunk
                 .into_iter()
                 .map(|matrix_room| {
-                    let room = PublicRoom::new(session);
+                    let room = PublicRoom::new(room_list);
                     room.set_matrix_public_room(matrix_room);
                     room
                 })
                 .collect();
 
-            let empty_row = list.pop().unwrap_or_else(|| PublicRoom::new(session));
+            let empty_row = list.pop().unwrap_or_else(|| PublicRoom::new(room_list));
             list.append(&mut new_rooms);
 
             if !self.complete() {

@@ -1,18 +1,17 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::directory::PublicRoomsChunk;
 
-use crate::session::{room::Room, Avatar, Session};
+use crate::session::{room::Room, Avatar, RoomList};
 
 mod imp {
     use super::*;
-    use glib::object::WeakRef;
     use glib::signal::SignalHandlerId;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default)]
     pub struct PublicRoom {
-        pub session: OnceCell<WeakRef<Session>>,
+        pub room_list: OnceCell<RoomList>,
         pub matrix_public_room: OnceCell<PublicRoomsChunk>,
         pub avatar: OnceCell<Avatar>,
         pub room: OnceCell<Room>,
@@ -32,10 +31,10 @@ mod imp {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
                     glib::ParamSpec::new_object(
-                        "session",
-                        "Session",
-                        "The session",
-                        Session::static_type(),
+                        "room-list",
+                        "Room List",
+                        "The list of rooms in this session",
+                        RoomList::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_object(
@@ -73,9 +72,9 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "session" => self
-                    .session
-                    .set(value.get::<Session>().unwrap().downgrade())
+                "room-list" => self
+                    .room_list
+                    .set(value.get::<RoomList>().unwrap())
                     .unwrap(),
                 _ => unimplemented!(),
             }
@@ -83,7 +82,7 @@ mod imp {
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "session" => obj.session().to_value(),
+                "room-list" => obj.room_list().to_value(),
                 "avatar" => obj.avatar().to_value(),
                 "room" => obj.room().to_value(),
                 "pending" => obj.is_pending().to_value(),
@@ -94,13 +93,14 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            self.avatar.set(Avatar::new(&obj.session(), None)).unwrap();
+            self.avatar
+                .set(Avatar::new(&obj.room_list().session(), None))
+                .unwrap();
 
-            obj.session()
-                .room_list()
+            obj.room_list()
                 .connect_pending_rooms_changed(clone!(@weak obj => move |_| {
                     if let Some(matrix_public_room) = obj.matrix_public_room() {
-                        obj.set_pending(obj.session()
+                        obj.set_pending(obj.room_list().session()
                         .room_list()
                         .is_pending_room(&matrix_public_room.room_id.clone().into()));
                     }
@@ -109,7 +109,7 @@ mod imp {
 
         fn dispose(&self, obj: &Self::Type) {
             if let Some(handler_id) = self.room_handler.take() {
-                obj.session().room_list().disconnect(handler_id);
+                obj.room_list().disconnect(handler_id);
             }
         }
     }
@@ -120,13 +120,13 @@ glib::wrapper! {
 }
 
 impl PublicRoom {
-    pub fn new(session: &Session) -> Self {
-        glib::Object::new(&[("session", session)]).expect("Failed to create Room")
+    pub fn new(room_list: &RoomList) -> Self {
+        glib::Object::new(&[("room-list", room_list)]).expect("Failed to create Room")
     }
 
-    pub fn session(&self) -> Session {
+    pub fn room_list(&self) -> &RoomList {
         let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        priv_.room_list.get().unwrap()
     }
 
     pub fn avatar(&self) -> &Avatar {
@@ -169,11 +169,11 @@ impl PublicRoom {
         self.avatar().set_display_name(display_name);
         self.avatar().set_url(room.avatar_url.clone());
 
-        if let Some(room) = self.session().room_list().get(&room.room_id) {
+        if let Some(room) = self.room_list().get(&room.room_id) {
             self.set_room(room);
         } else {
             let room_id = room.room_id.clone();
-            let handler_id = self.session().room_list().connect_items_changed(
+            let handler_id = self.room_list().connect_items_changed(
                 clone!(@weak self as obj => move |room_list, _, _, _| {
                     if let Some(room) = room_list.get(&room_id) {
                         let priv_ = imp::PublicRoom::from_instance(&obj);
@@ -189,8 +189,7 @@ impl PublicRoom {
         }
 
         self.set_pending(
-            self.session()
-                .room_list()
+            self.room_list()
                 .is_pending_room(&room.room_id.clone().into()),
         );
 
@@ -203,12 +202,10 @@ impl PublicRoom {
     }
 
     pub fn join_or_view(&self) {
-        let session = self.session();
         if let Some(room) = self.room() {
-            session.select_room(Some(room.clone()));
+            self.room_list().session().select_room(Some(room.clone()));
         } else if let Some(matrix_public_room) = self.matrix_public_room() {
-            session
-                .room_list()
+            self.room_list()
                 .join_by_id_or_alias(matrix_public_room.room_id.clone().into());
         }
     }
