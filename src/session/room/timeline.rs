@@ -14,13 +14,14 @@ use crate::{spawn, spawn_tokio};
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
     use std::collections::{HashMap, VecDeque};
 
     #[derive(Debug, Default)]
     pub struct Timeline {
-        pub room: OnceCell<Room>,
+        pub room: OnceCell<WeakRef<Room>>,
         /// A store to keep track of related events that aren't known
         pub relates_to_events: RefCell<HashMap<EventId, Vec<EventId>>>,
         /// All events shown in the room history
@@ -98,7 +99,7 @@ mod imp {
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "room" => self.room.get().unwrap().to_value(),
+                "room" => obj.room().to_value(),
                 "loading" => obj.loading().to_value(),
                 "empty" => obj.is_empty().to_value(),
                 "complete" => obj.is_complete().to_value(),
@@ -458,12 +459,12 @@ impl Timeline {
 
     fn set_room(&self, room: Room) {
         let priv_ = imp::Timeline::from_instance(self);
-        priv_.room.set(room).unwrap();
+        priv_.room.set(room.downgrade()).unwrap();
     }
 
-    pub fn room(&self) -> &Room {
+    pub fn room(&self) -> Room {
         let priv_ = imp::Timeline::from_instance(self);
-        priv_.room.get().unwrap()
+        priv_.room.get().unwrap().upgrade().unwrap()
     }
 
     fn set_loading(&self, loading: bool) {
@@ -555,11 +556,11 @@ impl Timeline {
                                             events
                                            .into_iter()
                                            .skip(1)
-                                           .map(|event| Event::new(event, obj.room())).collect()
+                                           .map(|event| Event::new(event, &obj.room())).collect()
                             } else {
                                             events
                                            .into_iter()
-                                           .map(|event| Event::new(event, obj.room())).collect()
+                                           .map(|event| Event::new(event, &obj.room())).collect()
                             };
                             obj.set_complete(events.iter().any(|event| matches!(event.matrix_event(), Some(AnySyncRoomEvent::State(AnySyncStateEvent::RoomCreate(_))))));
                             obj.prepend(events)

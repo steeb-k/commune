@@ -22,6 +22,7 @@ pub struct BoxedSyncRoomEvent(SyncRoomEvent);
 
 mod imp {
     use super::*;
+    use glib::object::WeakRef;
     use glib::subclass::Signal;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
@@ -34,7 +35,7 @@ mod imp {
         pub pure_event: RefCell<Option<SyncRoomEvent>>,
         pub relates_to: RefCell<Vec<super::Event>>,
         pub show_header: Cell<bool>,
-        pub room: OnceCell<Room>,
+        pub room: OnceCell<WeakRef<Room>>,
     }
 
     #[glib::object_subclass]
@@ -127,7 +128,9 @@ mod imp {
                     let _ = obj.set_show_header(show_header);
                 }
                 "room" => {
-                    let _ = self.room.set(value.get().unwrap());
+                    self.room
+                        .set(value.get::<Room>().unwrap().downgrade())
+                        .unwrap();
                 }
                 _ => unimplemented!(),
             }
@@ -162,18 +165,12 @@ impl Event {
     }
 
     pub fn sender(&self) -> Member {
-        let priv_ = imp::Event::from_instance(self);
-        priv_
-            .room
-            .get()
-            .unwrap()
-            .members()
-            .member_by_id(&self.matrix_sender())
+        self.room().members().member_by_id(&self.matrix_sender())
     }
 
-    pub fn room(&self) -> &Room {
+    pub fn room(&self) -> Room {
         let priv_ = imp::Event::from_instance(self);
-        priv_.room.get().unwrap()
+        priv_.room.get().unwrap().upgrade().unwrap()
     }
 
     /// Get the matrix event
