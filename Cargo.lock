@@ -141,6 +141,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61604a8f862e1d5c3229fdd78f8b02c68dcf73a4c4b05fd636d12240aaa242c1"
 
 [[package]]
+name = "anymap2"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d301b3b94cb4b2f23d7917810addbbaff90738e0ca2be692bd027e70d7e0330c"
+
+[[package]]
 name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -405,6 +411,12 @@ name = "block-padding"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
+
+[[package]]
+name = "bs58"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
 name = "bumpalo"
@@ -1084,15 +1096,6 @@ dependencies = [
  "parking",
  "pin-project-lite",
  "waker-fn",
-]
-
-[[package]]
-name = "futures-locks"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50c4e684ddb2d8a4db5ca8a02b35156da129674ba4412b6f528698d58c594954"
-dependencies = [
- "futures",
 ]
 
 [[package]]
@@ -2202,7 +2205,7 @@ checksum = "a3e378b66a060d48947b590737b30a1be76706c8dd7b8ba0f2fe3989c68a853f"
 [[package]]
 name = "matrix-qrcode"
 version = "0.2.0"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#03b8d8cd7e296f800bb94b077a471385c2267fb1"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#a3ac0be5a2bad8d6f0252662695bfa10d2da679b"
 dependencies = [
  "base64",
  "byteorder",
@@ -2216,15 +2219,17 @@ dependencies = [
 [[package]]
 name = "matrix-sdk"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#03b8d8cd7e296f800bb94b077a471385c2267fb1"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#a3ac0be5a2bad8d6f0252662695bfa10d2da679b"
 dependencies = [
+ "anymap2",
  "async-stream",
  "backoff",
  "bytes",
  "dashmap",
  "event-listener",
- "futures",
+ "futures-core",
  "futures-timer",
+ "futures-util",
  "http",
  "matrix-sdk-base",
  "matrix-sdk-common",
@@ -2236,7 +2241,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-futures",
  "url",
  "zeroize",
 ]
@@ -2244,11 +2248,12 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-base"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#03b8d8cd7e296f800bb94b077a471385c2267fb1"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#a3ac0be5a2bad8d6f0252662695bfa10d2da679b"
 dependencies = [
  "chacha20poly1305",
  "dashmap",
- "futures",
+ "futures-core",
+ "futures-util",
  "hmac 0.11.0",
  "lru",
  "matrix-sdk-common",
@@ -2269,11 +2274,11 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-common"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#03b8d8cd7e296f800bb94b077a471385c2267fb1"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#a3ac0be5a2bad8d6f0252662695bfa10d2da679b"
 dependencies = [
+ "async-lock",
  "async-trait",
- "futures",
- "futures-locks",
+ "futures-util",
  "instant",
  "ruma",
  "serde",
@@ -2285,21 +2290,23 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-crypto"
 version = "0.4.1"
-source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#03b8d8cd7e296f800bb94b077a471385c2267fb1"
+source = "git+https://github.com/jsparber/matrix-rust-sdk.git?branch=messages-api#a3ac0be5a2bad8d6f0252662695bfa10d2da679b"
 dependencies = [
  "aes 0.7.5",
  "aes-gcm",
  "atomic",
  "base64",
+ "bs58",
  "byteorder",
  "dashmap",
- "futures",
+ "futures-util",
  "getrandom 0.2.3",
  "hmac 0.11.0",
  "matrix-qrcode",
  "matrix-sdk-common",
  "olm-rs",
  "pbkdf2",
+ "rand 0.8.4",
  "ruma",
  "serde",
  "serde_json",
@@ -2614,9 +2621,9 @@ dependencies = [
 
 [[package]]
 name = "olm-rs"
-version = "2.0.1"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33a5773f317476f5687fc8200fc0120d97b075c30c133a5b15ca558252743720"
+checksum = "28d071397525c2c184bb916a608d8e0be8f0c14f0ae4075c2949c7a7fbae52ad"
 dependencies = [
  "getrandom 0.2.3",
  "olm-sys",
@@ -4165,16 +4172,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f4ed65637b8390770814083d20756f87bfa2c21bf2f110babdc5438351746e4"
 dependencies = [
  "lazy_static",
-]
-
-[[package]]
-name = "tracing-futures"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
-dependencies = [
- "pin-project",
- "tracing",
 ]
 
 [[package]]
