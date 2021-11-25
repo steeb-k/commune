@@ -72,6 +72,7 @@ sources = files(
   'session/room/highlight_flags.rs',
   'session/room/item.rs',
   'session/room/member.rs',
+  'session/room/member_list.rs',
   'session/room/mod.rs',
   'session/room/power_levels.rs',
   'session/room/room_type.rs',
