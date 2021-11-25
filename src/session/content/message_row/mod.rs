@@ -292,6 +292,10 @@ impl MessageRow {
                     }
                 }
             }
+            Some(AnyMessageEventContent::Sticker(content)) => {
+                let child = MessageImage::sticker(content, &event.room().session());
+                priv_.content.set_child(Some(&child));
+            }
             Some(AnyMessageEventContent::RoomEncrypted(content)) => {
                 warn!("Couldn't decrypt event {:?}", content);
                 let child = MessageText::text(gettext("Fractal couldn't decrypt this message."));

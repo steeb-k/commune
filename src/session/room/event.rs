@@ -369,7 +369,6 @@ impl Event {
                     | AnySyncMessageEvent::KeyVerificationDone(_)
                     | AnySyncMessageEvent::RoomMessageFeedback(_)
                     | AnySyncMessageEvent::RoomRedaction(_)
-                    | AnySyncMessageEvent::Sticker(_)
             ),
             Some(AnySyncRoomEvent::State(state)) => matches!(
                 state,
@@ -447,20 +446,22 @@ impl Event {
     }
 
     pub fn can_hide_header(&self) -> bool {
-        let msgtype = match self.message_content() {
-            Some(AnyMessageEventContent::RoomMessage(message)) => message.msgtype,
-            _ => return false,
-        };
-        matches!(
-            msgtype,
-            MessageType::Audio(_)
-                | MessageType::File(_)
-                | MessageType::Image(_)
-                | MessageType::Location(_)
-                | MessageType::Notice(_)
-                | MessageType::Text(_)
-                | MessageType::Video(_)
-        )
+        match self.message_content() {
+            Some(AnyMessageEventContent::RoomMessage(message)) => {
+                matches!(
+                    message.msgtype,
+                    MessageType::Audio(_)
+                        | MessageType::File(_)
+                        | MessageType::Image(_)
+                        | MessageType::Location(_)
+                        | MessageType::Notice(_)
+                        | MessageType::Text(_)
+                        | MessageType::Video(_)
+                )
+            }
+            Some(AnyMessageEventContent::Sticker(_)) => true,
+            _ => false,
+        }
     }
 
     pub fn add_relates_to(&self, events: Vec<Event>) {

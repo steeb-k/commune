@@ -15,15 +15,32 @@ use matrix_sdk::{
     media::{MediaEventContent, MediaThumbnailSize},
     ruma::{
         api::client::r0::media::get_content_thumbnail::Method,
-        events::room::{message::ImageMessageEventContent, ImageInfo},
+        events::{
+            room::{message::ImageMessageEventContent, ImageInfo},
+            sticker::StickerEventContent,
+        },
         uint,
     },
 };
 
 use crate::{session::Session, spawn, spawn_tokio};
 
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[repr(u32)]
+#[genum(type_name = "MediaType")]
+pub enum MediaType {
+    Image = 0,
+    Sticker = 1,
+}
+
+impl Default for MediaType {
+    fn default() -> Self {
+        Self::Image
+    }
+}
+
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     use once_cell::sync::Lazy;
 
@@ -31,10 +48,14 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct MessageImage {
+        /// The type of media previewed with this image.
+        pub media_type: Cell<MediaType>,
         /// The intended display width of the full image.
         pub width: Cell<i32>,
         /// The intended display height of the full image.
         pub height: Cell<i32>,
+        /// The "body" of the image to show as a tooltip. Only used for stickers.
+        pub body: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -48,6 +69,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
+                    glib::ParamSpec::new_enum(
+                        "media-type",
+                        "Media Type",
+                        "The type of media previewed with this image",
+                        MediaType::static_type(),
+                        MediaType::default() as i32,
+                        glib::ParamFlags::WRITABLE,
+                    ),
                     glib::ParamSpec::new_int(
                         "width",
                         "Width",
@@ -66,6 +95,13 @@ mod imp {
                         -1,
                         glib::ParamFlags::WRITABLE,
                     ),
+                    glib::ParamSpec::new_string(
+                        "body",
+                        "Body",
+                        "The 'body' of the image to show as a tooltip",
+                        None,
+                        glib::ParamFlags::WRITABLE,
+                    ),
                 ]
             });
 
@@ -80,11 +116,17 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
+                "media-type" => {
+                    self.media_type.set(value.get().unwrap());
+                }
                 "width" => {
                     self.width.set(value.get().unwrap());
                 }
                 "height" => {
                     self.height.set(value.get().unwrap());
+                }
+                "body" => {
+                    self.body.replace(value.get().unwrap());
                 }
                 _ => unimplemented!(),
             }
@@ -175,6 +217,30 @@ impl MessageImage {
         self_
     }
 
+    pub fn sticker(sticker: StickerEventContent, session: &Session) -> Self {
+        let (width, height) = get_width_height(Some(&sticker.info));
+
+        let self_: Self = glib::Object::new(&[
+            ("media-type", &MediaType::Sticker),
+            ("width", &width),
+            ("height", &height),
+            ("body", &Some(sticker.body.clone())),
+        ])
+        .expect("Failed to create MessageImage");
+        self_.build(sticker, session);
+        self_
+    }
+
+    pub fn media_type(&self) -> MediaType {
+        let priv_ = imp::MessageImage::from_instance(self);
+        priv_.media_type.get()
+    }
+
+    pub fn body(&self) -> Option<String> {
+        let priv_ = imp::MessageImage::from_instance(self);
+        priv_.body.borrow().clone()
+    }
+
     fn build<C>(&self, content: C, session: &Session)
     where
         C: MediaEventContent + Send + Sync + 'static,
@@ -212,9 +278,16 @@ impl MessageImage {
                             .map(|pixbuf| gdk::Texture::for_pixbuf(&pixbuf));
                         let child = gtk::Picture::for_paintable(texture.as_ref());
 
-                        // To get rounded corners
-                        child.set_overflow(gtk::Overflow::Hidden);
-                        child.add_css_class("thumbnail");
+                        match obj.media_type() {
+                            MediaType::Image => {
+                                // To get rounded corners
+                                child.set_overflow(gtk::Overflow::Hidden);
+                                child.add_css_class("thumbnail");
+                            }
+                            MediaType::Sticker => {
+                                child.set_tooltip_text(obj.body().as_deref());
+                            }
+                        }
 
                         obj.set_child(Some(&child));
                         obj.queue_resize();
