@@ -7,6 +7,7 @@ use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 use matrix_sdk::RoomMember;
 
 use crate::prelude::*;
+use crate::session::room::power_levels::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN};
 use crate::session::{Room, User};
 
 mod imp {
@@ -16,7 +17,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct Member {
-        pub power_level: Cell<u32>,
+        pub power_level: Cell<PowerLevel>,
     }
 
     #[glib::object_subclass]
@@ -29,12 +30,12 @@ mod imp {
     impl ObjectImpl for Member {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_uint(
+                vec![glib::ParamSpec::new_int64(
                     "power-level",
                     "Power level",
                     "Power level of the member in its room.",
-                    0,
-                    100,
+                    POWER_LEVEL_MIN,
+                    POWER_LEVEL_MAX,
                     0,
                     glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                 )]
@@ -64,12 +65,12 @@ impl Member {
             .expect("Failed to create Member")
     }
 
-    pub fn power_level(&self) -> u32 {
+    pub fn power_level(&self) -> PowerLevel {
         let priv_ = imp::Member::from_instance(self);
         priv_.power_level.get()
     }
 
-    fn set_power_level(&self, power_level: u32) {
+    fn set_power_level(&self, power_level: PowerLevel) {
         if self.power_level() == power_level {
             return;
         }
@@ -87,7 +88,7 @@ impl Member {
 
         self.set_display_name(member.display_name().map(String::from));
         self.avatar().set_url(member.avatar_url().cloned());
-        self.set_power_level(member.power_level().clamp(0, 100) as u32);
+        self.set_power_level(member.power_level());
     }
 
     /// Update the user based on the the room member state event

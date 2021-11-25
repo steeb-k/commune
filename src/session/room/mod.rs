@@ -12,7 +12,9 @@ pub use self::highlight_flags::HighlightFlags;
 pub use self::item::Item;
 pub use self::item::ItemType;
 pub use self::member::Member;
-pub use self::power_levels::{PowerLevels, RoomAction};
+pub use self::power_levels::{
+    PowerLevel, PowerLevels, RoomAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
+};
 pub use self::room_type::RoomType;
 pub use self::timeline::Timeline;
 

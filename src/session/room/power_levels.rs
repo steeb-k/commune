@@ -11,6 +11,14 @@ use crate::utils::prop_expr;
 #[gboxed(type_name = "BoxedPowerLevelsEventContent")]
 pub struct BoxedPowerLevelsEventContent(RoomPowerLevelsEventContent);
 
+/// Power level of a user.
+///
+/// Is usually in the range (0..=100), but can be any JS integer.
+pub type PowerLevel = i64;
+// Same value as MAX_SAFE_INT from js_int.
+pub const POWER_LEVEL_MAX: i64 = 0x001F_FFFF_FFFF_FFFF;
+pub const POWER_LEVEL_MIN: i64 = -POWER_LEVEL_MAX;
+
 mod imp {
     use super::*;
     use once_cell::sync::Lazy;
@@ -67,7 +75,7 @@ impl PowerLevels {
     }
 
     /// Returns the power level minimally required to perform the given action.
-    pub fn min_level_for_room_action(&self, room_action: &RoomAction) -> u32 {
+    pub fn min_level_for_room_action(&self, room_action: &RoomAction) -> PowerLevel {
         let priv_ = imp::PowerLevels::from_instance(self);
         let content = priv_.content.borrow();
         min_level_for_room_action(&content.0, room_action)
@@ -77,7 +85,7 @@ impl PowerLevels {
     pub fn new_allowed_expr(&self, member: &Member, room_action: RoomAction) -> gtk::Expression {
         gtk::ClosureExpression::new(
             move |args| {
-                let power_level: u32 = args[1].get().unwrap();
+                let power_level: PowerLevel = args[1].get().unwrap();
                 let content = args[2].get::<BoxedPowerLevelsEventContent>().unwrap().0;
                 power_level >= min_level_for_room_action(&content, &room_action)
             },
@@ -108,8 +116,8 @@ impl Default for PowerLevels {
 fn min_level_for_room_action(
     content: &RoomPowerLevelsEventContent,
     room_action: &RoomAction,
-) -> u32 {
-    let power_level = i64::from(match room_action {
+) -> PowerLevel {
+    match room_action {
         RoomAction::Ban => content.ban,
         RoomAction::Invite => content.invite,
         RoomAction::Kick => content.kick,
@@ -123,13 +131,8 @@ fn min_level_for_room_action(
             .events
             .get(event_type)
             .unwrap_or(&content.events_default),
-    });
-
-    if (0..=100).contains(&power_level) {
-        power_level as u32
-    } else {
-        0
     }
+    .into()
 }
 
 /// Actions that require different power levels to perform them.
