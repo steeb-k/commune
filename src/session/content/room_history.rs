@@ -177,6 +177,10 @@ mod imp {
         }
 
         fn constructed(&self, obj: &Self::Type) {
+            // Needed to use the natural height of GtkPictures
+            self.listview
+                .set_vscroll_policy(gtk::ScrollablePolicy::Natural);
+
             obj.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();
 

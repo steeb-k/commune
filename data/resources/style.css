@@ -191,6 +191,10 @@ headerbar.flat {
   margin-left: 46px;
 }
 
+.room-history .event-content .thumbnail {
+  border-radius: 6px;
+}
+
 .divider-row {
   font-size: 0.9em;
   font-weight: bold;
