@@ -139,7 +139,8 @@ impl Avatar {
     fn request_custom_avatar(&self) {
         let priv_ = imp::Avatar::from_instance(self);
         if let Some(item) = &*priv_.item.borrow() {
-            item.set_needed(true);
+            // FIXME: update on size changes
+            item.set_needed_size(self.size());
         }
     }
 }

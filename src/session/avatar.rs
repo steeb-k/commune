@@ -8,8 +8,8 @@ use matrix_sdk::ruma::events::room::avatar::RoomAvatarEventContent;
 use matrix_sdk::ruma::events::AnyStateEventContent;
 use matrix_sdk::Client;
 use matrix_sdk::{
-    media::{MediaFormat, MediaRequest, MediaType},
-    ruma::identifiers::MxcUri,
+    media::{MediaFormat, MediaRequest, MediaThumbnailSize, MediaType},
+    ruma::{api::client::r0::media::get_content_thumbnail::Method, identifiers::MxcUri},
 };
 
 use crate::{spawn, spawn_tokio};
@@ -25,7 +25,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Avatar {
         pub image: RefCell<Option<gdk::Paintable>>,
-        pub needed: Cell<bool>,
+        pub needed_size: Cell<i32>,
         pub url: RefCell<Option<MxcUri>>,
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<WeakRef<Session>>,
@@ -49,11 +49,13 @@ mod imp {
                         gdk::Paintable::static_type(),
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_object(
-                        "needed",
-                        "Needed",
-                        "Whether the user defined image needs to be loaded",
-                        gdk::Paintable::static_type(),
+                    glib::ParamSpec::new_int(
+                        "needed-size",
+                        "Needed Size",
+                        "The size needed of the user defined image. If -1 no image will be loaded",
+                        -1,
+                        i32::MAX,
+                        -1,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_string(
@@ -91,7 +93,7 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "needed" => obj.set_needed(value.get().unwrap()),
+                "needed-size" => obj.set_needed_size(value.get().unwrap()),
                 "url" => obj.set_url(value.get::<Option<&str>>().unwrap().map(Into::into)),
                 "session" => self
                     .session
@@ -107,7 +109,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "image" => obj.image().to_value(),
-                "needed" => obj.needed().to_value(),
+                "needed-size" => obj.needed_size().to_value(),
                 "url" => obj.url().map_or_else(
                     || {
                         let none: Option<&str> = None;
@@ -163,15 +165,21 @@ impl Avatar {
 
     fn load(&self) {
         // Don't do anything here if we don't need the avatar
-        if !self.needed() {
+        if self.needed_size() < 0 {
             return;
         }
+
+        let needed_size = self.needed_size() as u16;
 
         if let Some(url) = self.url() {
             let client = self.session().client();
             let request = MediaRequest {
                 media_type: MediaType::Uri(url),
-                format: MediaFormat::File,
+                format: MediaFormat::Thumbnail(MediaThumbnailSize {
+                    width: needed_size.into(),
+                    height: needed_size.into(),
+                    method: Method::Scale,
+                }),
             };
             let handle =
                 spawn_tokio!(async move { client.get_media_content(&request, true).await });
@@ -204,24 +212,26 @@ impl Avatar {
         priv_.display_name.borrow().clone()
     }
 
-    pub fn set_needed(&self, needed: bool) {
+    /// Set the needed size.
+    /// Only the biggest size will be stored
+    pub fn set_needed_size(&self, size: i32) {
         let priv_ = imp::Avatar::from_instance(self);
-        if self.needed() == needed {
-            return;
+
+        if priv_.needed_size.get() < size {
+            priv_.needed_size.set(size);
+
+            if priv_.needed_size.get() > -1 {
+                self.load();
+            }
         }
 
-        priv_.needed.set(needed);
-
-        if needed {
-            self.load();
-        }
-
-        self.notify("needed");
+        self.notify("needed-size");
     }
 
-    pub fn needed(&self) -> bool {
+    /// Get the biggest needed size
+    pub fn needed_size(&self) -> i32 {
         let priv_ = imp::Avatar::from_instance(self);
-        priv_.needed.get()
+        priv_.needed_size.get()
     }
 
     pub fn set_url(&self, url: Option<MxcUri>) {
