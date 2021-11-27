@@ -290,7 +290,6 @@ impl MessageImage {
                         }
 
                         obj.set_child(Some(&child));
-                        obj.queue_resize();
                     }
                     Ok(None) => {
                         warn!("Could not retrieve invalid image file");
