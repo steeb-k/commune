@@ -388,6 +388,7 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
         HtmlBlock::Quote(blocks) => {
             let bx = gtk::Box::new(gtk::Orientation::Vertical, 6);
             bx.add_css_class("quote");
+            bx.add_css_class("dim-label");
             for block in blocks.iter() {
                 let w = create_widget_for_html_block(block);
                 bx.append(&w);

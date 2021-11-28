@@ -195,6 +195,11 @@ headerbar.flat {
   border-radius: 6px;
 }
 
+.room-history .event-content .quote {
+  border-left: 2px solid @theme_selected_bg_color;
+  padding-left: 6px;
+}
+
 .divider-row {
   font-size: 0.9em;
   font-weight: bold;
