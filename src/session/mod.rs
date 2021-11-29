@@ -46,6 +46,7 @@ use matrix_sdk::ruma::{
         session::logout,
     },
     assign,
+    identifiers::RoomId,
 };
 use matrix_sdk::{
     config::{ClientConfig, RequestConfig, SyncSettings},
@@ -58,6 +59,7 @@ use matrix_sdk::{
     Client, Error as MatrixError, HttpError,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use std::convert::TryFrom;
 use std::fs;
 use std::time::Duration;
 use tokio::task::JoinHandle;
@@ -102,6 +104,20 @@ mod imp {
             klass.install_action("session.close-room", None, move |session, _, _| {
                 session.select_room(None);
             });
+
+            klass.install_action(
+                "session.show-room",
+                Some("s"),
+                move |session, _, parameter| {
+                    if let Ok(room_id) =
+                        RoomId::try_from(parameter.unwrap().get::<String>().unwrap())
+                    {
+                        session.select_room_by_id(room_id);
+                    } else {
+                        error!("Can't show room because the provided id is invalid");
+                    }
+                },
+            );
 
             klass.install_action("session.logout", None, move |session, _, _| {
                 spawn!(clone!(@weak session => async move {
@@ -251,6 +267,14 @@ impl Session {
         priv_
             .sidebar
             .set_selected_item(room.map(|item| item.upcast()));
+    }
+
+    pub fn select_room_by_id(&self, room_id: RoomId) {
+        if let Some(room) = self.room_list().get(&room_id) {
+            self.select_room(Some(room));
+        } else {
+            warn!("A room with id {} couldn't be found", room_id);
+        }
     }
 
     pub fn login_with_password(&self, homeserver: Url, username: String, password: String) {
