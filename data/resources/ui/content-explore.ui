@@ -78,6 +78,11 @@
                     <property name="maximum-size">800</property>
                     <property name="child">
                       <object class="GtkListView" id="listview">
+                        <property name="show-separators">True</property>
+                        <property name="margin-top">24</property>
+                        <property name="margin-bottom">24</property>
+                        <property name="margin-start">24</property>
+                        <property name="margin-end">24</property>
                         <style>
                           <class name="content"/>
                         </style>
