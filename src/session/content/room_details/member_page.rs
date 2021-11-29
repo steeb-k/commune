@@ -118,6 +118,27 @@ impl MemberPage {
         let priv_ = imp::MemberPage::from_instance(self);
         let members = self.room().members();
 
+        // Sort the members list by power level, then display name.
+        let sorter = gtk::MultiSorter::new();
+        sorter.append(
+            &gtk::NumericSorter::builder()
+                .expression(&gtk::PropertyExpression::new(
+                    Member::static_type(),
+                    gtk::NONE_EXPRESSION,
+                    "power-level",
+                ))
+                .sort_order(gtk::SortType::Descending)
+                .build(),
+        );
+        sorter.append(&gtk::StringSorter::new(Some(
+            &gtk::PropertyExpression::new(
+                Member::static_type(),
+                gtk::NONE_EXPRESSION,
+                "display-name",
+            ),
+        )));
+        let sorted_members = gtk::SortListModel::new(Some(members), Some(&sorter));
+
         fn search_string(member: Member) -> String {
             format!(
                 "{} {} {} {}",
@@ -148,7 +169,7 @@ impl MemberPage {
             .flags(glib::BindingFlags::SYNC_CREATE)
             .build();
 
-        let filter_model = gtk::FilterListModel::new(Some(members), Some(&filter));
+        let filter_model = gtk::FilterListModel::new(Some(&sorted_members), Some(&filter));
         let model = gtk::NoSelection::new(Some(&filter_model));
         priv_.members_list_view.set_model(Some(&model));
     }
