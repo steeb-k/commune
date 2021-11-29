@@ -86,6 +86,8 @@ mod imp {
         pub members_loaded: Cell<bool>,
         pub power_levels: RefCell<PowerLevels>,
         pub latest_change: RefCell<Option<glib::DateTime>>,
+        pub predecessor: OnceCell<RoomId>,
+        pub successor: OnceCell<RoomId>,
     }
 
     #[glib::object_subclass]
@@ -187,6 +189,20 @@ mod imp {
                         MemberList::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_string(
+                        "predecessor",
+                        "Predecessor",
+                        "The room id of predecessor of this Room",
+                        None,
+                        glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpec::new_string(
+                        "successor",
+                        "Successor",
+                        "The room id of successor of this Room",
+                        None,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -251,6 +267,20 @@ mod imp {
                     .to_value()
                 }
                 "latest-change" => obj.latest_change().to_value(),
+                "predecessor" => obj.predecessor().map_or_else(
+                    || {
+                        let none: Option<&str> = None;
+                        none.to_value()
+                    },
+                    |id| id.as_ref().to_value(),
+                ),
+                "successor" => obj.successor().map_or_else(
+                    || {
+                        let none: Option<&str> = None;
+                        none.to_value()
+                    },
+                    |id| id.as_ref().to_value(),
+                ),
                 _ => unimplemented!(),
             }
         }
@@ -331,6 +361,8 @@ impl Room {
         priv_.matrix_room.replace(Some(matrix_room));
 
         self.load_display_name();
+        self.load_predecessor();
+        self.load_successor();
         self.load_category();
     }
 
@@ -354,7 +386,7 @@ impl Room {
     /// Set the category of this room.
     ///
     /// This makes the necessary to propagate the category to the homeserver.
-    /// Note: Rooms can't be moved to the invite category.
+    /// Note: Rooms can't be moved to the invite category and they can't be moved once they are upgraded
     pub fn set_category(&self, category: RoomType) {
         let matrix_room = self.matrix_room();
         let previous_category = self.category();
@@ -365,6 +397,17 @@ impl Room {
 
         if category == RoomType::Invited {
             warn!("Rooms can’t be moved to the invite Category");
+            return;
+        }
+
+        if self.category() == RoomType::Outdated {
+            warn!("Can't set the category of an upgraded room");
+            return;
+        }
+
+        // Outdated rooms don't need to propagate anything to the server
+        if category == RoomType::Outdated {
+            self.set_category_internal(category);
             return;
         }
 
@@ -383,6 +426,7 @@ impl Room {
                             // TODO: set low priority tag
                         }
                         RoomType::Left => room.reject_invitation().await,
+                        RoomType::Outdated => unimplemented!(),
                     }
                 }
                 MatrixRoom::Joined(room) => {
@@ -401,6 +445,7 @@ impl Room {
                             Ok(())
                         }
                         RoomType::Left => room.leave().await,
+                        RoomType::Outdated => unimplemented!(),
                     }
                 }
                 MatrixRoom::Left(room) => {
@@ -419,6 +464,7 @@ impl Room {
                             // TODO: set low priority tag
                         }
                         RoomType::Left => Ok(()),
+                        RoomType::Outdated => unimplemented!(),
                     }
                 }
             }
@@ -461,6 +507,11 @@ impl Room {
     }
 
     pub fn load_category(&self) {
+        // Don't load the category if this room was upgraded
+        if self.category() == RoomType::Outdated {
+            return;
+        }
+
         let matrix_room = self.matrix_room();
 
         match matrix_room {
@@ -999,6 +1050,38 @@ impl Room {
             None
         })
         .unwrap()
+    }
+
+    pub fn predecessor(&self) -> Option<&RoomId> {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.predecessor.get()
+    }
+
+    fn load_predecessor(&self) -> Option<()> {
+        let priv_ = imp::Room::from_instance(self);
+        let event = self.matrix_room().create_content()?;
+        let room_id = event.predecessor?.room_id;
+
+        priv_.predecessor.set(room_id).unwrap();
+        self.notify("predecessor");
+        Some(())
+    }
+
+    pub fn successor(&self) -> Option<&RoomId> {
+        let priv_ = imp::Room::from_instance(self);
+        priv_.successor.get()
+    }
+
+    pub fn load_successor(&self) -> Option<()> {
+        let priv_ = imp::Room::from_instance(self);
+
+        let room_id = self.matrix_room().tombstone()?.replacement_room;
+
+        priv_.successor.set(room_id).unwrap();
+        self.set_category_internal(RoomType::Outdated);
+        self.notify("successor");
+
+        Some(())
     }
 }
 

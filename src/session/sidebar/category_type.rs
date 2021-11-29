@@ -12,6 +12,7 @@ pub enum CategoryType {
     Normal = 3,
     LowPriority = 4,
     Left = 5,
+    Outdated = 6,
 }
 
 impl Default for CategoryType {
@@ -29,6 +30,8 @@ impl ToString for CategoryType {
             CategoryType::Normal => gettext("Rooms"),
             CategoryType::LowPriority => gettext("Low Priority"),
             CategoryType::Left => gettext("Historical"),
+            // Translators: This shouldn't ever be visible to the user,
+            CategoryType::Outdated => gettext("Outdated"),
         }
     }
 }
@@ -41,6 +44,7 @@ impl From<RoomType> for CategoryType {
             RoomType::Normal => Self::Normal,
             RoomType::LowPriority => Self::LowPriority,
             RoomType::Left => Self::Left,
+            RoomType::Outdated => Self::Outdated,
         }
     }
 }
@@ -53,6 +57,7 @@ impl From<&RoomType> for CategoryType {
             RoomType::Normal => Self::Normal,
             RoomType::LowPriority => Self::LowPriority,
             RoomType::Left => Self::Left,
+            RoomType::Outdated => Self::Outdated,
         }
     }
 }

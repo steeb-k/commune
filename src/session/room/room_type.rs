@@ -11,6 +11,7 @@ pub enum RoomType {
     Normal = 2,
     LowPriority = 3,
     Left = 4,
+    Outdated = 5,
 }
 
 impl Default for RoomType {
