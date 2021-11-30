@@ -73,7 +73,7 @@ mod imp {
                     "Context Menu",
                     "The context menu",
                     gio::MenuModel::static_type(),
-                    glib::ParamFlags::READWRITE,
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                 )]
             });
 
@@ -180,6 +180,7 @@ impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
     fn set_context_menu(&self, menu: Option<gio::MenuModel>) {
         let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
         priv_.popover.set_menu_model(menu.as_ref());
+        self.notify("context-menu");
     }
 
     fn context_menu(&self) -> Option<gio::MenuModel> {
