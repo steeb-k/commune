@@ -61,8 +61,10 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="MediaViewer" id="media_viewer" />
+        </child>
       </object>
     </property>
   </template>
 </interface>
-

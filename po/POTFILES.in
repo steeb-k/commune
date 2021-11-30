@@ -28,6 +28,7 @@ data/resources/ui/event-menu.ui
 data/resources/ui/event-source-dialog.ui
 data/resources/ui/login.ui
 data/resources/ui/in-app-notification.ui
+data/resources/ui/media-viewer.ui
 data/resources/ui/room-creation.ui
 data/resources/ui/session.ui
 data/resources/ui/session-verification.ui
@@ -86,6 +87,7 @@ src/session/content/room_history/message_row/mod.rs
 src/session/content/room_history/message_row/text.rs
 src/session/content/room_history/mod.rs
 src/session/content/room_history/state_row.rs
+src/session/media_viewer.rs
 src/session/mod.rs
 src/session/room_creation/mod.rs
 src/session/room_list.rs

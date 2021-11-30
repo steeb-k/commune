@@ -22,6 +22,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="event-menu.ui">ui/event-menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="event-source-dialog.ui">ui/event-source-dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="login.ui">ui/login.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="media-viewer.ui">ui/media-viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="session.ui">ui/session.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar.ui">ui/sidebar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-account-switcher.ui">ui/sidebar-account-switcher.ui</file>

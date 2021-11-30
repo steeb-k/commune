@@ -142,6 +142,7 @@
                                 <property name="resource">/org/gnome/FractalNext/content-item.ui</property>
                               </object>
                             </property>
+                            <property name="single-click-activate">True</property>
                             <accessibility>
                               <property name="label" translatable="yes">Room History</property>
                             </accessibility>
@@ -227,4 +228,3 @@
     </child>
   </template>
 </interface>
-

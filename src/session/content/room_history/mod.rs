@@ -16,7 +16,7 @@ use sourceview::prelude::*;
 
 use crate::components::{CustomEntry, RoomTitle};
 use crate::session::content::{MarkdownPopover, RoomDetails};
-use crate::session::room::{Room, RoomType};
+use crate::session::room::{Item, Room, RoomType};
 
 mod imp {
     use super::*;
@@ -192,6 +192,21 @@ mod imp {
             // Needed to use the natural height of GtkPictures
             self.listview
                 .set_vscroll_policy(gtk::ScrollablePolicy::Natural);
+
+            self.listview
+                .connect_activate(clone!(@weak obj => move |listview, pos| {
+                    if let Some(item) = listview
+                        .model()
+                        .and_then(|model| model.item(pos))
+                        .and_then(|o| o.downcast::<Item>().ok())
+                    {
+                        if let Some(event) = item.event() {
+                            if let Some(room) = obj.room() {
+                                room.session().show_media(event);
+                            }
+                        }
+                    }
+                }));
 
             obj.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();

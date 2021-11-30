@@ -27,12 +27,15 @@ impl From<ItemType> for BoxedItemType {
 }
 
 mod imp {
+    use std::cell::Cell;
+
     use super::*;
     use once_cell::{sync::Lazy, unsync::OnceCell};
 
     #[derive(Debug, Default)]
     pub struct Item {
         pub type_: OnceCell<ItemType>,
+        pub activatable: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -74,6 +77,13 @@ mod imp {
                         false,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "activatable",
+                        "Activatable",
+                        "Whether this item is activatable.",
+                        false,
+                        glib::ParamFlags::READWRITE,
+                    ),
                 ]
             });
 
@@ -96,6 +106,7 @@ mod imp {
                     let show_header = value.get().unwrap();
                     let _ = obj.set_show_header(show_header);
                 }
+                "activatable" => self.activatable.set(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -105,7 +116,17 @@ mod imp {
                 "selectable" => obj.selectable().to_value(),
                 "show-header" => obj.show_header().to_value(),
                 "can-hide-header" => obj.can_hide_header().to_value(),
+                "activatable" => self.activatable.get().to_value(),
                 _ => unimplemented!(),
+            }
+        }
+
+        fn constructed(&self, obj: &Self::Type) {
+            if let Some(event) = obj.event() {
+                event
+                    .bind_property("can-view-media", obj, "activatable")
+                    .flags(glib::BindingFlags::SYNC_CREATE)
+                    .build();
             }
         }
     }

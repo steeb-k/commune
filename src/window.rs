@@ -74,6 +74,17 @@ mod imp {
             );
 
             obj.set_default_by_child();
+
+            // Ask for the toggle fullscreen state
+            let fullscreen = gio::SimpleAction::new("toggle-fullscreen", None);
+            fullscreen.connect_activate(clone!(@weak obj as window => move |_, _| {
+                if window.is_fullscreened() {
+                    window.unfullscreen();
+                } else {
+                    window.fullscreen();
+                }
+            }));
+            obj.add_action(&fullscreen);
         }
     }
 

@@ -107,6 +107,13 @@ mod imp {
                         None,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "can-view-media",
+                        "Can View Media",
+                        "Whether this is a media event that can be viewed",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -146,6 +153,7 @@ mod imp {
                 "show-header" => obj.show_header().to_value(),
                 "can-hide-header" => obj.can_hide_header().to_value(),
                 "time" => obj.time().to_value(),
+                "can-view-media" => obj.can_view_media().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -200,6 +208,7 @@ impl Event {
         priv_.pure_event.replace(Some(event));
 
         self.notify("event");
+        self.notify("can-view-media");
     }
 
     pub fn matrix_sender(&self) -> UserId {
@@ -506,6 +515,7 @@ impl Event {
     /// Compatible events:
     ///
     /// - File message (`MessageType::File`).
+    /// - Image message (`MessageType::Image`).
     ///
     /// Returns `Ok((filename, binary_content))` on success, `Err` if an error occured while
     /// fetching the content. Panics on an incompatible event.
@@ -513,16 +523,32 @@ impl Event {
         if let AnyMessageEventContent::RoomMessage(content) = self.message_content().unwrap() {
             let client = self.room().session().client();
             match content.msgtype {
-                MessageType::File(file_content) => {
-                    let content = file_content.clone();
+                MessageType::File(content) => {
+                    let filename = content.filename.clone().unwrap_or(content.body.clone());
                     let handle = spawn_tokio!(async move { client.get_file(content, true).await });
                     let data = handle.await.unwrap()?.unwrap();
-                    return Ok((file_content.filename.unwrap_or(file_content.body), data));
+                    return Ok((filename, data));
+                }
+                MessageType::Image(content) => {
+                    let filename = content.body.clone();
+                    let handle = spawn_tokio!(async move { client.get_file(content, true).await });
+                    let data = handle.await.unwrap()?.unwrap();
+                    return Ok((filename, data));
                 }
                 _ => {}
             };
         };
 
         panic!("Trying to get the media content of an event of incompatible type");
+    }
+
+    /// Whether this is a media event that can be viewed.
+    pub fn can_view_media(&self) -> bool {
+        match self.message_content() {
+            Some(AnyMessageEventContent::RoomMessage(message)) => {
+                matches!(message.msgtype, MessageType::Image(_))
+            }
+            _ => false,
+        }
     }
 }

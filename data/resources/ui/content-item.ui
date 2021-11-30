@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="GtkListItem">
-    <property name="activatable">False</property>
+    <binding name="activatable">
+      <lookup name="activatable">
+        <lookup name="item">row</lookup>
+      </lookup>
+    </binding>
     <property name="selectable">False</property>
     <property name="child">
-      <object class="ContentItemRow">
+      <object class="ContentItemRow" id="row">
         <binding name="item">
-            <lookup name="item">GtkListItem</lookup>
+          <lookup name="item">GtkListItem</lookup>
         </binding>
       </object>
     </property>

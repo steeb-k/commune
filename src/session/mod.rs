@@ -2,6 +2,7 @@ mod account_settings;
 mod avatar;
 mod content;
 mod event_source_dialog;
+mod media_viewer;
 pub mod room;
 mod room_creation;
 mod room_list;
@@ -12,7 +13,8 @@ pub mod verification;
 use self::account_settings::AccountSettings;
 pub use self::avatar::Avatar;
 use self::content::Content;
-pub use self::room::Room;
+use self::media_viewer::MediaViewer;
+pub use self::room::{Event, Item, Room};
 pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
@@ -75,6 +77,8 @@ mod imp {
         pub content: TemplateChild<adw::Leaflet>,
         #[template_child]
         pub sidebar: TemplateChild<Sidebar>,
+        #[template_child]
+        pub media_viewer: TemplateChild<MediaViewer>,
         pub client: RefCell<Option<Client>>,
         pub item_list: OnceCell<ItemList>,
         pub user: OnceCell<User>,
@@ -727,6 +731,14 @@ impl Session {
         }
 
         self.emit_by_name("ready", &[]).unwrap();
+    }
+
+    /// Show a media event
+    pub fn show_media(&self, event: &Event) {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.media_viewer.set_event(Some(event.clone()));
+
+        priv_.stack.set_visible_child(&*priv_.media_viewer);
     }
 }
 
