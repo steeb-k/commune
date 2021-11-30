@@ -1,5 +1,5 @@
 use adw::{prelude::BinExt, subclass::prelude::*};
-use gtk::{gio, glib, pango, prelude::*, subclass::prelude::*};
+use gtk::{glib, pango, prelude::*, subclass::prelude::*};
 use html2pango::{
     block::{markup_html, HtmlBlock},
     html_escape, markup_links,
@@ -7,7 +7,11 @@ use html2pango::{
 use matrix_sdk::ruma::events::room::message::{FormattedBody, MessageFormat};
 use sourceview::prelude::*;
 
-use crate::session::{room::Member, UserExt};
+use crate::session::{
+    content::room_history::ItemRow,
+    room::{EventActions, Member},
+    UserExt,
+};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
 #[repr(u32)]
@@ -320,10 +324,8 @@ fn set_label_styles(w: &gtk::Label) {
     w.set_valign(gtk::Align::Start);
     w.set_halign(gtk::Align::Fill);
     w.set_selectable(true);
-    let menu_model: Option<gio::MenuModel> =
-        gtk::Builder::from_resource("/org/gnome/FractalNext/content-item-row-menu.ui")
-            .object("menu_model");
-    w.set_extra_menu(menu_model.as_ref());
+    let menu_model = ItemRow::event_menu_model();
+    w.set_extra_menu(Some(&menu_model));
 }
 
 fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {

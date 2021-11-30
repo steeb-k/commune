@@ -4,64 +4,61 @@
     <section>
       <item>
         <attribute name="label" translatable="yes">_Reply</attribute>
-        <attribute name="action">item-row.reply</attribute>
+        <attribute name="action">event.reply</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Edit</attribute>
-        <attribute name="action">item-row.edit</attribute>
+        <attribute name="action">event.edit</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Forward</attribute>
-        <attribute name="action">item-row.forward</attribute>
+        <attribute name="action">event.forward</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
     <section>
       <item>
         <attribute name="label" translatable="yes">_Select</attribute>
-        <attribute name="action">item-row.select</attribute>
+        <attribute name="action">event.select</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
     <section>
       <item>
         <attribute name="label" translatable="yes">_Copy Text</attribute>
-        <attribute name="action">item-row.copy-text</attribute>
+        <attribute name="action">event.copy-text</attribute>
         <attribute name="hidden-when">action-disabled</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Copy Image</attribute>
-        <attribute name="action">item-row.copy-image</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="action">event.copy-image</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">S_ave Image</attribute>
-        <attribute name="action">item-row.save-image</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="action">event.save-image</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Permalink</attribute>
-        <attribute name="action">item-row.permalink</attribute>
+        <attribute name="action">event.permalink</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_View Source</attribute>
-        <attribute name="action">item-row.view-source</attribute>
+        <attribute name="action">event.view-source</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
     <section>
       <item>
         <attribute name="label" translatable="yes">Re_move</attribute>
-        <attribute name="action">item-row.remove</attribute>
+        <attribute name="action">event.remove</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
   </menu>
 </interface>
-

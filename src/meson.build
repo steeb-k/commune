@@ -71,6 +71,7 @@ sources = files(
   'session/content/mod.rs',
   'session/content/room_details/member_page.rs',
   'session/content/room_details/mod.rs',
+  'session/room/event_actions.rs',
   'session/room/event.rs',
   'session/room/highlight_flags.rs',
   'session/room/item.rs',

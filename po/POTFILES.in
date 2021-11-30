@@ -14,7 +14,6 @@ data/resources/ui/components-avatar.ui
 data/resources/ui/components-loading-listbox-row.ui
 data/resources/ui/avatar-with-selection.ui
 data/resources/ui/content-divider-row.ui
-data/resources/ui/content-item-row-menu.ui
 data/resources/ui/content-item.ui
 data/resources/ui/content-invite.ui
 data/resources/ui/content-markdown-popover.ui
@@ -25,6 +24,7 @@ data/resources/ui/content-room-history.ui
 data/resources/ui/content-state-row.ui
 data/resources/ui/content.ui
 data/resources/ui/context-menu-bin.ui
+data/resources/ui/event-menu.ui
 data/resources/ui/event-source-dialog.ui
 data/resources/ui/login.ui
 data/resources/ui/in-app-notification.ui
@@ -89,6 +89,7 @@ src/session/content/room_history/state_row.rs
 src/session/mod.rs
 src/session/room_creation/mod.rs
 src/session/room_list.rs
+src/session/room/event_actions.rs
 src/session/room/event.rs
 src/session/room/highlight_flags.rs
 src/session/room/item.rs

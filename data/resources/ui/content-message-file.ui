@@ -20,14 +20,14 @@
                 <object class="GtkButton" id="open">
                   <property name="icon-name">document-open-symbolic</property>
                   <property name="tooltip-text" translatable="yes">Open</property>
-                  <property name="action-name">item-row.file-open</property>
+                  <property name="action-name">event.file-open</property>
                 </object>
               </child>
               <child>
                 <object class="GtkButton" id="save">
                   <property name="icon-name">document-save-symbolic</property>
                   <property name="tooltip-text" translatable="yes">Save</property>
-                  <property name="action-name">item-row.file-save</property>
+                  <property name="action-name">event.file-save</property>
                 </object>
               </child>
               <style>

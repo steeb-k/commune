@@ -10,7 +10,6 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="content-explore-item.ui">ui/content-explore-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-public-room-row.ui">ui/content-public-room-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-item.ui">ui/content-item.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-item-row-menu.ui">ui/content-item-row-menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-file.ui">ui/content-message-file.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-member-page.ui">ui/content-member-page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-member-row.ui">ui/content-member-row.ui</file>
@@ -20,6 +19,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="content-state-row.ui">ui/content-state-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-markdown-popover.ui">ui/content-markdown-popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invite.ui">ui/content-invite.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="event-menu.ui">ui/event-menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="event-source-dialog.ui">ui/event-source-dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="login.ui">ui/login.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="session.ui">ui/session.ui</file>

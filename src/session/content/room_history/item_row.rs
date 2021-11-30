@@ -1,18 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, subclass::prelude::*, FileChooserAction, ResponseType};
-use log::error;
-use matrix_sdk::ruma::events::{
-    room::message::MessageType, AnyMessageEventContent, AnySyncRoomEvent,
-};
+use gtk::{gio, glib, glib::clone, subclass::prelude::*};
+use matrix_sdk::ruma::events::AnySyncRoomEvent;
 
 use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
-use crate::matrix_error::UserFacingError;
 use crate::session::content::room_history::{message_row::MessageRow, DividerRow, StateRow};
-use crate::session::event_source_dialog::EventSourceDialog;
-use crate::session::room::{Event, Item, ItemType};
-use crate::utils::cache_dir;
-use crate::{spawn, spawn_tokio, Error, Window};
+use crate::session::room::{Event, EventActions, Item, ItemType};
 
 mod imp {
     use super::*;
@@ -31,36 +24,6 @@ mod imp {
         const NAME: &'static str = "ContentItemRow";
         type Type = super::ItemRow;
         type ParentType = ContextMenuBin;
-
-        fn class_init(klass: &mut Self::Class) {
-            // View Event Source
-            klass.install_action("item-row.view-source", None, move |widget, _, _| {
-                let window = widget.root().unwrap().downcast().unwrap();
-                let dialog =
-                    EventSourceDialog::new(&window, widget.item().unwrap().event().unwrap());
-                dialog.show();
-            });
-
-            // Save message's file
-            klass.install_action("item-row.file-save", None, move |widget, _, _| {
-                spawn!(
-                    glib::PRIORITY_LOW,
-                    clone!(@weak widget as obj => async move {
-                        obj.save_file().await;
-                    })
-                );
-            });
-
-            // Open message's file
-            klass.install_action("item-row.file-open", None, move |widget, _, _| {
-                spawn!(
-                    glib::PRIORITY_LOW,
-                    clone!(@weak widget as obj => async move {
-                        obj.open_file().await;
-                    })
-                );
-            });
-        }
     }
 
     impl ObjectImpl for ItemRow {
@@ -136,14 +99,6 @@ impl ItemRow {
         priv_.item.borrow().clone()
     }
 
-    fn enable_gactions(&self) {
-        self.action_set_enabled("item-row.view-source", true);
-    }
-
-    fn disable_gactions(&self) {
-        self.action_set_enabled("item-row.view-source", false);
-    }
-
     /// This method sets this row to a new `Item`.
     ///
     /// It tries to reuse the widget and only update the content whenever possible, but it will
@@ -162,14 +117,9 @@ impl ItemRow {
             match item.type_() {
                 ItemType::Event(event) => {
                     if self.context_menu().is_none() {
-                        let menu_model = gtk::Builder::from_resource(
-                            "/org/gnome/FractalNext/content-item-row-menu.ui",
-                        )
-                        .object("menu_model");
-                        self.set_context_menu(menu_model);
-
-                        self.enable_gactions();
+                        self.set_context_menu(Some(Self::event_menu_model()));
                     }
+                    self.set_event_actions(Some(event));
 
                     let event_notify_handler = event.connect_notify_local(
                         Some("event"),
@@ -188,7 +138,7 @@ impl ItemRow {
                 ItemType::DayDivider(date) => {
                     if self.context_menu().is_some() {
                         self.set_context_menu(None);
-                        self.disable_gactions();
+                        self.set_event_actions(None);
                     }
 
                     let fmt = if date.year() == glib::DateTime::new_now_local().unwrap().year() {
@@ -210,7 +160,7 @@ impl ItemRow {
                 ItemType::NewMessageDivider => {
                     if self.context_menu().is_some() {
                         self.set_context_menu(None);
-                        self.disable_gactions();
+                        self.set_event_actions(None);
                     }
 
                     let label = gettext("New Messages");
@@ -266,125 +216,6 @@ impl ItemRow {
             }
         }
     }
-
-    pub async fn save_file(&self) {
-        let (filename, data) = match self.get_media_content().await {
-            Ok(res) => res,
-            Err(err) => {
-                error!("Could not get file: {}", err);
-
-                let error_message = err.to_user_facing();
-                let error = Error::new(move |_| {
-                    let error_label = gtk::LabelBuilder::new()
-                        .label(&error_message)
-                        .wrap(true)
-                        .build();
-                    Some(error_label.upcast())
-                });
-                if let Some(window) = self.root().and_then(|root| root.downcast::<Window>().ok()) {
-                    window.append_error(&error);
-                }
-
-                return;
-            }
-        };
-
-        let window: gtk::Window = self.root().unwrap().downcast().unwrap();
-        let dialog = gtk::FileChooserDialog::new(
-            Some(&gettext("Save File")),
-            Some(&window),
-            FileChooserAction::Save,
-            &[
-                (&gettext("Save"), ResponseType::Accept),
-                (&gettext("Cancel"), ResponseType::Cancel),
-            ],
-        );
-        dialog.set_current_name(&filename);
-
-        let response = dialog.run_future().await;
-        if response == ResponseType::Accept {
-            if let Some(file) = dialog.file() {
-                file.replace_contents(
-                    &data,
-                    None,
-                    false,
-                    gio::FileCreateFlags::REPLACE_DESTINATION,
-                    gio::NONE_CANCELLABLE,
-                )
-                .unwrap();
-            }
-        }
-
-        dialog.close();
-    }
-
-    pub async fn open_file(&self) {
-        let (filename, data) = match self.get_media_content().await {
-            Ok(res) => res,
-            Err(err) => {
-                error!("Could not get file: {}", err);
-
-                let error_message = err.to_user_facing();
-                let error = Error::new(move |_| {
-                    let error_label = gtk::LabelBuilder::new()
-                        .label(&error_message)
-                        .wrap(true)
-                        .build();
-                    Some(error_label.upcast())
-                });
-                if let Some(window) = self.root().and_then(|root| root.downcast::<Window>().ok()) {
-                    window.append_error(&error);
-                }
-
-                return;
-            }
-        };
-
-        let mut path = cache_dir();
-        path.push(filename);
-        let file = gio::File::for_path(path);
-
-        file.replace_contents(
-            &data,
-            None,
-            false,
-            gio::FileCreateFlags::REPLACE_DESTINATION,
-            gio::NONE_CANCELLABLE,
-        )
-        .unwrap();
-
-        if let Err(error) = gio::AppInfo::launch_default_for_uri_async_future(
-            &file.uri(),
-            gio::NONE_APP_LAUNCH_CONTEXT,
-        )
-        .await
-        {
-            error!("Error opening file '{}': {}", file.uri(), error);
-        }
-    }
-
-    async fn get_media_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
-        let item = self.item().unwrap();
-        let event = item.event().unwrap();
-
-        if let AnySyncRoomEvent::Message(message_event) = event.matrix_event().unwrap() {
-            if let AnyMessageEventContent::RoomMessage(content) = message_event.content() {
-                let client = event.room().session().client();
-                match content.msgtype {
-                    MessageType::File(file_content) => {
-                        let content = file_content.clone();
-                        let handle =
-                            spawn_tokio!(async move { client.get_file(content, true).await });
-                        let data = handle.await.unwrap()?.unwrap();
-                        return Ok((file_content.filename.unwrap_or(file_content.body), data));
-                    }
-                    _ => {}
-                };
-            }
-        };
-
-        panic!("Trying to get the media content of an event of incompatible type");
-    }
 }
 
 impl Default for ItemRow {
@@ -392,3 +223,5 @@ impl Default for ItemRow {
         Self::new()
     }
 }
+
+impl EventActions for ItemRow {}

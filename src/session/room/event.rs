@@ -1,4 +1,5 @@
 use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
+use log::warn;
 use matrix_sdk::{
     deserialized_responses::SyncRoomEvent,
     ruma::{
@@ -12,9 +13,10 @@ use matrix_sdk::{
     },
 };
 
-use crate::session::room::Member;
-use crate::session::Room;
-use log::warn;
+use crate::{
+    session::{room::Member, Room},
+    spawn_tokio,
+};
 
 #[derive(Clone, Debug, glib::GBoxed)]
 #[gboxed(type_name = "BoxedSyncRoomEvent")]
@@ -438,7 +440,10 @@ impl Event {
         priv_.show_header.get()
     }
 
-    fn message_content(&self) -> Option<AnyMessageEventContent> {
+    /// The content of this message.
+    ///
+    /// Returns `None` if this is not a message.
+    pub fn message_content(&self) -> Option<AnyMessageEventContent> {
         match self.matrix_event() {
             Some(AnySyncRoomEvent::Message(message)) => Some(message.content()),
             _ => None,
@@ -494,5 +499,30 @@ impl Event {
         f: F,
     ) -> glib::SignalHandlerId {
         self.connect_notify_local(Some("show-header"), f)
+    }
+
+    /// The content of a media message.
+    ///
+    /// Compatible events:
+    ///
+    /// - File message (`MessageType::File`).
+    ///
+    /// Returns `Ok((filename, binary_content))` on success, `Err` if an error occured while
+    /// fetching the content. Panics on an incompatible event.
+    pub async fn get_media_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
+        if let AnyMessageEventContent::RoomMessage(content) = self.message_content().unwrap() {
+            let client = self.room().session().client();
+            match content.msgtype {
+                MessageType::File(file_content) => {
+                    let content = file_content.clone();
+                    let handle = spawn_tokio!(async move { client.get_file(content, true).await });
+                    let data = handle.await.unwrap()?.unwrap();
+                    return Ok((file_content.filename.unwrap_or(file_content.body), data));
+                }
+                _ => {}
+            };
+        };
+
+        panic!("Trying to get the media content of an event of incompatible type");
     }
 }

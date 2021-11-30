@@ -1,4 +1,5 @@
 mod event;
+mod event_actions;
 mod highlight_flags;
 mod item;
 mod member;
@@ -9,6 +10,7 @@ mod room_type;
 mod timeline;
 
 pub use self::event::Event;
+pub use self::event_actions::EventActions;
 pub use self::highlight_flags::HighlightFlags;
 pub use self::item::Item;
 pub use self::item::ItemType;
