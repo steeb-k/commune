@@ -1,3 +1,9 @@
+mod creation;
+mod tombstone;
+
+use self::creation::StateCreation;
+use self::tombstone::StateTombstone;
+
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, subclass::prelude::*, CompositeTemplate};
@@ -52,13 +58,16 @@ impl StateRow {
     }
 
     pub fn update(&self, state: &AnySyncStateEvent) {
-        let _priv_ = imp::StateRow::from_instance(self);
         // We may want to show more state events in the future
         // For a full list of state events see:
         // https://matrix-org.github.io/matrix-rust-sdk/matrix_sdk/events/enum.AnyStateEventContent.html
         let message = match state.content() {
-            AnyStateEventContent::RoomCreate(_event) => gettext("The beginning of this room."),
-            AnyStateEventContent::RoomEncryption(_event) => gettext("This room is now encrypted."),
+            AnyStateEventContent::RoomCreate(event) => {
+                WidgetType::Creation(StateCreation::new(&event))
+            }
+            AnyStateEventContent::RoomEncryption(_event) => {
+                WidgetType::Text(gettext("This room is now encrypted."))
+            }
             AnyStateEventContent::RoomMember(event) => {
                 let display_name = event
                     .displayname
@@ -108,14 +117,19 @@ impl StateRow {
                             _ => None,
                         };
 
-                        message.unwrap_or(gettext!("{} joined this room.", display_name))
+                        WidgetType::Text(
+                            message.unwrap_or(gettext!("{} joined this room.", display_name)),
+                        )
                     }
                     MembershipState::Invite => {
-                        gettext!("{} was invited to this room.", display_name)
+                        WidgetType::Text(gettext!("{} was invited to this room.", display_name))
                     }
                     MembershipState::Knock => {
                         // TODO: Add button to invite the user.
-                        gettext!("{} requested to be invited to this room.", display_name)
+                        WidgetType::Text(gettext!(
+                            "{} requested to be invited to this room.",
+                            display_name
+                        ))
                     }
                     MembershipState::Leave => {
                         let message = match state.prev_content() {
@@ -136,18 +150,20 @@ impl StateRow {
                             _ => None,
                         };
 
-                        message.unwrap_or_else(|| {
+                        WidgetType::Text(message.unwrap_or_else(|| {
                             if state.state_key() == state.sender() {
                                 gettext!("{} left the room.", display_name)
                             } else {
                                 gettext!("{} was kicked out of the room.", display_name)
                             }
-                        })
+                        }))
                     }
-                    MembershipState::Ban => gettext!("{} was banned.", display_name),
+                    MembershipState::Ban => {
+                        WidgetType::Text(gettext!("{} was banned.", display_name))
+                    }
                     _ => {
                         warn!("Unsupported room member event: {:?}", state);
-                        gettext("An unsupported room member event was received.")
+                        WidgetType::Text(gettext("An unsupported room member event was received."))
                     }
                 }
             }
@@ -156,27 +172,43 @@ impl StateRow {
                     s if s.is_empty() => state.state_key().into(),
                     s => s,
                 };
-                gettext!("{} was invited to this room.", display_name)
+                WidgetType::Text(gettext!("{} was invited to this room.", display_name))
             }
             AnyStateEventContent::RoomTombstone(event) => {
-                gettext!("The room was upgraded: {}", event.body)
-                // Todo: add button for new room with action session.show_room::room_id
+                WidgetType::Tombstone(StateTombstone::new(&event))
             }
             _ => {
                 warn!("Unsupported state event: {}", state.event_type());
-                gettext("An unsupported state event was received.")
+                WidgetType::Text(gettext("An unsupported state event was received."))
             }
         };
-        if let Some(Ok(child)) = self.child().map(|w| w.downcast::<gtk::Label>()) {
-            child.set_text(&message);
-        } else {
-            let child = gtk::Label::new(Some(&message));
-            child.set_css_classes(&["event-content", "dim-label"]);
-            child.set_wrap(true);
-            child.set_wrap_mode(gtk::pango::WrapMode::WordChar);
-            self.set_child(Some(&child));
-        };
+
+        match message {
+            WidgetType::Text(message) => {
+                if let Some(Ok(child)) = self.child().map(|w| w.downcast::<gtk::Label>()) {
+                    child.set_text(&message);
+                } else {
+                    self.set_child(Some(&text(message)));
+                };
+            }
+            WidgetType::Creation(widget) => self.set_child(Some(&widget)),
+            WidgetType::Tombstone(widget) => self.set_child(Some(&widget)),
+        }
     }
+}
+
+enum WidgetType {
+    Text(String),
+    Creation(StateCreation),
+    Tombstone(StateTombstone),
+}
+
+fn text(label: String) -> gtk::Label {
+    let child = gtk::Label::new(Some(&label));
+    child.set_css_classes(&["event-content", "dim-label"]);
+    child.set_wrap(true);
+    child.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+    child
 }
 
 impl Default for StateRow {

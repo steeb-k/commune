@@ -87,6 +87,7 @@ src/session/content/room_history/message_row/mod.rs
 src/session/content/room_history/message_row/text.rs
 src/session/content/room_history/mod.rs
 src/session/content/room_history/state_row.rs
+src/session/content/room_history/state_row/mod.rs
 src/session/media_viewer.rs
 src/session/mod.rs
 src/session/room_creation/mod.rs
