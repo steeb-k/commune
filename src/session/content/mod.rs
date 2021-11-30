@@ -1,21 +1,14 @@
-mod divider_row;
 mod explore;
 mod invite;
-mod item_row;
 mod markdown_popover;
-mod message_row;
 mod room_details;
 mod room_history;
-mod state_row;
 
-use self::divider_row::DividerRow;
 use self::explore::Explore;
 use self::invite::Invite;
-use self::item_row::ItemRow;
 use self::markdown_popover::MarkdownPopover;
 use self::room_details::RoomDetails;
 use self::room_history::RoomHistory;
-use self::state_row::StateRow;
 use crate::session::sidebar::{Entry, EntryType};
 
 use crate::session::verification::{IdentityVerification, IncomingVerification, VerificationMode};

@@ -8,7 +8,7 @@ use matrix_sdk::ruma::events::{
 
 use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
 use crate::matrix_error::UserFacingError;
-use crate::session::content::{message_row::MessageRow, DividerRow, StateRow};
+use crate::session::content::room_history::{message_row::MessageRow, DividerRow, StateRow};
 use crate::session::event_source_dialog::EventSourceDialog;
 use crate::session::room::{Event, Item, ItemType};
 use crate::utils::cache_dir;

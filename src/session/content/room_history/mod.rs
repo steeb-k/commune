@@ -1,3 +1,12 @@
+mod divider_row;
+mod item_row;
+mod message_row;
+mod state_row;
+
+use self::divider_row::DividerRow;
+use self::item_row::ItemRow;
+use self::state_row::StateRow;
+
 use adw::subclass::prelude::*;
 use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
@@ -6,7 +15,7 @@ use gtk::{
 use sourceview::prelude::*;
 
 use crate::components::{CustomEntry, RoomTitle};
-use crate::session::content::{ItemRow, MarkdownPopover, RoomDetails};
+use crate::session::content::{MarkdownPopover, RoomDetails};
 use crate::session::room::{Room, RoomType};
 
 mod imp {
