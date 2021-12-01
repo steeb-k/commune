@@ -324,8 +324,7 @@ fn set_label_styles(w: &gtk::Label) {
     w.set_valign(gtk::Align::Start);
     w.set_halign(gtk::Align::Fill);
     w.set_selectable(true);
-    let menu_model = ItemRow::event_menu_model();
-    w.set_extra_menu(Some(&menu_model));
+    w.set_extra_menu(Some(ItemRow::event_menu_model()));
 }
 
 fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {

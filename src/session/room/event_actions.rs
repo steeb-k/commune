@@ -2,6 +2,7 @@ use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*};
 use log::error;
 use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageEventContent};
+use once_cell::sync::Lazy;
 
 use crate::{
     matrix_error::UserFacingError,
@@ -11,6 +12,12 @@ use crate::{
     Error, Window,
 };
 
+// This is only save because the trait `EventActions` can
+// only be implemented on `gtk::Widgets` that run only on the main thread
+struct MenuModelSendSync(gio::MenuModel);
+unsafe impl Send for MenuModelSendSync {}
+unsafe impl Sync for MenuModelSendSync {}
+
 pub trait EventActions
 where
     Self: IsA<gtk::Widget>,
@@ -18,10 +25,15 @@ where
     <Self as glib::clone::Downgrade>::Weak: glib::clone::Upgrade<Strong = Self>,
 {
     /// The `MenuModel` for common event actions.
-    fn event_menu_model() -> gio::MenuModel {
-        gtk::Builder::from_resource("/org/gnome/FractalNext/event-menu.ui")
-            .object("menu_model")
-            .unwrap()
+    fn event_menu_model() -> &'static gio::MenuModel {
+        static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
+            MenuModelSendSync(
+                gtk::Builder::from_resource("/org/gnome/FractalNext/event-menu.ui")
+                    .object::<gio::MenuModel>("menu_model")
+                    .unwrap(),
+            )
+        });
+        &MODEL.0
     }
 
     /// Set the actions available on `self` for `event`.
