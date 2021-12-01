@@ -117,7 +117,7 @@ impl ItemRow {
             match item.type_() {
                 ItemType::Event(event) => {
                     if self.context_menu().is_none() {
-                        self.set_context_menu(Some(Self::event_menu_model()));
+                        self.set_context_menu(Some(&Self::event_menu_model()));
                     }
                     self.set_event_actions(Some(event));
 

@@ -111,7 +111,7 @@ mod imp {
 
             let menu_model = Some(Self::Type::event_menu_model());
             self.menu_full.set_menu_model(menu_model.as_ref());
-            obj.set_context_menu(menu_model);
+            obj.set_context_menu(menu_model.as_ref());
 
             // Bind `fullscreened` to the window property of the same name.
             obj.connect_notify_local(Some("root"), |obj, _| {

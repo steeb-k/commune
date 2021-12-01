@@ -89,10 +89,7 @@ mod imp {
         ) {
             match pspec.name() {
                 "context-menu" => {
-                    let context_menu = value
-                        .get::<Option<gio::MenuModel>>()
-                        .expect("type conformity checked by `Object::set_property`");
-                    obj.set_context_menu(context_menu);
+                    obj.set_context_menu(value.get::<Option<gio::MenuModel>>().unwrap().as_ref())
                 }
                 _ => unimplemented!(),
             }
@@ -170,16 +167,16 @@ impl ContextMenuBin {
 
 pub trait ContextMenuBinExt: 'static {
     /// Set the `MenuModel` used in the context menu.
-    fn set_context_menu(&self, menu: Option<gio::MenuModel>);
+    fn set_context_menu(&self, menu: Option<&gio::MenuModel>);
 
     /// Get the `MenuModel` used in the context menu.
     fn context_menu(&self) -> Option<gio::MenuModel>;
 }
 
 impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
-    fn set_context_menu(&self, menu: Option<gio::MenuModel>) {
+    fn set_context_menu(&self, menu: Option<&gio::MenuModel>) {
         let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
-        priv_.popover.set_menu_model(menu.as_ref());
+        priv_.popover.set_menu_model(menu);
         self.notify("context-menu");
     }
 
