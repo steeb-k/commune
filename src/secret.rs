@@ -1,19 +1,61 @@
+use gettextrs::gettext;
 use matrix_sdk::ruma::identifiers::{DeviceIdBox, UserId};
 use secret_service::EncryptionType;
 use secret_service::SecretService;
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use serde_json::error::Error as JsonError;
 use std::convert::TryFrom;
 use std::path::PathBuf;
+use std::string::FromUtf8Error;
 use url::Url;
+
+use crate::config::APP_ID;
 
 #[derive(Debug, Clone)]
 pub struct StoredSession {
     pub homeserver: Url,
-    pub path: PathBuf,
-    pub passphrase: String,
     pub user_id: UserId,
-    pub access_token: String,
     pub device_id: DeviceIdBox,
+    pub path: PathBuf,
+    pub secret: Secret,
+}
+
+/// A possible error value when converting a `Secret` from a UTF-8 byte vector.
+pub enum FromUtf8SecretError {
+    Str(FromUtf8Error),
+    Json(JsonError),
+}
+
+impl From<FromUtf8Error> for FromUtf8SecretError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::Str(err)
+    }
+}
+
+impl From<JsonError> for FromUtf8SecretError {
+    fn from(err: JsonError) -> Self {
+        Self::Json(err)
+    }
+}
+
+/// A `Secret` that can be stored in the `SecretService`.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Secret {
+    pub access_token: String,
+    pub passphrase: String,
+}
+
+impl Secret {
+    /// Returns a byte vec of this `Secret`’s contents.
+    pub fn as_bytes(&self) -> Vec<u8> {
+        serde_json::to_string(self).unwrap().as_bytes().to_vec()
+    }
+
+    /// Converts a vector of bytes to a `Secret`.
+    pub fn from_utf8(vec: Vec<u8>) -> Result<Self, FromUtf8SecretError> {
+        let s = String::from_utf8(vec)?;
+        Ok(serde_json::from_str(&s)?)
+    }
 }
 
 /// Retrieves all sessions stored to the `SecretService`
@@ -24,54 +66,24 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
     // Sessions that contain or produce errors are ignored.
     // TODO: Return error for corrupt sessions
 
-    type TmpKey = (String, String, String);
-    type TmpValue = (String, Option<String>);
-
     let res = collection
-        .get_all_items()?
+        .search_items([("xdg:schema", APP_ID)].into())?
         .iter()
-        .fold(HashMap::new(), |mut acc, item| {
-            let finder = move || -> Option<(TmpKey, TmpValue)> {
-                let attr = item.get_attributes().ok()?;
+        .filter_map(|item| {
+            let attr = item.get_attributes().ok()?;
 
-                let homeserver = attr.get("homeserver")?.to_string();
-                let user_id = attr.get("user-id")?.to_string();
-                let device_id = attr.get("device-id")?.to_string();
-                let secret = String::from_utf8(item.get_secret().ok()?).ok()?;
-                let path = attr.get("path").map(|s| s.to_string());
-                Some(((homeserver, user_id, device_id), (secret, path)))
-            };
-
-            if let Some((key, value)) = finder() {
-                acc.entry(key).or_insert_with(Vec::new).push(value);
-            }
-
-            acc
-        })
-        .into_iter()
-        .filter_map(|((homeserver, user_id, device_id), mut items)| {
-            if items.len() != 2 {
-                return None;
-            }
-            let (access_token, passphrase, path) = match items.pop()? {
-                (secret, Some(path)) => (items.pop()?.0, secret, PathBuf::from(path)),
-                (secret, None) => {
-                    let item = items.pop()?;
-                    (secret, item.0, PathBuf::from(item.1?))
-                }
-            };
-
-            let homeserver = Url::parse(&homeserver).ok()?;
-            let user_id = UserId::try_from(user_id).ok()?;
-            let device_id = DeviceIdBox::try_from(device_id).ok()?;
+            let homeserver = Url::parse(&attr.get("homeserver")?).ok()?;
+            let user_id = UserId::try_from(attr.get("user")?.to_string()).ok()?;
+            let device_id = DeviceIdBox::try_from(attr.get("device-id")?.to_string()).ok()?;
+            let path = PathBuf::from(attr.get("db-path")?);
+            let secret = Secret::from_utf8(item.get_secret().ok()?).ok()?;
 
             Some(StoredSession {
                 homeserver,
                 path,
-                passphrase,
                 user_id,
-                access_token,
                 device_id,
+                secret,
             })
         })
         .collect();
@@ -85,41 +97,22 @@ pub fn store_session(session: &StoredSession) -> Result<(), secret_service::Erro
     let ss = SecretService::new(EncryptionType::Dh)?;
     let collection = get_default_collection_unlocked(&ss)?;
 
-    // Store the information for the login
-    let attributes: HashMap<&str, &str> = [
-        ("user-id", session.user_id.as_str()),
+    let attributes = [
+        ("xdg:schema", APP_ID),
         ("homeserver", session.homeserver.as_str()),
+        ("user", session.user_id.as_str()),
         ("device-id", session.device_id.as_str()),
+        ("db-path", session.path.to_str().unwrap()),
     ]
-    .iter()
-    .cloned()
-    .collect();
+    .into();
 
     collection.create_item(
-        "Fractal",
+        // Translators: The parameter is a Matrix User ID
+        &gettext!("Fractal: Matrix credentials for {}", session.user_id),
         attributes,
-        session.access_token.as_bytes(),
+        &session.secret.as_bytes(),
         true,
-        "text/plain",
-    )?;
-
-    // Store the information for the crypto store
-    let attributes: HashMap<&str, &str> = [
-        ("path", session.path.to_str().unwrap()),
-        ("user-id", session.user_id.as_str()),
-        ("homeserver", session.homeserver.as_str()),
-        ("device-id", session.device_id.as_str()),
-    ]
-    .iter()
-    .cloned()
-    .collect();
-
-    collection.create_item(
-        "Fractal (Encrypted local database)",
-        attributes,
-        session.passphrase.as_bytes(),
-        true,
-        "text/plain",
+        "application/json",
     )?;
 
     Ok(())
@@ -130,32 +123,14 @@ pub fn remove_session(session: &StoredSession) -> Result<(), secret_service::Err
     let ss = SecretService::new(EncryptionType::Dh)?;
     let collection = get_default_collection_unlocked(&ss)?;
 
-    // Store the information for the login
-    let attributes: HashMap<&str, &str> = [
-        ("user-id", session.user_id.as_str()),
+    let attributes = [
+        ("xdg:schema", APP_ID),
         ("homeserver", session.homeserver.as_str()),
+        ("user", session.user_id.as_str()),
         ("device-id", session.device_id.as_str()),
+        ("db-path", session.path.to_str().unwrap()),
     ]
-    .iter()
-    .cloned()
-    .collect();
-
-    let items = collection.search_items(attributes)?;
-
-    for item in items {
-        item.delete()?;
-    }
-
-    // Store the information for the crypto store
-    let attributes: HashMap<&str, &str> = [
-        ("path", session.path.to_str().unwrap()),
-        ("user-id", session.user_id.as_str()),
-        ("homeserver", session.homeserver.as_str()),
-        ("device-id", session.device_id.as_str()),
-    ]
-    .iter()
-    .cloned()
-    .collect();
+    .into();
 
     let items = collection.search_items(attributes)?;
 

@@ -23,6 +23,7 @@ use self::verification::{IdentityVerification, SessionVerification, Verification
 use crate::session::sidebar::ItemList;
 
 use crate::secret;
+use crate::secret::Secret;
 use crate::secret::StoredSession;
 use crate::Error;
 use crate::Window;
@@ -286,10 +287,12 @@ impl Session {
                     StoredSession {
                         homeserver,
                         path,
-                        passphrase,
-                        access_token: response.access_token,
                         user_id: response.user_id,
                         device_id: response.device_id,
+                        secret: Secret {
+                            passphrase,
+                            access_token: response.access_token,
+                        },
                     },
                 )),
                 Err(error) => {
@@ -318,7 +321,7 @@ impl Session {
         let handle = spawn_tokio!(async move {
             let config = ClientConfig::new()
                 .request_config(RequestConfig::new().retry_limit(2))
-                .passphrase(session.passphrase.clone())
+                .passphrase(session.secret.passphrase.clone())
                 .store_path(session.path.clone());
 
             let client = Client::new_with_config(session.homeserver.clone(), config).unwrap();
@@ -326,7 +329,7 @@ impl Session {
                 .restore_login(matrix_sdk::Session {
                     user_id: session.user_id.clone(),
                     device_id: session.device_id.clone(),
-                    access_token: session.access_token.clone(),
+                    access_token: session.secret.access_token.clone(),
                 })
                 .await
                 .map(|_| (client, session))

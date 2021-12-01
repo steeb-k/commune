@@ -1002,6 +1002,7 @@ dependencies = [
  "qrcode",
  "rand 0.8.4",
  "secret-service",
+ "serde",
  "serde_json",
  "sourceview5",
  "tokio",
