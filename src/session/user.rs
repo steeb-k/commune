@@ -64,7 +64,7 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
@@ -73,6 +73,9 @@ mod imp {
                 "user-id" => {
                     let user_id = value.get::<&str>().unwrap().try_into().unwrap();
                     self.user_id.set(user_id).unwrap();
+                }
+                "display-name" => {
+                    obj.set_display_name(value.get::<Option<String>>().unwrap());
                 }
                 "session" => self
                     .session
