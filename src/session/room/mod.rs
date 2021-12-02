@@ -757,6 +757,9 @@ impl Room {
                 AnySyncRoomEvent::State(AnySyncStateEvent::RoomPowerLevels(event)) => {
                     self.power_levels().update_from_event(event.clone());
                 }
+                AnySyncRoomEvent::State(AnySyncStateEvent::RoomTombstone(_)) => {
+                    self.load_successor();
+                }
                 _ => {}
             }
             let event_is_join_or_leave = matches!(&event, AnySyncRoomEvent::State(AnySyncStateEvent::RoomMember(event))
