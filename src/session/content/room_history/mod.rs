@@ -12,11 +12,16 @@ use gtk::{
     gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
     CompositeTemplate,
 };
+use matrix_sdk::ruma::events::room::message::{
+    EmoteMessageEventContent, FormattedBody, MessageType, RoomMessageEventContent,
+    TextMessageEventContent,
+};
 use sourceview::prelude::*;
 
-use crate::components::{CustomEntry, RoomTitle};
+use crate::components::{CustomEntry, Pill, RoomTitle};
 use crate::session::content::{MarkdownPopover, RoomDetails};
 use crate::session::room::{Item, Room, RoomType};
+use crate::session::user::UserExt;
 
 mod imp {
     use super::*;
@@ -373,12 +378,92 @@ impl RoomHistory {
         let priv_ = imp::RoomHistory::from_instance(self);
         let buffer = priv_.message_entry.buffer();
         let (start_iter, end_iter) = buffer.bounds();
-        let body = buffer.text(&start_iter, &end_iter, true);
+        let body_len = buffer.text(&start_iter, &end_iter, true).len();
 
-        if let Some(room) = &*priv_.room.borrow() {
-            room.send_text_message(body.as_str(), priv_.md_enabled.get());
+        let is_markdown = priv_.md_enabled.get();
+        let mut has_mentions = false;
+        let mut plain_body = String::with_capacity(body_len);
+        // formatted_body is Markdown if is_markdown is true, and HTML if false.
+        let mut formatted_body = String::with_capacity(body_len);
+        // uncopied_text_location is the start of the text we haven't copied to plain_body and formatted_body.
+        let mut uncopied_text_location = start_iter.clone();
+
+        let mut iter = start_iter;
+        loop {
+            if let Some(anchor) = iter.child_anchor() {
+                let widgets = anchor.widgets();
+                let pill = widgets.first().unwrap().downcast_ref::<Pill>().unwrap();
+                let (url, label) = pill
+                    .user()
+                    .map(|user| {
+                        (
+                            user.user_id().matrix_to_url().to_string(),
+                            user.display_name(),
+                        )
+                    })
+                    .or(pill.room().map(|room| {
+                        (
+                            // No server name needed. matrix.to URIs for mentions aren't routable
+                            room.room_id().matrix_to_url([]).to_string(),
+                            room.display_name(),
+                        )
+                    }))
+                    .unwrap();
+
+                // Add more uncopied characters from message
+                let some_text = buffer.text(&uncopied_text_location, &iter, false);
+                plain_body.push_str(&some_text);
+                formatted_body.push_str(&some_text);
+                uncopied_text_location = iter.clone();
+
+                // Add mention
+                has_mentions = true;
+                plain_body.push_str(&label);
+                formatted_body.push_str(&if is_markdown {
+                    format!("[{}]({})", label, url)
+                } else {
+                    format!("<a href='{}'>{}</a>", url, label)
+                });
+            }
+            if !iter.forward_char() {
+                // Add remaining uncopied characters
+                let some_text = buffer.text(&uncopied_text_location, &iter, false);
+                plain_body.push_str(&some_text);
+                formatted_body.push_str(&some_text);
+                break;
+            }
         }
 
+        let is_emote = plain_body.starts_with("/me ");
+        if is_emote {
+            plain_body.replace_range(.."/me ".len(), "");
+            formatted_body.replace_range(.."/me ".len(), "");
+        }
+
+        let html_body = if is_markdown {
+            FormattedBody::markdown(formatted_body).map(|b| b.body)
+        } else if has_mentions {
+            // Already formatted with HTML
+            Some(formatted_body)
+        } else {
+            None
+        };
+
+        let content = RoomMessageEventContent::new(if is_emote {
+            MessageType::Emote(if let Some(html_body) = html_body {
+                EmoteMessageEventContent::html(plain_body, html_body)
+            } else {
+                EmoteMessageEventContent::plain(plain_body)
+            })
+        } else {
+            MessageType::Text(if let Some(html_body) = html_body {
+                TextMessageEventContent::html(plain_body, html_body)
+            } else {
+                TextMessageEventContent::plain(plain_body)
+            })
+        });
+
+        self.room().unwrap().send_message(content);
         buffer.set_text("");
     }
 

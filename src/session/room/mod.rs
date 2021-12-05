@@ -33,13 +33,8 @@ use matrix_sdk::{
         api::client::r0::sync::sync_events::InvitedRoom,
         events::{
             room::{
-                member::MembershipState,
-                message::{
-                    EmoteMessageEventContent, MessageType, RoomMessageEventContent,
-                    TextMessageEventContent,
-                },
-                name::RoomNameEventContent,
-                topic::RoomTopicEventContent,
+                member::MembershipState, message::RoomMessageEventContent,
+                name::RoomNameEventContent, topic::RoomTopicEventContent,
             },
             tag::TagName,
             AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
@@ -846,39 +841,17 @@ impl Room {
         );
     }
 
-    pub fn send_text_message(&self, body: &str, markdown_enabled: bool) {
-        let content = if let Some(body) = body.strip_prefix("/me ") {
-            let emote = if markdown_enabled {
-                EmoteMessageEventContent::markdown(body)
-            } else {
-                EmoteMessageEventContent::plain(body)
-            };
-            RoomMessageEventContent::new(MessageType::Emote(emote))
-        } else {
-            let text = if markdown_enabled {
-                TextMessageEventContent::markdown(body)
-            } else {
-                TextMessageEventContent::plain(body)
-            };
-            RoomMessageEventContent::new(MessageType::Text(text))
-        };
+    pub fn send_message(&self, content: RoomMessageEventContent) {
+        let priv_ = imp::Room::from_instance(self);
 
         let txn_id = Uuid::new_v4();
-
-        let pending_event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
-            content,
+        let event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
+            content: content.clone(),
             event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
             sender: self.session().user().unwrap().user_id().clone(),
             origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
             unsigned: Unsigned::default(),
         });
-
-        self.send_message(txn_id, pending_event);
-    }
-
-    pub fn send_message(&self, txn_id: Uuid, event: AnySyncMessageEvent) {
-        let priv_ = imp::Room::from_instance(self);
-        let content = event.content();
 
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
