@@ -22,7 +22,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Login Request From Another Session</property>
@@ -91,7 +90,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Verify Session</property>
@@ -163,7 +161,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Scan Complete</property>
@@ -206,7 +203,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Verify Session</property>
@@ -262,7 +258,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Verify Session</property>
@@ -333,7 +328,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Verify Session</property>
@@ -407,7 +401,6 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
-                    <property name="halign">center</property>
                     <child>
                       <object class="GtkLabel">
                         <property name="label" translatable="yes">Request Complete</property>
