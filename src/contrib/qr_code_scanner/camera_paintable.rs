@@ -293,14 +293,10 @@ mod imp {
             let snapshot = snapshot.downcast_ref::<gtk::Snapshot>().unwrap();
 
             if let Some(ref image) = *self.image.borrow() {
-                // Transformation to avoid stretching the camera. We translate and scale the image
-                // under a clip.
-                let clip = graphene::Rect::new(0.0, 0.0, width as f32, height as f32);
+                // Transformation to avoid stretching the camera. We translate and scale the image.
 
                 let aspect = width / height.max(std::f64::EPSILON); // Do not divide by zero.
                 let image_aspect = image.intrinsic_aspect_ratio();
-
-                snapshot.push_clip(&clip);
 
                 if image_aspect == 0.0 {
                     image.snapshot(snapshot.upcast_ref(), width, height);
@@ -319,8 +315,6 @@ mod imp {
                 snapshot.translate(&p);
 
                 image.snapshot(snapshot.upcast_ref(), new_width, new_height);
-
-                snapshot.pop();
             } else {
                 snapshot.append_color(
                     &gdk::RGBA::black(),
