@@ -119,13 +119,11 @@ pub(crate) mod imp {
             orientation: gtk::Orientation,
             for_size: i32,
         ) -> (i32, i32, i32, i32) {
-            let self_ = imp::QRCode::from_instance(widget);
-
             let stride = widget.block_size() as i32;
 
             let minimum = match orientation {
-                gtk::Orientation::Horizontal => self_.data.borrow().width * stride,
-                gtk::Orientation::Vertical => self_.data.borrow().height * stride,
+                gtk::Orientation::Horizontal => self.data.borrow().width * stride,
+                gtk::Orientation::Vertical => self.data.borrow().height * stride,
                 _ => unreachable!(),
             };
             let natural = std::cmp::max(for_size, minimum);
