@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentInviteSubpage" parent="AdwBin">
+    <property name="child">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkHeaderBar">
+            <property name="show-title-buttons">false</property>
+            <child type="start">
+              <object class="GtkButton" id="cancel_button">
+                <property name="label" translatable="yes">_Cancel</property>
+                <property name="use_underline">True</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="SpinnerButton" id="invite_button">
+                <property name="label" translatable="yes">I_nvite</property>
+                <property name="use_underline">True</property>
+                <property name="sensitive">False</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSearchBar">
+            <property name="search-mode-enabled">True</property>
+            <child>
+              <object class="AdwClamp">
+                <property name="margin-bottom">6</property>
+                <property name="margin-end">30</property>
+                <property name="margin-start">30</property>
+                <property name="margin-top">6</property>
+                <property name="hexpand">true</property>
+                <child>
+                  <object class="CustomEntry">
+                   <!-- FIXME: inserting a Pill makes the Entry grow, therefore we force more height so that it doens't grow visually
+                        Would be nice to fix it properly. Including the vertical alignment of Pills in the textview
+                    -->
+                    <property name="height-request">74</property>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkImage">
+                            <property name="icon-name">system-search-symbolic</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkScrolledWindow">
+                            <child>
+                              <object class="GtkTextView" id="text_view">
+                                <property name="hexpand">true</property>
+                                <property name="justification">left</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="accepts-tab">False</property>
+                                <property name="pixels_above_lines">3</property>
+                                <property name="pixels_below_lines">3</property>
+                                <property name="pixels_inside_wrap">6</property>
+                                <property name="editable" bind-source="invite_button" bind-property="loading" bind-flags="sync-create | invert-boolean"/>
+                                <property name="buffer">
+                                  <object class="GtkTextBuffer" id="text_buffer"/>
+                                </property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStack" id="stack">
+            <child>
+              <object class="AdwStatusPage" id="no_search_page">
+                <property name="visible">True</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="icon-name">system-search-symbolic</property>
+                <property name="description" translatable="yes">Search for users to invite them to this room.</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow" id="matching_page">
+                <property name="propagate-natural-height">True</property>
+                <property name="child">
+                  <object class="AdwClampScrollable">
+                    <property name="child">
+                      <object class="GtkListView" id="list_view">
+                        <property name="margin-bottom">24</property>
+                        <property name="margin-end">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-top">24</property>
+                        <property name="show-separators">True</property>
+                        <property name="single-click-activate">True</property>
+                        <property name="factory">
+                          <object class="GtkBuilderListItemFactory">
+                            <property name="resource">/org/gnome/FractalNext/content-invitee-item.ui</property>
+                          </object>
+                        </property>
+                        <style>
+                          <class name="content"/>
+                        </style>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwStatusPage" id="no_matching_page">
+                <property name="visible">True</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="icon-name">system-search-symbolic</property>
+                <property name="description" translatable="yes">No users matching the search where found.</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwStatusPage" id="error_page">
+                <property name="visible">True</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="icon-name">dialog-error-symbolic</property>
+                <property name="description" translatable="yes">An error occured while searching for matches</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkSpinner" id="loading_page">
+                <property name="spinning">True</property>
+                <property name="valign">center</property>
+                <property name="halign">center</property>
+                <property name="vexpand">True</property>
+                <style>
+                  <class name="session-loading-spinner"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>
+

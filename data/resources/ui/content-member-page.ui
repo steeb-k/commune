@@ -23,8 +23,6 @@
               <object class="GtkButton" id="invite_button">
                 <property name="label" translatable="yes">Invite new member</property>
                 <property name="halign">end</property>
-                <!-- Make the invite button invisible for now till we implement the invite dialog -->
-                <property name="visible">False</property>
               </object>
             </child>
           </object>

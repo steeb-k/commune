@@ -77,6 +77,10 @@ src/session/categories/mod.rs
 src/session/content/invite.rs
 src/session/content/markdown_popover.rs
 src/session/content/mod.rs
+src/session/content/room_details/invite_subpage/invitee.rs
+src/session/content/room_details/invite_subpage/mod.rs
+src/session/content/room_details/invite_subpage/invitee_list.rs
+src/session/content/room_details/invite_subpage/invitee_row.rs
 src/session/content/room_details/member_page.rs
 src/session/content/room_details/mod.rs
 src/session/content/room_history/divider_row.rs

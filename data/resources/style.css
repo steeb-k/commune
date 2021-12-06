@@ -237,7 +237,7 @@ headerbar.flat {
   color: @theme_text_color;
 }
 
-.message-entry .view {
+.view {
   padding: 7px 0;
 }
 

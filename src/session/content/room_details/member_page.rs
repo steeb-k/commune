@@ -1,12 +1,13 @@
+use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::ngettext;
 use gtk::glib::{self, clone};
-use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use gtk::CompositeTemplate;
 
 use crate::components::{Avatar, Badge};
 use crate::prelude::*;
+use crate::session::content::RoomDetails;
 use crate::session::room::{Member, RoomAction};
 use crate::session::Room;
 
@@ -194,5 +195,16 @@ impl MemberPage {
         let invite_possible = self.room().new_allowed_expr(RoomAction::Invite);
         const NONE_OBJECT: Option<&glib::Object> = None;
         invite_possible.bind(&*priv_.invite_button, "sensitive", NONE_OBJECT);
+
+        priv_
+            .invite_button
+            .connect_clicked(clone!(@weak self as obj => move |_| {
+                let window = obj
+                .root()
+                .unwrap()
+                .downcast::<RoomDetails>()
+                .unwrap();
+                window.present_invite_subpage();
+            }));
     }
 }

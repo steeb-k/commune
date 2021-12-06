@@ -1,3 +1,4 @@
+mod invite_subpage;
 mod member_page;
 
 use adw::prelude::*;
@@ -11,6 +12,7 @@ use gtk::{
 };
 use matrix_sdk::ruma::events::EventType;
 
+pub use self::invite_subpage::InviteSubpage;
 pub use self::member_page::MemberPage;
 use crate::components::CustomEntry;
 use crate::session::room::RoomAction;
@@ -117,7 +119,7 @@ mod imp {
 glib::wrapper! {
     /// Preference Window to display and update room details.
     pub struct RoomDetails(ObjectSubclass<imp::RoomDetails>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, gtk::Root, adw::PreferencesWindow, @implements gtk::Accessible;
 }
 
 impl RoomDetails {
@@ -244,5 +246,16 @@ impl RoomDetails {
 
     fn open_avatar_chooser(&self) {
         self.avatar_chooser().show();
+    }
+
+    pub fn present_invite_subpage(&self) {
+        self.set_title(Some(&gettext("Invite new Members")));
+        let subpage = InviteSubpage::new(self.room());
+        self.present_subpage(&subpage);
+    }
+
+    pub fn close_invite_subpage(&self) {
+        self.set_title(Some(&gettext("Room Details")));
+        self.close_subpage();
     }
 }

@@ -16,7 +16,6 @@
         </child>
         <child>
           <object class="GtkLabel" id="display_name">
-            <property name="ellipsize">middle</property>
             <property name="max-width-chars">30</property>
           </object>
         </child>

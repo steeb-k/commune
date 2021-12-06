@@ -21,6 +21,7 @@ pub use self::power_levels::{
 };
 pub use self::room_type::RoomType;
 pub use self::timeline::Timeline;
+use crate::session::User;
 
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
@@ -1085,6 +1086,65 @@ impl Room {
         self.notify("successor");
 
         Some(())
+    }
+
+    pub async fn invite(&self, users: &[User]) {
+        let matrix_room = self.matrix_room();
+        let user_ids: Vec<UserId> = users.iter().map(|user| user.user_id().to_owned()).collect();
+
+        if let MatrixRoom::Joined(matrix_room) = matrix_room {
+            let handle = spawn_tokio!(async move {
+                let invitiations = user_ids
+                    .iter()
+                    .map(|user_id| matrix_room.invite_user_by_id(user_id));
+                futures::future::join_all(invitiations).await
+            });
+
+            let mut failed_invites: Vec<User> = Vec::new();
+            for (index, result) in handle.await.unwrap().iter().enumerate() {
+                match result {
+                    Ok(_) => {}
+                    Err(error) => {
+                        error!(
+                            "Failed to invite user with id {}: {}",
+                            users[index].user_id(),
+                            error
+                        );
+                        failed_invites.push(users[index].clone());
+                    }
+                }
+            }
+
+            if !failed_invites.is_empty() {
+                let no_failed = failed_invites.len();
+                let first_failed = failed_invites.first().unwrap();
+                let error = Error::new(
+                    clone!(@strong self as room, @strong first_failed => move |_| {
+                            // TODO: should we show all the failed users?
+                            let error_message = if no_failed == 1 {
+                                gettext("Failed to invite <widget> to <widget>. Try again later.")
+                            } else if no_failed == 2 {
+                                gettext("Failed to invite <widget> and some other user to <widget>. Try again later.")
+                            } else {
+                               gettext("Failed to invite <widget> and some other users to <widget>. Try again later.")
+                            };
+
+                            let user_pill = Pill::new();
+                            user_pill.set_user(Some(first_failed.clone()));
+                            let room_pill = Pill::new();
+                            room_pill.set_room(Some(room.clone()));
+                            let error_label = LabelWithWidgets::new(&error_message, vec![user_pill, room_pill]);
+                            Some(error_label.upcast())
+                    }),
+                );
+
+                if let Some(window) = self.session().parent_window() {
+                    window.append_error(&error);
+                }
+            }
+        } else {
+            error!("Can’t invite users, because this room isn’t a joined room");
+        }
     }
 }
 
