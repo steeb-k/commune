@@ -11,6 +11,7 @@
 
 use glib::{clone, Receiver, Sender};
 use gst::prelude::*;
+use gtk::gdk::prelude::TextureExt;
 use gtk::glib;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
@@ -41,8 +42,8 @@ mod camera_sink {
         }
     }
 
-    impl From<Frame> for gdk::Paintable {
-        fn from(f: Frame) -> gdk::Paintable {
+    impl From<Frame> for gdk::Texture {
+        fn from(f: Frame) -> gdk::Texture {
             let format = match f.0.format() {
                 gst_video::VideoFormat::Bgra => gdk::MemoryFormat::B8g8r8a8,
                 gst_video::VideoFormat::Argb => gdk::MemoryFormat::A8r8g8b8,
@@ -214,8 +215,7 @@ mod imp {
         pub detector: QrCodeDetector,
         pub pipeline: RefCell<Option<gst::Pipeline>>,
         pub sender: Sender<Action>,
-        pub image: RefCell<Option<gdk::Paintable>>,
-        pub size: RefCell<Option<(u32, u32)>>,
+        pub image: RefCell<Option<gdk::Texture>>,
         pub receiver: RefCell<Option<Receiver<Action>>>,
     }
 
@@ -231,7 +231,6 @@ mod imp {
                 image: RefCell::new(None),
                 sender,
                 receiver,
-                size: RefCell::new(None),
             }
         }
     }
@@ -269,15 +268,16 @@ mod imp {
 
     impl PaintableImpl for CameraPaintable {
         fn intrinsic_height(&self, _paintable: &Self::Type) -> i32 {
-            if let Some((_, height)) = *self.size.borrow() {
-                height as i32
+            if let Some(frame) = &*self.image.borrow() {
+                frame.height()
             } else {
                 0
             }
         }
+
         fn intrinsic_width(&self, _paintable: &Self::Type) -> i32 {
-            if let Some((width, _)) = *self.size.borrow() {
-                width as i32
+            if let Some(frame) = &*self.image.borrow() {
+                frame.width()
             } else {
                 0
             }
@@ -444,10 +444,25 @@ impl CameraPaintable {
         let self_ = imp::CameraPaintable::from_instance(self);
         match action {
             Action::FrameChanged => {
-                if let Some(frame) = self_.sink.pending_frame() {
-                    let (width, height) = (frame.width(), frame.height());
-                    self_.size.replace(Some((width, height)));
-                    self_.image.replace(Some(frame.into()));
+                if let Some(frame) = self_
+                    .sink
+                    .pending_frame()
+                    .map::<gdk::Texture, _>(Into::into)
+                {
+                    let width = frame.width();
+                    let height = frame.height();
+
+                    let prev_frame = self_.image.replace(Some(frame));
+
+                    let (prev_width, prev_height) = if let Some(frame) = prev_frame {
+                        (frame.width(), frame.height())
+                    } else {
+                        (0, 0)
+                    };
+
+                    if prev_width != width || prev_height != height {
+                        self.invalidate_size();
+                    }
                     self.invalidate_contents();
                 }
             }
