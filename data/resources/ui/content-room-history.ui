@@ -188,9 +188,6 @@
                 </child>
                 <child>
                   <object class="CustomEntry">
-                    <style>
-                      <class name="message-entry"/>
-                    </style>
                     <child>
                       <object class="GtkScrolledWindow">
                         <property name="vexpand">True</property>

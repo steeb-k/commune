@@ -300,3 +300,8 @@ button.cutout:active {
 .emoji {
   font-size: 2em;
 }
+
+textview, text {
+  color: inherit;
+  background: none;
+}
