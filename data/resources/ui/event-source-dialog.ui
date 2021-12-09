@@ -32,6 +32,10 @@
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <property name="wrap_mode">word-char</property>
+                <property name="left-margin">12</property>
+                <property name="right-margin">12</property>
+                <property name="top-margin">12</property>
+                <property name="bottom-margin">12</property>
                 <property name="buffer">
                   <object class="GtkSourceBuffer">
                     <binding name="text">

@@ -263,8 +263,7 @@ headerbar.flat {
 
 /* Event Source Dialog */
 .event-source-dialog .sourceview {
-  background-color: @theme_base_color;
-  padding: 6px;
+  font-family: monospace;
 }
 
 .explore listview row {
