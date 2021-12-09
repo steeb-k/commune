@@ -516,6 +516,7 @@ impl Event {
     ///
     /// - File message (`MessageType::File`).
     /// - Image message (`MessageType::Image`).
+    /// - Video message (`MessageType::Video`).
     ///
     /// Returns `Ok((filename, binary_content))` on success, `Err` if an error occured while
     /// fetching the content. Panics on an incompatible event.
@@ -535,6 +536,12 @@ impl Event {
                     let data = handle.await.unwrap()?.unwrap();
                     return Ok((filename, data));
                 }
+                MessageType::Video(content) => {
+                    let filename = content.body.clone();
+                    let handle = spawn_tokio!(async move { client.get_file(content, true).await });
+                    let data = handle.await.unwrap()?.unwrap();
+                    return Ok((filename, data));
+                }
                 _ => {}
             };
         };
@@ -546,7 +553,10 @@ impl Event {
     pub fn can_view_media(&self) -> bool {
         match self.message_content() {
             Some(AnyMessageEventContent::RoomMessage(message)) => {
-                matches!(message.msgtype, MessageType::Image(_))
+                matches!(
+                    message.msgtype,
+                    MessageType::Image(_) | MessageType::Video(_)
+                )
             }
             _ => false,
         }

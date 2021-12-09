@@ -1,6 +1,7 @@
 mod file;
 mod image;
 mod text;
+mod video;
 
 use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
@@ -15,7 +16,7 @@ use matrix_sdk::ruma::events::{
     AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
 };
 
-use self::{file::MessageFile, image::MessageImage, text::MessageText};
+use self::{file::MessageFile, image::MessageImage, text::MessageText, video::MessageVideo};
 use crate::prelude::*;
 use crate::session::room::Event;
 
@@ -285,7 +286,10 @@ impl MessageRow {
                         let child = MessageText::markup(message.formatted, message.body);
                         priv_.content.set_child(Some(&child));
                     }
-                    MessageType::Video(_message) => {}
+                    MessageType::Video(message) => {
+                        let child = MessageVideo::new(message, &event.room().session());
+                        priv_.content.set_child(Some(&child));
+                    }
                     MessageType::VerificationRequest(_message) => {}
                     _ => {
                         warn!("Event not supported: {:?}", msgtype)

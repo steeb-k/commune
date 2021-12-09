@@ -58,10 +58,12 @@ macro_rules! spawn_tokio {
     };
 }
 
+use std::convert::TryInto;
 use std::path::PathBuf;
 
 use gtk::gio::{self, prelude::*};
 use gtk::glib::{self, Object};
+use matrix_sdk::ruma::UInt;
 
 /// Returns an expression looking up the given property on `object`.
 pub fn prop_expr<T: IsA<Object>>(object: &T, prop: &str) -> gtk::Expression {
@@ -120,4 +122,19 @@ pub fn cache_dir() -> PathBuf {
     }
 
     path
+}
+
+/// Converts a `UInt` to `i32`.
+///
+/// Returns `-1` if the conversion didn't work.
+pub fn uint_to_i32(u: Option<UInt>) -> i32 {
+    u.and_then(|ui| {
+        let u: Option<u16> = ui.try_into().ok();
+        u
+    })
+    .and_then(|u| {
+        let i: i32 = u.into();
+        Some(i)
+    })
+    .unwrap_or(-1)
 }

@@ -9,7 +9,9 @@ use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageEventConten
 use crate::{
     components::{ContextMenuBin, ContextMenuBinImpl},
     session::room::Event,
-    spawn, Window,
+    spawn,
+    utils::cache_dir,
+    Window,
 };
 
 use super::room::EventActions;
@@ -45,6 +47,28 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.install_action("media-viewer.close", None, move |obj, _, _| {
+                let priv_ = imp::MediaViewer::from_instance(obj);
+                if let Some(stream) = priv_
+                    .media
+                    .child()
+                    .and_then(|w| w.downcast::<gtk::Video>().ok())
+                    .and_then(|video| video.media_stream())
+                {
+                    if stream.is_playing() {
+                        stream.pause();
+                        stream.seek(0);
+                    }
+                }
+                obj.activate_action("session.show-content", None);
+            });
+            klass.add_binding_action(
+                gdk::keys::constants::Escape,
+                gdk::ModifierType::empty(),
+                "media-viewer.close",
+                None,
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -258,6 +282,43 @@ impl MediaViewer {
                                     Err(error) => {
                                         warn!("Could not retrieve image file: {}", error);
                                         let child = gtk::Label::new(Some(&gettext("Could not retrieve image")));
+                                        priv_.media.set_child(Some(&child));
+                                    }
+                                }
+                            })
+                        );
+                    }
+                    MessageType::Video(video) => {
+                        self.set_body(Some(video.body.clone()));
+
+                        spawn!(
+                            glib::PRIORITY_LOW,
+                            clone!(@weak self as obj => async move {
+                                let priv_ = imp::MediaViewer::from_instance(&obj);
+
+                                match event.get_media_content().await {
+                                    Ok((_, data)) => {
+                                        // The GStreamer backend of GtkVideo doesn't work with input streams so
+                                        // we need to store the file.
+                                        // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
+                                        let mut path = cache_dir();
+                                        path.push(video.body);
+                                        let file = gio::File::for_path(path);
+                                        file.replace_contents(
+                                            &data,
+                                            None,
+                                            false,
+                                            gio::FileCreateFlags::REPLACE_DESTINATION,
+                                            gio::NONE_CANCELLABLE,
+                                        )
+                                        .unwrap();
+                                        let child = gtk::Video::builder().file(&file).autoplay(true).build();
+
+                                        priv_.media.set_child(Some(&child));
+                                    }
+                                    Err(error) => {
+                                        warn!("Could not retrieve video file: {}", error);
+                                        let child = gtk::Label::new(Some(&gettext("Could not retrieve video")));
                                         priv_.media.set_child(Some(&child));
                                     }
                                 }

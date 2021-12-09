@@ -24,7 +24,7 @@
                 <child type="start">
                   <object class="GtkButton" id="back">
                     <property name="icon-name">go-previous-symbolic</property>
-                    <property name="action-name">session.show-content</property>
+                    <property name="action-name">media-viewer.close</property>
                   </object>
                 </child>
                 <child type="end">
@@ -44,6 +44,8 @@
             <child>
               <object class="AdwBin" id="media">
                 <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="vexpand">true</property>
               </object>
             </child>
           </object>

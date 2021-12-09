@@ -12,6 +12,7 @@ data/resources/ui/account-settings-devices-page.ui
 data/resources/ui/components-auth-dialog.ui
 data/resources/ui/components-avatar.ui
 data/resources/ui/components-loading-listbox-row.ui
+data/resources/ui/components-video-player.ui
 data/resources/ui/avatar-with-selection.ui
 data/resources/ui/content-divider-row.ui
 data/resources/ui/content-item.ui
@@ -58,6 +59,7 @@ src/components/in_app_notification.rs
 src/components/mod.rs
 src/components/spinner_button.rs
 src/components/pill.rs
+src/components/video_player.rs
 src/contrib/mod.rs
 src/contrib/qr_code.rs
 src/error.rs
@@ -89,6 +91,7 @@ src/session/content/room_history/message_row/file.rs
 src/session/content/room_history/message_row/image.rs
 src/session/content/room_history/message_row/mod.rs
 src/session/content/room_history/message_row/text.rs
+src/session/content/room_history/message_row/video.rs
 src/session/content/room_history/mod.rs
 src/session/content/room_history/state_row.rs
 src/session/content/room_history/state_row/mod.rs

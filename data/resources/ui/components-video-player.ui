@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ComponentsVideoPlayer" parent="AdwBin">
+    <style>
+      <class name="thumbnail"/>
+    </style>
+    <property name="overflow">hidden</property>
+    <child>
+      <object class="GtkOverlay">
+        <child>
+          <object class="GtkPicture" id="video"/>
+        </child>
+        <child type="overlay">
+          <object class="GtkLabel" id="timestamp">
+            <style>
+              <class name="osd"/>
+              <class name="timestamp"/>
+            </style>
+            <property name="halign">1</property>
+            <property name="valign">1</property>
+            <property name="margin-start">5</property>
+            <property name="margin-top">5</property>
+            <property name="label">00:00</property>
+            <layout>
+              <property name="measure">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

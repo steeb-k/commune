@@ -9,6 +9,7 @@ mod loading_listbox_row;
 mod pill;
 mod room_title;
 mod spinner_button;
+mod video_player;
 
 pub use self::auth_dialog::{AuthData, AuthDialog};
 pub use self::avatar::Avatar;
@@ -21,3 +22,4 @@ pub use self::loading_listbox_row::LoadingListBoxRow;
 pub use self::pill::Pill;
 pub use self::room_title::RoomTitle;
 pub use self::spinner_button::SpinnerButton;
+pub use self::video_player::VideoPlayer;

@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use adw::{prelude::BinExt, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
@@ -15,15 +13,12 @@ use matrix_sdk::{
     media::{MediaEventContent, MediaThumbnailSize},
     ruma::{
         api::client::r0::media::get_content_thumbnail::Method,
-        events::{
-            room::{message::ImageMessageEventContent, ImageInfo},
-            sticker::StickerEventContent,
-        },
+        events::{room::message::ImageMessageEventContent, sticker::StickerEventContent},
         uint,
     },
 };
 
-use crate::{session::Session, spawn, spawn_tokio};
+use crate::{session::Session, spawn, spawn_tokio, utils::uint_to_i32};
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
 #[repr(u32)]
@@ -222,7 +217,9 @@ glib::wrapper! {
 
 impl MessageImage {
     pub fn image(image: ImageMessageEventContent, session: &Session) -> Self {
-        let (width, height) = get_width_height(image.info.as_deref());
+        let info = image.info.as_deref();
+        let width = uint_to_i32(info.and_then(|info| info.width));
+        let height = uint_to_i32(info.and_then(|info| info.height));
 
         let self_: Self = glib::Object::new(&[("width", &width), ("height", &height)])
             .expect("Failed to create MessageImage");
@@ -231,7 +228,9 @@ impl MessageImage {
     }
 
     pub fn sticker(sticker: StickerEventContent, session: &Session) -> Self {
-        let (width, height) = get_width_height(Some(&sticker.info));
+        let info = &sticker.info;
+        let width = uint_to_i32(info.width);
+        let height = uint_to_i32(info.height);
 
         let self_: Self = glib::Object::new(&[
             ("media-type", &MediaType::Sticker),
@@ -318,35 +317,4 @@ impl MessageImage {
             })
         );
     }
-}
-
-/// Gets the width and height of the full image in info.
-///
-/// Returns a (width, height) tuple with either value set to -1 if it wasn't found.
-fn get_width_height(info: Option<&ImageInfo>) -> (i32, i32) {
-    let width = info
-        .and_then(|info| info.width)
-        .and_then(|ui| {
-            let u: Option<u16> = ui.try_into().ok();
-            u
-        })
-        .and_then(|u| {
-            let i: i32 = u.into();
-            Some(i)
-        })
-        .unwrap_or(-1);
-
-    let height = info
-        .and_then(|info| info.height)
-        .and_then(|ui| {
-            let u: Option<u16> = ui.try_into().ok();
-            u
-        })
-        .and_then(|u| {
-            let i: i32 = u.into();
-            Some(i)
-        })
-        .unwrap_or(-1);
-
-    (width, height)
 }
