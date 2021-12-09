@@ -5,6 +5,8 @@ use gtk::glib::{self, clone};
 use gtk::subclass::prelude::*;
 use gtk::CompositeTemplate;
 
+mod member_row;
+use self::member_row::MemberRow;
 use crate::components::{Avatar, Badge};
 use crate::prelude::*;
 use crate::session::content::RoomDetails;
@@ -40,6 +42,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Avatar::static_type();
             Badge::static_type();
+            MemberRow::static_type();
             Self::bind_template(klass);
         }
 
