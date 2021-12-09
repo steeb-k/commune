@@ -87,8 +87,8 @@ mod imp {
             klass.install_action("room-history.details", None, move |widget, _, _| {
                 widget.open_room_details("general");
             });
-            klass.install_action("room-history.members", None, move |widget, _, _| {
-                widget.open_room_details("members");
+            klass.install_action("room-history.invite-members", None, move |widget, _, _| {
+                widget.open_invite_members();
             });
 
             klass.install_action("room-history.scroll-down", None, move |widget, _, _| {
@@ -395,6 +395,15 @@ impl RoomHistory {
         if let Some(room) = self.room() {
             let window = RoomDetails::new(&self.parent_window(), &room);
             window.set_property("visible-page-name", page_name).unwrap();
+            window.show();
+        }
+    }
+
+    pub fn open_invite_members(&self) {
+        if let Some(room) = self.room() {
+            let window = RoomDetails::new(&self.parent_window(), &room);
+            window.set_property("visible-page-name", "members").unwrap();
+            window.present_invite_subpage();
             window.show();
         }
     }
