@@ -149,28 +149,41 @@ mod imp {
         ) -> (i32, i32, i32, i32) {
             match obj.child() {
                 Some(child) => {
-                    // The GdkPaintable will keep its ratio, so we only need to control the height.
-                    if orientation == gtk::Orientation::Vertical {
-                        let original_width = self.width.get();
-                        let original_height = self.height.get();
+                    let original_width = self.width.get();
+                    let original_height = self.height.get();
 
-                        // We limit the thumbnail's width to 320 pixels.
+                    if orientation == gtk::Orientation::Vertical {
+                        // We limit the width to 320 pixels.
                         let width = for_size.min(320);
 
                         let nat_height = if original_height > 0 && original_width > 0 {
-                            // We don't want the image to be upscaled.
+                            // We don't want the paintable to be upscaled.
                             let width = width.min(original_width);
                             width * original_height / original_width
                         } else {
-                            // Get the natural height of the image data.
+                            // Get the natural height of the data.
                             child.measure(orientation, width).1
                         };
 
-                        // We limit the thumbnail's height to 240 pixels.
+                        // We limit the height to 240 pixels.
                         let height = nat_height.min(240);
                         (0, height, -1, -1)
                     } else {
-                        child.measure(orientation, for_size)
+                        // We limit the height to 240 pixels.
+                        let height = for_size.min(240);
+
+                        let nat_width = if original_height > 0 && original_width > 0 {
+                            // We don't want the paintable to be upscaled.
+                            let height = height.min(original_height);
+                            height * original_width / original_height
+                        } else {
+                            // Get the natural height of the data.
+                            child.measure(orientation, height).1
+                        };
+
+                        // We limit the width to 320 pixels.
+                        let width = nat_width.min(320);
+                        (0, width, -1, -1)
                     }
                 }
                 None => (0, 0, -1, -1),
