@@ -25,10 +25,10 @@ impl UserFacingError for HttpError {
                     UserDeactivated => gettext("The user is deactivated."),
                     LimitExceeded { retry_after_ms } => {
                         if let Some(ms) = retry_after_ms {
-                            gettext(format!(
+                            gettext!(
                                 "You exceeded the homeservers rate limit, retry in {} seconds.",
                                 ms.as_secs()
-                            ))
+                            )
                         } else {
                             gettext("You exceeded the homeservers rate limit, try again later.")
                         }
