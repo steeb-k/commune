@@ -226,6 +226,7 @@ impl InviteeList {
         response: Result<search_users::Response, HttpError>,
     ) {
         let session = self.room().session();
+        let member_list = self.room().members();
 
         if Some(search_term) != self.search_term() {
             return;
@@ -240,12 +241,16 @@ impl InviteeList {
                 let users: Vec<Invitee> = response
                     .results
                     .into_iter()
-                    .map(|item| {
-                        if let Some(user) = self.get_invitee(&item.user_id) {
+                    .filter_map(|item| {
+                        // Skip over users that are already in the room
+                        if member_list.contains(&item.user_id) {
+                            self.remove_invitee(&item.user_id);
+                            None
+                        } else if let Some(user) = self.get_invitee(&item.user_id) {
                             // The avatar or the display name may have changed in the mean time
                             user.set_avatar_url(item.avatar_url);
                             user.set_display_name(item.display_name);
-                            user
+                            Some(user)
                         } else {
                             let user = Invitee::new(
                                 &session,
@@ -265,7 +270,7 @@ impl InviteeList {
                                 }),
                             );
 
-                            user
+                            Some(user)
                         }
                     })
                     .collect();

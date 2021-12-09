@@ -156,4 +156,11 @@ impl MemberList {
         self.member_by_id(&event.sender)
             .update_from_member_event(event);
     }
+
+    /// Returns whether the given user id is present in `MemberList`
+    pub fn contains(&self, user_id: &UserId) -> bool {
+        let priv_ = imp::MemberList::from_instance(self);
+
+        priv_.members.borrow().contains_key(user_id)
+    }
 }
