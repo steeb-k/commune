@@ -11,17 +11,17 @@ mod components;
 mod contrib;
 mod error;
 mod login;
-mod matrix_error;
 mod secret;
 mod session;
+mod user_facing_error;
 mod utils;
 mod window;
 
 use self::application::Application;
 use self::error::Error;
 use self::login::Login;
-use self::matrix_error::UserFacingError;
 use self::session::Session;
+use self::user_facing_error::UserFacingError;
 use self::window::Window;
 
 use config::{GETTEXT_PACKAGE, LOCALEDIR, RESOURCES_FILE};

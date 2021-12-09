@@ -26,10 +26,10 @@ use crate::secret;
 use crate::secret::Secret;
 use crate::secret::StoredSession;
 use crate::Error;
+use crate::UserFacingError;
 use crate::Window;
 use crate::{spawn, spawn_tokio};
 
-use crate::matrix_error::UserFacingError;
 use adw::subclass::prelude::BinImpl;
 use futures::StreamExt;
 use gettextrs::gettext;

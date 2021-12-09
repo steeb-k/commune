@@ -65,7 +65,6 @@ src/contrib/qr_code.rs
 src/error.rs
 src/login.rs
 src/main.rs
-src/matrix_error.rs
 src/secret.rs
 src/session/account_settings/devices_page/device.rs
 src/session/account_settings/devices_page/device_item.rs
@@ -129,5 +128,6 @@ src/session/verification/mod.rs
 src/session/verification/session_verification.rs
 src/session/verification/verification_list.rs
 src/session/user.rs
+src/user_facing_error.rs
 src/utils.rs
 src/window.rs

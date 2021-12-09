@@ -4,7 +4,7 @@ use crate::secret;
 use crate::Application;
 use crate::Login;
 use crate::Session;
-use crate::{matrix_error::UserFacingError, Error};
+use crate::{Error, UserFacingError};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use gettextrs::gettext;
 use glib::signal::Inhibit;

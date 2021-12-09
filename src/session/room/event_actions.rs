@@ -5,11 +5,10 @@ use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageEventConten
 use once_cell::sync::Lazy;
 
 use crate::{
-    matrix_error::UserFacingError,
     session::{event_source_dialog::EventSourceDialog, room::Event},
     spawn,
     utils::cache_dir,
-    Error, Window,
+    Error, UserFacingError, Window,
 };
 
 // This is only save because the trait `EventActions` can
