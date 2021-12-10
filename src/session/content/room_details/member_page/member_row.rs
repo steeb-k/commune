@@ -1,5 +1,6 @@
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
+use crate::session::content::RoomDetails;
 use crate::session::room::Member;
 use adw::subclass::prelude::BinImpl;
 
@@ -13,6 +14,8 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/content-member-row.ui")]
     pub struct MemberRow {
         pub member: RefCell<Option<Member>>,
+        #[template_child]
+        pub menu_btn: TemplateChild<gtk::ToggleButton>,
     }
 
     #[glib::object_subclass]
@@ -66,6 +69,21 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            self.menu_btn
+                .connect_toggled(clone!(@weak obj => move |btn| {
+                    if let Some(details) = obj.details() {
+                        let page = details.member_page();
+                        let menu = page.member_menu();
+                        if btn.is_active() {
+                            menu.present_popover(btn, obj.member());
+                        }
+                    }
+                }));
+        }
     }
     impl WidgetImpl for MemberRow {}
     impl BinImpl for MemberRow {}
@@ -93,7 +111,21 @@ impl MemberRow {
             return;
         }
 
+        // We need to update the member of the menu if it's shown for this row
+        if priv_.menu_btn.is_active() {
+            if let Some(details) = self.details() {
+                let page = details.member_page();
+                let menu = page.member_menu();
+
+                menu.set_member(member.clone());
+            }
+        }
+
         priv_.member.replace(member);
         self.notify("member");
+    }
+
+    fn details(&self) -> Option<RoomDetails> {
+        Some(self.root()?.downcast::<RoomDetails>().unwrap())
     }
 }

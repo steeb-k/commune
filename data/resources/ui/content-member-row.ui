@@ -71,6 +71,12 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="GtkToggleButton" id="menu_btn">
+            <property name="has-frame">False</property>
+            <property name="icon-name">view-more-symbolic</property>
+          </object>
+        </child>
       </object>
     </property>
   </template>

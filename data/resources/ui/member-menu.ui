@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <menu id="menu_model">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Verify</attribute>
+        <attribute name="action">member.verify</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Make _Mod</attribute>
+        <attribute name="action">member.make-mod</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Make _Admin</attribute>
+        <attribute name="action">member.make-admin</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Kick</attribute>
+        <attribute name="action">member.kick</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>
+

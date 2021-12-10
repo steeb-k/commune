@@ -5,13 +5,16 @@ use gtk::glib::{self, clone};
 use gtk::subclass::prelude::*;
 use gtk::CompositeTemplate;
 
+mod member_menu;
 mod member_row;
+use self::member_menu::MemberMenu;
 use self::member_row::MemberRow;
 use crate::components::{Avatar, Badge};
 use crate::prelude::*;
 use crate::session::content::RoomDetails;
 use crate::session::room::{Member, RoomAction};
 use crate::session::Room;
+use log::warn;
 
 mod imp {
     use super::*;
@@ -31,6 +34,7 @@ mod imp {
         pub members_search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
         pub members_list_view: TemplateChild<gtk::ListView>,
+        pub member_menu: OnceCell<MemberMenu>,
     }
 
     #[glib::object_subclass]
@@ -44,6 +48,14 @@ mod imp {
             Badge::static_type();
             MemberRow::static_type();
             Self::bind_template(klass);
+
+            klass.install_action("member.verify", None, move |widget, _, _| {
+                if let Some(member) = widget.member_menu().member() {
+                    widget.verify_member(member);
+                } else {
+                    warn!("No member was selected to be verified");
+                }
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -54,13 +66,22 @@ mod imp {
     impl ObjectImpl for MemberPage {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
-                    "room",
-                    "Room",
-                    "The room backing all details of the member page",
-                    Room::static_type(),
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                )]
+                vec![
+                    glib::ParamSpec::new_object(
+                        "room",
+                        "Room",
+                        "The room backing all details of the member page",
+                        Room::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_object(
+                        "member-menu",
+                        "Member Menu",
+                        "The object holding information needed for the menu of each MemberRow",
+                        MemberMenu::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -79,9 +100,10 @@ mod imp {
             }
         }
 
-        fn property(&self, _obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "room" => self.room.get().to_value(),
+                "member-menu" => obj.member_menu().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -209,5 +231,14 @@ impl MemberPage {
                 .unwrap();
                 window.present_invite_subpage();
             }));
+    }
+
+    pub fn member_menu(&self) -> &MemberMenu {
+        let priv_ = imp::MemberPage::from_instance(self);
+        priv_.member_menu.get_or_init(|| MemberMenu::new())
+    }
+
+    fn verify_member(&self, _member: Member) {
+        todo!("Show member verification");
     }
 }

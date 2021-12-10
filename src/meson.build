@@ -79,6 +79,7 @@ sources = files(
   'session/content/room_details/invite_subpage/invitee_row.rs',
   'session/content/room_details/member_page/mod.rs',
   'session/content/room_details/member_page/member_row.rs',
+  'session/content/room_details/member_page/member_menu.rs',
   'session/content/room_details/mod.rs',
   'session/content/verification/emoji.rs',
   'session/content/verification/mod.rs',

@@ -39,6 +39,7 @@ mod imp {
         pub room_name_entry: TemplateChild<gtk::Entry>,
         #[template_child]
         pub room_topic_text_view: TemplateChild<gtk::TextView>,
+        pub member_page: OnceCell<MemberPage>,
     }
 
     #[glib::object_subclass]
@@ -102,7 +103,9 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            obj.add(&MemberPage::new(obj.room()));
+            let member_page = MemberPage::new(obj.room());
+            obj.add(&member_page);
+            self.member_page.set(member_page).unwrap();
 
             obj.init_avatar();
             obj.init_edit_toggle();
@@ -257,5 +260,10 @@ impl RoomDetails {
     pub fn close_invite_subpage(&self) {
         self.set_title(Some(&gettext("Room Details")));
         self.close_subpage();
+    }
+
+    pub fn member_page(&self) -> &MemberPage {
+        let priv_ = imp::RoomDetails::from_instance(self);
+        priv_.member_page.get().unwrap()
     }
 }
