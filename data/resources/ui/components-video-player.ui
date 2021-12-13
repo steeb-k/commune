@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ComponentsVideoPlayer" parent="AdwBin">
-    <style>
-      <class name="thumbnail"/>
-    </style>
-    <property name="overflow">hidden</property>
     <child>
       <object class="GtkOverlay">
         <child>
@@ -16,13 +12,13 @@
               <class name="osd"/>
               <class name="timestamp"/>
             </style>
-            <property name="halign">1</property>
-            <property name="valign">1</property>
+            <property name="halign">GTK_ALIGN_START</property>
+            <property name="valign">GTK_ALIGN_START</property>
             <property name="margin-start">5</property>
             <property name="margin-top">5</property>
             <property name="label">00:00</property>
             <layout>
-              <property name="measure">1</property>
+              <property name="measure">true</property>
             </layout>
           </object>
         </child>

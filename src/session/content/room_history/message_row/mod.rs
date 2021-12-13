@@ -1,7 +1,6 @@
 mod file;
-mod image;
+mod media;
 mod text;
-mod video;
 
 use crate::components::Avatar;
 use adw::{prelude::*, subclass::prelude::*};
@@ -16,7 +15,7 @@ use matrix_sdk::ruma::events::{
     AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
 };
 
-use self::{file::MessageFile, image::MessageImage, text::MessageText, video::MessageVideo};
+use self::{file::MessageFile, media::MessageMedia, text::MessageText};
 use crate::prelude::*;
 use crate::session::room::Event;
 
@@ -270,7 +269,7 @@ impl MessageRow {
                         priv_.content.set_child(Some(&child));
                     }
                     MessageType::Image(message) => {
-                        let child = MessageImage::image(message, &event.room().session());
+                        let child = MessageMedia::image(message, &event.room().session());
                         priv_.content.set_child(Some(&child));
                     }
                     MessageType::Location(_message) => {}
@@ -287,7 +286,7 @@ impl MessageRow {
                         priv_.content.set_child(Some(&child));
                     }
                     MessageType::Video(message) => {
-                        let child = MessageVideo::new(message, &event.room().session());
+                        let child = MessageMedia::video(message, &event.room().session());
                         priv_.content.set_child(Some(&child));
                     }
                     MessageType::VerificationRequest(_message) => {}
@@ -297,7 +296,7 @@ impl MessageRow {
                 }
             }
             Some(AnyMessageEventContent::Sticker(content)) => {
-                let child = MessageImage::sticker(content, &event.room().session());
+                let child = MessageMedia::sticker(content, &event.room().session());
                 priv_.content.set_child(Some(&child));
             }
             Some(AnyMessageEventContent::RoomEncrypted(content)) => {
