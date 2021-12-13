@@ -367,17 +367,17 @@ impl MessageMedia {
 
     fn build<C>(&self, content: C, session: &Session)
     where
-        C: MediaEventContent + Send + Sync + 'static,
+        C: MediaEventContent + Send + Sync + Clone + 'static,
     {
         self.set_state(MediaState::Loading);
 
         let media_type = self.media_type();
         let client = session.client();
-        let handle = if media_type != MediaType::Video && content.thumbnail().is_some() {
-            spawn_tokio!(async move {
+        let handle = spawn_tokio!(async move {
+            let thumbnail = if media_type != MediaType::Video && content.thumbnail().is_some() {
                 client
                     .get_thumbnail(
-                        content,
+                        content.clone(),
                         MediaThumbnailSize {
                             method: Method::Scale,
                             width: uint!(320),
@@ -386,10 +386,18 @@ impl MessageMedia {
                         true,
                     )
                     .await
-            })
-        } else {
-            spawn_tokio!(async move { client.get_file(content, true,).await })
-        };
+                    .ok()
+                    .flatten()
+            } else {
+                None
+            };
+
+            if let Some(data) = thumbnail {
+                Ok(Some(data))
+            } else {
+                client.get_file(content, true).await
+            }
+        });
 
         spawn!(
             glib::PRIORITY_LOW,
