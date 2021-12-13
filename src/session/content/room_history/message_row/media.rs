@@ -6,6 +6,7 @@ use gtk::{
     gio,
     glib::{self, clone},
     subclass::prelude::*,
+    CompositeTemplate,
 };
 use log::warn;
 use matrix_sdk::{
@@ -47,14 +48,32 @@ impl Default for MediaType {
     }
 }
 
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[repr(u32)]
+#[genum(type_name = "MediaState")]
+pub enum MediaState {
+    Initial = 0,
+    Loading = 1,
+    Ready = 2,
+    Error = 3,
+}
+
+impl Default for MediaState {
+    fn default() -> Self {
+        Self::Initial
+    }
+}
+
 mod imp {
     use std::cell::{Cell, RefCell};
 
+    use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, CompositeTemplate)]
+    #[template(resource = "/org/gnome/FractalNext/content-message-media.ui")]
     pub struct MessageMedia {
         /// The type of media previewed with this image.
         pub media_type: Cell<MediaType>,
@@ -64,13 +83,29 @@ mod imp {
         pub height: Cell<i32>,
         /// The "body" of the image to show as a tooltip. Only used for stickers.
         pub body: RefCell<Option<String>>,
+        /// The state of the media.
+        pub state: Cell<MediaState>,
+        #[template_child]
+        pub media: TemplateChild<gtk::Overlay>,
+        #[template_child]
+        pub overlay_error: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub overlay_spinner: TemplateChild<gtk::Spinner>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for MessageMedia {
         const NAME: &'static str = "ContentMessageMedia";
         type Type = super::MessageMedia;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::Widget;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
     }
 
     impl ObjectImpl for MessageMedia {
@@ -110,6 +145,14 @@ mod imp {
                         None,
                         glib::ParamFlags::READWRITE,
                     ),
+                    glib::ParamSpec::new_enum(
+                        "state",
+                        "State",
+                        "The state of the media",
+                        MediaState::static_type(),
+                        MediaState::default() as i32,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -118,7 +161,7 @@ mod imp {
 
         fn set_property(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             _id: usize,
             value: &glib::Value,
             pspec: &glib::ParamSpec,
@@ -136,6 +179,9 @@ mod imp {
                 "body" => {
                     self.body.replace(value.get().unwrap());
                 }
+                "state" => {
+                    obj.set_state(value.get().unwrap());
+                }
                 _ => unimplemented!(),
             }
         }
@@ -146,22 +192,20 @@ mod imp {
                 "width" => self.width.get().to_value(),
                 "height" => self.height.get().to_value(),
                 "body" => obj.body().to_value(),
+                "state" => obj.state().to_value(),
                 _ => unimplemented!(),
             }
         }
 
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
-
-            // We need to control the value returned by `measure`.
-            obj.set_layout_manager(gtk::NONE_LAYOUT_MANAGER);
+        fn dispose(&self, _obj: &Self::Type) {
+            self.media.unparent();
         }
     }
 
     impl WidgetImpl for MessageMedia {
         fn measure(
             &self,
-            obj: &Self::Type,
+            _obj: &Self::Type,
             orientation: gtk::Orientation,
             for_size: i32,
         ) -> (i32, i32, i32, i32) {
@@ -194,7 +238,7 @@ mod imp {
                 // We don't want the paintable to be upscaled.
                 let other = other.min(original_other);
                 other * original / original_other
-            } else if let Some(child) = obj.child() {
+            } else if let Some(child) = self.media.child() {
                 // Get the natural size of the data.
                 child.measure(orientation, other).1
             } else {
@@ -210,8 +254,8 @@ mod imp {
             gtk::SizeRequestMode::HeightForWidth
         }
 
-        fn size_allocate(&self, obj: &Self::Type, _width: i32, height: i32, baseline: i32) {
-            if let Some(child) = obj.child() {
+        fn size_allocate(&self, _obj: &Self::Type, width: i32, height: i32, baseline: i32) {
+            if let Some(child) = self.media.child() {
                 // We need to allocate just enough width to the child so it doesn't expand.
                 let original_width = self.width.get();
                 let original_height = self.height.get();
@@ -222,18 +266,18 @@ mod imp {
                     child.measure(gtk::Orientation::Horizontal, height).1
                 };
 
-                child.allocate(width, height, baseline, None);
+                self.media.allocate(width, height, baseline, None);
+            } else {
+                self.media.allocate(width, height, baseline, None)
             }
         }
     }
-
-    impl BinImpl for MessageMedia {}
 }
 
 glib::wrapper! {
     /// A widget displaying a media message in the timeline.
     pub struct MessageMedia(ObjectSubclass<imp::MessageMedia>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 impl MessageMedia {
@@ -290,10 +334,43 @@ impl MessageMedia {
         priv_.body.borrow().clone()
     }
 
+    pub fn state(&self) -> MediaState {
+        let priv_ = imp::MessageMedia::from_instance(self);
+        priv_.state.get()
+    }
+
+    fn set_state(&self, state: MediaState) {
+        let priv_ = imp::MessageMedia::from_instance(self);
+
+        if self.state() == state {
+            return;
+        }
+
+        match state {
+            MediaState::Loading | MediaState::Initial => {
+                priv_.overlay_spinner.set_visible(true);
+                priv_.overlay_error.set_visible(false);
+            }
+            MediaState::Ready => {
+                priv_.overlay_spinner.set_visible(false);
+                priv_.overlay_error.set_visible(false);
+            }
+            MediaState::Error => {
+                priv_.overlay_spinner.set_visible(false);
+                priv_.overlay_error.set_visible(true);
+            }
+        }
+
+        priv_.state.set(state);
+        self.notify("state");
+    }
+
     fn build<C>(&self, content: C, session: &Session)
     where
         C: MediaEventContent + Send + Sync + 'static,
     {
+        self.set_state(MediaState::Loading);
+
         let media_type = self.media_type();
         let client = session.client();
         let handle = if media_type != MediaType::Video && content.thumbnail().is_some() {
@@ -317,6 +394,8 @@ impl MessageMedia {
         spawn!(
             glib::PRIORITY_LOW,
             clone!(@weak self as obj => async move {
+                let priv_ = imp::MessageMedia::from_instance(&obj);
+
                 match handle.await.unwrap() {
                     Ok(Some(data)) => {
                         let child: gtk::Widget = match media_type {
@@ -329,9 +408,7 @@ impl MessageMedia {
 
                                 if media_type == MediaType::Sticker {
                                     child.set_tooltip_text(obj.body().as_deref());
-                                } else {
-                                    child.add_css_class("thumbnail");
-                                    child.set_overflow(gtk::Overflow::Hidden);
+                                    priv_.media.remove_css_class("thumbnail");
                                 }
                                 child.upcast()
                             }
@@ -358,17 +435,18 @@ impl MessageMedia {
                             }
                         };
 
-                        obj.set_child(Some(&child));
+                        priv_.media.set_child(Some(&child));
+                        obj.set_state(MediaState::Ready);
                     }
                     Ok(None) => {
-                        warn!("Could not retrieve invalid image file");
-                        let child = gtk::Label::new(Some(&gettext("Could not retrieve image")));
-                        obj.set_child(Some(&child));
+                        warn!("Could not retrieve invalid media file");
+                        priv_.overlay_error.set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                        obj.set_state(MediaState::Error);
                     }
                     Err(error) => {
-                        warn!("Could not retrieve image file: {}", error);
-                        let child = gtk::Label::new(Some(&gettext("Could not retrieve image")));
-                        obj.set_child(Some(&child));
+                        warn!("Could not retrieve media file: {}", error);
+                        priv_.overlay_error.set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                        obj.set_state(MediaState::Error);
                     }
                 }
             })

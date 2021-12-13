@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMessageMedia" parent="GtkWidget">
+    <property name="focusable">True</property>
+    <property name="valign">center</property>
+    <child>
+      <object class="GtkOverlay" id="media">
+        <style>
+          <class name="thumbnail"/>
+        </style>
+        <property name="overflow">GTK_OVERFLOW_HIDDEN</property>
+        <child type="overlay">
+          <object class="GtkSpinner" id="overlay_spinner">
+            <property name="halign">GTK_ALIGN_CENTER</property>
+            <property name="valign">GTK_ALIGN_CENTER</property>
+            <layout>
+              <property name="measure">true</property>
+            </layout>
+          </object>
+        </child>
+        <child type="overlay">
+          <object class="GtkImage" id="overlay_error">
+            <style>
+              <class name="osd"/>
+              <class name="circular"/>
+            </style>
+            <property name="halign">GTK_ALIGN_CENTER</property>
+            <property name="valign">GTK_ALIGN_CENTER</property>
+            <property name="icon-name">dialog-error-symbolic</property>
+            <property name="icon-size">GTK_ICON_SIZE_LARGE</property>
+            <layout>
+              <property name="measure">true</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

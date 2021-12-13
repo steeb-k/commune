@@ -212,6 +212,13 @@ headerbar.flat {
 
 .room-history .event-content .thumbnail {
   border-radius: 6px;
+  background-color: @light_3;
+}
+
+.room-history .event-content .thumbnail .osd.circular {
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 32px;
 }
 
 .room-history .event-content .thumbnail .timestamp {
