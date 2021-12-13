@@ -27,8 +27,10 @@ use crate::{
     utils::{cache_dir, uint_to_i32},
 };
 
-const MAX_THUMBNAIL_WIDTH: i32 = 320;
-const MAX_THUMBNAIL_HEIGHT: i32 = 240;
+const MAX_THUMBNAIL_WIDTH: i32 = 600;
+const MAX_THUMBNAIL_HEIGHT: i32 = 400;
+const FALLBACK_WIDTH: i32 = 480;
+const FALLBACK_HEIGHT: i32 = 360;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
 #[repr(u32)]
@@ -166,11 +168,12 @@ mod imp {
             let original_width = self.width.get();
             let original_height = self.height.get();
 
-            let (original, max, original_other, max_other) =
+            let (original, max, fallback, original_other, max_other) =
                 if orientation == gtk::Orientation::Vertical {
                     (
                         original_height,
                         MAX_THUMBNAIL_HEIGHT,
+                        FALLBACK_HEIGHT,
                         original_width,
                         MAX_THUMBNAIL_WIDTH,
                     )
@@ -178,6 +181,7 @@ mod imp {
                     (
                         original_width,
                         MAX_THUMBNAIL_WIDTH,
+                        FALLBACK_WIDTH,
                         original_height,
                         MAX_THUMBNAIL_HEIGHT,
                     )
@@ -194,7 +198,7 @@ mod imp {
                 // Get the natural size of the data.
                 child.measure(orientation, other).1
             } else {
-                max
+                fallback
             };
 
             // Limit this size to 400 pixels.
