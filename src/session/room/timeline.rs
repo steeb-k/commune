@@ -352,7 +352,7 @@ impl Timeline {
                 }
             } else {
                 // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
-                // the `related_to` event is is added to the list
+                // the `related_to` event is added to the list
                 let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
                 let replacing_events_ids: Vec<EventId> = relations
                     .iter()
