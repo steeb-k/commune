@@ -37,7 +37,7 @@ mod imp {
         pub timestamp: TemplateChild<gtk::Label>,
         #[template_child]
         pub content: TemplateChild<adw::Bin>,
-        pub content_changed_handler: RefCell<Option<SignalHandlerId>>,
+        pub source_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub event: RefCell<Option<Event>>,
     }
@@ -139,8 +139,8 @@ impl MessageRow {
         let priv_ = imp::MessageRow::from_instance(self);
         // Remove signals and bindings from the previous event
         if let Some(event) = priv_.event.take() {
-            if let Some(content_changed_handler) = priv_.content_changed_handler.take() {
-                event.disconnect(content_changed_handler);
+            if let Some(source_changed_handler) = priv_.source_changed_handler.take() {
+                event.disconnect(source_changed_handler);
             }
 
             while let Some(binding) = priv_.bindings.borrow_mut().pop() {
@@ -176,9 +176,10 @@ impl MessageRow {
         ]);
 
         priv_
-            .content_changed_handler
-            .replace(Some(event.connect_content_changed(
-                clone!(@weak self as obj => move |event| {
+            .source_changed_handler
+            .replace(Some(event.connect_notify_local(
+                Some("source"),
+                clone!(@weak self as obj => move |event, _| {
                     obj.update_content(event);
                 }),
             )));

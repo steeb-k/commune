@@ -26,7 +26,6 @@ pub struct BoxedSyncRoomEvent(SyncRoomEvent);
 mod imp {
     use super::*;
     use glib::object::WeakRef;
-    use glib::subclass::Signal;
     use glib::SignalHandlerId;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
@@ -39,7 +38,7 @@ mod imp {
         pub pure_event: RefCell<Option<SyncRoomEvent>>,
         /// Events that replace this one, in the order they arrive.
         pub replacing_events: RefCell<Vec<super::Event>>,
-        pub content_changed_handler: RefCell<Option<SignalHandlerId>>,
+        pub source_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub show_header: Cell<bool>,
         pub room: OnceCell<WeakRef<Room>>,
     }
@@ -52,13 +51,6 @@ mod imp {
     }
 
     impl ObjectImpl for Event {
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder("content-changed", &[], <()>::static_type().into()).build()]
-            });
-            SIGNALS.as_ref()
-        }
-
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
@@ -266,7 +258,8 @@ impl Event {
             .and_then(|unsigned| unsigned.transaction_id)
     }
 
-    pub fn source(&self) -> String {
+    /// The pretty-formatted JSON of this matrix event.
+    pub fn original_source(&self) -> String {
         let priv_ = imp::Event::from_instance(self);
 
         // We have to convert it to a Value, because a RawValue cannot be pretty-printed.
@@ -283,6 +276,15 @@ impl Event {
         .unwrap();
 
         serde_json::to_string_pretty(&json).unwrap()
+    }
+
+    /// The pretty-formatted JSON used for this matrix event.
+    ///
+    /// If this matrix event has been replaced, returns the replacing `Event`'s source.
+    pub fn source(&self) -> String {
+        self.replacement()
+            .map(|replacement| replacement.source())
+            .unwrap_or(self.original_source())
     }
 
     pub fn timestamp(&self) -> DateTime {
@@ -514,23 +516,24 @@ impl Event {
         // Update the signal handler to the new replacement
         if new_replacement != old_replacement {
             if let Some(replacement) = old_replacement {
-                if let Some(content_changed_handler) = priv_.content_changed_handler.take() {
-                    replacement.disconnect(content_changed_handler);
+                if let Some(source_changed_handler) = priv_.source_changed_handler.take() {
+                    replacement.disconnect(source_changed_handler);
                 }
             }
 
             // If the replacing event's content changed, this content changed too.
             if let Some(replacement) = new_replacement {
                 priv_
-                    .content_changed_handler
-                    .replace(Some(replacement.connect_content_changed(
-                        clone!(@weak self as obj => move |_| {
-                            obj.emit_by_name("content-changed", &[]).unwrap();
+                    .source_changed_handler
+                    .replace(Some(replacement.connect_notify_local(
+                        Some("source"),
+                        clone!(@weak self as obj => move |_, _| {
+                            obj.notify("source");
                         }),
                     )));
             }
 
-            self.emit_by_name("content-changed", &[]).unwrap();
+            self.notify("source");
         }
     }
 
@@ -602,17 +605,6 @@ impl Event {
         self.replacement()
             .and_then(|replacement| replacement.content())
             .or(self.original_content())
-    }
-
-    pub fn connect_content_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("content-changed", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-
-            f(&obj);
-
-            None
-        })
-        .unwrap()
     }
 
     pub fn connect_show_header_notify<F: Fn(&Self, &glib::ParamSpec) + 'static>(
