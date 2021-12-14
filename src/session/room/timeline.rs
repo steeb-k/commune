@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
 use matrix_sdk::{
@@ -17,7 +19,7 @@ mod imp {
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
-    use std::collections::{HashMap, VecDeque};
+    use std::collections::VecDeque;
 
     #[derive(Debug, Default)]
     pub struct Timeline {
@@ -252,7 +254,7 @@ impl Timeline {
             }
         }
 
-        // Update relates_to
+        // Add relations to event
         {
             let list = priv_.list.borrow();
             let mut relates_to_events = priv_.relates_to_events.borrow_mut();
@@ -261,29 +263,21 @@ impl Timeline {
                 .range(position as usize..(position + added) as usize)
                 .filter_map(|item| item.event())
             {
-                if let Some(relates_to_event_id) = event.related_matrix_event() {
-                    if let Some(relates_to_event) = self.event_by_id(&relates_to_event_id) {
-                        // FIXME: group events and set them all at once, to reduce the emission of notify
-                        relates_to_event.add_relates_to(vec![event.to_owned()]);
-                    } else {
-                        // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
-                        // the `related_to` event is is added to the list
-                        let relates_to_event =
-                            relates_to_events.entry(relates_to_event_id).or_default();
-                        relates_to_event.push(event.matrix_event_id().to_owned());
-                    }
-                }
-
                 if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
-                    event.add_relates_to(
-                        relates_to
-                            .into_iter()
-                            .map(|event_id| {
-                                self.event_by_id(&event_id)
-                                    .expect("Previously known event has disappeared")
-                            })
-                            .collect(),
-                    );
+                    let replacing_events = relates_to
+                        .into_iter()
+                        .map(|event_id| {
+                            self.event_by_id(&event_id)
+                                .expect("Previously known event has disappeared")
+                        })
+                        .filter(|related_event| related_event.is_replacing_event())
+                        .collect();
+
+                    if position != 0 || event.replacing_events().is_empty() {
+                        event.append_replacing_events(replacing_events);
+                    } else {
+                        event.prepend_replacing_events(replacing_events);
+                    }
                 }
             }
         }
@@ -294,33 +288,83 @@ impl Timeline {
             .items_changed(position, removed, added);
     }
 
-    fn add_hidden_event(&self, event: Event) {
+    fn add_hidden_events(&self, events: Vec<Event>, at_front: bool) {
         let priv_ = imp::Timeline::from_instance(self);
 
         let mut relates_to_events = priv_.relates_to_events.borrow_mut();
 
-        if let Some(relates_to_event_id) = event.related_matrix_event() {
-            if let Some(relates_to_event) = self.event_by_id(&relates_to_event_id) {
-                // FIXME: group events and set them all at once, to reduce the emission of notify
-                relates_to_event.add_relates_to(vec![event.to_owned()]);
-            } else {
-                // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
-                // the `related_to` event is is added to the list
-                let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
-                relates_to_event.push(event.matrix_event_id());
-            }
-        }
-
-        if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
-            event.add_relates_to(
-                relates_to
+        // Group events by related event
+        let mut new_relations: HashMap<EventId, Vec<Event>> = HashMap::new();
+        for event in events {
+            if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
+                let replacing_events = relates_to
                     .into_iter()
                     .map(|event_id| {
                         self.event_by_id(&event_id)
                             .expect("Previously known event has disappeared")
                     })
-                    .collect(),
-            );
+                    .filter(|related_event| related_event.is_replacing_event())
+                    .collect();
+
+                if !at_front || event.replacing_events().is_empty() {
+                    event.append_replacing_events(replacing_events);
+                } else {
+                    event.prepend_replacing_events(replacing_events);
+                }
+            }
+
+            if let Some(relates_to_event) = event.related_matrix_event() {
+                let relations = new_relations.entry(relates_to_event).or_default();
+                relations.push(event);
+            }
+        }
+
+        // Handle new relations
+        for (relates_to_event_id, relations) in new_relations {
+            if let Some(relates_to_event) = self.event_by_id(&relates_to_event_id) {
+                // Get the relations in relates_to_event otherwise they will be added in
+                // in items_changed and they might not be added at the right place.
+                let mut all_replacing_events: Vec<Event> = relates_to_events
+                    .remove(&relates_to_event.matrix_event_id())
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|event_id| {
+                        self.event_by_id(&event_id)
+                            .expect("Previously known event has disappeared")
+                    })
+                    .filter(|related_event| related_event.is_replacing_event())
+                    .collect();
+                let new_replacing_events: Vec<Event> = relations
+                    .into_iter()
+                    .filter(|event| event.is_replacing_event())
+                    .collect();
+
+                if at_front {
+                    all_replacing_events.splice(..0, new_replacing_events);
+                } else {
+                    all_replacing_events.extend(new_replacing_events);
+                }
+
+                if !at_front || relates_to_event.replacing_events().is_empty() {
+                    relates_to_event.append_replacing_events(all_replacing_events);
+                } else {
+                    relates_to_event.prepend_replacing_events(all_replacing_events);
+                }
+            } else {
+                // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
+                // the `related_to` event is is added to the list
+                let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
+                let replacing_events_ids: Vec<EventId> = relations
+                    .iter()
+                    .filter(|event| event.is_replacing_event())
+                    .map(|event| event.matrix_event_id())
+                    .collect();
+                if at_front {
+                    relates_to_event.splice(..0, replacing_events_ids);
+                } else {
+                    relates_to_event.extend(replacing_events_ids);
+                }
+            }
         }
     }
 
@@ -350,6 +394,7 @@ impl Timeline {
             };
 
             let mut pending_events = priv_.pending_events.borrow_mut();
+            let mut hidden_events: Vec<Event> = vec![];
 
             for event in batch.into_iter() {
                 let event_id = event.matrix_event_id();
@@ -371,13 +416,15 @@ impl Timeline {
                         .borrow_mut()
                         .insert(event_id.to_owned(), event.clone());
                     if event.is_hidden_event() {
-                        self.add_hidden_event(event);
+                        hidden_events.push(event);
                         added -= 1;
                     } else {
                         priv_.list.borrow_mut().push_back(Item::for_event(event));
                     }
                 }
             }
+
+            self.add_hidden_events(hidden_events, false);
 
             index
         };
@@ -404,7 +451,7 @@ impl Timeline {
             let index = list.len();
 
             if event.is_hidden_event() {
-                self.add_hidden_event(event);
+                self.add_hidden_events(vec![event], false);
                 None
             } else {
                 list.push_back(Item::for_event(event));
@@ -436,6 +483,7 @@ impl Timeline {
             .replace(batch.last().as_ref().map(|event| event.matrix_event_id()));
 
         {
+            let mut hidden_events: Vec<Event> = vec![];
             // Extend the size of the list so that rust doesn't need to reallocate memory multiple times
             priv_.list.borrow_mut().reserve(added);
 
@@ -446,12 +494,13 @@ impl Timeline {
                     .insert(event.matrix_event_id(), event.clone());
 
                 if event.is_hidden_event() {
-                    self.add_hidden_event(event);
+                    hidden_events.push(event);
                     added -= 1;
                 } else {
                     priv_.list.borrow_mut().push_front(Item::for_event(event));
                 }
             }
+            self.add_hidden_events(hidden_events, true);
         }
 
         self.items_changed(0, 0, added as u32);

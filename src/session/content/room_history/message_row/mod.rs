@@ -11,8 +11,7 @@ use gtk::{
 use log::warn;
 use matrix_sdk::ruma::events::{
     room::message::{MessageType, Relation},
-    room::redaction::RoomRedactionEventContent,
-    AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent,
+    AnyMessageEventContent,
 };
 
 use self::{file::MessageFile, media::MessageMedia, text::MessageText};
@@ -38,7 +37,7 @@ mod imp {
         pub timestamp: TemplateChild<gtk::Label>,
         #[template_child]
         pub content: TemplateChild<adw::Bin>,
-        pub relates_to_changed_handler: RefCell<Option<SignalHandlerId>>,
+        pub content_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub event: RefCell<Option<Event>>,
     }
@@ -140,8 +139,8 @@ impl MessageRow {
         let priv_ = imp::MessageRow::from_instance(self);
         // Remove signals and bindings from the previous event
         if let Some(event) = priv_.event.take() {
-            if let Some(relates_to_changed_handler) = priv_.relates_to_changed_handler.take() {
-                event.disconnect(relates_to_changed_handler);
+            if let Some(content_changed_handler) = priv_.content_changed_handler.take() {
+                event.disconnect(content_changed_handler);
             }
 
             while let Some(binding) = priv_.bindings.borrow_mut().pop() {
@@ -177,8 +176,8 @@ impl MessageRow {
         ]);
 
         priv_
-            .relates_to_changed_handler
-            .replace(Some(event.connect_relates_to_changed(
+            .content_changed_handler
+            .replace(Some(event.connect_content_changed(
                 clone!(@weak self as obj => move |event| {
                     obj.update_content(event);
                 }),
@@ -187,63 +186,9 @@ impl MessageRow {
         priv_.event.replace(Some(event));
     }
 
-    fn find_last_event(&self, event: &Event) -> Event {
-        if let Some(replacement_event) = event.relates_to().iter().rev().find(|event| {
-            let matrix_event = event.matrix_event();
-            match matrix_event {
-                Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomMessage(message))) => {
-                    message
-                        .content
-                        .relates_to
-                        .filter(|relation| matches!(relation, Relation::Replacement(_)))
-                        .is_some()
-                }
-                Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomRedaction(_))) => true,
-                _ => false,
-            }
-        }) {
-            if !replacement_event.relates_to().is_empty() {
-                self.find_last_event(replacement_event)
-            } else {
-                replacement_event.clone()
-            }
-        } else {
-            event.clone()
-        }
-    }
-    /// Find the content we need to display
-    fn find_content(&self, event: &Event) -> Option<AnyMessageEventContent> {
-        match self.find_last_event(event).matrix_event() {
-            Some(AnySyncRoomEvent::Message(message)) => Some(message.content()),
-            Some(AnySyncRoomEvent::RedactedMessage(message)) => {
-                if let Some(ref redaction_event) = message.unsigned().redacted_because {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        redaction_event.content.clone(),
-                    ))
-                } else {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        RoomRedactionEventContent::new(),
-                    ))
-                }
-            }
-            Some(AnySyncRoomEvent::RedactedState(state)) => {
-                if let Some(ref redaction_event) = state.unsigned().redacted_because {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        redaction_event.content.clone(),
-                    ))
-                } else {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        RoomRedactionEventContent::new(),
-                    ))
-                }
-            }
-            _ => None,
-        }
-    }
-
     fn update_content(&self, event: &Event) {
         let priv_ = imp::MessageRow::from_instance(self);
-        let content = self.find_content(event);
+        let content = event.content();
 
         // TODO: create widgets for all event types
         // TODO: display reaction events from event.relates_to()

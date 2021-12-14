@@ -1,12 +1,13 @@
-use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, glib::DateTime, prelude::*, subclass::prelude::*};
 use log::warn;
 use matrix_sdk::{
     deserialized_responses::SyncRoomEvent,
     ruma::{
         events::{
-            room::message::MessageType, room::message::Relation, AnyMessageEventContent,
-            AnyRedactedSyncMessageEvent, AnyRedactedSyncStateEvent, AnySyncMessageEvent,
-            AnySyncRoomEvent, AnySyncStateEvent, Unsigned,
+            room::message::Relation,
+            room::{message::MessageType, redaction::RoomRedactionEventContent},
+            AnyMessageEventContent, AnyRedactedSyncMessageEvent, AnyRedactedSyncStateEvent,
+            AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, Unsigned,
         },
         identifiers::{EventId, UserId},
         MilliSecondsSinceUnixEpoch,
@@ -26,6 +27,7 @@ mod imp {
     use super::*;
     use glib::object::WeakRef;
     use glib::subclass::Signal;
+    use glib::SignalHandlerId;
     use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
 
@@ -35,7 +37,9 @@ mod imp {
         pub event: RefCell<Option<AnySyncRoomEvent>>,
         /// The SDK event containing encryption information and the serialized event as `Raw`
         pub pure_event: RefCell<Option<SyncRoomEvent>>,
-        pub relates_to: RefCell<Vec<super::Event>>,
+        /// Events that replace this one, in the order they arrive.
+        pub replacing_events: RefCell<Vec<super::Event>>,
+        pub content_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub show_header: Cell<bool>,
         pub room: OnceCell<WeakRef<Room>>,
     }
@@ -50,7 +54,7 @@ mod imp {
     impl ObjectImpl for Event {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder("relates-to-changed", &[], <()>::static_type().into()).build()]
+                vec![Signal::builder("content-changed", &[], <()>::static_type().into()).build()]
             });
             SIGNALS.as_ref()
         }
@@ -478,22 +482,130 @@ impl Event {
         }
     }
 
-    pub fn add_relates_to(&self, events: Vec<Event>) {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.relates_to.borrow_mut().extend(events);
-        self.emit_by_name("relates-to-changed", &[]).unwrap();
+    /// Whether this is a replacing `Event`.
+    ///
+    /// Replacing matrix events are:
+    ///
+    /// - `RoomRedaction`
+    /// - `RoomMessage` with `Relation::Replacement`
+    pub fn is_replacing_event(&self) -> bool {
+        match self.matrix_event() {
+            Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomMessage(message))) => {
+                matches!(message.content.relates_to, Some(Relation::Replacement(_)))
+            }
+            Some(AnySyncRoomEvent::Message(AnySyncMessageEvent::RoomRedaction(_))) => true,
+            _ => false,
+        }
     }
 
-    pub fn relates_to(&self) -> Vec<Event> {
+    pub fn prepend_replacing_events(&self, events: Vec<Event>) {
         let priv_ = imp::Event::from_instance(self);
-        priv_.relates_to.borrow().clone()
+        priv_.replacing_events.borrow_mut().splice(..0, events);
     }
 
-    pub fn connect_relates_to_changed<F: Fn(&Self) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
-        self.connect_local("relates-to-changed", true, move |values| {
+    pub fn append_replacing_events(&self, events: Vec<Event>) {
+        let priv_ = imp::Event::from_instance(self);
+        let old_replacement = self.replacement();
+
+        priv_.replacing_events.borrow_mut().extend(events);
+
+        let new_replacement = self.replacement();
+
+        // Update the signal handler to the new replacement
+        if new_replacement != old_replacement {
+            if let Some(replacement) = old_replacement {
+                if let Some(content_changed_handler) = priv_.content_changed_handler.take() {
+                    replacement.disconnect(content_changed_handler);
+                }
+            }
+
+            // If the replacing event's content changed, this content changed too.
+            if let Some(replacement) = new_replacement {
+                priv_
+                    .content_changed_handler
+                    .replace(Some(replacement.connect_content_changed(
+                        clone!(@weak self as obj => move |_| {
+                            obj.emit_by_name("content-changed", &[]).unwrap();
+                        }),
+                    )));
+            }
+
+            self.emit_by_name("content-changed", &[]).unwrap();
+        }
+    }
+
+    pub fn replacing_events(&self) -> Vec<Event> {
+        let priv_ = imp::Event::from_instance(self);
+        priv_.replacing_events.borrow().clone()
+    }
+
+    /// The `Event` that replaces this one, if any.
+    ///
+    /// If this matrix event has been redacted or replaced, returns the corresponding `Event`,
+    /// otherwise returns `None`.
+    pub fn replacement(&self) -> Option<Event> {
+        self.replacing_events()
+            .iter()
+            .rev()
+            .find(|event| event.is_replacing_event() && !event.redacted())
+            .map(|event| event.clone())
+    }
+
+    /// Whether this matrix event has been redacted.
+    pub fn redacted(&self) -> bool {
+        self.replacement()
+            .filter(|event| {
+                matches!(
+                    event.matrix_event(),
+                    Some(AnySyncRoomEvent::Message(
+                        AnySyncMessageEvent::RoomRedaction(_)
+                    ))
+                )
+            })
+            .is_some()
+    }
+
+    /// The content of this matrix event.
+    pub fn original_content(&self) -> Option<AnyMessageEventContent> {
+        match self.matrix_event()? {
+            AnySyncRoomEvent::Message(message) => Some(message.content()),
+            AnySyncRoomEvent::RedactedMessage(message) => {
+                if let Some(ref redaction_event) = message.unsigned().redacted_because {
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        redaction_event.content.clone(),
+                    ))
+                } else {
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        RoomRedactionEventContent::new(),
+                    ))
+                }
+            }
+            AnySyncRoomEvent::RedactedState(state) => {
+                if let Some(ref redaction_event) = state.unsigned().redacted_because {
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        redaction_event.content.clone(),
+                    ))
+                } else {
+                    Some(AnyMessageEventContent::RoomRedaction(
+                        RoomRedactionEventContent::new(),
+                    ))
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// The content to display for this `Event`.
+    ///
+    /// If this matrix event has been replaced, returns the replacing `Event`'s content.
+    pub fn content(&self) -> Option<AnyMessageEventContent> {
+        self.replacement()
+            .and_then(|replacement| replacement.content())
+            .or(self.original_content())
+    }
+
+    pub fn connect_content_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("content-changed", true, move |values| {
             let obj = values[0].get::<Self>().unwrap();
 
             f(&obj);
