@@ -2,6 +2,10 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 
 use crate::session::{Avatar, Session};
+use crate::spawn_tokio;
+use matrix_sdk::encryption::identities::UserIdentity;
+
+use log::error;
 
 mod imp {
     use super::*;
@@ -118,6 +122,20 @@ impl User {
     pub fn new(session: &Session, user_id: &UserId) -> Self {
         glib::Object::new(&[("session", session), ("user-id", &user_id.as_str())])
             .expect("Failed to create User")
+    }
+
+    pub async fn crypto_identity(&self) -> Option<UserIdentity> {
+        let client = self.session().client();
+        let user_id = self.user_id().to_owned();
+        let handle = spawn_tokio!(async move { client.get_user_identity(&user_id).await });
+
+        match handle.await.unwrap() {
+            Ok(identity) => identity,
+            Err(error) => {
+                error!("Failed to find crypto identity: {}", error);
+                None
+            }
+        }
     }
 }
 

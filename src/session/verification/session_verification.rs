@@ -8,7 +8,7 @@ use crate::contrib::screenshot;
 use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
 use crate::contrib::QrCodeScanner;
-use crate::session::verification::{Emoji, IdentityVerification, VerificationMode};
+use crate::session::verification::{Emoji, IdentityVerification, SasData, VerificationMode};
 use crate::session::Session;
 use crate::spawn;
 use crate::Error;
@@ -281,8 +281,6 @@ impl SessionVerification {
         );
 
         priv_.mode_handler.replace(Some(handler));
-
-        request.start();
     }
 
     /// Cancel the verification request without telling the user about it
@@ -302,7 +300,8 @@ impl SessionVerification {
         let priv_ = imp::SessionVerification::from_instance(self);
         let request = self.request();
         match request.mode() {
-            VerificationMode::IdentityNotFound => {
+            // FIXME: we bootstrap on all errors
+            VerificationMode::Error => {
                 priv_.main_stack.set_visible_child_name("bootstrap");
             }
             VerificationMode::Requested => {
@@ -310,7 +309,7 @@ impl SessionVerification {
             }
             VerificationMode::QrV1Show => {
                 if let Some(qrcode) = request.qr_code() {
-                    priv_.qrcode.set_qrcode(qrcode);
+                    priv_.qrcode.set_qrcode(qrcode.clone());
                     priv_.main_stack.set_visible_child_name("qrcode");
                 } else {
                     warn!("Failed to get qrcode for QrVerification");
@@ -322,7 +321,7 @@ impl SessionVerification {
             }
             VerificationMode::SasV1 => {
                 // TODO: implement sas fallback when emojis arn't supported
-                if let Some(emoji) = request.emoji() {
+                if let Some(SasData::Emoji(emoji)) = request.sas_data() {
                     for (index, emoji) in emoji.iter().enumerate() {
                         if index < 4 {
                             priv_.emoji_row_1.append(&Emoji::new(emoji));

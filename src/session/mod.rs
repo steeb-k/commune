@@ -523,7 +523,7 @@ impl Session {
 
                 priv_.logout_on_dispose.set(true);
 
-                let verification = IdentityVerification::new(obj.user().unwrap());
+                let verification = IdentityVerification::create(&obj, obj.user().unwrap()).await;
                 let session = SessionVerification::new(&verification, &obj);
                 obj.verification_list().add(verification);
                 priv_
