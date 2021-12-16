@@ -75,7 +75,11 @@
               </object>
             </child>
             <child>
-              <object class="IdentityVerificationWidget" id="identity_verification_widget"/>
+              <object class="GtkScrolledWindow">
+                <child>
+                  <object class="IdentityVerificationWidget" id="identity_verification_widget"/>
+                </child>
+              </object>
             </child>
           </object>
         </child>
@@ -83,4 +87,3 @@
     </property>
   </template>
 </interface>
-
