@@ -215,7 +215,7 @@ headerbar.flat {
 
 .room-history .event-content .thumbnail {
   border-radius: 6px;
-  background-color: @light_3;
+  background-color: @borders;
 }
 
 .room-history .event-content .thumbnail .osd.circular {
