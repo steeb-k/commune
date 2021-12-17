@@ -14,7 +14,7 @@ use self::verification::IdentityVerificationWidget;
 
 use crate::session::sidebar::{Entry, EntryType};
 
-use crate::session::verification::{IdentityVerification, VerificationMode};
+use crate::session::verification::IdentityVerification;
 
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -219,12 +219,15 @@ impl Content {
             }
 
             if item.is::<IdentityVerification>() {
-                let handler_id = item.connect_notify_local(Some("mode"), clone!(@weak self as obj => move |request, _| {
-                    let request = request.downcast_ref::<IdentityVerification>().unwrap();
-                    if request.mode() == VerificationMode::Cancelled || request.mode() == VerificationMode::Error || request.mode() == VerificationMode::Dismissed {
-                        obj.set_item(None);
-                    }
-                }));
+                let handler_id = item.connect_notify_local(
+                    Some("mode"),
+                    clone!(@weak self as obj => move |request, _| {
+                        let request = request.downcast_ref::<IdentityVerification>().unwrap();
+                        if request.is_finished() {
+                            obj.set_item(None);
+                        }
+                    }),
+                );
                 priv_.signal_handler.replace(Some(handler_id));
             }
         }
