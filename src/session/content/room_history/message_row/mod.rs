@@ -302,9 +302,31 @@ impl MessageRow {
                         };
                         child.video(message, &event.room().session());
                     }
-                    MessageType::VerificationRequest(_message) => {}
+                    MessageType::VerificationRequest(_) => {
+                        // TODO: show more information about the verification
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageText>())
+                        {
+                            child
+                        } else {
+                            let child = MessageText::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.text(gettext("Identity verification was started"));
+                    }
                     _ => {
-                        warn!("Event not supported: {:?}", msgtype)
+                        warn!("Event not supported: {:?}", msgtype);
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageText>())
+                        {
+                            child
+                        } else {
+                            let child = MessageText::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.text(gettext("Unsupported event"));
                     }
                 }
             }
