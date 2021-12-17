@@ -2,7 +2,7 @@ mod identity_verification;
 mod verification_list;
 
 pub use self::identity_verification::{IdentityVerification, Mode as VerificationMode, SasData};
-pub use self::verification_list::VerificationList;
+pub use self::verification_list::{FlowId, VerificationList};
 
 use std::time::Duration;
 /// The time a verification is valid after it's creation.

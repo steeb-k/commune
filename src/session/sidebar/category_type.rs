@@ -24,7 +24,7 @@ impl Default for CategoryType {
 impl ToString for CategoryType {
     fn to_string(&self) -> String {
         match self {
-            CategoryType::VerificationRequest => gettext("Login Requests"),
+            CategoryType::VerificationRequest => gettext("Verifications"),
             CategoryType::Invited => gettext("Invited"),
             CategoryType::Favorite => gettext("Favorite"),
             CategoryType::Normal => gettext("Rooms"),

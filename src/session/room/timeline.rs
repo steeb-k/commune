@@ -1,17 +1,23 @@
 use std::collections::HashMap;
 
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use log::error;
+use log::{error, warn};
 use matrix_sdk::{
     ruma::{
         api::client::r0::message::get_message_events::Direction,
-        events::{AnySyncRoomEvent, AnySyncStateEvent},
+        events::{
+            room::message::MessageType, AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent,
+        },
         identifiers::EventId,
     },
     uuid::Uuid,
 };
 
-use crate::session::room::{Event, Item, ItemType, Room};
+use crate::session::{
+    room::{Event, Item, ItemType, Room},
+    user::UserExt,
+    verification::{FlowId, IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
+};
 use crate::{spawn, spawn_tokio};
 
 mod imp {
@@ -35,6 +41,8 @@ mod imp {
         pub loading: Cell<bool>,
         pub complete: Cell<bool>,
         pub oldest_event: RefCell<Option<EventId>>,
+        /// The most recent verification reuqest event
+        pub verification: RefCell<Option<IdentityVerification>>,
     }
 
     #[glib::object_subclass]
@@ -77,6 +85,13 @@ mod imp {
                         false,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_object(
+                        "verification",
+                        "Verification",
+                        "The most recent active verification for a user in this timeline",
+                        IdentityVerification::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -105,6 +120,7 @@ mod imp {
                 "loading" => obj.loading().to_value(),
                 "empty" => obj.is_empty().to_value(),
                 "complete" => obj.is_complete().to_value(),
+                "verification" => obj.verification().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -399,6 +415,8 @@ impl Timeline {
             for event in batch.into_iter() {
                 let event_id = event.matrix_event_id();
 
+                self.handle_verification(&event);
+
                 if let Some(pending_id) = event
                     .matrix_transaction_id()
                     .and_then(|txn_id| pending_events.remove(&txn_id))
@@ -488,6 +506,8 @@ impl Timeline {
             priv_.list.borrow_mut().reserve(added);
 
             for event in batch {
+                self.handle_verification(&event);
+
                 priv_
                     .event_map
                     .borrow_mut()
@@ -622,5 +642,107 @@ impl Timeline {
                obj.set_loading(false);
             })
         );
+    }
+
+    fn set_verification(&self, verification: IdentityVerification) {
+        let priv_ = imp::Timeline::from_instance(self);
+
+        priv_.verification.replace(Some(verification));
+        self.notify("verification");
+    }
+
+    pub fn verification(&self) -> Option<IdentityVerification> {
+        let priv_ = imp::Timeline::from_instance(self);
+
+        priv_.verification.borrow().clone()
+    }
+
+    fn handle_verification(&self, event: &Event) {
+        let message = if let Some(AnySyncRoomEvent::Message(message)) = event.matrix_event() {
+            message
+        } else {
+            return;
+        };
+
+        let session = self.room().session();
+
+        let flow_id = match message {
+            AnySyncMessageEvent::RoomMessage(message) => {
+                if let MessageType::VerificationRequest(request) = message.content.msgtype {
+                    // Ignore request that are too old
+                    if let Some(time) = message.origin_server_ts.to_system_time() {
+                        if let Ok(duration) = time.elapsed() {
+                            if duration > VERIFICATION_CREATION_TIMEOUT {
+                                return;
+                            }
+                        } else {
+                            warn!("Ignoring verification request because it was sent in the future. The system time of the server or the local machine is probably wrong.");
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+
+                    let user = session.user().unwrap();
+
+                    let user_to_verify = if &request.to == user.user_id() {
+                        // The request was sent by another user to verify us
+                        event.sender()
+                    } else if &message.sender == user.user_id() {
+                        // The request was sent by us to verify another user
+                        self.room().members().member_by_id(&request.to)
+                    } else {
+                        // Ignore the request when it doesn't verify us or wasn't set by us
+                        return;
+                    };
+
+                    let request = IdentityVerification::for_flow_id(
+                        event.matrix_event_id().as_str(),
+                        &session,
+                        &user_to_verify.upcast(),
+                        &event.timestamp(),
+                    );
+
+                    // Ignore the request when we have a newer one
+                    let previous_verification = self.verification();
+                    if previous_verification.is_none()
+                        || request.start_time() > previous_verification.unwrap().start_time()
+                    {
+                        session.verification_list().add(request.clone());
+                        self.set_verification(request);
+                    }
+                }
+
+                return;
+            }
+            AnySyncMessageEvent::KeyVerificationReady(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            AnySyncMessageEvent::KeyVerificationStart(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            AnySyncMessageEvent::KeyVerificationCancel(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            AnySyncMessageEvent::KeyVerificationAccept(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            AnySyncMessageEvent::KeyVerificationKey(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            AnySyncMessageEvent::KeyVerificationMac(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            AnySyncMessageEvent::KeyVerificationDone(e) => {
+                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+            }
+            _ => {
+                return;
+            }
+        };
+
+        if let Some(request) = session.verification_list().get_by_id(&flow_id) {
+            request.notify_state();
+        }
     }
 }
