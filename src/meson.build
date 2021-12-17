@@ -79,6 +79,10 @@ sources = files(
   'session/content/room_details/member_page/mod.rs',
   'session/content/room_details/member_page/member_row.rs',
   'session/content/room_details/mod.rs',
+  'session/content/verification/emoji.rs',
+  'session/content/verification/mod.rs',
+  'session/content/verification/identity_verification_widget.rs',
+  'session/content/verification/session_verification.rs',
   'session/media_viewer.rs',
   'session/room/event.rs',
   'session/room/event_actions.rs',
@@ -111,10 +115,7 @@ sources = files(
   'session/sidebar/account_switcher/user_entry.rs',
   'session/sidebar/category_type.rs',
   'session/verification/mod.rs',
-  'session/verification/emoji.rs',
   'session/verification/identity_verification.rs',
-  'session/verification/incoming_verification.rs',
-  'session/verification/session_verification.rs',
   'session/verification/verification_list.rs',
 )
 

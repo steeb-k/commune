@@ -3,12 +3,13 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::{debug, error, warn};
 
+use super::Emoji;
 use crate::components::{AuthDialog, SpinnerButton};
 use crate::contrib::screenshot;
 use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
 use crate::contrib::QrCodeScanner;
-use crate::session::verification::{Emoji, IdentityVerification, SasData, VerificationMode};
+use crate::session::verification::{IdentityVerification, SasData, VerificationMode};
 use crate::session::Session;
 use crate::spawn;
 use crate::Error;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="IncomingVerification" parent="AdwBin">
+  <template class="IdentityVerificationWidget" parent="AdwBin">
     <style>
       <class name="incoming-verification"/>
     </style>

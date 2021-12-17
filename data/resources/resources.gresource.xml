@@ -54,7 +54,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="room-creation.ui">ui/room-creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="session-verification.ui">ui/session-verification.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="verification-emoji.ui">ui/verification-emoji.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="incoming-verification.ui">ui/incoming-verification.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="identity-verification-widget.ui">ui/identity-verification-widget.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="qr-code-scanner.ui">ui/qr-code-scanner.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="components-video-player.ui">ui/components-video-player.ui</file>
     <file compressed="true">style.css</file>

@@ -3,15 +3,18 @@ mod invite;
 mod markdown_popover;
 mod room_details;
 mod room_history;
+pub mod verification;
 
 use self::explore::Explore;
 use self::invite::Invite;
 use self::markdown_popover::MarkdownPopover;
 use self::room_details::RoomDetails;
 use self::room_history::RoomHistory;
+use self::verification::IdentityVerificationWidget;
+
 use crate::session::sidebar::{Entry, EntryType};
 
-use crate::session::verification::{IdentityVerification, IncomingVerification, VerificationMode};
+use crate::session::verification::{IdentityVerification, VerificationMode};
 
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -47,7 +50,7 @@ mod imp {
         #[template_child]
         pub verification_page: TemplateChild<gtk::Box>,
         #[template_child]
-        pub incoming_verification: TemplateChild<IncomingVerification>,
+        pub identity_verification_widget: TemplateChild<IdentityVerificationWidget>,
     }
 
     #[glib::object_subclass]
@@ -148,7 +151,7 @@ mod imp {
                 .connect_visible_child_notify(clone!(@weak obj => move |stack| {
                     let priv_ = imp::Content::from_instance(&obj);
                     if stack.visible_child().as_ref() != Some(priv_.verification_page.upcast_ref::<gtk::Widget>()) {
-                        priv_.incoming_verification.set_request(None);
+                        priv_.identity_verification_widget.set_request(None);
                     }
                 }));
         }
@@ -273,7 +276,9 @@ impl Content {
                     .as_ref()
                     .and_then(|item| item.downcast_ref::<IdentityVerification>())
                 {
-                    priv_.incoming_verification.set_request(Some(item.clone()));
+                    priv_
+                        .identity_verification_widget
+                        .set_request(Some(item.clone()));
                     priv_.stack.set_visible_child(&*priv_.verification_page);
                 }
             }

@@ -12,6 +12,7 @@ pub mod verification;
 
 use self::account_settings::AccountSettings;
 pub use self::avatar::Avatar;
+use self::content::verification::SessionVerification;
 use self::content::Content;
 use self::media_viewer::MediaViewer;
 pub use self::room::{Event, Item, Room};
@@ -19,7 +20,7 @@ pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
-use self::verification::{IdentityVerification, SessionVerification, VerificationList};
+use self::verification::{IdentityVerification, VerificationList};
 use crate::session::sidebar::ItemList;
 
 use crate::secret;

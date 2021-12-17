@@ -75,7 +75,7 @@
               </object>
             </child>
             <child>
-              <object class="IncomingVerification" id="incoming_verification"/>
+              <object class="IdentityVerificationWidget" id="identity_verification_widget"/>
             </child>
           </object>
         </child>

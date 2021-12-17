@@ -31,6 +31,7 @@ data/resources/ui/event-menu.ui
 data/resources/ui/event-source-dialog.ui
 data/resources/ui/login.ui
 data/resources/ui/in-app-notification.ui
+data/resources/ui/identity-verification-widget.ui
 data/resources/ui/media-viewer.ui
 data/resources/ui/room-creation.ui
 data/resources/ui/session.ui
@@ -96,6 +97,9 @@ src/session/content/room_history/message_row/text.rs
 src/session/content/room_history/mod.rs
 src/session/content/room_history/state_row.rs
 src/session/content/room_history/state_row/mod.rs
+src/session/content/verification/emoji.rs
+src/session/content/verification/identity_verification_widget.rs
+src/session/content/verification/session_verification.rs
 src/session/media_viewer.rs
 src/session/mod.rs
 src/session/room_creation/mod.rs
@@ -124,10 +128,8 @@ src/session/sidebar/mod.rs
 src/session/sidebar/room_row.rs
 src/session/sidebar/row.rs
 src/session/sidebar/selection.rs
-src/session/verification/emoji.rs
 src/session/verification/identity_verification.rs
 src/session/verification/mod.rs
-src/session/verification/session_verification.rs
 src/session/verification/verification_list.rs
 src/session/user.rs
 src/user_facing_error.rs
