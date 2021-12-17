@@ -321,17 +321,29 @@ impl SessionVerification {
                 self.start_scanning();
             }
             VerificationMode::SasV1 => {
-                // TODO: implement sas fallback when emojis arn't supported
-                if let Some(SasData::Emoji(emoji)) = request.sas_data() {
-                    for (index, emoji) in emoji.iter().enumerate() {
-                        if index < 4 {
-                            priv_.emoji_row_1.append(&Emoji::new(emoji));
-                        } else {
-                            priv_.emoji_row_2.append(&Emoji::new(emoji));
+                match request.sas_data().unwrap() {
+                    SasData::Emoji(emoji) => {
+                        for (index, emoji) in emoji.iter().enumerate() {
+                            if index < 4 {
+                                priv_.emoji_row_1.append(&Emoji::new(emoji));
+                            } else {
+                                priv_.emoji_row_2.append(&Emoji::new(emoji));
+                            }
                         }
                     }
-                    priv_.main_stack.set_visible_child_name("emoji");
+                    SasData::Decimal((a, b, c)) => {
+                        let container = gtk::Box::builder()
+                            .spacing(24)
+                            .css_classes(vec!["emoji".to_string()])
+                            .build();
+                        container.append(&gtk::Label::builder().label(&a.to_string()).build());
+                        container.append(&gtk::Label::builder().label(&b.to_string()).build());
+                        container.append(&gtk::Label::builder().label(&c.to_string()).build());
+                        priv_.emoji_row_1.append(&container);
+                    }
                 }
+
+                priv_.main_stack.set_visible_child_name("emoji");
             }
             VerificationMode::Completed => {
                 priv_.main_stack.set_visible_child_name("completed");
