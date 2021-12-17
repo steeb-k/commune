@@ -11,7 +11,10 @@ use log::warn;
 use matrix_sdk::{
     encryption::{
         identities::RequestVerificationError,
-        verification::{CancelInfo, Emoji, QrVerificationData, VerificationRequest},
+        verification::{
+            CancelInfo, Emoji, QrVerificationData, SasVerification, Verification,
+            VerificationRequest,
+        },
     },
     ruma::{
         events::key::verification::{cancel::CancelCode, VerificationMethod},
@@ -559,6 +562,7 @@ impl IdentityVerification {
 }
 
 struct Context {
+    client: Client,
     main_sender: glib::SyncSender<MainMessage>,
     sync_receiver: mpsc::Receiver<Message>,
     request: VerificationRequest,
@@ -568,6 +572,21 @@ macro_rules! wait {
     ( $this:ident $(, $expected:expr )? $(; expect_match $allow_action:ident )? ) => {
         {
             loop {
+                // FIXME: add method to the sdk to check if a SAS verification was started
+                if let Some(Verification::SasV1(sas)) = $this.client.get_verification($this.request.other_user_id(), $this.request.flow_id()).await {
+                    return Ok($this.continue_sas(sas).await?);
+                }
+
+                if $this.request.is_passive() {
+                    return Ok(Mode::Passive);
+                }
+
+                $(
+                    if $expected {
+                        break;
+                    }
+                )?
+
                 match $this.sync_receiver.recv().await.expect("The channel was closed unexpected") {
                     Message::NotifyState if $this.request.is_cancelled() => {
                         if let Some(info) = $this.request.cancel_info() {
@@ -601,16 +620,6 @@ macro_rules! wait {
                     Message::NotifyState => {
                     }
                 }
-
-                if $this.request.is_passive() {
-                    return Ok(Mode::Passive);
-                }
-
-                $(
-                    if $expected {
-                        break;
-                    }
-                )?
             }
         }
     };
@@ -621,6 +630,16 @@ macro_rules! wait_without_scanning_sas {
     ( $this:ident $(, $expected:expr )?) => {
         {
             loop {
+                if $this.request.is_passive() {
+                    return Ok(Mode::Passive);
+                }
+
+                $(
+                    if $expected {
+                        break;
+                    }
+                )?
+
                 match $this.sync_receiver.recv().await.expect("The channel was closed unexpected") {
                     Message::NotifyState if $this.request.is_cancelled() => {
                         if let Some(info) = $this.request.cancel_info() {
@@ -651,16 +670,6 @@ macro_rules! wait_without_scanning_sas {
                     Message::NotifyState => {
                     }
                 }
-
-                if $this.request.is_passive() {
-                    return Ok(Mode::Passive);
-                }
-
-                $(
-                    if $expected {
-                        break;
-                    }
-                )?
             }
         }
     };
@@ -677,6 +686,7 @@ impl Context {
         let request = client.get_verification_request(user_id, flow_id).await?;
 
         Some(Self {
+            client,
             request,
             main_sender,
             sync_receiver,
@@ -790,7 +800,7 @@ impl Context {
         Ok(Mode::Completed)
     }
 
-    async fn start_sas(mut self) -> Result<Mode, RequestVerificationError> {
+    async fn start_sas(self) -> Result<Mode, RequestVerificationError> {
         let request = self
             .request
             .start_sas()
@@ -798,6 +808,13 @@ impl Context {
             .map_err(|error| RequestVerificationError::Sdk(error))?
             .expect("Sas should be supported");
 
+        self.continue_sas(request).await
+    }
+
+    async fn continue_sas(
+        mut self,
+        request: SasVerification,
+    ) -> Result<Mode, RequestVerificationError> {
         request.accept().await?;
 
         wait_without_scanning_sas![self, request.can_be_presented()];
