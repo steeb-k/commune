@@ -218,8 +218,17 @@ impl MessageRow {
                     }
                     MessageType::File(message) => {
                         let filename = message.filename.unwrap_or(message.body);
-                        let child = MessageFile::new(Some(filename));
-                        priv_.content.set_child(Some(&child));
+
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageFile>())
+                        {
+                            child
+                        } else {
+                            let child = MessageFile::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.set_filename(Some(filename));
                     }
                     MessageType::Image(message) => {
                         let child = MessageMedia::image(message, &event.room().session());

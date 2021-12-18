@@ -81,8 +81,8 @@ glib::wrapper! {
 }
 
 impl MessageFile {
-    pub fn new(filename: Option<String>) -> Self {
-        glib::Object::new(&[("filename", &filename)]).expect("Failed to create MessageFile")
+    pub fn new() -> Self {
+        glib::Object::new(&[]).expect("Failed to create MessageFile")
     }
 
     pub fn set_filename(&self, filename: Option<String>) {
@@ -106,6 +106,6 @@ impl MessageFile {
 
 impl Default for MessageFile {
     fn default() -> Self {
-        Self::new(None)
+        Self::new()
     }
 }
