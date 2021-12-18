@@ -13,32 +13,13 @@ use crate::session::{
     UserExt,
 };
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
-#[repr(u32)]
-#[genum(type_name = "TextFormat")]
-pub enum TextFormat {
-    Text = 0,
-    Markup = 1,
-    Html = 2,
-    Emote = 3,
-    HtmlEmote = 4,
-}
-
-impl Default for TextFormat {
-    fn default() -> Self {
-        TextFormat::Text
-    }
-}
-
 mod imp {
     use super::*;
     use once_cell::sync::Lazy;
-    use std::cell::{Cell, RefCell};
+    use std::cell::RefCell;
 
     #[derive(Debug, Default)]
     pub struct MessageText {
-        /// The format of the text message.
-        pub format: Cell<TextFormat>,
         /// The displayed content of the message.
         pub body: RefCell<Option<String>>,
         /// The sender of the message(only used for emotes).
@@ -56,20 +37,12 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_enum(
-                        "format",
-                        "Format",
-                        "The format of the text message",
-                        TextFormat::static_type(),
-                        TextFormat::default() as i32,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
                     glib::ParamSpec::new_string(
                         "body",
                         "Body",
                         "The displayed content of the message",
                         None,
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
                         "sender",
@@ -92,7 +65,6 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "format" => obj.set_format(value.get().unwrap()),
                 "body" => obj.set_body(value.get().unwrap()),
                 "sender" => obj.set_sender(value.get().unwrap()),
                 _ => unimplemented!(),
@@ -101,7 +73,6 @@ mod imp {
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "format" => obj.format().to_value(),
                 "body" => obj.body().to_value(),
                 "sender" => obj.sender().to_value(),
                 _ => unimplemented!(),
@@ -125,13 +96,21 @@ glib::wrapper! {
 }
 
 impl MessageText {
-    // Creates a widget that displays plain text.
-    pub fn text(body: String) -> Self {
-        glib::Object::new(&[("body", &body)]).expect("Failed to create MessageText")
+    /// Creates a text widget.
+    pub fn new() -> Self {
+        glib::Object::new(&[]).expect("Failed to create MessageText")
     }
 
-    // Creates a widget that displays text with markup. It will detect if it should display the body or the formatted body.
-    pub fn markup(formatted: Option<FormattedBody>, body: String) -> Self {
+    /// Display the given plain text.
+    pub fn text(&self, body: String) {
+        self.build_text(&body, false);
+        self.set_body(Some(body));
+    }
+
+    /// Display the given text with markup.
+    ///
+    /// It will detect if it should display the body or the formatted body.
+    pub fn markup(&self, formatted: Option<FormattedBody>, body: String) {
         if let Some((html_blocks, body)) = formatted
             .filter(|formatted| is_valid_formatted_body(formatted))
             .and_then(|formatted| {
@@ -139,60 +118,13 @@ impl MessageText {
                     .and_then(|blocks| Some((blocks, formatted.body)))
             })
         {
-            let self_: Self = glib::Object::new(&[("format", &TextFormat::Html), ("body", &body)])
-                .expect("Failed to create MessageText");
-
-            self_.build_html(html_blocks);
-            self_
+            self.build_html(html_blocks);
+            self.set_body(Some(body));
         } else {
-            let self_: Self =
-                glib::Object::new(&[("format", &TextFormat::Markup), ("body", &linkify(&body))])
-                    .expect("Failed to create MessageText");
-
-            self_.build();
-            self_
+            let body = linkify(&body);
+            self.build_text(&body, true);
+            self.set_body(Some(body));
         }
-    }
-
-    // Creates a widget that displays an emote. It will detect if it should display the body or the formatted body.
-    pub fn emote(formatted: Option<FormattedBody>, body: String, sender: Member) -> Self {
-        if let Some(body) = formatted
-            .filter(|formatted| is_valid_formatted_body(formatted))
-            .and_then(|formatted| {
-                let body = format!("<b>{}</b> {}", sender.display_name(), formatted.body);
-
-                parse_formatted_body(&body).and_then(|_| Some(formatted.body))
-            })
-        {
-            glib::Object::new(&[
-                ("format", &TextFormat::HtmlEmote),
-                ("body", &body),
-                ("sender", &Some(sender)),
-            ])
-            .expect("Failed to create MessageText")
-        } else {
-            glib::Object::new(&[
-                ("format", &TextFormat::Emote),
-                ("body", &linkify(&body)),
-                ("sender", &Some(sender)),
-            ])
-            .expect("Failed to create MessageText")
-        }
-    }
-
-    pub fn set_format(&self, format: TextFormat) {
-        let priv_ = imp::MessageText::from_instance(self);
-
-        if format == priv_.format.get() {
-            return;
-        }
-
-        priv_.format.set(format);
-    }
-
-    pub fn format(&self) -> TextFormat {
-        let priv_ = imp::MessageText::from_instance(self);
-        priv_.format.get()
     }
 
     pub fn set_body(&self, body: Option<String>) {
@@ -218,11 +150,6 @@ impl MessageText {
         }
 
         priv_.sender.replace(sender);
-
-        if self.format() == TextFormat::Emote || self.format() == TextFormat::HtmlEmote {
-            self.build();
-        }
-
         self.notify("sender");
     }
 
@@ -231,48 +158,34 @@ impl MessageText {
         priv_.sender.borrow().to_owned()
     }
 
-    fn build(&self) {
-        match self.format() {
-            TextFormat::Text => {
-                self.build_text(&self.body().unwrap(), false);
-            }
-            TextFormat::Markup => {
-                self.build_text(&self.body().unwrap(), true);
-            }
-            TextFormat::Html => {
-                let formatted = FormattedBody {
-                    body: self.body().unwrap(),
-                    format: MessageFormat::Html,
-                };
+    /// Display the given emote for `sender`.
+    ///
+    /// It will detect if it should display the body or the formatted body.
+    pub fn emote(&self, formatted: Option<FormattedBody>, body: String, sender: Member) {
+        if let Some(body) = formatted
+            .filter(|formatted| is_valid_formatted_body(formatted))
+            .and_then(|formatted| {
+                let body = format!("<b>{}</b> {}", sender.display_name(), formatted.body);
 
-                let html = parse_formatted_body(&formatted.body).unwrap();
-                self.build_html(html);
-            }
-            TextFormat::Emote => {
-                // TODO: we need to bind the display name to the sender
-                self.build_text(
-                    &format!(
-                        "<b>{}</b> {}",
-                        self.sender().unwrap().display_name(),
-                        &self.body().unwrap()
-                    ),
-                    true,
-                );
-            }
-            TextFormat::HtmlEmote => {
-                // TODO: we need to bind the display name to the sender
-                let formatted = FormattedBody {
-                    body: format!(
-                        "<b>{}</b> {}",
-                        self.sender().unwrap().display_name(),
-                        self.body().unwrap()
-                    ),
-                    format: MessageFormat::Html,
-                };
+                parse_formatted_body(&body).and_then(|_| Some(formatted.body))
+            })
+        {
+            // TODO: we need to bind the display name to the sender
+            let formatted = FormattedBody {
+                body: format!("<b>{}</b> {}", sender.display_name(), &body),
+                format: MessageFormat::Html,
+            };
 
-                let html = parse_formatted_body(&formatted.body).unwrap();
-                self.build_html(html);
-            }
+            let html = parse_formatted_body(&formatted.body).unwrap();
+            self.build_html(html);
+            self.set_body(Some(body));
+            self.set_sender(Some(sender));
+        } else {
+            // TODO: we need to bind the display name to the sender
+            let body = linkify(&body);
+            self.build_text(&format!("<b>{}</b> {}", sender.display_name(), &body), true);
+            self.set_body(Some(body));
+            self.set_sender(Some(sender));
         }
     }
 
@@ -408,6 +321,6 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
 
 impl Default for MessageText {
     fn default() -> Self {
-        Self::text(format!(""))
+        Self::new()
     }
 }

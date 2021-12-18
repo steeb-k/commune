@@ -205,9 +205,16 @@ impl MessageRow {
                 match msgtype {
                     MessageType::Audio(_message) => {}
                     MessageType::Emote(message) => {
-                        let child =
-                            MessageText::emote(message.formatted, message.body, event.sender());
-                        priv_.content.set_child(Some(&child));
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageText>())
+                        {
+                            child
+                        } else {
+                            let child = MessageText::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.emote(message.formatted, message.body, event.sender());
                     }
                     MessageType::File(message) => {
                         let filename = message.filename.unwrap_or(message.body);
@@ -220,16 +227,40 @@ impl MessageRow {
                     }
                     MessageType::Location(_message) => {}
                     MessageType::Notice(message) => {
-                        let child = MessageText::markup(message.formatted, message.body);
-                        priv_.content.set_child(Some(&child));
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageText>())
+                        {
+                            child
+                        } else {
+                            let child = MessageText::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.markup(message.formatted, message.body);
                     }
                     MessageType::ServerNotice(message) => {
-                        let child = MessageText::text(message.body);
-                        priv_.content.set_child(Some(&child));
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageText>())
+                        {
+                            child
+                        } else {
+                            let child = MessageText::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.text(message.body);
                     }
                     MessageType::Text(message) => {
-                        let child = MessageText::markup(message.formatted, message.body);
-                        priv_.content.set_child(Some(&child));
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageText>())
+                        {
+                            child
+                        } else {
+                            let child = MessageText::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.markup(message.formatted, message.body);
                     }
                     MessageType::Video(message) => {
                         let child = MessageMedia::video(message, &event.room().session());
@@ -247,16 +278,40 @@ impl MessageRow {
             }
             Some(AnyMessageEventContent::RoomEncrypted(content)) => {
                 warn!("Couldn't decrypt event {:?}", content);
-                let child = MessageText::text(gettext("Fractal couldn't decrypt this message."));
-                priv_.content.set_child(Some(&child));
+                let child = if let Some(Ok(child)) =
+                    priv_.content.child().map(|w| w.downcast::<MessageText>())
+                {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    priv_.content.set_child(Some(&child));
+                    child
+                };
+                child.text(gettext("Fractal couldn't decrypt this message."));
             }
             Some(AnyMessageEventContent::RoomRedaction(_)) => {
-                let child = MessageText::text(gettext("This message was removed."));
-                priv_.content.set_child(Some(&child));
+                let child = if let Some(Ok(child)) =
+                    priv_.content.child().map(|w| w.downcast::<MessageText>())
+                {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    priv_.content.set_child(Some(&child));
+                    child
+                };
+                child.text(gettext("This message was removed."));
             }
             _ => {
-                let child = MessageText::text(gettext("Unsupported event"));
-                priv_.content.set_child(Some(&child));
+                let child = if let Some(Ok(child)) =
+                    priv_.content.child().map(|w| w.downcast::<MessageText>())
+                {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    priv_.content.set_child(Some(&child));
+                    child
+                };
+                child.text(gettext("Unsupported event"));
             }
         }
     }
