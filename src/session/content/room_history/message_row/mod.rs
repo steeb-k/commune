@@ -231,8 +231,16 @@ impl MessageRow {
                         child.set_filename(Some(filename));
                     }
                     MessageType::Image(message) => {
-                        let child = MessageMedia::image(message, &event.room().session());
-                        priv_.content.set_child(Some(&child));
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageMedia>())
+                        {
+                            child
+                        } else {
+                            let child = MessageMedia::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.image(message, &event.room().session());
                     }
                     MessageType::Location(_message) => {}
                     MessageType::Notice(message) => {
@@ -272,8 +280,16 @@ impl MessageRow {
                         child.markup(message.formatted, message.body);
                     }
                     MessageType::Video(message) => {
-                        let child = MessageMedia::video(message, &event.room().session());
-                        priv_.content.set_child(Some(&child));
+                        let child = if let Some(Ok(child)) =
+                            priv_.content.child().map(|w| w.downcast::<MessageMedia>())
+                        {
+                            child
+                        } else {
+                            let child = MessageMedia::new();
+                            priv_.content.set_child(Some(&child));
+                            child
+                        };
+                        child.video(message, &event.room().session());
                     }
                     MessageType::VerificationRequest(_message) => {}
                     _ => {
@@ -282,8 +298,16 @@ impl MessageRow {
                 }
             }
             Some(AnyMessageEventContent::Sticker(content)) => {
-                let child = MessageMedia::sticker(content, &event.room().session());
-                priv_.content.set_child(Some(&child));
+                let child = if let Some(Ok(child)) =
+                    priv_.content.child().map(|w| w.downcast::<MessageMedia>())
+                {
+                    child
+                } else {
+                    let child = MessageMedia::new();
+                    priv_.content.set_child(Some(&child));
+                    child
+                };
+                child.sticker(content, &event.room().session());
             }
             Some(AnyMessageEventContent::RoomEncrypted(content)) => {
                 warn!("Couldn't decrypt event {:?}", content);

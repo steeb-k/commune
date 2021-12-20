@@ -9,7 +9,7 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-video-player.ui")]
     pub struct VideoPlayer {
-        pub media_file: RefCell<Option<gtk::MediaFile>>,
+        pub duration_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub video: TemplateChild<gtk::Picture>,
         #[template_child]
@@ -45,20 +45,28 @@ glib::wrapper! {
 }
 
 impl VideoPlayer {
-    pub fn new(media_file: &gtk::MediaFile) -> Self {
-        let self_: Self = glib::Object::new(&[]).expect("Failed to create VideoPlayer");
-        self_.build(media_file);
-        self_
+    /// Create a new video player.
+    pub fn new() -> Self {
+        glib::Object::new(&[]).expect("Failed to create VideoPlayer")
     }
 
-    pub fn build(&self, media_file: &gtk::MediaFile) {
+    /// Set the media_file to display.
+    pub fn set_media_file(&self, media_file: &gtk::MediaFile) {
         let priv_ = imp::VideoPlayer::from_instance(self);
+
+        if let Some(handler_id) = priv_.duration_handler.take() {
+            if let Some(paintable) = priv_.video.paintable() {
+                paintable.disconnect(handler_id);
+            }
+        }
 
         priv_.video.set_paintable(Some(media_file));
         let timestamp = &*priv_.timestamp;
-        media_file.connect_duration_notify(clone!(@weak timestamp => move |media_file| {
-            timestamp.set_label(&duration(media_file));
-        }));
+        let handler_id =
+            media_file.connect_duration_notify(clone!(@weak timestamp => move |media_file| {
+                timestamp.set_label(&duration(media_file));
+            }));
+        priv_.duration_handler.replace(Some(handler_id));
     }
 }
 
