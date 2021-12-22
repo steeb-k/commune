@@ -35,6 +35,10 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Dialog);
+
+            klass.install_action("account-switcher.close", None, move |item, _, _| {
+                item.popdown();
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

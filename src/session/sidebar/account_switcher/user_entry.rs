@@ -36,6 +36,7 @@ mod imp {
                 "user-entry-row.open-account-settings",
                 None,
                 move |item, _, _| {
+                    item.activate_action("account-switcher.close", None);
                     item.show_account_settings();
                 },
             );
