@@ -91,7 +91,7 @@ where
         spawn!(
             glib::PRIORITY_LOW,
             clone!(@weak window => async move {
-                let (filename, data) = match event.get_media_content().await {
+                let (_, filename, data) = match event.get_media_content().await {
                     Ok(res) => res,
                     Err(err) => {
                         error!("Could not get file: {}", err);
@@ -148,7 +148,7 @@ where
         spawn!(
             glib::PRIORITY_LOW,
             clone!(@weak window => async move {
-                let (filename, data) = match event.get_media_content().await {
+                let (uid, filename, data) = match event.get_media_content().await {
                     Ok(res) => res,
                     Err(err) => {
                         error!("Could not get file: {}", err);
@@ -168,6 +168,13 @@ where
                 };
 
                 let mut path = cache_dir();
+                path.push(uid);
+                if !path.exists() {
+                    let dir = gio::File::for_path(path.clone());
+                    dir.make_directory_with_parents(gio::NONE_CANCELLABLE)
+                        .unwrap();
+                }
+
                 path.push(filename);
                 let file = gio::File::for_path(path);
 

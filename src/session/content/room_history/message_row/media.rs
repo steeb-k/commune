@@ -25,7 +25,7 @@ use crate::{
     components::VideoPlayer,
     session::Session,
     spawn, spawn_tokio,
-    utils::{cache_dir, uint_to_i32},
+    utils::{cache_dir, media_type_uid, uint_to_i32},
 };
 
 const MAX_THUMBNAIL_WIDTH: i32 = 600;
@@ -378,9 +378,11 @@ impl MessageMedia {
             };
 
             if let Some(data) = thumbnail {
-                Ok(Some(data))
+                let id = media_type_uid(content.thumbnail());
+                Ok((Some(data), id))
             } else {
-                client.get_file(content, true).await
+                let id = media_type_uid(content.file());
+                client.get_file(content, true).await.map(|data| (data, id))
             }
         });
 
@@ -390,7 +392,7 @@ impl MessageMedia {
                 let priv_ = imp::MessageMedia::from_instance(&obj);
 
                 match handle.await.unwrap() {
-                    Ok(Some(data)) => {
+                    Ok((Some(data), id)) => {
                         match media_type {
                             MediaType::Image | MediaType::Sticker => {
                                 let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(&data));
@@ -421,7 +423,7 @@ impl MessageMedia {
                                 // we need to store the file.
                                 // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
                                 let mut path = cache_dir();
-                                path.push(body.unwrap());
+                                path.push(format!("{}_{}", id, body.unwrap_or_default()));
                                 let file = gio::File::for_path(path);
                                 file.replace_contents(
                                     &data,
@@ -450,7 +452,7 @@ impl MessageMedia {
 
                         obj.set_state(MediaState::Ready);
                     }
-                    Ok(None) => {
+                    Ok((None, _)) => {
                         warn!("Could not retrieve invalid media file");
                         priv_.overlay_error.set_tooltip_text(Some(&gettext("Could not retrieve media")));
                         obj.set_state(MediaState::Error);

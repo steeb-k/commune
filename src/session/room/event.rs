@@ -2,6 +2,7 @@ use gtk::{glib, glib::clone, glib::DateTime, prelude::*, subclass::prelude::*};
 use log::warn;
 use matrix_sdk::{
     deserialized_responses::SyncRoomEvent,
+    media::MediaEventContent,
     ruma::{
         events::{
             room::message::Relation,
@@ -17,6 +18,7 @@ use matrix_sdk::{
 use crate::{
     session::{room::Member, Room},
     spawn_tokio,
+    utils::{filename_for_mime, media_type_uid},
 };
 
 #[derive(Clone, Debug, glib::GBoxed)]
@@ -622,29 +624,68 @@ impl Event {
     /// - Image message (`MessageType::Image`).
     /// - Video message (`MessageType::Video`).
     ///
-    /// Returns `Ok((filename, binary_content))` on success, `Err` if an error occured while
-    /// fetching the content. Panics on an incompatible event.
-    pub async fn get_media_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
+    /// Returns `Ok((uid, filename, binary_content))` on success, `Err` if an error occured while
+    /// fetching the content. Panics on an incompatible event. `uid` is a unique identifier for this
+    /// media.
+    pub async fn get_media_content(&self) -> Result<(String, String, Vec<u8>), matrix_sdk::Error> {
         if let AnyMessageEventContent::RoomMessage(content) = self.message_content().unwrap() {
             let client = self.room().session().client();
             match content.msgtype {
                 MessageType::File(content) => {
-                    let filename = content.filename.clone().unwrap_or(content.body.clone());
+                    let uid = media_type_uid(content.file());
+                    let filename = content
+                        .filename
+                        .as_ref()
+                        .filter(|name| !name.is_empty())
+                        .or(Some(&content.body))
+                        .filter(|name| !name.is_empty())
+                        .map(|name| name.clone())
+                        .unwrap_or_else(|| {
+                            filename_for_mime(
+                                content
+                                    .info
+                                    .as_ref()
+                                    .and_then(|info| info.mimetype.as_deref()),
+                                None,
+                            )
+                        });
                     let handle = spawn_tokio!(async move { client.get_file(content, true).await });
                     let data = handle.await.unwrap()?.unwrap();
-                    return Ok((filename, data));
+                    return Ok((uid, filename, data));
                 }
                 MessageType::Image(content) => {
-                    let filename = content.body.clone();
+                    let uid = media_type_uid(content.file());
+                    let filename = if content.body.is_empty() {
+                        filename_for_mime(
+                            content
+                                .info
+                                .as_ref()
+                                .and_then(|info| info.mimetype.as_deref()),
+                            Some(mime::IMAGE),
+                        )
+                    } else {
+                        content.body.clone()
+                    };
                     let handle = spawn_tokio!(async move { client.get_file(content, true).await });
                     let data = handle.await.unwrap()?.unwrap();
-                    return Ok((filename, data));
+                    return Ok((uid, filename, data));
                 }
                 MessageType::Video(content) => {
-                    let filename = content.body.clone();
+                    let uid = media_type_uid(content.file());
+                    let filename = if content.body.is_empty() {
+                        filename_for_mime(
+                            content
+                                .info
+                                .as_ref()
+                                .and_then(|info| info.mimetype.as_deref()),
+                            Some(mime::VIDEO),
+                        )
+                    } else {
+                        content.body.clone()
+                    };
                     let handle = spawn_tokio!(async move { client.get_file(content, true).await });
                     let data = handle.await.unwrap()?.unwrap();
-                    return Ok((filename, data));
+                    return Ok((uid, filename, data));
                 }
                 _ => {}
             };

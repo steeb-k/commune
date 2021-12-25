@@ -2,7 +2,7 @@ mod file;
 mod media;
 mod text;
 
-use crate::components::Avatar;
+use crate::{components::Avatar, utils::filename_for_mime};
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
@@ -217,7 +217,18 @@ impl MessageRow {
                         child.emote(message.formatted, message.body, event.sender());
                     }
                     MessageType::File(message) => {
-                        let filename = message.filename.unwrap_or(message.body);
+                        let info = message.info.as_ref();
+                        let filename = message
+                            .filename
+                            .filter(|name| !name.is_empty())
+                            .or(Some(message.body))
+                            .filter(|name| !name.is_empty())
+                            .unwrap_or_else(|| {
+                                filename_for_mime(
+                                    info.and_then(|info| info.mimetype.as_deref()),
+                                    None,
+                                )
+                            });
 
                         let child = if let Some(Ok(child)) =
                             priv_.content.child().map(|w| w.downcast::<MessageFile>())

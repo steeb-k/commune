@@ -270,7 +270,7 @@ impl MediaViewer {
                                 let priv_ = imp::MediaViewer::from_instance(&obj);
 
                                 match event.get_media_content().await {
-                                    Ok((_, data)) => {
+                                    Ok((_, _, data)) => {
                                         let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(&data));
                                         let texture = Pixbuf::from_stream(&stream, gio::NONE_CANCELLABLE)
                                             .ok()
@@ -297,12 +297,12 @@ impl MediaViewer {
                                 let priv_ = imp::MediaViewer::from_instance(&obj);
 
                                 match event.get_media_content().await {
-                                    Ok((_, data)) => {
+                                    Ok((uid, filename, data)) => {
                                         // The GStreamer backend of GtkVideo doesn't work with input streams so
                                         // we need to store the file.
                                         // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
                                         let mut path = cache_dir();
-                                        path.push(video.body);
+                                        path.push(format!("{}_{}", uid, filename));
                                         let file = gio::File::for_path(path);
                                         file.replace_contents(
                                             &data,
