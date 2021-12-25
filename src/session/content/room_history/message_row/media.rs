@@ -69,9 +69,9 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-message-media.ui")]
     pub struct MessageMedia {
-        /// The intended display width of the full image.
+        /// The intended display width of the media.
         pub width: Cell<i32>,
-        /// The intended display height of the full image.
+        /// The intended display height of the media.
         pub height: Cell<i32>,
         /// The state of the media.
         pub state: Cell<MediaState>,
@@ -229,7 +229,7 @@ mod imp {
                 let width = if original_height > 0 && original_width > 0 {
                     height * original_width / original_height
                 } else {
-                    // Get the natural width of the image data.
+                    // Get the natural width of the media data.
                     child.measure(gtk::Orientation::Horizontal, height).1
                 };
 
