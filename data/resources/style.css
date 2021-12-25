@@ -209,6 +209,10 @@ headerbar.flat {
   margin-left: 46px;
 }
 
+.room-history .event-content .emoji {
+  font-size: 3em;
+}
+
 .room-history .event-content .thumbnail {
   border-radius: 6px;
   background-color: @light_3;

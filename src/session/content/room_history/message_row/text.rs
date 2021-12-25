@@ -5,6 +5,8 @@ use html2pango::{
     html_escape, markup_links,
 };
 use matrix_sdk::ruma::events::room::message::{FormattedBody, MessageFormat};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use sourceview::prelude::*;
 
 use crate::session::{
@@ -12,6 +14,21 @@ use crate::session::{
     room::{EventActions, Member},
     UserExt,
 };
+
+static EMOJI_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?x)
+        ^
+        [\p{White_Space}\p{Emoji_Component}]*
+        [\p{Emoji}--\p{Decimal_Number}]+
+        [\p{White_Space}\p{Emoji}\p{Emoji_Component}--\p{Decimal_Number}]*
+        $
+        # That string is made of at least one emoji, except digits, possibly more,
+        # possibly with modifiers, possibly with spaces, but nothing else
+        ",
+    )
+    .unwrap()
+});
 
 mod imp {
     use super::*;
@@ -198,6 +215,10 @@ impl MessageText {
             self.set_child(Some(&child));
             child
         };
+
+        if EMOJI_REGEX.is_match(text) {
+            child.add_css_class("emoji");
+        }
 
         if use_markup {
             child.set_markup(text);

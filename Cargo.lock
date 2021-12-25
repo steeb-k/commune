@@ -1001,6 +1001,7 @@ dependencies = [
  "once_cell",
  "qrcode",
  "rand 0.8.4",
+ "regex",
  "secret-service",
  "serde",
  "serde_json",
