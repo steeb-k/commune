@@ -1,10 +1,13 @@
 use crate::session::user::UserExt;
+use crate::session::{
+    verification::{IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
+    Session,
+};
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use log::warn;
 use matrix_sdk::ruma::{
     api::client::r0::sync::sync_events::ToDevice, events::AnyToDeviceEvent, identifiers::UserId,
 };
-
-use crate::session::{verification::IdentityVerification, Session};
 
 #[derive(Hash, PartialEq, Eq, Debug)]
 pub struct FlowId {
@@ -112,46 +115,81 @@ impl VerificationList {
 
     pub fn handle_response_to_device(&self, to_device: ToDevice) {
         for event in to_device.events.iter().filter_map(|e| e.deserialize().ok()) {
-            let flow_id = match event {
+            let request = match event {
                 AnyToDeviceEvent::KeyVerificationRequest(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    let flow_id = FlowId::new(e.sender, e.content.transaction_id);
+                    if let Some(request) = self.get_by_id(&flow_id) {
+                        Some(request)
+                    } else {
+                        let session = self.session();
+                        let user = session.user().unwrap();
+                        // ToDevice verifications can only be send by us
+                        if &flow_id.user_id != user.user_id() {
+                            continue;
+                        }
+
+                        // Ignore request that are too old
+                        let start_time = if let Some(time) = e.content.timestamp.to_system_time() {
+                            if let Ok(duration) = time.elapsed() {
+                                if duration > VERIFICATION_CREATION_TIMEOUT {
+                                    continue;
+                                }
+
+                                if let Ok(time) = glib::DateTime::from_unix_utc(
+                                    e.content.timestamp.as_secs().into(),
+                                )
+                                .and_then(|t| t.to_local())
+                                {
+                                    time
+                                } else {
+                                    warn!("Ignor verification request because getting a correct timestamp failed");
+                                    continue;
+                                }
+                            } else {
+                                warn!("Ignoring verification request because it was sent in the future. The system time of the server or the local machine is probably wrong.");
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        };
+
+                        let request = IdentityVerification::for_flow_id(
+                            &flow_id.flow_id,
+                            &session,
+                            user,
+                            &start_time,
+                        );
+                        self.add(request.clone());
+                        Some(request)
+                    }
                 }
                 AnyToDeviceEvent::KeyVerificationReady(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 AnyToDeviceEvent::KeyVerificationStart(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 AnyToDeviceEvent::KeyVerificationCancel(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 AnyToDeviceEvent::KeyVerificationAccept(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 AnyToDeviceEvent::KeyVerificationMac(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 AnyToDeviceEvent::KeyVerificationKey(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 AnyToDeviceEvent::KeyVerificationDone(e) => {
-                    FlowId::new(e.sender, e.content.transaction_id)
+                    self.get_by_id(&FlowId::new(e.sender, e.content.transaction_id))
                 }
                 _ => continue,
             };
-
-            if let Some(request) = self.get_by_id(&flow_id) {
+            if let Some(request) = request {
                 request.notify_state();
             } else {
-                let session = self.session();
-                let user = session.user().unwrap();
-                // ToDevice verifications can only be send by us
-                if &flow_id.user_id == user.user_id() {
-                    let request =
-                        IdentityVerification::for_flow_id(&flow_id.flow_id, &session, user);
-                    request.notify_state();
-                    self.add(request);
-                }
+                warn!("Recevied verification event, but we don't have the inital event.");
             }
         }
     }

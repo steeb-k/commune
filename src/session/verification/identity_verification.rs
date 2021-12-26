@@ -1,3 +1,4 @@
+use super::{VERIFICATION_CREATION_TIMEOUT, VERIFICATION_RECEIVE_TIMEOUT};
 use crate::session::user::UserExt;
 use crate::session::Session;
 use crate::session::User;
@@ -23,6 +24,7 @@ use matrix_sdk::{
     Client,
 };
 use qrcode::QrCode;
+use std::time::Duration;
 use tokio::sync::mpsc;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
@@ -118,6 +120,8 @@ mod imp {
         pub qr_code: OnceCell<QrCode>,
         pub cancel_info: OnceCell<CancelInfo>,
         pub flow_id: OnceCell<String>,
+        pub start_time: OnceCell<glib::DateTime>,
+        pub receive_time: OnceCell<glib::DateTime>,
     }
 
     #[glib::object_subclass]
@@ -175,6 +179,20 @@ mod imp {
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
+                    glib::ParamSpec::new_boxed(
+                        "start-time",
+                        "Start Time",
+                        "The time when this verification request was started",
+                        glib::DateTime::static_type(),
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_boxed(
+                        "receive-time",
+                        "Receive Time",
+                        "The time when this verification request was received",
+                        glib::DateTime::static_type(),
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -192,6 +210,7 @@ mod imp {
                 "user" => obj.set_user(value.get().unwrap()),
                 "session" => obj.set_session(value.get().unwrap()),
                 "flow-id" => obj.set_flow_id(value.get().unwrap()),
+                "start-time" => obj.set_start_time(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -204,6 +223,8 @@ mod imp {
                 "display-name" => obj.display_name().to_value(),
                 "flow-id" => obj.flow_id().to_value(),
                 "supported-methods" => obj.supported_methods().to_value(),
+                "start-time" => obj.start_time().to_value(),
+                "receive-time" => obj.receive_time().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -241,6 +262,11 @@ mod imp {
                     }),
                 );
             }
+
+            self.receive_time
+                .set(glib::DateTime::new_now_local().unwrap())
+                .unwrap();
+            obj.setup_timeout();
         }
 
         fn dispose(&self, obj: &Self::Type) {
@@ -254,15 +280,30 @@ glib::wrapper! {
 }
 
 impl IdentityVerification {
-    fn for_mode(mode: Mode, session: &Session, user: &User) -> Self {
-        glib::Object::new(&[("mode", &mode), ("session", session), ("user", user)])
-            .expect("Failed to create IdentityVerification")
+    fn for_mode(mode: Mode, session: &Session, user: &User, start_time: &glib::DateTime) -> Self {
+        glib::Object::new(&[
+            ("mode", &mode),
+            ("session", session),
+            ("user", user),
+            ("start-time", start_time),
+        ])
+        .expect("Failed to create IdentityVerification")
     }
 
     /// Create a new object tracking an already existing verification request
-    pub fn for_flow_id(flow_id: &str, session: &Session, user: &User) -> Self {
-        glib::Object::new(&[("flow-id", &flow_id), ("session", session), ("user", user)])
-            .expect("Failed to create IdentityVerification")
+    pub fn for_flow_id(
+        flow_id: &str,
+        session: &Session,
+        user: &User,
+        start_time: &glib::DateTime,
+    ) -> Self {
+        glib::Object::new(&[
+            ("flow-id", &flow_id),
+            ("session", session),
+            ("user", user),
+            ("start-time", start_time),
+        ])
+        .expect("Failed to create IdentityVerification")
     }
 
     /// Creates and send a new verificaiton request
@@ -281,7 +322,12 @@ impl IdentityVerification {
 
             match handle.await.unwrap() {
                 Ok(request) => {
-                    let obj = Self::for_flow_id(request.flow_id(), session, user);
+                    let obj = Self::for_flow_id(
+                        request.flow_id(),
+                        session,
+                        user,
+                        &glib::DateTime::new_now_local().unwrap(),
+                    );
                     // This will start the request handling
                     obj.accept();
                     return obj;
@@ -294,7 +340,12 @@ impl IdentityVerification {
             error!("Starting a verification failed: Crypto identity wasn't found");
         }
 
-        Self::for_mode(Mode::Error, session, user)
+        Self::for_mode(
+            Mode::Error,
+            session,
+            user,
+            &glib::DateTime::new_now_local().unwrap(),
+        )
     }
 
     /// Accept an incomming request
@@ -314,8 +365,6 @@ impl IdentityVerification {
 
         let (sync_sender, sync_receiver) = mpsc::channel(100);
         priv_.sync_sender.replace(Some(sync_sender));
-
-        // TODO add timeout
 
         let handle = spawn_tokio!(async move {
             if let Some(context) =
@@ -365,6 +414,54 @@ impl IdentityVerification {
     fn set_session(&self, session: Session) {
         let priv_ = imp::IdentityVerification::from_instance(self);
         priv_.session.set(session.downgrade()).unwrap()
+    }
+
+    fn setup_timeout(&self) {
+        let difference = glib::DateTime::new_now_local()
+            .unwrap()
+            .difference(self.start_time());
+
+        if difference < 0 {
+            warn!("The verification request was sent in the future.");
+            self.cancel();
+            return;
+        }
+        let difference = Duration::from_secs(difference as u64);
+        let remaining_creation = VERIFICATION_CREATION_TIMEOUT.saturating_sub(difference);
+
+        let remaining_receive = VERIFICATION_RECEIVE_TIMEOUT.saturating_sub(difference);
+
+        let remaining = std::cmp::max(remaining_creation, remaining_receive);
+
+        if remaining.is_zero() {
+            self.cancel();
+            return;
+        }
+
+        glib::source::timeout_add_local(
+            remaining,
+            clone!(@weak self as obj => @default-return glib::Continue(false), move || {
+                obj.cancel();
+
+                glib::Continue(false)
+            }),
+        );
+    }
+
+    /// The time and date when this verification request was started.
+    pub fn start_time(&self) -> &glib::DateTime {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        priv_.start_time.get().unwrap()
+    }
+
+    fn set_start_time(&self, time: glib::DateTime) {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        priv_.start_time.set(time).unwrap();
+    }
+
+    pub fn receive_time(&self) -> &glib::DateTime {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        priv_.receive_time.get().unwrap()
     }
 
     fn supported_methods(&self) -> SupportedMethods {
