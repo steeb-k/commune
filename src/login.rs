@@ -36,7 +36,7 @@ mod imp {
         pub password_entry: TemplateChild<gtk::PasswordEntry>,
         #[template_child]
         pub back_to_session_button: TemplateChild<gtk::Button>,
-        pub prepered_source_id: RefCell<Option<SignalHandlerId>>,
+        pub prepared_source_id: RefCell<Option<SignalHandlerId>>,
         pub logged_out_source_id: RefCell<Option<SignalHandlerId>>,
         pub ready_source_id: RefCell<Option<SignalHandlerId>>,
     }
@@ -103,15 +103,15 @@ impl Login {
     fn enable_next_action(&self) {
         let priv_ = imp::Login::from_instance(self);
         let homeserver = priv_.homeserver_entry.text();
-        let username = priv_.username_entry.text_length();
-        let password = priv_.password_entry.text().len();
+        let username_length = priv_.username_entry.text_length();
+        let password_length = priv_.password_entry.text().len();
 
         self.action_set_enabled(
             "login.next",
             homeserver.len() != 0
                 && build_homeserver_url(homeserver.as_str()).is_ok()
-                && username != 0
-                && password != 0,
+                && username_length != 0
+                && password_length != 0,
         );
     }
 
@@ -184,7 +184,7 @@ impl Login {
         let priv_ = imp::Login::from_instance(self);
 
         if let Some(session) = priv_.current_session.take() {
-            if let Some(id) = priv_.prepered_source_id.take() {
+            if let Some(id) = priv_.prepared_source_id.take() {
                 session.disconnect(id);
             }
             if let Some(id) = priv_.logged_out_source_id.take() {
@@ -209,7 +209,7 @@ impl Login {
     fn set_handler_for_prepared_session(&self, session: &Session) {
         let priv_ = imp::Login::from_instance(self);
         priv_
-            .prepered_source_id
+            .prepared_source_id
             .replace(Some(session.connect_prepared(
                 clone!(@weak self as login => move |session, error| {
                     match error {
