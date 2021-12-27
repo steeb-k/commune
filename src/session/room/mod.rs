@@ -1036,6 +1036,11 @@ impl Room {
 
     fn load_predecessor(&self) -> Option<()> {
         let priv_ = imp::Room::from_instance(self);
+
+        if priv_.successor.get().is_some() {
+            return None;
+        }
+
         let event = self.matrix_room().create_content()?;
         let room_id = event.predecessor?.room_id;
 
@@ -1051,6 +1056,10 @@ impl Room {
 
     pub fn load_successor(&self) -> Option<()> {
         let priv_ = imp::Room::from_instance(self);
+
+        if priv_.successor.get().is_some() {
+            return None;
+        }
 
         let room_id = self.matrix_room().tombstone()?.replacement_room;
 
