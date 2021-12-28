@@ -135,7 +135,7 @@ impl Window {
         if let Some(child) = priv_.sessions.first_child() {
             priv_.sessions.set_visible_child(&child);
         } else {
-            self.switch_to_login_page(true);
+            self.switch_to_login_page(false);
         }
     }
 
