@@ -20,7 +20,7 @@ pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
-use self::verification::{IdentityVerification, VerificationList};
+use self::verification::{IdentityVerification, VerificationList, VerificationMode};
 use crate::session::sidebar::ItemList;
 
 use crate::secret;
@@ -484,6 +484,36 @@ impl Session {
         priv_.sync_tokio_handle.replace(Some(handle));
     }
 
+    async fn create_session_verification(&self) {
+        let priv_ = imp::Session::from_instance(self);
+
+        let request = IdentityVerification::create(&self, self.user().unwrap()).await;
+
+        if let Some(widget) = priv_.stack.child_by_name("session-verification") {
+            widget
+                .downcast::<SessionVerification>()
+                .unwrap()
+                .set_request(request.clone());
+        } else {
+            let widget = SessionVerification::new(&request);
+            priv_.stack.add_named(&widget, Some("session-verification"));
+            priv_.stack.set_visible_child(&widget);
+        }
+
+        request.connect_notify_local(
+            Some("mode"),
+            clone!(@weak self as obj => move |request, _| {
+                if request.is_finished() && request.mode() !=  VerificationMode::Completed {
+                    spawn!(async move {
+                        obj.create_session_verification().await;
+                    });
+                }
+            }),
+        );
+
+        self.verification_list().add(request);
+    }
+
     fn mark_ready(&self) {
         let priv_ = imp::Session::from_instance(self);
         let client = self.client();
@@ -523,15 +553,7 @@ impl Session {
                 }
 
                 priv_.logout_on_dispose.set(true);
-
-                let verification = IdentityVerification::create(&obj, obj.user().unwrap()).await;
-                let session = SessionVerification::new(&verification, &obj);
-                obj.verification_list().add(verification);
-                priv_
-                    .stack
-                    .add_named(&session, Some("session-verification"));
-                priv_.stack.set_visible_child(&session);
-                session.start_verification();
+                obj.create_session_verification().await;
 
                 return;
             }
@@ -694,6 +716,11 @@ impl Session {
         // First stop the verification in progress
         if let Some(session_verificiation) = priv_.stack.child_by_name("session-verification") {
             priv_.stack.remove(&session_verificiation);
+            session_verificiation
+                .downcast_ref::<SessionVerification>()
+                .unwrap()
+                .request()
+                .cancel();
         }
 
         let client = self.client();

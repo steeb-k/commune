@@ -10,7 +10,6 @@ use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
 use crate::contrib::QrCodeScanner;
 use crate::session::verification::{IdentityVerification, SasData, VerificationMode};
-use crate::session::Session;
 use crate::spawn;
 use crate::Error;
 use crate::Window;
@@ -18,17 +17,14 @@ use matrix_sdk::encryption::verification::QrVerificationData;
 
 mod imp {
     use super::*;
-    use glib::object::WeakRef;
     use glib::subclass::InitializingObject;
     use glib::SignalHandlerId;
-    use once_cell::unsync::OnceCell;
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session-verification.ui")]
     pub struct SessionVerification {
-        pub request: OnceCell<IdentityVerification>,
-        pub session: OnceCell<WeakRef<Session>>,
+        pub request: RefCell<Option<IdentityVerification>>,
         #[template_child]
         pub bootstrap_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -88,22 +84,15 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpec::new_object(
-                        "request",
-                        "Request",
-                        "The Object holding the data for the verification",
-                        IdentityVerification::static_type(),
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
-                    glib::ParamSpec::new_object(
-                        "session",
-                        "Session",
-                        "The current Session",
-                        Session::static_type(),
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
-                    ),
-                ]
+                vec![glib::ParamSpec::new_object(
+                    "request",
+                    "Request",
+                    "The Object holding the data for the verification",
+                    IdentityVerification::static_type(),
+                    glib::ParamFlags::READWRITE
+                        | glib::ParamFlags::CONSTRUCT
+                        | glib::ParamFlags::EXPLICIT_NOTIFY,
+                )]
             });
 
             PROPERTIES.as_ref()
@@ -118,7 +107,6 @@ mod imp {
         ) {
             match pspec.name() {
                 "request" => obj.set_request(value.get().unwrap()),
-                "session" => obj.set_session(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -126,7 +114,6 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "request" => obj.request().to_value(),
-                "session" => obj.session().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -211,31 +198,40 @@ glib::wrapper! {
 }
 
 impl SessionVerification {
-    pub fn new(request: &IdentityVerification, session: &Session) -> Self {
-        glib::Object::new(&[("request", request), ("session", session)])
-            .expect("Failed to create SessionVerification")
+    pub fn new(request: &IdentityVerification) -> Self {
+        glib::Object::new(&[("request", request)]).expect("Failed to create SessionVerification")
     }
 
-    pub fn request(&self) -> &IdentityVerification {
+    pub fn request(&self) -> IdentityVerification {
         let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.request.get().unwrap()
+        priv_.request.borrow().clone().unwrap()
     }
 
-    fn set_request(&self, request: IdentityVerification) {
+    pub fn set_request(&self, request: IdentityVerification) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        priv_.request.set(request).unwrap();
-    }
+        if let Some(old_request) = &*priv_.request.borrow() {
+            if old_request == &request {
+                return;
+            }
 
-    pub fn session(&self) -> Session {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
-    }
+            self.reset();
 
-    fn set_session(&self, session: Session) {
-        let priv_ = imp::SessionVerification::from_instance(self);
+            if let Some(handler) = priv_.mode_handler.take() {
+                old_request.disconnect(handler);
+            }
+        }
 
-        priv_.session.set(session.downgrade()).unwrap()
+        let handler = request.connect_notify_local(
+            Some("mode"),
+            clone!(@weak self as obj => move |_, _| {
+                obj.update_view();
+            }),
+        );
+
+        priv_.mode_handler.replace(Some(handler));
+
+        priv_.request.replace(Some(request));
     }
 
     /// Returns the parent GtkWindow containing this widget.
@@ -245,6 +241,7 @@ impl SessionVerification {
 
     fn reset(&self) {
         let priv_ = imp::SessionVerification::from_instance(self);
+
         priv_.emoji_not_match_btn.set_loading(false);
         priv_.emoji_not_match_btn.set_sensitive(true);
         priv_.emoji_match_btn.set_loading(false);
@@ -266,22 +263,6 @@ impl SessionVerification {
         while let Some(child) = priv_.emoji_row_2.first_child() {
             priv_.emoji_row_2.remove(&child);
         }
-    }
-
-    pub fn start_verification(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        let request = self.request();
-
-        self.reset();
-
-        let handler = request.connect_notify_local(
-            Some("mode"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_view();
-            }),
-        );
-
-        priv_.mode_handler.replace(Some(handler));
     }
 
     /// Cancel the verification request without telling the user about it
@@ -397,7 +378,6 @@ impl SessionVerification {
         match priv_.main_stack.visible_child_name().unwrap().as_str() {
             "recovery" => {
                 self.silent_cancel();
-                self.start_verification();
             }
             "recovery-passphrase" | "recovery-key" => {
                 priv_.main_stack.set_visible_child_name("recovery");
@@ -408,7 +388,6 @@ impl SessionVerification {
             }
             "emoji" | "qrcode" | "scan-qr-code" | "no-camera" => {
                 self.silent_cancel();
-                self.start_verification();
             }
             _ => {}
         }
@@ -417,7 +396,7 @@ impl SessionVerification {
     fn bootstrap_cross_signing(&self) {
         spawn!(clone!(@weak self as obj => async move {
             let priv_ = imp::SessionVerification::from_instance(&obj);
-            let dialog = AuthDialog::new(obj.parent_window().as_ref(), &obj.session());
+            let dialog = AuthDialog::new(obj.parent_window().as_ref(), &obj.request().session());
 
             let result = dialog
             .authenticate(move |client, auth_data| async move {
@@ -452,12 +431,11 @@ impl SessionVerification {
                     Some(error_label.upcast())
                 });
 
-                if let Some(window) = obj.session().parent_window() {
+                if let Some(window) = obj.parent_window() {
                     window.append_error(&error);
                 }
 
                 obj.silent_cancel();
-                obj.start_verification();
             } else {
                 priv_
                 .main_stack
