@@ -12,6 +12,11 @@
             <property name="halign">start</property>
             <property name="hexpand">True</property>
             <property name="ellipsize">end</property>
+            <binding name="label">
+              <lookup name="display-name">
+                <lookup name="category">SidebarCategoryRow</lookup>
+              </lookup>
+            </binding>
             <style>
               <class name="dim-label"/>
             </style>
@@ -30,4 +35,3 @@
     </child>
   </template>
 </interface>
-

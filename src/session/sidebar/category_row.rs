@@ -15,9 +15,6 @@ mod imp {
     pub struct CategoryRow {
         pub category: RefCell<Option<Category>>,
         pub expanded: Cell<bool>,
-        pub binding: RefCell<Option<glib::Binding>>,
-        #[template_child]
-        pub display_name: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -113,20 +110,6 @@ impl CategoryRow {
 
         if self.category() == category {
             return;
-        }
-
-        if let Some(binding) = priv_.binding.take() {
-            binding.unbind();
-        }
-
-        if let Some(ref category) = category {
-            let binding = category
-                .bind_property("display-name", &priv_.display_name.get(), "label")
-                .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
-
-            priv_.binding.replace(Some(binding));
         }
 
         priv_.category.replace(category);
