@@ -37,6 +37,7 @@
             </binding>
             <style>
               <class name="notification_count"/>
+              <class name="osd"/>
             </style>
           </object>
         </child>
