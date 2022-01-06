@@ -1,4 +1,3 @@
-use crate::components::Avatar;
 use adw::subclass::prelude::BinImpl;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
@@ -14,10 +13,8 @@ mod imp {
     #[template(resource = "/org/gnome/FractalNext/sidebar-room-row.ui")]
     pub struct RoomRow {
         pub room: RefCell<Option<Room>>,
-        pub bindings: RefCell<Vec<glib::Binding>>,
+        pub binding: RefCell<Option<glib::Binding>>,
         pub signal_handler: RefCell<Option<SignalHandlerId>>,
-        #[template_child]
-        pub avatar: TemplateChild<Avatar>,
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
@@ -31,7 +28,6 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            Avatar::static_type();
             Self::bind_template(klass);
         }
 
@@ -117,31 +113,14 @@ impl RoomRow {
             if let Some(id) = priv_.signal_handler.take() {
                 room.disconnect(id);
             }
-        }
-
-        let mut bindings = priv_.bindings.borrow_mut();
-        while let Some(binding) = bindings.pop() {
-            binding.unbind();
+            if let Some(binding) = priv_.binding.take() {
+                binding.unbind();
+            }
         }
 
         if let Some(ref room) = room {
-            let display_name_binding = room
-                .bind_property("display-name", &priv_.display_name.get(), "label")
-                .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
-
-            let notification_count_binding = room
-                .bind_property(
-                    "notification-count",
-                    &priv_.notification_count.get(),
-                    "label",
-                )
-                .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
-            let notification_count_vislbe_binding = room
-                .bind_property(
+            priv_.binding.replace(Some(
+                room.bind_property(
                     "notification-count",
                     &priv_.notification_count.get(),
                     "visible",
@@ -149,7 +128,8 @@ impl RoomRow {
                 .flags(glib::BindingFlags::SYNC_CREATE)
                 .transform_from(|_, value| Some((value.get::<u64>().unwrap() > 0).to_value()))
                 .build()
-                .unwrap();
+                .unwrap(),
+            ));
 
             priv_.signal_handler.replace(Some(room.connect_notify_local(
                 Some("highlight"),
@@ -159,16 +139,7 @@ impl RoomRow {
             )));
 
             self.set_highlight();
-
-            bindings.append(&mut vec![
-                display_name_binding,
-                notification_count_binding,
-                notification_count_vislbe_binding,
-            ]);
         }
-        priv_
-            .avatar
-            .set_item(room.clone().map(|room| room.avatar().clone()));
         priv_.room.replace(room);
         self.notify("room");
     }
