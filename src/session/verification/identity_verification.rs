@@ -32,6 +32,7 @@ use tokio::sync::mpsc;
 #[genum(type_name = "VerificationMode")]
 pub enum Mode {
     Requested,
+    RequestSend,
     SasV1,
     QrV1Show,
     QrV1Scan,
@@ -75,6 +76,7 @@ impl Default for SupportedMethods {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum UserAction {
+    Accept,
     Match,
     NotMatch,
     Cancel,
@@ -237,7 +239,7 @@ mod imp {
 
             main_receiver.attach(
                 None,
-                clone!(@weak obj => @default-panic, move |message| {
+                clone!(@weak obj => @default-return glib::Continue(false), move |message| {
                     let priv_ = imp::IdentityVerification::from_instance(&obj);
                     match message {
                         MainMessage::QrCode(data) => { let _ = priv_.qr_code.set(data); },
@@ -267,6 +269,7 @@ mod imp {
                 .set(glib::DateTime::new_now_local().unwrap())
                 .unwrap();
             obj.setup_timeout();
+            obj.start_handler();
         }
 
         fn dispose(&self, obj: &Self::Type) {
@@ -328,8 +331,8 @@ impl IdentityVerification {
                         user,
                         &glib::DateTime::new_now_local().unwrap(),
                     );
-                    // This will start the request handling
-                    obj.accept();
+
+                    obj.set_mode(Mode::RequestSend);
                     return obj;
                 }
                 Err(error) => {
@@ -348,8 +351,7 @@ impl IdentityVerification {
         )
     }
 
-    /// Accept an incomming request
-    pub fn accept(&self) {
+    fn start_handler(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
         let main_sender = if let Some(main_sender) = priv_.main_sender.take() {
@@ -625,6 +627,17 @@ impl IdentityVerification {
         }
     }
 
+    /// Accept an incomming request
+    pub fn accept(&self) {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+            let result = sync_sender.try_send(Message::UserAction(UserAction::Accept));
+            if let Err(error) = result {
+                error!("Failed to send message to tokio runtime: {}", error);
+            }
+        }
+    }
+
     pub fn cancel(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
         if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
@@ -693,7 +706,12 @@ macro_rules! wait {
                     },
                     Message::UserAction(UserAction::Cancel) | Message::UserAction(UserAction::NotMatch) => {
                         return Ok($this.cancel_request().await?);
-                    }
+                    },
+                    Message::UserAction(UserAction::Accept) => {
+                        if true $(&& $allow_action)? {
+                            break;
+                        }
+                    },
                     Message::UserAction(UserAction::StartSas) => {
                         if true $(&& $allow_action)? {
                             return Ok($this.start_sas().await?);
@@ -749,6 +767,9 @@ macro_rules! wait_without_scanning_sas {
                     }
                     Message::UserAction(UserAction::NotMatch) => {
                         return Ok($this.cancel_request().await?);
+                    },
+                    Message::UserAction(UserAction::Accept) => {
+                        break;
                     },
                     Message::UserAction(UserAction::StartSas) => {
                     },
@@ -822,6 +843,9 @@ impl Context {
             if self.request.is_passive() {
                 return Ok(Mode::Passive);
             }
+
+            // Wait for the user to accept or cancel the request
+            wait![self];
 
             self.request
                 .accept_with_methods(vec![

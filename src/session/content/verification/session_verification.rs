@@ -286,7 +286,7 @@ impl SessionVerification {
             VerificationMode::Error => {
                 priv_.main_stack.set_visible_child_name("bootstrap");
             }
-            VerificationMode::Requested => {
+            VerificationMode::Requested | VerificationMode::RequestSend => {
                 priv_.main_stack.set_visible_child_name("wait-for-device");
             }
             VerificationMode::QrV1Show => {
