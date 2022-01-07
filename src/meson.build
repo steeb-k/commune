@@ -71,6 +71,7 @@ sources = files(
   'session/content/room_history/state_row/creation.rs',
   'session/content/room_history/state_row/mod.rs',
   'session/content/room_history/state_row/tombstone.rs',
+  'session/content/room_history/verification_info_bar.rs',
   'session/content/mod.rs',
   'session/content/room_details/invite_subpage/invitee.rs',
   'session/content/room_details/invite_subpage/mod.rs',

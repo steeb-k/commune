@@ -2,10 +2,12 @@ mod divider_row;
 mod item_row;
 mod message_row;
 mod state_row;
+mod verification_info_bar;
 
 use self::divider_row::DividerRow;
 use self::item_row::ItemRow;
 use self::state_row::StateRow;
+use self::verification_info_bar::VerificationInfoBar;
 
 use adw::subclass::prelude::*;
 use gtk::{
@@ -20,7 +22,7 @@ use sourceview::prelude::*;
 
 use crate::components::{CustomEntry, Pill, RoomTitle};
 use crate::session::content::{MarkdownPopover, RoomDetails};
-use crate::session::room::{Item, Room, RoomType};
+use crate::session::room::{Item, Room, RoomType, Timeline};
 use crate::session::user::UserExt;
 
 mod imp {
@@ -76,6 +78,8 @@ mod imp {
             CustomEntry::static_type();
             ItemRow::static_type();
             MarkdownPopover::static_type();
+            VerificationInfoBar::static_type();
+            Timeline::static_type();
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
             klass.install_action(

@@ -270,6 +270,11 @@ impl Session {
             .set_selected_item(room.map(|item| item.upcast()));
     }
 
+    pub fn select_item(&self, item: Option<glib::Object>) {
+        let priv_ = imp::Session::from_instance(self);
+        priv_.sidebar.set_selected_item(item);
+    }
+
     pub fn select_room_by_id(&self, room_id: RoomId) {
         if let Some(room) = self.room_list().get(&room_id) {
             self.select_room(Some(room));
