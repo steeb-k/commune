@@ -49,6 +49,21 @@ impl Default for State {
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[repr(u32)]
+#[genum(type_name = "VerificationMode")]
+pub enum Mode {
+    CurrentSession,
+    OtherSession,
+    User,
+}
+
+impl Default for Mode {
+    fn default() -> Self {
+        Self::User
+    }
+}
+
 #[glib::gflags("VerificationSupportedMethods")]
 pub enum SupportedMethods {
     NONE = 0b00000000,
@@ -115,6 +130,7 @@ mod imp {
         pub user: OnceCell<User>,
         pub session: OnceCell<WeakRef<Session>>,
         pub state: Cell<State>,
+        pub mode: OnceCell<Mode>,
         pub supported_methods: Cell<SupportedMethods>,
         pub sync_sender: RefCell<Option<mpsc::Sender<Message>>>,
         pub main_sender: RefCell<Option<glib::SyncSender<MainMessage>>>,
@@ -157,6 +173,14 @@ mod imp {
                         "The current state of this verification",
                         State::static_type(),
                         State::default() as i32,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
+                    ),
+                    glib::ParamSpec::new_enum(
+                        "mode",
+                        "Mode",
+                        "The mode of this verification",
+                        Mode::static_type(),
+                        Mode::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_flags(
@@ -212,6 +236,7 @@ mod imp {
                 "user" => obj.set_user(value.get().unwrap()),
                 "session" => obj.set_session(value.get().unwrap()),
                 "state" => obj.set_state(value.get().unwrap()),
+                "mode" => obj.set_mode(value.get().unwrap()),
                 "flow-id" => obj.set_flow_id(value.get().unwrap()),
                 "start-time" => obj.set_start_time(value.get().unwrap()),
                 _ => unimplemented!(),
@@ -223,6 +248,7 @@ mod imp {
                 "user" => obj.user().to_value(),
                 "session" => obj.session().to_value(),
                 "state" => obj.state().to_value(),
+                "mode" => obj.mode().to_value(),
                 "display-name" => obj.display_name().to_value(),
                 "flow-id" => obj.flow_id().to_value(),
                 "supported-methods" => obj.supported_methods().to_value(),
@@ -284,14 +310,10 @@ glib::wrapper! {
 }
 
 impl IdentityVerification {
-    fn for_state(
-        state: State,
-        session: &Session,
-        user: &User,
-        start_time: &glib::DateTime,
-    ) -> Self {
+    fn for_error(mode: Mode, session: &Session, user: &User, start_time: &glib::DateTime) -> Self {
         glib::Object::new(&[
-            ("state", &state),
+            ("state", &State::Error),
+            ("mode", &mode),
             ("session", session),
             ("user", user),
             ("start-time", start_time),
@@ -316,7 +338,15 @@ impl IdentityVerification {
     }
 
     /// Creates and send a new verificaiton request
-    pub async fn create(session: &Session, user: &User) -> Self {
+    ///
+    /// If `User` is `None` a new session verification is started for our own user and send to other devices
+    pub async fn create(session: &Session, user: Option<&User>) -> Self {
+        let (mode, user) = if let Some(user) = user {
+            (Mode::User, user)
+        } else {
+            (Mode::CurrentSession, session.user().unwrap())
+        };
+
         if let Some(identity) = user.crypto_identity().await {
             let handle = spawn_tokio!(async move {
                 identity
@@ -331,14 +361,16 @@ impl IdentityVerification {
 
             match handle.await.unwrap() {
                 Ok(request) => {
-                    let obj = Self::for_flow_id(
-                        request.flow_id(),
-                        session,
-                        user,
-                        &glib::DateTime::new_now_local().unwrap(),
-                    );
+                    let obj = glib::Object::new(&[
+                        ("state", &State::RequestSend),
+                        ("mode", &mode),
+                        ("flow-id", &request.flow_id()),
+                        ("session", session),
+                        ("user", user),
+                        ("start-time", &glib::DateTime::new_now_local().unwrap()),
+                    ])
+                    .expect("Failed to create IdentityVerification");
 
-                    obj.set_state(State::RequestSend);
                     return obj;
                 }
                 Err(error) => {
@@ -349,8 +381,8 @@ impl IdentityVerification {
             error!("Starting a verification failed: Crypto identity wasn't found");
         }
 
-        Self::for_state(
-            State::Error,
+        Self::for_error(
+            mode,
             session,
             user,
             &glib::DateTime::new_now_local().unwrap(),
@@ -520,6 +552,25 @@ impl IdentityVerification {
 
         priv_.state.set(state);
         self.notify("state");
+    }
+
+    pub fn mode(&self) -> Mode {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        *priv_.mode.get_or_init(|| {
+            let session = self.session();
+            let our_user = session.user().unwrap();
+            if our_user.user_id() == self.user().user_id() {
+                Mode::OtherSession
+            } else {
+                Mode::User
+            }
+        })
+    }
+
+    fn set_mode(&self, mode: Mode) {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+
+        priv_.mode.set(mode).unwrap();
     }
 
     /// Whether this request is finished

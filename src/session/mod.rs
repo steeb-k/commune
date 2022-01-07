@@ -492,7 +492,7 @@ impl Session {
     async fn create_session_verification(&self) {
         let priv_ = imp::Session::from_instance(self);
 
-        let request = IdentityVerification::create(&self, self.user().unwrap()).await;
+        let request = IdentityVerification::create(&self, None).await;
 
         if let Some(widget) = priv_.stack.child_by_name("session-verification") {
             widget
