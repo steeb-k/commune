@@ -220,7 +220,7 @@ impl Content {
 
             if item.is::<IdentityVerification>() {
                 let handler_id = item.connect_notify_local(
-                    Some("mode"),
+                    Some("state"),
                     clone!(@weak self as obj => move |request, _| {
                         let request = request.downcast_ref::<IdentityVerification>().unwrap();
                         if request.is_finished() {

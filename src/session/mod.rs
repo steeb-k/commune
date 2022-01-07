@@ -20,7 +20,7 @@ pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
-use self::verification::{IdentityVerification, VerificationList, VerificationMode};
+use self::verification::{IdentityVerification, VerificationList, VerificationState};
 use crate::session::sidebar::ItemList;
 
 use crate::secret;
@@ -506,9 +506,9 @@ impl Session {
         }
 
         request.connect_notify_local(
-            Some("mode"),
+            Some("state"),
             clone!(@weak self as obj => move |request, _| {
-                if request.is_finished() && request.mode() !=  VerificationMode::Completed {
+                if request.is_finished() && request.state() !=  VerificationState::Completed {
                     spawn!(async move {
                         obj.create_session_verification().await;
                     });

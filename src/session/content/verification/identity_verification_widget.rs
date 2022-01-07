@@ -8,7 +8,7 @@ use crate::contrib::screenshot;
 use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
 use crate::contrib::QrCodeScanner;
-use crate::session::verification::{IdentityVerification, SasData, VerificationMode};
+use crate::session::verification::{IdentityVerification, SasData, VerificationState};
 use crate::spawn;
 use gettextrs::gettext;
 use matrix_sdk::encryption::verification::QrVerificationData;
@@ -55,7 +55,7 @@ mod imp {
         pub qr_code_scanner: TemplateChild<QrCodeScanner>,
         #[template_child]
         pub done_btn: TemplateChild<gtk::Button>,
-        pub mode_handler: RefCell<Option<SignalHandlerId>>,
+        pub state_handler: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -224,7 +224,7 @@ mod imp {
 
         fn dispose(&self, obj: &Self::Type) {
             if let Some(request) = obj.request() {
-                if let Some(handler) = self.mode_handler.take() {
+                if let Some(handler) = self.state_handler.take() {
                     request.disconnect(handler);
                 }
             }
@@ -267,21 +267,21 @@ impl IdentityVerificationWidget {
         self.reset();
 
         if let Some(previous_request) = previous_request {
-            if let Some(handler) = priv_.mode_handler.take() {
+            if let Some(handler) = priv_.state_handler.take() {
                 previous_request.disconnect(handler);
             }
         }
 
         if let Some(ref request) = request {
             let handler = request.connect_notify_local(
-                Some("mode"),
+                Some("state"),
                 clone!(@weak self as obj => move |_, _| {
                     obj.update_view();
                 }),
             );
             self.update_view();
 
-            priv_.mode_handler.replace(Some(handler));
+            priv_.state_handler.replace(Some(handler));
         }
 
         priv_.request.replace(request);
@@ -340,11 +340,11 @@ impl IdentityVerificationWidget {
     fn update_view(&self) {
         let priv_ = imp::IdentityVerificationWidget::from_instance(self);
         if let Some(request) = self.request() {
-            match request.mode() {
-                VerificationMode::Requested => {
+            match request.state() {
+                VerificationState::Requested => {
                     priv_.main_stack.set_visible_child_name("accept-request");
                 }
-                VerificationMode::QrV1Show => {
+                VerificationState::QrV1Show => {
                     if let Some(qrcode) = request.qr_code() {
                         priv_.qrcode.set_qrcode(qrcode.clone());
                         priv_.main_stack.set_visible_child_name("qrcode");
@@ -353,10 +353,10 @@ impl IdentityVerificationWidget {
                         request.start_sas();
                     }
                 }
-                VerificationMode::QrV1Scan => {
+                VerificationState::QrV1Scan => {
                     self.start_scanning();
                 }
-                VerificationMode::SasV1 => {
+                VerificationState::SasV1 => {
                     self.clean_emoji();
                     match request.sas_data().unwrap() {
                         SasData::Emoji(emoji) => {
@@ -381,7 +381,7 @@ impl IdentityVerificationWidget {
                     }
                     priv_.main_stack.set_visible_child_name("emoji");
                 }
-                VerificationMode::Completed => {
+                VerificationState::Completed => {
                     priv_.main_stack.set_visible_child_name("completed");
                 }
                 _ => {}

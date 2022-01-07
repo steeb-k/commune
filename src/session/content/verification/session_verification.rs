@@ -9,7 +9,7 @@ use crate::contrib::screenshot;
 use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
 use crate::contrib::QrCodeScanner;
-use crate::session::verification::{IdentityVerification, SasData, VerificationMode};
+use crate::session::verification::{IdentityVerification, SasData, VerificationState};
 use crate::spawn;
 use crate::Error;
 use crate::Window;
@@ -51,7 +51,7 @@ mod imp {
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub qr_code_scanner: TemplateChild<QrCodeScanner>,
-        pub mode_handler: RefCell<Option<SignalHandlerId>>,
+        pub state_handler: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -217,19 +217,19 @@ impl SessionVerification {
 
             self.reset();
 
-            if let Some(handler) = priv_.mode_handler.take() {
+            if let Some(handler) = priv_.state_handler.take() {
                 old_request.disconnect(handler);
             }
         }
 
         let handler = request.connect_notify_local(
-            Some("mode"),
+            Some("state"),
             clone!(@weak self as obj => move |_, _| {
                 obj.update_view();
             }),
         );
 
-        priv_.mode_handler.replace(Some(handler));
+        priv_.state_handler.replace(Some(handler));
 
         priv_.request.replace(Some(request));
     }
@@ -269,7 +269,7 @@ impl SessionVerification {
     fn silent_cancel(&self) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        if let Some(handler) = priv_.mode_handler.take() {
+        if let Some(handler) = priv_.state_handler.take() {
             self.request().disconnect(handler);
         }
 
@@ -281,15 +281,15 @@ impl SessionVerification {
     fn update_view(&self) {
         let priv_ = imp::SessionVerification::from_instance(self);
         let request = self.request();
-        match request.mode() {
+        match request.state() {
             // FIXME: we bootstrap on all errors
-            VerificationMode::Error => {
+            VerificationState::Error => {
                 priv_.main_stack.set_visible_child_name("bootstrap");
             }
-            VerificationMode::Requested | VerificationMode::RequestSend => {
+            VerificationState::Requested | VerificationState::RequestSend => {
                 priv_.main_stack.set_visible_child_name("wait-for-device");
             }
-            VerificationMode::QrV1Show => {
+            VerificationState::QrV1Show => {
                 if let Some(qrcode) = request.qr_code() {
                     priv_.qrcode.set_qrcode(qrcode.clone());
                     priv_.main_stack.set_visible_child_name("qrcode");
@@ -298,10 +298,10 @@ impl SessionVerification {
                     request.start_sas();
                 }
             }
-            VerificationMode::QrV1Scan => {
+            VerificationState::QrV1Scan => {
                 self.start_scanning();
             }
-            VerificationMode::SasV1 => {
+            VerificationState::SasV1 => {
                 match request.sas_data().unwrap() {
                     SasData::Emoji(emoji) => {
                         for (index, emoji) in emoji.iter().enumerate() {
@@ -326,7 +326,7 @@ impl SessionVerification {
 
                 priv_.main_stack.set_visible_child_name("emoji");
             }
-            VerificationMode::Completed => {
+            VerificationState::Completed => {
                 priv_.main_stack.set_visible_child_name("completed");
             }
             _ => {

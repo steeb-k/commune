@@ -1,7 +1,7 @@
 mod identity_verification;
 mod verification_list;
 
-pub use self::identity_verification::{IdentityVerification, Mode as VerificationMode, SasData};
+pub use self::identity_verification::{IdentityVerification, SasData, State as VerificationState};
 pub use self::verification_list::{FlowId, VerificationList};
 
 use std::time::Duration;

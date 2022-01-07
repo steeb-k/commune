@@ -29,8 +29,8 @@ use tokio::sync::mpsc;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
 #[repr(u32)]
-#[genum(type_name = "VerificationMode")]
-pub enum Mode {
+#[genum(type_name = "VerificationState")]
+pub enum State {
     Requested,
     RequestSend,
     SasV1,
@@ -43,7 +43,7 @@ pub enum Mode {
     Error,
 }
 
-impl Default for Mode {
+impl Default for State {
     fn default() -> Self {
         Self::Requested
     }
@@ -95,7 +95,7 @@ pub enum MainMessage {
     SasData(SasData),
     SupportedMethods(SupportedMethods),
     CancelInfo(CancelInfo),
-    Mode(Mode),
+    State(State),
 }
 
 #[derive(Debug)]
@@ -114,7 +114,7 @@ mod imp {
     pub struct IdentityVerification {
         pub user: OnceCell<User>,
         pub session: OnceCell<WeakRef<Session>>,
-        pub mode: Cell<Mode>,
+        pub state: Cell<State>,
         pub supported_methods: Cell<SupportedMethods>,
         pub sync_sender: RefCell<Option<mpsc::Sender<Message>>>,
         pub main_sender: RefCell<Option<glib::SyncSender<MainMessage>>>,
@@ -152,11 +152,11 @@ mod imp {
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_enum(
-                        "mode",
-                        "Mode",
-                        "The verification mode used",
-                        Mode::static_type(),
-                        Mode::default() as i32,
+                        "state",
+                        "State",
+                        "The current state of this verification",
+                        State::static_type(),
+                        State::default() as i32,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_flags(
@@ -221,7 +221,7 @@ mod imp {
             match pspec.name() {
                 "user" => obj.user().to_value(),
                 "session" => obj.session().to_value(),
-                "mode" => obj.mode().to_value(),
+                "state" => obj.state().to_value(),
                 "display-name" => obj.display_name().to_value(),
                 "flow-id" => obj.flow_id().to_value(),
                 "supported-methods" => obj.supported_methods().to_value(),
@@ -246,7 +246,7 @@ mod imp {
                         MainMessage::CancelInfo(data) => priv_.cancel_info.set(data).unwrap(),
                         MainMessage::SasData(data) => priv_.sas_data.set(data).unwrap(),
                         MainMessage::SupportedMethods(flags) => priv_.supported_methods.set(flags),
-                        MainMessage::Mode(mode) => obj.set_mode(mode),
+                        MainMessage::State(state) => obj.set_state(state),
                     }
 
                     glib::Continue(true)
@@ -283,9 +283,14 @@ glib::wrapper! {
 }
 
 impl IdentityVerification {
-    fn for_mode(mode: Mode, session: &Session, user: &User, start_time: &glib::DateTime) -> Self {
+    fn for_state(
+        state: State,
+        session: &Session,
+        user: &User,
+        start_time: &glib::DateTime,
+    ) -> Self {
         glib::Object::new(&[
-            ("mode", &mode),
+            ("state", &state),
             ("session", session),
             ("user", user),
             ("start-time", start_time),
@@ -332,7 +337,7 @@ impl IdentityVerification {
                         &glib::DateTime::new_now_local().unwrap(),
                     );
 
-                    obj.set_mode(Mode::RequestSend);
+                    obj.set_state(State::RequestSend);
                     return obj;
                 }
                 Err(error) => {
@@ -343,8 +348,8 @@ impl IdentityVerification {
             error!("Starting a verification failed: Crypto identity wasn't found");
         }
 
-        Self::for_mode(
-            Mode::Error,
+        Self::for_state(
+            State::Error,
             session,
             user,
             &glib::DateTime::new_now_local().unwrap(),
@@ -374,7 +379,7 @@ impl IdentityVerification {
             {
                 context.start().await
             } else {
-                Ok(Mode::Error)
+                Ok(State::Error)
             }
         });
 
@@ -384,11 +389,11 @@ impl IdentityVerification {
             if let Some(obj) = weak_obj.upgrade() {
                 let priv_ = imp::IdentityVerification::from_instance(&obj);
                 match result {
-                    Ok(result) => obj.set_mode(result),
+                    Ok(result) => obj.set_state(result),
                     Err(error) => {
                         // FIXME: report error to the user
                         error!("Verification failed: {}", error);
-                        obj.set_mode(Mode::Error);
+                        obj.set_state(State::Error);
                     }
                 }
                 priv_.sync_sender.take();
@@ -495,32 +500,32 @@ impl IdentityVerification {
         }
     }
 
-    pub fn mode(&self) -> Mode {
+    pub fn state(&self) -> State {
         let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.mode.get()
+        priv_.state.get()
     }
 
-    fn set_mode(&self, mode: Mode) {
+    fn set_state(&self, state: State) {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
-        if self.mode() == mode {
+        if self.state() == state {
             return;
         }
 
-        match mode {
-            Mode::Cancelled | Mode::Error => self.show_error(),
+        match state {
+            State::Cancelled | State::Error => self.show_error(),
             _ => {}
         }
 
-        priv_.mode.set(mode);
-        self.notify("mode");
+        priv_.state.set(state);
+        self.notify("state");
     }
 
     /// Whether this request is finished
     pub fn is_finished(&self) -> bool {
         matches!(
-            self.mode(),
-            Mode::Error | Mode::Cancelled | Mode::Dismissed | Mode::Completed | Mode::Passive
+            self.state(),
+            State::Error | State::Cancelled | State::Dismissed | State::Completed | State::Passive
         )
     }
 
@@ -649,7 +654,7 @@ impl IdentityVerification {
     }
 
     pub fn dismiss(&self) {
-        self.set_mode(Mode::Dismissed);
+        self.set_state(State::Dismissed);
     }
 
     /// Get information about why the request was cancelled
@@ -688,7 +693,7 @@ macro_rules! wait {
                 }
 
                 if $this.request.is_passive() {
-                    return Ok(Mode::Passive);
+                    return Ok(State::Passive);
                 }
 
                 $(
@@ -702,7 +707,7 @@ macro_rules! wait {
                         if let Some(info) = $this.request.cancel_info() {
                             $this.send_cancel_info(info);
                         }
-                        return Ok(Mode::Cancelled);
+                        return Ok(State::Cancelled);
                     },
                     Message::UserAction(UserAction::Cancel) | Message::UserAction(UserAction::NotMatch) => {
                         return Ok($this.cancel_request().await?);
@@ -719,7 +724,7 @@ macro_rules! wait {
                     },
                     Message::UserAction(UserAction::Match) => {
                         if $this.request.is_passive() {
-                            return Ok(Mode::Passive);
+                            return Ok(State::Passive);
                         }
 
                         // Break only if we are in the expected state
@@ -746,7 +751,7 @@ macro_rules! wait_without_scanning_sas {
         {
             loop {
                 if $this.request.is_passive() {
-                    return Ok(Mode::Passive);
+                    return Ok(State::Passive);
                 }
 
                 $(
@@ -760,7 +765,7 @@ macro_rules! wait_without_scanning_sas {
                         if let Some(info) = $this.request.cancel_info() {
                             $this.send_cancel_info(info);
                         }
-                        return Ok(Mode::Cancelled);
+                        return Ok(State::Cancelled);
                     },
                     Message::UserAction(UserAction::Cancel) => {
                         return Ok($this.cancel_request().await?);
@@ -775,7 +780,7 @@ macro_rules! wait_without_scanning_sas {
                     },
                     Message::UserAction(UserAction::Match) => {
                         if $this.request.is_passive() {
-                            return Ok(Mode::Passive);
+                            return Ok(State::Passive);
                         }
 
                         // Break only if we are in the expected state
@@ -811,8 +816,8 @@ impl Context {
         })
     }
 
-    fn send_mode(&self, mode: Mode) {
-        self.main_sender.send(MainMessage::Mode(mode)).unwrap();
+    fn send_state(&self, state: State) {
+        self.main_sender.send(MainMessage::State(state)).unwrap();
     }
 
     fn send_qr_code(&self, qr_code: QrCode) {
@@ -835,13 +840,13 @@ impl Context {
             .unwrap();
     }
 
-    async fn start(mut self) -> Result<Mode, RequestVerificationError> {
+    async fn start(mut self) -> Result<State, RequestVerificationError> {
         if self.request.we_started() {
             wait![self, self.request.is_ready()];
         } else {
             // Check if it was started by somebody else already
             if self.request.is_passive() {
-                return Ok(Mode::Passive);
+                return Ok(State::Passive);
             }
 
             // Wait for the user to accept or cancel the request
@@ -878,14 +883,14 @@ impl Context {
             if let Ok(qr_code) = request.to_qr_code() {
                 self.send_qr_code(qr_code);
             } else {
-                return Ok(Mode::Error);
+                return Ok(State::Error);
             }
 
-            self.send_mode(Mode::QrV1Show);
+            self.send_state(State::QrV1Show);
 
             request
         } else if supported_methods.contains(SupportedMethods::QR_SCAN) {
-            self.send_mode(Mode::QrV1Scan);
+            self.send_state(State::QrV1Scan);
 
             // Wait for scanned data
             wait![self];
@@ -900,13 +905,13 @@ impl Context {
 
         wait![self, request.is_done()];
 
-        Ok(Mode::Completed)
+        Ok(State::Completed)
     }
 
     async fn finish_scanning(
         mut self,
         data: QrVerificationData,
-    ) -> Result<Mode, RequestVerificationError> {
+    ) -> Result<State, RequestVerificationError> {
         let request = self
             .request
             .scan_qr_code(data)
@@ -918,10 +923,10 @@ impl Context {
 
         wait_without_scanning_sas![self, request.is_done()];
 
-        Ok(Mode::Completed)
+        Ok(State::Completed)
     }
 
-    async fn start_sas(self) -> Result<Mode, RequestVerificationError> {
+    async fn start_sas(self) -> Result<State, RequestVerificationError> {
         let request = self
             .request
             .start_sas()
@@ -935,7 +940,7 @@ impl Context {
     async fn continue_sas(
         mut self,
         request: SasVerification,
-    ) -> Result<Mode, RequestVerificationError> {
+    ) -> Result<State, RequestVerificationError> {
         request.accept().await?;
 
         wait_without_scanning_sas![self, request.can_be_presented()];
@@ -945,11 +950,11 @@ impl Context {
         } else if let Some(decimal) = request.decimals() {
             SasData::Decimal(decimal)
         } else {
-            return Ok(Mode::Error);
+            return Ok(State::Error);
         };
 
         self.send_sas_data(sas_data);
-        self.send_mode(Mode::SasV1);
+        self.send_state(State::SasV1);
 
         // Wait for match user action
         wait_without_scanning_sas![self];
@@ -958,16 +963,16 @@ impl Context {
 
         wait_without_scanning_sas![self, request.is_done()];
 
-        Ok(Mode::Completed)
+        Ok(State::Completed)
     }
 
-    async fn cancel_request(self) -> Result<Mode, RequestVerificationError> {
+    async fn cancel_request(self) -> Result<State, RequestVerificationError> {
         self.request.cancel().await?;
 
         if let Some(info) = self.request.cancel_info() {
             self.send_cancel_info(info);
         }
 
-        Ok(Mode::Cancelled)
+        Ok(State::Cancelled)
     }
 }

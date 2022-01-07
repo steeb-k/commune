@@ -2,7 +2,7 @@ use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::user::UserExt;
-use crate::session::verification::{IdentityVerification, VerificationMode};
+use crate::session::verification::{IdentityVerification, VerificationState};
 use gettextrs::gettext;
 mod imp {
     use super::*;
@@ -20,7 +20,7 @@ mod imp {
         #[template_child]
         pub button: TemplateChild<gtk::Button>,
         pub request: RefCell<Option<IdentityVerification>>,
-        pub mode_handler: RefCell<Option<SignalHandlerId>>,
+        pub state_handler: RefCell<Option<SignalHandlerId>>,
         pub user_handler: RefCell<Option<SignalHandlerId>>,
     }
 
@@ -115,7 +115,7 @@ impl VerificationInfoBar {
                 return;
             }
 
-            if let Some(handler) = priv_.mode_handler.take() {
+            if let Some(handler) = priv_.state_handler.take() {
                 old_request.disconnect(handler);
             }
 
@@ -126,13 +126,13 @@ impl VerificationInfoBar {
 
         if let Some(ref request) = request {
             let handler = request.connect_notify_local(
-                Some("mode"),
+                Some("state"),
                 clone!(@weak self as obj => move |_, _| {
                     obj.update_view();
                 }),
             );
 
-            priv_.mode_handler.replace(Some(handler));
+            priv_.state_handler.replace(Some(handler));
 
             let handler = request.user().connect_notify_local(
                 Some("display-name"),
@@ -155,7 +155,7 @@ impl VerificationInfoBar {
         let visible = if let Some(request) = self.request() {
             if request.is_finished() {
                 false
-            } else if matches!(request.mode(), VerificationMode::Requested) {
+            } else if matches!(request.state(), VerificationState::Requested) {
                 // Translators: The value is the display name of the user who wants to be verified
                 priv_.label.set_markup(&gettext!(
                     "<b>{}</b> wants to be verified",

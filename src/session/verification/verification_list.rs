@@ -207,7 +207,7 @@ impl VerificationList {
             let mut list = priv_.list.borrow_mut();
             let length = list.len();
             request.connect_notify_local(
-                Some("mode"),
+                Some("state"),
                 clone!(@weak self as obj => move |request, _| {
                     if request.is_finished() {
                         obj.remove(request);
