@@ -19,25 +19,9 @@
               </object>
             </child>
             <child type="end">
-              <object class="GtkButton" id="next_button">
+              <object class="SpinnerButton" id="next_button">
                 <property name="action_name">login.next</property>
-                <property name="child">
-                  <object class="GtkStack" id="next_stack">
-                    <child>
-                      <object class="GtkLabel" id="next_label">
-                        <property name="use_underline">True</property>
-                        <property name="label" translatable="yes">_Next</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkSpinner" id="next_spinner">
-                        <property name="spinning">True</property>
-                        <property name="valign">center</property>
-                        <property name="halign">center</property>
-                      </object>
-                    </child>
-                  </object>
-                </property>
+                <property name="label" translatable="yes">_Next</property>
                 <style>
                   <class name="suggested-action"/>
                 </style>
@@ -167,4 +151,3 @@
     </child>
   </template>
 </interface>
-

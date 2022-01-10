@@ -27,6 +27,10 @@ listview.content row:last-child {
 	border-bottom-width: 0px;
 }
 
+headerbar .suggested-action {
+  min-width: 70px;
+}
+
 
 /* Components */
 

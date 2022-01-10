@@ -3,7 +3,7 @@ use gtk::{self, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTe
 use log::debug;
 use url::{ParseError, Url};
 
-use crate::Session;
+use crate::{components::SpinnerButton, Session};
 
 mod imp {
     use std::cell::RefCell;
@@ -21,13 +21,7 @@ mod imp {
     pub struct Login {
         pub current_session: RefCell<Option<Session>>,
         #[template_child]
-        pub next_button: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub next_stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub next_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub next_spinner: TemplateChild<gtk::Spinner>,
+        pub next_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -153,9 +147,7 @@ impl Login {
         let priv_ = self.imp();
 
         self.action_set_enabled("login.next", false);
-        priv_
-            .next_stack
-            .set_visible_child(&priv_.next_spinner.get());
+        priv_.next_button.set_loading(true);
         priv_.main_stack.set_sensitive(false);
     }
 
@@ -163,7 +155,7 @@ impl Login {
         let priv_ = self.imp();
 
         self.action_set_enabled("login.next", true);
-        priv_.next_stack.set_visible_child(&priv_.next_label.get());
+        priv_.next_button.set_loading(false);
         priv_.main_stack.set_sensitive(true);
     }
 
