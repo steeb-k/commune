@@ -43,6 +43,7 @@ where
     fn set_event_actions(&self, event: Option<&Event>) {
         if event.is_none() {
             self.insert_action_group("event", gio::NONE_ACTION_GROUP);
+            return;
         }
 
         let event = event.unwrap();
