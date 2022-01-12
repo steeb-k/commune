@@ -20,6 +20,7 @@ mod imp {
     use gtk::CompositeTemplate;
     use once_cell::sync::Lazy;
     use std::cell::Cell;
+    use tokio::sync::OnceCell;
 
     use super::*;
 
@@ -29,8 +30,8 @@ mod imp {
         pub paintable: CameraPaintable,
         #[template_child]
         pub picture: TemplateChild<gtk::Picture>,
+        pub connection: OnceCell<zbus::Connection>,
         pub has_camera: Cell<bool>,
-        pub is_started: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -116,53 +117,68 @@ impl QrCodeScanner {
         glib::Object::new(&[]).expect("Failed to create a QrCodeScanner")
     }
 
+    async fn connection(&self) -> Result<&zbus::Connection, ashpd::Error> {
+        let priv_ = imp::QrCodeScanner::from_instance(self);
+
+        Ok(priv_
+            .connection
+            .get_or_try_init(|| zbus::Connection::session())
+            .await?)
+    }
+
     pub fn stop(&self) {
         let self_ = imp::QrCodeScanner::from_instance(self);
 
         self_.paintable.close_pipeline();
     }
 
-    async fn start_internal(&self) -> bool {
-        let self_ = imp::QrCodeScanner::from_instance(self);
-        if let Ok(Some(stream_fd)) = stream().await {
+    pub async fn start(&self) -> bool {
+        let priv_ = imp::QrCodeScanner::from_instance(self);
+        if let Ok(stream_fd) = self.stream().await {
             if let Ok(node_id) = camera::pipewire_node_id(stream_fd).await {
-                self_.paintable.set_pipewire_fd(stream_fd, node_id);
-                self_.has_camera.set(true);
-                self.notify("has-camera");
+                priv_.paintable.set_pipewire_fd(stream_fd, node_id);
+                self.set_has_camera(true);
                 return true;
             }
         }
-        self_.has_camera.set(false);
-        self.notify("has-camera");
-        false
+
+        self.set_has_camera(false);
+        return false;
     }
 
-    pub async fn start(&self) -> bool {
-        let priv_ = imp::QrCodeScanner::from_instance(self);
-        let is_started = self.start_internal().await;
-        priv_.is_started.set(is_started);
-        is_started
+    async fn has_camera_internal(&self) -> Result<bool, ashpd::Error> {
+        let proxy = camera::CameraProxy::new(self.connection().await?).await?;
+
+        proxy.is_camera_present().await
+    }
+
+    async fn stream(&self) -> Result<RawFd, ashpd::Error> {
+        let proxy = camera::CameraProxy::new(self.connection().await?).await?;
+
+        proxy.access_camera().await?;
+        proxy.open_pipe_wire_remote().await
     }
 
     fn init_has_camera(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            let priv_ = imp::QrCodeScanner::from_instance(&obj);
-            let has_camera = if obj.start_internal().await {
-                if !priv_.is_started.get() {
-                    obj.stop();
-                }
-                true
-            } else {
-                false
-            };
-            priv_.has_camera.set(has_camera);
-            obj.notify("has-camera");
+            obj.set_has_camera(obj.has_camera_internal().await.unwrap_or_default());
         }));
     }
 
     pub fn has_camera(&self) -> bool {
         let priv_ = imp::QrCodeScanner::from_instance(self);
         priv_.has_camera.get()
+    }
+
+    fn set_has_camera(&self, has_camera: bool) {
+        let priv_ = imp::QrCodeScanner::from_instance(self);
+
+        if has_camera == self.has_camera() {
+            return;
+        }
+
+        priv_.has_camera.set(has_camera);
+        self.notify("has-camera");
     }
 
     /// Connects the prepared signals to the function f given in input
@@ -179,18 +195,6 @@ impl QrCodeScanner {
             None
         })
         .unwrap()
-    }
-}
-
-async fn stream() -> Result<Option<RawFd>, ashpd::Error> {
-    let connection = zbus::Connection::session().await?;
-    let proxy = camera::CameraProxy::new(&connection).await?;
-
-    if proxy.is_camera_present().await? {
-        proxy.access_camera().await?;
-        Ok(Some(proxy.open_pipe_wire_remote().await?))
-    } else {
-        Ok(None)
     }
 }
 

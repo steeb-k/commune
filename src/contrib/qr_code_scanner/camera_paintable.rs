@@ -212,7 +212,6 @@ mod imp {
 
     pub struct CameraPaintable {
         pub sink: camera_sink::CameraSink,
-        pub detector: QrCodeDetector,
         pub pipeline: RefCell<Option<gst::Pipeline>>,
         pub sender: Sender<Action>,
         pub image: RefCell<Option<gdk::Texture>>,
@@ -227,7 +226,6 @@ mod imp {
             Self {
                 pipeline: RefCell::default(),
                 sink: camera_sink::CameraSink::new(sender.clone()),
-                detector: QrCodeDetector::new(sender.clone()),
                 image: RefCell::new(None),
                 sender,
                 receiver,
@@ -337,6 +335,7 @@ impl Default for CameraPaintable {
 
 impl CameraPaintable {
     pub fn set_pipewire_fd<F: AsRawFd>(&self, fd: F, node_id: u32) {
+        self.close_pipeline();
         let pipewire_element = gst::ElementFactory::make("pipewiresrc", None).unwrap();
         pipewire_element
             .set_property("fd", &fd.as_raw_fd())
@@ -350,6 +349,7 @@ impl CameraPaintable {
     fn init_pipeline(&self, pipewire_src: gst::Element) {
         let self_ = imp::CameraPaintable::from_instance(self);
         let pipeline = gst::Pipeline::new(None);
+        let detector = QrCodeDetector::new(self_.sender.clone()).upcast();
 
         let tee = gst::ElementFactory::make("tee", None).unwrap();
         let queue = gst::ElementFactory::make("queue", None).unwrap();
@@ -377,21 +377,14 @@ impl CameraPaintable {
                 &tee,
                 &queue,
                 &videoconvert1,
-                self_.detector.upcast_ref(),
+                &detector,
                 &queue2,
                 &videoconvert2,
                 self_.sink.upcast_ref(),
             ])
             .unwrap();
 
-        gst::Element::link_many(&[
-            &pipewire_src,
-            &tee,
-            &queue,
-            &videoconvert1,
-            self_.detector.upcast_ref(),
-        ])
-        .unwrap();
+        gst::Element::link_many(&[&pipewire_src, &tee, &queue, &videoconvert1, &detector]).unwrap();
 
         tee.link_pads(None, &queue2, None).unwrap();
         gst::Element::link_many(&[&queue2, &videoconvert2, self_.sink.upcast_ref()]).unwrap();
