@@ -673,6 +673,7 @@ impl Session {
                 {
                     match error.kind {
                         ErrorKind::UnknownToken { soft_logout: _ } => {
+                            self.emit_by_name("logged-out", &[]).unwrap();
                             self.cleanup_session();
                         }
                         _ => {}
