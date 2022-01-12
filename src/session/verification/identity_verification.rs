@@ -513,11 +513,13 @@ impl IdentityVerification {
     pub fn emoji_match(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
-        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
-            let result = sync_sender.try_send(Message::UserAction(UserAction::Match));
+        if self.state() == State::SasV1 {
+            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+                let result = sync_sender.try_send(Message::UserAction(UserAction::Match));
 
-            if let Err(error) = result {
-                error!("Failed to send message to tokio runtime: {}", error);
+                if let Err(error) = result {
+                    error!("Failed to send message to tokio runtime: {}", error);
+                }
             }
         }
     }
@@ -525,11 +527,13 @@ impl IdentityVerification {
     pub fn emoji_not_match(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
-        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
-            let result = sync_sender.try_send(Message::UserAction(UserAction::NotMatch));
+        if self.state() == State::SasV1 {
+            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+                let result = sync_sender.try_send(Message::UserAction(UserAction::NotMatch));
 
-            if let Err(error) = result {
-                error!("Failed to send message to tokio runtime: {}", error);
+                if let Err(error) = result {
+                    error!("Failed to send message to tokio runtime: {}", error);
+                }
             }
         }
     }
@@ -673,11 +677,13 @@ impl IdentityVerification {
     pub fn start_sas(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
 
-        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
-            let result = sync_sender.try_send(Message::UserAction(UserAction::StartSas));
+        if self.state() != State::SasV1 {
+            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+                let result = sync_sender.try_send(Message::UserAction(UserAction::StartSas));
 
-            if let Err(error) = result {
-                error!("Failed to send message to tokio runtime: {}", error);
+                if let Err(error) = result {
+                    error!("Failed to send message to tokio runtime: {}", error);
+                }
             }
         }
     }
@@ -697,10 +703,12 @@ impl IdentityVerification {
     /// Accept an incomming request
     pub fn accept(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
-        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
-            let result = sync_sender.try_send(Message::UserAction(UserAction::Accept));
-            if let Err(error) = result {
-                error!("Failed to send message to tokio runtime: {}", error);
+        if self.state() == State::Requested {
+            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+                let result = sync_sender.try_send(Message::UserAction(UserAction::Accept));
+                if let Err(error) = result {
+                    error!("Failed to send message to tokio runtime: {}", error);
+                }
             }
         }
     }
