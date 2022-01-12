@@ -157,7 +157,7 @@ mod imp {
                         "The current state of this verification",
                         State::static_type(),
                         State::default() as i32,
-                        glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpec::new_flags(
                         "supported-methods",
@@ -211,6 +211,7 @@ mod imp {
             match pspec.name() {
                 "user" => obj.set_user(value.get().unwrap()),
                 "session" => obj.set_session(value.get().unwrap()),
+                "state" => obj.set_state(value.get().unwrap()),
                 "flow-id" => obj.set_flow_id(value.get().unwrap()),
                 "start-time" => obj.set_start_time(value.get().unwrap()),
                 _ => unimplemented!(),
