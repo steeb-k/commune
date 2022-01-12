@@ -20,7 +20,7 @@ pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
 pub use self::user::{User, UserExt};
-use self::verification::{IdentityVerification, VerificationList, VerificationState};
+use self::verification::VerificationList;
 use crate::session::sidebar::ItemList;
 
 use crate::secret;
@@ -492,31 +492,9 @@ impl Session {
     async fn create_session_verification(&self) {
         let priv_ = imp::Session::from_instance(self);
 
-        let request = IdentityVerification::create(&self, None).await;
-
-        if let Some(widget) = priv_.stack.child_by_name("session-verification") {
-            widget
-                .downcast::<SessionVerification>()
-                .unwrap()
-                .set_request(request.clone());
-        } else {
-            let widget = SessionVerification::new(&request);
-            priv_.stack.add_named(&widget, Some("session-verification"));
-            priv_.stack.set_visible_child(&widget);
-        }
-
-        request.connect_notify_local(
-            Some("state"),
-            clone!(@weak self as obj => move |request, _| {
-                if request.is_finished() && request.state() !=  VerificationState::Completed {
-                    spawn!(async move {
-                        obj.create_session_verification().await;
-                    });
-                }
-            }),
-        );
-
-        self.verification_list().add(request);
+        let widget = SessionVerification::new(self);
+        priv_.stack.add_named(&widget, Some("session-verification"));
+        priv_.stack.set_visible_child(&widget);
     }
 
     fn mark_ready(&self) {
@@ -722,11 +700,6 @@ impl Session {
         // First stop the verification in progress
         if let Some(session_verificiation) = priv_.stack.child_by_name("session-verification") {
             priv_.stack.remove(&session_verificiation);
-            session_verificiation
-                .downcast_ref::<SessionVerification>()
-                .unwrap()
-                .request()
-                .cancel();
         }
 
         let client = self.client();

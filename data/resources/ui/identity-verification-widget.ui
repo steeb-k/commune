@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="IdentityVerificationWidget" parent="AdwBin">
-    <style>
-      <class name="incoming-verification"/>
-    </style>
     <child>
       <object class="GtkStack" id="main_stack">
         <property name="transition-type">crossfade</property>
@@ -23,8 +20,7 @@
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Login Request From Another Session</property>
+                      <object class="GtkLabel" id="label1">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -34,8 +30,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Verify the new session with the current session.</property>
+                      <object class="GtkLabel" id="label2">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -51,10 +46,10 @@
                         <property name="halign">center</property>
                         <property name="spacing">24</property>
                         <child>
-                          <object class="GtkButton" id="dismiss_btn">
-                            <property name="label" translatable="yes">Dismiss</property>
+                          <object class="GtkButton" id="decline_btn">
+                            <property name="label" translatable="yes">Decline</property>
                             <property name="halign">center</property>
-                            <property name="action-name">verification.dismiss</property>
+                            <property name="action-name">verification.decline</property>
                             <style>
                               <class name="pill"/>
                             </style>
@@ -62,7 +57,7 @@
                         </child>
                         <child>
                           <object class="SpinnerButton" id="accept_btn">
-                            <property name="label" translatable="yes">Accept</property>
+                            <property name="label" translatable="yes">Verify</property>
                             <property name="halign">center</property>
                             <style>
                               <class name="suggested-action"/>
@@ -91,8 +86,7 @@
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Verify Session</property>
+                      <object class="GtkLabel" id="label3">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -102,8 +96,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Scan the Qr code with this session from another session logged into this account</property>
+                      <object class="GtkLabel" id="label4">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -178,8 +171,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">You scanned to qr code successfully. You may need to confirm the verification in the other session.</property>
+                      <object class="GtkLabel" id="label5">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -204,8 +196,7 @@
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Verify Session</property>
+                      <object class="GtkLabel" id="label6">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -215,8 +206,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Select an option to verify the new session.</property>
+                      <object class="GtkLabel" id="label7">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -259,8 +249,7 @@
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Verify Session</property>
+                      <object class="GtkLabel" id="label8">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -270,8 +259,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Scan this qr code with the newly logged in session.</property>
+                      <object class="GtkLabel" id="label9">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -329,8 +317,7 @@
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Verify Session</property>
+                      <object class="GtkLabel" id="label10">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -340,8 +327,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Check if the same emoji appear in the same order on the other device</property>
+                      <object class="GtkLabel" id="label11">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -402,8 +388,7 @@
                     <property name="spacing">18</property>
                     <property name="valign">center</property>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Request Complete</property>
+                      <object class="GtkLabel" id="label12">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -418,8 +403,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">The new session is now ready to send and receive secure messages.</property>
+                      <object class="GtkLabel" id="label13">
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
@@ -433,6 +417,47 @@
                           <class name="suggested-action"/>
                           <class name="pill"/>
                         </style>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">wait-for-other-party</property>
+            <property name="child">
+              <object class="AdwClamp">
+                <property name="maximum-size">400</property>
+                <property name="tightening-threshold">300</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="orientation">vertical</property>
+                    <property name="spacing">18</property>
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <child>
+                      <object class="GtkLabel" id="label14">
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="justify">center</property>
+                        <style>
+                          <class name="title-1"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label15">
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="justify">center</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkPicture">
+                        <property name="file">resource:///org/gnome/FractalNext/icons/scalable/status/other-device.svg</property>
                       </object>
                     </child>
                   </object>

@@ -8,7 +8,10 @@ use crate::contrib::screenshot;
 use crate::contrib::QRCode;
 use crate::contrib::QRCodeExt;
 use crate::contrib::QrCodeScanner;
-use crate::session::verification::{IdentityVerification, SasData, VerificationState};
+use crate::session::user::UserExt;
+use crate::session::verification::{
+    IdentityVerification, SasData, VerificationMode, VerificationState,
+};
 use crate::spawn;
 use gettextrs::gettext;
 use matrix_sdk::encryption::verification::QrVerificationData;
@@ -44,7 +47,7 @@ mod imp {
         #[template_child]
         pub accept_btn: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub dismiss_btn: TemplateChild<gtk::Button>,
+        pub decline_btn: TemplateChild<gtk::Button>,
         #[template_child]
         pub take_screenshot_btn2: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -56,6 +59,37 @@ mod imp {
         #[template_child]
         pub done_btn: TemplateChild<gtk::Button>,
         pub state_handler: RefCell<Option<SignalHandlerId>>,
+        pub name_handler: RefCell<Option<SignalHandlerId>>,
+        #[template_child]
+        pub label1: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label2: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label3: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label4: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label5: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label6: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label7: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label8: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label9: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label10: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label11: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label12: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label13: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label14: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub label15: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -70,8 +104,8 @@ mod imp {
             Emoji::static_type();
             QrCodeScanner::static_type();
 
-            klass.install_action("verification.dismiss", None, move |obj, _, _| {
-                obj.dismiss();
+            klass.install_action("verification.decline", None, move |obj, _, _| {
+                obj.decline();
             });
 
             Self::bind_template(klass);
@@ -124,7 +158,7 @@ mod imp {
                 .connect_clicked(clone!(@weak obj => move |button| {
                     let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.dismiss_btn.set_sensitive(false);
+                    priv_.decline_btn.set_sensitive(false);
                     obj.accept();
                 }));
 
@@ -205,7 +239,11 @@ mod imp {
                 }));
 
             self.done_btn.connect_clicked(clone!(@weak obj => move |_| {
-                obj.dismiss();
+                if let Some(request) = obj.request() {
+                    if request.mode() == VerificationMode::CurrentSession {
+                        obj.activate_action("session.show-content", None);
+                    }
+                }
             }));
 
             self.qr_code_scanner
@@ -226,6 +264,10 @@ mod imp {
             if let Some(request) = obj.request() {
                 if let Some(handler) = self.state_handler.take() {
                     request.disconnect(handler);
+                }
+
+                if let Some(handler) = self.name_handler.take() {
+                    request.user().disconnect(handler);
                 }
             }
         }
@@ -270,6 +312,10 @@ impl IdentityVerificationWidget {
             if let Some(handler) = priv_.state_handler.take() {
                 previous_request.disconnect(handler);
             }
+
+            if let Some(handler) = priv_.name_handler.take() {
+                previous_request.user().disconnect(handler);
+            }
         }
 
         if let Some(ref request) = request {
@@ -279,12 +325,22 @@ impl IdentityVerificationWidget {
                     obj.update_view();
                 }),
             );
-            self.update_view();
 
             priv_.state_handler.replace(Some(handler));
+
+            let handler = request.user().connect_notify_local(
+                Some("display-name"),
+                clone!(@weak self as obj => move |_, _| {
+                    obj.init_mode();
+                }),
+            );
+
+            priv_.name_handler.replace(Some(handler));
         }
 
         priv_.request.replace(request);
+        self.init_mode();
+        self.update_view();
         self.notify("request");
     }
 
@@ -292,7 +348,7 @@ impl IdentityVerificationWidget {
         let priv_ = imp::IdentityVerificationWidget::from_instance(self);
         priv_.accept_btn.set_loading(false);
         priv_.accept_btn.set_sensitive(true);
-        priv_.dismiss_btn.set_sensitive(true);
+        priv_.decline_btn.set_sensitive(true);
         priv_.scan_qr_code_btn.set_loading(false);
         priv_.scan_qr_code_btn.set_sensitive(true);
         priv_.emoji_not_match_btn.set_loading(false);
@@ -331,9 +387,9 @@ impl IdentityVerificationWidget {
         }
     }
 
-    pub fn dismiss(&self) {
+    pub fn decline(&self) {
         if let Some(request) = self.request() {
-            request.dismiss();
+            request.cancel();
         }
     }
 
@@ -343,6 +399,11 @@ impl IdentityVerificationWidget {
             match request.state() {
                 VerificationState::Requested => {
                     priv_.main_stack.set_visible_child_name("accept-request");
+                }
+                VerificationState::RequestSend => {
+                    priv_
+                        .main_stack
+                        .set_visible_child_name("wait-for-other-party");
                 }
                 VerificationState::QrV1Show => {
                     if let Some(qrcode) = request.qr_code() {
@@ -384,7 +445,10 @@ impl IdentityVerificationWidget {
                 VerificationState::Completed => {
                     priv_.main_stack.set_visible_child_name("completed");
                 }
-                _ => {}
+                VerificationState::Cancelled
+                | VerificationState::Dismissed
+                | VerificationState::Error
+                | VerificationState::Passive => {}
             }
         }
     }
@@ -430,6 +494,103 @@ impl IdentityVerificationWidget {
             priv_
                 .scan_qr_code_btn
                 .set_label(&gettext("Take a Screenshot of a Qr Code"))
+        }
+    }
+
+    fn init_mode(&self) {
+        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let request = if let Some(request) = self.request() {
+            request
+        } else {
+            return;
+        };
+
+        match request.mode() {
+            VerificationMode::CurrentSession => {
+                // label1 and label2 won't be shown
+                priv_
+                    .label2
+                    .set_label(&gettext("Verify the new session with the current session."));
+                priv_.label3.set_label(&gettext("Verify Session"));
+                priv_.label4.set_label(&gettext("Scan the Qr code with this session from another session logged into this account."));
+                priv_.label5.set_label(&gettext("You scanned to qr code successfully. You may need to confirm the verification in the other session."));
+                priv_.label6.set_label(&gettext("Verify Session"));
+                priv_
+                    .label7
+                    .set_label(&gettext("Select an option to verify the new session."));
+                priv_.label8.set_label(&gettext("Verify Session"));
+                priv_.label9.set_label(&gettext(
+                    "Scan this qr code with the newly logged in session.",
+                ));
+                priv_.label10.set_label(&gettext("Verify Session"));
+                priv_.label11.set_label(&gettext(
+                    "Check if the same emoji appear in the same order on the other device.",
+                ));
+                priv_.label12.set_label(&gettext("Request Complete"));
+                priv_.label13.set_label(&gettext(
+                    "This session is ready to send and receive secure messages.",
+                ));
+                priv_.done_btn.set_label(&gettext("Get Started"));
+            }
+            VerificationMode::OtherSession => {
+                priv_
+                    .label1
+                    .set_label(&gettext("Login Request From Another Session"));
+                priv_
+                    .label2
+                    .set_label(&gettext("Verify the new session with the current session."));
+                priv_.label3.set_label(&gettext("Verify Session"));
+                priv_.label4.set_label(&gettext("Scan the Qr code with this session from another session logged into this account."));
+                priv_.label5.set_label(&gettext("You scanned to qr code successfully. You may need to confirm the verification in the other session."));
+                priv_.label6.set_label(&gettext("Verify Session"));
+                priv_
+                    .label7
+                    .set_label(&gettext("Select an option to verify the new session."));
+                priv_.label8.set_label(&gettext("Verify Session"));
+                priv_.label9.set_label(&gettext(
+                    "Scan this qr code with the newly logged in session.",
+                ));
+                priv_.label10.set_label(&gettext("Verify Session"));
+                priv_.label11.set_label(&gettext(
+                    "Check if the same emoji appear in the same order on the other device.",
+                ));
+                priv_.label12.set_label(&gettext("Request Complete"));
+                priv_.label13.set_label(&gettext(
+                    "The new session is now ready to send and receive secure messages.",
+                ));
+                priv_.label14.set_label(&gettext("Get Another Device"));
+                priv_.label15.set_label(&gettext(
+                    "Accept the verification request from another session or device.",
+                ));
+            }
+            VerificationMode::User => {
+                let name = request.user().display_name();
+                priv_.label1.set_markup(&gettext("Verification Request"));
+                priv_
+                    .label2
+                    .set_markup(&gettext!("<b>{}</b> asked do be verified. Verifying an user increases the security of the conversation.", name));
+                priv_.label3.set_markup(&gettext("Verification Request"));
+                priv_.label4.set_markup(&gettext!(
+                    "Scan the Qr code shown on the device of <b>{}</b>.",
+                    name
+                ));
+                priv_.label5.set_markup(&gettext!("You scanned the Qr code successfully. <b>{}</b> may need to confirm the verification.", name));
+                priv_.label6.set_markup(&gettext("Verification Request"));
+                priv_
+                    .label7
+                    .set_markup(&gettext!("Select an option to verify <b>{}</b>", name));
+                priv_.label8.set_markup(&gettext("Verification Request"));
+                priv_.label9.set_markup(&gettext(
+                    "Ask <b>{}</b> to scan this Qr code with there device.",
+                ));
+                priv_.label10.set_markup(&gettext("Verification Request"));
+                priv_.label11.set_markup(&gettext!(
+                    "Ask <b>{}</b> if they see the following emoji appear in the same order on there screen.",
+                    name
+                ));
+                priv_.label12.set_markup(&gettext("Verification Complete"));
+                priv_.label13.set_markup(&gettext!("<b>{}</b>is now verified and you can now be sure that your comunication will be private.", name));
+            }
         }
     }
 }

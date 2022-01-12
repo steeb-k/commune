@@ -1,56 +1,37 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use log::{debug, error, warn};
+use log::error;
 
-use super::Emoji;
+use super::IdentityVerificationWidget;
 use crate::components::{AuthDialog, SpinnerButton};
-use crate::contrib::screenshot;
-use crate::contrib::QRCode;
-use crate::contrib::QRCodeExt;
-use crate::contrib::QrCodeScanner;
-use crate::session::verification::{IdentityVerification, SasData, VerificationState};
+use crate::session::verification::{IdentityVerification, VerificationState};
 use crate::spawn;
 use crate::Error;
+use crate::Session;
 use crate::Window;
-use matrix_sdk::encryption::verification::QrVerificationData;
 
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
     use glib::SignalHandlerId;
+    use glib::WeakRef;
+    use once_cell::unsync::OnceCell;
     use std::cell::RefCell;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session-verification.ui")]
     pub struct SessionVerification {
         pub request: RefCell<Option<IdentityVerification>>,
+        pub session: OnceCell<WeakRef<Session>>,
         #[template_child]
         pub bootstrap_button: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub qrcode: TemplateChild<QRCode>,
-        #[template_child]
-        pub emoji_row_1: TemplateChild<gtk::Box>,
-        #[template_child]
-        pub emoji_row_2: TemplateChild<gtk::Box>,
-        #[template_child]
-        pub emoji_match_btn: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub emoji_not_match_btn: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub start_emoji_btn: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub start_emoji_btn2: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub start_emoji_btn3: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub take_screenshot_btn2: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub take_screenshot_btn3: TemplateChild<SpinnerButton>,
-        #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub qr_code_scanner: TemplateChild<QrCodeScanner>,
+        pub bootstrap_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub verification_widget: TemplateChild<IdentityVerificationWidget>,
         pub state_handler: RefCell<Option<SignalHandlerId>>,
     }
 
@@ -62,17 +43,27 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             SpinnerButton::static_type();
-            QRCode::static_type();
-            Emoji::static_type();
             Self::bind_template(klass);
 
-            klass.install_action("verification.show-recovery", None, move |obj, _, _| {
-                obj.show_recovery();
-            });
-
-            klass.install_action("verification.previous", None, move |obj, _, _| {
+            klass.install_action("session-verification.previous", None, move |obj, _, _| {
                 obj.previous();
             });
+
+            klass.install_action(
+                "session-verification.show-recovery",
+                None,
+                move |obj, _, _| {
+                    obj.show_recovery();
+                },
+            );
+
+            klass.install_action(
+                "session-verification.show-bootstrap",
+                None,
+                move |obj, _, _| {
+                    obj.show_bootstrap();
+                },
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -85,13 +76,11 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![glib::ParamSpec::new_object(
-                    "request",
-                    "Request",
-                    "The Object holding the data for the verification",
-                    IdentityVerification::static_type(),
-                    glib::ParamFlags::READWRITE
-                        | glib::ParamFlags::CONSTRUCT
-                        | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    "session",
+                    "Session",
+                    "The session",
+                    Session::static_type(),
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                 )]
             });
 
@@ -106,14 +95,14 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "request" => obj.set_request(value.get().unwrap()),
+                "session" => obj.set_session(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
 
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
-                "request" => obj.request().to_value(),
+                "session" => obj.session().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -121,70 +110,21 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            obj.action_set_enabled("verification.show-recovery", false);
-
-            self.emoji_match_btn
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::SessionVerification::from_instance(&obj);
-                    button.set_loading(true);
-                    priv_.emoji_not_match_btn.set_sensitive(false);
-                    obj.request().emoji_match();
-                }));
-
-            self.emoji_not_match_btn
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::SessionVerification::from_instance(&obj);
-                    button.set_loading(true);
-                    priv_.emoji_match_btn.set_sensitive(false);
-                    obj.request().emoji_not_match();
-                }));
-
-            self.start_emoji_btn
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    button.set_loading(true);
-                    obj.request().start_sas();
-                }));
-
-            self.start_emoji_btn2
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::SessionVerification::from_instance(&obj);
-                    button.set_loading(true);
-                    priv_.take_screenshot_btn2.set_sensitive(false);
-                    obj.request().start_sas();
-                }));
-            self.start_emoji_btn3
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::SessionVerification::from_instance(&obj);
-                    button.set_loading(true);
-                    priv_.take_screenshot_btn3.set_sensitive(false);
-                    obj.request().start_sas();
-                }));
+            obj.action_set_enabled("session-verification.show-recovery", false);
 
             self.bootstrap_button
                 .connect_clicked(clone!(@weak obj => move |button| {
-                button.set_loading(true);
-                obj.bootstrap_cross_signing();
+                    button.set_loading(true);
+                    obj.bootstrap_cross_signing();
                 }));
 
-            self.take_screenshot_btn2
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::SessionVerification::from_instance(&obj);
-                    button.set_loading(true);
-                    priv_.start_emoji_btn2.set_sensitive(false);
-                    obj.take_screenshot();
-                }));
-
-            self.take_screenshot_btn3
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::SessionVerification::from_instance(&obj);
-                    button.set_loading(true);
-                    priv_.start_emoji_btn3.set_sensitive(false);
-                    obj.take_screenshot();
-                }));
+            obj.start_request();
         }
 
         fn dispose(&self, obj: &Self::Type) {
-            obj.silent_cancel();
+            if let Some(request) = obj.request() {
+                request.cancel();
+            }
         }
     }
 
@@ -198,40 +138,58 @@ glib::wrapper! {
 }
 
 impl SessionVerification {
-    pub fn new(request: &IdentityVerification) -> Self {
-        glib::Object::new(&[("request", request)]).expect("Failed to create SessionVerification")
+    pub fn new(session: &Session) -> Self {
+        glib::Object::new(&[("session", session)]).expect("Failed to create SessionVerification")
     }
 
-    pub fn request(&self) -> IdentityVerification {
+    /// The current `Session`.
+    pub fn session(&self) -> Session {
         let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.request.borrow().clone().unwrap()
+        priv_.session.get().unwrap().upgrade().unwrap()
     }
 
-    pub fn set_request(&self, request: IdentityVerification) {
+    fn set_session(&self, session: Session) {
         let priv_ = imp::SessionVerification::from_instance(self);
+        priv_.session.set(session.downgrade()).unwrap()
+    }
 
-        if let Some(old_request) = &*priv_.request.borrow() {
-            if old_request == &request {
-                return;
-            }
+    fn request(&self) -> Option<IdentityVerification> {
+        let priv_ = imp::SessionVerification::from_instance(self);
+        priv_.request.borrow().clone()
+    }
 
-            self.reset();
+    fn set_request(&self, request: Option<IdentityVerification>) {
+        let priv_ = imp::SessionVerification::from_instance(self);
+        let previous_request = self.request();
 
-            if let Some(handler) = priv_.state_handler.take() {
-                old_request.disconnect(handler);
-            }
+        if previous_request == request {
+            return;
         }
 
-        let handler = request.connect_notify_local(
-            Some("state"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_view();
-            }),
-        );
+        self.reset();
 
-        priv_.state_handler.replace(Some(handler));
+        if let Some(previous_request) = previous_request {
+            if let Some(handler) = priv_.state_handler.take() {
+                previous_request.disconnect(handler);
+            }
 
-        priv_.request.replace(Some(request));
+            previous_request.cancel();
+        }
+
+        if let Some(ref request) = request {
+            let handler = request.connect_notify_local(
+                Some("state"),
+                clone!(@weak self as obj => move |request, _| {
+                    obj.update_view(request);
+                }),
+            );
+
+            priv_.state_handler.replace(Some(handler));
+            self.update_view(request);
+        }
+
+        priv_.verification_widget.set_request(request.clone());
+        priv_.request.replace(request);
     }
 
     /// Returns the parent GtkWindow containing this widget.
@@ -242,161 +200,100 @@ impl SessionVerification {
     fn reset(&self) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        priv_.emoji_not_match_btn.set_loading(false);
-        priv_.emoji_not_match_btn.set_sensitive(true);
-        priv_.emoji_match_btn.set_loading(false);
-        priv_.emoji_match_btn.set_sensitive(true);
-        priv_.start_emoji_btn.set_loading(false);
-        priv_.start_emoji_btn.set_sensitive(true);
+        priv_.bootstrap_button.set_sensitive(true);
         priv_.bootstrap_button.set_loading(false);
-        priv_.start_emoji_btn2.set_loading(false);
-        priv_.start_emoji_btn2.set_sensitive(true);
-        priv_.take_screenshot_btn2.set_loading(false);
-        priv_.take_screenshot_btn2.set_sensitive(true);
-        priv_.take_screenshot_btn3.set_loading(false);
-        priv_.take_screenshot_btn3.set_sensitive(true);
-
-        while let Some(child) = priv_.emoji_row_1.first_child() {
-            priv_.emoji_row_1.remove(&child);
-        }
-
-        while let Some(child) = priv_.emoji_row_2.first_child() {
-            priv_.emoji_row_2.remove(&child);
-        }
     }
 
-    /// Cancel the verification request without telling the user about it
-    fn silent_cancel(&self) {
+    fn update_view(&self, request: &IdentityVerification) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        if let Some(handler) = priv_.state_handler.take() {
-            self.request().disconnect(handler);
+        if request.is_finished() && request.state() != VerificationState::Completed {
+            self.start_request();
+            return;
         }
 
-        debug!("Verification request was silently canceled");
-
-        self.request().cancel();
-    }
-
-    fn update_view(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        let request = self.request();
         match request.state() {
             // FIXME: we bootstrap on all errors
             VerificationState::Error => {
                 priv_.main_stack.set_visible_child_name("bootstrap");
             }
-            VerificationState::Requested | VerificationState::RequestSend => {
+            VerificationState::RequestSend => {
                 priv_.main_stack.set_visible_child_name("wait-for-device");
             }
-            VerificationState::QrV1Show => {
-                if let Some(qrcode) = request.qr_code() {
-                    priv_.qrcode.set_qrcode(qrcode.clone());
-                    priv_.main_stack.set_visible_child_name("qrcode");
-                } else {
-                    warn!("Failed to get qrcode for QrVerification");
-                    request.start_sas();
-                }
-            }
-            VerificationState::QrV1Scan => {
-                self.start_scanning();
-            }
-            VerificationState::SasV1 => {
-                match request.sas_data().unwrap() {
-                    SasData::Emoji(emoji) => {
-                        for (index, emoji) in emoji.iter().enumerate() {
-                            if index < 4 {
-                                priv_.emoji_row_1.append(&Emoji::new(emoji));
-                            } else {
-                                priv_.emoji_row_2.append(&Emoji::new(emoji));
-                            }
-                        }
-                    }
-                    SasData::Decimal((a, b, c)) => {
-                        let container = gtk::Box::builder()
-                            .spacing(24)
-                            .css_classes(vec!["emoji".to_string()])
-                            .build();
-                        container.append(&gtk::Label::builder().label(&a.to_string()).build());
-                        container.append(&gtk::Label::builder().label(&b.to_string()).build());
-                        container.append(&gtk::Label::builder().label(&c.to_string()).build());
-                        priv_.emoji_row_1.append(&container);
-                    }
-                }
-
-                priv_.main_stack.set_visible_child_name("emoji");
-            }
-            VerificationState::Completed => {
-                priv_.main_stack.set_visible_child_name("completed");
-            }
             _ => {
-                warn!("Try to show a dismissed verification");
+                priv_
+                    .main_stack
+                    .set_visible_child(&*priv_.verification_widget);
             }
         }
-    }
-
-    fn start_scanning(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            let priv_ = imp::SessionVerification::from_instance(&obj);
-            if priv_.qr_code_scanner.start().await {
-                priv_.main_stack.set_visible_child_name("scan-qr-code");
-            } else {
-                priv_.main_stack.set_visible_child_name("no-camera");
-            }
-        }));
-    }
-
-    fn take_screenshot(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            let root = obj.root().unwrap();
-            if let Some(code) = screenshot::capture(&root).await {
-                obj.finish_scanning(code);
-            } else {
-                obj.reset();
-            }
-        }));
-    }
-
-    fn finish_scanning(&self, data: QrVerificationData) {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.qr_code_scanner.stop();
-        self.request().scanned_qr_code(data);
-        priv_.main_stack.set_visible_child_name("qr-code-scanned");
     }
 
     fn show_recovery(&self) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        self.silent_cancel();
+        // TODO: stop the request
 
         priv_.main_stack.set_visible_child_name("recovery");
+    }
+
+    fn show_bootstrap(&self) {
+        let priv_ = imp::SessionVerification::from_instance(self);
+
+        self.set_request(None);
+        priv_.bootstrap_label.set_label(&gettext("If you lost access to all other session you can create a new crypto identity. Be care full because this will reset all verified users and make previously encrypted conversations unreadable."));
+        priv_.bootstrap_button.remove_css_class("suggested-action");
+        priv_.bootstrap_button.add_css_class("destructive-action");
+        priv_.bootstrap_button.set_label(&gettext("Reset"));
+        priv_.main_stack.set_visible_child_name("bootstrap");
+    }
+
+    fn start_request(&self) {
+        let priv_ = imp::SessionVerification::from_instance(self);
+        priv_.main_stack.set_visible_child_name("wait-for-device");
+
+        spawn!(clone!(@weak self as obj => async move {
+            let request = IdentityVerification::create(&obj.session(), None).await;
+            obj.session().verification_list().add(request.clone());
+            obj.set_request(Some(request));
+        }));
     }
 
     fn previous(&self) {
         let priv_ = imp::SessionVerification::from_instance(self);
 
-        match priv_.main_stack.visible_child_name().unwrap().as_str() {
-            "recovery" => {
-                self.silent_cancel();
+        if let Some(child_name) = priv_.main_stack.visible_child_name() {
+            match child_name.as_str() {
+                "recovery" => {
+                    self.start_request();
+                    return;
+                }
+                "recovery-passphrase" | "recovery-key" => {
+                    priv_.main_stack.set_visible_child_name("recovery");
+                    return;
+                }
+                "bootstrap" => {
+                    self.start_request();
+                    return;
+                }
+                _ => {}
             }
-            "recovery-passphrase" | "recovery-key" => {
-                priv_.main_stack.set_visible_child_name("recovery");
-            }
-            "wait-for-device" | "complete" => {
-                self.silent_cancel();
+        }
+
+        if let Some(request) = self.request() {
+            if request.state() == VerificationState::RequestSend {
+                self.set_request(None);
                 self.activate_action("session.logout", None);
+            } else {
+                self.start_request();
             }
-            "emoji" | "qrcode" | "scan-qr-code" | "no-camera" => {
-                self.silent_cancel();
-            }
-            _ => {}
+        } else {
+            self.activate_action("session.logout", None);
         }
     }
 
     fn bootstrap_cross_signing(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            let priv_ = imp::SessionVerification::from_instance(&obj);
-            let dialog = AuthDialog::new(obj.parent_window().as_ref(), &obj.request().session());
+            let dialog = AuthDialog::new(obj.parent_window().as_ref(), &obj.session());
 
             let result = dialog
             .authenticate(move |client, auth_data| async move {
@@ -434,12 +331,9 @@ impl SessionVerification {
                 if let Some(window) = obj.parent_window() {
                     window.append_error(&error);
                 }
-
-                obj.silent_cancel();
             } else {
-                priv_
-                .main_stack
-                .set_visible_child_name("completed");
+                // TODO tell user that the a crypto identity was created
+                obj.activate_action("session.show-content", None);
             }
         }));
     }

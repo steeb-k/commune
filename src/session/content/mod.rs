@@ -14,7 +14,7 @@ use self::verification::IdentityVerificationWidget;
 
 use crate::session::sidebar::{Entry, EntryType};
 
-use crate::session::verification::IdentityVerification;
+use crate::session::verification::{IdentityVerification, VerificationMode};
 
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
@@ -279,10 +279,12 @@ impl Content {
                     .as_ref()
                     .and_then(|item| item.downcast_ref::<IdentityVerification>())
                 {
-                    priv_
-                        .identity_verification_widget
-                        .set_request(Some(item.clone()));
-                    priv_.stack.set_visible_child(&*priv_.verification_page);
+                    if item.mode() != VerificationMode::CurrentSession {
+                        priv_
+                            .identity_verification_widget
+                            .set_request(Some(item.clone()));
+                        priv_.stack.set_visible_child(&*priv_.verification_page);
+                    }
                 }
             }
             _ => {}
