@@ -43,7 +43,7 @@ mod imp {
             });
 
             klass.install_action("verification.decline", None, move |widget, _, _| {
-                widget.request().unwrap().cancel();
+                widget.request().unwrap().cancel(true);
             });
         }
 

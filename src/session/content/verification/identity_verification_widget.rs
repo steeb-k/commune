@@ -389,7 +389,7 @@ impl IdentityVerificationWidget {
 
     pub fn decline(&self) {
         if let Some(request) = self.request() {
-            request.cancel();
+            request.cancel(true);
         }
     }
 

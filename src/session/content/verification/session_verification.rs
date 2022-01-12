@@ -123,7 +123,7 @@ mod imp {
 
         fn dispose(&self, obj: &Self::Type) {
             if let Some(request) = obj.request() {
-                request.cancel();
+                request.cancel(true);
             }
         }
     }
@@ -173,7 +173,7 @@ impl SessionVerification {
                 previous_request.disconnect(handler);
             }
 
-            previous_request.cancel();
+            previous_request.cancel(true);
         }
 
         if let Some(ref request) = request {

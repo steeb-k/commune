@@ -140,6 +140,7 @@ mod imp {
         pub flow_id: OnceCell<String>,
         pub start_time: OnceCell<glib::DateTime>,
         pub receive_time: OnceCell<glib::DateTime>,
+        pub hide_error: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -300,7 +301,7 @@ mod imp {
         }
 
         fn dispose(&self, obj: &Self::Type) {
-            obj.cancel();
+            obj.cancel(true);
         }
     }
 }
@@ -463,7 +464,7 @@ impl IdentityVerification {
 
         if difference < 0 {
             warn!("The verification request was sent in the future.");
-            self.cancel();
+            self.cancel(false);
             return;
         }
         let difference = Duration::from_secs(difference as u64);
@@ -474,14 +475,14 @@ impl IdentityVerification {
         let remaining = std::cmp::max(remaining_creation, remaining_receive);
 
         if remaining.is_zero() {
-            self.cancel();
+            self.cancel(false);
             return;
         }
 
         glib::source::timeout_add_local(
             remaining,
             clone!(@weak self as obj => @default-return glib::Continue(false), move || {
-                obj.cancel();
+                obj.cancel(false);
 
                 glib::Continue(false)
             }),
@@ -581,7 +582,16 @@ impl IdentityVerification {
         )
     }
 
+    fn hide_error(&self) -> bool {
+        let priv_ = imp::IdentityVerification::from_instance(self);
+        priv_.hide_error.get()
+    }
+
     fn show_error(&self) {
+        if self.hide_error() {
+            return;
+        }
+
         let error_message = if let Some(info) = self.cancel_info() {
             match info.cancel_code() {
                 CancelCode::User => Some(gettext("You cancelled the verificaiton process.")),
@@ -695,8 +705,11 @@ impl IdentityVerification {
         }
     }
 
-    pub fn cancel(&self) {
+    pub fn cancel(&self, hide_error: bool) {
         let priv_ = imp::IdentityVerification::from_instance(self);
+
+        priv_.hide_error.set(hide_error);
+
         if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
             let result = sync_sender.try_send(Message::UserAction(UserAction::Cancel));
             if let Err(error) = result {
