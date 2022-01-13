@@ -5,13 +5,15 @@ mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-message-file.ui")]
     pub struct MessageFile {
         /// The filename of the file
         pub filename: RefCell<Option<String>>,
+        /// Whether this file should be displayed in a compact format.
+        pub compact: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -32,13 +34,22 @@ mod imp {
     impl ObjectImpl for MessageFile {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_string(
-                    "filename",
-                    "Filename",
-                    "The filename of the file",
-                    None,
-                    glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
-                )]
+                vec![
+                    glib::ParamSpec::new_string(
+                        "filename",
+                        "Filename",
+                        "The filename of the file",
+                        None,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
+                    glib::ParamSpec::new_boolean(
+                        "compact",
+                        "Compact",
+                        "Whether this file should be displayed in a compact format",
+                        false,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -53,6 +64,7 @@ mod imp {
         ) {
             match pspec.name() {
                 "filename" => obj.set_filename(value.get().unwrap()),
+                "compact" => obj.set_compact(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -60,12 +72,9 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "filename" => obj.filename().to_value(),
+                "compact" => obj.compact().to_value(),
                 _ => unimplemented!(),
             }
-        }
-
-        fn constructed(&self, obj: &Self::Type) {
-            self.parent_constructed(obj);
         }
     }
 
@@ -101,6 +110,22 @@ impl MessageFile {
     pub fn filename(&self) -> Option<String> {
         let priv_ = imp::MessageFile::from_instance(self);
         priv_.filename.borrow().to_owned()
+    }
+
+    pub fn set_compact(&self, compact: bool) {
+        let priv_ = imp::MessageFile::from_instance(self);
+
+        if self.compact() == compact {
+            return;
+        }
+
+        priv_.compact.set(compact);
+        self.notify("compact");
+    }
+
+    pub fn compact(&self) -> bool {
+        let priv_ = imp::MessageFile::from_instance(self);
+        priv_.compact.get()
     }
 }
 

@@ -9,13 +9,12 @@
         <child>
           <object class="GtkLabel">
             <property name="ellipsize">end</property>
-            <binding name="label">
-              <lookup name="filename">ContentMessageFile</lookup>
-            </binding>
+            <property name="label" bind-source="ContentMessageFile" bind-property="filename" bind-flags="sync-create"/>
           </object>
         </child>
         <child>
           <object class="GtkBox">
+              <property name="visible" bind-source="ContentMessageFile" bind-property="compact" bind-flags="sync-create | invert-boolean"/>
               <child>
                 <object class="GtkButton" id="open">
                   <property name="icon-name">document-open-symbolic</property>

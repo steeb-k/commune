@@ -32,6 +32,8 @@ const MAX_THUMBNAIL_WIDTH: i32 = 600;
 const MAX_THUMBNAIL_HEIGHT: i32 = 400;
 const FALLBACK_WIDTH: i32 = 480;
 const FALLBACK_HEIGHT: i32 = 360;
+const MAX_COMPACT_THUMBNAIL_WIDTH: i32 = 75;
+const MAX_COMPACT_THUMBNAIL_HEIGHT: i32 = 50;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
 #[repr(u32)]
@@ -75,6 +77,8 @@ mod imp {
         pub height: Cell<i32>,
         /// The state of the media.
         pub state: Cell<MediaState>,
+        /// Whether to display this media in a compact format.
+        pub compact: Cell<bool>,
         #[template_child]
         pub media: TemplateChild<gtk::Overlay>,
         #[template_child]
@@ -128,6 +132,13 @@ mod imp {
                         MediaState::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "compact",
+                        "Compact",
+                        "Whether to display this media in a compact format",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -160,6 +171,7 @@ mod imp {
                 "width" => obj.width().to_value(),
                 "height" => obj.height().to_value(),
                 "state" => obj.state().to_value(),
+                "compact" => obj.compact().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -172,29 +184,36 @@ mod imp {
     impl WidgetImpl for MessageMedia {
         fn measure(
             &self,
-            _obj: &Self::Type,
+            obj: &Self::Type,
             orientation: gtk::Orientation,
             for_size: i32,
         ) -> (i32, i32, i32, i32) {
             let original_width = self.width.get();
             let original_height = self.height.get();
 
+            let compact = obj.compact();
+            let (max_width, max_height) = if compact {
+                (MAX_COMPACT_THUMBNAIL_WIDTH, MAX_COMPACT_THUMBNAIL_HEIGHT)
+            } else {
+                (MAX_THUMBNAIL_WIDTH, MAX_THUMBNAIL_HEIGHT)
+            };
+
             let (original, max, fallback, original_other, max_other) =
                 if orientation == gtk::Orientation::Vertical {
                     (
                         original_height,
-                        MAX_THUMBNAIL_HEIGHT,
+                        max_height,
                         FALLBACK_HEIGHT,
                         original_width,
-                        MAX_THUMBNAIL_WIDTH,
+                        max_width,
                     )
                 } else {
                     (
                         original_width,
-                        MAX_THUMBNAIL_WIDTH,
+                        max_width,
                         FALLBACK_WIDTH,
                         original_height,
-                        MAX_THUMBNAIL_HEIGHT,
+                        max_height,
                     )
                 };
 
@@ -212,7 +231,7 @@ mod imp {
                 fallback
             };
 
-            // Limit this size to 400 pixels.
+            // Limit this side to max size.
             let size = nat.min(max);
             (0, size, -1, -1)
         }
@@ -316,19 +335,31 @@ impl MessageMedia {
         self.notify("state");
     }
 
-    /// Display the given `image`.
-    pub fn image(&self, image: ImageMessageEventContent, session: &Session) {
+    fn compact(&self) -> bool {
+        let priv_ = imp::MessageMedia::from_instance(self);
+        priv_.compact.get()
+    }
+
+    fn set_compact(&self, compact: bool) {
+        let priv_ = imp::MessageMedia::from_instance(self);
+        priv_.compact.set(compact);
+        self.notify("compact");
+    }
+
+    /// Display the given `image`, in a `compact` format or not.
+    pub fn image(&self, image: ImageMessageEventContent, session: &Session, compact: bool) {
         let info = image.info.as_deref();
         let width = uint_to_i32(info.and_then(|info| info.width));
         let height = uint_to_i32(info.and_then(|info| info.height));
 
         self.set_width(width);
         self.set_height(height);
+        self.set_compact(compact);
         self.build(image, None, MediaType::Image, session);
     }
 
-    /// Display the given `sticker`.
-    pub fn sticker(&self, sticker: StickerEventContent, session: &Session) {
+    /// Display the given `sticker`, in a `compact` format or not.
+    pub fn sticker(&self, sticker: StickerEventContent, session: &Session, compact: bool) {
         let info = &sticker.info;
         let width = uint_to_i32(info.width);
         let height = uint_to_i32(info.height);
@@ -336,11 +367,12 @@ impl MessageMedia {
 
         self.set_width(width);
         self.set_height(height);
+        self.set_compact(compact);
         self.build(sticker, body, MediaType::Sticker, session);
     }
 
-    /// Display the given `video`.
-    pub fn video(&self, video: VideoMessageEventContent, session: &Session) {
+    /// Display the given `video`, in a `compact` format or not.
+    pub fn video(&self, video: VideoMessageEventContent, session: &Session, compact: bool) {
         let info = &video.info.as_deref();
         let width = uint_to_i32(info.and_then(|info| info.width));
         let height = uint_to_i32(info.and_then(|info| info.height));
@@ -348,6 +380,7 @@ impl MessageMedia {
 
         self.set_width(width);
         self.set_height(height);
+        self.set_compact(compact);
         self.build(video, body, MediaType::Video, session);
     }
 
@@ -446,6 +479,7 @@ impl MessageMedia {
                                     priv_.media.set_child(Some(&child));
                                     child
                                 };
+                                child.set_compact(obj.compact());
                                 child.set_media_file(&media_file)
                             }
                         };

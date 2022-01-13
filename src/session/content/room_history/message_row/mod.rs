@@ -200,16 +200,16 @@ impl MessageRow {
                     if let Ok(Some(related_event)) = event.reply_to_event().await {
                         let reply = MessageReply::new();
                         reply.set_related_content_sender(related_event.sender().upcast());
-                        build_content(reply.related_content(), &related_event);
-                        build_content(reply.content(), &event);
+                        build_content(reply.related_content(), &related_event, true);
+                        build_content(reply.content(), &event, false);
                         priv_.content.set_child(Some(&reply));
                     } else {
-                        build_content(&*priv_.content, &event);
+                        build_content(&*priv_.content, &event, false);
                     }
                 })
             );
         } else {
-            build_content(&*priv_.content, event);
+            build_content(&*priv_.content, event, false);
         }
     }
 }
@@ -221,7 +221,10 @@ impl Default for MessageRow {
 }
 
 /// Build the content widget of `event` as a child of `parent`.
-fn build_content(parent: &adw::Bin, event: &Event) {
+///
+/// If `compact` is true, the content should appear in a smaller format without
+/// interactions, if possible.
+fn build_content(parent: &adw::Bin, event: &Event, compact: bool) {
     // TODO: create widgets for all event types
     // TODO: display reaction events from event.relates_to()
     // TODO: we should reuse the already present child widgets when possible
@@ -267,6 +270,7 @@ fn build_content(parent: &adw::Bin, event: &Event) {
                         child
                     };
                     child.set_filename(Some(filename));
+                    child.set_compact(compact);
                 }
                 MessageType::Image(message) => {
                     let child = if let Some(Ok(child)) =
@@ -278,7 +282,7 @@ fn build_content(parent: &adw::Bin, event: &Event) {
                         parent.set_child(Some(&child));
                         child
                     };
-                    child.image(message, &event.room().session());
+                    child.image(message, &event.room().session(), compact);
                 }
                 MessageType::Location(_message) => {}
                 MessageType::Notice(message) => {
@@ -327,7 +331,7 @@ fn build_content(parent: &adw::Bin, event: &Event) {
                         parent.set_child(Some(&child));
                         child
                     };
-                    child.video(message, &event.room().session());
+                    child.video(message, &event.room().session(), compact);
                 }
                 MessageType::VerificationRequest(_) => {
                     // TODO: show more information about the verification
@@ -366,7 +370,7 @@ fn build_content(parent: &adw::Bin, event: &Event) {
                     parent.set_child(Some(&child));
                     child
                 };
-            child.sticker(content, &event.room().session());
+            child.sticker(content, &event.room().session(), compact);
         }
         Some(AnyMessageEventContent::RoomEncrypted(content)) => {
             warn!("Couldn't decrypt event {:?}", content);

@@ -4,11 +4,14 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
-    use std::cell::RefCell;
+    use once_cell::sync::Lazy;
+    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-video-player.ui")]
     pub struct VideoPlayer {
+        /// Whether this player should be displayed in a compact format.
+        pub compact: Cell<bool>,
         pub duration_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub video: TemplateChild<gtk::Picture>,
@@ -31,7 +34,41 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for VideoPlayer {}
+    impl ObjectImpl for VideoPlayer {
+        fn properties() -> &'static [glib::ParamSpec] {
+            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
+                vec![glib::ParamSpec::new_boolean(
+                    "compact",
+                    "Compact",
+                    "Whether this player should be displayed in a compact format",
+                    false,
+                    glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                )]
+            });
+
+            PROPERTIES.as_ref()
+        }
+
+        fn set_property(
+            &self,
+            obj: &Self::Type,
+            _id: usize,
+            value: &glib::Value,
+            pspec: &glib::ParamSpec,
+        ) {
+            match pspec.name() {
+                "compact" => obj.set_compact(value.get().unwrap()),
+                _ => unimplemented!(),
+            }
+        }
+
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "compact" => obj.compact().to_value(),
+                _ => unimplemented!(),
+            }
+        }
+    }
 
     impl WidgetImpl for VideoPlayer {}
 
@@ -48,6 +85,22 @@ impl VideoPlayer {
     /// Create a new video player.
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create VideoPlayer")
+    }
+
+    pub fn compact(&self) -> bool {
+        let priv_ = imp::VideoPlayer::from_instance(self);
+        priv_.compact.get()
+    }
+
+    pub fn set_compact(&self, compact: bool) {
+        let priv_ = imp::VideoPlayer::from_instance(self);
+
+        if self.compact() == compact {
+            return;
+        }
+
+        priv_.compact.set(compact);
+        self.notify("compact");
     }
 
     /// Set the media_file to display.
