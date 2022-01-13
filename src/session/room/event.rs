@@ -13,6 +13,7 @@ use matrix_sdk::{
         identifiers::{EventId, UserId},
         MilliSecondsSinceUnixEpoch,
     },
+    Error as MatrixError,
 };
 
 use crate::{
@@ -705,5 +706,42 @@ impl Event {
             }
             _ => false,
         }
+    }
+
+    /// Get the id of the event this `Event` replies to, if any.
+    pub fn reply_to_id(&self) -> Option<EventId> {
+        match self.original_content()? {
+            AnyMessageEventContent::RoomMessage(message) => {
+                if let Some(Relation::Reply { in_reply_to }) = message.relates_to {
+                    Some(in_reply_to.event_id)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// Whether this `Event` is a reply to another event.
+    pub fn is_reply(&self) -> bool {
+        self.reply_to_id().is_some()
+    }
+
+    /// Get the `Event` this `Event` replies to, if any.
+    ///
+    /// Returns `Ok(None)` if this event is not a reply.
+    pub async fn reply_to_event(&self) -> Result<Option<Event>, MatrixError> {
+        let related_event_id = match self.reply_to_id() {
+            Some(related_event_id) => related_event_id,
+            None => {
+                return Ok(None);
+            }
+        };
+        let event = self
+            .room()
+            .timeline()
+            .fetch_event_by_id(&related_event_id)
+            .await?;
+        Ok(Some(event))
     }
 }

@@ -232,6 +232,7 @@ headerbar.flat {
 .room-history .event-content .quote {
   border-left: 2px solid @theme_selected_bg_color;
   padding-left: 6px;
+  opacity: 0.7;
 }
 
 .divider-row {

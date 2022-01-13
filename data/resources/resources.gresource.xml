@@ -18,6 +18,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invitee-item.ui">ui/content-invitee-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invitee-row.ui">ui/content-invitee-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-media.ui">ui/content-message-media.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-message-reply.ui">ui/content-message-reply.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-row.ui">ui/content-message-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-divider-row.ui">ui/content-divider-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-room-details.ui">ui/content-room-details.ui</file>

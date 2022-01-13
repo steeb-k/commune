@@ -4,13 +4,16 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{error, warn};
 use matrix_sdk::{
     ruma::{
-        api::client::r0::message::get_message_events::Direction,
+        api::client::r0::{
+            message::get_message_events::Direction, room::get_room_event::Request as EventRequest,
+        },
         events::{
             room::message::MessageType, AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent,
         },
         identifiers::EventId,
     },
     uuid::Uuid,
+    Error as MatrixError,
 };
 
 use crate::session::{
@@ -482,12 +485,43 @@ impl Timeline {
         }
     }
 
-    /// Returns the event with the given id
+    /// Get the event with the given id from the local store.
+    ///
+    /// Use this method if you are sure the event has already been received.
+    /// Otherwise use `fetch_event_by_id`.
     pub fn event_by_id(&self, event_id: &EventId) -> Option<Event> {
-        // TODO: if the referenced event isn't known to us we will need to request it
-        // from the sdk or the matrix homeserver
         let priv_ = imp::Timeline::from_instance(self);
         priv_.event_map.borrow().get(event_id).cloned()
+    }
+
+    /// Fetch the event with the given id.
+    ///
+    /// If the event can't be found locally, a request will be made to the
+    /// homeserver.
+    ///
+    /// Use this method if you are not sure the event has already been received.
+    /// Otherwise use `event_by_id`.
+    pub async fn fetch_event_by_id(&self, event_id: &EventId) -> Result<Event, MatrixError> {
+        if let Some(event) = self.event_by_id(event_id) {
+            Ok(event)
+        } else {
+            let room = self.room();
+            let matrix_room = room.matrix_room();
+            let event_id_clone = event_id.clone();
+            let handle = spawn_tokio!(async move {
+                matrix_room
+                    .event(EventRequest::new(matrix_room.room_id(), &event_id_clone))
+                    .await
+            });
+            match handle.await.unwrap() {
+                Ok(room_event) => Ok(Event::new(room_event.event.into(), &room)),
+                Err(error) => {
+                    // TODO: Retry on connection error?
+                    warn!("Could not fetch event {}: {}", event_id, error);
+                    Err(error)
+                }
+            }
+        }
     }
 
     /// Prepends a batch of events

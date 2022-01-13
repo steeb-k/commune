@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMessageReply" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <property name="spacing">3</property>
+    <child>
+      <object class="GtkBox">
+        <style>
+          <class name="quote"/>
+        </style>
+        <property name="orientation">vertical</property>
+        <property name="spacing">3</property>
+        <child>
+          <object class="Pill" id="pill">
+            <property name="halign">start</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwBin" id="related_content"/>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwBin" id="content"/>
+    </child>
+  </template>
+</interface>

@@ -4,6 +4,7 @@ use html2pango::{
     block::{markup_html, HtmlBlock},
     html_escape, markup_links,
 };
+use log::warn;
 use matrix_sdk::ruma::events::room::message::{FormattedBody, MessageFormat};
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -131,14 +132,14 @@ impl MessageText {
         if let Some((html_blocks, body)) = formatted
             .filter(|formatted| is_valid_formatted_body(formatted))
             .and_then(|formatted| {
-                parse_formatted_body(&formatted.body)
+                parse_formatted_body(strip_reply(&formatted.body))
                     .and_then(|blocks| Some((blocks, formatted.body)))
             })
         {
             self.build_html(html_blocks);
             self.set_body(Some(body));
         } else {
-            let body = linkify(&body);
+            let body = linkify(strip_reply(&body));
             self.build_text(&body, true);
             self.set_body(Some(body));
         }
@@ -189,7 +190,7 @@ impl MessageText {
         {
             // TODO: we need to bind the display name to the sender
             let formatted = FormattedBody {
-                body: format!("<b>{}</b> {}", sender.display_name(), &body),
+                body: format!("<b>{}</b> {}", sender.display_name(), strip_reply(&body)),
                 format: MessageFormat::Html,
             };
 
@@ -324,7 +325,6 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
         HtmlBlock::Quote(blocks) => {
             let bx = gtk::Box::new(gtk::Orientation::Vertical, 6);
             bx.add_css_class("quote");
-            bx.add_css_class("dim-label");
             for block in blocks.iter() {
                 let w = create_widget_for_html_block(block);
                 bx.append(&w);
@@ -337,6 +337,21 @@ fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {
             w.set_markup(s);
             w.upcast::<gtk::Widget>()
         }
+    }
+}
+
+/// Remove the content between `mx-reply` tags.
+///
+/// Returns the unchanged string if none was found to be able to chain calls.
+fn strip_reply(text: &str) -> &str {
+    if let Some(end) = text.find("</mx-reply>") {
+        if !text.starts_with("<mx-reply>") {
+            warn!("Received a rich reply that doesn't start with '<mx-reply>'");
+        }
+
+        &text[end + 11..]
+    } else {
+        text
     }
 }
 
