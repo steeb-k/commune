@@ -640,6 +640,7 @@ impl Session {
     }
 
     fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
+        debug!("Received sync response");
         match response {
             Ok(response) => {
                 if !self.is_ready() {
