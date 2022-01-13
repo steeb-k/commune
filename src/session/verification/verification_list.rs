@@ -4,7 +4,7 @@ use crate::session::{
     Session,
 };
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use log::warn;
+use log::{debug, warn};
 use matrix_sdk::ruma::{
     api::client::r0::sync::sync_events::ToDevice, events::AnyToDeviceEvent, identifiers::UserId,
 };
@@ -115,6 +115,7 @@ impl VerificationList {
 
     pub fn handle_response_to_device(&self, to_device: ToDevice) {
         for event in to_device.events.iter().filter_map(|e| e.deserialize().ok()) {
+            debug!("Received verification event: {:?}", event);
             let request = match event {
                 AnyToDeviceEvent::KeyVerificationRequest(e) => {
                     let flow_id = FlowId::new(e.sender, e.content.transaction_id);
@@ -125,6 +126,7 @@ impl VerificationList {
                         let user = session.user().unwrap();
                         // ToDevice verifications can only be send by us
                         if &flow_id.user_id != user.user_id() {
+                            warn!("Received a device verification event from a different user, which isn't allowed");
                             continue;
                         }
 
@@ -132,6 +134,7 @@ impl VerificationList {
                         let start_time = if let Some(time) = e.content.timestamp.to_system_time() {
                             if let Ok(duration) = time.elapsed() {
                                 if duration > VERIFICATION_CREATION_TIMEOUT {
+                                    debug!("Received verification event that already timedout");
                                     continue;
                                 }
 
@@ -142,14 +145,15 @@ impl VerificationList {
                                 {
                                     time
                                 } else {
-                                    warn!("Ignor verification request because getting a correct timestamp failed");
+                                    warn!("Ignore verification request because getting a correct timestamp failed");
                                     continue;
                                 }
                             } else {
-                                warn!("Ignoring verification request because it was sent in the future. The system time of the server or the local machine is probably wrong.");
+                                warn!("Ignore verification request because it was sent in the future. The system time of the server or the local machine is probably wrong.");
                                 continue;
                             }
                         } else {
+                            warn!("Ignore verification request because getting a correct timestamp failed");
                             continue;
                         };
 

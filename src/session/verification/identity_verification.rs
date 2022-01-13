@@ -7,8 +7,7 @@ use crate::spawn_tokio;
 use crate::Error;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use log::error;
-use log::warn;
+use log::{debug, error, warn};
 use matrix_sdk::{
     encryption::{
         identities::RequestVerificationError,
@@ -915,6 +914,7 @@ impl Context {
 
     async fn start(mut self) -> Result<State, RequestVerificationError> {
         if self.request.we_started() {
+            debug!("Wait for ready state");
             wait![self, self.request.is_ready()];
         } else {
             // Check if it was started by somebody else already
@@ -922,6 +922,7 @@ impl Context {
                 return Ok(State::Passive);
             }
 
+            debug!("Wait for user action accept or cancel");
             // Wait for the user to accept or cancel the request
             wait![self];
 
@@ -966,6 +967,7 @@ impl Context {
             self.send_state(State::QrV1Scan);
 
             // Wait for scanned data
+            debug!("Wait for user to scan a qr-code");
             wait![self];
 
             unreachable!();
@@ -976,6 +978,7 @@ impl Context {
         // FIXME: we should automatically confirm
         request.confirm().await?;
 
+        debug!("Wait for done state");
         wait![self, request.is_done()];
 
         Ok(State::Completed)
@@ -994,6 +997,7 @@ impl Context {
         // FIXME: we should automatically confirm
         request.confirm().await?;
 
+        debug!("Wait for done state");
         wait_without_scanning_sas![self, request.is_done()];
 
         Ok(State::Completed)
@@ -1016,6 +1020,7 @@ impl Context {
     ) -> Result<State, RequestVerificationError> {
         request.accept().await?;
 
+        debug!("Wait for emojis to be ready");
         wait_without_scanning_sas![self, request.can_be_presented()];
 
         let sas_data = if let Some(emoji) = request.emoji() {
@@ -1030,10 +1035,12 @@ impl Context {
         self.send_state(State::SasV1);
 
         // Wait for match user action
+        debug!("Wait for user action match or missmatch");
         wait_without_scanning_sas![self];
 
         request.confirm().await?;
 
+        debug!("Wait for done state");
         wait_without_scanning_sas![self, request.is_done()];
 
         Ok(State::Completed)
