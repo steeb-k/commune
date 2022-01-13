@@ -194,7 +194,7 @@ mod imp {
                     glib::ParamSpec::new_string(
                         "display-name",
                         "Display name",
-                        "The display name of this verificaiton request",
+                        "The display name of this verification request",
                         None,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
@@ -337,7 +337,7 @@ impl IdentityVerification {
         .expect("Failed to create IdentityVerification")
     }
 
-    /// Creates and send a new verificaiton request
+    /// Creates and send a new verification request
     ///
     /// If `User` is `None` a new session verification is started for our own user and send to other devices
     pub async fn create(session: &Session, user: Option<&User>) -> Self {
@@ -597,7 +597,7 @@ impl IdentityVerification {
 
         let error_message = if let Some(info) = self.cancel_info() {
             match info.cancel_code() {
-                CancelCode::User => Some(gettext("You cancelled the verificaiton process.")),
+                CancelCode::User => Some(gettext("You cancelled the verification process.")),
                 CancelCode::Timeout => Some(gettext(
                     "The verification process failed because it reached a timeout.",
                 )),
