@@ -1,13 +1,21 @@
 #!/bin/sh
 # Depends on: scripts/checks.sh
 
+# Style helpers
+act="\e[1;32m"
+err="\e[1;31m"
+pos="\e[32m"
+neg="\e[31m"
+res="\e[0m"
+
 echo "-- Pre-commit checks --"
 echo "To ignore these checks next time, run: git commit --no-verify"
 echo ""
 if scripts/checks.sh; then
     echo ""
-    echo "Pre-commit checks result: ok"
+    echo -e "Pre-commit checks result: ${pos}ok${res}"
 elif [[ $? -eq 2 ]]; then
+    echo ""
     echo "A missing dependency was found"
     echo ""
     echo "y: Skip checks and proceed with commit"
@@ -18,20 +26,22 @@ elif [[ $? -eq 2 ]]; then
         echo -n "Skip the pre-commit checks? [y/N]: "; read yn < /dev/tty
         case $yn in
             [Yy]* )
-                echo "Skipping checks…"
+                echo -e "  ${act}Skipping${res} checks"
                 exit 0
                 ;;
             [Nn]* | "" )
-                echo "Aborting commit"
+                echo -e "  ${err}Aborting${res} commit"
                 exit  1
                 ;;
             * ) 
-                echo "Invalid input"
+                echo -e "${neg}Invalid input${res}"
                 ;;
         esac
     done
 else
-    echo "Pre-commit checks result: fail"
-    echo "Aborting commit"
+    echo ""
+    echo -e "Pre-commit checks result: ${neg}fail${res}"
+    echo ""
+    echo -e "  ${err}Aborting${res} commit"
     exit 1
 fi
