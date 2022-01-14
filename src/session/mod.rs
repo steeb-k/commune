@@ -529,7 +529,9 @@ impl Session {
             if !has_cross_signing_keys.await.unwrap() {
                 if need_new_identity.await.unwrap() {
                     let client = obj.client();
-                    if spawn_tokio!(async move { client.bootstrap_cross_signing(None).await }).await.is_ok() {
+
+                    let handle = spawn_tokio!(async move { client.bootstrap_cross_signing(None).await });
+                    if handle.await.is_ok() {
                         priv_.stack.set_visible_child(&*priv_.content);
                         return;
                     }
@@ -655,12 +657,9 @@ impl Session {
                     ServerError::Known(ref error),
                 ))) = error
                 {
-                    match error.kind {
-                        ErrorKind::UnknownToken { soft_logout: _ } => {
-                            self.emit_by_name("logged-out", &[]).unwrap();
-                            self.cleanup_session();
-                        }
-                        _ => {}
+                    if let ErrorKind::UnknownToken { soft_logout: _ } = error.kind {
+                        self.emit_by_name("logged-out", &[]).unwrap();
+                        self.cleanup_session();
                     }
                 }
                 error!("Failed to perform sync: {:?}", error);

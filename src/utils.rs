@@ -138,9 +138,9 @@ pub fn uint_to_i32(u: Option<UInt>) -> i32 {
         let u: Option<u16> = ui.try_into().ok();
         u
     })
-    .and_then(|u| {
+    .map(|u| {
         let i: i32 = u.into();
-        Some(i)
+        i
     })
     .unwrap_or(-1)
 }

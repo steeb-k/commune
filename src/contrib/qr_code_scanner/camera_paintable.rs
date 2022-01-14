@@ -71,7 +71,7 @@ mod camera_sink {
     impl Frame {
         pub fn new(buffer: &gst::Buffer, info: &gst_video::VideoInfo) -> Self {
             let video_frame =
-                gst_video::VideoFrame::from_buffer_readable(buffer.clone(), &info).unwrap();
+                gst_video::VideoFrame::from_buffer_readable(buffer.clone(), info).unwrap();
             Self(video_frame)
         }
 
@@ -186,6 +186,7 @@ mod camera_sink {
     glib::wrapper! {
         pub struct CameraSink(ObjectSubclass<imp::CameraSink>) @extends gst_video::VideoSink, gst_base::BaseSink, gst::Element, gst::Object;
     }
+    #[allow(clippy::non_send_fields_in_send_ty)]
     unsafe impl Send for CameraSink {}
     unsafe impl Sync for CameraSink {}
 
@@ -391,16 +392,13 @@ impl CameraPaintable {
         let bus = pipeline.bus().unwrap();
         bus.add_watch_local(
             clone!(@weak self as paintable => @default-return glib::Continue(false), move |_, msg| {
-                match msg.view() {
-                    gst::MessageView::Error(err) => {
-                        log::error!(
-                            "Error from {:?}: {} ({:?})",
-                            err.src().map(|s| s.path_string()),
-                            err.error(),
-                            err.debug()
-                        );
-                    },
-                    _ => (),
+                if let gst::MessageView::Error(err) = msg.view() {
+                    log::error!(
+                        "Error from {:?}: {} ({:?})",
+                        err.src().map(|s| s.path_string()),
+                        err.error(),
+                        err.debug()
+                    );
                 }
                 glib::Continue(true)
             }),

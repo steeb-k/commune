@@ -113,6 +113,7 @@ pub enum MainMessage {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum SasData {
     Emoji([Emoji; 7]),
     Decimal((u16, u16, u16)),
@@ -761,7 +762,7 @@ macro_rules! wait {
             loop {
                 // FIXME: add method to the sdk to check if a SAS verification was started
                 if let Some(Verification::SasV1(sas)) = $this.client.get_verification($this.request.other_user_id(), $this.request.flow_id()).await {
-                    return Ok($this.continue_sas(sas).await?);
+                    return $this.continue_sas(sas).await;
                 }
 
                 if $this.request.is_passive() {
@@ -782,7 +783,7 @@ macro_rules! wait {
                         return Ok(State::Cancelled);
                     },
                     Message::UserAction(UserAction::Cancel) | Message::UserAction(UserAction::NotMatch) => {
-                        return Ok($this.cancel_request().await?);
+                        return $this.cancel_request().await;
                     },
                     Message::UserAction(UserAction::Accept) => {
                         if true $(&& $allow_action)? {
@@ -791,7 +792,7 @@ macro_rules! wait {
                     },
                     Message::UserAction(UserAction::StartSas) => {
                         if true $(&& $allow_action)? {
-                            return Ok($this.start_sas().await?);
+                            return $this.start_sas().await;
                         }
                     },
                     Message::UserAction(UserAction::Match) => {
@@ -806,7 +807,7 @@ macro_rules! wait {
                     },
                     Message::UserAction(UserAction::Scanned(data)) => {
                         if true $(&& $allow_action)? {
-                            return Ok($this.finish_scanning(data).await?);
+                            return $this.finish_scanning(data).await;
                         }
                     },
                     Message::NotifyState => {
@@ -840,10 +841,10 @@ macro_rules! wait_without_scanning_sas {
                         return Ok(State::Cancelled);
                     },
                     Message::UserAction(UserAction::Cancel) => {
-                        return Ok($this.cancel_request().await?);
+                        return $this.cancel_request().await;
                     }
                     Message::UserAction(UserAction::NotMatch) => {
-                        return Ok($this.cancel_request().await?);
+                        return $this.cancel_request().await;
                     },
                     Message::UserAction(UserAction::Accept) => {
                         break;
@@ -951,7 +952,7 @@ impl Context {
                 .request
                 .generate_qr_code()
                 .await
-                .map_err(|error| RequestVerificationError::Sdk(error))?
+                .map_err(RequestVerificationError::Sdk)?
                 .expect("Couldn't create qr-code");
 
             if let Ok(qr_code) = request.to_qr_code() {
@@ -972,7 +973,7 @@ impl Context {
 
             unreachable!();
         } else {
-            return Ok(self.start_sas().await?);
+            return self.start_sas().await;
         };
 
         // FIXME: we should automatically confirm
@@ -1008,7 +1009,7 @@ impl Context {
             .request
             .start_sas()
             .await
-            .map_err(|error| RequestVerificationError::Sdk(error))?
+            .map_err(RequestVerificationError::Sdk)?
             .expect("Sas should be supported");
 
         self.continue_sas(request).await

@@ -716,7 +716,7 @@ impl Room {
 
         let inviter_event = events.iter().find(|event| {
             if let AnyStrippedStateEvent::RoomMember(event) = event {
-                &event.sender == inviter_id
+                event.sender == inviter_id
             } else {
                 false
             }

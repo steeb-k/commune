@@ -207,7 +207,7 @@ impl InviteSubpage {
         }
 
         if let Some(ref room) = room {
-            let user_list = InviteeList::new(&room);
+            let user_list = InviteeList::new(room);
             user_list.connect_invitee_added(clone!(@weak self as obj => move |_, invitee| {
                 obj.add_user_pill(invitee);
             }));

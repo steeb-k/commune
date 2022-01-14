@@ -129,12 +129,13 @@ impl MessageText {
     ///
     /// It will detect if it should display the body or the formatted body.
     pub fn markup(&self, formatted: Option<FormattedBody>, body: String) {
-        if let Some((html_blocks, body)) = formatted
-            .filter(|formatted| is_valid_formatted_body(formatted))
-            .and_then(|formatted| {
-                parse_formatted_body(strip_reply(&formatted.body))
-                    .and_then(|blocks| Some((blocks, formatted.body)))
-            })
+        if let Some((html_blocks, body)) =
+            formatted
+                .filter(is_valid_formatted_body)
+                .and_then(|formatted| {
+                    parse_formatted_body(strip_reply(&formatted.body))
+                        .map(|blocks| (blocks, formatted.body))
+                })
         {
             self.build_html(html_blocks);
             self.set_body(Some(body));
@@ -181,11 +182,11 @@ impl MessageText {
     /// It will detect if it should display the body or the formatted body.
     pub fn emote(&self, formatted: Option<FormattedBody>, body: String, sender: Member) {
         if let Some(body) = formatted
-            .filter(|formatted| is_valid_formatted_body(formatted))
+            .filter(is_valid_formatted_body)
             .and_then(|formatted| {
                 let body = format!("<b>{}</b> {}", sender.display_name(), formatted.body);
 
-                parse_formatted_body(&body).and_then(|_| Some(formatted.body))
+                parse_formatted_body(&body).map(|_| formatted.body)
             })
         {
             // TODO: we need to bind the display name to the sender

@@ -220,7 +220,7 @@ mod imp {
             // Limit other side to max size.
             let other = for_size.min(max_other);
 
-            let nat = if original > 0 && original > 0 {
+            let nat = if original > 0 {
                 // We don't want the paintable to be upscaled.
                 let other = other.min(original_other);
                 other * original / original_other
@@ -268,6 +268,7 @@ glib::wrapper! {
 
 impl MessageMedia {
     /// Create a new media message.
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create MessageMedia")
     }

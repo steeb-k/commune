@@ -122,7 +122,7 @@ impl QrCodeScanner {
 
         Ok(priv_
             .connection
-            .get_or_try_init(|| zbus::Connection::session())
+            .get_or_try_init(zbus::Connection::session)
             .await?)
     }
 
@@ -143,7 +143,7 @@ impl QrCodeScanner {
         }
 
         self.set_has_camera(false);
-        return false;
+        false
     }
 
     async fn has_camera_internal(&self) -> Result<bool, ashpd::Error> {

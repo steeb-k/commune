@@ -288,7 +288,7 @@ impl Event {
     pub fn source(&self) -> String {
         self.replacement()
             .map(|replacement| replacement.source())
-            .unwrap_or(self.original_source())
+            .unwrap_or_else(|| self.original_source())
     }
 
     pub fn timestamp(&self) -> DateTime {
@@ -555,7 +555,7 @@ impl Event {
             .iter()
             .rev()
             .find(|event| event.is_replacing_event() && !event.redacted())
-            .map(|event| event.clone())
+            .cloned()
     }
 
     /// Whether this matrix event has been redacted.
@@ -608,7 +608,7 @@ impl Event {
     pub fn content(&self) -> Option<AnyMessageEventContent> {
         self.replacement()
             .and_then(|replacement| replacement.content())
-            .or(self.original_content())
+            .or_else(|| self.original_content())
     }
 
     pub fn connect_show_header_notify<F: Fn(&Self, &glib::ParamSpec) + 'static>(
@@ -641,7 +641,7 @@ impl Event {
                         .filter(|name| !name.is_empty())
                         .or(Some(&content.body))
                         .filter(|name| !name.is_empty())
-                        .map(|name| name.clone())
+                        .cloned()
                         .unwrap_or_else(|| {
                             filename_for_mime(
                                 content

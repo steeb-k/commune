@@ -71,7 +71,7 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
         .filter_map(|item| {
             let attr = item.get_attributes().ok()?;
 
-            let homeserver = Url::parse(&attr.get("homeserver")?).ok()?;
+            let homeserver = Url::parse(attr.get("homeserver")?).ok()?;
             let user_id = UserId::parse(attr.get("user")?.as_str()).ok()?;
             let device_id = <&DeviceId>::from(attr.get("device-id")?.as_str()).to_owned();
             let path = PathBuf::from(attr.get("db-path")?);

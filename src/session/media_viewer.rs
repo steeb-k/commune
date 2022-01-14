@@ -191,6 +191,7 @@ glib::wrapper! {
 }
 
 impl MediaViewer {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create MediaViewer")
     }
@@ -262,7 +263,7 @@ impl MediaViewer {
             if let Some(AnyMessageEventContent::RoomMessage(content)) = event.message_content() {
                 match content.msgtype {
                     MessageType::Image(image) => {
-                        self.set_body(Some(image.body.clone()));
+                        self.set_body(Some(image.body));
 
                         spawn!(
                             glib::PRIORITY_LOW,
@@ -289,7 +290,7 @@ impl MediaViewer {
                         );
                     }
                     MessageType::Video(video) => {
-                        self.set_body(Some(video.body.clone()));
+                        self.set_body(Some(video.body));
 
                         spawn!(
                             glib::PRIORITY_LOW,

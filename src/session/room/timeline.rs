@@ -714,10 +714,10 @@ impl Timeline {
 
                     let user = session.user().unwrap();
 
-                    let user_to_verify = if &*request.to == &*user.user_id() {
+                    let user_to_verify = if *request.to == *user.user_id() {
                         // The request was sent by another user to verify us
                         event.sender()
-                    } else if &*message.sender == &*user.user_id() {
+                    } else if *message.sender == *user.user_id() {
                         // The request was sent by us to verify another user
                         self.room().members().member_by_id(request.to.into())
                     } else {

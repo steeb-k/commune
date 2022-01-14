@@ -127,6 +127,7 @@ mod imp {
 glib::wrapper! {
     pub struct QrCodeDetector(ObjectSubclass<imp::QrCodeDetector>) @extends gst_video::VideoSink, gst_base::BaseSink, gst::Element, gst::Object;
 }
+#[allow(clippy::non_send_fields_in_send_ty)]
 unsafe impl Send for QrCodeDetector {}
 unsafe impl Sync for QrCodeDetector {}
 

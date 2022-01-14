@@ -406,13 +406,15 @@ impl RoomHistory {
                             user.display_name(),
                         )
                     })
-                    .or(pill.room().map(|room| {
-                        (
-                            // No server name needed. matrix.to URIs for mentions aren't routable
-                            room.room_id().matrix_to_url([]).to_string(),
-                            room.display_name(),
-                        )
-                    }))
+                    .or_else(|| {
+                        pill.room().map(|room| {
+                            (
+                                // No server name needed. matrix.to URIs for mentions aren't routable
+                                room.room_id().matrix_to_url([]).to_string(),
+                                room.display_name(),
+                            )
+                        })
+                    })
                     .unwrap();
 
                 // Add more uncopied characters from message

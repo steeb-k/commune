@@ -234,7 +234,7 @@ impl InviteeList {
         }
 
         match response {
-            Ok(response) if response.results.len() == 0 => {
+            Ok(response) if response.results.is_empty() => {
                 self.set_state(InviteeListState::NoMatching);
                 self.clear_list();
             }
@@ -316,9 +316,8 @@ impl InviteeList {
         }
 
         spawn!(clone!(@weak self as obj => async move {
-            match future.await {
-                Ok(result) => obj.finish_search(search_term, result.unwrap()),
-                Err(_) => {},
+            if let Ok(result) = future.await {
+                obj.finish_search(search_term, result.unwrap());
             }
         }));
     }

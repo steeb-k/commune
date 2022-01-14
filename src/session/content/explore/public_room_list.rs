@@ -239,12 +239,10 @@ impl PublicRoomList {
                 } else {
                     (position - 1, 0, added)
                 }
+            } else if position == 0 {
+                (position, 0, added)
             } else {
-                if position == 0 {
-                    (position, 0, added)
-                } else {
-                    (position - 1, 1, added)
-                }
+                (position - 1, 1, added)
             }
         };
 

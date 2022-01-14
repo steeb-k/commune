@@ -110,7 +110,7 @@ impl MemberList {
             members
                 .entry(member.user_id().into())
                 .or_insert_with_key(|user_id| Member::new(&self.room(), user_id))
-                .update_from_room_member(&member);
+                .update_from_room_member(member);
         }
         let num_members_added = members.len().saturating_sub(prev_len);
 

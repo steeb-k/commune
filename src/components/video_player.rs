@@ -83,6 +83,7 @@ glib::wrapper! {
 
 impl VideoPlayer {
     /// Create a new video player.
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         glib::Object::new(&[]).expect("Failed to create VideoPlayer")
     }
@@ -128,9 +129,9 @@ fn duration(media_file: &gtk::MediaFile) -> String {
     let mut time = media_file.duration() / 1000000;
 
     let sec = time % 60;
-    time = time - sec;
+    time -= sec;
     let min = (time % (60 * 60)) / 60;
-    time = time - (min * 60);
+    time -= min * 60;
     let hour = time / (60 * 60);
 
     if hour > 0 {
