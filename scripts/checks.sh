@@ -107,7 +107,6 @@ check_cargo() {
     if [[ $verbose -eq 1 ]]; then
         echo ""
         rustc -Vv && cargo -Vv
-        echo ""
     fi
 }
 
@@ -126,13 +125,13 @@ install_rustfmt() {
 # Run rustfmt to enforce code style.
 run_rustfmt() {
     if ! cargo fmt --version >/dev/null 2>&1; then
-        echo "Unable to check Fractal’s code style, because rustfmt could not be run"
-
         if [[ $force_install -eq 1 ]]; then
             install_rustfmt
         elif [ ! -t 1 ]; then
+            echo "Unable to check Fractal’s code style, because rustfmt could not be run"
             exit 2
         else
+            echo "Rustfmt is needed to check Fractal’s code style, but it isn’t available"
             echo ""
             echo "y: Install rustfmt via rustup"
             echo "N: Don't install rustfmt and abort checks"
@@ -172,6 +171,66 @@ run_rustfmt() {
     fi
 }
 
+
+# Install typos with cargo.
+install_typos() {
+    echo -e "$Installing typos…"
+    cargo install typos-cli
+    if ! typos --version >/dev/null 2>&1; then
+        echo -e "$Failed to install typos"
+        exit 2
+    fi
+}
+
+# Run typos to check for spelling mistakes.
+run_typos() {
+    if ! typos --version >/dev/null 2>&1; then
+        if [[ $force_install -eq 1 ]]; then
+            install_typos
+        elif [ ! -t 1 ]; then
+            echo "Unable to check spelling mistakes, because typos could not be run"
+            exit 2
+        else
+            echo "Typos is needed to check spelling mistakes, but it isn’t available"
+            echo ""
+            echo "y: Install typos via cargo"
+            echo "N: Don't install typos and abort checks"
+            echo ""
+            while true; do
+                echo -n "Install typos? [y/N]: "; read yn < /dev/tty
+                case $yn in
+                    [Yy]* ) 
+                        install_typos
+                        break
+                        ;;
+                    [Nn]* | "" )
+                        exit 2
+                        ;;
+                    * ) 
+                        echo $invalid
+                        ;;
+                esac
+            done
+        fi
+    fi
+
+    echo -e "$Checking spelling mistakes…"
+
+    if [[ $verbose -eq 1 ]]; then
+        echo ""
+        typos --version
+        echo ""
+    fi
+
+    if ! typos --color always; then
+        echo -e "  Checking spelling mistakes result: $fail"
+        echo "Please fix the above issues, either manually or by running: typos -w"
+        exit 1
+    else
+        echo -e "  Checking spelling mistakes result: $ok"
+    fi
+}
+
 # Check arguments
 while [[ "$1" ]]; do case $1 in
     -f | --force-install )
@@ -191,4 +250,7 @@ esac; shift; done
 
 # Run
 check_cargo
+echo ""
 run_rustfmt
+echo ""
+run_typos
