@@ -32,15 +32,13 @@ flatpak:
       - 'logs'
     expire_in: 14 days
 
-# Configure and run rustfmt
-# Exits and builds fails if on bad format
-rustfmt:
+# Configure and run code checks
+# Exits and fails if an error is encountered
+checks:
   image: "rust:slim"
+  stage: check
   script:
-    - rustup component add rustfmt
-    - rustc -Vv && cargo -Vv
-    - cargo fmt --version
-    - cargo fmt --all -- --color=always --check
+    - scripts/checks.sh --verbose --force-install
 
 cargo-clippy:
   image: 'registry.gitlab.gnome.org/gnome/gnome-runtime-images/rust_bundle:master'
