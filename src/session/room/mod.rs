@@ -1037,7 +1037,7 @@ impl Room {
     fn load_predecessor(&self) -> Option<()> {
         let priv_ = imp::Room::from_instance(self);
 
-        if priv_.successor.get().is_some() {
+        if priv_.predecessor.get().is_some() {
             return None;
         }
 
