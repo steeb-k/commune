@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <menu id="menu_model">
+  <menu id="message_menu_model">
     <section>
       <item>
         <attribute name="label" translatable="yes">_Reply</attribute>
@@ -57,6 +57,20 @@
       <item>
         <attribute name="label" translatable="yes">Re_move</attribute>
         <attribute name="action">event.remove</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="media_menu_model">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Copy Image</attribute>
+        <attribute name="action">event.copy-image</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">S_ave Image</attribute>
+        <attribute name="action">event.save-image</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>

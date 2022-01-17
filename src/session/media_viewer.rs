@@ -133,8 +133,7 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            let menu_model = Some(Self::Type::event_menu_model());
-            self.menu_full.set_menu_model(menu_model);
+            let menu_model = Some(Self::Type::event_media_menu_model());
             obj.set_context_menu(menu_model);
 
             // Bind `fullscreened` to the window property of the same name.

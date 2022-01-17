@@ -24,12 +24,24 @@ where
     Self: glib::clone::Downgrade,
     <Self as glib::clone::Downgrade>::Weak: glib::clone::Upgrade<Strong = Self>,
 {
-    /// The `MenuModel` for common event actions.
-    fn event_menu_model() -> &'static gio::MenuModel {
+    /// The `MenuModel` for common message event actions.
+    fn event_message_menu_model() -> &'static gio::MenuModel {
         static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
             MenuModelSendSync(
                 gtk::Builder::from_resource("/org/gnome/FractalNext/event-menu.ui")
-                    .object::<gio::MenuModel>("menu_model")
+                    .object::<gio::MenuModel>("message_menu_model")
+                    .unwrap(),
+            )
+        });
+        &MODEL.0
+    }
+
+    /// The `MenuModel` for common media message event actions.
+    fn event_media_menu_model() -> &'static gio::MenuModel {
+        static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
+            MenuModelSendSync(
+                gtk::Builder::from_resource("/org/gnome/FractalNext/event-menu.ui")
+                    .object::<gio::MenuModel>("media_menu_model")
                     .unwrap(),
             )
         });
