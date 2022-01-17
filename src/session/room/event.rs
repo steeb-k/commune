@@ -406,6 +406,8 @@ impl Event {
                     | AnySyncStateEvent::RoomPowerLevels(_)
                     | AnySyncStateEvent::RoomServerAcl(_)
                     | AnySyncStateEvent::RoomTopic(_)
+                    | AnySyncStateEvent::SpaceParent(_)
+                    | AnySyncStateEvent::SpaceChild(_)
             ),
             Some(AnySyncRoomEvent::RedactedMessage(message)) => matches!(
                 message,
@@ -439,6 +441,8 @@ impl Event {
                     | AnyRedactedSyncStateEvent::RoomPowerLevels(_)
                     | AnyRedactedSyncStateEvent::RoomServerAcl(_)
                     | AnyRedactedSyncStateEvent::RoomTopic(_)
+                    | AnyRedactedSyncStateEvent::SpaceParent(_)
+                    | AnyRedactedSyncStateEvent::SpaceChild(_)
             ),
             _ => false,
         }
