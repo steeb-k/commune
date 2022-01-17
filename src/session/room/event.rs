@@ -210,7 +210,7 @@ impl Event {
         self.notify("can-view-media");
     }
 
-    pub fn matrix_sender(&self) -> UserId {
+    pub fn matrix_sender(&self) -> Box<UserId> {
         let priv_ = imp::Event::from_instance(self);
 
         if let Some(event) = priv_.event.borrow().as_ref() {
@@ -222,13 +222,13 @@ impl Event {
                 .as_ref()
                 .unwrap()
                 .event
-                .get_field::<UserId>("sender")
+                .get_field::<Box<UserId>>("sender")
                 .unwrap()
                 .unwrap()
         }
     }
 
-    pub fn matrix_event_id(&self) -> EventId {
+    pub fn matrix_event_id(&self) -> Box<EventId> {
         let priv_ = imp::Event::from_instance(self);
 
         if let Some(event) = priv_.event.borrow().as_ref() {
@@ -240,7 +240,7 @@ impl Event {
                 .as_ref()
                 .unwrap()
                 .event
-                .get_field::<EventId>("event_id")
+                .get_field::<Box<EventId>>("event_id")
                 .unwrap()
                 .unwrap()
         }
@@ -329,7 +329,7 @@ impl Event {
     }
 
     /// Find the related event if any
-    pub fn related_matrix_event(&self) -> Option<EventId> {
+    pub fn related_matrix_event(&self) -> Option<Box<EventId>> {
         let priv_ = imp::Event::from_instance(self);
 
         match priv_.event.borrow().as_ref()? {
@@ -709,7 +709,7 @@ impl Event {
     }
 
     /// Get the id of the event this `Event` replies to, if any.
-    pub fn reply_to_id(&self) -> Option<EventId> {
+    pub fn reply_to_id(&self) -> Option<Box<EventId>> {
         match self.original_content()? {
             AnyMessageEventContent::RoomMessage(message) => {
                 if let Some(Relation::Reply { in_reply_to }) = message.relates_to {

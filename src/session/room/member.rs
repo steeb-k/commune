@@ -104,7 +104,8 @@ impl Member {
         };
 
         self.set_display_name(member.display_name().map(String::from));
-        self.avatar().set_url(member.avatar_url().cloned());
+        self.avatar()
+            .set_url(member.avatar_url().map(std::borrow::ToOwned::to_owned));
         self.set_power_level(member.power_level());
     }
 
@@ -124,8 +125,8 @@ pub trait MemberEvent {
     fn sender(&self) -> &UserId;
     fn content(&self) -> &RoomMemberEventContent;
 
-    fn avatar_url(&self) -> Option<MxcUri> {
-        self.content().avatar_url.clone()
+    fn avatar_url(&self) -> Option<Box<MxcUri>> {
+        self.content().avatar_url.to_owned()
     }
 
     fn display_name(&self) -> Option<String> {

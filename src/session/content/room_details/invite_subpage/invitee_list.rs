@@ -40,7 +40,7 @@ mod imp {
         pub room: OnceCell<Room>,
         pub state: Cell<InviteeListState>,
         pub search_term: RefCell<Option<String>>,
-        pub invitee_list: RefCell<HashMap<UserId, Invitee>>,
+        pub invitee_list: RefCell<HashMap<Box<UserId>, Invitee>>,
         pub abort_handle: RefCell<Option<AbortHandle>>,
     }
 
@@ -256,7 +256,7 @@ impl InviteeList {
                                 &session,
                                 &item.user_id,
                                 item.display_name.as_deref(),
-                                item.avatar_url,
+                                item.avatar_url.as_deref(),
                             );
 
                             user.connect_notify_local(

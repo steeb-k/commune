@@ -4,9 +4,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{error, warn};
 use matrix_sdk::{
     ruma::{
-        api::client::r0::{
-            message::get_message_events::Direction, room::get_room_event::Request as EventRequest,
-        },
+        api::client::r0::message::get_message_events::Direction,
         events::{
             room::message::MessageType, AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent,
         },
@@ -34,16 +32,16 @@ mod imp {
     pub struct Timeline {
         pub room: OnceCell<WeakRef<Room>>,
         /// A store to keep track of related events that aren't known
-        pub relates_to_events: RefCell<HashMap<EventId, Vec<EventId>>>,
+        pub relates_to_events: RefCell<HashMap<Box<EventId>, Vec<Box<EventId>>>>,
         /// All events shown in the room history
         pub list: RefCell<VecDeque<Item>>,
         /// A Hashmap linking `EventId` to corresponding `Event`
-        pub event_map: RefCell<HashMap<EventId, Event>>,
+        pub event_map: RefCell<HashMap<Box<EventId>, Event>>,
         /// Maps the temporary `EventId` of the pending Event to the real `EventId`
-        pub pending_events: RefCell<HashMap<String, EventId>>,
+        pub pending_events: RefCell<HashMap<String, Box<EventId>>>,
         pub loading: Cell<bool>,
         pub complete: Cell<bool>,
-        pub oldest_event: RefCell<Option<EventId>>,
+        pub oldest_event: RefCell<Option<Box<EventId>>>,
         /// The most recent verification reuqest event
         pub verification: RefCell<Option<IdentityVerification>>,
     }
@@ -313,7 +311,7 @@ impl Timeline {
         let mut relates_to_events = priv_.relates_to_events.borrow_mut();
 
         // Group events by related event
-        let mut new_relations: HashMap<EventId, Vec<Event>> = HashMap::new();
+        let mut new_relations: HashMap<Box<EventId>, Vec<Event>> = HashMap::new();
         for event in events {
             if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
                 let replacing_events = relates_to
@@ -373,7 +371,7 @@ impl Timeline {
                 // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
                 // the `related_to` event is added to the list
                 let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
-                let replacing_events_ids: Vec<EventId> = relations
+                let replacing_events_ids: Vec<Box<EventId>> = relations
                     .iter()
                     .filter(|event| event.is_replacing_event())
                     .map(|event| event.matrix_event_id())
@@ -507,12 +505,9 @@ impl Timeline {
         } else {
             let room = self.room();
             let matrix_room = room.matrix_room();
-            let event_id_clone = event_id.clone();
-            let handle = spawn_tokio!(async move {
-                matrix_room
-                    .event(EventRequest::new(matrix_room.room_id(), &event_id_clone))
-                    .await
-            });
+            let event_id_clone = event_id.to_owned();
+            let handle =
+                spawn_tokio!(async move { matrix_room.event(event_id_clone.as_ref()).await });
             match handle.await.unwrap() {
                 Ok(room_event) => Ok(Event::new(room_event.event.into(), &room)),
                 Err(error) => {
@@ -609,7 +604,7 @@ impl Timeline {
         priv_.list.borrow().is_empty() || (priv_.list.borrow().len() == 1 && self.loading())
     }
 
-    fn oldest_event(&self) -> Option<EventId> {
+    fn oldest_event(&self) -> Option<Box<EventId>> {
         let priv_ = imp::Timeline::from_instance(self);
         priv_.oldest_event.borrow().clone()
     }
@@ -642,7 +637,7 @@ impl Timeline {
 
         let handle = spawn_tokio!(async move {
             matrix_room
-                .messages(last_event.as_ref(), None, 20, Direction::Backward)
+                .messages(last_event.as_deref(), None, 20, Direction::Backward)
                 .await
         });
 

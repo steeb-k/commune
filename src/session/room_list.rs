@@ -2,7 +2,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
 use matrix_sdk::{
     deserialized_responses::Rooms as ResponseRooms,
-    ruma::identifiers::{RoomId, RoomIdOrAliasId},
+    ruma::identifiers::{RoomId, RoomOrAliasId},
 };
 
 use crate::{
@@ -24,8 +24,8 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct RoomList {
-        pub list: RefCell<IndexMap<RoomId, Room>>,
-        pub pending_rooms: RefCell<HashSet<RoomIdOrAliasId>>,
+        pub list: RefCell<IndexMap<Box<RoomId>, Room>>,
+        pub pending_rooms: RefCell<HashSet<Box<RoomOrAliasId>>>,
         pub session: OnceCell<WeakRef<Session>>,
     }
 
@@ -127,30 +127,30 @@ impl RoomList {
         priv_.session.get().unwrap().upgrade().unwrap()
     }
 
-    pub fn is_pending_room(&self, identifier: &RoomIdOrAliasId) -> bool {
+    pub fn is_pending_room(&self, identifier: &RoomOrAliasId) -> bool {
         let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow().contains(identifier)
     }
 
-    fn pending_rooms_remove(&self, identifier: &RoomIdOrAliasId) {
+    fn pending_rooms_remove(&self, identifier: &RoomOrAliasId) {
         let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow_mut().remove(identifier);
         self.emit_by_name("pending-rooms-changed", &[]).unwrap();
     }
 
-    fn pending_rooms_insert(&self, identifier: RoomIdOrAliasId) {
+    fn pending_rooms_insert(&self, identifier: Box<RoomOrAliasId>) {
         let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow_mut().insert(identifier);
         self.emit_by_name("pending-rooms-changed", &[]).unwrap();
     }
 
-    fn pending_rooms_replace_or_remove(&self, identifier: &RoomIdOrAliasId, room_id: RoomId) {
+    fn pending_rooms_replace_or_remove(&self, identifier: &RoomOrAliasId, room_id: &RoomId) {
         let priv_ = imp::RoomList::from_instance(self);
         {
             let mut pending_rooms = priv_.pending_rooms.borrow_mut();
             pending_rooms.remove(identifier);
-            if !self.contains_key(&room_id) {
-                pending_rooms.insert(room_id.into());
+            if !self.contains_key(room_id) {
+                pending_rooms.insert(room_id.to_owned().into());
             }
         }
         self.emit_by_name("pending-rooms-changed", &[]).unwrap();
@@ -162,9 +162,9 @@ impl RoomList {
     }
 
     /// Waits till the Room becomes available
-    pub async fn get_wait(&self, room_id: RoomId) -> Option<Room> {
+    pub async fn get_wait(&self, room_id: Box<RoomId>) -> Option<Room> {
         let priv_ = imp::RoomList::from_instance(self);
-        if let Some(room) = priv_.list.borrow().get(&room_id) {
+        if let Some(room) = priv_.list.borrow().get(&*room_id) {
             Some(room.clone())
         } else {
             let (sender, receiver) = futures::channel::oneshot::channel();
@@ -172,7 +172,7 @@ impl RoomList {
             let sender = Cell::new(Some(sender));
             // FIXME: add a timeout
             let handler_id = self.connect_items_changed(move |obj, _, _, _| {
-                if let Some(room) = obj.get(&room_id) {
+                if let Some(room) = obj.get(&*room_id) {
                     if let Some(sender) = sender.take() {
                         sender.send(Some(room)).unwrap();
                     }
@@ -185,7 +185,7 @@ impl RoomList {
         }
     }
 
-    fn get_full(&self, room_id: &RoomId) -> Option<(usize, RoomId, Room)> {
+    fn get_full(&self, room_id: &RoomId) -> Option<(usize, Box<RoomId>, Room)> {
         let priv_ = imp::RoomList::from_instance(self);
         priv_
             .list
@@ -273,7 +273,7 @@ impl RoomList {
                 })
                 .clone();
 
-            self.pending_rooms_remove(&room_id.into());
+            self.pending_rooms_remove((&*room_id).into());
             room.handle_left_response(left_room);
         }
 
@@ -288,7 +288,7 @@ impl RoomList {
                 })
                 .clone();
 
-            self.pending_rooms_remove(&room_id.into());
+            self.pending_rooms_remove((&*room_id).into());
             room.handle_joined_response(joined_room);
         }
 
@@ -303,7 +303,7 @@ impl RoomList {
                 })
                 .clone();
 
-            self.pending_rooms_remove(&room_id.into());
+            self.pending_rooms_remove((&*room_id).into());
             room.handle_invited_response(invited_room);
         }
 
@@ -312,7 +312,7 @@ impl RoomList {
         }
     }
 
-    pub fn join_by_id_or_alias(&self, identifier: RoomIdOrAliasId) {
+    pub fn join_by_id_or_alias(&self, identifier: Box<RoomOrAliasId>) {
         let client = self.session().client();
         let identifier_clone = identifier.clone();
 
@@ -328,7 +328,7 @@ impl RoomList {
             glib::PRIORITY_DEFAULT_IDLE,
             clone!(@weak self as obj => async move {
                 match handle.await.unwrap() {
-                    Ok(response) => obj.pending_rooms_replace_or_remove(&identifier, response.room_id),
+                    Ok(response) => obj.pending_rooms_replace_or_remove(&identifier, response.room_id.as_ref()),
                     Err(error) => {
                         obj.pending_rooms_remove(&identifier);
                         error!("Joining room {} failed: {}", identifier, error);

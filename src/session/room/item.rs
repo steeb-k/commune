@@ -182,7 +182,7 @@ impl Item {
         }
     }
 
-    pub fn matrix_sender(&self) -> Option<UserId> {
+    pub fn matrix_sender(&self) -> Option<Box<UserId>> {
         let priv_ = imp::Item::from_instance(self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event.matrix_sender())
@@ -191,7 +191,7 @@ impl Item {
         }
     }
 
-    pub fn matrix_event_id(&self) -> Option<EventId> {
+    pub fn matrix_event_id(&self) -> Option<Box<EventId>> {
         let priv_ = imp::Item::from_instance(self);
 
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {

@@ -26,7 +26,7 @@ mod imp {
     pub struct Avatar {
         pub image: RefCell<Option<gdk::Paintable>>,
         pub needed_size: Cell<i32>,
-        pub url: RefCell<Option<MxcUri>>,
+        pub url: RefCell<Option<Box<MxcUri>>>,
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<WeakRef<Session>>,
     }
@@ -130,7 +130,7 @@ glib::wrapper! {
 }
 
 impl Avatar {
-    pub fn new(session: &Session, url: Option<MxcUri>) -> Self {
+    pub fn new(session: &Session, url: Option<&MxcUri>) -> Self {
         glib::Object::new(&[
             ("session", session),
             ("url", &url.map(|url| url.to_string())),
@@ -234,7 +234,7 @@ impl Avatar {
         priv_.needed_size.get()
     }
 
-    pub fn set_url(&self, url: Option<MxcUri>) {
+    pub fn set_url(&self, url: Option<Box<MxcUri>>) {
         let priv_ = imp::Avatar::from_instance(self);
 
         if priv_.url.borrow().as_ref() == url.as_ref() {
@@ -253,7 +253,7 @@ impl Avatar {
         self.notify("url");
     }
 
-    pub fn url(&self) -> Option<MxcUri> {
+    pub fn url(&self) -> Option<Box<MxcUri>> {
         let priv_ = imp::Avatar::from_instance(self);
         priv_.url.borrow().to_owned()
     }
@@ -266,7 +266,7 @@ pub async fn update_room_avatar_from_file<P>(
     matrix_client: &Client,
     matrix_room: &MatrixRoom,
     filename: Option<&P>,
-) -> Result<Option<MxcUri>, AvatarError>
+) -> Result<Option<Box<MxcUri>>, AvatarError>
 where
     P: AsRef<Path> + std::fmt::Debug,
 {
@@ -292,7 +292,7 @@ where
 }
 
 /// Returns the URI of the room avatar after uploading it.
-async fn upload_avatar<P>(matrix_client: &Client, filename: &P) -> Result<MxcUri, AvatarError>
+async fn upload_avatar<P>(matrix_client: &Client, filename: &P) -> Result<Box<MxcUri>, AvatarError>
 where
     P: AsRef<Path> + std::fmt::Debug,
 {

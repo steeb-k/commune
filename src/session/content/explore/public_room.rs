@@ -1,5 +1,8 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::directory::PublicRoomsChunk;
+use matrix_sdk::ruma::{
+    directory::PublicRoomsChunk,
+    identifiers::{RoomId, RoomOrAliasId},
+};
 
 use crate::session::{room::Room, Avatar, RoomList};
 
@@ -102,7 +105,7 @@ mod imp {
                     if let Some(matrix_public_room) = obj.matrix_public_room() {
                         obj.set_pending(obj.room_list().session()
                         .room_list()
-                        .is_pending_room(&matrix_public_room.room_id.clone().into()));
+                        .is_pending_room((&*matrix_public_room.room_id).into()));
                     }
                 }));
         }
@@ -188,10 +191,7 @@ impl PublicRoom {
             priv_.room_handler.replace(Some(handler_id));
         }
 
-        self.set_pending(
-            self.room_list()
-                .is_pending_room(&room.room_id.clone().into()),
-        );
+        self.set_pending(self.room_list().is_pending_room((&*room.room_id).into()));
 
         priv_.matrix_public_room.set(room).unwrap();
     }
@@ -205,8 +205,9 @@ impl PublicRoom {
         if let Some(room) = self.room() {
             self.room_list().session().select_room(Some(room.clone()));
         } else if let Some(matrix_public_room) = self.matrix_public_room() {
+            let room_id: &RoomId = matrix_public_room.room_id.as_ref();
             self.room_list()
-                .join_by_id_or_alias(matrix_public_room.room_id.clone().into());
+                .join_by_id_or_alias(<&RoomOrAliasId>::from(room_id).to_owned());
         }
     }
 }

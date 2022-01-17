@@ -82,7 +82,7 @@ impl Invitee {
         session: &Session,
         user_id: &UserId,
         display_name: Option<&str>,
-        avatar_url: Option<MxcUri>,
+        avatar_url: Option<&MxcUri>,
     ) -> Self {
         let obj: Self = glib::Object::new(&[
             ("session", session),
@@ -91,7 +91,7 @@ impl Invitee {
         ])
         .expect("Failed to create Invitee");
         // FIXME: we should make the avatar_url settable as property
-        obj.set_avatar_url(avatar_url);
+        obj.set_avatar_url(avatar_url.map(std::borrow::ToOwned::to_owned));
         obj
     }
 

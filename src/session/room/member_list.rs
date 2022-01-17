@@ -13,7 +13,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct MemberList {
-        pub members: RefCell<IndexMap<UserId, Member>>,
+        pub members: RefCell<IndexMap<Box<UserId>, Member>>,
         pub room: OnceCell<WeakRef<Room>>,
     }
 
@@ -108,7 +108,7 @@ impl MemberList {
         let prev_len = members.len();
         for member in new_members {
             members
-                .entry(member.user_id().clone())
+                .entry(member.user_id().to_owned())
                 .or_insert_with(|| Member::new(&self.room(), member.user_id()))
                 .update_from_room_member(&member);
         }
@@ -131,7 +131,7 @@ impl MemberList {
         let mut was_member_added = false;
         let prev_len = members.len();
         let member = members
-            .entry(user_id.clone())
+            .entry(user_id.to_owned())
             .or_insert_with(|| {
                 was_member_added = true;
                 Member::new(&self.room(), user_id)

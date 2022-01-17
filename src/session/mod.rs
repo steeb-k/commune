@@ -111,7 +111,7 @@ mod imp {
                 Some("s"),
                 move |session, _, parameter| {
                     if let Ok(room_id) =
-                        RoomId::try_from(parameter.unwrap().get::<String>().unwrap())
+                        <&RoomId>::try_from(&*parameter.unwrap().get::<String>().unwrap())
                     {
                         session.select_room_by_id(room_id);
                     } else {
@@ -275,8 +275,8 @@ impl Session {
         priv_.sidebar.set_selected_item(item);
     }
 
-    pub fn select_room_by_id(&self, room_id: RoomId) {
-        if let Some(room) = self.room_list().get(&room_id) {
+    pub fn select_room_by_id(&self, room_id: &RoomId) {
+        if let Some(room) = self.room_list().get(room_id) {
             self.select_room(Some(room));
         } else {
             warn!("A room with id {} couldn't be found", room_id);
@@ -397,7 +397,7 @@ impl Session {
                     match handle.await.unwrap() {
                         Ok((display_name, avatar_url)) => {
                             user.set_display_name(display_name);
-                            user.set_avatar_url(avatar_url);
+                            user.set_avatar_url(avatar_url)
                         }
                         Err(error) => error!("Couldn’t fetch account metadata: {}", error),
                     }

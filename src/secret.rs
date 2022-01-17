@@ -1,10 +1,9 @@
 use gettextrs::gettext;
-use matrix_sdk::ruma::identifiers::{DeviceIdBox, UserId};
+use matrix_sdk::ruma::identifiers::{DeviceId, UserId};
 use secret_service::EncryptionType;
 use secret_service::SecretService;
 use serde::{Deserialize, Serialize};
 use serde_json::error::Error as JsonError;
-use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::string::FromUtf8Error;
 use url::Url;
@@ -14,8 +13,8 @@ use crate::config::APP_ID;
 #[derive(Debug, Clone)]
 pub struct StoredSession {
     pub homeserver: Url,
-    pub user_id: UserId,
-    pub device_id: DeviceIdBox,
+    pub user_id: Box<UserId>,
+    pub device_id: Box<DeviceId>,
     pub path: PathBuf,
     pub secret: Secret,
 }
@@ -73,8 +72,8 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
             let attr = item.get_attributes().ok()?;
 
             let homeserver = Url::parse(&attr.get("homeserver")?).ok()?;
-            let user_id = UserId::try_from(attr.get("user")?.to_string()).ok()?;
-            let device_id = DeviceIdBox::try_from(attr.get("device-id")?.to_string()).ok()?;
+            let user_id = UserId::parse(attr.get("user")?.as_str()).ok()?;
+            let device_id = <&DeviceId>::from(attr.get("device-id")?.as_str()).to_owned();
             let path = PathBuf::from(attr.get("db-path")?);
             let secret = Secret::from_utf8(item.get_secret().ok()?).ok()?;
 

@@ -11,7 +11,7 @@ use matrix_sdk::ruma::{
     },
     assign,
     directory::{Filter, RoomNetwork},
-    identifiers::ServerNameBox,
+    identifiers::ServerName,
     uint,
 };
 use std::convert::TryFrom;
@@ -304,13 +304,15 @@ impl PublicRoomList {
                 Some(custom) => RoomNetwork::ThirdParty(custom),
                 _ => RoomNetwork::default(),
             };
-            let server = server.and_then(|server| ServerNameBox::try_from(server).ok());
+            let server = server
+                .as_deref()
+                .and_then(|server| <&ServerName>::try_from(server).ok());
 
             let request = assign!(PublicRoomsRequest::new(), {
               limit: Some(uint!(20)),
               since: next_batch.as_deref(),
               room_network,
-              server: server.as_deref(),
+              server,
               filter: assign!(Filter::new(), { generic_search_term: search_term.as_deref() }),
             });
             client.public_rooms_filtered(request).await

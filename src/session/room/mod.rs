@@ -49,7 +49,7 @@ use matrix_sdk::{
 };
 use serde_json::value::RawValue;
 use std::cell::RefCell;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::path::PathBuf;
 
 use crate::components::{LabelWithWidgets, Pill};
@@ -69,7 +69,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct Room {
-        pub room_id: OnceCell<RoomId>,
+        pub room_id: OnceCell<Box<RoomId>>,
         pub matrix_room: RefCell<Option<MatrixRoom>>,
         pub session: OnceCell<WeakRef<Session>>,
         pub name: RefCell<Option<String>>,
@@ -82,8 +82,8 @@ mod imp {
         pub members_loaded: Cell<bool>,
         pub power_levels: RefCell<PowerLevels>,
         pub latest_change: RefCell<Option<glib::DateTime>>,
-        pub predecessor: OnceCell<RoomId>,
-        pub successor: OnceCell<RoomId>,
+        pub predecessor: OnceCell<Box<RoomId>>,
+        pub successor: OnceCell<Box<RoomId>>,
     }
 
     #[glib::object_subclass]
@@ -227,7 +227,7 @@ mod imp {
                 }
                 "room-id" => self
                     .room_id
-                    .set(RoomId::try_from(value.get::<&str>().unwrap()).unwrap())
+                    .set(RoomId::parse(value.get::<&str>().unwrap()).unwrap())
                     .unwrap(),
                 "topic" => {
                     let topic = value.get().unwrap();
@@ -295,7 +295,10 @@ mod imp {
             self.timeline.set(Timeline::new(obj)).unwrap();
             self.members.set(MemberList::new(obj)).unwrap();
             self.avatar
-                .set(Avatar::new(&obj.session(), obj.matrix_room().avatar_url()))
+                .set(Avatar::new(
+                    &obj.session(),
+                    obj.matrix_room().avatar_url().as_deref(),
+                ))
                 .unwrap();
 
             obj.load_power_levels();
@@ -847,8 +850,8 @@ impl Room {
         let txn_id = Uuid::new_v4();
         let event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
             content: content.clone(),
-            event_id: EventId::try_from(format!("${}:fractal.gnome.org", txn_id)).unwrap(),
-            sender: self.session().user().unwrap().user_id().clone(),
+            event_id: EventId::parse(format!("${}:fractal.gnome.org", txn_id).as_str()).unwrap(),
+            sender: self.session().user().unwrap().user_id().to_owned(),
             origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
             unsigned: Unsigned::default(),
         });
@@ -1031,7 +1034,7 @@ impl Room {
 
     pub fn predecessor(&self) -> Option<&RoomId> {
         let priv_ = imp::Room::from_instance(self);
-        priv_.predecessor.get()
+        priv_.predecessor.get().map(std::ops::Deref::deref)
     }
 
     fn load_predecessor(&self) -> Option<()> {
@@ -1051,7 +1054,7 @@ impl Room {
 
     pub fn successor(&self) -> Option<&RoomId> {
         let priv_ = imp::Room::from_instance(self);
-        priv_.successor.get()
+        priv_.successor.get().map(std::ops::Deref::deref)
     }
 
     pub fn load_successor(&self) -> Option<()> {
@@ -1072,7 +1075,8 @@ impl Room {
 
     pub async fn invite(&self, users: &[User]) {
         let matrix_room = self.matrix_room();
-        let user_ids: Vec<UserId> = users.iter().map(|user| user.user_id().to_owned()).collect();
+        let user_ids: Vec<Box<UserId>> =
+            users.iter().map(|user| user.user_id().to_owned()).collect();
 
         if let MatrixRoom::Joined(matrix_room) = matrix_room {
             let handle = spawn_tokio!(async move {

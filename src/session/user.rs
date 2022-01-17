@@ -15,7 +15,7 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct User {
-        pub user_id: OnceCell<UserId>,
+        pub user_id: OnceCell<Box<UserId>>,
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<WeakRef<Session>>,
         pub avatar: OnceCell<Avatar>,
@@ -174,7 +174,7 @@ pub trait UserExt: IsA<User> {
         priv_.avatar.get().unwrap()
     }
 
-    fn set_avatar_url(&self, url: Option<MxcUri>) {
+    fn set_avatar_url(&self, url: Option<Box<MxcUri>>) {
         self.avatar().set_url(url);
     }
 }

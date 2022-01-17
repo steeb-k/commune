@@ -11,12 +11,12 @@ use matrix_sdk::ruma::{
 
 #[derive(Hash, PartialEq, Eq, Debug)]
 pub struct FlowId {
-    user_id: UserId,
+    user_id: Box<UserId>,
     flow_id: String,
 }
 
 impl FlowId {
-    pub fn new(user_id: UserId, flow_id: String) -> Self {
+    pub fn new(user_id: Box<UserId>, flow_id: String) -> Self {
         Self { user_id, flow_id }
     }
 }
