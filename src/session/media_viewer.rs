@@ -6,19 +6,11 @@ use gtk::{
 use log::warn;
 use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageEventContent};
 
-use crate::{
-    components::{ContextMenuBin, ContextMenuBinImpl},
-    session::room::Event,
-    spawn,
-    utils::cache_dir,
-    Window,
-};
+use crate::{session::room::Event, spawn, utils::cache_dir, Window};
 
 use super::room::EventActions;
 
 mod imp {
-    use crate::components::ContextMenuBinExt;
-
     use super::*;
     use glib::object::WeakRef;
     use glib::subclass::InitializingObject;
@@ -34,6 +26,8 @@ mod imp {
         #[template_child]
         pub headerbar_revealer: TemplateChild<gtk::Revealer>,
         #[template_child]
+        pub menu_unfull: TemplateChild<gtk::MenuButton>,
+        #[template_child]
         pub menu_full: TemplateChild<gtk::MenuButton>,
         #[template_child]
         pub media: TemplateChild<adw::Bin>,
@@ -43,7 +37,7 @@ mod imp {
     impl ObjectSubclass for MediaViewer {
         const NAME: &'static str = "MediaViewer";
         type Type = super::MediaViewer;
-        type ParentType = ContextMenuBin;
+        type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -134,7 +128,8 @@ mod imp {
             self.parent_constructed(obj);
 
             let menu_model = Some(Self::Type::event_media_menu_model());
-            obj.set_context_menu(menu_model);
+            self.menu_full.set_menu_model(menu_model);
+            self.menu_unfull.set_menu_model(menu_model);
 
             // Bind `fullscreened` to the window property of the same name.
             obj.connect_notify_local(Some("root"), |obj, _| {
@@ -181,12 +176,11 @@ mod imp {
 
     impl WidgetImpl for MediaViewer {}
     impl BinImpl for MediaViewer {}
-    impl ContextMenuBinImpl for MediaViewer {}
 }
 
 glib::wrapper! {
     pub struct MediaViewer(ObjectSubclass<imp::MediaViewer>)
-        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 impl MediaViewer {

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="MediaViewer" parent="ContextMenuBin">
+  <template class="MediaViewer" parent="AdwBin">
     <property name="child">
       <object class="GtkOverlay">
         <child>
@@ -30,7 +30,6 @@
                 <child type="end">
                   <object class="GtkMenuButton" id="menu_unfull">
                     <property name="icon-name">view-more-symbolic</property>
-                    <property name="menu-model" bind-source="MediaViewer" bind-property="context-menu" bind-flags="sync-create"/>
                   </object>
                 </child>
                 <child type="end">
@@ -73,7 +72,6 @@
                 <child type="end">
                   <object class="GtkMenuButton" id="menu_full">
                     <property name="icon-name">view-more-symbolic</property>
-                    <property name="menu-model" bind-source="MediaViewer" bind-property="context-menu" bind-flags="sync-create"/>
                   </object>
                 </child>
                 <child type="end">
