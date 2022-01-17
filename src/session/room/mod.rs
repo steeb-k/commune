@@ -51,6 +51,7 @@ use serde_json::value::RawValue;
 use std::cell::RefCell;
 use std::convert::TryInto;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::components::{LabelWithWidgets, Pill};
 use crate::prelude::*;
@@ -851,7 +852,7 @@ impl Room {
         let event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
             content: content.clone(),
             event_id: EventId::parse(format!("${}:fractal.gnome.org", txn_id).as_str()).unwrap(),
-            sender: self.session().user().unwrap().user_id().to_owned(),
+            sender: self.session().user().unwrap().user_id().as_ref().to_owned(),
             origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
             unsigned: Unsigned::default(),
         });
@@ -1075,8 +1076,7 @@ impl Room {
 
     pub async fn invite(&self, users: &[User]) {
         let matrix_room = self.matrix_room();
-        let user_ids: Vec<Box<UserId>> =
-            users.iter().map(|user| user.user_id().to_owned()).collect();
+        let user_ids: Vec<Arc<UserId>> = users.iter().map(|user| user.user_id()).collect();
 
         if let MatrixRoom::Joined(matrix_room) = matrix_room {
             let handle = spawn_tokio!(async move {

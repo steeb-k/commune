@@ -2,6 +2,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
 use matrix_sdk::ruma::{api::client::r0::user_directory::search_users, identifiers::UserId};
 use matrix_sdk::HttpError;
+use std::sync::Arc;
 
 use crate::session::user::UserExt;
 use crate::{session::Room, spawn, spawn_tokio};
@@ -40,7 +41,7 @@ mod imp {
         pub room: OnceCell<Room>,
         pub state: Cell<InviteeListState>,
         pub search_term: RefCell<Option<String>>,
-        pub invitee_list: RefCell<HashMap<Box<UserId>, Invitee>>,
+        pub invitee_list: RefCell<HashMap<Arc<UserId>, Invitee>>,
         pub abort_handle: RefCell<Option<AbortHandle>>,
     }
 
@@ -244,7 +245,7 @@ impl InviteeList {
                     .filter_map(|item| {
                         // Skip over users that are already in the room
                         if member_list.contains(&item.user_id) {
-                            self.remove_invitee(&item.user_id);
+                            self.remove_invitee(item.user_id.into());
                             None
                         } else if let Some(user) = self.get_invitee(&item.user_id) {
                             // The avatar or the display name may have changed in the mean time
@@ -333,7 +334,7 @@ impl InviteeList {
         priv_
             .invitee_list
             .borrow_mut()
-            .insert(user.user_id().to_owned(), user.clone());
+            .insert(user.user_id(), user.clone());
         self.emit_by_name("invitee-added", &[&user]).unwrap();
         self.notify("has-selected");
     }
@@ -348,9 +349,9 @@ impl InviteeList {
             .collect()
     }
 
-    fn remove_invitee(&self, user_id: &UserId) {
+    fn remove_invitee(&self, user_id: Arc<UserId>) {
         let priv_ = imp::InviteeList::from_instance(self);
-        let removed = priv_.invitee_list.borrow_mut().remove(user_id);
+        let removed = priv_.invitee_list.borrow_mut().remove(&user_id);
         if let Some(user) = removed {
             user.set_invited(false);
             self.emit_by_name("invitee-removed", &[&user]).unwrap();

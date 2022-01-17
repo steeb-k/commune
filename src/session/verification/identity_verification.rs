@@ -400,7 +400,7 @@ impl IdentityVerification {
         };
 
         let client = self.session().client();
-        let user_id = self.user().user_id().to_owned();
+        let user_id = self.user().user_id();
         let flow_id = self.flow_id().to_owned();
 
         let (sync_sender, sync_receiver) = mpsc::channel(100);

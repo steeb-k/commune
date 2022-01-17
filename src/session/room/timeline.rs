@@ -714,12 +714,12 @@ impl Timeline {
 
                     let user = session.user().unwrap();
 
-                    let user_to_verify = if &request.to == user.user_id() {
+                    let user_to_verify = if &*request.to == &*user.user_id() {
                         // The request was sent by another user to verify us
                         event.sender()
-                    } else if &message.sender == user.user_id() {
+                    } else if &*message.sender == &*user.user_id() {
                         // The request was sent by us to verify another user
-                        self.room().members().member_by_id(&request.to)
+                        self.room().members().member_by_id(request.to.into())
                     } else {
                         // Ignore the request when it doesn't verify us or wasn't set by us
                         return;
@@ -745,25 +745,25 @@ impl Timeline {
                 return;
             }
             AnySyncMessageEvent::KeyVerificationReady(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             AnySyncMessageEvent::KeyVerificationStart(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             AnySyncMessageEvent::KeyVerificationCancel(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             AnySyncMessageEvent::KeyVerificationAccept(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             AnySyncMessageEvent::KeyVerificationKey(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             AnySyncMessageEvent::KeyVerificationMac(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             AnySyncMessageEvent::KeyVerificationDone(e) => {
-                FlowId::new(e.sender, e.content.relates_to.event_id.to_string())
+                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
             }
             _ => {
                 return;

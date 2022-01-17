@@ -3,6 +3,7 @@ use matrix_sdk::ruma::{
     events::AnySyncRoomEvent,
     identifiers::{EventId, UserId},
 };
+use std::sync::Arc;
 
 use crate::session::room::Event;
 
@@ -182,7 +183,7 @@ impl Item {
         }
     }
 
-    pub fn matrix_sender(&self) -> Option<Box<UserId>> {
+    pub fn matrix_sender(&self) -> Option<Arc<UserId>> {
         let priv_ = imp::Item::from_instance(self);
         if let ItemType::Event(event) = priv_.type_.get().unwrap() {
             Some(event.matrix_sender())

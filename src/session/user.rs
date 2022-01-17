@@ -4,6 +4,7 @@ use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 use crate::session::{Avatar, Session};
 use crate::spawn_tokio;
 use matrix_sdk::encryption::identities::UserIdentity;
+use std::sync::Arc;
 
 use log::error;
 
@@ -11,11 +12,11 @@ mod imp {
     use super::*;
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::{cell::RefCell, convert::TryInto};
+    use std::cell::RefCell;
 
     #[derive(Debug, Default)]
     pub struct User {
-        pub user_id: OnceCell<Box<UserId>>,
+        pub user_id: OnceCell<Arc<UserId>>,
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<WeakRef<Session>>,
         pub avatar: OnceCell<Avatar>,
@@ -75,8 +76,9 @@ mod imp {
         ) {
             match pspec.name() {
                 "user-id" => {
-                    let user_id = value.get::<&str>().unwrap().try_into().unwrap();
-                    self.user_id.set(user_id).unwrap();
+                    self.user_id
+                        .set(UserId::parse_arc(value.get::<&str>().unwrap()).unwrap())
+                        .unwrap();
                 }
                 "display-name" => {
                     obj.set_display_name(value.get::<Option<String>>().unwrap());
@@ -126,7 +128,7 @@ impl User {
 
     pub async fn crypto_identity(&self) -> Option<UserIdentity> {
         let client = self.session().client();
-        let user_id = self.user_id().to_owned();
+        let user_id = self.user_id();
         let handle = spawn_tokio!(async move { client.get_user_identity(&user_id).await });
 
         match handle.await.unwrap() {
@@ -145,9 +147,9 @@ pub trait UserExt: IsA<User> {
         priv_.session.get().unwrap().upgrade().unwrap()
     }
 
-    fn user_id(&self) -> &UserId {
+    fn user_id(&self) -> Arc<UserId> {
         let priv_ = imp::User::from_instance(self.upcast_ref());
-        priv_.user_id.get().unwrap()
+        priv_.user_id.get().unwrap().clone()
     }
 
     fn display_name(&self) -> String {

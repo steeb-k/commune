@@ -397,7 +397,7 @@ impl Session {
                     match handle.await.unwrap() {
                         Ok((display_name, avatar_url)) => {
                             user.set_display_name(display_name);
-                            user.set_avatar_url(avatar_url)
+                            user.set_avatar_url(avatar_url);
                         }
                         Err(error) => error!("Couldn’t fetch account metadata: {}", error),
                     }
@@ -500,7 +500,7 @@ impl Session {
     fn mark_ready(&self) {
         let priv_ = imp::Session::from_instance(self);
         let client = self.client();
-        let user_id = self.user().unwrap().user_id().to_owned();
+        let user_id = self.user().unwrap().user_id();
 
         priv_.is_ready.set(true);
 

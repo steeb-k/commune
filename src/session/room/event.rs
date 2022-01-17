@@ -15,6 +15,7 @@ use matrix_sdk::{
     },
     Error as MatrixError,
 };
+use std::sync::Arc;
 
 use crate::{
     session::{room::Member, Room},
@@ -174,7 +175,7 @@ impl Event {
     }
 
     pub fn sender(&self) -> Member {
-        self.room().members().member_by_id(&self.matrix_sender())
+        self.room().members().member_by_id(self.matrix_sender())
     }
 
     pub fn room(&self) -> Room {
@@ -210,11 +211,11 @@ impl Event {
         self.notify("can-view-media");
     }
 
-    pub fn matrix_sender(&self) -> Box<UserId> {
+    pub fn matrix_sender(&self) -> Arc<UserId> {
         let priv_ = imp::Event::from_instance(self);
 
         if let Some(event) = priv_.event.borrow().as_ref() {
-            event.sender().to_owned()
+            event.sender().into()
         } else {
             priv_
                 .pure_event
@@ -222,7 +223,7 @@ impl Event {
                 .as_ref()
                 .unwrap()
                 .event
-                .get_field::<Box<UserId>>("sender")
+                .get_field::<Arc<UserId>>("sender")
                 .unwrap()
                 .unwrap()
         }
