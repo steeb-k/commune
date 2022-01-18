@@ -42,6 +42,9 @@ flatpak install --user gnome-nightly org.gnome.Sdk org.gnome.Platform
 
 # Install the required rust-stable extension from Flathub
 flatpak install --user flathub org.freedesktop.Sdk.Extension.rust-stable//21.08
+
+# Install the required llvm extension from Flathub
+flatpak install --user flathub org.freedesktop.Sdk.Extension.llvm12//21.08
 ```
 **Inside** the `build-aux` folder run:
 
