@@ -102,7 +102,7 @@ Get the pot file from [the Fractal module page on Damned lies](https://l10n.gnom
 ### Password Storage
 
 Fractal uses [Secret Service](https://www.freedesktop.org/wiki/Specifications/secret-storage-spec/)
-to store the password so you should have something providing 
+to store the password so you should have something providing
 that service on your system. If you're using GNOME or KDE
 this should work for you out of the box with gnome-keyring or
 ksecretservice.
