@@ -17,7 +17,7 @@ use matrix_sdk::{
 use crate::session::{
     room::{Event, Item, ItemType, Room},
     user::UserExt,
-    verification::{FlowId, IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
+    verification::{IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
 };
 use crate::{spawn, spawn_tokio};
 
@@ -694,8 +694,9 @@ impl Timeline {
         };
 
         let session = self.room().session();
+        let verification_list = session.verification_list();
 
-        let flow_id = match message {
+        let request = match message {
             AnySyncMessageEvent::RoomMessage(message) => {
                 if let MessageType::VerificationRequest(request) = message.content.msgtype {
                     // Ignore request that are too old
@@ -745,32 +746,32 @@ impl Timeline {
                 return;
             }
             AnySyncMessageEvent::KeyVerificationReady(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             AnySyncMessageEvent::KeyVerificationStart(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             AnySyncMessageEvent::KeyVerificationCancel(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             AnySyncMessageEvent::KeyVerificationAccept(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             AnySyncMessageEvent::KeyVerificationKey(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             AnySyncMessageEvent::KeyVerificationMac(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             AnySyncMessageEvent::KeyVerificationDone(e) => {
-                FlowId::new(e.sender.into(), e.content.relates_to.event_id.to_string())
+                verification_list.get_by_id(&e.sender, &e.content.relates_to.event_id)
             }
             _ => {
                 return;
             }
         };
 
-        if let Some(request) = session.verification_list().get_by_id(&flow_id) {
+        if let Some(request) = request {
             request.notify_state();
         }
     }

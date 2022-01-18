@@ -22,6 +22,24 @@ impl FlowId {
     }
 }
 
+#[derive(Hash, PartialEq, Eq, Debug)]
+struct FlowIdUnowned<'a> {
+    user_id: &'a UserId,
+    flow_id: &'a str,
+}
+
+impl<'a> FlowIdUnowned<'a> {
+    pub fn new(user_id: &'a UserId, flow_id: &'a str) -> Self {
+        Self { user_id, flow_id }
+    }
+}
+
+impl indexmap::Equivalent<FlowId> for FlowIdUnowned<'_> {
+    fn equivalent(&self, key: &FlowId) -> bool {
+        self.user_id == &*key.user_id && self.flow_id == &*key.flow_id
+    }
+}
+
 mod imp {
     use glib::object::WeakRef;
     use indexmap::IndexMap;
@@ -119,14 +137,13 @@ impl VerificationList {
             debug!("Received verification event: {:?}", event);
             let request = match event {
                 AnyToDeviceEvent::KeyVerificationRequest(e) => {
-                    let flow_id = FlowId::new(e.sender.into(), e.content.transaction_id);
-                    if let Some(request) = self.get_by_id(&flow_id) {
+                    if let Some(request) = self.get_by_id(&e.sender, &e.content.transaction_id) {
                         Some(request)
                     } else {
                         let session = self.session();
                         let user = session.user().unwrap();
                         // ToDevice verifications can only be send by us
-                        if flow_id.user_id != user.user_id() {
+                        if *e.sender != *user.user_id() {
                             warn!("Received a device verification event from a different user, which isn't allowed");
                             continue;
                         }
@@ -159,7 +176,7 @@ impl VerificationList {
                         };
 
                         let request = IdentityVerification::for_flow_id(
-                            &flow_id.flow_id,
+                            e.content.transaction_id.as_str(),
                             &session,
                             user,
                             &start_time,
@@ -169,25 +186,25 @@ impl VerificationList {
                     }
                 }
                 AnyToDeviceEvent::KeyVerificationReady(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 AnyToDeviceEvent::KeyVerificationStart(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 AnyToDeviceEvent::KeyVerificationCancel(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 AnyToDeviceEvent::KeyVerificationAccept(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 AnyToDeviceEvent::KeyVerificationMac(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 AnyToDeviceEvent::KeyVerificationKey(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 AnyToDeviceEvent::KeyVerificationDone(e) => {
-                    self.get_by_id(&FlowId::new(e.sender.into(), e.content.transaction_id))
+                    self.get_by_id(&e.sender, &e.content.transaction_id)
                 }
                 _ => continue,
             };
@@ -232,9 +249,14 @@ impl VerificationList {
     pub fn remove(&self, request: &IdentityVerification) {
         let priv_ = imp::VerificationList::from_instance(self);
 
-        let position = if let Some((position, _, _)) = priv_.list.borrow_mut().shift_remove_full(
-            &FlowId::new(request.user().user_id(), request.flow_id().to_owned()),
-        ) {
+        let position = if let Some((position, _, _)) =
+            priv_
+                .list
+                .borrow_mut()
+                .shift_remove_full(&FlowIdUnowned::new(
+                    request.user().user_id().as_ref(),
+                    request.flow_id(),
+                )) {
             position
         } else {
             return;
@@ -243,9 +265,14 @@ impl VerificationList {
         self.items_changed(position as u32, 1, 0);
     }
 
-    pub fn get_by_id(&self, flow_id: &FlowId) -> Option<IdentityVerification> {
+    pub fn get_by_id(
+        &self,
+        user_id: &UserId,
+        flow_id: &impl AsRef<str>,
+    ) -> Option<IdentityVerification> {
         let priv_ = imp::VerificationList::from_instance(self);
 
-        priv_.list.borrow().get(flow_id).cloned()
+        let flow_id = FlowIdUnowned::new(user_id, flow_id.as_ref());
+        priv_.list.borrow().get(&flow_id).cloned()
     }
 }
