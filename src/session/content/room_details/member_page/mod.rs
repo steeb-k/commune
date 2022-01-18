@@ -14,6 +14,8 @@ use crate::prelude::*;
 use crate::session::content::RoomDetails;
 use crate::session::room::{Member, RoomAction};
 use crate::session::Room;
+use crate::session::User;
+use crate::spawn;
 use log::warn;
 
 mod imp {
@@ -238,7 +240,10 @@ impl MemberPage {
         priv_.member_menu.get_or_init(|| MemberMenu::new())
     }
 
-    fn verify_member(&self, _member: Member) {
-        todo!("Show member verification");
+    fn verify_member(&self, member: Member) {
+        // TODO: show the verification immediately when started
+        spawn!(clone!(@weak self as obj => async move {
+            member.upcast::<User>().verify_identity().await;
+        }));
     }
 }

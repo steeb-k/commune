@@ -1,8 +1,8 @@
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 
-use crate::session::{Avatar, Session};
-use crate::spawn_tokio;
+use crate::session::{verification::IdentityVerification, Avatar, Session};
+use crate::{spawn, spawn_tokio};
 use matrix_sdk::encryption::identities::UserIdentity;
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ mod imp {
     use super::*;
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default)]
     pub struct User {
@@ -20,6 +20,7 @@ mod imp {
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<WeakRef<Session>>,
         pub avatar: OnceCell<Avatar>,
+        pub is_verified: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -61,6 +62,13 @@ mod imp {
                         Session::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
+                    glib::ParamSpec::new_boolean(
+                        "verified",
+                        "Verified",
+                        "Whether this user has been verified",
+                        false,
+                        glib::ParamFlags::READABLE,
+                    ),
                 ]
             });
 
@@ -97,6 +105,7 @@ mod imp {
                 "user-id" => obj.user_id().as_str().to_value(),
                 "session" => obj.session().to_value(),
                 "avatar" => obj.avatar().to_value(),
+                "verified" => obj.is_verified().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -111,6 +120,8 @@ mod imp {
                 .flags(glib::BindingFlags::SYNC_CREATE)
                 .build()
                 .unwrap();
+
+            obj.init_is_verified();
         }
     }
 }
@@ -138,6 +149,32 @@ impl User {
                 None
             }
         }
+    }
+
+    pub async fn verify_identity(&self) -> IdentityVerification {
+        let request = IdentityVerification::create(&self.session(), Some(self)).await;
+        self.session().verification_list().add(request.clone());
+        request
+    }
+
+    pub fn is_verified(&self) -> bool {
+        let priv_ = imp::User::from_instance(self);
+
+        priv_.is_verified.get()
+    }
+
+    fn init_is_verified(&self) {
+        spawn!(clone!(@weak self as obj => async move {
+            let priv_ = imp::User::from_instance(&obj);
+            let is_verified = obj.crypto_identity().await.map_or(false, |i| i.verified());
+
+            if is_verified == obj.is_verified() {
+                return;
+            }
+
+            priv_.is_verified.set(is_verified);
+            obj.notify("verified");
+        }));
     }
 }
 

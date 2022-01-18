@@ -726,21 +726,31 @@ impl Timeline {
                         return;
                     };
 
-                    let request = IdentityVerification::for_flow_id(
-                        event.matrix_event_id().as_str(),
-                        &session,
-                        &user_to_verify.upcast(),
-                        &event.timestamp(),
-                    );
-
                     // Ignore the request when we have a newer one
                     let previous_verification = self.verification();
-                    if previous_verification.is_none()
-                        || request.start_time() > previous_verification.unwrap().start_time()
+                    if !(previous_verification.is_none()
+                        || &event.timestamp() > previous_verification.unwrap().start_time())
                     {
-                        session.verification_list().add(request.clone());
-                        self.set_verification(request);
+                        return;
                     }
+
+                    let request = if let Some(request) = verification_list
+                        .get_by_id(&user_to_verify.user_id(), &event.matrix_event_id())
+                    {
+                        request
+                    } else {
+                        let request = IdentityVerification::for_flow_id(
+                            event.matrix_event_id().as_str(),
+                            &session,
+                            &user_to_verify.upcast(),
+                            &event.timestamp(),
+                        );
+
+                        verification_list.add(request.clone());
+                        request
+                    };
+
+                    self.set_verification(request);
                 }
 
                 return;
