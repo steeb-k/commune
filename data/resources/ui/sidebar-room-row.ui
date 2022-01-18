@@ -1,6 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="SidebarRoomRow" parent="AdwBin">
+  <menu id="room-row-menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Accept</attribute>
+        <attribute name="action">room-row.accept-invite</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Reject</attribute>
+        <attribute name="action">room-row.reject-invite</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Mark as _Favorite</attribute>
+        <attribute name="action">room-row.set-favorite</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Unmark as _Favorite</attribute>
+        <attribute name="action">room-row.unset-favorite</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Mark as Low _Priority</attribute>
+        <attribute name="action">room-row.set-lowpriority</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Unmark as Low _Priority</attribute>
+        <attribute name="action">room-row.unset-lowpriority</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Leave Room</attribute>
+        <attribute name="action">room-row.leave</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Re_join Room</attribute>
+        <attribute name="action">room-row.join</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Forget Room</attribute>
+        <attribute name="action">room-row.forget</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+  </menu>
+  <template class="SidebarRoomRow" parent="ContextMenuBin">
+    <property name="context-menu">room-row-menu</property>
     <child>
       <object class="GtkBox">
         <property name="spacing">12</property>

@@ -1,7 +1,10 @@
 use adw::subclass::prelude::BinImpl;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::room::{HighlightFlags, Room, RoomType};
+use crate::{
+    components::{ContextMenuBin, ContextMenuBinImpl},
+    session::room::{HighlightFlags, Room, RoomType},
+};
 
 mod imp {
     use super::*;
@@ -25,10 +28,40 @@ mod imp {
     impl ObjectSubclass for RoomRow {
         const NAME: &'static str = "SidebarRoomRow";
         type Type = super::RoomRow;
-        type ParentType = adw::Bin;
+        type ParentType = ContextMenuBin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.install_action("room-row.accept-invite", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Normal)
+            });
+            klass.install_action("room-row.reject-invite", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Left)
+            });
+
+            klass.install_action("room-row.set-favorite", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Favorite);
+            });
+            klass.install_action("room-row.unset-favorite", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Normal);
+            });
+            klass.install_action("room-row.set-lowpriority", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::LowPriority);
+            });
+            klass.install_action("room-row.unset-lowpriority", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Normal);
+            });
+
+            klass.install_action("room-row.leave", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Left);
+            });
+            klass.install_action("room-row.join", None, move |widget, _, _| {
+                widget.room().unwrap().set_category(RoomType::Normal)
+            });
+            klass.install_action("room-row.forget", None, move |widget, _, _| {
+                widget.room().unwrap().forget();
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -59,10 +92,7 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "room" => {
-                    let room = value.get().unwrap();
-                    obj.set_room(room);
-                }
+                "room" => obj.set_room(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -106,11 +136,12 @@ mod imp {
 
     impl WidgetImpl for RoomRow {}
     impl BinImpl for RoomRow {}
+    impl ContextMenuBinImpl for RoomRow {}
 }
 
 glib::wrapper! {
     pub struct RoomRow(ObjectSubclass<imp::RoomRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
 }
 
 impl RoomRow {
@@ -167,6 +198,8 @@ impl RoomRow {
             self.set_highlight();
         }
         priv_.room.replace(room);
+
+        self.update_actions();
         self.notify("room");
     }
 
@@ -193,6 +226,85 @@ impl RoomRow {
                 _ => {}
             };
         }
+    }
+
+    /// Enable or disable actions according to the category of the room.
+    fn update_actions(&self) {
+        if let Some(room) = self.room() {
+            match room.category() {
+                RoomType::Invited => {
+                    self.action_set_enabled("room-row.accept-invite", true);
+                    self.action_set_enabled("room-row.reject-invite", true);
+                    self.action_set_enabled("room-row.set-favorite", false);
+                    self.action_set_enabled("room-row.unset-favorite", false);
+                    self.action_set_enabled("room-row.set-lowpriority", false);
+                    self.action_set_enabled("room-row.unset-lowpriority", false);
+                    self.action_set_enabled("room-row.leave", false);
+                    self.action_set_enabled("room-row.join", false);
+                    self.action_set_enabled("room-row.forget", false);
+                    return;
+                }
+                RoomType::Favorite => {
+                    self.action_set_enabled("room-row.accept-invite", false);
+                    self.action_set_enabled("room-row.reject-invite", false);
+                    self.action_set_enabled("room-row.set-favorite", false);
+                    self.action_set_enabled("room-row.unset-favorite", true);
+                    self.action_set_enabled("room-row.set-lowpriority", true);
+                    self.action_set_enabled("room-row.unset-lowpriority", false);
+                    self.action_set_enabled("room-row.leave", true);
+                    self.action_set_enabled("room-row.join", false);
+                    self.action_set_enabled("room-row.forget", false);
+                    return;
+                }
+                RoomType::Normal => {
+                    self.action_set_enabled("room-row.accept-invite", false);
+                    self.action_set_enabled("room-row.reject-invite", false);
+                    self.action_set_enabled("room-row.set-favorite", true);
+                    self.action_set_enabled("room-row.unset-favorite", false);
+                    self.action_set_enabled("room-row.set-lowpriority", true);
+                    self.action_set_enabled("room-row.unset-lowpriority", false);
+                    self.action_set_enabled("room-row.leave", true);
+                    self.action_set_enabled("room-row.join", false);
+                    self.action_set_enabled("room-row.forget", false);
+                    return;
+                }
+                RoomType::LowPriority => {
+                    self.action_set_enabled("room-row.accept-invite", false);
+                    self.action_set_enabled("room-row.reject-invite", false);
+                    self.action_set_enabled("room-row.set-favorite", true);
+                    self.action_set_enabled("room-row.unset-favorite", false);
+                    self.action_set_enabled("room-row.set-lowpriority", false);
+                    self.action_set_enabled("room-row.unset-lowpriority", true);
+                    self.action_set_enabled("room-row.leave", true);
+                    self.action_set_enabled("room-row.join", false);
+                    self.action_set_enabled("room-row.forget", false);
+                    return;
+                }
+                RoomType::Left => {
+                    self.action_set_enabled("room-row.accept-invite", false);
+                    self.action_set_enabled("room-row.reject-invite", false);
+                    self.action_set_enabled("room-row.set-favorite", false);
+                    self.action_set_enabled("room-row.unset-favorite", false);
+                    self.action_set_enabled("room-row.set-lowpriority", false);
+                    self.action_set_enabled("room-row.unset-lowpriority", false);
+                    self.action_set_enabled("room-row.leave", false);
+                    self.action_set_enabled("room-row.join", true);
+                    self.action_set_enabled("room-row.forget", true);
+                    return;
+                }
+                RoomType::Outdated => {}
+            }
+        }
+
+        self.action_set_enabled("room-row.accept-invite", false);
+        self.action_set_enabled("room-row.reject-invite", false);
+        self.action_set_enabled("room-row.set-favorite", false);
+        self.action_set_enabled("room-row.unset-favorite", false);
+        self.action_set_enabled("room-row.set-lowpriority", false);
+        self.action_set_enabled("room-row.unset-lowpriority", false);
+        self.action_set_enabled("room-row.leave", false);
+        self.action_set_enabled("room-row.join", false);
+        self.action_set_enabled("room-row.forget", false);
     }
 
     fn drag_prepare(&self, drag: &gtk::DragSource, x: f64, y: f64) -> Option<gdk::ContentProvider> {
