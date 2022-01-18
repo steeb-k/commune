@@ -413,6 +413,7 @@ impl IdentityVerification {
             {
                 context.start().await
             } else {
+                error!("Unable to start verification handler");
                 Ok(State::Error)
             }
         });
@@ -958,6 +959,7 @@ impl Context {
             if let Ok(qr_code) = request.to_qr_code() {
                 self.send_qr_code(qr_code);
             } else {
+                error!("Unable to generate Qr code for verification");
                 return Ok(State::Error);
             }
 
@@ -1029,6 +1031,7 @@ impl Context {
         } else if let Some(decimal) = request.decimals() {
             SasData::Decimal(decimal)
         } else {
+            error!("Sas verification failed because emoji nor deciaml are supported by the server");
             return Ok(State::Error);
         };
 
