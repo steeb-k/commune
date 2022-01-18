@@ -40,7 +40,7 @@ rustfmt:
 
 cargo-clippy:
   image: 'registry.gitlab.gnome.org/gnome/gnome-runtime-images/rust_bundle:master'
-  stage: test
+  stage: check
   tags:
     - flatpak
   variables:
