@@ -1,6 +1,9 @@
+use std::convert::TryFrom;
+
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use crate::session::{
+    room::RoomType,
     room_list::RoomList,
     sidebar::CategoryType,
     sidebar::EntryType,
@@ -17,10 +20,13 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct ItemList {
-        pub list: OnceCell<[(glib::Object, Cell<bool>); 7]>,
+        pub list: OnceCell<[(glib::Object, Cell<bool>); 8]>,
         pub room_list: OnceCell<RoomList>,
         pub verification_list: OnceCell<VerificationList>,
-        pub show_all: Cell<bool>,
+        /// The `CategoryType` to show all compatible categories for.
+        ///
+        /// Uses `RoomType::can_change_to` to find compatible categories.
+        pub show_all_for_category: Cell<CategoryType>,
     }
 
     #[glib::object_subclass]
@@ -49,11 +55,12 @@ mod imp {
                         VerificationList::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_boolean(
-                        "show-all",
-                        "Show All",
-                        "Whether all room categories should be shown",
-                        false,
+                    glib::ParamSpec::new_enum(
+                        "show-all-for-category",
+                        "Show All For Category",
+                        "The `CategoryType` to show all compatible categories for",
+                        CategoryType::static_type(),
+                        CategoryType::None as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                 ]
@@ -72,7 +79,7 @@ mod imp {
             match pspec.name() {
                 "room-list" => obj.set_room_list(value.get().unwrap()),
                 "verification-list" => obj.set_verification_list(value.get().unwrap()),
-                "show-all" => obj.set_show_all(value.get().unwrap()),
+                "show-all-for-category" => obj.set_show_all_for_category(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -81,7 +88,7 @@ mod imp {
             match pspec.name() {
                 "room-list" => obj.room_list().to_value(),
                 "verification-list" => obj.verification_list().to_value(),
-                "show-all" => obj.show_all().to_value(),
+                "show-all-for-category" => obj.show_all_for_category().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -101,6 +108,7 @@ mod imp {
                 Category::new(CategoryType::Normal, room_list).upcast::<glib::Object>(),
                 Category::new(CategoryType::LowPriority, room_list).upcast::<glib::Object>(),
                 Category::new(CategoryType::Left, room_list).upcast::<glib::Object>(),
+                Entry::new(EntryType::Forget).upcast::<glib::Object>(),
             ];
 
             for (index, item) in list.iter().enumerate() {
@@ -108,7 +116,7 @@ mod imp {
                     category.connect_notify_local(
                         Some("empty"),
                         clone!(@weak obj => move |_, _| {
-                            obj.update_category(index);
+                            obj.update_item(index);
                         }),
                     );
                 }
@@ -118,7 +126,9 @@ mod imp {
                 let visible = if let Some(category) = item.downcast_ref::<Category>() {
                     !category.is_empty()
                 } else {
-                    true
+                    item.downcast_ref::<Entry>()
+                        .filter(|entry| entry.type_() == EntryType::Forget)
+                        .is_none()
                 };
                 (item, Cell::new(visible))
             });
@@ -177,12 +187,30 @@ impl ItemList {
         .expect("Failed to create ItemList")
     }
 
-    fn update_category(&self, position: usize) {
+    fn update_item(&self, position: usize) {
         let priv_ = imp::ItemList::from_instance(self);
         let (item, old_visible) = priv_.list.get().unwrap().get(position).unwrap();
-        let category = item.downcast_ref::<Category>().unwrap();
 
-        let visible = !category.is_empty() || (self.show_all() && is_show_all_category(category));
+        let visible = if let Some(category) = item.downcast_ref::<Category>() {
+            !category.is_empty()
+                || RoomType::try_from(self.show_all_for_category())
+                    .ok()
+                    .and_then(|room_type| {
+                        RoomType::try_from(category.type_())
+                            .ok()
+                            .filter(|category| room_type.can_change_to(category))
+                    })
+                    .is_some()
+        } else if item
+            .downcast_ref::<Entry>()
+            .filter(|entry| entry.type_() == EntryType::Forget)
+            .is_some()
+        {
+            self.show_all_for_category() == CategoryType::Left
+        } else {
+            return;
+        };
+
         if visible != old_visible.get() {
             old_visible.set(visible);
             let hidden_before_position = priv_
@@ -201,32 +229,24 @@ impl ItemList {
         }
     }
 
-    // Whether all room categories are shown
-    // This doesn't include `CategoryType::Invite` since the user can't move rooms to it.
-    pub fn show_all(&self) -> bool {
+    pub fn show_all_for_category(&self) -> CategoryType {
         let priv_ = imp::ItemList::from_instance(self);
-        priv_.show_all.get()
+        priv_.show_all_for_category.get()
     }
 
-    // Set whether all room categories should be shown
-    // This doesn't include `CategoryType::Invite` since the user can't move rooms to it.
-    pub fn set_show_all(&self, show_all: bool) {
+    pub fn set_show_all_for_category(&self, category: CategoryType) {
         let priv_ = imp::ItemList::from_instance(self);
-        if show_all == self.show_all() {
+
+        if category == self.show_all_for_category() {
             return;
         }
 
-        priv_.show_all.set(show_all);
-
-        for (index, (item, _)) in priv_.list.get().unwrap().iter().enumerate() {
-            if let Some(category) = item.downcast_ref::<Category>() {
-                if is_show_all_category(category) {
-                    self.update_category(index);
-                }
-            }
+        priv_.show_all_for_category.set(category);
+        for i in 0..priv_.list.get().unwrap().len() {
+            self.update_item(i);
         }
 
-        self.notify("show-all");
+        self.notify("show-all-for-category");
     }
 
     fn set_room_list(&self, room_list: RoomList) {
@@ -248,16 +268,4 @@ impl ItemList {
         let priv_ = imp::ItemList::from_instance(self);
         priv_.verification_list.get().unwrap()
     }
-}
-
-// Wheter this category should be shown when `show-all` is `true`
-// This doesn't include `CategoryType::Invite` since the user can't move rooms to it.
-fn is_show_all_category(category: &Category) -> bool {
-    matches!(
-        category.type_(),
-        CategoryType::Favorite
-            | CategoryType::Normal
-            | CategoryType::LowPriority
-            | CategoryType::Left
-    )
 }

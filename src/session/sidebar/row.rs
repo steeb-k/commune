@@ -1,11 +1,15 @@
+use std::convert::TryFrom;
+
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, subclass::prelude::*};
+use gtk::{gdk, glib, glib::clone, subclass::prelude::*};
 
 use crate::session::{
-    room::Room,
+    room::{Room, RoomType},
     sidebar::{Category, CategoryRow, Entry, EntryRow, RoomRow, VerificationRow},
     verification::IdentityVerification,
 };
+
+use super::EntryType;
 
 mod imp {
     use super::*;
@@ -23,6 +27,10 @@ mod imp {
         const NAME: &'static str = "SidebarRow";
         type Type = super::Row;
         type ParentType = adw::Bin;
+
+        fn class_init(klass: &mut Self::Class) {
+            klass.set_css_name("sidebar-row");
+        }
     }
 
     impl ObjectImpl for Row {
@@ -71,6 +79,28 @@ mod imp {
                 "list-row" => obj.list_row().to_value(),
                 _ => unimplemented!(),
             }
+        }
+
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            // Set up drop controller
+            let drop = gtk::DropTarget::builder()
+                .actions(gdk::DragAction::MOVE)
+                .formats(&gdk::ContentFormats::for_type(Room::static_type()))
+                .build();
+            drop.connect_accept(clone!(@weak obj => @default-return false, move |_, drop| {
+                obj.drop_accept(drop)
+            }));
+            drop.connect_leave(clone!(@weak obj => move |_| {
+                obj.drop_leave();
+            }));
+            drop.connect_drop(
+                clone!(@weak obj => @default-return false, move |_, v, _, _| {
+                    obj.drop_end(v)
+                }),
+            );
+            obj.add_controller(&drop);
         }
     }
 
@@ -162,6 +192,10 @@ impl Row {
                     child
                 };
 
+                if entry.type_() == EntryType::Forget {
+                    self.add_css_class("forget");
+                }
+
                 child.set_entry(Some(entry.clone()));
 
                 if let Some(list_item) = self.parent() {
@@ -186,10 +220,83 @@ impl Row {
             } else {
                 panic!("Wrong row item: {:?}", item);
             }
+            self.activate_action("sidebar.update-drop-targets", None);
         }
 
         self.notify("item");
         self.notify("list-row");
+    }
+
+    /// Get the `RoomType` of this item.
+    ///
+    /// If this is not a `Category` or one of its children, returns `None`.
+    pub fn room_type(&self) -> Option<RoomType> {
+        let item = self.item()?;
+
+        if let Some(room) = item.downcast_ref::<Room>() {
+            Some(room.category())
+        } else {
+            item.downcast_ref::<Category>()
+                .and_then(|category| RoomType::try_from(category.type_()).ok())
+        }
+    }
+
+    /// Get the `EntryType` of this item.
+    ///
+    /// If this is not a `Entry`, returns `None`.
+    pub fn entry_type(&self) -> Option<EntryType> {
+        let item = self.item()?;
+        item.downcast_ref::<Entry>().map(|entry| entry.type_())
+    }
+
+    fn drop_accept(&self, drop: &gdk::Drop) -> bool {
+        let room = drop
+            .drag()
+            .and_then(|drag| drag.content())
+            .and_then(|content| content.value(Room::static_type()).ok())
+            .and_then(|value| value.get::<Room>().ok());
+        if let Some(room) = room {
+            if let Some(target_type) = self.room_type() {
+                if room.category().can_change_to(&target_type) {
+                    self.activate_action(
+                        "sidebar.set-active-drop-category",
+                        Some(&Some(u32::from(target_type)).to_variant()),
+                    );
+                    return true;
+                }
+            } else if let Some(entry_type) = self.entry_type() {
+                if room.category() == RoomType::Left && entry_type == EntryType::Forget {
+                    self.parent().unwrap().add_css_class("drop-active");
+                    self.activate_action("sidebar.set-active-drop-category", None);
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn drop_leave(&self) {
+        self.parent().unwrap().remove_css_class("drop-active");
+        self.activate_action("sidebar.set-active-drop-category", None);
+    }
+
+    fn drop_end(&self, value: &glib::Value) -> bool {
+        let mut ret = false;
+        if let Ok(room) = value.get::<Room>() {
+            if let Some(target_type) = self.room_type() {
+                if room.category().can_change_to(&target_type) {
+                    room.set_category(target_type);
+                    ret = true;
+                }
+            } else if let Some(entry_type) = self.entry_type() {
+                if room.category() == RoomType::Left && entry_type == EntryType::Forget {
+                    room.forget();
+                    ret = true;
+                }
+            }
+        }
+        self.activate_action("sidebar.set-drop-source-type", None);
+        ret
     }
 }
 

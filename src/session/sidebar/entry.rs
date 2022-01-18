@@ -103,6 +103,7 @@ impl Entry {
     pub fn icon_name(&self) -> Option<&str> {
         match self.type_() {
             EntryType::Explore => Some("explore-symbolic"),
+            EntryType::Forget => Some("user-trash-symbolic"),
         }
     }
 }

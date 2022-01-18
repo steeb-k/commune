@@ -36,7 +36,7 @@ use matrix_sdk::{
                 member::MembershipState, message::RoomMessageEventContent,
                 name::RoomNameEventContent, topic::RoomTopicEventContent,
             },
-            tag::TagName,
+            tag::{TagInfo, TagName},
             AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
             AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, EventType, SyncMessageEvent,
             Unsigned,
@@ -284,7 +284,10 @@ mod imp {
 
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder("order-changed", &[], <()>::static_type().into()).build()]
+                vec![
+                    Signal::builder("order-changed", &[], <()>::static_type().into()).build(),
+                    Signal::builder("room-forgotten", &[], <()>::static_type().into()).build(),
+                ]
             });
             SIGNALS.as_ref()
         }
@@ -366,6 +369,56 @@ impl Room {
         self.load_category();
     }
 
+    /// Forget a room that is left.
+    pub fn forget(&self) {
+        if self.category() != RoomType::Left {
+            warn!("Cannot forget a room that is not left");
+            return;
+        }
+
+        let matrix_room = self.matrix_room();
+
+        let handle = spawn_tokio!(async move {
+            match matrix_room {
+                MatrixRoom::Left(room) => room.forget().await,
+                _ => unimplemented!(),
+            }
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
+                    Ok(_) => {
+                        obj.emit_by_name("room-forgotten", &[]).unwrap();
+                    }
+                    Err(error) => {
+                            error!("Couldn’t forget the room: {}", error);
+                            let error = Error::new(
+                                    clone!(@weak obj => @default-return None, move |_| {
+                                            let error_message = gettext(
+                                                "Failed to forget <widget>."
+                                            );
+                                            let room_pill = Pill::new();
+                                            room_pill.set_room(Some(obj));
+                                            let label = LabelWithWidgets::new(&error_message, vec![room_pill]);
+
+                                            Some(label.upcast())
+                                    }),
+                            );
+
+                            if let Some(window) = obj.session().parent_window() {
+                                window.append_error(&error);
+                            }
+
+                            // Load the previous category
+                            obj.load_category();
+                    },
+                };
+            })
+        );
+    }
+
     pub fn category(&self) -> RoomType {
         let priv_ = imp::Room::from_instance(self);
         priv_.category.get()
@@ -386,7 +439,9 @@ impl Room {
     /// Set the category of this room.
     ///
     /// This makes the necessary to propagate the category to the homeserver.
-    /// Note: Rooms can't be moved to the invite category and they can't be moved once they are upgraded
+    ///
+    /// Note: Rooms can't be moved to the invite category and they can't be
+    /// moved once they are upgraded.
     pub fn set_category(&self, category: RoomType) {
         let matrix_room = self.matrix_room();
         let previous_category = self.category();
@@ -395,78 +450,93 @@ impl Room {
             return;
         }
 
-        if category == RoomType::Invited {
-            warn!("Rooms can’t be moved to the invite Category");
-            return;
-        }
-
-        if self.category() == RoomType::Outdated {
+        if previous_category == RoomType::Outdated {
             warn!("Can't set the category of an upgraded room");
             return;
         }
 
-        // Outdated rooms don't need to propagate anything to the server
-        if category == RoomType::Outdated {
-            self.set_category_internal(category);
-            return;
+        match category {
+            RoomType::Invited => {
+                warn!("Rooms can’t be moved to the invite Category");
+                return;
+            }
+            RoomType::Outdated => {
+                // Outdated rooms don't need to propagate anything to the server
+                self.set_category_internal(category);
+                return;
+            }
+            _ => {}
         }
 
         let handle = spawn_tokio!(async move {
             match matrix_room {
-                MatrixRoom::Invited(room) => {
-                    match category {
-                        RoomType::Invited => Ok(()),
-                        RoomType::Favorite => {
-                            room.accept_invitation().await
-                            // TODO: set favorite tag
-                        }
-                        RoomType::Normal => room.accept_invitation().await,
-                        RoomType::LowPriority => {
-                            room.accept_invitation().await
-                            // TODO: set low priority tag
-                        }
-                        RoomType::Left => room.reject_invitation().await,
-                        RoomType::Outdated => unimplemented!(),
+                MatrixRoom::Invited(room) => match category {
+                    RoomType::Invited => Ok(()),
+                    RoomType::Favorite => {
+                        room.accept_invitation().await
+                        // TODO: set favorite tag
                     }
-                }
-                MatrixRoom::Joined(room) => {
-                    match category {
-                        RoomType::Invited => Ok(()),
-                        RoomType::Favorite => {
-                            // TODO: set favorite tag
-                            Ok(())
-                        }
-                        RoomType::Normal => {
-                            // TODO: remove tags
-                            Ok(())
-                        }
-                        RoomType::LowPriority => {
-                            // TODO: set low priority tag
-                            Ok(())
-                        }
-                        RoomType::Left => room.leave().await,
-                        RoomType::Outdated => unimplemented!(),
+                    RoomType::Normal => {
+                        room.accept_invitation().await
+                        // TODO: remove tags
                     }
-                }
-                MatrixRoom::Left(room) => {
-                    match category {
-                        RoomType::Invited => Ok(()),
-                        RoomType::Favorite => {
-                            room.join().await
-                            // TODO: set favorite tag
-                        }
-                        RoomType::Normal => {
-                            room.join().await
-                            // TODO: remove tags
-                        }
-                        RoomType::LowPriority => {
-                            room.join().await
-                            // TODO: set low priority tag
-                        }
-                        RoomType::Left => Ok(()),
-                        RoomType::Outdated => unimplemented!(),
+                    RoomType::LowPriority => {
+                        room.accept_invitation().await
+                        // TODO: set low priority tag
                     }
-                }
+                    RoomType::Left => room.reject_invitation().await,
+                    RoomType::Outdated => unimplemented!(),
+                },
+                MatrixRoom::Joined(room) => match category {
+                    RoomType::Invited => Ok(()),
+                    RoomType::Favorite => {
+                        room.set_tag(TagName::Favorite.as_ref(), TagInfo::new())
+                            .await?;
+                        if previous_category == RoomType::LowPriority {
+                            room.remove_tag(TagName::LowPriority.as_ref()).await?;
+                        }
+                        Ok(())
+                    }
+                    RoomType::Normal => {
+                        match previous_category {
+                            RoomType::Favorite => {
+                                room.remove_tag(TagName::Favorite.as_ref()).await?;
+                            }
+                            RoomType::LowPriority => {
+                                room.remove_tag(TagName::LowPriority.as_ref()).await?;
+                            }
+                            _ => {}
+                        }
+                        Ok(())
+                    }
+                    RoomType::LowPriority => {
+                        room.set_tag(TagName::LowPriority.as_ref(), TagInfo::new())
+                            .await?;
+                        if previous_category == RoomType::Favorite {
+                            room.remove_tag(TagName::Favorite.as_ref()).await?;
+                        }
+                        Ok(())
+                    }
+                    RoomType::Left => room.leave().await,
+                    RoomType::Outdated => unimplemented!(),
+                },
+                MatrixRoom::Left(room) => match category {
+                    RoomType::Invited => Ok(()),
+                    RoomType::Favorite => {
+                        room.join().await
+                        // TODO: set favorite tag
+                    }
+                    RoomType::Normal => {
+                        room.join().await
+                        // TODO: remove tags
+                    }
+                    RoomType::LowPriority => {
+                        room.join().await
+                        // TODO: set low priority tag
+                    }
+                    RoomType::Left => Ok(()),
+                    RoomType::Outdated => unimplemented!(),
+                },
             }
         });
 
@@ -1026,6 +1096,16 @@ impl Room {
 
     pub fn connect_order_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_local("order-changed", true, move |values| {
+            let obj = values[0].get::<Self>().unwrap();
+            f(&obj);
+            None
+        })
+        .unwrap()
+    }
+
+    /// Connect to the signal sent when a room was forgotten.
+    pub fn connect_room_forgotten<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_local("room-forgotten", true, move |values| {
             let obj = values[0].get::<Self>().unwrap();
             f(&obj);
             None

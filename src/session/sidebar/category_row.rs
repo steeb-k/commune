@@ -1,9 +1,10 @@
 use adw::subclass::prelude::BinImpl;
+use gettextrs::gettext;
 use gtk::subclass::prelude::*;
 use gtk::{self, prelude::*};
 use gtk::{glib, CompositeTemplate};
 
-use crate::session::sidebar::Category;
+use crate::session::sidebar::{Category, CategoryType};
 
 mod imp {
     use super::*;
@@ -13,8 +14,13 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-category-row.ui")]
     pub struct CategoryRow {
+        /// The category of this row.
         pub category: RefCell<Option<Category>>,
+        /// The expanded state of this row.
         pub expanded: Cell<bool>,
+        /// The `CategoryType` to show a label for during a drag-and-drop
+        /// operation.
+        pub show_label_for_category: Cell<CategoryType>,
     }
 
     #[glib::object_subclass]
@@ -51,6 +57,21 @@ mod imp {
                         true,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
+                    glib::ParamSpec::new_string(
+                        "label",
+                        "Label",
+                        "The label to show for this row",
+                        None,
+                        glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpec::new_enum(
+                        "show-label-for-category",
+                        "Show Label for Category",
+                        "The CategoryType to show a label for",
+                        CategoryType::static_type(),
+                        CategoryType::None as i32,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
                 ]
             });
 
@@ -65,14 +86,9 @@ mod imp {
             pspec: &glib::ParamSpec,
         ) {
             match pspec.name() {
-                "category" => {
-                    let category = value.get().unwrap();
-                    obj.set_category(category);
-                }
-                "expanded" => {
-                    let expanded = value.get().unwrap();
-                    obj.set_expanded(expanded);
-                }
+                "category" => obj.set_category(value.get().unwrap()),
+                "expanded" => obj.set_expanded(value.get().unwrap()),
+                "show-label-for-category" => obj.set_show_label_for_category(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -81,6 +97,8 @@ mod imp {
             match pspec.name() {
                 "category" => obj.category().to_value(),
                 "expanded" => obj.expanded().to_value(),
+                "label" => obj.label().to_value(),
+                "show-label-for-category" => obj.show_label_for_category().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -97,7 +115,8 @@ glib::wrapper! {
 
 impl CategoryRow {
     pub fn new() -> Self {
-        glib::Object::new(&[]).expect("Failed to create CategoryRow")
+        glib::Object::new(&[("show-label-for-category", &CategoryType::None)])
+            .expect("Failed to create CategoryRow")
     }
 
     pub fn category(&self) -> Option<Category> {
@@ -114,6 +133,7 @@ impl CategoryRow {
 
         priv_.category.replace(category);
         self.notify("category");
+        self.notify("label");
     }
 
     fn expanded(&self) -> bool {
@@ -136,6 +156,66 @@ impl CategoryRow {
 
         priv_.expanded.set(expanded);
         self.notify("expanded");
+    }
+
+    pub fn label(&self) -> Option<String> {
+        let to_type = self.category()?.type_();
+        let from_type = self.show_label_for_category();
+
+        let label = match from_type {
+            CategoryType::Invited => match to_type {
+                CategoryType::Favorite => gettext("Join Room as Favorite"),
+                CategoryType::Normal => gettext("Join Room"),
+                CategoryType::LowPriority => gettext("Join Room as Low Priority"),
+                CategoryType::Left => gettext("Reject Invite"),
+                _ => to_type.to_string(),
+            },
+            CategoryType::Favorite => match to_type {
+                CategoryType::Normal => gettext("Unmark as Favorite"),
+                CategoryType::LowPriority => gettext("Mark as Low Priority"),
+                CategoryType::Left => gettext("Leave Room"),
+                _ => to_type.to_string(),
+            },
+            CategoryType::Normal => match to_type {
+                CategoryType::Favorite => gettext("Mark as Favorite"),
+                CategoryType::LowPriority => gettext("Mark as Low Priority"),
+                CategoryType::Left => gettext("Leave Room"),
+                _ => to_type.to_string(),
+            },
+            CategoryType::LowPriority => match to_type {
+                CategoryType::Favorite => gettext("Mark as Favorite"),
+                CategoryType::Normal => gettext("Unmark as Low Priority"),
+                CategoryType::Left => gettext("Leave Room"),
+                _ => to_type.to_string(),
+            },
+            CategoryType::Left => match to_type {
+                CategoryType::Favorite => gettext("Rejoin Room as Favorite"),
+                CategoryType::Normal => gettext("Rejoin Room"),
+                CategoryType::LowPriority => gettext("Rejoin Room as Low Priority"),
+                _ => to_type.to_string(),
+            },
+            _ => to_type.to_string(),
+        };
+
+        Some(label)
+    }
+
+    pub fn show_label_for_category(&self) -> CategoryType {
+        let priv_ = imp::CategoryRow::from_instance(self);
+        priv_.show_label_for_category.get()
+    }
+
+    pub fn set_show_label_for_category(&self, category: CategoryType) {
+        let priv_ = imp::CategoryRow::from_instance(self);
+
+        if category == self.show_label_for_category() {
+            return;
+        }
+
+        priv_.show_label_for_category.set(category);
+
+        self.notify("show-label-for-category");
+        self.notify("label");
     }
 }
 

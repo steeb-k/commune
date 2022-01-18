@@ -12,11 +12,7 @@
             <property name="halign">start</property>
             <property name="hexpand">True</property>
             <property name="ellipsize">end</property>
-            <binding name="label">
-              <lookup name="display-name">
-                <lookup name="category">SidebarCategoryRow</lookup>
-              </lookup>
-            </binding>
+            <property name="label" bind-source="SidebarCategoryRow" bind-property="label" bind-flags="sync-create"/>
             <style>
               <class name="dim-label"/>
             </style>

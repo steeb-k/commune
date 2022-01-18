@@ -3,9 +3,10 @@ use gettextrs::gettext;
 use gtk::glib;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
-#[repr(u32)]
+#[repr(i32)]
 #[genum(type_name = "CategoryType")]
 pub enum CategoryType {
+    None = -1,
     VerificationRequest = 0,
     Invited = 1,
     Favorite = 2,
@@ -24,6 +25,7 @@ impl Default for CategoryType {
 impl ToString for CategoryType {
     fn to_string(&self) -> String {
         match self {
+            CategoryType::None => unimplemented!(),
             CategoryType::VerificationRequest => gettext("Verifications"),
             CategoryType::Invited => gettext("Invited"),
             CategoryType::Favorite => gettext("Favorite"),

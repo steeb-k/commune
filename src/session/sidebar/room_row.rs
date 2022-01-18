@@ -1,7 +1,7 @@
 use adw::subclass::prelude::BinImpl;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::room::{HighlightFlags, Room};
+use crate::session::room::{HighlightFlags, Room, RoomType};
 
 mod imp {
     use super::*;
@@ -74,6 +74,27 @@ mod imp {
             }
         }
 
+        fn constructed(&self, obj: &Self::Type) {
+            self.parent_constructed(obj);
+
+            // Allow to drag rooms
+            let drag = gtk::DragSource::builder()
+                .actions(gdk::DragAction::MOVE)
+                .build();
+            drag.connect_prepare(
+                clone!(@weak obj => @default-return None, move |drag, x, y| {
+                    obj.drag_prepare(drag, x, y)
+                }),
+            );
+            drag.connect_drag_begin(clone!(@weak obj => move |_, _| {
+                obj.drag_begin();
+            }));
+            drag.connect_drag_end(clone!(@weak obj => move |_, _, _| {
+                obj.drag_end();
+            }));
+            obj.add_controller(&drag);
+        }
+
         fn dispose(&self, _obj: &Self::Type) {
             if let Some(room) = self.room.take() {
                 if let Some(id) = self.signal_handler.take() {
@@ -116,6 +137,7 @@ impl RoomRow {
             if let Some(binding) = priv_.binding.take() {
                 binding.unbind();
             }
+            priv_.display_name.remove_css_class("dim-label");
         }
 
         if let Some(ref room) = room {
@@ -137,6 +159,10 @@ impl RoomRow {
                         obj.set_highlight();
                 }),
             )));
+
+            if room.category() == RoomType::Left {
+                priv_.display_name.add_css_class("dim-label");
+            }
 
             self.set_highlight();
         }
@@ -167,6 +193,26 @@ impl RoomRow {
                 _ => {}
             };
         }
+    }
+
+    fn drag_prepare(&self, drag: &gtk::DragSource, x: f64, y: f64) -> Option<gdk::ContentProvider> {
+        let paintable = gtk::WidgetPaintable::new(Some(&self.parent().unwrap()));
+        // FIXME: The hotspot coordinates don't work.
+        // See https://gitlab.gnome.org/GNOME/gtk/-/issues/2341
+        drag.set_icon(Some(&paintable), x as i32, y as i32);
+        self.room()
+            .map(|room| gdk::ContentProvider::for_value(&room.to_value()))
+    }
+
+    fn drag_begin(&self) {
+        self.parent().unwrap().add_css_class("drag");
+        let category = Some(u32::from(self.room().unwrap().category()));
+        self.activate_action("sidebar.set-drop-source-type", Some(&category.to_variant()));
+    }
+
+    fn drag_end(&self) {
+        self.activate_action("sidebar.set-drop-source-type", None);
+        self.parent().unwrap().remove_css_class("drag");
     }
 }
 

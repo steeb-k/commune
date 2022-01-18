@@ -23,11 +23,11 @@ use self::row::Row;
 use self::selection::Selection;
 use self::verification_row::VerificationRow;
 
-use adw::subclass::prelude::BinImpl;
-use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate, SelectionModel};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, subclass::prelude::*, CompositeTemplate, SelectionModel};
 
 use crate::components::Avatar;
-use crate::session::room::Room;
+use crate::session::room::{Room, RoomType};
 use crate::session::verification::IdentityVerification;
 use crate::session::Session;
 use crate::session::User;
@@ -37,7 +37,10 @@ mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        convert::TryFrom,
+    };
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar.ui")]
@@ -55,6 +58,9 @@ mod imp {
         #[template_child]
         pub room_search: TemplateChild<gtk::SearchBar>,
         pub user: RefCell<Option<User>>,
+        /// The type of the source that activated drop mode.
+        pub drop_source_type: Cell<Option<RoomType>>,
+        pub drop_binding: RefCell<Option<glib::Binding>>,
     }
 
     #[glib::object_subclass]
@@ -68,6 +74,35 @@ mod imp {
             Row::static_type();
             Avatar::static_type();
             Self::bind_template(klass);
+            klass.set_css_name("sidebar");
+
+            klass.install_action(
+                "sidebar.set-drop-source-type",
+                Some("u"),
+                move |obj, _, variant| {
+                    obj.set_drop_source_type(
+                        variant
+                            .and_then(|variant| variant.get::<Option<u32>>().flatten())
+                            .and_then(|u| RoomType::try_from(u).ok()),
+                    );
+                },
+            );
+            klass.install_action("sidebar.update-drop-targets", None, move |obj, _, _| {
+                if obj.drop_source_type().is_some() {
+                    obj.update_drop_targets();
+                }
+            });
+            klass.install_action(
+                "sidebar.set-active-drop-category",
+                Some("mu"),
+                move |obj, _, variant| {
+                    obj.update_active_drop_targets(
+                        variant
+                            .and_then(|variant| variant.get::<Option<u32>>().flatten())
+                            .and_then(|u| RoomType::try_from(u).ok()),
+                    );
+                },
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -98,7 +133,7 @@ mod imp {
                         "Item List",
                         "The list of items in the sidebar",
                         ItemList::static_type(),
-                        glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                        glib::ParamFlags::WRITABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpec::new_object(
                         "selected-item",
@@ -106,6 +141,14 @@ mod imp {
                         "The selected item in this sidebar",
                         glib::Object::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                    ),
+                    glib::ParamSpec::new_enum(
+                        "drop-source-type",
+                        "Drop Source Type",
+                        "The type of the source that activated drop mode",
+                        CategoryType::static_type(),
+                        CategoryType::None as i32,
+                        glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                 ]
             });
@@ -144,6 +187,11 @@ mod imp {
                 "compact" => self.compact.get().to_value(),
                 "user" => obj.user().to_value(),
                 "selected-item" => obj.selected_item().to_value(),
+                "drop-source-type" => obj
+                    .drop_source_type()
+                    .map(CategoryType::from)
+                    .unwrap_or(CategoryType::None)
+                    .to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -151,7 +199,7 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            self.listview.get().connect_activate(move |listview, pos| {
+            self.listview.connect_activate(move |listview, pos| {
                 let model: Option<Selection> = listview.model().and_then(|o| o.downcast().ok());
                 let row: Option<gtk::TreeListRow> = model
                     .as_ref()
@@ -200,6 +248,11 @@ impl Sidebar {
 
     pub fn set_item_list(&self, item_list: Option<ItemList>) {
         let priv_ = imp::Sidebar::from_instance(self);
+
+        if let Some(binding) = priv_.drop_binding.take() {
+            binding.unbind();
+        }
+
         let item_list = match item_list {
             Some(item_list) => item_list,
             None => {
@@ -207,6 +260,12 @@ impl Sidebar {
                 return;
             }
         };
+
+        priv_.drop_binding.replace(
+            self.bind_property("drop-source-type", &item_list, "show-all-for-category")
+                .flags(glib::BindingFlags::SYNC_CREATE)
+                .build(),
+        );
 
         let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
             item.clone().downcast::<gio::ListModel>().ok()
@@ -279,6 +338,119 @@ impl Sidebar {
         imp::Sidebar::from_instance(self)
             .account_switcher
             .set_logged_in_users(sessions_stack_pages, session_root);
+    }
+
+    pub fn drop_source_type(&self) -> Option<RoomType> {
+        let priv_ = imp::Sidebar::from_instance(self);
+        priv_.drop_source_type.get()
+    }
+
+    pub fn set_drop_source_type(&self, source_type: Option<RoomType>) {
+        let priv_ = imp::Sidebar::from_instance(self);
+
+        if self.drop_source_type() == source_type {
+            return;
+        }
+
+        priv_.drop_source_type.set(source_type);
+
+        if source_type.is_some() {
+            priv_.listview.add_css_class("drop-mode");
+        } else {
+            priv_.listview.remove_css_class("drop-mode");
+        }
+
+        self.notify("drop-source-type");
+        self.update_drop_targets();
+    }
+
+    /// Update the disabled or empty state of drop targets.
+    fn update_drop_targets(&self) {
+        let priv_ = imp::Sidebar::from_instance(self);
+        let mut child = priv_.listview.first_child();
+
+        while let Some(widget) = child {
+            if let Some(row) = widget
+                .first_child()
+                .and_then(|widget| widget.downcast::<Row>().ok())
+            {
+                if let Some(source_type) = self.drop_source_type() {
+                    if row
+                        .room_type()
+                        .filter(|row_type| source_type.can_change_to(row_type))
+                        .is_some()
+                    {
+                        row.remove_css_class("drop-disabled");
+
+                        if row
+                            .item()
+                            .and_then(|object| object.downcast::<Category>().ok())
+                            .filter(|category| category.is_empty())
+                            .is_some()
+                        {
+                            row.add_css_class("drop-empty");
+                        } else {
+                            row.remove_css_class("drop-empty");
+                        }
+                    } else {
+                        let is_forget_entry = row
+                            .entry_type()
+                            .filter(|entry_type| entry_type == &EntryType::Forget)
+                            .is_some();
+                        if is_forget_entry && source_type == RoomType::Left {
+                            row.remove_css_class("drop-disabled");
+                        } else {
+                            row.add_css_class("drop-disabled");
+                            row.remove_css_class("drop-empty");
+                        }
+                    }
+                } else {
+                    // Clear style
+                    row.remove_css_class("drop-disabled");
+                    row.remove_css_class("drop-empty");
+                    row.parent().unwrap().remove_css_class("drop-active");
+                };
+
+                if let Some(category_row) = row
+                    .child()
+                    .and_then(|child| child.downcast::<CategoryRow>().ok())
+                {
+                    category_row.set_show_label_for_category(
+                        self.drop_source_type()
+                            .map(CategoryType::from)
+                            .unwrap_or(CategoryType::None),
+                    );
+                }
+            }
+            child = widget.next_sibling();
+        }
+    }
+
+    /// Update the active state of drop targets.
+    fn update_active_drop_targets(&self, target_type: Option<RoomType>) {
+        let priv_ = imp::Sidebar::from_instance(self);
+        let mut child = priv_.listview.first_child();
+
+        while let Some(widget) = child {
+            if let Some((row, row_type)) = widget
+                .first_child()
+                .and_then(|widget| widget.downcast::<Row>().ok())
+                .and_then(|row| {
+                    let row_type = row.room_type()?;
+                    Some((row, row_type))
+                })
+            {
+                if target_type
+                    .filter(|target_type| target_type == &row_type)
+                    .is_some()
+                {
+                    row.parent().unwrap().add_css_class("drop-active");
+                } else {
+                    row.parent().unwrap().remove_css_class("drop-active");
+                }
+            }
+            child = widget.next_sibling();
+        }
     }
 }
 

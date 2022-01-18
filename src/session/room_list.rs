@@ -226,6 +226,9 @@ impl RoomList {
                     obj.items_changed(position as u32, 1, 1);
                 }
             }));
+            room.connect_room_forgotten(clone!(@weak self as obj => move |room| {
+                obj.remove(room.room_id());
+            }));
         }
 
         self.items_changed(position as u32, 0, added as u32);
