@@ -18,7 +18,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="button">
+              <object class="GtkButton" id="accept_btn">
                 <property name="action-name">verification.accept</property>
                 <property name="valign">center</property>
                 <style>
@@ -27,9 +27,8 @@
               </object>
             </child>
             <child type="end">
-              <object class="GtkButton">
+              <object class="GtkButton" id="cancel_btn">
                 <property name="margin-end">12</property>
-                <property name="label" translatable="yes">Decline</property>
                 <property name="action-name">verification.decline</property>
                 <property name="valign">center</property>
               </object>

@@ -18,7 +18,9 @@ mod imp {
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub button: TemplateChild<gtk::Button>,
+        pub accept_btn: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub cancel_btn: TemplateChild<gtk::Button>,
         pub request: RefCell<Option<IdentityVerification>>,
         pub state_handler: RefCell<Option<SignalHandlerId>>,
         pub user_handler: RefCell<Option<SignalHandlerId>>,
@@ -161,11 +163,13 @@ impl VerificationInfoBar {
                     "<b>{}</b> wants to be verified",
                     request.user().display_name()
                 ));
-                priv_.button.set_label(&gettext("Verify"));
+                priv_.accept_btn.set_label(&gettext("Verify"));
+                priv_.cancel_btn.set_label(&gettext("Decline"));
                 true
             } else {
                 priv_.label.set_label(&gettext("Verification in progess"));
-                priv_.button.set_label(&gettext("Continue"));
+                priv_.accept_btn.set_label(&gettext("Continue"));
+                priv_.cancel_btn.set_label(&gettext("Cancel"));
                 true
             }
         } else {
