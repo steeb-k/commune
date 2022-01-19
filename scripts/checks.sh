@@ -388,6 +388,41 @@ check_potfiles() {
     fi
 }
 
+# Check if files in data/resources/resources.gresource.xml are sorted alphabetically.
+check_resources() {
+    echo -e "$Checking data/resources/resources.gresource.xml…"
+
+    local ret=0
+
+    # Get files.
+    regex="<file .*>(.*)</file>"
+    while read -r line; do
+        if [[ $line =~ $regex ]]; then
+            files+=("${BASH_REMATCH[1]}")
+        fi
+    done < data/resources/resources.gresource.xml
+
+    # Check sorted alphabetically
+    to_sort=("${files[@]}")
+    sort
+    for i in ${!files[@]}; do
+        if [[ "${files[$i]}" != "${to_sort[$i]}" ]]; then
+            echo -e "$error Found file '${files[$i]#src/}' before '${to_sort[$i]#src/}' in resources.gresource.xml"
+            ret=1
+            break
+        fi
+    done
+
+    if [[ ret -eq 1 ]]; then
+        echo ""
+        echo -e "  Checking data/resources/resources.gresource.xml result: $fail"
+        echo "Please fix the above issues"
+        exit 1
+    else
+        echo -e "  Checking data/resources/resources.gresource.xml result: $ok"
+    fi
+}
+
 # Check arguments
 while [[ "$1" ]]; do case $1 in
     -f | --force-install )
@@ -413,3 +448,6 @@ echo ""
 run_typos
 echo ""
 check_potfiles
+echo ""
+check_resources
+echo ""
