@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use gtk::{gdk, gdk_pixbuf::Pixbuf, gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use log::{debug, error, info};
 use matrix_sdk::room::Room as MatrixRoom;
@@ -42,14 +42,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "image",
                         "Image",
                         "The user defined image if any",
                         gdk::Paintable::static_type(),
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_int(
+                    glib::ParamSpecInt::new(
                         "needed-size",
                         "Needed Size",
                         "The size needed of the user defined image. If -1 no image will be loaded",
@@ -58,21 +58,21 @@ mod imp {
                         -1,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "url",
                         "Url",
                         "The url of the Avatar",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "display-name",
                         "Display Name",
                         "The display name used for this avatar",
                         None,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session",
                         "Session",
                         "The session",
@@ -151,14 +151,9 @@ impl Avatar {
     fn set_image_data(&self, data: Option<Vec<u8>>) {
         let priv_ = imp::Avatar::from_instance(self);
 
-        let image = if let Some(data) = data {
-            let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(&data));
-            Pixbuf::from_stream(&stream, gio::NONE_CANCELLABLE)
-                .ok()
-                .map(|pixbuf| gdk::Texture::for_pixbuf(&pixbuf).upcast())
-        } else {
-            None
-        };
+        let image = data
+            .and_then(|data| gdk::Texture::from_bytes(&glib::Bytes::from(&data)).ok())
+            .map(|texture| texture.upcast());
         priv_.image.replace(image);
         self.notify("image");
     }
@@ -298,7 +293,9 @@ where
 {
     debug!("Getting mime type of file {:?}", filename);
     let image = tokio::fs::read(filename).await?;
-    let content_type = gio::content_type_guess(None, &image).0.to_string();
+    let content_type = gio::content_type_guess(Option::<String>::None, &image)
+        .0
+        .to_string();
 
     info!("Uploading avatar from file {:?}", filename);
     // TODO: Use blurhash

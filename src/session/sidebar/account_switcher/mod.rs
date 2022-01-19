@@ -67,7 +67,7 @@ mod imp {
                                 .set_visible_child(&session_widget);
                         }
                         AccountSwitcherItem::AddAccount => {
-                            list_view.activate_action("app.new-login", None);
+                            list_view.activate_action("app.new-login", None).unwrap();
                         }
                         _ => {}
                     }
@@ -122,7 +122,7 @@ impl AccountSwitcher {
         }));
 
         factory.connect_unbind(|_, list_item| {
-            list_item.set_child(gtk::NONE_WIDGET);
+            list_item.set_child(gtk::Widget::NONE);
         });
 
         entries.set_factory(Some(factory));

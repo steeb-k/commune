@@ -137,7 +137,7 @@ mod imp {
             });
 
             klass.add_binding_action(
-                gdk::keys::constants::Escape,
+                gdk::Key::Escape,
                 gdk::ModifierType::empty(),
                 "session.close-room",
                 None,
@@ -148,7 +148,7 @@ mod imp {
             });
 
             klass.add_binding_action(
-                gdk::keys::constants::k,
+                gdk::Key::k,
                 gdk::ModifierType::CONTROL_MASK,
                 "session.toggle-room-search",
                 None,
@@ -174,14 +174,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "item-list",
                         "Item List",
                         "The list of items in the sidebar",
                         ItemList::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "user",
                         "User",
                         "The user of this session",
@@ -237,7 +237,7 @@ mod imp {
 
         fn dispose(&self, obj: &Self::Type) {
             if let Some(source_id) = self.source_id.take() {
-                let _ = glib::Source::remove(source_id);
+                source_id.remove();
             }
 
             if let Some(handle) = self.sync_tokio_handle.take() {
@@ -410,7 +410,7 @@ impl Session {
                             warn!("Couldn't store session: {:?}", error);
                             let error_string = error.to_user_facing();
                             Some(Error::new(move |_| {
-                                let error_label = gtk::LabelBuilder::new()
+                                let error_label = gtk::Label::builder()
                                     .label(
                                         &(gettext("Unable to store session")
                                             + ": "
@@ -442,7 +442,7 @@ impl Session {
                 let error_string = error.to_user_facing();
 
                 Some(Error::new(move |_| {
-                    let error_label = gtk::LabelBuilder::new()
+                    let error_label = gtk::Label::builder()
                         .label(&error_string)
                         .wrap(true)
                         .build();
@@ -451,7 +451,7 @@ impl Session {
             }
         };
 
-        self.emit_by_name("prepared", &[&error]).unwrap();
+        self.emit_by_name::<()>("prepared", &[&error]);
     }
 
     fn sync(&self) {
@@ -616,7 +616,6 @@ impl Session {
 
             None
         })
-        .unwrap()
     }
 
     pub fn connect_logged_out<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
@@ -627,7 +626,6 @@ impl Session {
 
             None
         })
-        .unwrap()
     }
 
     pub fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
@@ -638,7 +636,6 @@ impl Session {
 
             None
         })
-        .unwrap()
     }
 
     fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
@@ -658,7 +655,7 @@ impl Session {
                 ))) = error
                 {
                     if let ErrorKind::UnknownToken { soft_logout: _ } = error.kind {
-                        self.emit_by_name("logged-out", &[]).unwrap();
+                        self.emit_by_name::<()>("logged-out", &[]);
                         self.cleanup_session();
                     }
                 }
@@ -693,7 +690,7 @@ impl Session {
 
     pub async fn logout(&self) {
         let priv_ = imp::Session::from_instance(self);
-        self.emit_by_name("logged-out", &[]).unwrap();
+        self.emit_by_name::<()>("logged-out", &[]);
 
         debug!("The session is about to be logout");
 
@@ -731,7 +728,7 @@ impl Session {
         priv_.is_ready.set(false);
 
         if let Some(source_id) = priv_.source_id.take() {
-            let _ = glib::Source::remove(source_id);
+            source_id.remove();
         }
 
         if let Some(handle) = priv_.sync_tokio_handle.take() {
@@ -764,7 +761,7 @@ impl Session {
             priv_.stack.remove(&session_verificiation);
         }
 
-        self.emit_by_name("ready", &[]).unwrap();
+        self.emit_by_name::<()>("ready", &[]);
     }
 
     /// Show a media event

@@ -9,9 +9,9 @@ use crate::{session::Room, spawn, spawn_tokio};
 
 use super::Invitee;
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "ContentInviteeListState")]
+#[enum_type(name = "ContentInviteeListState")]
 pub enum InviteeListState {
     Initial = 0,
     Loading = 1,
@@ -57,28 +57,28 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "room",
                         "Room",
                         "The room this invitee list refers to",
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "search-term",
                         "Search Term",
                         "The search term",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "has-selected",
                         "Has Selected",
                         "Whether the user has selected some users",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_enum(
+                    glib::ParamSpecEnum::new(
                         "state",
                         "InviteeListState",
                         "The state of the list",
@@ -334,7 +334,7 @@ impl InviteeList {
             .invitee_list
             .borrow_mut()
             .insert(user.user_id(), user.clone());
-        self.emit_by_name("invitee-added", &[&user]).unwrap();
+        self.emit_by_name::<()>("invitee-added", &[&user]);
         self.notify("has-selected");
     }
 
@@ -353,7 +353,7 @@ impl InviteeList {
         let removed = priv_.invitee_list.borrow_mut().remove(&user_id);
         if let Some(user) = removed {
             user.set_invited(false);
-            self.emit_by_name("invitee-removed", &[&user]).unwrap();
+            self.emit_by_name::<()>("invitee-removed", &[&user]);
             self.notify("has-selected");
         }
     }
@@ -373,7 +373,6 @@ impl InviteeList {
             f(&obj, &invitee);
             None
         })
-        .unwrap()
     }
 
     pub fn connect_invitee_removed<F: Fn(&Self, &Invitee) + 'static>(
@@ -386,6 +385,5 @@ impl InviteeList {
             f(&obj, &invitee);
             None
         })
-        .unwrap()
     }
 }

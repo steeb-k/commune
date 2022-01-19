@@ -40,7 +40,7 @@ mod imp {
     impl ObjectImpl for RoomList {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "session",
                     "Session",
                     "The session",
@@ -108,7 +108,7 @@ glib::wrapper! {
     ///
     /// This is the parent ListModel of the sidebar from which all other models
     /// are derived. If a room is updated in an order-relevant manner, use
-    /// `room.emit_by_name("order-changed", &[])` to fix the sorting.
+    /// `room.emit_by_name::<()>("order-changed", &[])` to fix the sorting.
     ///
     /// The `RoomList` also takes care of all so called *pending rooms*, i.e.
     /// rooms the user requested to join, but received no response from the
@@ -135,13 +135,13 @@ impl RoomList {
     fn pending_rooms_remove(&self, identifier: &RoomOrAliasId) {
         let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow_mut().remove(identifier);
-        self.emit_by_name("pending-rooms-changed", &[]).unwrap();
+        self.emit_by_name::<()>("pending-rooms-changed", &[]);
     }
 
     fn pending_rooms_insert(&self, identifier: Box<RoomOrAliasId>) {
         let priv_ = imp::RoomList::from_instance(self);
         priv_.pending_rooms.borrow_mut().insert(identifier);
-        self.emit_by_name("pending-rooms-changed", &[]).unwrap();
+        self.emit_by_name::<()>("pending-rooms-changed", &[]);
     }
 
     fn pending_rooms_replace_or_remove(&self, identifier: &RoomOrAliasId, room_id: &RoomId) {
@@ -153,7 +153,7 @@ impl RoomList {
                 pending_rooms.insert(room_id.to_owned().into());
             }
         }
-        self.emit_by_name("pending-rooms-changed", &[]).unwrap();
+        self.emit_by_name::<()>("pending-rooms-changed", &[]);
     }
 
     pub fn get(&self, room_id: &RoomId) -> Option<Room> {
@@ -340,7 +340,7 @@ impl RoomList {
                                     let error_message = gettext!(
                                         "Failed to join room {}. Try again later.", identifier
                                     );
-                                    let error_label = gtk::LabelBuilder::new().label(&error_message).wrap(true).build();
+                                    let error_label = gtk::Label::builder().label(&error_message).wrap(true).build();
                                     Some(error_label.upcast())
                             }),
                         );
@@ -365,6 +365,5 @@ impl RoomList {
 
             None
         })
-        .unwrap()
     }
 }

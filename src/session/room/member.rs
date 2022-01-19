@@ -31,7 +31,7 @@ mod imp {
     impl ObjectImpl for Member {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_int64(
+                vec![glib::ParamSpecInt64::new(
                     "power-level",
                     "Power level",
                     "Power level of the member in its room.",

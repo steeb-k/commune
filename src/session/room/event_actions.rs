@@ -67,7 +67,7 @@ where
     /// Should be paired with the `EventActions` menu models.
     fn set_event_actions(&self, event: Option<&Event>) -> Option<gio::SimpleActionGroup> {
         if event.is_none() {
-            self.insert_action_group("event", gio::NONE_ACTION_GROUP);
+            self.insert_action_group("event", gio::ActionGroup::NONE);
             return None;
         }
 
@@ -143,7 +143,7 @@ where
 
                         let error_message = err.to_user_facing();
                         let error = Error::new(move |_| {
-                            let error_label = gtk::LabelBuilder::new()
+                            let error_label = gtk::Label::builder()
                                 .label(&error_message)
                                 .wrap(true)
                                 .build();
@@ -174,7 +174,7 @@ where
                             None,
                             false,
                             gio::FileCreateFlags::REPLACE_DESTINATION,
-                            gio::NONE_CANCELLABLE,
+                            gio::Cancellable::NONE,
                         )
                         .unwrap();
                     }
@@ -200,7 +200,7 @@ where
 
                         let error_message = err.to_user_facing();
                         let error = Error::new(move |_| {
-                            let error_label = gtk::LabelBuilder::new()
+                            let error_label = gtk::Label::builder()
                                 .label(&error_message)
                                 .wrap(true)
                                 .build();
@@ -216,7 +216,7 @@ where
                 path.push(uid);
                 if !path.exists() {
                     let dir = gio::File::for_path(path.clone());
-                    dir.make_directory_with_parents(gio::NONE_CANCELLABLE)
+                    dir.make_directory_with_parents(gio::Cancellable::NONE)
                         .unwrap();
                 }
 
@@ -228,13 +228,13 @@ where
                     None,
                     false,
                     gio::FileCreateFlags::REPLACE_DESTINATION,
-                    gio::NONE_CANCELLABLE,
+                    gio::Cancellable::NONE,
                 )
                 .unwrap();
 
-                if let Err(error) = gio::AppInfo::launch_default_for_uri_async_future(
+                if let Err(error) = gio::AppInfo::launch_default_for_uri_future(
                     &file.uri(),
-                    gio::NONE_APP_LAUNCH_CONTEXT,
+                    gio::AppLaunchContext::NONE,
                 )
                 .await
                 {

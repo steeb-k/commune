@@ -115,35 +115,35 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "compact",
                         "Compact",
                         "Whether a compact view is used",
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "room",
                         "Room",
                         "The room currently shown",
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "empty",
                         "Empty",
                         "Wheter there is currently a room shown",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "markdown-enabled",
                         "Markdown enabled",
                         "Whether outgoing messages should be interpreted as markdown",
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "sticky",
                         "Sticky",
                         "Whether the room history should stick to the newest message in the timeline",
@@ -245,8 +245,8 @@ mod imp {
 
             key_events
                 .connect_key_pressed(clone!(@weak obj => @default-return Inhibit(false), move |_, key, _, modifier| {
-                if !modifier.contains(gdk::ModifierType::SHIFT_MASK) && (key == gdk::keys::constants::Return || key == gdk::keys::constants::KP_Enter) {
-                    obj.activate_action("room-history.send-text-message", None);
+                if !modifier.contains(gdk::ModifierType::SHIFT_MASK) && (key == gdk::Key::Return || key == gdk::Key::KP_Enter) {
+                    obj.activate_action("room-history.send-text-message", None).unwrap();
                     Inhibit(true)
                 } else {
                     Inhibit(false)
@@ -268,8 +268,7 @@ mod imp {
             let (start_iter, end_iter) = buffer.bounds();
             obj.action_set_enabled("room-history.send-text-message", start_iter != end_iter);
 
-            let md_lang =
-                sourceview::LanguageManager::default().and_then(|lm| lm.language("markdown"));
+            let md_lang = sourceview::LanguageManager::default().language("markdown");
             buffer.set_language(md_lang.as_ref());
             obj.bind_property("markdown-enabled", &buffer, "highlight-syntax")
                 .flags(glib::BindingFlags::SYNC_CREATE)
@@ -390,8 +389,9 @@ impl RoomHistory {
         let mut plain_body = String::with_capacity(body_len);
         // formatted_body is Markdown if is_markdown is true, and HTML if false.
         let mut formatted_body = String::with_capacity(body_len);
-        // uncopied_text_location is the start of the text we haven't copied to plain_body and formatted_body.
-        let mut uncopied_text_location = start_iter.clone();
+        // uncopied_text_location is the start of the text we haven't copied to
+        // plain_body and formatted_body.
+        let mut uncopied_text_location = start_iter;
 
         let mut iter = start_iter;
         loop {
@@ -421,7 +421,7 @@ impl RoomHistory {
                 let some_text = buffer.text(&uncopied_text_location, &iter, false);
                 plain_body.push_str(&some_text);
                 formatted_body.push_str(&some_text);
-                uncopied_text_location = iter.clone();
+                uncopied_text_location = iter;
 
                 // Add mention
                 has_mentions = true;
@@ -486,7 +486,7 @@ impl RoomHistory {
     pub fn open_room_details(&self, page_name: &str) {
         if let Some(room) = self.room() {
             let window = RoomDetails::new(&self.parent_window(), &room);
-            window.set_property("visible-page-name", page_name).unwrap();
+            window.set_property("visible-page-name", page_name);
             window.show();
         }
     }
@@ -494,7 +494,7 @@ impl RoomHistory {
     pub fn open_invite_members(&self) {
         if let Some(room) = self.room() {
             let window = RoomDetails::new(&self.parent_window(), &room);
-            window.set_property("visible-page-name", "members").unwrap();
+            window.set_property("visible-page-name", "members");
             window.present_invite_subpage();
             window.show();
         }
@@ -571,8 +571,7 @@ impl RoomHistory {
 
         priv_
             .scrolled_window
-            .emit_by_name("scroll-child", &[&gtk::ScrollType::End, &false])
-            .unwrap();
+            .emit_by_name::<bool>("scroll-child", &[&gtk::ScrollType::End, &false]);
     }
 }
 

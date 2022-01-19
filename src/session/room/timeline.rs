@@ -58,35 +58,35 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "room",
                         "Room",
                         "The Room containing this timeline",
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "loading",
                         "Loading",
                         "Whether a response is loaded or not",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "empty",
                         "Empty",
                         "Whether the timeline is empty",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "complete",
                         "Complete",
                         "Whether the full timeline is loaded",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "verification",
                         "Verification",
                         "The most recent active verification for a user in this timeline",

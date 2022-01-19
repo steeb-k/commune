@@ -24,7 +24,7 @@ use self::selection::Selection;
 use self::verification_row::VerificationRow;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gio, glib, subclass::prelude::*, CompositeTemplate, SelectionModel};
+use gtk::{gio, glib, glib::closure, subclass::prelude::*, CompositeTemplate, SelectionModel};
 
 use crate::components::Avatar;
 use crate::session::room::{Room, RoomType};
@@ -114,35 +114,35 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "user",
                         "User",
                         "The logged in user",
                         User::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "compact",
                         "Compact",
                         "Whether a compact view is used",
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "item-list",
                         "Item List",
                         "The list of items in the sidebar",
                         ItemList::static_type(),
                         glib::ParamFlags::WRITABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "selected-item",
                         "Selected Item",
                         "The selected item in this sidebar",
                         glib::Object::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_enum(
+                    glib::ParamSpecEnum::new(
                         "drop-source-type",
                         "Drop Source Type",
                         "The type of the source that activated drop mode",
@@ -256,33 +256,30 @@ impl Sidebar {
         let item_list = match item_list {
             Some(item_list) => item_list,
             None => {
-                priv_.listview.set_model(gtk::NONE_SELECTION_MODEL);
+                priv_.listview.set_model(gtk::SelectionModel::NONE);
                 return;
             }
         };
 
-        priv_.drop_binding.replace(
+        priv_.drop_binding.replace(Some(
             self.bind_property("drop-source-type", &item_list, "show-all-for-category")
                 .flags(glib::BindingFlags::SYNC_CREATE)
                 .build(),
-        );
+        ));
 
         let tree_model = gtk::TreeListModel::new(&item_list, false, true, |item| {
             item.clone().downcast::<gio::ListModel>().ok()
         });
 
-        let room_expression = gtk::ClosureExpression::new(
-            |value| {
-                value[0]
-                    .get::<gtk::TreeListRow>()
-                    .unwrap()
-                    .item()
+        let room_expression = gtk::ClosureExpression::new::<String, &[gtk::Expression], _>(
+            &[],
+            closure!(|row: gtk::TreeListRow| {
+                row.item()
                     .and_then(|o| o.downcast::<Room>().ok())
                     .map_or(String::new(), |o| o.display_name())
-            },
-            &[],
+            }),
         );
-        let filter = gtk::StringFilterBuilder::new()
+        let filter = gtk::StringFilter::builder()
             .match_mode(gtk::StringFilterMatchMode::Substring)
             .expression(&room_expression)
             .ignore_case(true)

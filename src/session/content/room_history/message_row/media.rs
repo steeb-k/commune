@@ -1,9 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gdk,
-    gdk_pixbuf::Pixbuf,
-    gio,
+    gdk, gio,
     glib::{self, clone},
     subclass::prelude::*,
     CompositeTemplate,
@@ -35,18 +33,18 @@ const FALLBACK_HEIGHT: i32 = 360;
 const MAX_COMPACT_THUMBNAIL_WIDTH: i32 = 75;
 const MAX_COMPACT_THUMBNAIL_HEIGHT: i32 = 50;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "MediaType")]
+#[enum_type(name = "MediaType")]
 pub enum MediaType {
     Image = 0,
     Sticker = 1,
     Video = 2,
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "MediaState")]
+#[enum_type(name = "MediaState")]
 pub enum MediaState {
     Initial = 0,
     Loading = 1,
@@ -106,7 +104,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_int(
+                    glib::ParamSpecInt::new(
                         "width",
                         "Width",
                         "The intended display width of the media",
@@ -115,7 +113,7 @@ mod imp {
                         -1,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_int(
+                    glib::ParamSpecInt::new(
                         "height",
                         "Height",
                         "The intended display height of the media",
@@ -124,7 +122,7 @@ mod imp {
                         -1,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_enum(
+                    glib::ParamSpecEnum::new(
                         "state",
                         "State",
                         "The state of the media",
@@ -132,7 +130,7 @@ mod imp {
                         MediaState::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "compact",
                         "Compact",
                         "Whether to display this media in a compact format",
@@ -429,28 +427,33 @@ impl MessageMedia {
                     Ok((Some(data), id)) => {
                         match media_type {
                             MediaType::Image | MediaType::Sticker => {
-                                let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(&data));
-                                let texture = Pixbuf::from_stream(&stream, gio::NONE_CANCELLABLE)
-                                    .ok()
-                                    .map(|pixbuf| gdk::Texture::for_pixbuf(&pixbuf));
+                                match gdk::Texture::from_bytes(&glib::Bytes::from(&data))
+                                    {
+                                        Ok(texture) => {
+                                            let child = if let Some(Ok(child)) =
+                                                priv_.media.child().map(|w| w.downcast::<gtk::Picture>())
+                                            {
+                                                child
+                                            } else {
+                                                let child = gtk::Picture::new();
+                                                priv_.media.set_child(Some(&child));
+                                                child
+                                            };
+                                            child.set_paintable(Some(&texture));
 
-                                let child = if let Some(Ok(child)) =
-                                    priv_.media.child().map(|w| w.downcast::<gtk::Picture>())
-                                {
-                                    child
-                                } else {
-                                    let child = gtk::Picture::new();
-                                    priv_.media.set_child(Some(&child));
-                                    child
-                                };
-                                child.set_paintable(texture.as_ref());
-
-                                child.set_tooltip_text(body.as_deref());
-                                if media_type == MediaType::Sticker && priv_.media.has_css_class("thumbnail") {
-                                    priv_.media.remove_css_class("thumbnail");
-                                } else if !priv_.media.has_css_class("thumbnail") {
-                                    priv_.media.add_css_class("thumbnail");
-                                }
+                                            child.set_tooltip_text(body.as_deref());
+                                            if media_type == MediaType::Sticker && priv_.media.has_css_class("thumbnail") {
+                                                priv_.media.remove_css_class("thumbnail");
+                                            } else if !priv_.media.has_css_class("thumbnail") {
+                                                priv_.media.add_css_class("thumbnail");
+                                            }
+                                        }
+                                        Err(error) => {
+                                            warn!("Image file not supported: {}", error);
+                                            priv_.overlay_error.set_tooltip_text(Some(&gettext("Image file not supported")));
+                                            obj.set_state(MediaState::Error);
+                                        }
+                                    }
                             }
                             MediaType::Video => {
                                 // The GStreamer backend of GtkVideo doesn't work with input streams so
@@ -464,7 +467,7 @@ impl MessageMedia {
                                     None,
                                     false,
                                     gio::FileCreateFlags::REPLACE_DESTINATION,
-                                    gio::NONE_CANCELLABLE,
+                                    gio::Cancellable::NONE,
                                 )
                                 .unwrap();
                                 let media_file = gtk::MediaFile::for_file(&file);

@@ -177,7 +177,6 @@ impl Login {
 
             None
         })
-        .unwrap()
     }
 
     fn drop_session_reference(&self) {
@@ -219,7 +218,7 @@ impl Login {
                         },
                         None => {
                             debug!("A new session was prepared");
-                            login.emit_by_name("new-session", &[&session]).unwrap();
+                            login.emit_by_name::<()>("new-session", &[&session]);
                         }
                     }
                 }),

@@ -104,9 +104,9 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            let response = glib::Variant::from_tuple(&[false.to_variant()]);
+            let response = (&[false]).to_variant();
             klass.add_binding_signal(
-                gdk::keys::constants::Escape,
+                gdk::Key::Escape,
                 gdk::ModifierType::empty(),
                 "response",
                 Some(&response),
@@ -121,7 +121,7 @@ mod imp {
     impl ObjectImpl for AuthDialog {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "session",
                     "Session",
                     "The session",
@@ -161,17 +161,17 @@ mod imp {
 
             self.button_cancel
                 .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.emit_by_name("response", &[&false]).unwrap();
+                    obj.emit_by_name::<()>("response", &[&false]);
                 }));
 
             self.button_ok
                 .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.emit_by_name("response", &[&true]).unwrap();
+                    obj.emit_by_name::<()>("response", &[&true]);
                 }));
 
             obj.connect_close_request(
                 clone!(@weak obj => @default-return gtk::Inhibit(false), move |_| {
-                    obj.emit_by_name("response", &[&false]).unwrap();
+                    obj.emit_by_name::<()>("response", &[&false]);
                     gtk::Inhibit(false)
                 }),
             );
@@ -355,6 +355,5 @@ impl AuthDialog {
 
             None
         })
-        .unwrap()
     }
 }

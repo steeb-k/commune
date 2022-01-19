@@ -60,7 +60,7 @@ mod imp {
             Self::bind_template(klass);
 
             klass.add_binding(
-                gdk::keys::constants::Escape,
+                gdk::Key::Escape,
                 gdk::ModifierType::empty(),
                 |obj, _| {
                     obj.close();
@@ -79,7 +79,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "room",
                     "Room",
                     "The room users will be invited to",
@@ -120,7 +120,7 @@ mod imp {
                 }));
 
             self.text_buffer.connect_delete_range(clone!(@weak obj => move |_, start, end| {
-                let mut current = start.clone();
+                let mut current = start.to_owned();
                 loop {
                     if let Some(anchor) = current.child_anchor() {
                         let user = anchor.widgets()[0].downcast_ref::<Pill>().unwrap().user().unwrap().downcast::<Invitee>().unwrap();
@@ -154,7 +154,7 @@ mod imp {
 
                     if changed {
                         text_buffer.place_cursor(location);
-                        text_buffer.stop_signal_emission("insert-text");
+                        text_buffer.stop_signal_emission_by_name("insert-text");
                         text_buffer.insert(location, text);
                     }
                 }),
@@ -227,20 +227,18 @@ impl InviteSubpage {
                 .text_buffer
                 .bind_property("text", &user_list, "search-term")
                 .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
 
             user_list
                 .bind_property("has-selected", &*priv_.invite_button, "sensitive")
                 .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
 
             priv_
                 .list_view
                 .set_model(Some(&gtk::NoSelection::new(Some(&user_list))));
         } else {
-            priv_.list_view.set_model(gtk::NONE_SELECTION_MODEL);
+            priv_.list_view.set_model(gtk::SelectionModel::NONE);
         }
 
         priv_.room.replace(room);
@@ -285,7 +283,7 @@ impl InviteSubpage {
         if let Some(anchor) = user.take_anchor() {
             if !anchor.is_deleted() {
                 let mut start_iter = priv_.text_buffer.iter_at_child_anchor(&anchor);
-                let mut end_iter = start_iter.clone();
+                let mut end_iter = start_iter;
                 end_iter.forward_char();
                 priv_.text_buffer.delete(&mut start_iter, &mut end_iter);
             }

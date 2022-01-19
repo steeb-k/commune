@@ -1,8 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    gdk, gdk_pixbuf::Pixbuf, gio, glib, glib::clone, subclass::prelude::*, CompositeTemplate,
-};
+use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 use log::warn;
 use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageEventContent};
 
@@ -55,10 +53,10 @@ mod imp {
                         stream.seek(0);
                     }
                 }
-                obj.activate_action("session.show-content", None);
+                obj.activate_action("session.show-content", None).unwrap();
             });
             klass.add_binding_action(
-                gdk::keys::constants::Escape,
+                gdk::Key::Escape,
                 gdk::ModifierType::empty(),
                 "media-viewer.close",
                 None,
@@ -74,21 +72,21 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "fullscreened",
                         "Fullscreened",
                         "Whether the viewer is fullscreen",
                         false,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "event",
                         "Event",
                         "The media event to display",
                         Event::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "body",
                         "Body",
                         "The body of the media event",
@@ -145,7 +143,7 @@ mod imp {
             let click_gesture = gtk::GestureClick::builder().button(1).build();
             click_gesture.connect_pressed(clone!(@weak obj => move |_, n_pressed, _, _| {
                 if n_pressed == 2 {
-                    obj.activate_action("win.toggle-fullscreen", None);
+                    obj.activate_action("win.toggle-fullscreen", None).unwrap();
                 }
             }));
             obj.add_controller(&click_gesture);
@@ -265,13 +263,18 @@ impl MediaViewer {
 
                                 match event.get_media_content().await {
                                     Ok((_, _, data)) => {
-                                        let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(&data));
-                                        let texture = Pixbuf::from_stream(&stream, gio::NONE_CANCELLABLE)
-                                            .ok()
-                                            .map(|pixbuf| gdk::Texture::for_pixbuf(&pixbuf));
-                                        let child = gtk::Picture::for_paintable(texture.as_ref());
-
-                                        priv_.media.set_child(Some(&child));
+                                        match gdk::Texture::from_bytes(&glib::Bytes::from(&data))
+                                            {
+                                                Ok(texture) => {
+                                                    let child = gtk::Picture::for_paintable(&texture);
+                                                    priv_.media.set_child(Some(&child));
+                                                }
+                                                Err(error) => {
+                                                    warn!("Image file not supported: {}", error);
+                                                    let child = gtk::Label::new(Some(&gettext("Image file not supported")));
+                                                    priv_.media.set_child(Some(&child));
+                                                }
+                                            }
                                     }
                                     Err(error) => {
                                         warn!("Could not retrieve image file: {}", error);
@@ -303,7 +306,7 @@ impl MediaViewer {
                                             None,
                                             false,
                                             gio::FileCreateFlags::REPLACE_DESTINATION,
-                                            gio::NONE_CANCELLABLE,
+                                            gio::Cancellable::NONE,
                                         )
                                         .unwrap();
                                         let child = gtk::Video::builder().file(&file).autoplay(true).build();

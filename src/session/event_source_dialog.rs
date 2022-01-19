@@ -38,7 +38,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "event",
                     "Event",
                     "The event that is displayed in the Dialog",
@@ -80,8 +80,8 @@ mod imp {
                 .downcast::<sourceview::Buffer>()
                 .unwrap();
 
-            let md_lang = sourceview::LanguageManager::default().and_then(|lm| lm.language("json"));
-            buffer.set_language(md_lang.as_ref());
+            let json_lang = sourceview::LanguageManager::default().language("json");
+            buffer.set_language(json_lang.as_ref());
             crate::utils::setup_style_scheme(&buffer);
 
             self.parent_constructed(obj);

@@ -36,7 +36,7 @@ mod imp {
     impl ObjectImpl for InviteeRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "user",
                     "User",
                     "The user this row is showing",
@@ -105,8 +105,7 @@ impl InviteeRow {
             let binding = user
                 .bind_property("invited", &*priv_.check_button, "active")
                 .flags(glib::BindingFlags::BIDIRECTIONAL | glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
 
             priv_.binding.replace(Some(binding));
         }

@@ -46,14 +46,14 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "user",
                         "User",
                         "The user displayed by this widget",
                         User::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "room",
                         "Room",
                         "The room displayed by this widget",
@@ -120,8 +120,7 @@ impl Pill {
             let display_name_binding = user
                 .bind_property("display-name", &*priv_.display_name, "label")
                 .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
 
             priv_.bindings.borrow_mut().push(display_name_binding);
         }
@@ -154,8 +153,7 @@ impl Pill {
             let display_name_binding = room
                 .bind_property("display-name", &*priv_.display_name, "label")
                 .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
 
             priv_.bindings.borrow_mut().push(display_name_binding);
         }

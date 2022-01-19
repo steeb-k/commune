@@ -43,7 +43,7 @@ pub(crate) mod imp {
 
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_uint(
+                vec![glib::ParamSpecUInt::new(
                     "block-size",
                     "block-size",
                     "block-size",
@@ -94,12 +94,7 @@ pub(crate) mod imp {
                             widget
                                 .style_context()
                                 .lookup_color("background")
-                                .unwrap_or(gdk::RGBA {
-                                    red: 0.0,
-                                    blue: 0.0,
-                                    green: 0.0,
-                                    alpha: 0.0,
-                                })
+                                .unwrap_or_else(|| gdk::RGBA::new(0.0, 0.0, 0.0, 0.0))
                         };
                         let position = graphene::Rect::new(
                             (x as f32) * square_width,

@@ -120,7 +120,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "request",
                     "Request",
                     "The Object holding the data for the verification",
@@ -241,7 +241,7 @@ mod imp {
             self.done_btn.connect_clicked(clone!(@weak obj => move |_| {
                 if let Some(request) = obj.request() {
                     if request.mode() == VerificationMode::CurrentSession {
-                        obj.activate_action("session.show-content", None);
+                        obj.activate_action("session.show-content", None).unwrap();
                     }
                 }
             }));

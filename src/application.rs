@@ -145,7 +145,7 @@ impl Application {
     }
 
     fn show_about_dialog(&self) {
-        let dialog = gtk::AboutDialogBuilder::new()
+        let dialog = gtk::AboutDialog::builder()
             .logo_icon_name(config::APP_ID)
             .license_type(gtk::License::Gpl30)
             .website("https://gitlab.gnome.org/GNOME/fractal/")

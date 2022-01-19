@@ -26,8 +26,8 @@ use crate::{
     utils::{filename_for_mime, media_type_uid},
 };
 
-#[derive(Clone, Debug, glib::GBoxed)]
-#[gboxed(type_name = "BoxedSyncRoomEvent")]
+#[derive(Clone, Debug, glib::Boxed)]
+#[boxed_type(name = "BoxedSyncRoomEvent")]
 pub struct BoxedSyncRoomEvent(SyncRoomEvent);
 
 mod imp {
@@ -62,56 +62,56 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boxed(
+                    glib::ParamSpecBoxed::new(
                         "event",
                         "event",
                         "The matrix event of this Event",
                         BoxedSyncRoomEvent::static_type(),
                         glib::ParamFlags::WRITABLE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "source",
                         "Source",
                         "The source (JSON) of this Event",
                         None,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "show-header",
                         "Show Header",
                         "Whether this event should show a header. This does nothing if this event doesn’t have a header. ",
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "can-hide-header",
                         "Can hide header",
                         "Whether this event is allowed to hide it's header or not.",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "sender",
                         "Sender",
                         "The sender of this matrix event",
                         Member::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "room",
                         "Room",
                         "The room containing this event",
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "time",
                         "Time",
                         "The locally formatted time of this matrix event",
                         None,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "can-view-media",
                         "Can View Media",
                         "Whether this is a media event that can be viewed",

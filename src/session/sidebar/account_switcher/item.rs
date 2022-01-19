@@ -22,7 +22,7 @@ mod imp {
     impl ObjectImpl for ExtraItemObj {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_enum(
+                vec![glib::ParamSpecEnum::new(
                     "inner",
                     "Inner",
                     "Inner value of ExtraItem",
@@ -57,9 +57,9 @@ mod imp {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "ExtraItem")]
+#[enum_type(name = "ExtraItem")]
 pub enum ExtraItem {
     Separator = 0,
     AddAccount = 1,

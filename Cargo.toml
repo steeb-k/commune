@@ -29,14 +29,14 @@ futures = "0.3"
 rand = "0.8"
 indexmap = "1.6.2"
 qrcode = "0.12.0"
-ashpd = { git = "https://github.com/bilelmoussaoui/ashpd", rev = "66d4dc0020181a7174451150ecc711344082b5ce", features = [
+ashpd = { version = "0.2.0-beta-1", features = [
     "feature_gtk4",
     "feature_pipewire",
     "log",
 ] }
-gst = { version = "0.17", package = "gstreamer" }
-gst_base = { version = "0.17", package = "gstreamer-base" }
-gst_video = { version = "0.17", package = "gstreamer-video" }
+gst = { version = "0.18", package = "gstreamer" }
+gst_base = { version = "0.18", package = "gstreamer-base" }
+gst_video = { version = "0.18", package = "gstreamer-video" }
 image = { version = "0.23", default-features = false, features = ["png"] }
 regex = "1.5.4"
 mime_guess = "2.0.3"
@@ -44,15 +44,16 @@ num_enum = "0.5.6"
 
 [dependencies.sourceview]
 package = "sourceview5"
-version = "0.3.0"
+version = "0.4.0"
 
 [dependencies.gtk]
 package = "gtk4"
-version = "0.3"
+version = "0.4.4"
+features = ["v4_6"]
 
 [dependencies.adw]
 package = "libadwaita"
-version = "0.1.0-alpha-6"
+version = "0.1.0"
 
 [dependencies.matrix-sdk]
 git = "https://github.com/jsparber/matrix-rust-sdk.git"

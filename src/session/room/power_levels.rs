@@ -1,14 +1,13 @@
-use gtk::glib;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
+use gtk::{glib, glib::closure};
 use matrix_sdk::ruma::events::room::power_levels::RoomPowerLevelsEventContent;
 use matrix_sdk::ruma::events::{EventType, SyncStateEvent};
 
 use crate::session::room::Member;
-use crate::utils::prop_expr;
 
-#[derive(Clone, Debug, Default, glib::GBoxed)]
-#[gboxed(type_name = "BoxedPowerLevelsEventContent")]
+#[derive(Clone, Debug, Default, glib::Boxed)]
+#[boxed_type(name = "BoxedPowerLevelsEventContent")]
 pub struct BoxedPowerLevelsEventContent(RoomPowerLevelsEventContent);
 
 /// Power level of a user.
@@ -39,7 +38,7 @@ mod imp {
     impl ObjectImpl for PowerLevels {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_boxed(
+                vec![glib::ParamSpecBoxed::new(
                     "power-levels",
                     "Power levels",
                     "Ruma struct containing all power level information of a room",
@@ -82,19 +81,22 @@ impl PowerLevels {
     }
 
     /// Creates an expression that is true when the user is allowed the given action.
-    pub fn new_allowed_expr(&self, member: &Member, room_action: RoomAction) -> gtk::Expression {
-        gtk::ClosureExpression::new(
-            move |args| {
-                let power_level: PowerLevel = args[1].get().unwrap();
-                let content = args[2].get::<BoxedPowerLevelsEventContent>().unwrap().0;
-                power_level >= min_level_for_room_action(&content, &room_action)
-            },
+    pub fn new_allowed_expr(
+        &self,
+        member: &Member,
+        room_action: RoomAction,
+    ) -> gtk::ClosureExpression {
+        gtk::ClosureExpression::new::<bool, _, _>(
             &[
-                prop_expr(member, "power-level"),
-                prop_expr(self, "power-levels"),
+                member.property_expression("power-level"),
+                self.property_expression("power-levels"),
             ],
+            closure!(|_: Option<glib::Object>,
+                      power_level: PowerLevel,
+                      content: BoxedPowerLevelsEventContent| {
+                power_level >= min_level_for_room_action(&content.0, &room_action)
+            }),
         )
-        .upcast()
     }
 
     /// Updates the power levels from the given event.

@@ -6,13 +6,13 @@ use gtk::glib;
 use crate::session::room::power_levels::PowerLevel;
 
 /// Role of a room member, like admin or moderator.
-#[glib::gflags("MemberRole")]
+#[glib::flags(name = "MemberRole")]
 pub enum MemberRole {
-    #[glib::gflags(name = "ADMIN")]
+    #[flags_value(name = "ADMIN")]
     ADMIN = 1,
-    #[glib::gflags(name = "MOD")]
+    #[flags_value(name = "MOD")]
     MOD = 2,
-    #[glib::gflags(name = "PEASANT")]
+    #[flags_value(name = "PEASANT")]
     PEASANT = 0,
 }
 

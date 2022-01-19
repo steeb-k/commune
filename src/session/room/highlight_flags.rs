@@ -1,14 +1,14 @@
 use gtk::glib;
 
-#[glib::gflags("HighlightFlags")]
+#[glib::flags(name = "HighlightFlags")]
 pub enum HighlightFlags {
-    #[glib::gflags(name = "NONE")]
+    #[flags_value(name = "NONE")]
     NONE = 0b00000000,
-    #[glib::gflags(name = "HIGHLIGHT")]
+    #[flags_value(name = "HIGHLIGHT")]
     HIGHLIGHT = 0b00000001,
-    #[glib::gflags(name = "BOLD")]
+    #[flags_value(name = "BOLD")]
     BOLD = 0b00000010,
-    #[glib::gflags(skip)]
+    #[flags_value(skip)]
     HIGHLIGHT_BOLD = Self::HIGHLIGHT.bits() | Self::BOLD.bits(),
 }
 

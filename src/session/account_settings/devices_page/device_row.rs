@@ -5,8 +5,6 @@ use super::Device;
 use crate::components::SpinnerButton;
 use crate::spawn;
 
-const G_TIME_SPAN_DAY: i64 = 86400000000;
-
 mod imp {
     use super::*;
     use glib::subclass::InitializingObject;
@@ -49,7 +47,7 @@ mod imp {
     impl ObjectImpl for DeviceRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "device",
                     "Device",
                     "The device this row is showing",
@@ -174,14 +172,14 @@ impl DeviceRow {
 // This was ported from Nautilus and simplified for our use case.
 // See: https://gitlab.gnome.org/GNOME/nautilus/-/blob/master/src/nautilus-file.c#L5488
 pub fn format_date_time_as_string(datetime: glib::DateTime) -> glib::GString {
-    let now = glib::DateTime::new_now_local().unwrap();
+    let now = glib::DateTime::now_local().unwrap();
     let format;
     let days_ago = {
         let today_midnight =
-            glib::DateTime::new_local(now.year(), now.month(), now.day_of_month(), 0, 0, 0f64)
+            glib::DateTime::from_local(now.year(), now.month(), now.day_of_month(), 0, 0, 0f64)
                 .unwrap();
 
-        let date = glib::DateTime::new_local(
+        let date = glib::DateTime::from_local(
             datetime.year(),
             datetime.month(),
             datetime.day_of_month(),
@@ -191,7 +189,7 @@ pub fn format_date_time_as_string(datetime: glib::DateTime) -> glib::GString {
         )
         .unwrap();
 
-        today_midnight.difference(&date) / G_TIME_SPAN_DAY
+        today_midnight.difference(&date).as_days()
     };
 
     let use_24 = {

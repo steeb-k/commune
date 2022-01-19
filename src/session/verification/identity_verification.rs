@@ -26,9 +26,9 @@ use qrcode::QrCode;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "VerificationState")]
+#[enum_type(name = "VerificationState")]
 pub enum State {
     Requested,
     RequestSend,
@@ -48,9 +48,9 @@ impl Default for State {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "VerificationMode")]
+#[enum_type(name = "VerificationMode")]
 pub enum Mode {
     CurrentSession,
     OtherSession,
@@ -63,7 +63,7 @@ impl Default for Mode {
     }
 }
 
-#[glib::gflags("VerificationSupportedMethods")]
+#[glib::flags(name = "VerificationSupportedMethods")]
 pub enum SupportedMethods {
     NONE = 0b00000000,
     SAS = 0b00000001,
@@ -154,21 +154,21 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "user",
                         "User",
                         "The user to be verified",
                         User::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session",
                         "Session",
                         "The current session",
                         Session::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_enum(
+                    glib::ParamSpecEnum::new(
                         "state",
                         "State",
                         "The current state of this verification",
@@ -176,7 +176,7 @@ mod imp {
                         State::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_enum(
+                    glib::ParamSpecEnum::new(
                         "mode",
                         "Mode",
                         "The mode of this verification",
@@ -184,7 +184,7 @@ mod imp {
                         Mode::default() as i32,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_flags(
+                    glib::ParamSpecFlags::new(
                         "supported-methods",
                         "Supported Methods",
                         "The supported methods of this verification",
@@ -192,28 +192,28 @@ mod imp {
                         SupportedMethods::default().bits(),
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "display-name",
                         "Display name",
                         "The display name of this verification request",
                         None,
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "flow-id",
                         "Flow Id",
                         "The flow id of this verification request",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_boxed(
+                    glib::ParamSpecBoxed::new(
                         "start-time",
                         "Start Time",
                         "The time when this verification request was started",
                         glib::DateTime::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_boxed(
+                    glib::ParamSpecBoxed::new(
                         "receive-time",
                         "Receive Time",
                         "The time when this verification request was received",
@@ -294,7 +294,7 @@ mod imp {
             }
 
             self.receive_time
-                .set(glib::DateTime::new_now_local().unwrap())
+                .set(glib::DateTime::now_local().unwrap())
                 .unwrap();
             obj.setup_timeout();
             obj.start_handler();
@@ -368,7 +368,7 @@ impl IdentityVerification {
                         ("flow-id", &request.flow_id()),
                         ("session", session),
                         ("user", user),
-                        ("start-time", &glib::DateTime::new_now_local().unwrap()),
+                        ("start-time", &glib::DateTime::now_local().unwrap()),
                     ])
                     .expect("Failed to create IdentityVerification");
 
@@ -382,12 +382,7 @@ impl IdentityVerification {
             error!("Starting a verification failed: Crypto identity wasn't found");
         }
 
-        Self::for_error(
-            mode,
-            session,
-            user,
-            &glib::DateTime::new_now_local().unwrap(),
-        )
+        Self::for_error(mode, session, user, &glib::DateTime::now_local().unwrap())
     }
 
     fn start_handler(&self) {
@@ -459,9 +454,10 @@ impl IdentityVerification {
     }
 
     fn setup_timeout(&self) {
-        let difference = glib::DateTime::new_now_local()
+        let difference = glib::DateTime::now_local()
             .unwrap()
-            .difference(self.start_time());
+            .difference(self.start_time())
+            .as_seconds();
 
         if difference < 0 {
             warn!("The verification request was sent in the future.");
@@ -620,7 +616,7 @@ impl IdentityVerification {
         });
 
         let error = Error::new(move |_| {
-            let error_label = gtk::LabelBuilder::new()
+            let error_label = gtk::Label::builder()
                 .label(&error_message)
                 .wrap(true)
                 .build();

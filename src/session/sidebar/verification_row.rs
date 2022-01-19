@@ -33,7 +33,7 @@ mod imp {
     impl ObjectImpl for VerificationRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "identity-verification",
                     "Identity Verification",
                     "The identity verification of this row",

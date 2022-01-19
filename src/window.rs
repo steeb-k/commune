@@ -153,7 +153,7 @@ impl Window {
                 warn!("Failed to restore previous sessions: {:?}", error);
                 let error_string = error.to_user_facing();
                 self.append_error(&Error::new(move |_| {
-                    let error_label = gtk::LabelBuilder::new()
+                    let error_label = gtk::Label::builder()
                         .label(
                             &(gettext("Unable to restore previous sessions")
                                 + ": "
@@ -188,7 +188,7 @@ impl Window {
         let is_maximized = settings.boolean("is-maximized");
 
         self.set_default_size(width, height);
-        self.set_property("maximized", &is_maximized).unwrap();
+        self.set_property("maximized", &is_maximized);
     }
 
     /// Change the default widget of the window based on the visible child
@@ -198,7 +198,7 @@ impl Window {
         if priv_.main_stack.visible_child() == Some(priv_.login.get().upcast()) {
             self.set_default_widget(Some(&priv_.login.default_widget()));
         } else {
-            self.set_default_widget(gtk::NONE_WIDGET);
+            self.set_default_widget(gtk::Widget::NONE);
         }
     }
 

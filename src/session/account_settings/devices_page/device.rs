@@ -36,41 +36,41 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session",
                         "Session",
                         "The session",
                         Session::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "device-id",
                         "Device Id",
                         "The Id of this device",
                         None,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "display-name",
                         "Display Name",
                         "The display name of the device",
                         None,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "last-seen-ip",
                         "Last Seen Ip",
                         "The last ip the device used",
                         None,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_pointer(
+                    glib::ParamSpecPointer::new(
                         "last-seen-ts",
                         "Last Seen Ts",
                         "The last time the device was used",
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_pointer(
+                    glib::ParamSpecPointer::new(
                         "verified",
                         "Verified",
                         "Whether this devices is verified",

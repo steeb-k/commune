@@ -6,9 +6,9 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use crate::session::sidebar::CategoryType;
 
 // TODO: do we also want the category `People` and a custom category support?
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum, IntoPrimitive, TryFromPrimitive)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, IntoPrimitive, TryFromPrimitive)]
 #[repr(u32)]
-#[genum(type_name = "RoomType")]
+#[enum_type(name = "RoomType")]
 pub enum RoomType {
     Invited = 0,
     Favorite = 1,

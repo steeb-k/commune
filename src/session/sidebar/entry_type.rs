@@ -1,9 +1,9 @@
 use gettextrs::gettext;
 use gtk::glib;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[genum(type_name = "EntryType")]
+#[enum_type(name = "EntryType")]
 pub enum EntryType {
     Explore = 0,
     Forget = 1,

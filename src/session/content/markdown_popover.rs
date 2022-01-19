@@ -31,7 +31,7 @@ pub mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_boolean(
+                vec![glib::ParamSpecBoolean::new(
                     "markdown-enabled",
                     "Markdown enabled",
                     "Whether outgoing messages should be interpreted as markdown",

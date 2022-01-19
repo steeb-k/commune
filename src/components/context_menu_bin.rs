@@ -24,7 +24,7 @@ mod imp {
                 click_gesture: Default::default(),
                 long_press_gesture: Default::default(),
                 // WORKAROUND: there is some issue with creating the popover from the template
-                popover: gtk::PopoverMenuBuilder::new()
+                popover: gtk::PopoverMenu::builder()
                     .position(gtk::PositionType::Bottom)
                     .has_arrow(false)
                     .halign(gtk::Align::Start)
@@ -46,13 +46,13 @@ mod imp {
                 widget.open_menu_at(0, 0)
             });
             klass.add_binding_action(
-                gdk::keys::constants::F10,
+                gdk::Key::F10,
                 gdk::ModifierType::SHIFT_MASK,
                 "context-menu.activate",
                 None,
             );
             klass.add_binding_action(
-                gdk::keys::constants::Menu,
+                gdk::Key::Menu,
                 gdk::ModifierType::empty(),
                 "context-menu.activate",
                 None,
@@ -73,7 +73,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "context-menu",
                     "Context Menu",
                     "The context menu",
@@ -160,12 +160,7 @@ impl ContextMenuBin {
             return;
         }
 
-        popover.set_pointing_to(&gdk::Rectangle {
-            x,
-            y,
-            width: 0,
-            height: 0,
-        });
+        popover.set_pointing_to(Some(&gdk::Rectangle::new(x, y, 0, 0)));
         popover.popup();
     }
 }

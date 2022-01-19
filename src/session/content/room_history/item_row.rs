@@ -32,7 +32,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "item",
                     "item",
                     "The item represented by this row",
@@ -158,7 +158,7 @@ impl ItemRow {
                         self.remove_reaction_chooser();
                     }
 
-                    let fmt = if date.year() == glib::DateTime::new_now_local().unwrap().year() {
+                    let fmt = if date.year() == glib::DateTime::now_local().unwrap().year() {
                         // Translators: This is a date format in the day divider without the year
                         gettext("%A, %B %e")
                     } else {
@@ -195,7 +195,7 @@ impl ItemRow {
                         .child()
                         .map_or(false, |widget| widget.is::<gtk::Spinner>())
                     {
-                        let spinner = gtk::SpinnerBuilder::new()
+                        let spinner = gtk::Spinner::builder()
                             .spinning(true)
                             .margin_top(12)
                             .margin_bottom(12)
@@ -275,16 +275,18 @@ impl ItemRow {
         if priv_.emoji_chooser.borrow().is_none() {
             let emoji_chooser = gtk::EmojiChooser::builder().has_arrow(false).build();
             emoji_chooser.connect_emoji_picked(|emoji_chooser, emoji| {
-                emoji_chooser.activate_action("event.toggle-reaction", Some(&emoji.to_variant()));
+                emoji_chooser
+                    .activate_action("event.toggle-reaction", Some(&emoji.to_variant()))
+                    .unwrap();
             });
             emoji_chooser.set_parent(self);
             priv_.emoji_chooser.replace(Some(emoji_chooser));
         }
 
         let emoji_chooser = priv_.emoji_chooser.borrow().clone().unwrap();
-        if let Some(rectangle) = self.popover().pointing_to() {
-            emoji_chooser.set_pointing_to(&rectangle);
-        }
+        let (_, rectangle) = self.popover().pointing_to();
+        emoji_chooser.set_pointing_to(Some(&rectangle));
+
         self.popover().popdown();
         emoji_chooser.popup();
     }

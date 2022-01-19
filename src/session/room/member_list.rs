@@ -28,7 +28,7 @@ mod imp {
     impl ObjectImpl for MemberList {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "room",
                     "Room",
                     "The associated room",

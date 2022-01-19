@@ -2,9 +2,9 @@ use crate::session::room::RoomType;
 use gettextrs::gettext;
 use gtk::glib;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::GEnum)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(i32)]
-#[genum(type_name = "CategoryType")]
+#[enum_type(name = "CategoryType")]
 pub enum CategoryType {
     None = -1,
     VerificationRequest = 0,

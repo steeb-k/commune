@@ -5,7 +5,6 @@ use gtk::{glib, CompositeTemplate};
 
 mod imp {
     use super::*;
-    use glib::object::ObjectClass;
     use glib::subclass::InitializingObject;
 
     #[derive(Debug, Default, CompositeTemplate)]
@@ -39,14 +38,8 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_override(
-                        "label",
-                        &ObjectClass::from_type(gtk::Button::static_type())
-                            .unwrap()
-                            .find_property("label")
-                            .unwrap(),
-                    ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecOverride::for_class::<gtk::Button>("label"),
+                    glib::ParamSpecBoolean::new(
                         "loading",
                         "Loading",
                         "Whether to display the loading spinner or the content",

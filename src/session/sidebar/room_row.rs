@@ -72,7 +72,7 @@ mod imp {
     impl ObjectImpl for RoomRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "room",
                     "Room",
                     "The room of this row",
@@ -180,8 +180,7 @@ impl RoomRow {
                 )
                 .flags(glib::BindingFlags::SYNC_CREATE)
                 .transform_from(|_, value| Some((value.get::<u64>().unwrap() > 0).to_value()))
-                .build()
-                .unwrap(),
+                .build(),
             ));
 
             priv_.signal_handler.replace(Some(room.connect_notify_local(
@@ -319,11 +318,13 @@ impl RoomRow {
     fn drag_begin(&self) {
         self.parent().unwrap().add_css_class("drag");
         let category = Some(u32::from(self.room().unwrap().category()));
-        self.activate_action("sidebar.set-drop-source-type", Some(&category.to_variant()));
+        self.activate_action("sidebar.set-drop-source-type", Some(&category.to_variant()))
+            .unwrap();
     }
 
     fn drag_end(&self) {
-        self.activate_action("sidebar.set-drop-source-type", None);
+        self.activate_action("sidebar.set-drop-source-type", None)
+            .unwrap();
         self.parent().unwrap().remove_css_class("drag");
     }
 }

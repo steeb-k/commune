@@ -107,49 +107,49 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "room-id",
                         "Room id",
                         "The room id of this Room",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session",
                         "Session",
                         "The session",
                         Session::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "display-name",
                         "Display Name",
                         "The display name of this room",
                         None,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "inviter",
                         "Inviter",
                         "The user who sent the invite to this room, this is only set when this room represents an invite",
                         Member::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "avatar",
                         "Avatar",
                         "The Avatar of this room",
                         Avatar::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "timeline",
                         "Timeline",
                         "The timeline of this room",
                         Timeline::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_flags(
+                    glib::ParamSpecFlags::new(
                         "highlight",
                         "Highlight",
                         "How this room is highlighted",
@@ -157,7 +157,7 @@ mod imp {
                         HighlightFlags::default().bits(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_uint64(
+                    glib::ParamSpecUInt64::new(
                         "notification-count",
                         "Notification count",
                         "The notification count of this room",
@@ -166,7 +166,7 @@ mod imp {
                         0,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_enum(
+                    glib::ParamSpecEnum::new(
                         "category",
                         "Category",
                         "The category of this room",
@@ -174,35 +174,35 @@ mod imp {
                         RoomType::default() as i32,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "topic",
                         "Topic",
                         "The topic of this room",
                         None,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_boxed(
+                    glib::ParamSpecBoxed::new(
                         "latest-change",
                         "Latest Change",
                         "Latest origin_server_ts of all loaded invents",
                         glib::DateTime::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "members",
                         "Members",
                         "Model of the room’s members",
                         MemberList::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "predecessor",
                         "Predecessor",
                         "The room id of predecessor of this Room",
                         None,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "successor",
                         "Successor",
                         "The room id of successor of this Room",
@@ -318,8 +318,7 @@ mod imp {
 
             obj.bind_property("display-name", obj.avatar(), "display-name")
                 .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
         }
     }
 }
@@ -399,7 +398,7 @@ impl Room {
             clone!(@weak self as obj => async move {
                 match handle.await.unwrap() {
                     Ok(_) => {
-                        obj.emit_by_name("room-forgotten", &[]).unwrap();
+                        obj.emit_by_name::<()>("room-forgotten", &[]);
                     }
                     Err(error) => {
                             error!("Couldn’t forget the room: {}", error);
@@ -442,7 +441,7 @@ impl Room {
 
         priv_.category.set(category);
         self.notify("category");
-        self.emit_by_name("order-changed", &[]).unwrap();
+        self.emit_by_name::<()>("order-changed", &[]);
     }
 
     /// Set the category of this room.
@@ -852,7 +851,7 @@ impl Room {
         priv_.timeline.get().unwrap().append(batch);
         priv_.latest_change.replace(latest_change);
         self.notify("latest-change");
-        self.emit_by_name("order-changed", &[]).unwrap();
+        self.emit_by_name::<()>("order-changed", &[]);
     }
 
     /// Returns the point in time this room received its latest event.
@@ -1024,7 +1023,7 @@ impl Room {
     }
 
     /// Creates an expression that is true when the user is allowed the given action.
-    pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::Expression {
+    pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::ClosureExpression {
         let session = self.session();
         let user_id = session.user().unwrap().user_id();
         let member = self.members().member_by_id(user_id);
@@ -1174,7 +1173,6 @@ impl Room {
             f(&obj);
             None
         })
-        .unwrap()
     }
 
     /// Connect to the signal sent when a room was forgotten.
@@ -1184,7 +1182,6 @@ impl Room {
             f(&obj);
             None
         })
-        .unwrap()
     }
 
     pub fn predecessor(&self) -> Option<&RoomId> {

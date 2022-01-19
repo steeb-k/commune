@@ -42,14 +42,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "loading",
                         "Loading",
                         "Whether to show the loading spinner",
                         true,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "error",
                         "Error",
                         "The error message to show",
@@ -100,7 +100,7 @@ mod imp {
 
             self.retry_button
                 .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.emit_by_name("retry", &[]).unwrap();
+                    obj.emit_by_name::<()>("retry", &[]);
                 }));
         }
     }
@@ -175,6 +175,5 @@ impl LoadingListBoxRow {
             f(&obj);
             None
         })
-        .unwrap()
     }
 }

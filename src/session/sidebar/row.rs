@@ -37,14 +37,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "item",
                         "Item",
                         "The sidebar item of this row",
                         glib::Object::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "list-row",
                         "List Row",
                         "The list row to track for expander state",
@@ -160,8 +160,7 @@ impl Row {
                 let binding = row
                     .bind_property("expanded", &child, "expanded")
                     .flags(glib::BindingFlags::SYNC_CREATE)
-                    .build()
-                    .unwrap();
+                    .build();
 
                 priv_.binding.replace(Some(binding));
 
@@ -220,7 +219,8 @@ impl Row {
             } else {
                 panic!("Wrong row item: {:?}", item);
             }
-            self.activate_action("sidebar.update-drop-targets", None);
+            self.activate_action("sidebar.update-drop-targets", None)
+                .unwrap();
         }
 
         self.notify("item");
@@ -252,7 +252,7 @@ impl Row {
     fn drop_accept(&self, drop: &gdk::Drop) -> bool {
         let room = drop
             .drag()
-            .and_then(|drag| drag.content())
+            .map(|drag| drag.content())
             .and_then(|content| content.value(Room::static_type()).ok())
             .and_then(|value| value.get::<Room>().ok());
         if let Some(room) = room {
@@ -261,13 +261,15 @@ impl Row {
                     self.activate_action(
                         "sidebar.set-active-drop-category",
                         Some(&Some(u32::from(target_type)).to_variant()),
-                    );
+                    )
+                    .unwrap();
                     return true;
                 }
             } else if let Some(entry_type) = self.entry_type() {
                 if room.category() == RoomType::Left && entry_type == EntryType::Forget {
                     self.parent().unwrap().add_css_class("drop-active");
-                    self.activate_action("sidebar.set-active-drop-category", None);
+                    self.activate_action("sidebar.set-active-drop-category", None)
+                        .unwrap();
                     return true;
                 }
             }
@@ -277,7 +279,8 @@ impl Row {
 
     fn drop_leave(&self) {
         self.parent().unwrap().remove_css_class("drop-active");
-        self.activate_action("sidebar.set-active-drop-category", None);
+        self.activate_action("sidebar.set-active-drop-category", None)
+            .unwrap();
     }
 
     fn drop_end(&self, value: &glib::Value) -> bool {
@@ -295,7 +298,8 @@ impl Row {
                 }
             }
         }
-        self.activate_action("sidebar.set-drop-source-type", None);
+        self.activate_action("sidebar.set-drop-source-type", None)
+            .unwrap();
         ret
     }
 }

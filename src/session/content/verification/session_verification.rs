@@ -75,7 +75,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "session",
                     "Session",
                     "The session",
@@ -282,12 +282,12 @@ impl SessionVerification {
         if let Some(request) = self.request() {
             if request.state() == VerificationState::RequestSend {
                 self.set_request(None);
-                self.activate_action("session.logout", None);
+                self.activate_action("session.logout", None).unwrap();
             } else {
                 self.start_request();
             }
         } else {
-            self.activate_action("session.logout", None);
+            self.activate_action("session.logout", None).unwrap();
         }
     }
 
@@ -321,7 +321,7 @@ impl SessionVerification {
 
             if let Some(error_message) = error_message {
                 let error = Error::new(move |_| {
-                    let error_label = gtk::LabelBuilder::new()
+                    let error_label = gtk::Label::builder()
                         .label(&error_message)
                         .wrap(true)
                         .build();
@@ -333,7 +333,7 @@ impl SessionVerification {
                 }
             } else {
                 // TODO tell user that the a crypto identity was created
-                obj.activate_action("session.show-content", None);
+                obj.activate_action("session.show-content", None).unwrap();
             }
         }));
     }

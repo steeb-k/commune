@@ -31,7 +31,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_string(
+                vec![glib::ParamSpecString::new(
                     "label",
                     "Label",
                     "The label for this divider",

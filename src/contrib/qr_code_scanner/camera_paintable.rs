@@ -13,8 +13,8 @@ use glib::{clone, Receiver, Sender};
 use gst::prelude::*;
 use gtk::gdk::prelude::TextureExt;
 use gtk::glib;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
+use gtk::glib::subclass::prelude::*;
+use gtk::{prelude::*, subclass::prelude::*};
 use once_cell::sync::Lazy;
 
 use std::os::unix::io::AsRawFd;
@@ -111,6 +111,7 @@ mod camera_sink {
         }
 
         impl ObjectImpl for CameraSink {}
+        impl GstObjectImpl for CameraSink {}
         impl ElementImpl for CameraSink {
             fn metadata() -> Option<&'static gst::subclass::ElementMetadata> {
                 static ELEMENT_METADATA: Lazy<gst::subclass::ElementMetadata> = Lazy::new(|| {
@@ -316,7 +317,7 @@ mod imp {
                 image.snapshot(snapshot.upcast_ref(), new_width, new_height);
             } else {
                 snapshot.append_color(
-                    &gdk::RGBA::black(),
+                    &gdk::RGBA::BLACK,
                     &graphene::Rect::new(0f32, 0f32, width as f32, height as f32),
                 );
             }
@@ -338,12 +339,8 @@ impl CameraPaintable {
     pub fn set_pipewire_fd<F: AsRawFd>(&self, fd: F, node_id: u32) {
         self.close_pipeline();
         let pipewire_element = gst::ElementFactory::make("pipewiresrc", None).unwrap();
-        pipewire_element
-            .set_property("fd", &fd.as_raw_fd())
-            .unwrap();
-        pipewire_element
-            .set_property("path", &node_id.to_string())
-            .unwrap();
+        pipewire_element.set_property("fd", &fd.as_raw_fd());
+        pipewire_element.set_property("path", &node_id.to_string());
         self.init_pipeline(pipewire_element);
     }
 
@@ -452,8 +449,7 @@ impl CameraPaintable {
                 }
             }
             Action::QrCodeDetected(code) => {
-                self.emit_by_name("code-detected", &[&QrVerificationDataBoxed(code)])
-                    .unwrap();
+                self.emit_by_name::<()>("code-detected", &[&QrVerificationDataBoxed(code)]);
             }
         }
         glib::Continue(true)

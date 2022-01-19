@@ -37,7 +37,7 @@ mod imp {
     impl ObjectImpl for VideoPlayer {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_boolean(
+                vec![glib::ParamSpecBoolean::new(
                     "compact",
                     "Compact",
                     "Whether this player should be displayed in a compact format",

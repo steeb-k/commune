@@ -17,8 +17,8 @@ pub enum ItemType {
     LoadingSpinner,
 }
 
-#[derive(Clone, Debug, glib::GBoxed)]
-#[gboxed(type_name = "BoxedItemType")]
+#[derive(Clone, Debug, glib::Boxed)]
+#[boxed_type(name = "BoxedItemType")]
 pub struct BoxedItemType(ItemType);
 
 impl From<ItemType> for BoxedItemType {
@@ -50,35 +50,35 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boxed(
+                    glib::ParamSpecBoxed::new(
                         "type",
                         "Type",
                         "The type of this item",
                         BoxedItemType::static_type(),
                         glib::ParamFlags::WRITABLE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "selectable",
                         "Selectable",
                         "Whether this item is selectable.",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "show-header",
                         "Show Header",
                         "Whether this item should show a header. This does do nothing if this event doesn’t have a header. ",
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "can-hide-header",
                         "Can hide header",
                         "Whether this item is allowed to hide its header.",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "activatable",
                         "Activatable",
                         "Whether this item is activatable.",

@@ -27,7 +27,7 @@ mod imp {
     impl Default for LabelWithWidgets {
         fn default() -> Self {
             Self {
-                label: gtk::LabelBuilder::new().wrap(true).build(),
+                label: gtk::Label::builder().wrap(true).build(),
                 widgets: Default::default(),
                 widgets_sizes: Default::default(),
                 placeholder: Default::default(),
@@ -49,14 +49,14 @@ mod imp {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "label",
                         "Label",
                         "The label",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "placeholder",
                         "Placeholder",
                         "The placeholder that is replaced with widgets",
@@ -277,8 +277,8 @@ impl LabelWithWidgets {
         let mut child_size_changed = false;
         for (i, child) in priv_.widgets.borrow().iter().enumerate() {
             let (_, natural_size) = child.preferred_size();
-            let width = natural_size.width;
-            let height = natural_size.height;
+            let width = natural_size.width();
+            let height = natural_size.height();
             if let Some((old_width, old_height)) = widgets_sizes.get(i) {
                 if old_width != &width || old_height != &height {
                     let _ = std::mem::replace(&mut widgets_sizes[i], (width, height));
@@ -310,7 +310,7 @@ impl LabelWithWidgets {
                     height * PANGO_SCALE,
                 );
 
-                let mut shape = pango::Attribute::new_shape(&logical_rect, &logical_rect);
+                let mut shape = pango::AttrShape::new(&logical_rect, &logical_rect);
                 shape.set_start_index(start_index as u32);
                 shape.set_end_index((start_index + OBJECT_REPLACEMENT_CHARACTER.len()) as u32);
                 attrs.insert(shape);
@@ -342,12 +342,12 @@ impl LabelWithWidgets {
                         let (_, extents) = run_iter.run_extents();
 
                         let (offset_x, offset_y) = priv_.label.layout_offsets();
-                        let allocation = gtk::Allocation {
-                            x: pango_pixels(extents.x) + offset_x,
-                            y: pango_pixels(extents.y) + offset_y,
+                        let allocation = gtk::Allocation::new(
+                            pango_pixels(extents.x()) + offset_x,
+                            pango_pixels(extents.y()) + offset_y,
                             width,
                             height,
-                        };
+                        );
                         widget.size_allocate(&allocation, -1);
                         i += 1;
                     } else {

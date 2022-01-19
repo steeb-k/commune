@@ -1,7 +1,7 @@
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::ngettext;
-use gtk::glib::{self, clone};
+use gtk::glib::{self, clone, closure};
 use gtk::subclass::prelude::*;
 use gtk::CompositeTemplate;
 
@@ -69,14 +69,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "room",
                         "Room",
                         "The room backing all details of the member page",
                         Room::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "member-menu",
                         "Member Menu",
                         "The object holding information needed for the menu of each MemberRow",
@@ -152,7 +152,7 @@ impl MemberPage {
             &gtk::NumericSorter::builder()
                 .expression(&gtk::PropertyExpression::new(
                     Member::static_type(),
-                    gtk::NONE_EXPRESSION,
+                    gtk::Expression::NONE,
                     "power-level",
                 ))
                 .sort_order(gtk::SortType::Descending)
@@ -161,7 +161,7 @@ impl MemberPage {
         sorter.append(&gtk::StringSorter::new(Some(
             &gtk::PropertyExpression::new(
                 Member::static_type(),
-                gtk::NONE_EXPRESSION,
+                gtk::Expression::NONE,
                 "display-name",
             ),
         )));
@@ -177,14 +177,9 @@ impl MemberPage {
             )
         }
 
-        let member_expr = gtk::ClosureExpression::new(
-            |value| {
-                value[0]
-                    .get::<Member>()
-                    .map(search_string)
-                    .unwrap_or_default()
-            },
+        let member_expr = gtk::ClosureExpression::new::<String, &[gtk::Expression], _>(
             &[],
+            closure!(|member: Option<Member>| { member.map(search_string).unwrap_or_default() }),
         );
         let filter = gtk::StringFilter::builder()
             .match_mode(gtk::StringFilterMatchMode::Substring)

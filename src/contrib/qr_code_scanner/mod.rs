@@ -51,7 +51,7 @@ mod imp {
     impl ObjectImpl for QrCodeScanner {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_boolean(
+                vec![glib::ParamSpecBoolean::new(
                     "has-camera",
                     "Has Camera",
                     "Whether we have a working camera",
@@ -75,13 +75,12 @@ mod imp {
 
             let callback = glib::clone!(@weak obj => @default-return None, move |args: &[glib::Value]| {
                 let code = args.get(1).unwrap().get::<QrVerificationDataBoxed>().unwrap();
-                obj.emit_by_name("code-detected", &[&code]).unwrap();
+                obj.emit_by_name::<()>("code-detected", &[&code]);
 
                 None
             });
             self.paintable
-                .connect_local("code-detected", false, callback)
-                .unwrap();
+                .connect_local("code-detected", false, callback);
             obj.init_has_camera();
         }
 
@@ -194,10 +193,9 @@ impl QrCodeScanner {
 
             None
         })
-        .unwrap()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, glib::GBoxed)]
-#[gboxed(type_name = "QrVerificationDataBoxed")]
+#[derive(Clone, Debug, PartialEq, glib::Boxed)]
+#[boxed_type(name = "QrVerificationDataBoxed")]
 struct QrVerificationDataBoxed(QrVerificationData);

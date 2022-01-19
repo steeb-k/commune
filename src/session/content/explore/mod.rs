@@ -66,14 +66,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "compact",
                         "Compact",
                         "Whether a compact view is used",
                         false,
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session",
                         "Session",
                         "The session",
@@ -110,7 +110,7 @@ mod imp {
 
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
-            let adj = self.scrolled_window.vadjustment().unwrap();
+            let adj = self.scrolled_window.vadjustment();
 
             adj.connect_value_changed(clone!(@weak obj => move |adj| {
                 if adj.upper() - adj.value() < adj.page_size() * 2.0 {

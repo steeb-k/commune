@@ -10,8 +10,8 @@ pub enum ItemType {
     LoadingSpinner,
 }
 
-#[derive(Clone, Debug, glib::GBoxed)]
-#[gboxed(type_name = "BoxedDeviceItemType")]
+#[derive(Clone, Debug, glib::Boxed)]
+#[boxed_type(name = "BoxedDeviceItemType")]
 pub struct BoxedItemType(ItemType);
 
 impl From<ItemType> for BoxedItemType {
@@ -39,7 +39,7 @@ mod imp {
     impl ObjectImpl for Item {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_boxed(
+                vec![glib::ParamSpecBoxed::new(
                     "type",
                     "Type",
                     "The type of this item",

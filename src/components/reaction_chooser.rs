@@ -92,7 +92,7 @@ mod imp {
                     .css_classes(vec!["flat".to_string(), "circular".to_string()])
                     .build();
                 button.connect_clicked(|button| {
-                    button.activate_action("context-menu.close", None);
+                    button.activate_action("context-menu.close", None).unwrap();
                 });
                 grid.attach(&button, reaction_item.column, reaction_item.row, 1, 1);
             }
@@ -166,8 +166,7 @@ impl ReactionChooser {
                     let binding = reaction
                         .bind_property("has-user", &button, "active")
                         .flags(glib::BindingFlags::SYNC_CREATE)
-                        .build()
-                        .unwrap();
+                        .build();
                     reaction_bindings.insert(reaction_item.key.to_string(), binding);
                 }
             } else if let Some(binding) = reaction_bindings.remove(reaction_item.key) {

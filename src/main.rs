@@ -53,7 +53,6 @@ fn main() {
     gio::resources_register(&res);
 
     IconTheme::for_display(&Display::default().unwrap())
-        .unwrap()
         .add_resource_path("/org/gnome/FractalNext/icons");
 
     let app = Application::new();

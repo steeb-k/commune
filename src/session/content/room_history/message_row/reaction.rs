@@ -39,7 +39,7 @@ mod imp {
     impl ObjectImpl for MessageReaction {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "group",
                     "Group",
                     "The reaction group to display",

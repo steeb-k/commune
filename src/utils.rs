@@ -66,7 +66,7 @@ use std::str::FromStr;
 
 use gettextrs::gettext;
 use gtk::gio::{self, prelude::*};
-use gtk::glib::{self, Object};
+use gtk::glib::{self, closure, Object};
 use matrix_sdk::{
     media::MediaType,
     ruma::{EventId, UInt},
@@ -74,50 +74,30 @@ use matrix_sdk::{
 };
 use mime::Mime;
 
-/// Returns an expression looking up the given property on `object`.
-pub fn prop_expr<T: IsA<Object>>(object: &T, prop: &str) -> gtk::Expression {
-    let obj_expr = gtk::ConstantExpression::new(object).upcast();
-    gtk::PropertyExpression::new(T::static_type(), Some(&obj_expr), prop).upcast()
-}
-
 // Returns an expression that is the and’ed result of the given boolean expressions.
 #[allow(dead_code)]
-pub fn and_expr(a_expr: gtk::Expression, b_expr: gtk::Expression) -> gtk::Expression {
-    gtk::ClosureExpression::new(
-        move |args| {
-            let a: bool = args[1].get().unwrap();
-            let b: bool = args[2].get().unwrap();
-            a && b
-        },
+pub fn and_expr<E: AsRef<gtk::Expression>>(a_expr: E, b_expr: E) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<bool, _, _>(
         &[a_expr, b_expr],
+        closure!(|_: Option<Object>, a: bool, b: bool| { a && b }),
     )
-    .upcast()
 }
 
 // Returns an expression that is the or’ed result of the given boolean expressions.
-pub fn or_expr(a_expr: gtk::Expression, b_expr: gtk::Expression) -> gtk::Expression {
-    gtk::ClosureExpression::new(
-        move |args| {
-            let a: bool = args[1].get().unwrap();
-            let b: bool = args[2].get().unwrap();
-            a || b
-        },
+pub fn or_expr<E: AsRef<gtk::Expression>>(a_expr: E, b_expr: E) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<bool, _, _>(
         &[a_expr, b_expr],
+        closure!(|_: Option<Object>, a: bool, b: bool| { a || b }),
     )
-    .upcast()
 }
 
 // Returns an expression that is the inverted result of the given boolean expressions.
 #[allow(dead_code)]
-pub fn not_expr(a_expr: gtk::Expression) -> gtk::Expression {
-    gtk::ClosureExpression::new(
-        move |args| {
-            let a: bool = args[1].get().unwrap();
-            !a
-        },
+pub fn not_expr<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<bool, _, _>(
         &[a_expr],
+        closure!(|_: Option<Object>, a: bool| { !a }),
     )
-    .upcast()
 }
 
 pub fn cache_dir() -> PathBuf {
@@ -126,7 +106,7 @@ pub fn cache_dir() -> PathBuf {
 
     if !path.exists() {
         let dir = gio::File::for_path(path.clone());
-        dir.make_directory_with_parents(gio::NONE_CANCELLABLE)
+        dir.make_directory_with_parents(gio::Cancellable::NONE)
             .unwrap();
     }
 
@@ -149,7 +129,7 @@ pub fn uint_to_i32(u: Option<UInt>) -> i32 {
 }
 
 pub fn setup_style_scheme(buffer: &sourceview::Buffer) {
-    let manager = adw::StyleManager::default().unwrap();
+    let manager = adw::StyleManager::default();
 
     buffer.set_style_scheme(style_scheme().as_ref());
 
@@ -159,14 +139,14 @@ pub fn setup_style_scheme(buffer: &sourceview::Buffer) {
 }
 
 pub fn style_scheme() -> Option<sourceview::StyleScheme> {
-    let manager = adw::StyleManager::default().unwrap();
+    let manager = adw::StyleManager::default();
     let scheme_name = if manager.is_dark() {
         "Adwaita-dark"
     } else {
         "Adwaita"
     };
 
-    sourceview::StyleSchemeManager::default().and_then(|scm| scm.scheme(scheme_name))
+    sourceview::StyleSchemeManager::default().scheme(scheme_name)
 }
 
 /// Get the unique id of the given `MediaType`.

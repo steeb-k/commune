@@ -6,7 +6,7 @@ use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::gdk;
 use gtk::{
-    glib::{self, clone},
+    glib::{self, clone, closure},
     subclass::prelude::*,
     CompositeTemplate,
 };
@@ -17,7 +17,7 @@ pub use self::member_page::MemberPage;
 use crate::components::CustomEntry;
 use crate::session::room::RoomAction;
 use crate::session::{self, Room};
-use crate::utils::{and_expr, or_expr, prop_expr};
+use crate::utils::{and_expr, or_expr};
 
 mod imp {
     use super::*;
@@ -68,7 +68,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "room",
                     "Room",
                     "The room backing all details of the preference window",
@@ -150,25 +150,19 @@ impl RoomDetails {
         // Hide avatar controls when the user is not eligible to perform the actions.
         let room = self.room();
 
-        let avatar = prop_expr(room, "avatar");
-        let avatar_image =
-            gtk::PropertyExpression::new(session::Avatar::static_type(), Some(&avatar), "image")
-                .upcast();
-        let room_avatar_exists = gtk::ClosureExpression::new(
-            move |args| {
-                let image: Option<gdk::Paintable> = args[1].get().unwrap();
-                image.is_some()
-            },
-            &[avatar_image],
-        )
-        .upcast();
+        let room_avatar_exists = room
+            .property_expression("avatar")
+            .chain_property::<session::Avatar>("image")
+            .chain_closure::<bool>(closure!(
+                |_: Option<glib::Object>, image: Option<gdk::Paintable>| { image.is_some() }
+            ));
 
         let room_avatar_changeable =
             room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomAvatar));
-        let room_avatar_removable = and_expr(room_avatar_changeable.clone(), room_avatar_exists);
+        let room_avatar_removable = and_expr(&room_avatar_changeable, &room_avatar_exists);
 
-        room_avatar_removable.bind(&avatar_remove_button.get(), "visible", gtk::NONE_WIDGET);
-        room_avatar_changeable.bind(&avatar_edit_button.get(), "visible", gtk::NONE_WIDGET);
+        room_avatar_removable.bind(&avatar_remove_button.get(), "visible", gtk::Widget::NONE);
+        room_avatar_changeable.bind(&avatar_edit_button.get(), "visible", gtk::Widget::NONE);
     }
 
     fn init_edit_toggle(&self) {
@@ -214,7 +208,7 @@ impl RoomDetails {
             room.new_allowed_expr(RoomAction::StateEvent(EventType::RoomTopic));
 
         let edit_toggle_visible = or_expr(room_name_changeable, room_topic_changeable);
-        edit_toggle_visible.bind(&edit_toggle.get(), "visible", gtk::NONE_WIDGET);
+        edit_toggle_visible.bind(&edit_toggle.get(), "visible", gtk::Widget::NONE);
     }
 
     fn init_avatar_chooser(&self) {

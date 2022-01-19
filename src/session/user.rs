@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use log::error;
 
-#[glib::gflags("UserActions")]
+#[glib::flags(name = "UserActions")]
 pub enum UserActions {
     NONE = 0b00000000,
     VERIFY = 0b00000001,
@@ -49,42 +49,42 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "user-id",
                         "User id",
                         "The user id of this user",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_string(
+                    glib::ParamSpecString::new(
                         "display-name",
                         "Display Name",
                         "The display name of the user",
                         None,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "avatar",
                         "Avatar",
                         "The avatar of this user",
                         Avatar::static_type(),
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session",
                         "Session",
                         "The session",
                         Session::static_type(),
                         glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "verified",
                         "Verified",
                         "Whether this user has been verified",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
-                    glib::ParamSpec::new_flags(
+                    glib::ParamSpecFlags::new(
                         "allowed-actions",
                         "Allowed Actions",
                         "The actions the currently logged-in user is allowed to perform on this user.",
@@ -142,8 +142,7 @@ mod imp {
 
             obj.bind_property("display-name", obj.avatar(), "display-name")
                 .flags(glib::BindingFlags::SYNC_CREATE)
-                .build()
-                .unwrap();
+                .build();
 
             obj.init_is_verified();
         }

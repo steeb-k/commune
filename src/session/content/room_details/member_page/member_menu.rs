@@ -26,14 +26,14 @@ mod imp {
     impl ObjectImpl for MemberMenu {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "member",
                     "Member",
                     "The member this row is showing",
                     Member::static_type(),
                     glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                 ),
-                glib::ParamSpec::new_flags(
+                glib::ParamSpecFlags::new(
                         "allowed-actions",
                         "Allowed Actions",
                         "The actions the currently logged-in user is allowed to perform on the selected member.",

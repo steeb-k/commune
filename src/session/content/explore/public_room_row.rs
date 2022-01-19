@@ -51,7 +51,7 @@ mod imp {
     impl ObjectImpl for PublicRoomRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpec::new_object(
+                vec![glib::ParamSpecObject::new(
                     "public-room",
                     "Public Room",
                     "The public room displayed by this row",
@@ -201,7 +201,7 @@ impl PublicRoomRow {
 
                 self.update_button(public_room);
             } else if priv_.original_child.borrow().is_none() {
-                let spinner = gtk::SpinnerBuilder::new()
+                let spinner = gtk::Spinner::builder()
                     .spinning(true)
                     .margin_top(12)
                     .margin_bottom(12)

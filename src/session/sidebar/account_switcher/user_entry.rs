@@ -36,7 +36,8 @@ mod imp {
                 "user-entry-row.open-account-settings",
                 None,
                 move |item, _, _| {
-                    item.activate_action("account-switcher.close", None);
+                    item.activate_action("account-switcher.close", None)
+                        .unwrap();
                     item.show_account_settings();
                 },
             );
@@ -51,14 +52,14 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_object(
+                    glib::ParamSpecObject::new(
                         "session-page",
                         "Session StackPage",
                         "The stack page of the session that this entry represents",
                         gtk::StackPage::static_type(),
                         glib::ParamFlags::READWRITE,
                     ),
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "hint",
                         "Selection hint",
                         "The hint of the session that owns the account switcher which this entry belongs to",
@@ -131,6 +132,8 @@ impl UserEntryRow {
             .downcast::<Session>()
             .unwrap();
 
-        session.activate_action("session.open-account-settings", None);
+        session
+            .activate_action("session.open-account-settings", None)
+            .unwrap();
     }
 }

@@ -70,7 +70,7 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpec::new_boolean(
+                    glib::ParamSpecBoolean::new(
                         "show-header",
                         "Show Header",
                         "Whether this item should show a header. This does nothing if this event doesn’t have a header. ",
@@ -162,20 +162,17 @@ impl MessageRow {
             .sender()
             .bind_property("display-name", &priv_.display_name.get(), "label")
             .flags(glib::BindingFlags::SYNC_CREATE)
-            .build()
-            .unwrap();
+            .build();
 
         let show_header_binding = event
             .bind_property("show-header", self, "show-header")
             .flags(glib::BindingFlags::SYNC_CREATE)
-            .build()
-            .unwrap();
+            .build();
 
         let timestamp_binding = event
             .bind_property("time", &*priv_.timestamp, "label")
             .flags(glib::BindingFlags::SYNC_CREATE)
-            .build()
-            .unwrap();
+            .build();
 
         priv_.bindings.borrow_mut().append(&mut vec![
             display_name_binding,
