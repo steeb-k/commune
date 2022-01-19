@@ -281,20 +281,27 @@ impl Timeline {
                 .filter_map(|item| item.event())
             {
                 if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
-                    let replacing_events = relates_to
-                        .into_iter()
-                        .map(|event_id| {
-                            self.event_by_id(&event_id)
-                                .expect("Previously known event has disappeared")
-                        })
-                        .filter(|related_event| related_event.is_replacing_event())
-                        .collect();
+                    let mut replacing_events: Vec<Event> = vec![];
+                    let mut reactions: Vec<Event> = vec![];
+
+                    for relation_event_id in relates_to {
+                        let relation = self
+                            .event_by_id(&relation_event_id)
+                            .expect("Previously known event has disappeared");
+
+                        if relation.is_replacing_event() {
+                            replacing_events.push(relation);
+                        } else if relation.is_reaction() {
+                            reactions.push(relation);
+                        }
+                    }
 
                     if position != 0 || event.replacing_events().is_empty() {
                         event.append_replacing_events(replacing_events);
                     } else {
                         event.prepend_replacing_events(replacing_events);
                     }
+                    event.add_reactions(reactions);
                 }
             }
         }
@@ -314,20 +321,27 @@ impl Timeline {
         let mut new_relations: HashMap<Box<EventId>, Vec<Event>> = HashMap::new();
         for event in events {
             if let Some(relates_to) = relates_to_events.remove(&event.matrix_event_id()) {
-                let replacing_events = relates_to
-                    .into_iter()
-                    .map(|event_id| {
-                        self.event_by_id(&event_id)
-                            .expect("Previously known event has disappeared")
-                    })
-                    .filter(|related_event| related_event.is_replacing_event())
-                    .collect();
+                let mut replacing_events: Vec<Event> = vec![];
+                let mut reactions: Vec<Event> = vec![];
+
+                for relation_event_id in relates_to {
+                    let relation = self
+                        .event_by_id(&relation_event_id)
+                        .expect("Previously known event has disappeared");
+
+                    if relation.is_replacing_event() {
+                        replacing_events.push(relation);
+                    } else if relation.is_reaction() {
+                        reactions.push(relation);
+                    }
+                }
 
                 if !at_front || event.replacing_events().is_empty() {
                     event.append_replacing_events(replacing_events);
                 } else {
                     event.prepend_replacing_events(replacing_events);
                 }
+                event.add_reactions(reactions);
             }
 
             if let Some(relates_to_event) = event.related_matrix_event() {
@@ -337,11 +351,11 @@ impl Timeline {
         }
 
         // Handle new relations
-        for (relates_to_event_id, relations) in new_relations {
+        for (relates_to_event_id, new_relations) in new_relations {
             if let Some(relates_to_event) = self.event_by_id(&relates_to_event_id) {
                 // Get the relations in relates_to_event otherwise they will be added in
                 // in items_changed and they might not be added at the right place.
-                let mut all_replacing_events: Vec<Event> = relates_to_events
+                let mut relations: Vec<Event> = relates_to_events
                     .remove(&relates_to_event.matrix_event_id())
                     .unwrap_or_default()
                     .into_iter()
@@ -349,37 +363,44 @@ impl Timeline {
                         self.event_by_id(&event_id)
                             .expect("Previously known event has disappeared")
                     })
-                    .filter(|related_event| related_event.is_replacing_event())
-                    .collect();
-                let new_replacing_events: Vec<Event> = relations
-                    .into_iter()
-                    .filter(|event| event.is_replacing_event())
                     .collect();
 
                 if at_front {
-                    all_replacing_events.splice(..0, new_replacing_events);
+                    relations.splice(..0, new_relations);
                 } else {
-                    all_replacing_events.extend(new_replacing_events);
+                    relations.extend(new_relations);
+                }
+
+                let mut replacing_events: Vec<Event> = vec![];
+                let mut reactions: Vec<Event> = vec![];
+
+                for relation in relations {
+                    if relation.is_replacing_event() {
+                        replacing_events.push(relation);
+                    } else if relation.is_reaction() {
+                        reactions.push(relation);
+                    }
                 }
 
                 if !at_front || relates_to_event.replacing_events().is_empty() {
-                    relates_to_event.append_replacing_events(all_replacing_events);
+                    relates_to_event.append_replacing_events(replacing_events);
                 } else {
-                    relates_to_event.prepend_replacing_events(all_replacing_events);
+                    relates_to_event.prepend_replacing_events(replacing_events);
                 }
+                relates_to_event.add_reactions(reactions);
             } else {
                 // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
                 // the `related_to` event is added to the list
                 let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
-                let replacing_events_ids: Vec<Box<EventId>> = relations
+
+                let relations_ids: Vec<Box<EventId>> = new_relations
                     .iter()
-                    .filter(|event| event.is_replacing_event())
                     .map(|event| event.matrix_event_id())
                     .collect();
                 if at_front {
-                    relates_to_event.splice(..0, replacing_events_ids);
+                    relates_to_event.splice(..0, relations_ids);
                 } else {
-                    relates_to_event.extend(replacing_events_ids);
+                    relates_to_event.extend(relations_ids);
                 }
             }
         }

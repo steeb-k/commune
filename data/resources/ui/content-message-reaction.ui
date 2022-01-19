@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMessageReaction" parent="GtkFlowBoxChild">
+    <property name="focusable">false</property>
+    <child>
+      <object class="GtkToggleButton" id="button">
+        <style>
+          <class name="pill"/>
+        </style>
+        <property name="action-name">event.toggle-reaction</property>
+        <child>
+          <object class="GtkBox">
+            <child>
+              <object class="GtkLabel" id="reaction_key">
+                <style>
+                  <class name="reaction-key"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel" id="reaction_count">
+                <style>
+                  <class name="reaction-count"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -49,10 +49,12 @@
                 </style>
               </object>
             </child>
+            <child>
+              <object class="ContentMessageReactionList" id="reactions"/>
+            </child>
           </object>
         </child>
       </object>
     </child>
   </template>
 </interface>
-

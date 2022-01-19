@@ -1,5 +1,7 @@
 mod file;
 mod media;
+mod reaction;
+mod reaction_list;
 mod reply;
 mod text;
 
@@ -15,7 +17,10 @@ use matrix_sdk::ruma::events::{
     AnyMessageEventContent,
 };
 
-use self::{file::MessageFile, media::MessageMedia, reply::MessageReply, text::MessageText};
+use self::{
+    file::MessageFile, media::MessageMedia, reaction_list::MessageReactionList,
+    reply::MessageReply, text::MessageText,
+};
 use crate::prelude::*;
 use crate::session::room::Event;
 
@@ -38,6 +43,8 @@ mod imp {
         pub timestamp: TemplateChild<gtk::Label>,
         #[template_child]
         pub content: TemplateChild<adw::Bin>,
+        #[template_child]
+        pub reactions: TemplateChild<MessageReactionList>,
         pub source_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub event: RefCell<Option<Event>>,
@@ -185,6 +192,8 @@ impl MessageRow {
                 }),
             )));
         self.update_content(&event);
+
+        priv_.reactions.set_reaction_list(event.reactions());
         priv_.event.replace(Some(event));
     }
 

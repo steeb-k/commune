@@ -10,3 +10,11 @@
 button.cutout {
   color: alpha(black, 0.8);
 }
+
+message-reactions .toggle {
+  border-color: @dark_2;
+}
+
+message-reactions .toggle:checked {
+  border-color: @blue_5;
+}

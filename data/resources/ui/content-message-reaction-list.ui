@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMessageReactionList" parent="AdwBin">
+    <child>
+      <object class="GtkFlowBox" id="flow_box">
+        <property name="max-children-per-line">100</property>
+      </object>
+    </child>
+  </template>
+</interface>

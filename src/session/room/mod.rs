@@ -6,6 +6,8 @@ mod member;
 mod member_list;
 mod member_role;
 mod power_levels;
+mod reaction_group;
+mod reaction_list;
 mod room_type;
 mod timeline;
 
@@ -19,9 +21,12 @@ pub use self::member_role::MemberRole;
 pub use self::power_levels::{
     PowerLevel, PowerLevels, RoomAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
 };
+pub use self::reaction_group::ReactionGroup;
+pub use self::reaction_list::ReactionList;
 pub use self::room_type::RoomType;
 pub use self::timeline::Timeline;
 use crate::session::User;
+use crate::utils::pending_event_ids;
 
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
@@ -32,9 +37,13 @@ use matrix_sdk::{
     ruma::{
         api::client::r0::sync::sync_events::InvitedRoom,
         events::{
+            reaction::{Relation, SyncReactionEvent},
             room::{
-                member::MembershipState, message::RoomMessageEventContent,
-                name::RoomNameEventContent, topic::RoomTopicEventContent,
+                member::MembershipState,
+                message::RoomMessageEventContent,
+                name::RoomNameEventContent,
+                redaction::{RoomRedactionEventContent, SyncRoomRedactionEvent},
+                topic::RoomTopicEventContent,
             },
             tag::{TagInfo, TagName},
             AnyRoomAccountDataEvent, AnyStateEventContent, AnyStrippedStateEvent,
@@ -915,19 +924,12 @@ impl Room {
         );
     }
 
-    pub fn send_message(&self, content: RoomMessageEventContent) {
+    /// Send the given `event` in this room, with the temporary ID `txn_id`.
+    fn send_room_message_event(&self, event: AnySyncMessageEvent, txn_id: Uuid) {
         let priv_ = imp::Room::from_instance(self);
 
-        let txn_id = Uuid::new_v4();
-        let event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
-            content: content.clone(),
-            event_id: EventId::parse(format!("${}:fractal.gnome.org", txn_id).as_str()).unwrap(),
-            sender: self.session().user().unwrap().user_id().as_ref().to_owned(),
-            origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
-            unsigned: Unsigned::default(),
-        });
-
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
+            let content = event.content();
             let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
             let raw_event: Raw<AnySyncRoomEvent> =
                 Raw::from_json(RawValue::from_string(json).unwrap());
@@ -942,7 +944,79 @@ impl Room {
                     // FIXME: We should retry the request if it fails
                     match handle.await.unwrap() {
                             Ok(_) => {},
-                            Err(error) => error!("Couldn’t send message: {}", error),
+                            Err(error) => error!("Couldn’t send room message event: {}", error),
+                    };
+                })
+            );
+        }
+    }
+
+    /// Send a message with the given `content` in this room.
+    pub fn send_message(&self, content: RoomMessageEventContent) {
+        let (txn_id, event_id) = pending_event_ids();
+        let event = AnySyncMessageEvent::RoomMessage(SyncMessageEvent {
+            content,
+            event_id,
+            sender: self.session().user().unwrap().user_id().as_ref().to_owned(),
+            origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
+            unsigned: Unsigned::default(),
+        });
+
+        self.send_room_message_event(event, txn_id);
+    }
+
+    /// Send a `key` reaction for the `relates_to` event ID in this room.
+    pub fn send_reaction(&self, key: String, relates_to: Box<EventId>) {
+        let (txn_id, event_id) = pending_event_ids();
+        let event = AnySyncMessageEvent::Reaction(SyncReactionEvent {
+            content: Relation::new(relates_to, key).into(),
+            event_id,
+            sender: self.session().user().unwrap().user_id().as_ref().to_owned(),
+            origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
+            unsigned: Unsigned::default(),
+        });
+
+        self.send_room_message_event(event, txn_id);
+    }
+
+    /// Redact `redacted_event_id` in this room because of `reason`.
+    pub fn redact(&self, redacted_event_id: Box<EventId>, reason: Option<String>) {
+        let (txn_id, event_id) = pending_event_ids();
+        let content = if let Some(reason) = reason.as_ref() {
+            RoomRedactionEventContent::with_reason(reason.clone())
+        } else {
+            RoomRedactionEventContent::new()
+        };
+        let event = AnySyncMessageEvent::RoomRedaction(SyncRoomRedactionEvent {
+            content,
+            redacts: redacted_event_id.clone(),
+            event_id,
+            sender: self.session().user().unwrap().user_id().as_ref().to_owned(),
+            origin_server_ts: MilliSecondsSinceUnixEpoch::now(),
+            unsigned: Unsigned::default(),
+        });
+
+        let priv_ = imp::Room::from_instance(self);
+        if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
+            let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
+            let raw_event: Raw<AnySyncRoomEvent> =
+                Raw::from_json(RawValue::from_string(json).unwrap());
+            let event = Event::new(raw_event.into(), self);
+            priv_.timeline.get().unwrap().append_pending(txn_id, event);
+
+            let handle = spawn_tokio!(async move {
+                matrix_room
+                    .redact(&redacted_event_id, reason.as_deref(), Some(txn_id))
+                    .await
+            });
+
+            spawn!(
+                glib::PRIORITY_DEFAULT_IDLE,
+                clone!(@weak self as obj => async move {
+                    // FIXME: We should retry the request if it fails
+                    match handle.await.unwrap() {
+                            Ok(_) => {},
+                            Err(error) => error!("Couldn’t redadct event: {}", error),
                     };
                 })
             );

@@ -18,7 +18,10 @@ use matrix_sdk::{
 use std::sync::Arc;
 
 use crate::{
-    session::{room::Member, Room},
+    session::{
+        room::{Member, ReactionList},
+        Room,
+    },
     spawn_tokio,
     utils::{filename_for_mime, media_type_uid},
 };
@@ -42,6 +45,7 @@ mod imp {
         pub pure_event: RefCell<Option<SyncRoomEvent>>,
         /// Events that replace this one, in the order they arrive.
         pub replacing_events: RefCell<Vec<super::Event>>,
+        pub reactions: ReactionList,
         pub source_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub show_header: Cell<bool>,
         pub room: OnceCell<WeakRef<Room>>,
@@ -574,6 +578,26 @@ impl Event {
                 )
             })
             .is_some()
+    }
+
+    /// Whether this is a reaction.
+    pub fn is_reaction(&self) -> bool {
+        matches!(
+            self.message_content(),
+            Some(AnyMessageEventContent::Reaction(_))
+        )
+    }
+
+    /// The reactions for this event.
+    pub fn reactions(&self) -> &ReactionList {
+        let priv_ = imp::Event::from_instance(self);
+        &priv_.reactions
+    }
+
+    /// Add reactions to this event.
+    pub fn add_reactions(&self, reactions: Vec<Event>) {
+        let priv_ = imp::Event::from_instance(self);
+        priv_.reactions.add_reactions(reactions);
     }
 
     /// The content of this matrix event.

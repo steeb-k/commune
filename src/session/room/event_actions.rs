@@ -72,6 +72,25 @@ where
         action_group.add_action(&view_source);
 
         if let Some(AnyMessageEventContent::RoomMessage(message)) = event.message_content() {
+            // Send/redact a reaction
+            let toggle_reaction =
+                gio::SimpleAction::new("toggle-reaction", Some(&String::static_variant_type()));
+            toggle_reaction.connect_activate(clone!(@weak event => move |_, variant| {
+                let key: String = variant.unwrap().get().unwrap();
+                let room = event.room();
+
+                    let reaction_group = event.reactions().reaction_group_by_key(&key);
+
+                    if let Some(reaction) = reaction_group.and_then(|group| group.user_reaction()) {
+                        // The user already sent that reaction, redact it.
+                        room.redact(reaction.matrix_event_id(), None);
+                    } else {
+                        // The user didn't send that redaction, send it.
+                        room.send_reaction(key, event.matrix_event_id());
+                    }
+            }));
+            action_group.add_action(&toggle_reaction);
+
             if let MessageType::File(_) = message.msgtype {
                 // Save message's file
                 let file_save = gio::SimpleAction::new("file-save", None);

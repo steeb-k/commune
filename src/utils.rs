@@ -67,8 +67,11 @@ use std::str::FromStr;
 use gettextrs::gettext;
 use gtk::gio::{self, prelude::*};
 use gtk::glib::{self, Object};
-use matrix_sdk::media::MediaType;
-use matrix_sdk::ruma::UInt;
+use matrix_sdk::{
+    media::MediaType,
+    ruma::{EventId, UInt},
+    uuid::Uuid,
+};
 use mime::Mime;
 
 /// Returns an expression looking up the given property on `object`.
@@ -216,4 +219,14 @@ pub fn filename_for_mime(mime_type: Option<&str>, fallback: Option<mime::Name>) 
     extension
         .map(|extension| format!("{}.{}", name, extension))
         .unwrap_or(name)
+}
+
+/// Generate temporary IDs for pending events.
+///
+/// Returns a `(transaction_id, event_id)` tuple. The `event_id` is derived from
+/// the `transaction_id`.
+pub fn pending_event_ids() -> (Uuid, Box<EventId>) {
+    let txn_id = Uuid::new_v4();
+    let event_id = EventId::parse(format!("${}:fractal.gnome.org", txn_id)).unwrap();
+    (txn_id, event_id)
 }
