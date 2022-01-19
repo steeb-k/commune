@@ -62,6 +62,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="identity-verification-widget.ui">ui/identity-verification-widget.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="qr-code-scanner.ui">ui/qr-code-scanner.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="components-video-player.ui">ui/components-video-player.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-reaction-chooser.ui">ui/components-reaction-chooser.ui</file>
     <file compressed="true">style.css</file>
     <file compressed="true">style-dark.css</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>

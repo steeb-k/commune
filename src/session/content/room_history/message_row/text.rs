@@ -10,11 +10,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use sourceview::prelude::*;
 
-use crate::session::{
-    content::room_history::ItemRow,
-    room::{EventActions, Member},
-    UserExt,
-};
+use crate::session::{room::Member, UserExt};
 
 static EMOJI_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
@@ -259,8 +255,9 @@ fn set_label_styles(w: &gtk::Label) {
     w.set_xalign(0.0);
     w.set_valign(gtk::Align::Start);
     w.set_halign(gtk::Align::Fill);
-    w.set_selectable(true);
-    w.set_extra_menu(Some(ItemRow::event_message_menu_model()));
+    // FIXME: We have to be able to allow text selection and override popover menu.
+    // See https://gitlab.gnome.org/GNOME/gtk/-/issues/4606
+    // w.set_selectable(true);
 }
 
 fn create_widget_for_html_block(block: &HtmlBlock) -> gtk::Widget {

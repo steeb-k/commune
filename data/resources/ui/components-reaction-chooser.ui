@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ComponentsReactionChooser" parent="AdwBin">
+    <property name="child">
+      <object class="GtkGrid" id="reaction_grid">
+        <property name="row-spacing">4</property>
+        <property name="column-spacing">4</property>
+        <style>
+          <class name="reaction-chooser"/>
+        </style>
+        <child>
+          <object class="GtkButton">
+            <style>
+              <class name="circular"/>
+            </style>
+            <property name="action_name">event.more-reactions</property>
+            <property name="icon_name">view-more-horizontal-symbolic</property>
+            <layout>
+              <property name="column">3</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+</interface>

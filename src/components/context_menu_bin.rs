@@ -57,6 +57,11 @@ mod imp {
                 "context-menu.activate",
                 None,
             );
+
+            klass.install_action("context-menu.close", None, move |widget, _, _| {
+                let priv_ = imp::ContextMenuBin::from_instance(widget);
+                priv_.popover.popdown();
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -171,11 +176,19 @@ pub trait ContextMenuBinExt: 'static {
 
     /// Get the `MenuModel` used in the context menu.
     fn context_menu(&self) -> Option<gio::MenuModel>;
+
+    /// Get the `PopoverMenu` used in the context menu.
+    fn popover(&self) -> &gtk::PopoverMenu;
 }
 
 impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
     fn set_context_menu(&self, menu: Option<&gio::MenuModel>) {
         let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
+
+        if self.context_menu().as_ref() == menu {
+            return;
+        }
+
         priv_.popover.set_menu_model(menu);
         self.notify("context-menu");
     }
@@ -183,6 +196,11 @@ impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
     fn context_menu(&self) -> Option<gio::MenuModel> {
         let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
         priv_.popover.menu_model()
+    }
+
+    fn popover(&self) -> &gtk::PopoverMenu {
+        let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
+        &priv_.popover
     }
 }
 

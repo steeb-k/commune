@@ -48,15 +48,27 @@ where
         &MODEL.0
     }
 
+    /// The default `MenuModel` for common state event actions.
+    fn event_state_menu_model() -> &'static gio::MenuModel {
+        static MODEL: Lazy<MenuModelSendSync> = Lazy::new(|| {
+            MenuModelSendSync(
+                gtk::Builder::from_resource("/org/gnome/FractalNext/event-menu.ui")
+                    .object::<gio::MenuModel>("state_menu_model")
+                    .unwrap(),
+            )
+        });
+        &MODEL.0
+    }
+
     /// Set the actions available on `self` for `event`.
     ///
     /// Unsets the actions if `event` is `None`.
     ///
-    /// Should be used with the compatible model from `event_menu_model`.
-    fn set_event_actions(&self, event: Option<&Event>) {
+    /// Should be paired with the `EventActions` menu models.
+    fn set_event_actions(&self, event: Option<&Event>) -> Option<gio::SimpleActionGroup> {
         if event.is_none() {
             self.insert_action_group("event", gio::NONE_ACTION_GROUP);
-            return;
+            return None;
         }
 
         let event = event.unwrap();
@@ -79,15 +91,15 @@ where
                 let key: String = variant.unwrap().get().unwrap();
                 let room = event.room();
 
-                    let reaction_group = event.reactions().reaction_group_by_key(&key);
+                let reaction_group = event.reactions().reaction_group_by_key(&key);
 
-                    if let Some(reaction) = reaction_group.and_then(|group| group.user_reaction()) {
-                        // The user already sent that reaction, redact it.
-                        room.redact(reaction.matrix_event_id(), None);
-                    } else {
-                        // The user didn't send that redaction, send it.
-                        room.send_reaction(key, event.matrix_event_id());
-                    }
+                if let Some(reaction) = reaction_group.and_then(|group| group.user_reaction()) {
+                    // The user already sent that reaction, redact it.
+                    room.redact(reaction.matrix_event_id(), None);
+                } else {
+                    // The user didn't send that redaction, send it.
+                    room.send_reaction(key, event.matrix_event_id());
+                }
             }));
             action_group.add_action(&toggle_reaction);
 
@@ -113,6 +125,7 @@ where
         }
 
         self.insert_action_group("event", Some(&action_group));
+        Some(action_group)
     }
 
     /// Save the file in `event`.

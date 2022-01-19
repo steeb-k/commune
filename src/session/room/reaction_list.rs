@@ -119,9 +119,8 @@ impl ReactionList {
     /// Remove a reaction group by its key.
     pub fn remove_reaction_group(&self, key: &str) {
         let priv_ = imp::ReactionList::from_instance(self);
-        if let Some((pos, _, _)) = priv_.reactions.borrow_mut().shift_remove_full(key) {
-            self.items_changed(pos as u32, 1, 0);
-        }
+        let (pos, ..) = priv_.reactions.borrow_mut().shift_remove_full(key).unwrap();
+        self.items_changed(pos as u32, 1, 0);
     }
 }
 

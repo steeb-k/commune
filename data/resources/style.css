@@ -310,8 +310,12 @@ message-reactions .toggle {
   border: 1px solid @light_4;
 }
 
-message-reactions .toggle:checked {
+message-reactions .toggle:checked,
+.reaction-chooser button:checked {
   background-color: alpha(@blue_1, 0.4);
+}
+
+message-reactions .toggle:checked {
   border-color: @blue_2;
 }
 
@@ -322,6 +326,16 @@ message-reactions .reaction-key {
 message-reactions .reaction-count {
   font-size: 0.8em;
   padding-left: 5px;
+}
+
+.reaction-chooser {
+  margin: 5px;
+}
+
+.reaction-chooser button {
+  font-size: 1.3em;
+  -gtk-icon-size: 1.3em;
+  padding: 2px;
 }
 
 .divider-row {
