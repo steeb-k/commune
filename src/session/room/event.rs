@@ -654,7 +654,7 @@ impl Event {
     /// - Image message (`MessageType::Image`).
     /// - Video message (`MessageType::Video`).
     ///
-    /// Returns `Ok((uid, filename, binary_content))` on success, `Err` if an error occured while
+    /// Returns `Ok((uid, filename, binary_content))` on success, `Err` if an error occurred while
     /// fetching the content. Panics on an incompatible event. `uid` is a unique identifier for this
     /// media.
     pub async fn get_media_content(&self) -> Result<(String, String, Vec<u8>), matrix_sdk::Error> {

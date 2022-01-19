@@ -257,7 +257,7 @@ impl RoomCreation {
         None
     }
 
-    /// Display the error that occured during creation
+    /// Display the error that occurred during creation
     fn handle_error(&self, error: HttpError) {
         let priv_ = imp::RoomCreation::from_instance(self);
 

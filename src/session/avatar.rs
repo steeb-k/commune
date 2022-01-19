@@ -305,7 +305,7 @@ where
     Ok(response.content_uri)
 }
 
-/// Error occuring when updating an avatar.
+/// Error occurring when updating an avatar.
 #[derive(Debug)]
 pub enum AvatarError {
     Filesystem(std::io::Error),

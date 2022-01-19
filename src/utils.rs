@@ -36,7 +36,7 @@ macro_rules! event_from_sync_event {
 
 /// Spawn a future on the default `MainContext`
 ///
-/// This was taken from `gtk-macors`
+/// This was taken from `gtk-macros`
 /// but allows setting optionally the priority
 ///
 /// FIXME: this should maybe be upstreamed

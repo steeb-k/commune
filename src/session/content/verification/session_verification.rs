@@ -310,11 +310,11 @@ impl SessionVerification {
             let error_message = match result {
                 Some(Ok(_)) => None,
                 Some(Err(error)) => {
-                    error!("Failed to bootstap cross singing: {}", error);
-                    Some(gettext("An error occured during the creation of the encryption keys."))
+                    error!("Failed to bootstrap cross-signing: {}", error);
+                    Some(gettext("An error occurred during the creation of the encryption keys."))
                 },
                 None => {
-                    error!("Failed to bootstap cross singing: User cancelled the authentication");
+                    error!("Failed to bootstrap cross-signing: User cancelled the authentication");
                     Some(gettext("You cancelled the authentication needed to create the encryption keys."))
                 },
             };

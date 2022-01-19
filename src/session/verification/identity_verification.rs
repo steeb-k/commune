@@ -283,7 +283,7 @@ mod imp {
 
             self.main_sender.replace(Some(main_sender));
 
-            // We don't need to track ourselfs because we show "Login Request" as name in that case.
+            // We don't need to track ourselves because we show "Login Request" as name in that case.
             if obj.user() != obj.session().user().unwrap() {
                 obj.user().connect_notify_local(
                     Some("display-name"),
@@ -612,7 +612,7 @@ impl IdentityVerification {
         };
 
         let error_message = error_message.unwrap_or_else(|| {
-            gettext("An unknown error occured during the verification process.")
+            gettext("An unknown error occurred during the verification process.")
         });
 
         let error = Error::new(move |_| {
@@ -697,7 +697,7 @@ impl IdentityVerification {
         }
     }
 
-    /// Accept an incomming request
+    /// Accept an incoming request
     pub fn accept(&self) {
         let priv_ = imp::IdentityVerification::from_instance(self);
         if self.state() == State::Requested {
@@ -1027,7 +1027,7 @@ impl Context {
         } else if let Some(decimal) = request.decimals() {
             SasData::Decimal(decimal)
         } else {
-            error!("Sas verification failed because emoji nor deciaml are supported by the server");
+            error!("SAS verification failed because neither emoji nor decimal are supported by the server");
             return Ok(State::Error);
         };
 
@@ -1035,7 +1035,7 @@ impl Context {
         self.send_state(State::SasV1);
 
         // Wait for match user action
-        debug!("Wait for user action match or missmatch");
+        debug!("Wait for user action match or mismatch");
         wait_without_scanning_sas![self];
 
         request.confirm().await?;

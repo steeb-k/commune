@@ -109,7 +109,7 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// This is a `ListBoxRow` continaing a loading spinner.
+    /// This is a `ListBoxRow` containing a loading spinner.
     ///
     /// It's also possible to set an error once the loading fails including a retry button.
     pub struct LoadingListBoxRow(ObjectSubclass<imp::LoadingListBoxRow>)

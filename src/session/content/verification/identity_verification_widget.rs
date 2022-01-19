@@ -589,7 +589,7 @@ impl IdentityVerificationWidget {
                     name
                 ));
                 priv_.label12.set_markup(&gettext("Verification Complete"));
-                priv_.label13.set_markup(&gettext!("<b>{}</b>is now verified and you can now be sure that your comunication will be private.", name));
+                priv_.label13.set_markup(&gettext!("<b>{}</b> is verified and you can now be sure that your communication will be private.", name));
                 priv_.label14.set_markup(&gettext!("Waiting for {}", name));
                 priv_.label15.set_markup(&gettext!(
                     "Ask <b>{}</b> to accept the verification request.",

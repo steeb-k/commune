@@ -1045,7 +1045,7 @@ impl Room {
             glib::PRIORITY_DEFAULT_IDLE,
             clone!(@weak self as this => async move {
                 match handle.await.unwrap() {
-                    Ok(_avatar_uri) => info!("Sucessfully updated room avatar"),
+                    Ok(_avatar_uri) => info!("Successfully updated room avatar"),
                     Err(error) => error!("Couldn’t update room avatar: {}", error),
                 };
             })

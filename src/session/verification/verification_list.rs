@@ -211,7 +211,7 @@ impl VerificationList {
             if let Some(request) = request {
                 request.notify_state();
             } else {
-                warn!("Recevied verification event, but we don't have the inital event.");
+                warn!("Received verification event, but we don't have the initial event.");
             }
         }
     }

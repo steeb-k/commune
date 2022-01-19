@@ -42,7 +42,7 @@ mod imp {
         pub loading: Cell<bool>,
         pub complete: Cell<bool>,
         pub oldest_event: RefCell<Option<Box<EventId>>>,
-        /// The most recent verification reuqest event
+        /// The most recent verification request event
         pub verification: RefCell<Option<IdentityVerification>>,
     }
 
@@ -609,7 +609,7 @@ impl Timeline {
         self.notify("complete");
     }
 
-    // Wether the timeline is full loaded
+    // Whether the timeline is fully loaded
     pub fn is_complete(&self) -> bool {
         let priv_ = imp::Timeline::from_instance(self);
         priv_.complete.get()

@@ -186,7 +186,7 @@ impl MemberMenu {
             }
             button
                 .downcast::<gtk::ToggleButton>()
-                .expect("The parent of a MemberMenu needs to ba a gtk::ToggleButton")
+                .expect("The parent of a MemberMenu needs to be a gtk::ToggleButton")
                 .set_active(false);
         }
     }

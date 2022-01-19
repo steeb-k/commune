@@ -167,7 +167,7 @@ impl VerificationInfoBar {
                 priv_.cancel_btn.set_label(&gettext("Decline"));
                 true
             } else {
-                priv_.label.set_label(&gettext("Verification in progess"));
+                priv_.label.set_label(&gettext("Verification in progress"));
                 priv_.accept_btn.set_label(&gettext("Continue"));
                 priv_.cancel_btn.set_label(&gettext("Cancel"));
                 true

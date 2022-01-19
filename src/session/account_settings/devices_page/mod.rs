@@ -138,11 +138,11 @@ impl DevicesPage {
 
             device_list.connect_items_changed(
                 clone!(@weak self as obj => move |device_list, _, _, _| {
-                    obj.set_other_sessions_visiblity(device_list.n_items() > 0)
+                    obj.set_other_sessions_visibility(device_list.n_items() > 0)
                 }),
             );
 
-            self.set_other_sessions_visiblity(device_list.n_items() > 0);
+            self.set_other_sessions_visibility(device_list.n_items() > 0);
 
             device_list.connect_notify_local(
                 Some("current-device"),
@@ -164,7 +164,7 @@ impl DevicesPage {
         self.notify("user");
     }
 
-    fn set_other_sessions_visiblity(&self, visible: bool) {
+    fn set_other_sessions_visibility(&self, visible: bool) {
         let priv_ = imp::DevicesPage::from_instance(self);
         priv_.other_sessions_group.set_visible(visible);
     }

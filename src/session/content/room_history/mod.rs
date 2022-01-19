@@ -132,7 +132,7 @@ mod imp {
                     glib::ParamSpecBoolean::new(
                         "empty",
                         "Empty",
-                        "Wheter there is currently a room shown",
+                        "Whether there is currently a room shown",
                         false,
                         glib::ParamFlags::READABLE,
                     ),
