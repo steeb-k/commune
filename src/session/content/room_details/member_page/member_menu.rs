@@ -1,6 +1,6 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::room::Member;
+use crate::session::{room::Member, UserActions, UserExt};
 
 mod imp {
     use super::*;
@@ -13,6 +13,7 @@ mod imp {
         pub member: RefCell<Option<Member>>,
         pub popover: OnceCell<gtk::PopoverMenu>,
         pub destroy_handler: RefCell<Option<glib::signal::SignalHandlerId>>,
+        pub actions_handler: RefCell<Option<glib::signal::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -31,7 +32,16 @@ mod imp {
                     "The member this row is showing",
                     Member::static_type(),
                     glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
-                )]
+                ),
+                glib::ParamSpec::new_flags(
+                        "allowed-actions",
+                        "Allowed Actions",
+                        "The actions the currently logged-in user is allowed to perform on the selected member.",
+                        UserActions::static_type(),
+                        UserActions::default().bits(),
+                        glib::ParamFlags::READABLE,
+                    )
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -53,6 +63,7 @@ mod imp {
         fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "member" => obj.member().to_value(),
+                "allowed-actions" => obj.allowed_actions().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -84,13 +95,37 @@ impl MemberMenu {
 
     pub fn set_member(&self, member: Option<Member>) {
         let priv_ = imp::MemberMenu::from_instance(self);
+        let prev_member = self.member();
 
-        if self.member() == member {
+        if prev_member == member {
             return;
+        }
+
+        if let Some(member) = prev_member {
+            if let Some(handler) = priv_.actions_handler.take() {
+                member.disconnect(handler);
+            }
+        }
+
+        if let Some(ref member) = member {
+            let handler = member.connect_notify_local(
+                Some("allowed-actions"),
+                clone!(@weak self as obj => move |_, _| {
+                    obj.notify("allowed-actions");
+                }),
+            );
+
+            priv_.actions_handler.replace(Some(handler));
         }
 
         priv_.member.replace(member);
         self.notify("member");
+        self.notify("allowed-actions");
+    }
+
+    pub fn allowed_actions(&self) -> UserActions {
+        self.member()
+            .map_or(UserActions::NONE, |member| member.allowed_actions())
     }
 
     fn popover_menu(&self) -> &gtk::PopoverMenu {

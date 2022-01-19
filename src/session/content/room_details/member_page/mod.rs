@@ -14,7 +14,7 @@ use crate::prelude::*;
 use crate::session::content::RoomDetails;
 use crate::session::room::{Member, RoomAction};
 use crate::session::Room;
-use crate::session::User;
+use crate::session::{User, UserActions};
 use crate::spawn;
 use log::warn;
 
@@ -237,7 +237,25 @@ impl MemberPage {
 
     pub fn member_menu(&self) -> &MemberMenu {
         let priv_ = imp::MemberPage::from_instance(self);
-        priv_.member_menu.get_or_init(|| MemberMenu::new())
+        priv_.member_menu.get_or_init(|| {
+            let menu = MemberMenu::new();
+
+            menu.connect_notify_local(
+                Some("allowed-actions"),
+                clone!(@weak self as obj => move |menu, _| {
+                    obj.update_actions(menu.allowed_actions());
+                }),
+            );
+            self.update_actions(menu.allowed_actions());
+            menu
+        })
+    }
+
+    fn update_actions(&self, allowed_actions: UserActions) {
+        self.action_set_enabled(
+            "member.verify",
+            allowed_actions.contains(UserActions::VERIFY),
+        );
     }
 
     fn verify_member(&self, member: Member) {

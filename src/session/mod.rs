@@ -19,7 +19,7 @@ pub use self::room::{Event, Item, Room};
 pub use self::room_creation::RoomCreation;
 use self::room_list::RoomList;
 use self::sidebar::Sidebar;
-pub use self::user::{User, UserExt};
+pub use self::user::{User, UserActions, UserExt};
 use self::verification::VerificationList;
 use crate::session::sidebar::ItemList;
 

@@ -1,12 +1,27 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 
-use crate::session::{verification::IdentityVerification, Avatar, Session};
+use crate::session::{
+    verification::{IdentityVerification, VerificationState},
+    Avatar, Session,
+};
 use crate::{spawn, spawn_tokio};
 use matrix_sdk::encryption::identities::UserIdentity;
 use std::sync::Arc;
 
 use log::error;
+
+#[glib::gflags("UserActions")]
+pub enum UserActions {
+    NONE = 0b00000000,
+    VERIFY = 0b00000001,
+}
+
+impl Default for UserActions {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
 
 mod imp {
     use super::*;
@@ -69,6 +84,14 @@ mod imp {
                         false,
                         glib::ParamFlags::READABLE,
                     ),
+                    glib::ParamSpec::new_flags(
+                        "allowed-actions",
+                        "Allowed Actions",
+                        "The actions the currently logged-in user is allowed to perform on this user.",
+                        UserActions::static_type(),
+                        UserActions::default().bits(),
+                        glib::ParamFlags::READABLE,
+                    )
                 ]
             });
 
@@ -106,6 +129,7 @@ mod imp {
                 "session" => obj.session().to_value(),
                 "avatar" => obj.avatar().to_value(),
                 "verified" => obj.is_verified().to_value(),
+                "allowed-actions" => obj.allowed_actions().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -154,6 +178,15 @@ impl User {
     pub async fn verify_identity(&self) -> IdentityVerification {
         let request = IdentityVerification::create(&self.session(), Some(self)).await;
         self.session().verification_list().add(request.clone());
+        // FIXME: actually listen to room events to get updates for verification state
+        request.connect_notify_local(
+            Some("state"),
+            clone!(@weak self as obj => move |request,_| {
+                if request.state() == VerificationState::Completed {
+                    obj.init_is_verified();
+                }
+            }),
+        );
         request
     }
 
@@ -174,6 +207,7 @@ impl User {
 
             priv_.is_verified.set(is_verified);
             obj.notify("verified");
+            obj.notify("allowed-actions");
         }));
     }
 }
@@ -215,6 +249,20 @@ pub trait UserExt: IsA<User> {
 
     fn set_avatar_url(&self, url: Option<Box<MxcUri>>) {
         self.avatar().set_url(url);
+    }
+
+    fn allowed_actions(&self) -> UserActions {
+        let user = self.upcast_ref();
+
+        let is_us = self.session().user().map_or(false, |session_user| {
+            session_user.user_id() != self.user_id()
+        });
+
+        if !user.is_verified() && is_us {
+            UserActions::VERIFY
+        } else {
+            UserActions::NONE
+        }
     }
 }
 
