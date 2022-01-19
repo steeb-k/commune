@@ -44,6 +44,16 @@
                   </object>
                 </child>
                 <child>
+                  <object class="GtkImage" id="verified_icon">
+                    <property name="icon-name">verified-symbolic</property>
+                    <binding name="visible">
+                      <lookup name="verified" type="User">
+                        <lookup name="member">ContentMemberRow</lookup>
+                      </lookup>
+                    </binding>
+                  </object>
+                </child>
+                <child>
                   <object class="Badge">
                     <binding name="power-level">
                       <lookup name="power-level" type="Member">
