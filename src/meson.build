@@ -50,3 +50,16 @@ cargo_build = custom_target(
     'cp', 'src' / rust_target / meson.project_name(), '@OUTPUT@',
   ]
 )
+
+cargo_doc = custom_target(
+    'cargo-doc',
+    build_by_default: false,
+    build_always_stale: true,
+    output: 'doc',
+    console: true,
+    command: [
+      'env', cargo_env,
+      cargo, 'doc',
+      cargo_options + ['--no-deps', '--document-private-items'],
+    ],
+  )

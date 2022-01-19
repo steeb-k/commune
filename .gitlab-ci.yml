@@ -1,6 +1,7 @@
 stages:
   - check
   - test
+  - doc
 
 flatpak:
   image: 'registry.gitlab.gnome.org/gnome/gnome-runtime-images/rust_bundle:master'
@@ -18,14 +19,17 @@ flatpak:
       xvfb-run -a -s "-screen 0 1024x768x24"
       flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
     - flatpak build-bundle repo ${BUNDLE} --runtime-repo=${RUNTIME_REPO} ${APP_ID} ${BRANCH}
+    - mkdir logs
+    - mv .flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/meson-logs/meson-log.txt logs/
+    - mv .flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/meson-logs/testlog.txt logs/
+
   artifacts:
     name: 'Flatpak artifacts'
     expose_as: 'Get Flatpak bundle here'
     when: 'always'
     paths:
       - "${BUNDLE}"
-      - '.flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/meson-logs/meson-log.txt'
-      - '.flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/meson-logs/testlog.txt'
+      - 'logs'
     expire_in: 14 days
 
 # Configure and run rustfmt
@@ -51,31 +55,32 @@ cargo-clippy:
     - echo "cargo clippy -- -D warnings" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
 
 pages:
-  image: "ghcr.io/gtk-rs/gtk4-rs/gtk4:latest"
+  image: 'registry.gitlab.gnome.org/gnome/gnome-runtime-images/rust_bundle:master'
   variables:
     RUSTDOCFLAGS: >
       -Z unstable-options
       --enable-index-page
-      --extern-html-root-url=gio=https://gtk-rs.org/gtk-rs/git/docs
-      --extern-html-root-url=gsk4=https://gtk-rs.org/gtk4-rs/git/docs
-      --extern-html-root-url=gdk4=https://gtk-rs.org/gtk4-rs/git/docs
-      --extern-html-root-url=gtk4=https://gtk-rs.org/gtk4-rs/git/docs
-      --extern-html-root-url=glib=https://gtk-rs.org/gtk-rs/git/docs
-      --extern-html-root-url=libadwaita=https://world.pages.gitlab.gnome.org/Rust/libadwaita-rs/libadwaita/
-      --extern-html-root-url=matrix-sdk=https://docs.rs/matrix-sdk
+      --extern-html-root-url=gio=https://gtk-rs.org/gtk-rs-core/stable/latest/docs/gio/
+      --extern-html-root-url=gsk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/gsk4/
+      --extern-html-root-url=gdk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/gdk4/
+      --extern-html-root-url=gtk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/gtk4/
+      --extern-html-root-url=glib=https://gtk-rs.org/gtk-rs-core/stable/latest/docs/glib/
+      --extern-html-root-url=libadwaita=https://world.pages.gitlab.gnome.org/Rust/libadwaita-rs/stable/latest/docs/libadwaita/
+      --extern-html-root-url=matrix-sdk=https://matrix-org.github.io/matrix-rust-sdk/matrix_sdk
+  stage: doc
+  tags:
+    - flatpak
+  variables:
+    MANIFEST_PATH: "build-aux/org.gnome.FractalNext.Devel.json"
+    FLATPAK_MODULE: "fractal"
   script:
-    # generate the docs
-    - dnf update -y
-    - dnf install -y openssl-devel cmake gtk-update-icon-cache llvm pipewire-devel clang
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
-    - source $HOME/.cargo/env
-    - meson _build --prefix=/usr -Dskip-cargo-build=true
-    - ninja -C _build install
-    - cargo doc -p fractal --no-deps
-    - mv target/doc/ public
+    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
+    - echo "ninja src/doc" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
+    - mv .flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/src/doc public
+    - chmod -R a=rwx public
   artifacts:
     paths:
-      - public
+      - 'public'
   only:
     refs:
       - fractal-next
