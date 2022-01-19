@@ -41,6 +41,45 @@ fail="${neg}fail${res}"
 force_install=0
 verbose=0
 
+# Helper functions
+# Sort to_sort in natural order.
+sort() {
+    local size=${#to_sort[@]}
+    local swapped=0;
+
+    for (( i = 0; i < $size-1; i++ ))
+    do
+        swapped=0
+        for ((j = 0; j < $size-1-$i; j++ ))
+        do
+            if [[ "${to_sort[$j]}" > "${to_sort[$j+1]}" ]]
+            then
+                temp="${to_sort[$j]}";
+                to_sort[$j]="${to_sort[$j+1]}";
+                to_sort[$j+1]="$temp";
+                swapped=1;
+            fi
+        done
+
+        if [[ $swapped -eq 0 ]]; then
+            break;
+        fi
+    done
+}
+
+# Remove common entries in to_diff1 and to_diff2.
+diff() {
+    for i in ${!to_diff1[@]}; do
+        for j in ${!to_diff2[@]}; do
+            if [[ "${to_diff1[$i]}" == "${to_diff2[$j]}" ]]; then
+                unset to_diff1[$i]
+                unset to_diff2[$j]
+                break
+            fi
+        done
+    done
+}
+
 # Check if rustup is available.
 # Argument:
 #   '-i' to install if missing.
@@ -231,6 +270,124 @@ run_typos() {
     fi
 }
 
+# Check if files in POTFILES.in are correct.
+#
+# This checks, in that order:
+#   - All files exist
+#   - All files with translatable strings are present and only those
+#   - Files are sorted alphabetically
+#
+# This assumes the following:
+#   - POTFILES is located at 'po/POTFILES.in'
+#   - UI (Glade) files are located in 'data/resources/ui' and use 'translatable="yes"'
+#   - Rust files are located in 'src' and use '*gettext' methods or macros
+check_potfiles() {
+    echo -e "$Checking po/POTFILES.in…"
+
+    local ret=0
+
+    # Check that files in POTFILES exist.
+    while read -r line; do
+        if [[ -n $line &&  ${line::1} != '#' ]]; then
+            if [[ ! -f $line ]]; then
+                echo -e "$error File '$line' in POTFILES.in does not exist"
+                ret=1
+            fi
+            if [[ ${line:(-3):3} == '.ui' ]]; then
+                ui_potfiles+=($line)
+            elif [[ ${line:(-3):3} == '.rs' ]]; then
+                rs_potfiles+=($line)
+            fi
+        fi
+    done < po/POTFILES.in
+
+    if [[ ret -eq 1 ]]; then
+        echo -e "  Checking po/POTFILES.in result: $fail"
+        echo "Please fix the above issues"
+        exit 1
+    fi
+
+    # Get UI files with 'translatable="yes"'.
+    ui_files=(`grep -lIr 'translatable="yes"' data/resources/ui/*`)
+
+    # Get Rust files with regex 'gettext[!]?\('.
+    rs_files=(`grep -lIrE 'gettext[!]?\(' src/*`)
+
+    # Remove common files
+    to_diff1=("${ui_potfiles[@]}")
+    to_diff2=("${ui_files[@]}")
+    diff
+    ui_potfiles=("${to_diff1[@]}")
+    ui_files=("${to_diff2[@]}")
+    
+    to_diff1=("${rs_potfiles[@]}")
+    to_diff2=("${rs_files[@]}")
+    diff
+    rs_potfiles=("${to_diff1[@]}")
+    rs_files=("${to_diff2[@]}")
+
+    potfiles_count=$((${#ui_potfiles[@]} + ${#rs_potfiles[@]}))
+    if [[ $potfiles_count -eq 1 ]]; then
+        echo ""
+        echo -e "$error Found 1 file in POTFILES.in without translatable strings:"
+        ret=1
+    elif [[ $potfiles_count -ne 0 ]]; then
+        echo ""
+        echo -e "$error Found $potfiles_count files in POTFILES.in without translatable strings:"
+        ret=1
+    fi
+    for file in ${ui_potfiles[@]}; do
+        echo $file
+    done
+    for file in ${rs_potfiles[@]}; do
+        echo $file
+    done
+
+    let files_count=$((${#ui_files[@]} + ${#rs_files[@]}))
+    if [[ $files_count -eq 1 ]]; then
+        echo ""
+        echo -e "$error Found 1 file with translatable strings not present in POTFILES.in:"
+        ret=1
+    elif [[ $files_count -ne 0 ]]; then
+        echo ""
+        echo -e "$error Found $files_count with translatable strings not present in POTFILES.in:"
+        ret=1
+    fi
+    for file in ${ui_files[@]}; do
+        echo $file
+    done
+    for file in ${rs_files[@]}; do
+        echo $file
+    done
+
+    if [[ ret -eq 1 ]]; then
+        echo ""
+        echo -e "  Checking po/POTFILES.in result: $fail"
+        echo "Please fix the above issues"
+        exit 1
+    fi
+
+    # Check sorted alphabetically
+    to_sort=("${potfiles[@]}")
+    sort
+    for i in ${!potfiles[@]}; do
+        if [[ "${potfiles[$i]}" != "${to_sort[$i]}" ]]; then
+            echo -e "$error Found file '${potfiles[$i]}' before '${to_sort[$i]}' in POTFILES.in"
+            ret=1
+            break
+        fi
+    done
+
+    if [[ ret -eq 1 ]]; then
+        echo ""
+        echo -e "  Checking po/POTFILES.in result: $fail"
+        echo "Please fix the above issues"
+        exit 1
+    else
+        echo -e "  Checking po/POTFILES.in result: $ok"
+    fi
+}
+
 # Check arguments
 while [[ "$1" ]]; do case $1 in
     -f | --force-install )
@@ -254,3 +411,5 @@ echo ""
 run_rustfmt
 echo ""
 run_typos
+echo ""
+check_potfiles
