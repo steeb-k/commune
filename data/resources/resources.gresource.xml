@@ -1,77 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/FractalNext/">
+    <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/devices-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/empty-page.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/other-device.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/setup-complete.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
+    <file compressed="true">style-dark.css</file>
+    <file compressed="true">style.css</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-device-row.ui">ui/account-settings-device-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-devices-page.ui">ui/account-settings-devices-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings.ui">ui/account-settings.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="add-account-row.ui">ui/add-account-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="user-entry-row.ui">ui/user-entry-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="shortcuts.ui">ui/shortcuts.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content.ui">ui/content.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-room-history.ui">ui/content-room-history.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-explore.ui">ui/content-explore.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="avatar-with-selection.ui">ui/avatar-with-selection.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-auth-dialog.ui">ui/components-auth-dialog.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-avatar.ui">ui/components-avatar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-loading-listbox-row.ui">ui/components-loading-listbox-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-reaction-chooser.ui">ui/components-reaction-chooser.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="components-video-player.ui">ui/components-video-player.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-divider-row.ui">ui/content-divider-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-explore-item.ui">ui/content-explore-item.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-public-room-row.ui">ui/content-public-room-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-item.ui">ui/content-item.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-message-file.ui">ui/content-message-file.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-member-page.ui">ui/content-member-page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-member-item.ui">ui/content-member-item.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-member-row.ui">ui/content-member-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-explore.ui">ui/content-explore.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invite-subpage.ui">ui/content-invite-subpage.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-invite.ui">ui/content-invite.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invitee-item.ui">ui/content-invitee-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-invitee-row.ui">ui/content-invitee-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-item.ui">ui/content-item.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-markdown-popover.ui">ui/content-markdown-popover.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-member-item.ui">ui/content-member-item.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-member-page.ui">ui/content-member-page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-member-row.ui">ui/content-member-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-message-file.ui">ui/content-message-file.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-media.ui">ui/content-message-media.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-reaction-list.ui">ui/content-message-reaction-list.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-reaction.ui">ui/content-message-reaction.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-reply.ui">ui/content-message-reply.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-message-row.ui">ui/content-message-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-divider-row.ui">ui/content-divider-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-public-room-row.ui">ui/content-public-room-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-room-details.ui">ui/content-room-details.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-room-history.ui">ui/content-room-history.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content-state-creation.ui">ui/content-state-creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-state-row.ui">ui/content-state-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-state-tombstone.ui">ui/content-state-tombstone.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-state-creation.ui">ui/content-state-creation.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-markdown-popover.ui">ui/content-markdown-popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="content-invite.ui">ui/content-invite.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="content-verification-info-bar.ui">ui/content-verification-info-bar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="content.ui">ui/content.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="context-menu-bin.ui">ui/context-menu-bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="event-menu.ui">ui/event-menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="event-source-dialog.ui">ui/event-source-dialog.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="identity-verification-widget.ui">ui/identity-verification-widget.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="in-app-notification.ui">ui/in-app-notification.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="login.ui">ui/login.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="media-viewer.ui">ui/media-viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="member-menu.ui">ui/member-menu.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="pill.ui">ui/pill.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="qr-code-scanner.ui">ui/qr-code-scanner.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="room-creation.ui">ui/room-creation.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="room-title.ui">ui/room-title.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="session-verification.ui">ui/session-verification.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="session.ui">ui/session.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="sidebar.ui">ui/sidebar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="shortcuts.ui">ui/shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-account-switcher.ui">ui/sidebar-account-switcher.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-item.ui">ui/sidebar-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-category-row.ui">ui/sidebar-category-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-entry-row.ui">ui/sidebar-entry-row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-item.ui">ui/sidebar-item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-room-row.ui">ui/sidebar-room-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="sidebar-verification-row.ui">ui/sidebar-verification-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="window.ui">ui/window.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="context-menu-bin.ui">ui/context-menu-bin.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="pill.ui">ui/pill.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="room-title.ui">ui/room-title.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="sidebar.ui">ui/sidebar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="spinner-button.ui">ui/spinner-button.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="in-app-notification.ui">ui/in-app-notification.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="components-avatar.ui">ui/components-avatar.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="avatar-with-selection.ui">ui/avatar-with-selection.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="components-auth-dialog.ui">ui/components-auth-dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings.ui">ui/account-settings.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-device-row.ui">ui/account-settings-device-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-devices-page.ui">ui/account-settings-devices-page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="components-loading-listbox-row.ui">ui/components-loading-listbox-row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="room-creation.ui">ui/room-creation.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="session-verification.ui">ui/session-verification.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="user-entry-row.ui">ui/user-entry-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="verification-emoji.ui">ui/verification-emoji.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="identity-verification-widget.ui">ui/identity-verification-widget.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="qr-code-scanner.ui">ui/qr-code-scanner.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="components-video-player.ui">ui/components-video-player.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks" alias="components-reaction-chooser.ui">ui/components-reaction-chooser.ui</file>
-    <file compressed="true">style.css</file>
-    <file compressed="true">style-dark.css</file>
-    <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/empty-page.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/devices-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/setup-complete.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/other-device.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="window.ui">ui/window.ui</file>
   </gresource>
 </gresources>
