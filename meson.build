@@ -1,7 +1,7 @@
 project('fractal',
         'rust',
         version: '0.0.1',
-        license: 'MIT',
+        license: 'GPL-3.0-or-later',
   meson_version: '>= 0.57')
 
 i18n = import('i18n')

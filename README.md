@@ -2,16 +2,26 @@
 
 # Fractal
 
-Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for collaboration in large groups, such as free software projects.
+Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for collaboration in large groups, such as free software projects. The current development focus is on Fractal Next, a rewrite based on modern technologies.
 
-* Come to talk to us on Matrix: <https://matrix.to/#/#fractal-gtk:matrix.org>
+* Come talk to us on Matrix: <https://matrix.to/#/#fractal:gnome.org>
 * Main repository: <https://gitlab.gnome.org/GNOME/fractal/>
 
-![screenshot](https://gitlab.gnome.org/GNOME/fractal/raw/master/screenshots/fractal.png)
+![screenshot](https://gitlab.gnome.org/GNOME/fractal/raw/fractal-next/screenshots/fractal.png)
+
+
+## Work in Progress
+
+We are working on rewriting [Fractal](https://gitlab.gnome.org/GNOME/fractal/) from scratch using [GTK4](https://www.gtk.org/) and the [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk). This effort is called fractal-next.
+
+We already talked several times in the past about rewriting the application, but for different reasons we didn't do it. Now that the [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk) exists, which does a lot of the heavy lifting for us, we have a good starting point to build Fractal without the need to implement every single feature from the Matrix API. Finally with the release of GTK4 we would need to rework most of Fractal's code anyways. Therefore, it just makes sense to start over and build Fractal with all the features (e.g end-to-end encryption) we have in mind.
+
+The main development branch is [fractal-next](https://gitlab.gnome.org/GNOME/fractal/-/tree/fractal-next). Issues that target fractal-next should be labelled accordingly as "Fractal-next".
+Our current work focuses on getting the same level of features as we already have in the stable version. Then fractal-next will replace our current codebase, merging it into the main git branch and becoming the new nightly version. You can follow along our progress towards that goal by looking at the [feature parity milestone](https://gitlab.gnome.org/GNOME/fractal/-/milestones/18).
 
 ## Installation instructions
 
-Flatpak is the recommended installation method. You can get the official
+Flatpak is the recommended installation method. Until Fractal Next is ready, you can get the official
 Fractal Flatpak on Flathub.
 
 <a href="https://flathub.org/apps/details/org.gnome.Fractal">
@@ -46,26 +56,17 @@ flatpak install --user flathub org.freedesktop.Sdk.Extension.rust-stable//21.08
 # Install the required llvm extension from Flathub
 flatpak install --user flathub org.freedesktop.Sdk.Extension.llvm12//21.08
 ```
-**Inside** the `build-aux` folder run:
+Move inside the `build-aux` folder and then build and install the app:
 
 ```
+cd build-aux
 flatpak-builder --user --install app org.gnome.FractalNext.Devel.json
 ```
-to compile and build fractalNext.Devel via flatpak. \
-(If flatpak is used, FractalNext.Devel can be entirely removed from your system with: `flatpak remove org.gnome.FractalNext.Devel.json`)
-### Snap
 
-To build as a snap simply install snapcraft
+Fractal Next can then be entirely removed from your system with:
 
 ```
-snap install --classic snapcraft
-snapcraft
-```
-
-The snapcraft build will produce a file that ends with .snap that can be easily installed with the snap command
-
-```
-snap install --dangerous FILENAME.snap
+flatpak remove org.gnome.FractalNext.Devel.json`
 ```
 
 ### GNU/Linux
@@ -75,18 +76,6 @@ outside of Flatpak or snap, you will need Meson and Ninja (as well as Rust and C
 
 ```sh
 meson . _build --prefix=/usr/local
-ninja -C _build
-sudo ninja -C _build install
-```
-
-### macOS
-
-```sh
-brew install gtk+3 dbus bash adwaita-icon-theme libhandy gtksourceview4 \
-    gspell gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-editing-services
-# empirically needs 3.22.19 or later of gtk3+
-# ...and run configure as:
-/usr/local/bin/bash -c "meson . _build --prefix=/usr/local"
 ninja -C _build
 sudo ninja -C _build install
 ```
@@ -110,31 +99,12 @@ that service on your system. If you're using GNOME or KDE
 this should work for you out of the box with gnome-keyring or
 ksecretservice.
 
-## Supported m.room.message (msgtypes)
-
-msgtypes          | Recv                | Send
---------          | -----               | ------
-m.text            | Done                | Done
-m.emote           | Done                | Done
-m.notice          |                     |
-m.image           | Done                | Done
-m.file            | Done                | Done
-m.location        |                     |
-m.video           | Done                | Done
-m.audio           | Done                | Done
-
-Full reference in: <https://matrix.org/docs/spec/client_server/r0.2.0.html#m-room-message-msgtypes>
-
 ## Frequently Asked Questions
 
 * Does Fractal have encryption support? Will it ever?
 
-Fractal does not currently have encryption support, but
-there is an initiative for it.
-
-We are heading towards using matrix-rust-sdk rather than our own implementation. (See https://gitlab.gnome.org/GNOME/fractal/-/issues/636)
-
-Code and further information for this module can be found at [matrix/matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk).
+Yes, Fractal-next has encryption support using Cross-Signing.
+See <https://gitlab.gnome.org/GNOME/fractal/-/issues/717> for more info on the state of encryption.
 
 * Can I run Fractal with the window closed?
 
@@ -145,12 +115,11 @@ when GNOME gets a "Do Not Disturb" feature.
 
 ## The origin of Fractal
 
-This project is based on Fest <https://github.com/fest-im/fest>, formerly called ruma-gtk.
+Fractal-next is a complete rewrite of Fractal built on top of the [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk) using [GTK4](https://gtk.org/).
 
-Instead of using RUMA Client, Fractal calls directly to the matrix.org
-REST API.
-
-The first version of this project was called guillotine, based on French revolution,
+The previous version of Fractal was using GTK3 and its own backend to talk to a matrix homeserver.
+Initial versions were based on Fest <https://github.com/fest-im/fest>, formerly called ruma-gtk.
+In the origins of the project it was called guillotine, based on French revolution,
 in relation with the Riot client name, but it's a negative name so we decide
 to change for a math one.
 
