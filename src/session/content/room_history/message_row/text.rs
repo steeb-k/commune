@@ -218,6 +218,8 @@ impl MessageText {
 
         if EMOJI_REGEX.is_match(text) {
             child.add_css_class("emoji");
+        } else {
+            child.remove_css_class("emoji");
         }
 
         if use_markup {
