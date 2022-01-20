@@ -1,11 +1,10 @@
+use std::{path::PathBuf, string::FromUtf8Error};
+
 use gettextrs::gettext;
 use matrix_sdk::ruma::identifiers::{DeviceId, UserId};
-use secret_service::EncryptionType;
-use secret_service::SecretService;
+use secret_service::{EncryptionType, SecretService};
 use serde::{Deserialize, Serialize};
 use serde_json::error::Error as JsonError;
-use std::path::PathBuf;
-use std::string::FromUtf8Error;
 use url::Url;
 
 use crate::config::APP_ID;
@@ -90,8 +89,8 @@ pub fn restore_sessions() -> Result<Vec<StoredSession>, secret_service::Error> {
     Ok(res)
 }
 
-/// Writes a session to the `SecretService`, overwriting any previously stored session with the
-/// same `homeserver`, `username` and `device-id`.
+/// Writes a session to the `SecretService`, overwriting any previously stored
+/// session with the same `homeserver`, `username` and `device-id`.
 pub fn store_session(session: &StoredSession) -> Result<(), secret_service::Error> {
     let ss = SecretService::new(EncryptionType::Dh)?;
     let collection = get_default_collection_unlocked(&ss)?;

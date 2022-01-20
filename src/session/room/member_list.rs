@@ -1,15 +1,18 @@
-use crate::session::room::{Member, Room, UserId};
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use indexmap::IndexMap;
 use std::sync::Arc;
 
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use indexmap::IndexMap;
 use matrix_sdk::ruma::events::{room::member::RoomMemberEventContent, SyncStateEvent};
 
+use crate::session::room::{Member, Room, UserId};
+
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct MemberList {
@@ -114,8 +117,8 @@ impl MemberList {
         }
         let num_members_added = members.len().saturating_sub(prev_len);
 
-        // We can't have the borrow active when items_changed is emitted because that will probably
-        // cause reads of the members field.
+        // We can't have the borrow active when items_changed is emitted because that
+        // will probably cause reads of the members field.
         std::mem::drop(members);
         if num_members_added > 0 {
             // IndexMap preserves insertion order, so all the new items will be at the end.
@@ -138,8 +141,8 @@ impl MemberList {
             })
             .clone();
 
-        // We can't have the borrow active when items_changed is emitted because that will probably
-        // cause reads of the members field.
+        // We can't have the borrow active when items_changed is emitted because that
+        // will probably cause reads of the members field.
         std::mem::drop(members);
         if was_member_added {
             // IndexMap preserves insertion order so the new member will be at the end.
@@ -151,7 +154,8 @@ impl MemberList {
 
     /// Updates a room member based on the room member state event.
     ///
-    /// Creates a new member first if there is no member matching the given event.
+    /// Creates a new member first if there is no member matching the given
+    /// event.
     pub fn update_member_for_member_event(&self, event: &SyncStateEvent<RoomMemberEventContent>) {
         self.member_by_id(event.sender.clone().into())
             .update_from_member_event(event);

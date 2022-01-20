@@ -1,26 +1,27 @@
 use std::path::Path;
 
 use gtk::{gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-
 use log::{debug, error, info};
-use matrix_sdk::room::Room as MatrixRoom;
-use matrix_sdk::ruma::events::room::avatar::RoomAvatarEventContent;
-use matrix_sdk::ruma::events::AnyStateEventContent;
-use matrix_sdk::Client;
 use matrix_sdk::{
     media::{MediaFormat, MediaRequest, MediaThumbnailSize, MediaType},
-    ruma::{api::client::r0::media::get_content_thumbnail::Method, identifiers::MxcUri},
+    room::Room as MatrixRoom,
+    ruma::{
+        api::client::r0::media::get_content_thumbnail::Method,
+        events::{room::avatar::RoomAvatarEventContent, AnyStateEventContent},
+        identifiers::MxcUri,
+    },
+    Client,
 };
 
-use crate::{spawn, spawn_tokio};
-
-use crate::session::Session;
+use crate::{session::Session, spawn, spawn_tokio};
 
 mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
+
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Avatar {

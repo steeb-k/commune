@@ -28,9 +28,11 @@ static EMOJI_REGEX: Lazy<Regex> = Lazy::new(|| {
 });
 
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::RefCell;
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct MessageText {
@@ -255,8 +257,8 @@ fn set_label_styles(w: &gtk::Label) {
     w.set_xalign(0.0);
     w.set_valign(gtk::Align::Start);
     w.set_halign(gtk::Align::Fill);
-    // FIXME: We have to be able to allow text selection and override popover menu.
-    // See https://gitlab.gnome.org/GNOME/gtk/-/issues/4606
+    // FIXME: We have to be able to allow text selection and override popover
+    // menu. See https://gitlab.gnome.org/GNOME/gtk/-/issues/4606
     // w.set_selectable(true);
 }
 

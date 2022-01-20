@@ -7,10 +7,12 @@ use matrix_sdk::ruma::{
 use crate::session::{room::Room, Avatar, RoomList};
 
 mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
+
     use glib::signal::SignalHandlerId;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct PublicRoom {

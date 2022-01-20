@@ -1,13 +1,13 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::components::Avatar;
-use crate::session::Avatar as AvatarItem;
+use crate::{components::Avatar, session::Avatar as AvatarItem};
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/avatar-with-selection.ui")]

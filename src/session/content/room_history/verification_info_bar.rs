@@ -1,14 +1,17 @@
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::user::UserExt;
-use crate::session::verification::{IdentityVerification, VerificationState};
-use gettextrs::gettext;
+use crate::session::{
+    user::UserExt,
+    verification::{IdentityVerification, VerificationState},
+};
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
-    use glib::SignalHandlerId;
     use std::cell::RefCell;
+
+    use glib::{subclass::InitializingObject, SignalHandlerId};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-verification-info-bar.ui")]
@@ -158,7 +161,8 @@ impl VerificationInfoBar {
             if request.is_finished() {
                 false
             } else if matches!(request.state(), VerificationState::Requested) {
-                // Translators: The value is the display name of the user who wants to be verified
+                // Translators: The value is the display name of the user who wants to be
+                // verified
                 priv_.label.set_markup(&gettext!(
                     "<b>{}</b> wants to be verified",
                     request.user().display_name()

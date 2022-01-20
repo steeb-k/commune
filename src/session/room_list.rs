@@ -1,5 +1,9 @@
+use std::{cell::Cell, collections::HashSet};
+
+use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
+use log::error;
 use matrix_sdk::{
     deserialized_responses::Rooms as ResponseRooms,
     ruma::identifiers::{RoomId, RoomOrAliasId},
@@ -9,16 +13,12 @@ use crate::{
     session::{room::Room, Session},
     spawn, spawn_tokio, Error,
 };
-use gettextrs::gettext;
-use log::error;
-use std::cell::Cell;
-use std::collections::HashSet;
 
 mod imp {
-    use glib::object::WeakRef;
-    use glib::subclass::Signal;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::RefCell;
+
+    use glib::{object::WeakRef, subclass::Signal};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::*;
 
@@ -208,7 +208,7 @@ impl RoomList {
             list.shift_remove_full(room_id)
         };
 
-        if let Some((position, _, _)) = removed {
+        if let Some((position, ..)) = removed {
             self.items_changed(position as u32, 1, 0);
         }
     }
@@ -236,8 +236,8 @@ impl RoomList {
 
     /// Loads the state from the `Store`.
     ///
-    /// Note that the `Store` currently doesn't store all events, therefore, we aren't really
-    /// loading much via this function.
+    /// Note that the `Store` currently doesn't store all events, therefore, we
+    /// aren't really loading much via this function.
     pub fn load(&self) {
         let priv_ = imp::RoomList::from_instance(self);
         let session = self.session();

@@ -7,10 +7,12 @@ use crate::{
 };
 
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::{subclass::InitializingObject, SignalHandlerId};
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-room-row.ui")]

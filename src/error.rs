@@ -3,8 +3,9 @@ use gtk::{glib, subclass::prelude::*};
 type WidgetBuilderFn = Box<dyn Fn(&super::Error) -> Option<gtk::Widget> + 'static>;
 
 mod imp {
-    use super::*;
     use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Default)]
     pub struct Error {
@@ -33,7 +34,8 @@ impl Error {
         obj
     }
 
-    /// Set a function that builds the widget used to display this error in the UI
+    /// Set a function that builds the widget used to display this error in the
+    /// UI
     pub fn set_widget_builder<F: Fn(&Self) -> Option<gtk::Widget> + 'static>(&self, f: F) {
         let priv_ = imp::Error::from_instance(self);
         priv_.widget_builder.replace(Some(Box::new(f)));

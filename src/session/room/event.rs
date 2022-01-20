@@ -1,12 +1,21 @@
-use gtk::{glib, glib::clone, glib::DateTime, prelude::*, subclass::prelude::*};
+use std::sync::Arc;
+
+use gtk::{
+    glib,
+    glib::{clone, DateTime},
+    prelude::*,
+    subclass::prelude::*,
+};
 use log::warn;
 use matrix_sdk::{
     deserialized_responses::SyncRoomEvent,
     media::MediaEventContent,
     ruma::{
         events::{
-            room::message::Relation,
-            room::{message::MessageType, redaction::RoomRedactionEventContent},
+            room::{
+                message::{MessageType, Relation},
+                redaction::RoomRedactionEventContent,
+            },
             AnyMessageEventContent, AnyRedactedSyncMessageEvent, AnyRedactedSyncStateEvent,
             AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, Unsigned,
         },
@@ -15,7 +24,6 @@ use matrix_sdk::{
     },
     Error as MatrixError,
 };
-use std::sync::Arc;
 
 use crate::{
     session::{
@@ -31,17 +39,19 @@ use crate::{
 pub struct BoxedSyncRoomEvent(SyncRoomEvent);
 
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::SignalHandlerId;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::{Cell, RefCell};
+
+    use glib::{object::WeakRef, SignalHandlerId};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Event {
         /// The deserialized matrix event
         pub event: RefCell<Option<AnySyncRoomEvent>>,
-        /// The SDK event containing encryption information and the serialized event as `Raw`
+        /// The SDK event containing encryption information and the serialized
+        /// event as `Raw`
         pub pure_event: RefCell<Option<SyncRoomEvent>>,
         /// Events that replace this one, in the order they arrive.
         pub replacing_events: RefCell<Vec<super::Event>>,
@@ -270,7 +280,8 @@ impl Event {
     pub fn original_source(&self) -> String {
         let priv_ = imp::Event::from_instance(self);
 
-        // We have to convert it to a Value, because a RawValue cannot be pretty-printed.
+        // We have to convert it to a Value, because a RawValue cannot be
+        // pretty-printed.
         let json: serde_json::Value = serde_json::from_str(
             priv_
                 .pure_event
@@ -288,7 +299,8 @@ impl Event {
 
     /// The pretty-formatted JSON used for this matrix event.
     ///
-    /// If this matrix event has been replaced, returns the replacing `Event`'s source.
+    /// If this matrix event has been replaced, returns the replacing `Event`'s
+    /// source.
     pub fn source(&self) -> String {
         self.replacement()
             .map(|replacement| replacement.source())
@@ -344,8 +356,8 @@ impl Event {
                     AnyMessageEventContent::Reaction(event) => Some(event.relates_to.event_id),
                     AnyMessageEventContent::RoomMessage(event) => match event.relates_to {
                         Some(relates_to) => match relates_to {
-                            // TODO: Figure out Relation::Annotation(), Relation::Reference() but they are pre-specs for now
-                            // See: https://github.com/uhoreg/matrix-doc/blob/aggregations-reactions/proposals/2677-reactions.md
+                            // TODO: Figure out Relation::Annotation(), Relation::Reference() but
+                            // they are pre-specs for now See: https://github.com/uhoreg/matrix-doc/blob/aggregations-reactions/proposals/2677-reactions.md
                             Relation::Reply { in_reply_to } => Some(in_reply_to.event_id),
                             Relation::Replacement(replacement) => Some(replacement.event_id),
                             _ => None,
@@ -360,7 +372,8 @@ impl Event {
         }
     }
 
-    /// Whether this event is hidden from the user or displayed in the room history.
+    /// Whether this event is hidden from the user or displayed in the room
+    /// history.
     pub fn is_hidden_event(&self) -> bool {
         let priv_ = imp::Event::from_instance(self);
 
@@ -556,8 +569,8 @@ impl Event {
 
     /// The `Event` that replaces this one, if any.
     ///
-    /// If this matrix event has been redacted or replaced, returns the corresponding `Event`,
-    /// otherwise returns `None`.
+    /// If this matrix event has been redacted or replaced, returns the
+    /// corresponding `Event`, otherwise returns `None`.
     pub fn replacement(&self) -> Option<Event> {
         self.replacing_events()
             .iter()
@@ -632,7 +645,8 @@ impl Event {
 
     /// The content to display for this `Event`.
     ///
-    /// If this matrix event has been replaced, returns the replacing `Event`'s content.
+    /// If this matrix event has been replaced, returns the replacing `Event`'s
+    /// content.
     pub fn content(&self) -> Option<AnyMessageEventContent> {
         self.replacement()
             .and_then(|replacement| replacement.content())
@@ -654,9 +668,9 @@ impl Event {
     /// - Image message (`MessageType::Image`).
     /// - Video message (`MessageType::Video`).
     ///
-    /// Returns `Ok((uid, filename, binary_content))` on success, `Err` if an error occurred while
-    /// fetching the content. Panics on an incompatible event. `uid` is a unique identifier for this
-    /// media.
+    /// Returns `Ok((uid, filename, binary_content))` on success, `Err` if an
+    /// error occurred while fetching the content. Panics on an incompatible
+    /// event. `uid` is a unique identifier for this media.
     pub async fn get_media_content(&self) -> Result<(String, String, Vec<u8>), matrix_sdk::Error> {
         if let AnyMessageEventContent::RoomMessage(content) = self.message_content().unwrap() {
             let client = self.room().session().client();

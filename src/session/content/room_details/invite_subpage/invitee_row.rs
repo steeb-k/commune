@@ -1,13 +1,15 @@
+use adw::subclass::prelude::BinImpl;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use super::Invitee;
-use adw::subclass::prelude::BinImpl;
 
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-invitee-row.ui")]

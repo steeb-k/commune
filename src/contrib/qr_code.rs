@@ -1,18 +1,16 @@
 // Taken from https://gitlab.gnome.org/msandova/trinket/-/blob/master/src/qr_code.rs
 // All credit goes to Maximiliano
-use gtk::glib;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-
 use std::convert::TryFrom;
 
+use gtk::{glib, prelude::*, subclass::prelude::*};
+
 pub(crate) mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
 
     use gtk::{gdk, graphene};
-
     use once_cell::sync::Lazy;
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct QRCode {

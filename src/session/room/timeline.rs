@@ -14,19 +14,25 @@ use matrix_sdk::{
     Error as MatrixError,
 };
 
-use crate::session::{
-    room::{Event, Item, ItemType, Room},
-    user::UserExt,
-    verification::{IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
+use crate::{
+    session::{
+        room::{Event, Item, ItemType, Room},
+        user::UserExt,
+        verification::{IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
+    },
+    spawn, spawn_tokio,
 };
-use crate::{spawn, spawn_tokio};
 
 mod imp {
-    use super::*;
+    use std::{
+        cell::{Cell, RefCell},
+        collections::VecDeque,
+    };
+
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
-    use std::collections::VecDeque;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Timeline {
@@ -37,7 +43,8 @@ mod imp {
         pub list: RefCell<VecDeque<Item>>,
         /// A Hashmap linking `EventId` to corresponding `Event`
         pub event_map: RefCell<HashMap<Box<EventId>, Event>>,
-        /// Maps the temporary `EventId` of the pending Event to the real `EventId`
+        /// Maps the temporary `EventId` of the pending Event to the real
+        /// `EventId`
         pub pending_events: RefCell<HashMap<String, Box<EventId>>>,
         pub loading: Cell<bool>,
         pub complete: Cell<bool>,
@@ -169,7 +176,8 @@ impl Timeline {
 
         let last_new_message_date;
 
-        // Insert date divider, this needs to happen before updating the position and headers
+        // Insert date divider, this needs to happen before updating the position and
+        // headers
         let added = {
             let position = position as usize;
             let added = added as usize;
@@ -254,12 +262,14 @@ impl Timeline {
 
             // Update the events after the new events
             for next in list.range((position + added)..) {
-                // After an event with non hiddable header the visibility for headers will be correct
+                // After an event with non hiddable header the visibility for headers will be
+                // correct
                 if !next.can_hide_header() {
                     break;
                 }
 
-                // Once the sender changes we can be sure that the visibility for headers will be correct
+                // Once the sender changes we can be sure that the visibility for headers will
+                // be correct
                 if next.matrix_sender() != previous_sender {
                     next.set_show_header(true);
                     break;
@@ -389,8 +399,8 @@ impl Timeline {
                 }
                 relates_to_event.add_reactions(reactions);
             } else {
-                // Store the new event if the `related_to` event isn't known, we will update the `relates_to` once
-                // the `related_to` event is added to the list
+                // Store the new event if the `related_to` event isn't known, we will update the
+                // `relates_to` once the `related_to` event is added to the list
                 let relates_to_event = relates_to_events.entry(relates_to_event_id).or_default();
 
                 let relations_ids: Vec<Box<EventId>> = new_relations
@@ -419,7 +429,8 @@ impl Timeline {
         let index = {
             let index = {
                 let mut list = priv_.list.borrow_mut();
-                // Extend the size of the list so that rust doesn't need to reallocate memory multiple times
+                // Extend the size of the list so that rust doesn't need to reallocate memory
+                // multiple times
                 list.reserve(batch.len());
 
                 if list.is_empty() {
@@ -552,7 +563,8 @@ impl Timeline {
 
         {
             let mut hidden_events: Vec<Event> = vec![];
-            // Extend the size of the list so that rust doesn't need to reallocate memory multiple times
+            // Extend the size of the list so that rust doesn't need to reallocate memory
+            // multiple times
             priv_.list.borrow_mut().reserve(added);
 
             for event in batch {

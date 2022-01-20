@@ -3,18 +3,19 @@ use std::convert::TryFrom;
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, subclass::prelude::*};
 
+use super::EntryType;
 use crate::session::{
     room::{Room, RoomType},
     sidebar::{Category, CategoryRow, Entry, EntryRow, RoomRow, VerificationRow},
     verification::IdentityVerification,
 };
 
-use super::EntryType;
-
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::RefCell;
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Row {

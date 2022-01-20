@@ -1,8 +1,6 @@
-use gtk::pango;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{glib, glib::clone};
 use std::cmp::max;
+
+use gtk::{glib, glib::clone, pango, prelude::*, subclass::prelude::*};
 
 const DEFAULT_PLACEHOLDER: &str = "<widget>";
 const PANGO_SCALE: i32 = 1024;
@@ -12,8 +10,9 @@ fn pango_pixels(d: i32) -> i32 {
 }
 
 mod imp {
-    use super::*;
     use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug)]
     pub struct LabelWithWidgets {

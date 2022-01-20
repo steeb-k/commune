@@ -1,15 +1,14 @@
-use gtk::glib;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
+use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
 
-use crate::session::user::UserExt;
-use crate::session::{Session, User};
+use crate::session::{user::UserExt, Session, User};
 
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Invitee {

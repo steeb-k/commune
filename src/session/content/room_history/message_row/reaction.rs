@@ -4,9 +4,10 @@ use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use crate::session::room::ReactionGroup;
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-message-reaction.ui")]

@@ -12,16 +12,18 @@ mod room_title;
 mod spinner_button;
 mod video_player;
 
-pub use self::auth_dialog::{AuthData, AuthDialog};
-pub use self::avatar::Avatar;
-pub use self::badge::Badge;
-pub use self::context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl};
-pub use self::custom_entry::CustomEntry;
-pub use self::in_app_notification::InAppNotification;
-pub use self::label_with_widgets::LabelWithWidgets;
-pub use self::loading_listbox_row::LoadingListBoxRow;
-pub use self::pill::Pill;
-pub use self::reaction_chooser::ReactionChooser;
-pub use self::room_title::RoomTitle;
-pub use self::spinner_button::SpinnerButton;
-pub use self::video_player::VideoPlayer;
+pub use self::{
+    auth_dialog::{AuthData, AuthDialog},
+    avatar::Avatar,
+    badge::Badge,
+    context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    custom_entry::CustomEntry,
+    in_app_notification::InAppNotification,
+    label_with_widgets::LabelWithWidgets,
+    loading_listbox_row::LoadingListBoxRow,
+    pill::Pill,
+    reaction_chooser::ReactionChooser,
+    room_title::RoomTitle,
+    spinner_button::SpinnerButton,
+    video_player::VideoPlayer,
+};

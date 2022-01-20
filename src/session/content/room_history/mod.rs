@@ -4,14 +4,12 @@ mod message_row;
 mod state_row;
 mod verification_info_bar;
 
-use self::divider_row::DividerRow;
-use self::item_row::ItemRow;
-use self::state_row::StateRow;
-use self::verification_info_bar::VerificationInfoBar;
-
 use adw::subclass::prelude::*;
 use gtk::{
-    gdk, glib, glib::clone, glib::signal::Inhibit, prelude::*, subclass::prelude::*,
+    gdk, glib,
+    glib::{clone, signal::Inhibit},
+    prelude::*,
+    subclass::prelude::*,
     CompositeTemplate,
 };
 use matrix_sdk::ruma::events::room::message::{
@@ -20,16 +18,26 @@ use matrix_sdk::ruma::events::room::message::{
 };
 use sourceview::prelude::*;
 
-use crate::components::{CustomEntry, Pill, RoomTitle};
-use crate::session::content::{MarkdownPopover, RoomDetails};
-use crate::session::room::{Item, Room, RoomType, Timeline};
-use crate::session::user::UserExt;
+use self::{
+    divider_row::DividerRow, item_row::ItemRow, state_row::StateRow,
+    verification_info_bar::VerificationInfoBar,
+};
+use crate::{
+    components::{CustomEntry, Pill, RoomTitle},
+    session::{
+        content::{MarkdownPopover, RoomDetails},
+        room::{Item, Room, RoomType, Timeline},
+        user::UserExt,
+    },
+};
 
 mod imp {
+    use std::cell::{Cell, RefCell};
+
+    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
+
     use super::*;
     use crate::Application;
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
-    use std::cell::{Cell, RefCell};
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-room-history.ui")]
@@ -409,7 +417,8 @@ impl RoomHistory {
                     .or_else(|| {
                         pill.room().map(|room| {
                             (
-                                // No server name needed. matrix.to URIs for mentions aren't routable
+                                // No server name needed. matrix.to URIs for mentions aren't
+                                // routable
                                 room.room_id().matrix_to_url([]).to_string(),
                                 room.display_name(),
                             )
@@ -527,8 +536,9 @@ impl RoomHistory {
     }
 
     fn load_more_messages(&self, adj: &gtk::Adjustment) {
-        // Load more messages when the user gets close to the end of the known room history
-        // Use the page size twice to detect if the user gets close to the end
+        // Load more messages when the user gets close to the end of the known room
+        // history Use the page size twice to detect if the user gets close to
+        // the end
         if let Some(room) = self.room() {
             if adj.value() < adj.page_size() * 2.0
                 || adj.upper() <= adj.page_size() / 2.0

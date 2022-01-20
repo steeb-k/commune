@@ -1,14 +1,15 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
+use super::Event;
 use crate::session::UserExt;
 
-use super::Event;
-
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use indexmap::IndexSet;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct ReactionGroup {

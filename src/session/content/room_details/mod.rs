@@ -1,28 +1,28 @@
 mod invite_subpage;
 mod member_page;
 
-use adw::prelude::*;
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::gdk;
 use gtk::{
+    gdk,
     glib::{self, clone, closure},
     subclass::prelude::*,
     CompositeTemplate,
 };
 use matrix_sdk::ruma::events::EventType;
 
-pub use self::invite_subpage::InviteSubpage;
-pub use self::member_page::MemberPage;
-use crate::components::CustomEntry;
-use crate::session::room::RoomAction;
-use crate::session::{self, Room};
-use crate::utils::{and_expr, or_expr};
+pub use self::{invite_subpage::InviteSubpage, member_page::MemberPage};
+use crate::{
+    components::CustomEntry,
+    session::{self, room::RoomAction, Room},
+    utils::{and_expr, or_expr},
+};
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::unsync::OnceCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-room-details.ui")]

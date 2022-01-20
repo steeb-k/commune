@@ -9,16 +9,17 @@ mod device_item;
 use self::device_item::Item as DeviceItem;
 mod device_list;
 use self::device_list::DeviceList;
-
-use crate::components::LoadingListBoxRow;
-
-use crate::session::user::UserExt;
-use crate::session::User;
+use crate::{
+    components::LoadingListBoxRow,
+    session::{user::UserExt, User},
+};
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::RefCell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/account-settings-devices-page.ui")]

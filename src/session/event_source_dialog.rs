@@ -1,12 +1,14 @@
-use crate::session::room::Event;
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use sourceview::prelude::*;
 
+use crate::session::room::Event;
+
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
     use once_cell::unsync::OnceCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/event-source-dialog.ui")]

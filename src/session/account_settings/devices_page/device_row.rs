@@ -2,14 +2,15 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use super::Device;
-use crate::components::SpinnerButton;
-use crate::spawn;
+use crate::{components::SpinnerButton, spawn};
 
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/account-settings-device-row.ui")]
@@ -127,7 +128,7 @@ impl DeviceRow {
 
             priv_.verified_icon.set_visible(device.is_verified());
             // TODO: Implement verification
-            //priv_.verify_button.set_visible(!device.is_verified());
+            // priv_.verify_button.set_visible(!device.is_verified());
 
             if let Some(last_seen_ip) = device.last_seen_ip() {
                 priv_.last_seen_ip.set_label(last_seen_ip);

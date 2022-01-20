@@ -11,22 +11,7 @@ mod reaction_list;
 mod room_type;
 mod timeline;
 
-pub use self::event::Event;
-pub use self::event_actions::EventActions;
-pub use self::highlight_flags::HighlightFlags;
-pub use self::item::Item;
-pub use self::item::ItemType;
-pub use self::member::Member;
-pub use self::member_role::MemberRole;
-pub use self::power_levels::{
-    PowerLevel, PowerLevels, RoomAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
-};
-pub use self::reaction_group::ReactionGroup;
-pub use self::reaction_list::ReactionList;
-pub use self::room_type::RoomType;
-pub use self::timeline::Timeline;
-use crate::session::User;
-use crate::utils::pending_event_ids;
+use std::{cell::RefCell, convert::TryInto, path::PathBuf, sync::Arc};
 
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
@@ -57,25 +42,38 @@ use matrix_sdk::{
     uuid::Uuid,
 };
 use serde_json::value::RawValue;
-use std::cell::RefCell;
-use std::convert::TryInto;
-use std::path::PathBuf;
-use std::sync::Arc;
 
-use crate::components::{LabelWithWidgets, Pill};
-use crate::prelude::*;
-use crate::session::avatar::update_room_avatar_from_file;
-use crate::session::room::member_list::MemberList;
-use crate::session::{Avatar, Session};
-use crate::Error;
-use crate::{spawn, spawn_tokio};
+pub use self::{
+    event::Event,
+    event_actions::EventActions,
+    highlight_flags::HighlightFlags,
+    item::{Item, ItemType},
+    member::Member,
+    member_role::MemberRole,
+    power_levels::{PowerLevel, PowerLevels, RoomAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
+    reaction_group::ReactionGroup,
+    reaction_list::ReactionList,
+    room_type::RoomType,
+    timeline::Timeline,
+};
+use crate::{
+    components::{LabelWithWidgets, Pill},
+    prelude::*,
+    session::{
+        avatar::update_room_avatar_from_file, room::member_list::MemberList, Avatar, Session, User,
+    },
+    spawn, spawn_tokio,
+    utils::pending_event_ids,
+    Error,
+};
 
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::subclass::Signal;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::Cell;
+
+    use glib::{object::WeakRef, subclass::Signal};
+    use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Room {
@@ -87,7 +85,8 @@ mod imp {
         pub category: Cell<RoomType>,
         pub timeline: OnceCell<Timeline>,
         pub members: OnceCell<MemberList>,
-        /// The user who sent the invite to this room. This is only set when this room is an invitiation.
+        /// The user who sent the invite to this room. This is only set when
+        /// this room is an invitiation.
         pub inviter: RefCell<Option<Member>>,
         pub members_loaded: Cell<bool>,
         pub power_levels: RefCell<PowerLevels>,
@@ -813,7 +812,7 @@ impl Room {
     pub fn append_events(&self, batch: Vec<Event>) {
         let priv_ = imp::Room::from_instance(self);
 
-        //FIXME: notify only when the count has changed
+        // FIXME: notify only when the count has changed
         self.notify_notification_count();
 
         let mut latest_change = self.latest_change();
@@ -1022,7 +1021,8 @@ impl Room {
         }
     }
 
-    /// Creates an expression that is true when the user is allowed the given action.
+    /// Creates an expression that is true when the user is allowed the given
+    /// action.
     pub fn new_allowed_expr(&self, room_action: RoomAction) -> gtk::ClosureExpression {
         let session = self.session();
         let user_id = session.user().unwrap().user_id();

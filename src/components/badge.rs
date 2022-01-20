@@ -1,13 +1,12 @@
-use adw::prelude::*;
-use adw::subclass::prelude::*;
-use gtk::glib;
-use gtk::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, subclass::prelude::*};
 
 use crate::session::room::{MemberRole, PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN};
 
 mod imp {
-    use super::*;
     use std::cell::Cell;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Badge {

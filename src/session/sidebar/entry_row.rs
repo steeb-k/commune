@@ -1,14 +1,14 @@
 use adw::subclass::prelude::BinImpl;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::sidebar::Entry;
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::RefCell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-entry-row.ui")]

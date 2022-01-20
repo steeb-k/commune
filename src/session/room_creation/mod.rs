@@ -1,13 +1,9 @@
+use std::convert::{TryFrom, TryInto};
+
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::error;
-use std::convert::{TryFrom, TryInto};
-
-use crate::components::SpinnerButton;
-use crate::session::user::UserExt;
-use crate::session::Session;
-use crate::{spawn, spawn_tokio};
 use matrix_sdk::{
     ruma::{
         api::{
@@ -23,16 +19,21 @@ use matrix_sdk::{
     HttpError,
 };
 
-use crate::UserFacingError;
+use crate::{
+    components::SpinnerButton,
+    session::{user::UserExt, Session},
+    spawn, spawn_tokio, UserFacingError,
+};
 
 // MAX length of room addresses
 const MAX_BYTES: usize = 255;
 
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::subclass::InitializingObject;
     use std::cell::RefCell;
+
+    use glib::{object::WeakRef, subclass::InitializingObject};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/room-creation.ui")]
@@ -343,7 +344,8 @@ impl RoomCreation {
             (true, false)
         };
 
-        // TODO: should we immediately check if the address is available, like element is doing?
+        // TODO: should we immediately check if the address is available, like element
+        // is doing?
 
         if has_error {
             priv_.room_address.add_css_class("error");

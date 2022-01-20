@@ -9,21 +9,21 @@
 //                         \
 //                            queue -- videoconvert -- our fancy sink
 
+use std::{
+    os::unix::io::AsRawFd,
+    sync::{Arc, Mutex},
+};
+
 use glib::{clone, Receiver, Sender};
 use gst::prelude::*;
-use gtk::gdk::prelude::TextureExt;
-use gtk::glib;
-use gtk::glib::subclass::prelude::*;
-use gtk::{prelude::*, subclass::prelude::*};
+use gtk::{
+    gdk, gdk::prelude::TextureExt, glib, glib::subclass::prelude::*, graphene, prelude::*,
+    subclass::prelude::*,
+};
+use matrix_sdk::encryption::verification::QrVerificationData;
 use once_cell::sync::Lazy;
 
-use std::os::unix::io::AsRawFd;
-use std::sync::{Arc, Mutex};
-
-use crate::contrib::qr_code_scanner::qr_code_detector::QrCodeDetector;
-use crate::contrib::qr_code_scanner::QrVerificationDataBoxed;
-use gtk::{gdk, graphene};
-use matrix_sdk::encryption::verification::QrVerificationData;
+use crate::contrib::qr_code_scanner::{qr_code_detector::QrCodeDetector, QrVerificationDataBoxed};
 
 pub enum Action {
     FrameChanged,
@@ -207,8 +207,9 @@ mod camera_sink {
 }
 
 mod imp {
-    use glib::subclass;
     use std::cell::RefCell;
+
+    use glib::subclass;
 
     use super::*;
 
@@ -293,7 +294,8 @@ mod imp {
             let snapshot = snapshot.downcast_ref::<gtk::Snapshot>().unwrap();
 
             if let Some(ref image) = *self.image.borrow() {
-                // Transformation to avoid stretching the camera. We translate and scale the image.
+                // Transformation to avoid stretching the camera. We translate and scale the
+                // image.
 
                 let aspect = width / height.max(std::f64::EPSILON); // Do not divide by zero.
                 let image_aspect = image.intrinsic_aspect_ratio();

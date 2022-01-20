@@ -11,36 +11,37 @@ mod row;
 mod selection;
 mod verification_row;
 
-pub use self::category::Category;
-use self::category_row::CategoryRow;
-pub use self::category_type::CategoryType;
-pub use self::entry::Entry;
-use self::entry_row::EntryRow;
-pub use self::entry_type::EntryType;
-pub use self::item_list::ItemList;
-use self::room_row::RoomRow;
-use self::row::Row;
-use self::selection::Selection;
-use self::verification_row::VerificationRow;
-
+use account_switcher::AccountSwitcher;
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gio, glib, glib::closure, subclass::prelude::*, CompositeTemplate, SelectionModel};
 
-use crate::components::Avatar;
-use crate::session::room::{Room, RoomType};
-use crate::session::verification::IdentityVerification;
-use crate::session::Session;
-use crate::session::User;
-use account_switcher::AccountSwitcher;
+pub use self::{
+    category::Category, category_type::CategoryType, entry::Entry, entry_type::EntryType,
+    item_list::ItemList,
+};
+use self::{
+    category_row::CategoryRow, entry_row::EntryRow, room_row::RoomRow, row::Row,
+    selection::Selection, verification_row::VerificationRow,
+};
+use crate::{
+    components::Avatar,
+    session::{
+        room::{Room, RoomType},
+        verification::IdentityVerification,
+        Session, User,
+    },
+};
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
     use std::{
         cell::{Cell, RefCell},
         convert::TryFrom,
     };
+
+    use glib::subclass::InitializingObject;
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar.ui")]

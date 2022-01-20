@@ -1,18 +1,19 @@
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
-use matrix_sdk::encryption::identities::UserDevices as CryptoDevices;
-use matrix_sdk::ruma::api::client::r0::device::Device as MatrixDevice;
-use matrix_sdk::Error;
-
-use crate::{session::Session, spawn, spawn_tokio};
+use matrix_sdk::{
+    encryption::identities::UserDevices as CryptoDevices,
+    ruma::api::client::r0::device::Device as MatrixDevice, Error,
+};
 
 use super::{Device, DeviceItem};
+use crate::{session::Session, spawn, spawn_tokio};
 
 mod imp {
+    use std::cell::{Cell, RefCell};
+
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
 
     use super::*;
 

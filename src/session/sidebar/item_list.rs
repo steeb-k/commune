@@ -5,16 +5,14 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use crate::session::{
     room::RoomType,
     room_list::RoomList,
-    sidebar::CategoryType,
-    sidebar::EntryType,
-    sidebar::{Category, Entry},
+    sidebar::{Category, CategoryType, Entry, EntryType},
     verification::VerificationList,
 };
 
 mod imp {
-    use once_cell::sync::Lazy;
-    use once_cell::unsync::OnceCell;
     use std::cell::Cell;
+
+    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::*;
 

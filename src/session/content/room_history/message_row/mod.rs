@@ -5,11 +5,13 @@ mod reaction_list;
 mod reply;
 mod text;
 
-use crate::{components::Avatar, spawn, utils::filename_for_mime};
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    glib, glib::clone, glib::signal::SignalHandlerId, subclass::prelude::*, CompositeTemplate,
+    glib,
+    glib::{clone, signal::SignalHandlerId},
+    subclass::prelude::*,
+    CompositeTemplate,
 };
 use log::warn;
 use matrix_sdk::ruma::events::{
@@ -21,14 +23,17 @@ use self::{
     file::MessageFile, media::MessageMedia, reaction_list::MessageReactionList,
     reply::MessageReply, text::MessageText,
 };
-use crate::prelude::*;
-use crate::session::room::Event;
+use crate::{
+    components::Avatar, prelude::*, session::room::Event, spawn, utils::filename_for_mime,
+};
 
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-message-row.ui")]
@@ -115,7 +120,7 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-//TODO
+// TODO
 // - [] Implement widgets to show message events
 impl MessageRow {
     pub fn new() -> Self {

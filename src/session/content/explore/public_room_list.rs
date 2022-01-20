@@ -1,25 +1,27 @@
-use crate::{
-    session::{content::explore::PublicRoom, Session},
-    spawn, spawn_tokio,
-};
+use std::convert::TryFrom;
+
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
 use matrix_sdk::ruma::{
-    api::client::r0::directory::{
-        get_public_rooms_filtered::Request as PublicRoomsRequest,
-        get_public_rooms_filtered::Response as PublicRoomsResponse,
+    api::client::r0::directory::get_public_rooms_filtered::{
+        Request as PublicRoomsRequest, Response as PublicRoomsResponse,
     },
     assign,
     directory::{Filter, RoomNetwork},
     identifiers::ServerName,
     uint,
 };
-use std::convert::TryFrom;
+
+use crate::{
+    session::{content::explore::PublicRoom, Session},
+    spawn, spawn_tokio,
+};
 
 mod imp {
+    use std::cell::{Cell, RefCell};
+
     use glib::object::WeakRef;
     use once_cell::sync::Lazy;
-    use std::cell::{Cell, RefCell};
 
     use super::*;
 

@@ -130,7 +130,8 @@ where
 
     /// Save the file in `event`.
     ///
-    /// See `Event::get_media_content` for compatible events. Panics on an incompatible event.
+    /// See `Event::get_media_content` for compatible events. Panics on an
+    /// incompatible event.
     fn save_event_file(&self, event: Event) {
         let window: Window = self.root().unwrap().downcast().unwrap();
         spawn!(
@@ -187,7 +188,8 @@ where
 
     /// Open the file in `event`.
     ///
-    /// See `Event::get_media_content` for compatible events. Panics on an incompatible event.
+    /// See `Event::get_media_content` for compatible events. Panics on an
+    /// incompatible event.
     fn open_event_file(&self, event: Event) {
         let window: Window = self.root().unwrap().downcast().unwrap();
         spawn!(

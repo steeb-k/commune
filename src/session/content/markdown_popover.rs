@@ -1,9 +1,11 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 pub mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::Cell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-markdown-popover.ui")]

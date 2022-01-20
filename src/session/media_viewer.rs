@@ -4,16 +4,16 @@ use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 use log::warn;
 use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageEventContent};
 
+use super::room::EventActions;
 use crate::{session::room::Event, spawn, utils::cache_dir, Window};
 
-use super::room::EventActions;
-
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
+
+    use glib::{object::WeakRef, subclass::InitializingObject};
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/media-viewer.ui")]

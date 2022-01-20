@@ -1,28 +1,32 @@
-use adw::prelude::*;
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::ngettext;
-use gtk::glib::{self, clone, closure};
-use gtk::subclass::prelude::*;
-use gtk::CompositeTemplate;
+use gtk::{
+    glib::{self, clone, closure},
+    subclass::prelude::*,
+    CompositeTemplate,
+};
 
 mod member_menu;
 mod member_row;
-use self::member_menu::MemberMenu;
-use self::member_row::MemberRow;
-use crate::components::{Avatar, Badge};
-use crate::prelude::*;
-use crate::session::content::RoomDetails;
-use crate::session::room::{Member, RoomAction};
-use crate::session::Room;
-use crate::session::{User, UserActions};
-use crate::spawn;
 use log::warn;
 
+use self::{member_menu::MemberMenu, member_row::MemberRow};
+use crate::{
+    components::{Avatar, Badge},
+    prelude::*,
+    session::{
+        content::RoomDetails,
+        room::{Member, RoomAction},
+        Room, User, UserActions,
+    },
+    spawn,
+};
+
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
-    use once_cell::unsync::OnceCell;
+    use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-member-page.ui")]

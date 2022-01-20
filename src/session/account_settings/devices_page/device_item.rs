@@ -21,8 +21,9 @@ impl From<ItemType> for BoxedItemType {
 }
 
 mod imp {
-    use super::*;
     use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Item {

@@ -1,12 +1,11 @@
 use adw::subclass::prelude::*;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
+use gtk::{gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::debug;
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/context-menu-bin.ui")]

@@ -1,8 +1,7 @@
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{glib, glib::closure};
-use matrix_sdk::ruma::events::room::power_levels::RoomPowerLevelsEventContent;
-use matrix_sdk::ruma::events::{EventType, SyncStateEvent};
+use gtk::{glib, glib::closure, prelude::*, subclass::prelude::*};
+use matrix_sdk::ruma::events::{
+    room::power_levels::RoomPowerLevelsEventContent, EventType, SyncStateEvent,
+};
 
 use crate::session::room::Member;
 
@@ -19,9 +18,11 @@ pub const POWER_LEVEL_MAX: i64 = 0x001F_FFFF_FFFF_FFFF;
 pub const POWER_LEVEL_MIN: i64 = -POWER_LEVEL_MAX;
 
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::RefCell;
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct PowerLevels {
@@ -80,7 +81,8 @@ impl PowerLevels {
         min_level_for_room_action(&content.0, room_action)
     }
 
-    /// Creates an expression that is true when the user is allowed the given action.
+    /// Creates an expression that is true when the user is allowed the given
+    /// action.
     pub fn new_allowed_expr(
         &self,
         member: &Member,

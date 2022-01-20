@@ -10,67 +10,71 @@ mod sidebar;
 mod user;
 pub mod verification;
 
-use self::account_settings::AccountSettings;
-pub use self::avatar::Avatar;
-use self::content::verification::SessionVerification;
-use self::content::Content;
-use self::media_viewer::MediaViewer;
-pub use self::room::{Event, Item, Room};
-pub use self::room_creation::RoomCreation;
-use self::room_list::RoomList;
-use self::sidebar::Sidebar;
-pub use self::user::{User, UserActions, UserExt};
-use self::verification::VerificationList;
-use crate::session::sidebar::ItemList;
-
-use crate::secret;
-use crate::secret::Secret;
-use crate::secret::StoredSession;
-use crate::Error;
-use crate::UserFacingError;
-use crate::Window;
-use crate::{spawn, spawn_tokio};
+use std::{convert::TryFrom, fs, time::Duration};
 
 use adw::subclass::prelude::BinImpl;
 use futures::StreamExt;
 use gettextrs::gettext;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
 use gtk::{
-    gdk, glib, glib::clone, glib::source::SourceId, glib::SyncSender, CompositeTemplate,
-    SelectionModel,
+    self, gdk, glib,
+    glib::{clone, source::SourceId, SyncSender},
+    prelude::*,
+    subclass::prelude::*,
+    CompositeTemplate, SelectionModel,
 };
 use log::{debug, error, warn};
-use matrix_sdk::ruma::{
-    api::client::r0::{
-        filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
-        session::logout,
-    },
-    assign,
-    identifiers::RoomId,
-};
 use matrix_sdk::{
     config::{ClientConfig, RequestConfig, SyncSettings},
     deserialized_responses::SyncResponse,
-    ruma::api::{
-        client::error::ErrorKind,
-        error::{FromHttpResponseError, ServerError},
+    ruma::{
+        api::{
+            client::{
+                error::ErrorKind,
+                r0::{
+                    filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
+                    session::logout,
+                },
+            },
+            error::{FromHttpResponseError, ServerError},
+        },
+        assign,
+        identifiers::RoomId,
     },
     uuid::Uuid,
     Client, Error as MatrixError, HttpError,
 };
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use std::convert::TryFrom;
-use std::fs;
-use std::time::Duration;
 use tokio::task::JoinHandle;
 use url::Url;
 
+use self::{
+    account_settings::AccountSettings,
+    content::{verification::SessionVerification, Content},
+    media_viewer::MediaViewer,
+    room_list::RoomList,
+    sidebar::Sidebar,
+    verification::VerificationList,
+};
+pub use self::{
+    avatar::Avatar,
+    room::{Event, Item, Room},
+    room_creation::RoomCreation,
+    user::{User, UserActions, UserExt},
+};
+use crate::{
+    secret,
+    secret::{Secret, StoredSession},
+    session::sidebar::ItemList,
+    spawn, spawn_tokio, Error, UserFacingError, Window,
+};
+
 mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
+
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session.ui")]

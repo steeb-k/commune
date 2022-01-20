@@ -1,21 +1,19 @@
-use crate::components::InAppNotification;
-use crate::config::{APP_ID, PROFILE};
-use crate::secret;
-use crate::Application;
-use crate::Login;
-use crate::Session;
-use crate::{Error, UserFacingError};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use gettextrs::gettext;
 use glib::signal::Inhibit;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{self, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::warn;
 
+use crate::{
+    components::InAppNotification,
+    config::{APP_ID, PROFILE},
+    secret, Application, Error, Login, Session, UserFacingError,
+};
+
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, CompositeTemplate, Default)]
     #[template(resource = "/org/gnome/FractalNext/window.ui")]
@@ -192,7 +190,8 @@ impl Window {
     }
 
     /// Change the default widget of the window based on the visible child
-    /// If the login screen is visible, its login button becomes the default widget
+    /// If the login screen is visible, its login button becomes the default
+    /// widget
     fn set_default_by_child(&self) {
         let priv_ = imp::Window::from_instance(self);
         if priv_.main_stack.visible_child() == Some(priv_.login.get().upcast()) {

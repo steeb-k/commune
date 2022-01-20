@@ -1,13 +1,17 @@
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use log::error;
-use matrix_sdk::ruma::{api::client::r0::user_directory::search_users, identifiers::UserId};
-use matrix_sdk::HttpError;
 use std::sync::Arc;
 
-use crate::session::user::UserExt;
-use crate::{session::Room, spawn, spawn_tokio};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use log::error;
+use matrix_sdk::{
+    ruma::{api::client::r0::user_directory::search_users, identifiers::UserId},
+    HttpError,
+};
 
 use super::Invitee;
+use crate::{
+    session::{user::UserExt, Room},
+    spawn, spawn_tokio,
+};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -27,11 +31,14 @@ impl Default for InviteeListState {
 }
 
 mod imp {
+    use std::{
+        cell::{Cell, RefCell},
+        collections::HashMap,
+    };
+
     use futures::future::AbortHandle;
     use glib::subclass::Signal;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
-    use std::collections::HashMap;
 
     use super::*;
 

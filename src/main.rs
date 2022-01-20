@@ -17,19 +17,15 @@ mod user_facing_error;
 mod utils;
 mod window;
 
-use self::application::Application;
-use self::error::Error;
-use self::login::Login;
-use self::session::Session;
-use self::user_facing_error::UserFacingError;
-use self::window::Window;
-
 use config::{GETTEXT_PACKAGE, LOCALEDIR, RESOURCES_FILE};
 use gettextrs::*;
-use gtk::gdk::Display;
-use gtk::gio;
-use gtk::IconTheme;
+use gtk::{gdk::Display, gio, IconTheme};
 use once_cell::sync::Lazy;
+
+use self::{
+    application::Application, error::Error, login::Login, session::Session,
+    user_facing_error::UserFacingError, window::Window,
+};
 
 /// The default tokio runtime to be used for async tasks
 pub static RUNTIME: Lazy<tokio::runtime::Runtime> =

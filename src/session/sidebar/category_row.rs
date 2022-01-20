@@ -1,15 +1,15 @@
 use adw::subclass::prelude::BinImpl;
 use gettextrs::gettext;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::session::sidebar::{Category, CategoryType};
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::{Cell, RefCell};
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-category-row.ui")]

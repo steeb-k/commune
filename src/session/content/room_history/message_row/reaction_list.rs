@@ -1,13 +1,13 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
+use super::reaction::MessageReaction;
 use crate::session::room::ReactionList;
 
-use super::reaction::MessageReaction;
-
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-message-reaction-list.ui")]

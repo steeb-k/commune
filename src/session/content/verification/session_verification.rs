@@ -4,20 +4,19 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate
 use log::error;
 
 use super::IdentityVerificationWidget;
-use crate::components::{AuthDialog, SpinnerButton};
-use crate::session::verification::{IdentityVerification, VerificationState};
-use crate::spawn;
-use crate::Error;
-use crate::Session;
-use crate::Window;
+use crate::{
+    components::{AuthDialog, SpinnerButton},
+    session::verification::{IdentityVerification, VerificationState},
+    spawn, Error, Session, Window,
+};
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
-    use glib::SignalHandlerId;
-    use glib::WeakRef;
-    use once_cell::unsync::OnceCell;
     use std::cell::RefCell;
+
+    use glib::{subclass::InitializingObject, SignalHandlerId, WeakRef};
+    use once_cell::unsync::OnceCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/session-verification.ui")]

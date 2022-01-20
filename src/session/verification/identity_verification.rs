@@ -1,10 +1,5 @@
-use super::{VERIFICATION_CREATION_TIMEOUT, VERIFICATION_RECEIVE_TIMEOUT};
-use crate::session::user::UserExt;
-use crate::session::Session;
-use crate::session::User;
-use crate::spawn;
-use crate::spawn_tokio;
-use crate::Error;
+use std::time::Duration;
+
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, error, warn};
@@ -23,8 +18,13 @@ use matrix_sdk::{
     Client,
 };
 use qrcode::QrCode;
-use std::time::Duration;
 use tokio::sync::mpsc;
+
+use super::{VERIFICATION_CREATION_TIMEOUT, VERIFICATION_RECEIVE_TIMEOUT};
+use crate::{
+    session::{user::UserExt, Session, User},
+    spawn, spawn_tokio, Error,
+};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -120,10 +120,12 @@ pub enum SasData {
 }
 
 mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
+
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Default)]
     pub struct IdentityVerification {
@@ -283,7 +285,8 @@ mod imp {
 
             self.main_sender.replace(Some(main_sender));
 
-            // We don't need to track ourselves because we show "Login Request" as name in that case.
+            // We don't need to track ourselves because we show "Login Request" as name in
+            // that case.
             if obj.user() != obj.session().user().unwrap() {
                 obj.user().connect_notify_local(
                     Some("display-name"),
@@ -340,7 +343,8 @@ impl IdentityVerification {
 
     /// Creates and send a new verification request
     ///
-    /// If `User` is `None` a new session verification is started for our own user and send to other devices
+    /// If `User` is `None` a new session verification is started for our own
+    /// user and send to other devices
     pub async fn create(session: &Session, user: Option<&User>) -> Self {
         let (mode, user) = if let Some(user) = user {
             (Mode::User, user)

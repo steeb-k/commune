@@ -60,13 +60,13 @@ macro_rules! spawn_tokio {
     };
 }
 
-use std::convert::TryInto;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{convert::TryInto, path::PathBuf, str::FromStr};
 
 use gettextrs::gettext;
-use gtk::gio::{self, prelude::*};
-use gtk::glib::{self, closure, Object};
+use gtk::{
+    gio::{self, prelude::*},
+    glib::{self, closure, Object},
+};
 use matrix_sdk::{
     media::MediaType,
     ruma::{EventId, UInt},
@@ -74,7 +74,8 @@ use matrix_sdk::{
 };
 use mime::Mime;
 
-// Returns an expression that is the and’ed result of the given boolean expressions.
+// Returns an expression that is the and’ed result of the given boolean
+// expressions.
 #[allow(dead_code)]
 pub fn and_expr<E: AsRef<gtk::Expression>>(a_expr: E, b_expr: E) -> gtk::ClosureExpression {
     gtk::ClosureExpression::new::<bool, _, _>(
@@ -83,7 +84,8 @@ pub fn and_expr<E: AsRef<gtk::Expression>>(a_expr: E, b_expr: E) -> gtk::Closure
     )
 }
 
-// Returns an expression that is the or’ed result of the given boolean expressions.
+// Returns an expression that is the or’ed result of the given boolean
+// expressions.
 pub fn or_expr<E: AsRef<gtk::Expression>>(a_expr: E, b_expr: E) -> gtk::ClosureExpression {
     gtk::ClosureExpression::new::<bool, _, _>(
         &[a_expr, b_expr],
@@ -91,7 +93,8 @@ pub fn or_expr<E: AsRef<gtk::Expression>>(a_expr: E, b_expr: E) -> gtk::ClosureE
     )
 }
 
-// Returns an expression that is the inverted result of the given boolean expressions.
+// Returns an expression that is the inverted result of the given boolean
+// expressions.
 #[allow(dead_code)]
 pub fn not_expr<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
     gtk::ClosureExpression::new::<bool, _, _>(
@@ -151,7 +154,8 @@ pub fn style_scheme() -> Option<sourceview::StyleScheme> {
 
 /// Get the unique id of the given `MediaType`.
 ///
-/// It is built from the underlying `MxcUri` and can be safely used in a filename.
+/// It is built from the underlying `MxcUri` and can be safely used in a
+/// filename.
 ///
 /// The id is not guaranteed to be unique for malformed `MxcUri`s.
 pub fn media_type_uid(media_type: Option<MediaType>) -> String {

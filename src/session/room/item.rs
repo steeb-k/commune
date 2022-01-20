@@ -1,9 +1,10 @@
+use std::sync::Arc;
+
 use gtk::{glib, glib::DateTime, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::{
     events::AnySyncRoomEvent,
     identifiers::{EventId, UserId},
 };
-use std::sync::Arc;
 
 use crate::session::room::Event;
 
@@ -30,8 +31,9 @@ impl From<ItemType> for BoxedItemType {
 mod imp {
     use std::cell::Cell;
 
-    use super::*;
     use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Item {

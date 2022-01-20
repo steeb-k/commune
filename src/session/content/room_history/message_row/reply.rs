@@ -4,8 +4,9 @@ use gtk::{glib, subclass::prelude::*, CompositeTemplate};
 use crate::{components::Pill, session::User};
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-message-reply.ui")]

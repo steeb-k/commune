@@ -1,14 +1,16 @@
-use crate::session::user::UserExt;
-use crate::session::{
-    verification::{IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
-    Session,
-};
+use std::sync::Arc;
+
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::{debug, warn};
 use matrix_sdk::ruma::{
     api::client::r0::sync::sync_events::ToDevice, events::AnyToDeviceEvent, identifiers::UserId,
 };
-use std::sync::Arc;
+
+use crate::session::{
+    user::UserExt,
+    verification::{IdentityVerification, VERIFICATION_CREATION_TIMEOUT},
+    Session,
+};
 
 #[derive(Hash, PartialEq, Eq, Debug)]
 pub struct FlowId {
@@ -41,10 +43,11 @@ impl indexmap::Equivalent<FlowId> for FlowIdUnowned<'_> {
 }
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::object::WeakRef;
     use indexmap::IndexMap;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::RefCell;
 
     use super::*;
 
@@ -249,7 +252,7 @@ impl VerificationList {
     pub fn remove(&self, request: &IdentityVerification) {
         let priv_ = imp::VerificationList::from_instance(self);
 
-        let position = if let Some((position, _, _)) =
+        let position = if let Some((position, ..)) =
             priv_
                 .list
                 .borrow_mut()

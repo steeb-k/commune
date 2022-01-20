@@ -1,11 +1,11 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use crate::session::sidebar::CategoryType;
-use crate::session::{room::Room, room_list::RoomList};
+use crate::session::{room::Room, room_list::RoomList, sidebar::CategoryType};
 
 mod imp {
-    use once_cell::unsync::OnceCell;
     use std::cell::Cell;
+
+    use once_cell::unsync::OnceCell;
 
     use super::*;
 

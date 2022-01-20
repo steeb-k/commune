@@ -1,13 +1,13 @@
 use adw::subclass::prelude::*;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{glib, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use html2pango::markup;
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::RefCell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/room-title.ui")]
@@ -107,7 +107,8 @@ impl RoomTitle {
         let priv_ = imp::RoomTitle::from_instance(self);
         // Parse and escape markup in title
         let title = title.map(|s| markup(&s));
-        // If there's an existing title, check that current title and new title aren't equal
+        // If there's an existing title, check that current title and new title aren't
+        // equal
         if priv_.title.borrow().as_deref() != title.as_deref() {
             priv_.title.replace(title);
             priv_
@@ -127,7 +128,8 @@ impl RoomTitle {
         let priv_ = imp::RoomTitle::from_instance(self);
         // Parse and escape markup in subtitle
         let subtitle = subtitle.map(|s| markup(&s));
-        // If there's an existing subtitle, check that current subtitle and new subtitle aren't equal
+        // If there's an existing subtitle, check that current subtitle and new subtitle
+        // aren't equal
         if priv_.subtitle.borrow().as_deref() != subtitle.as_deref() {
             priv_.subtitle.replace(subtitle);
             priv_

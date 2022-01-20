@@ -1,14 +1,15 @@
+use adw::subclass::prelude::BinImpl;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::content::RoomDetails;
-use crate::session::room::Member;
-use adw::subclass::prelude::BinImpl;
+use crate::session::{content::RoomDetails, room::Member};
 
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-member-row.ui")]

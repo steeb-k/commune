@@ -5,21 +5,22 @@ mod invitee;
 use self::invitee::Invitee;
 mod invitee_list;
 mod invitee_row;
-use self::invitee_list::{InviteeList, InviteeListState};
-use self::invitee_row::InviteeRow;
-use crate::components::Pill;
-
-use crate::components::SpinnerButton;
-use crate::session::User;
-use crate::spawn;
-
-use crate::session::content::RoomDetails;
-use crate::session::Room;
+use self::{
+    invitee_list::{InviteeList, InviteeListState},
+    invitee_row::InviteeRow,
+};
+use crate::{
+    components::{Pill, SpinnerButton},
+    session::{content::RoomDetails, Room, User},
+    spawn,
+};
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::RefCell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-invite-subpage.ui")]

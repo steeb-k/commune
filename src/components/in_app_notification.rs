@@ -1,13 +1,14 @@
-use crate::Error;
 use adw::subclass::prelude::*;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+
+use crate::Error;
 
 mod imp {
-    use super::*;
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
     use std::cell::{Cell, RefCell};
+
+    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/in-app-notification.ui")]

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-use crate::spawn;
-use ashpd::{desktop::camera, zbus};
-use glib::clone;
-use glib::subclass;
-use gtk::glib;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use matrix_sdk::encryption::verification::QrVerificationData;
 use std::os::unix::prelude::RawFd;
+
+use ashpd::{desktop::camera, zbus};
+use glib::{clone, subclass};
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use matrix_sdk::encryption::verification::QrVerificationData;
+
+use crate::spawn;
 
 mod camera_paintable;
 mod qr_code_detector;
@@ -16,10 +15,11 @@ pub mod screenshot;
 use camera_paintable::CameraPaintable;
 
 mod imp {
+    use std::cell::Cell;
+
     use adw::subclass::prelude::*;
     use gtk::CompositeTemplate;
     use once_cell::sync::Lazy;
-    use std::cell::Cell;
     use tokio::sync::OnceCell;
 
     use super::*;

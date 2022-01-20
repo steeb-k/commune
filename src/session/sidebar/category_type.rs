@@ -1,6 +1,7 @@
-use crate::session::room::RoomType;
 use gettextrs::gettext;
 use gtk::glib;
+
+use crate::session::room::RoomType;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(i32)]

@@ -1,19 +1,17 @@
-use crate::config;
-use crate::Window;
 use gettextrs::gettext;
 use gio::{ApplicationFlags, Settings};
-use glib::clone;
-use glib::WeakRef;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{gio, glib};
+use glib::{clone, WeakRef};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use gtk_macros::action;
 use log::{debug, info};
 
+use crate::{config, Window};
+
 mod imp {
-    use super::*;
     use adw::subclass::prelude::AdwApplicationImpl;
     use once_cell::unsync::OnceCell;
+
+    use super::*;
 
     #[derive(Debug)]
     pub struct Application {

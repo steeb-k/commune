@@ -3,14 +3,20 @@ use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, subclass::prelude::*};
 use matrix_sdk::ruma::events::AnySyncRoomEvent;
 
-use crate::components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser};
-use crate::session::content::room_history::{message_row::MessageRow, DividerRow, StateRow};
-use crate::session::room::{Event, EventActions, Item, ItemType, ReactionList};
+use crate::{
+    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser},
+    session::{
+        content::room_history::{message_row::MessageRow, DividerRow, StateRow},
+        room::{Event, EventActions, Item, ItemType, ReactionList},
+    },
+};
 
 mod imp {
-    use super::*;
-    use glib::signal::SignalHandlerId;
     use std::cell::RefCell;
+
+    use glib::signal::SignalHandlerId;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct ItemRow {
@@ -105,8 +111,9 @@ impl ItemRow {
 
     /// This method sets this row to a new `Item`.
     ///
-    /// It tries to reuse the widget and only update the content whenever possible, but it will
-    /// create a new widget and drop the old one if it has to.
+    /// It tries to reuse the widget and only update the content whenever
+    /// possible, but it will create a new widget and drop the old one if it
+    /// has to.
     fn set_item(&self, item: Option<Item>) {
         let priv_ = imp::ItemRow::from_instance(self);
 

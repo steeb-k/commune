@@ -5,29 +5,27 @@ mod room_details;
 mod room_history;
 pub mod verification;
 
-use self::explore::Explore;
-use self::invite::Invite;
-use self::markdown_popover::MarkdownPopover;
-use self::room_details::RoomDetails;
-use self::room_history::RoomHistory;
-use self::verification::IdentityVerificationWidget;
-
-use crate::session::sidebar::{Entry, EntryType};
-
-use crate::session::verification::{IdentityVerification, VerificationMode};
-
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::room::{Room, RoomType};
-use crate::session::Session;
+use self::{
+    explore::Explore, invite::Invite, markdown_popover::MarkdownPopover, room_details::RoomDetails,
+    room_history::RoomHistory, verification::IdentityVerificationWidget,
+};
+use crate::session::{
+    room::{Room, RoomType},
+    sidebar::{Entry, EntryType},
+    verification::{IdentityVerification, VerificationMode},
+    Session,
+};
 
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
-    use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
+
+    use glib::{object::WeakRef, signal::SignalHandlerId, subclass::InitializingObject};
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content.ui")]

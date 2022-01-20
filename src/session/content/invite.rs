@@ -1,16 +1,21 @@
+use adw::subclass::prelude::*;
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+
 use crate::{
     components::{Avatar, LabelWithWidgets, Pill, SpinnerButton},
     session::room::{Room, RoomType},
     spawn,
 };
-use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
-    use super::*;
+    use std::{
+        cell::{Cell, RefCell},
+        collections::HashSet,
+    };
+
     use glib::{signal::SignalHandlerId, subclass::InitializingObject};
-    use std::cell::{Cell, RefCell};
-    use std::collections::HashSet;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-invite.ui")]

@@ -1,20 +1,29 @@
-use gtk::glib;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use matrix_sdk::ruma::events::room::member::RoomMemberEventContent;
-use matrix_sdk::ruma::events::{StrippedStateEvent, SyncStateEvent};
-use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
-use matrix_sdk::RoomMember;
+use gtk::{glib, prelude::*, subclass::prelude::*};
+use matrix_sdk::{
+    ruma::{
+        events::{room::member::RoomMemberEventContent, StrippedStateEvent, SyncStateEvent},
+        identifiers::{MxcUri, UserId},
+    },
+    RoomMember,
+};
 
-use crate::prelude::*;
-use crate::session::room::power_levels::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN};
-use crate::session::room::MemberRole;
-use crate::session::{Room, User};
+use crate::{
+    prelude::*,
+    session::{
+        room::{
+            power_levels::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
+            MemberRole,
+        },
+        Room, User,
+    },
+};
 
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::Cell;
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Member {

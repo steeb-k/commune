@@ -2,24 +2,23 @@ mod public_room;
 mod public_room_list;
 mod public_room_row;
 
-pub use self::public_room::PublicRoom;
-pub use self::public_room_list::PublicRoomList;
-pub use self::public_room_row::PublicRoomRow;
-
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::error;
 use matrix_sdk::ruma::api::client::r0::thirdparty::get_protocols;
 
-use crate::session::Session;
-use crate::{spawn, spawn_tokio};
+pub use self::{
+    public_room::PublicRoom, public_room_list::PublicRoomList, public_room_row::PublicRoomRow,
+};
+use crate::{session::Session, spawn, spawn_tokio};
 
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
+
+    use glib::{object::WeakRef, subclass::InitializingObject};
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-explore.ui")]

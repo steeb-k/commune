@@ -1,12 +1,12 @@
-use crate::contrib::qr_code_scanner::camera_paintable::Action;
-use matrix_sdk::encryption::verification::QrVerificationData;
+use std::convert::AsRef;
 
 use glib::Sender;
 use gst_video::{video_frame::VideoFrameRef, VideoInfo};
 use log::debug;
-use std::convert::AsRef;
+use matrix_sdk::encryption::verification::QrVerificationData;
 
 use super::*;
+use crate::contrib::qr_code_scanner::camera_paintable::Action;
 
 mod imp {
     use std::sync::Mutex;

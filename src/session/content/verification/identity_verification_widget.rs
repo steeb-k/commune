@@ -1,26 +1,26 @@
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::warn;
-
-use super::Emoji;
-use crate::components::SpinnerButton;
-use crate::contrib::screenshot;
-use crate::contrib::QRCode;
-use crate::contrib::QRCodeExt;
-use crate::contrib::QrCodeScanner;
-use crate::session::user::UserExt;
-use crate::session::verification::{
-    IdentityVerification, SasData, VerificationMode, VerificationState,
-};
-use crate::spawn;
-use gettextrs::gettext;
 use matrix_sdk::encryption::verification::QrVerificationData;
 
+use super::Emoji;
+use crate::{
+    components::SpinnerButton,
+    contrib::{screenshot, QRCode, QRCodeExt, QrCodeScanner},
+    session::{
+        user::UserExt,
+        verification::{IdentityVerification, SasData, VerificationMode, VerificationState},
+    },
+    spawn,
+};
+
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
-    use glib::SignalHandlerId;
     use std::cell::RefCell;
+
+    use glib::{subclass::InitializingObject, SignalHandlerId};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/identity-verification-widget.ui")]

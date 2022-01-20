@@ -1,15 +1,19 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::identifiers::{MxcUri, UserId};
-
-use crate::session::{
-    verification::{IdentityVerification, VerificationState},
-    Avatar, Session,
-};
-use crate::{spawn, spawn_tokio};
-use matrix_sdk::encryption::identities::UserIdentity;
 use std::sync::Arc;
 
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use log::error;
+use matrix_sdk::{
+    encryption::identities::UserIdentity,
+    ruma::identifiers::{MxcUri, UserId},
+};
+
+use crate::{
+    session::{
+        verification::{IdentityVerification, VerificationState},
+        Avatar, Session,
+    },
+    spawn, spawn_tokio,
+};
 
 #[glib::flags(name = "UserActions")]
 pub enum UserActions {
@@ -24,10 +28,12 @@ impl Default for UserActions {
 }
 
 mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
+
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct User {

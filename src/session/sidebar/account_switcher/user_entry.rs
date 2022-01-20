@@ -1,14 +1,16 @@
-use super::avatar_with_selection::AvatarWithSelection;
 use adw::subclass::prelude::BinImpl;
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
+use super::avatar_with_selection::AvatarWithSelection;
 use crate::session::Session;
 
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/user-entry-row.ui")]

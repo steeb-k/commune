@@ -1,3 +1,4 @@
+use gettextrs::gettext;
 use matrix_sdk::{
     ruma::api::{
         client::error::ErrorKind::{Forbidden, LimitExceeded, UserDeactivated},
@@ -5,8 +6,6 @@ use matrix_sdk::{
     },
     Error, HttpError,
 };
-
-use gettextrs::gettext;
 
 pub trait UserFacingError {
     fn to_user_facing(self) -> String;
@@ -34,7 +33,8 @@ impl UserFacingError for HttpError {
                         }
                     }
                     _ => {
-                        // TODO: The server may not give us pretty enough error message. We should add our own error message.
+                        // TODO: The server may not give us pretty enough error message. We should
+                        // add our own error message.
                         error.message
                     }
                 }

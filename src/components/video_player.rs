@@ -2,10 +2,12 @@ use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
-    use super::*;
+    use std::cell::{Cell, RefCell};
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::{Cell, RefCell};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-video-player.ui")]

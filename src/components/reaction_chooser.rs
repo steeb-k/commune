@@ -49,9 +49,11 @@ static QUICK_REACTIONS: &[ReactionGridItem] = &[
 
 mod imp {
 
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::{cell::RefCell, collections::HashMap};
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-reaction-chooser.ui")]

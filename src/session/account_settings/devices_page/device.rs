@@ -1,7 +1,5 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
-
-use crate::components::AuthDialog;
-use crate::session::Session;
+use log::error;
 use matrix_sdk::{
     encryption::identities::Device as CryptoDevice,
     ruma::{
@@ -11,12 +9,13 @@ use matrix_sdk::{
     },
 };
 
-use log::error;
+use crate::{components::AuthDialog, session::Session};
 
 mod imp {
-    use super::*;
     use glib::object::WeakRef;
     use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Device {

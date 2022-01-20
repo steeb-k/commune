@@ -1,35 +1,32 @@
+use std::{cell::Cell, fmt::Debug, future::Future};
+
 use adw::subclass::prelude::*;
-use gtk::gdk;
-use gtk::gio::prelude::*;
-use gtk::glib::clone;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{glib, CompositeTemplate};
-use std::cell::Cell;
-use std::future::Future;
-
-use crate::session::Session;
-use crate::session::UserExt;
-use crate::spawn_tokio;
-
+use gtk::{
+    gdk, gio::prelude::*, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate,
+};
 use matrix_sdk::{
-    ruma::api::{
-        client::{
-            error::ErrorBody,
-            r0::uiaa::{
-                AuthData as MatrixAuthData,
-                FallbackAcknowledgement as MatrixFallbackAcknowledgement,
-                Password as MatrixPassword, UiaaInfo, UiaaResponse, UserIdentifier,
+    ruma::{
+        api::{
+            client::{
+                error::ErrorBody,
+                r0::uiaa::{
+                    AuthData as MatrixAuthData,
+                    FallbackAcknowledgement as MatrixFallbackAcknowledgement,
+                    Password as MatrixPassword, UiaaInfo, UiaaResponse, UserIdentifier,
+                },
             },
+            error::{FromHttpResponseError, ServerError},
         },
-        error::{FromHttpResponseError, ServerError},
+        assign,
     },
-    ruma::assign,
     Error,
     HttpError::UiaaError,
 };
 
-use std::fmt::Debug;
+use crate::{
+    session::{Session, UserExt},
+    spawn_tokio,
+};
 
 pub struct Password {
     pub user_id: String,
@@ -68,12 +65,16 @@ impl AuthData {
 }
 
 mod imp {
-    use super::*;
-    use glib::object::WeakRef;
-    use glib::subclass::{InitializingObject, Signal};
-    use glib::SignalHandlerId;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
     use std::cell::RefCell;
+
+    use glib::{
+        object::WeakRef,
+        subclass::{InitializingObject, Signal},
+        SignalHandlerId,
+    };
+    use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-auth-dialog.ui")]

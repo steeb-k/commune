@@ -6,9 +6,11 @@ use matrix_sdk::ruma::events::AnyMessageEventContent;
 use super::{Event, ReactionGroup};
 
 mod imp {
-    use super::*;
-    use indexmap::IndexMap;
     use std::cell::RefCell;
+
+    use indexmap::IndexMap;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct ReactionList {
@@ -98,8 +100,8 @@ impl ReactionList {
 
         let num_reactions_added = reactions.len().saturating_sub(prev_len);
 
-        // We can't have the borrow active when items_changed is emitted because that will probably
-        // cause reads of the reactions field.
+        // We can't have the borrow active when items_changed is emitted because that
+        // will probably cause reads of the reactions field.
         std::mem::drop(reactions);
 
         if num_reactions_added > 0 {

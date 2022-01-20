@@ -1,15 +1,19 @@
-use crate::components::Avatar;
-use crate::{components::SpinnerButton, session::content::explore::PublicRoom};
-use adw::prelude::BinExt;
-use adw::subclass::prelude::BinImpl;
+use adw::{prelude::BinExt, subclass::prelude::BinImpl};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
+use crate::{
+    components::{Avatar, SpinnerButton},
+    session::content::explore::PublicRoom,
+};
+
 mod imp {
-    use super::*;
+    use std::cell::RefCell;
+
     use glib::{signal::SignalHandlerId, subclass::InitializingObject};
     use once_cell::sync::Lazy;
-    use std::cell::RefCell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-public-room-row.ui")]

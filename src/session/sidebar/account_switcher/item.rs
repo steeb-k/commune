@@ -1,13 +1,16 @@
-use super::add_account::AddAccountRow;
-use super::user_entry::UserEntryRow;
-use crate::session::Session;
-use gtk::{gio::ListStore, glib, prelude::*, subclass::prelude::*};
 use std::convert::TryFrom;
 
+use gtk::{gio::ListStore, glib, prelude::*, subclass::prelude::*};
+
+use super::{add_account::AddAccountRow, user_entry::UserEntryRow};
+use crate::session::Session;
+
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::Cell;
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct ExtraItemObj(pub Cell<super::ExtraItem>);

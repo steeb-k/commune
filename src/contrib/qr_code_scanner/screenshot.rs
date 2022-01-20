@@ -1,6 +1,5 @@
 use ashpd::desktop::screenshot;
-use gtk::gio;
-use gtk::prelude::*;
+use gtk::{gio, prelude::*};
 use matrix_sdk::encryption::verification::QrVerificationData;
 
 pub async fn capture(root: &gtk::Root) -> Option<QrVerificationData> {

@@ -3,10 +3,11 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use crate::session::{room::Member, UserActions, UserExt};
 
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
-    use once_cell::unsync::OnceCell;
     use std::cell::RefCell;
+
+    use once_cell::{sync::Lazy, unsync::OnceCell};
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct MemberMenu {
@@ -141,7 +142,8 @@ impl MemberMenu {
 
     /// Show the menu on the specific button
     ///
-    /// For convenience it allows to set the member for which the popover is shown
+    /// For convenience it allows to set the member for which the popover is
+    /// shown
     pub fn present_popover(&self, button: &gtk::ToggleButton, member: Option<Member>) {
         let priv_ = imp::MemberMenu::from_instance(self);
         let popover = self.popover_menu();

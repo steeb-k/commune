@@ -1,18 +1,20 @@
-use crate::Session;
-
 use adw::subclass::prelude::BinImpl;
-use gtk::subclass::prelude::*;
-use gtk::{self, prelude::*};
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{self, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use log::debug;
 use url::{ParseError, Url};
 
+use crate::Session;
+
 mod imp {
-    use super::*;
-    use glib::subclass::{InitializingObject, Signal};
-    use glib::SignalHandlerId;
-    use once_cell::sync::Lazy;
     use std::cell::RefCell;
+
+    use glib::{
+        subclass::{InitializingObject, Signal},
+        SignalHandlerId,
+    };
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/login.ui")]

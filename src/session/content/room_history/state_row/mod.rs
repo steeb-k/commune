@@ -1,9 +1,6 @@
 mod creation;
 mod tombstone;
 
-use self::creation::StateCreation;
-use self::tombstone::StateTombstone;
-
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, subclass::prelude::*, CompositeTemplate};
@@ -12,9 +9,12 @@ use matrix_sdk::ruma::events::{
     room::member::MembershipState, AnyStateEventContent, AnySyncStateEvent,
 };
 
+use self::{creation::StateCreation, tombstone::StateTombstone};
+
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-state-row.ui")]
@@ -50,7 +50,7 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-//TODO
+// TODO
 // - [] Implement widgets to show state events
 impl StateRow {
     pub fn new() -> Self {

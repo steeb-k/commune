@@ -1,3 +1,5 @@
+use std::convert::TryFrom;
+
 use gtk::{
     gio::{self, ListModel, ListStore},
     glib::{self, clone},
@@ -5,7 +7,6 @@ use gtk::{
     subclass::prelude::*,
     CompositeTemplate, SelectionModel,
 };
-use std::convert::TryFrom;
 
 use super::account_switcher::item::{ExtraItemObj, Item as AccountSwitcherItem};
 use crate::session::Session;
@@ -16,8 +17,9 @@ pub mod item;
 pub mod user_entry;
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/sidebar-account-switcher.ui")]

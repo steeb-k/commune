@@ -2,10 +2,12 @@ use glib::subclass::Signal;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
-    use super::*;
+    use std::cell::Cell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
-    use std::cell::Cell;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/components-loading-listbox-row.ui")]

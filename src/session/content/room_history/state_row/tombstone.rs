@@ -3,8 +3,9 @@ use gtk::{glib, subclass::prelude::*, CompositeTemplate};
 use matrix_sdk::ruma::events::room::tombstone::RoomTombstoneEventContent;
 
 mod imp {
-    use super::*;
     use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/content-state-tombstone.ui")]

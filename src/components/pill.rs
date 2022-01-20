@@ -1,16 +1,18 @@
-use crate::components::Avatar;
 use adw::subclass::prelude::*;
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
-use gtk::{glib, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::prelude::*;
-use crate::session::{Room, User};
+use crate::{
+    components::Avatar,
+    prelude::*,
+    session::{Room, User},
+};
 
 mod imp {
-    use super::*;
-    use glib::subclass::InitializingObject;
     use std::cell::RefCell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/FractalNext/pill.ui")]

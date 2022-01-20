@@ -1,9 +1,11 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 mod imp {
-    use super::*;
-    use once_cell::sync::Lazy;
     use std::cell::{Cell, RefCell};
+
+    use once_cell::sync::Lazy;
+
+    use super::*;
 
     #[derive(Debug, Default)]
     pub struct Selection {
