@@ -87,7 +87,7 @@ check_rustup() {
     if ! which rustup &> /dev/null; then
         if [[ "$1" == '-i' ]]; then
             echo -e "$Installing rustup…"
-            curl https://sh.rustup.rs -sSf  | sh -s -- -y
+            curl https://sh.rustup.rs -sSf  | sh -s -- -y --default-toolchain nightly
             export PATH=$PATH:$HOME/.cargo/bin
             if ! which rustup &> /dev/null; then
                 echo -e "$Failed to install rustup"
@@ -145,7 +145,7 @@ check_cargo() {
 
     if [[ $verbose -eq 1 ]]; then
         echo ""
-        rustc -Vv && cargo -Vv
+        rustc -Vv && cargo +nightly -Vv
     fi
 }
 
@@ -154,8 +154,8 @@ install_rustfmt() {
     check_rustup -i
 
     echo -e "$Installing rustfmt…"
-    rustup component add rustfmt
-    if ! cargo fmt --version >/dev/null 2>&1; then
+    rustup component add --toolchain nightly rustfmt
+    if ! cargo +nightly fmt --version >/dev/null 2>&1; then
         echo -e "$Failed to install rustfmt"
         exit 2
     fi
@@ -163,7 +163,7 @@ install_rustfmt() {
 
 # Run rustfmt to enforce code style.
 run_rustfmt() {
-    if ! cargo fmt --version >/dev/null 2>&1; then
+    if ! cargo +nightly fmt --version >/dev/null 2>&1; then
         if [[ $force_install -eq 1 ]]; then
             install_rustfmt
         elif [ ! -t 1 ]; then
@@ -197,11 +197,11 @@ run_rustfmt() {
 
     if [[ $verbose -eq 1 ]]; then
         echo ""
-        cargo fmt --version
+        cargo +nightly fmt --version
         echo ""
     fi
 
-    if ! cargo fmt --all -- --check; then
+    if ! cargo +nightly fmt --all -- --check; then
         echo -e "  Checking code style result: $fail"
         echo "Please fix the above issues, either manually or by running: cargo fmt --all"
         exit 1

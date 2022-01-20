@@ -35,7 +35,7 @@ flatpak:
 # Configure and run code checks
 # Exits and fails if an error is encountered
 checks:
-  image: "rust:slim"
+  image: "rustlang/rust:nightly-slim"
   stage: check
   script:
     - scripts/checks.sh --verbose --force-install
