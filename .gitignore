@@ -10,3 +10,4 @@ src/config.rs
 .flatpak
 subprojects/libadwaita
 subprojects/gtksourceview
+.vscode
