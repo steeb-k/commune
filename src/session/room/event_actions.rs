@@ -102,28 +102,39 @@ where
                 }
             }));
             action_group.add_action(&toggle_reaction);
+            match message.msgtype {
+                // Copy Text-Message
+                MessageType::Text(text_message) => {
+                    gtk_macros::action!(
+                        &action_group,
+                        "copy-text",
+                        clone!(@weak self as widget => move |_, _| {
+                            widget.clipboard().set_text(&text_message.body);
+                        })
+                    );
+                }
+                MessageType::File(_) => {
+                    // Save message's file
+                    let file_save = gio::SimpleAction::new("file-save", None);
+                    file_save.connect_activate(
+                        clone!(@weak self as widget, @weak event => move |_, _| {
+                            widget.save_event_file(event);
+                        }),
+                    );
+                    action_group.add_action(&file_save);
 
-            if let MessageType::File(_) = message.msgtype {
-                // Save message's file
-                let file_save = gio::SimpleAction::new("file-save", None);
-                file_save.connect_activate(
-                    clone!(@weak self as widget, @weak event => move |_, _| {
-                        widget.save_event_file(event);
-                    }),
-                );
-                action_group.add_action(&file_save);
-
-                // Open message's file
-                let file_open = gio::SimpleAction::new("file-open", None);
-                file_open.connect_activate(
-                    clone!(@weak self as widget, @weak event => move |_, _| {
-                        widget.open_event_file(event);
-                    }),
-                );
-                action_group.add_action(&file_open);
+                    // Open message's file
+                    let file_open = gio::SimpleAction::new("file-open", None);
+                    file_open.connect_activate(
+                        clone!(@weak self as widget, @weak event => move |_, _| {
+                            widget.open_event_file(event);
+                        }),
+                    );
+                    action_group.add_action(&file_open);
+                }
+                _ => {}
             }
         }
-
         self.insert_action_group("event", Some(&action_group));
         Some(action_group)
     }
