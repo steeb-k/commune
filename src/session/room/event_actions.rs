@@ -75,33 +75,37 @@ where
         let action_group = gio::SimpleActionGroup::new();
 
         // View Event Source
-        let view_source = gio::SimpleAction::new("view-source", None);
-        view_source.connect_activate(clone!(@weak self as widget, @weak event => move |_, _| {
-            let window = widget.root().unwrap().downcast().unwrap();
-            let dialog = EventSourceDialog::new(&window, &event);
-            dialog.show();
-        }));
-        action_group.add_action(&view_source);
+        gtk_macros::action!(
+            &action_group,
+            "view-source",
+            clone!(@weak self as widget, @weak event => move |_, _| {
+                let window = widget.root().unwrap().downcast().unwrap();
+                let dialog = EventSourceDialog::new(&window, &event);
+                dialog.show();
+            })
+        );
 
         if let Some(AnyMessageEventContent::RoomMessage(message)) = event.message_content() {
             // Send/redact a reaction
-            let toggle_reaction =
-                gio::SimpleAction::new("toggle-reaction", Some(&String::static_variant_type()));
-            toggle_reaction.connect_activate(clone!(@weak event => move |_, variant| {
-                let key: String = variant.unwrap().get().unwrap();
-                let room = event.room();
+            gtk_macros::action!(
+                &action_group,
+                "toggle-reaction",
+                Some(&String::static_variant_type()),
+                clone!(@weak event => move |_, variant| {
+                    let key: String = variant.unwrap().get().unwrap();
+                    let room = event.room();
 
-                let reaction_group = event.reactions().reaction_group_by_key(&key);
+                    let reaction_group = event.reactions().reaction_group_by_key(&key);
 
-                if let Some(reaction) = reaction_group.and_then(|group| group.user_reaction()) {
-                    // The user already sent that reaction, redact it.
-                    room.redact(reaction.matrix_event_id(), None);
-                } else {
-                    // The user didn't send that redaction, send it.
-                    room.send_reaction(key, event.matrix_event_id());
-                }
-            }));
-            action_group.add_action(&toggle_reaction);
+                    if let Some(reaction) = reaction_group.and_then(|group| group.user_reaction()) {
+                        // The user already sent that reaction, redact it.
+                        room.redact(reaction.matrix_event_id(), None);
+                    } else {
+                        // The user didn't send that redaction, send it.
+                        room.send_reaction(key, event.matrix_event_id());
+                    }
+                })
+            );
             match message.msgtype {
                 // Copy Text-Message
                 MessageType::Text(text_message) => {
@@ -115,22 +119,22 @@ where
                 }
                 MessageType::File(_) => {
                     // Save message's file
-                    let file_save = gio::SimpleAction::new("file-save", None);
-                    file_save.connect_activate(
+                    gtk_macros::action!(
+                        &action_group,
+                        "file-save",
                         clone!(@weak self as widget, @weak event => move |_, _| {
-                            widget.save_event_file(event);
-                        }),
+                        widget.save_event_file(event);
+                        })
                     );
-                    action_group.add_action(&file_save);
 
                     // Open message's file
-                    let file_open = gio::SimpleAction::new("file-open", None);
-                    file_open.connect_activate(
+                    gtk_macros::action!(
+                        &action_group,
+                        "file-open",
                         clone!(@weak self as widget, @weak event => move |_, _| {
-                            widget.open_event_file(event);
-                        }),
+                        widget.open_event_file(event);
+                        })
                     );
-                    action_group.add_action(&file_open);
                 }
                 _ => {}
             }
