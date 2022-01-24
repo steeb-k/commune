@@ -117,25 +117,21 @@ impl QrCodeScanner {
     }
 
     async fn connection(&self) -> Result<&zbus::Connection, ashpd::Error> {
-        let priv_ = imp::QrCodeScanner::from_instance(self);
-
-        Ok(priv_
+        Ok(self
+            .imp()
             .connection
             .get_or_try_init(zbus::Connection::session)
             .await?)
     }
 
     pub fn stop(&self) {
-        let self_ = imp::QrCodeScanner::from_instance(self);
-
-        self_.paintable.close_pipeline();
+        self.imp().paintable.close_pipeline();
     }
 
     pub async fn start(&self) -> bool {
-        let priv_ = imp::QrCodeScanner::from_instance(self);
         if let Ok(stream_fd) = self.stream().await {
             if let Ok(node_id) = camera::pipewire_node_id(stream_fd).await {
-                priv_.paintable.set_pipewire_fd(stream_fd, node_id);
+                self.imp().paintable.set_pipewire_fd(stream_fd, node_id);
                 self.set_has_camera(true);
                 return true;
             }
@@ -165,18 +161,15 @@ impl QrCodeScanner {
     }
 
     pub fn has_camera(&self) -> bool {
-        let priv_ = imp::QrCodeScanner::from_instance(self);
-        priv_.has_camera.get()
+        self.imp().has_camera.get()
     }
 
     fn set_has_camera(&self, has_camera: bool) {
-        let priv_ = imp::QrCodeScanner::from_instance(self);
-
         if has_camera == self.has_camera() {
             return;
         }
 
-        priv_.has_camera.set(has_camera);
+        self.imp().has_camera.set(has_camera);
         self.notify("has-camera");
     }
 

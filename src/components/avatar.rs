@@ -108,12 +108,11 @@ impl Avatar {
     }
 
     pub fn set_size(&self, size: i32) {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.avatar.set_size(size);
+        self.imp().avatar.set_size(size);
     }
 
     pub fn set_item(&self, item: Option<AvatarItem>) {
-        let priv_ = imp::Avatar::from_instance(self);
+        let priv_ = self.imp();
 
         if *priv_.item.borrow() == item {
             return;
@@ -129,18 +128,15 @@ impl Avatar {
     }
 
     pub fn size(&self) -> i32 {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.avatar.size()
+        self.imp().avatar.size()
     }
 
     pub fn item(&self) -> Option<AvatarItem> {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.item.borrow().clone()
+        self.imp().item.borrow().clone()
     }
 
     fn request_custom_avatar(&self) {
-        let priv_ = imp::Avatar::from_instance(self);
-        if let Some(item) = &*priv_.item.borrow() {
+        if let Some(item) = &*self.imp().item.borrow() {
             // FIXME: update on size changes
             item.set_needed_size(self.size());
         }

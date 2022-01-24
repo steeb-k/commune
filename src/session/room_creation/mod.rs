@@ -172,8 +172,7 @@ impl RoomCreation {
     }
 
     pub fn session(&self) -> Option<Session> {
-        let priv_ = imp::RoomCreation::from_instance(self);
-        priv_
+        self.imp()
             .session
             .borrow()
             .as_ref()
@@ -181,7 +180,7 @@ impl RoomCreation {
     }
 
     fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::RoomCreation::from_instance(self);
+        let priv_ = self.imp();
 
         if self.session() == session {
             return;
@@ -200,7 +199,7 @@ impl RoomCreation {
     }
 
     fn create_room(&self) -> Option<()> {
-        let priv_ = imp::RoomCreation::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.create_button.set_loading(true);
         priv_.content.set_sensitive(false);
@@ -260,7 +259,7 @@ impl RoomCreation {
 
     /// Display the error that occurred during creation
     fn handle_error(&self, error: HttpError) {
-        let priv_ = imp::RoomCreation::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.create_button.set_loading(false);
         priv_.content.set_sensitive(true);
@@ -288,7 +287,7 @@ impl RoomCreation {
     }
 
     fn validate_input(&self) {
-        let priv_ = imp::RoomCreation::from_instance(self);
+        let priv_ = self.imp();
 
         // Validate room name
         let (is_name_valid, has_error) =
@@ -362,9 +361,7 @@ impl RoomCreation {
     }
 
     fn cancel(&self) {
-        let priv_ = imp::RoomCreation::from_instance(self);
-
-        if priv_.cancel_button.is_sensitive() {
+        if self.imp().cancel_button.is_sensitive() {
             self.close();
         }
     }

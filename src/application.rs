@@ -85,16 +85,11 @@ impl Application {
     }
 
     fn get_main_window(&self) -> Window {
-        imp::Application::from_instance(self)
-            .window
-            .get()
-            .unwrap()
-            .upgrade()
-            .unwrap()
+        self.imp().window.get().unwrap().upgrade().unwrap()
     }
 
     pub fn settings(&self) -> Settings {
-        imp::Application::from_instance(self).settings.clone()
+        self.imp().settings.clone()
     }
 
     fn setup_gactions(&self) {

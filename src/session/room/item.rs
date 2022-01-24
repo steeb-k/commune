@@ -168,8 +168,7 @@ impl Item {
     }
 
     pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {
-        let priv_ = imp::Item::from_instance(self);
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             event.matrix_event()
         } else {
             None
@@ -177,8 +176,7 @@ impl Item {
     }
 
     pub fn event(&self) -> Option<&Event> {
-        let priv_ = imp::Item::from_instance(self);
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             Some(event)
         } else {
             None
@@ -186,8 +184,7 @@ impl Item {
     }
 
     pub fn matrix_sender(&self) -> Option<Arc<UserId>> {
-        let priv_ = imp::Item::from_instance(self);
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             Some(event.matrix_sender())
         } else {
             None
@@ -195,9 +192,7 @@ impl Item {
     }
 
     pub fn matrix_event_id(&self) -> Option<Box<EventId>> {
-        let priv_ = imp::Item::from_instance(self);
-
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             Some(event.matrix_event_id())
         } else {
             None
@@ -205,9 +200,7 @@ impl Item {
     }
 
     pub fn event_timestamp(&self) -> Option<DateTime> {
-        let priv_ = imp::Item::from_instance(self);
-
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             Some(event.timestamp())
         } else {
             None
@@ -215,12 +208,11 @@ impl Item {
     }
 
     pub fn set_show_header(&self, visible: bool) {
-        let priv_ = imp::Item::from_instance(self);
         if self.show_header() == visible {
             return;
         }
 
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             event.set_show_header(visible);
         }
 
@@ -228,9 +220,7 @@ impl Item {
     }
 
     pub fn show_header(&self) -> bool {
-        let priv_ = imp::Item::from_instance(self);
-
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             event.show_header()
         } else {
             false
@@ -238,9 +228,7 @@ impl Item {
     }
 
     pub fn can_hide_header(&self) -> bool {
-        let priv_ = imp::Item::from_instance(self);
-
-        if let ItemType::Event(event) = priv_.type_.get().unwrap() {
+        if let ItemType::Event(event) = self.imp().type_.get().unwrap() {
             event.can_hide_header()
         } else {
             false
@@ -248,8 +236,7 @@ impl Item {
     }
 
     pub fn type_(&self) -> &ItemType {
-        let priv_ = imp::Item::from_instance(self);
-        priv_.type_.get().unwrap()
+        self.imp().type_.get().unwrap()
     }
 
     pub fn connect_show_header_notify<F: Fn(&Self, &glib::ParamSpec) + 'static>(

@@ -196,21 +196,18 @@ impl User {
     }
 
     pub fn is_verified(&self) -> bool {
-        let priv_ = imp::User::from_instance(self);
-
-        priv_.is_verified.get()
+        self.imp().is_verified.get()
     }
 
     fn init_is_verified(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            let priv_ = imp::User::from_instance(&obj);
             let is_verified = obj.crypto_identity().await.map_or(false, |i| i.verified());
 
             if is_verified == obj.is_verified() {
                 return;
             }
 
-            priv_.is_verified.set(is_verified);
+            obj.imp().is_verified.set(is_verified);
             obj.notify("verified");
             obj.notify("allowed-actions");
         }));
@@ -219,17 +216,21 @@ impl User {
 
 pub trait UserExt: IsA<User> {
     fn session(&self) -> Session {
-        let priv_ = imp::User::from_instance(self.upcast_ref());
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.upcast_ref()
+            .imp()
+            .session
+            .get()
+            .unwrap()
+            .upgrade()
+            .unwrap()
     }
 
     fn user_id(&self) -> Arc<UserId> {
-        let priv_ = imp::User::from_instance(self.upcast_ref());
-        priv_.user_id.get().unwrap().clone()
+        self.upcast_ref().imp().user_id.get().unwrap().clone()
     }
 
     fn display_name(&self) -> String {
-        let priv_ = imp::User::from_instance(self.upcast_ref());
+        let priv_ = self.upcast_ref().imp();
 
         if let Some(display_name) = priv_.display_name.borrow().to_owned() {
             display_name
@@ -242,14 +243,12 @@ pub trait UserExt: IsA<User> {
         if Some(self.display_name()) == display_name {
             return;
         }
-        let priv_ = imp::User::from_instance(self.upcast_ref());
-        priv_.display_name.replace(display_name);
+        self.upcast_ref().imp().display_name.replace(display_name);
         self.notify("display-name");
     }
 
     fn avatar(&self) -> &Avatar {
-        let priv_ = imp::User::from_instance(self.upcast_ref());
-        priv_.avatar.get().unwrap()
+        self.upcast_ref().imp().avatar.get().unwrap()
     }
 
     fn set_avatar_url(&self, url: Option<Box<MxcUri>>) {

@@ -120,30 +120,24 @@ impl CategoryRow {
     }
 
     pub fn category(&self) -> Option<Category> {
-        let priv_ = imp::CategoryRow::from_instance(self);
-        priv_.category.borrow().clone()
+        self.imp().category.borrow().clone()
     }
 
     pub fn set_category(&self, category: Option<Category>) {
-        let priv_ = imp::CategoryRow::from_instance(self);
-
         if self.category() == category {
             return;
         }
 
-        priv_.category.replace(category);
+        self.imp().category.replace(category);
         self.notify("category");
         self.notify("label");
     }
 
     fn expanded(&self) -> bool {
-        let priv_ = imp::CategoryRow::from_instance(self);
-        priv_.expanded.get()
+        self.imp().expanded.get()
     }
 
     fn set_expanded(&self, expanded: bool) {
-        let priv_ = imp::CategoryRow::from_instance(self);
-
         if self.expanded() == expanded {
             return;
         }
@@ -154,7 +148,7 @@ impl CategoryRow {
             self.unset_state_flags(gtk::StateFlags::CHECKED);
         }
 
-        priv_.expanded.set(expanded);
+        self.imp().expanded.set(expanded);
         self.notify("expanded");
     }
 
@@ -201,18 +195,15 @@ impl CategoryRow {
     }
 
     pub fn show_label_for_category(&self) -> CategoryType {
-        let priv_ = imp::CategoryRow::from_instance(self);
-        priv_.show_label_for_category.get()
+        self.imp().show_label_for_category.get()
     }
 
     pub fn set_show_label_for_category(&self, category: CategoryType) {
-        let priv_ = imp::CategoryRow::from_instance(self);
-
         if category == self.show_label_for_category() {
             return;
         }
 
-        priv_.show_label_for_category.set(category);
+        self.imp().show_label_for_category.set(category);
 
         self.notify("show-label-for-category");
         self.notify("label");

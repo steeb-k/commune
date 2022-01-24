@@ -92,7 +92,7 @@ impl MessageReaction {
     }
 
     fn set_group(&self, group: ReactionGroup) {
-        let priv_ = imp::MessageReaction::from_instance(self);
+        let priv_ = self.imp();
         let key = group.key();
         priv_.reaction_key.set_label(key);
         priv_

@@ -107,7 +107,7 @@ impl AvatarWithSelection {
     }
 
     pub fn set_selected(&self, selected: bool) {
-        let priv_ = imp::AvatarWithSelection::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.checkmark.set_visible(selected);
 
@@ -119,8 +119,7 @@ impl AvatarWithSelection {
     }
 
     pub fn avatar(&self) -> &Avatar {
-        let priv_ = imp::AvatarWithSelection::from_instance(self);
-        &priv_.child_avatar
+        &self.imp().child_avatar
     }
 }
 

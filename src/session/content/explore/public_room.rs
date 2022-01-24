@@ -130,45 +130,38 @@ impl PublicRoom {
     }
 
     pub fn room_list(&self) -> &RoomList {
-        let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.room_list.get().unwrap()
+        self.imp().room_list.get().unwrap()
     }
 
     pub fn avatar(&self) -> &Avatar {
-        let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.avatar.get().unwrap()
+        self.imp().avatar.get().unwrap()
     }
 
     /// The room if the user is already a member of this room.
     pub fn room(&self) -> Option<&Room> {
-        let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.room.get()
+        self.imp().room.get()
     }
 
     fn set_room(&self, room: Room) {
-        let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.room.set(room).unwrap();
+        self.imp().room.set(room).unwrap();
         self.notify("room");
     }
 
     fn set_pending(&self, is_pending: bool) {
-        let priv_ = imp::PublicRoom::from_instance(self);
-
         if self.is_pending() == is_pending {
             return;
         }
 
-        priv_.is_pending.set(is_pending);
+        self.imp().is_pending.set(is_pending);
         self.notify("pending");
     }
 
     pub fn is_pending(&self) -> bool {
-        let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.is_pending.get()
+        self.imp().is_pending.get()
     }
 
     pub fn set_matrix_public_room(&self, room: PublicRoomsChunk) {
-        let priv_ = imp::PublicRoom::from_instance(self);
+        let priv_ = self.imp();
 
         let display_name = room.name.clone().map(Into::into);
         self.avatar().set_display_name(display_name);
@@ -181,8 +174,7 @@ impl PublicRoom {
             let handler_id = self.room_list().connect_items_changed(
                 clone!(@weak self as obj => move |room_list, _, _, _| {
                     if let Some(room) = room_list.get(&room_id) {
-                        let priv_ = imp::PublicRoom::from_instance(&obj);
-                        if let Some(handler_id) = priv_.room_handler.take() {
+                        if let Some(handler_id) = obj.imp().room_handler.take() {
                             obj.set_room(room);
                             room_list.disconnect(handler_id);
                         }
@@ -199,8 +191,7 @@ impl PublicRoom {
     }
 
     pub fn matrix_public_room(&self) -> Option<&PublicRoomsChunk> {
-        let priv_ = imp::PublicRoom::from_instance(self);
-        priv_.matrix_public_room.get()
+        self.imp().matrix_public_room.get()
     }
 
     pub fn join_or_view(&self) {

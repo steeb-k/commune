@@ -132,18 +132,16 @@ impl RoomDetails {
     }
 
     pub fn room(&self) -> &Room {
-        let priv_ = imp::RoomDetails::from_instance(self);
         // Use unwrap because room property is CONSTRUCT_ONLY.
-        priv_.room.get().unwrap()
+        self.imp().room.get().unwrap()
     }
 
     fn set_room(&self, room: Room) {
-        let priv_ = imp::RoomDetails::from_instance(self);
-        priv_.room.set(room).expect("Room already initialized");
+        self.imp().room.set(room).expect("Room already initialized");
     }
 
     fn init_avatar(&self) {
-        let priv_ = imp::RoomDetails::from_instance(self);
+        let priv_ = self.imp();
         let avatar_remove_button = &priv_.avatar_remove_button;
         let avatar_edit_button = &priv_.avatar_edit_button;
 
@@ -166,7 +164,7 @@ impl RoomDetails {
     }
 
     fn init_edit_toggle(&self) {
-        let priv_ = imp::RoomDetails::from_instance(self);
+        let priv_ = self.imp();
         let edit_toggle = &priv_.edit_toggle;
         let label_enabled = gettext("Save Details");
         let label_disabled = gettext("Edit Details");
@@ -182,7 +180,7 @@ impl RoomDetails {
             }
             button.set_label(&label_disabled);
 
-            let priv_ = imp::RoomDetails::from_instance(&this);
+            let priv_ = this.imp();
             let room = this.room();
 
             let room_name = priv_.room_name_entry.buffer().text();
@@ -196,8 +194,7 @@ impl RoomDetails {
         priv_
             .room_name_entry
             .connect_activate(clone!(@weak self as this => move |_entry| {
-                let priv_ = imp::RoomDetails::from_instance(&this);
-                priv_.edit_toggle.set_active(false);
+                this.imp().edit_toggle.set_active(false);
             }));
 
         // Hide edit controls when the user is not eligible to perform the actions.
@@ -212,7 +209,6 @@ impl RoomDetails {
     }
 
     fn init_avatar_chooser(&self) {
-        let priv_ = imp::RoomDetails::from_instance(self);
         let avatar_chooser = gtk::FileChooserNative::new(
             Some(&gettext("Choose avatar")),
             Some(self),
@@ -230,15 +226,14 @@ impl RoomDetails {
 
         // We must keep a reference to FileChooserNative around as it is not
         // managed by GTK.
-        priv_
+        self.imp()
             .avatar_chooser
             .set(avatar_chooser)
             .expect("File chooser already initialized");
     }
 
     fn avatar_chooser(&self) -> &gtk::FileChooserNative {
-        let priv_ = imp::RoomDetails::from_instance(self);
-        priv_.avatar_chooser.get().unwrap()
+        self.imp().avatar_chooser.get().unwrap()
     }
 
     fn open_avatar_chooser(&self) {
@@ -257,7 +252,6 @@ impl RoomDetails {
     }
 
     pub fn member_page(&self) -> &MemberPage {
-        let priv_ = imp::RoomDetails::from_instance(self);
-        priv_.member_page.get().unwrap()
+        self.imp().member_page.get().unwrap()
     }
 }

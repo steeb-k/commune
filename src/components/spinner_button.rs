@@ -91,7 +91,7 @@ impl SpinnerButton {
     }
 
     pub fn set_label(&self, label: &str) {
-        let priv_ = imp::SpinnerButton::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.label.label().as_str() == label {
             return;
@@ -103,12 +103,11 @@ impl SpinnerButton {
     }
 
     pub fn label(&self) -> glib::GString {
-        let priv_ = imp::SpinnerButton::from_instance(self);
-        priv_.label.label()
+        self.imp().label.label()
     }
 
     pub fn set_loading(&self, loading: bool) {
-        let priv_ = imp::SpinnerButton::from_instance(self);
+        let priv_ = self.imp();
 
         if self.loading() == loading {
             return;
@@ -126,7 +125,7 @@ impl SpinnerButton {
     }
 
     pub fn loading(&self) -> bool {
-        let priv_ = imp::SpinnerButton::from_instance(self);
+        let priv_ = self.imp();
         priv_.stack.visible_child().as_ref() == Some(priv_.spinner.upcast_ref())
     }
 }

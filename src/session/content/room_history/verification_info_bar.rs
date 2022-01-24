@@ -108,12 +108,11 @@ impl VerificationInfoBar {
     }
 
     pub fn request(&self) -> Option<IdentityVerification> {
-        let priv_ = imp::VerificationInfoBar::from_instance(self);
-        priv_.request.borrow().clone()
+        self.imp().request.borrow().clone()
     }
 
     pub fn set_request(&self, request: Option<IdentityVerification>) {
-        let priv_ = imp::VerificationInfoBar::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(old_request) = &*priv_.request.borrow() {
             if Some(old_request) == request.as_ref() {
@@ -156,7 +155,7 @@ impl VerificationInfoBar {
     }
 
     pub fn update_view(&self) {
-        let priv_ = imp::VerificationInfoBar::from_instance(self);
+        let priv_ = self.imp();
         let visible = if let Some(request) = self.request() {
             if request.is_finished() {
                 false

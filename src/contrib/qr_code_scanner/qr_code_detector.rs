@@ -134,9 +134,8 @@ unsafe impl Sync for QrCodeDetector {}
 
 impl QrCodeDetector {
     pub fn new(sender: Sender<Action>) -> Self {
-        let sink = glib::Object::new(&[]).expect("Failed to create a QrCodeDetector");
-        let priv_ = imp::QrCodeDetector::from_instance(&sink);
-        priv_.sender.lock().unwrap().replace(sender);
+        let sink = glib::Object::new::<Self>(&[]).expect("Failed to create a QrCodeDetector");
+        sink.imp().sender.lock().unwrap().replace(sender);
         sink
     }
 }

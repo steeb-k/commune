@@ -173,12 +173,11 @@ impl InviteeList {
     }
 
     pub fn room(&self) -> &Room {
-        let priv_ = imp::InviteeList::from_instance(self);
-        priv_.room.get().unwrap()
+        self.imp().room.get().unwrap()
     }
 
     pub fn set_search_term(&self, search_term: Option<String>) {
-        let priv_ = imp::InviteeList::from_instance(self);
+        let priv_ = self.imp();
 
         if search_term.as_ref() == priv_.search_term.borrow().as_ref() {
             return;
@@ -195,12 +194,11 @@ impl InviteeList {
     }
 
     fn search_term(&self) -> Option<String> {
-        let priv_ = imp::InviteeList::from_instance(self);
-        priv_.search_term.borrow().clone()
+        self.imp().search_term.borrow().clone()
     }
 
     fn set_state(&self, state: InviteeListState) {
-        let priv_ = imp::InviteeList::from_instance(self);
+        let priv_ = self.imp();
 
         if state == self.state() {
             return;
@@ -211,15 +209,13 @@ impl InviteeList {
     }
 
     pub fn state(&self) -> InviteeListState {
-        let priv_ = imp::InviteeList::from_instance(self);
-        priv_.state.get()
+        self.imp().state.get()
     }
 
     fn set_list(&self, users: Vec<Invitee>) {
-        let priv_ = imp::InviteeList::from_instance(self);
         let added = users.len();
 
-        let prev_users = priv_.list.replace(users);
+        let prev_users = self.imp().list.replace(users);
 
         self.items_changed(0, prev_users.len() as u32, added as u32);
     }
@@ -295,7 +291,6 @@ impl InviteeList {
     }
 
     fn search_users(&self) {
-        let priv_ = imp::InviteeList::from_instance(self);
         let client = self.room().session().client();
         let search_term = if let Some(search_term) = self.search_term() {
             search_term
@@ -318,7 +313,7 @@ impl InviteeList {
 
         let (future, handle) = futures::future::abortable(handle);
 
-        if let Some(abort_handle) = priv_.abort_handle.replace(Some(handle)) {
+        if let Some(abort_handle) = self.imp().abort_handle.replace(Some(handle)) {
             abort_handle.abort();
         }
 
@@ -330,14 +325,12 @@ impl InviteeList {
     }
 
     fn get_invitee(&self, user_id: &UserId) -> Option<Invitee> {
-        let priv_ = imp::InviteeList::from_instance(self);
-        priv_.invitee_list.borrow().get(user_id).cloned()
+        self.imp().invitee_list.borrow().get(user_id).cloned()
     }
 
     pub fn add_invitee(&self, user: Invitee) {
-        let priv_ = imp::InviteeList::from_instance(self);
         user.set_invited(true);
-        priv_
+        self.imp()
             .invitee_list
             .borrow_mut()
             .insert(user.user_id(), user.clone());
@@ -346,8 +339,7 @@ impl InviteeList {
     }
 
     pub fn invitees(&self) -> Vec<Invitee> {
-        let priv_ = imp::InviteeList::from_instance(self);
-        priv_
+        self.imp()
             .invitee_list
             .borrow()
             .values()
@@ -356,8 +348,7 @@ impl InviteeList {
     }
 
     fn remove_invitee(&self, user_id: Arc<UserId>) {
-        let priv_ = imp::InviteeList::from_instance(self);
-        let removed = priv_.invitee_list.borrow_mut().remove(&user_id);
+        let removed = self.imp().invitee_list.borrow_mut().remove(&user_id);
         if let Some(user) = removed {
             user.set_invited(false);
             self.emit_by_name::<()>("invitee-removed", &[&user]);
@@ -366,8 +357,7 @@ impl InviteeList {
     }
 
     pub fn has_selected(&self) -> bool {
-        let priv_ = imp::InviteeList::from_instance(self);
-        !priv_.invitee_list.borrow().is_empty()
+        !self.imp().invitee_list.borrow().is_empty()
     }
 
     pub fn connect_invitee_added<F: Fn(&Self, &Invitee) + 'static>(

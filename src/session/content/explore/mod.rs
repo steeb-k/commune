@@ -113,8 +113,7 @@ mod imp {
 
             adj.connect_value_changed(clone!(@weak obj => move |adj| {
                 if adj.upper() - adj.value() < adj.page_size() * 2.0 {
-                    let priv_ = imp::Explore::from_instance(&obj);
-                    if let Some(public_room_list) = &*priv_.public_room_list.borrow() {
+                    if let Some(public_room_list) = &*obj.imp().public_room_list.borrow() {
                         public_room_list.load_public_rooms(false);
                     }
                 }
@@ -122,7 +121,7 @@ mod imp {
 
             self.search_entry
                 .connect_search_changed(clone!(@weak obj => move |_| {
-                    let priv_ = imp::Explore::from_instance(&obj);
+                    let priv_ = obj.imp();
                     if let Some(public_room_list) = &*priv_.public_room_list.borrow() {
                         let text = priv_.search_entry.text().as_str().to_string();
                         let network = priv_.network_menu.active_id().map(|id| id.as_str().to_owned());
@@ -147,8 +146,7 @@ impl Explore {
     }
 
     pub fn session(&self) -> Option<Session> {
-        let priv_ = imp::Explore::from_instance(self);
-        priv_
+        self.imp()
             .session
             .borrow()
             .as_ref()
@@ -156,15 +154,14 @@ impl Explore {
     }
 
     pub fn init(&self) {
-        let priv_ = imp::Explore::from_instance(self);
         self.load_protocols();
-        if let Some(public_room_list) = &*priv_.public_room_list.borrow() {
+        if let Some(public_room_list) = &*self.imp().public_room_list.borrow() {
             public_room_list.load_public_rooms(true);
         }
     }
 
     pub fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::Explore::from_instance(self);
+        let priv_ = self.imp();
 
         if session == self.session() {
             return;
@@ -200,7 +197,7 @@ impl Explore {
     }
 
     fn set_visible_child(&self) {
-        let priv_ = imp::Explore::from_instance(self);
+        let priv_ = self.imp();
         if let Some(public_room_list) = &*priv_.public_room_list.borrow() {
             if public_room_list.loading() {
                 priv_.stack.set_visible_child(&*priv_.spinner);
@@ -213,27 +210,25 @@ impl Explore {
     }
 
     fn set_protocols(&self, protocols: get_protocols::Response) {
-        let priv_ = imp::Explore::from_instance(self);
-
         for protocol in protocols
             .protocols
             .into_iter()
             .flat_map(|(_, protocol)| protocol.instances)
         {
-            priv_
+            self.imp()
                 .network_menu
                 .append(Some(&protocol.instance_id), &protocol.desc);
         }
     }
 
     fn load_protocols(&self) {
-        let priv_ = imp::Explore::from_instance(self);
+        let network_menu = &self.imp().network_menu;
         let client = self.session().unwrap().client();
 
-        priv_.network_menu.remove_all();
-        priv_.network_menu.append(Some("matrix"), "Matrix");
-        priv_.network_menu.append(Some("all"), "All rooms");
-        priv_.network_menu.set_active(Some(0));
+        network_menu.remove_all();
+        network_menu.append(Some("matrix"), "Matrix");
+        network_menu.append(Some("all"), "All rooms");
+        network_menu.set_active(Some(0));
 
         let handle =
             spawn_tokio!(async move { client.send(get_protocols::Request::new(), None).await });

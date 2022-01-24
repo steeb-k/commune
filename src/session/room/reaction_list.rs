@@ -62,9 +62,7 @@ impl ReactionList {
     ///
     /// Ignores `Event`s that are not reactions.
     pub fn add_reactions(&self, new_reactions: Vec<Event>) {
-        let mut reactions = imp::ReactionList::from_instance(self)
-            .reactions
-            .borrow_mut();
+        let mut reactions = self.imp().reactions.borrow_mut();
         let prev_len = reactions.len();
 
         // Group reactions by key
@@ -114,14 +112,17 @@ impl ReactionList {
     ///
     /// Returns `None` if no action group was found with this key.
     pub fn reaction_group_by_key(&self, key: &str) -> Option<ReactionGroup> {
-        let priv_ = imp::ReactionList::from_instance(self);
-        priv_.reactions.borrow().get(key).cloned()
+        self.imp().reactions.borrow().get(key).cloned()
     }
 
     /// Remove a reaction group by its key.
     pub fn remove_reaction_group(&self, key: &str) {
-        let priv_ = imp::ReactionList::from_instance(self);
-        let (pos, ..) = priv_.reactions.borrow_mut().shift_remove_full(key).unwrap();
+        let (pos, ..) = self
+            .imp()
+            .reactions
+            .borrow_mut()
+            .shift_remove_full(key)
+            .unwrap();
         self.items_changed(pos as u32, 1, 0);
     }
 }

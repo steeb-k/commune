@@ -136,8 +136,7 @@ impl PublicRoomList {
     }
 
     pub fn session(&self) -> Option<Session> {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-        priv_
+        self.imp()
             .session
             .borrow()
             .as_ref()
@@ -145,41 +144,34 @@ impl PublicRoomList {
     }
 
     pub fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-
         if session == self.session() {
             return;
         }
 
-        priv_
+        self.imp()
             .session
             .replace(session.map(|session| session.downgrade()));
         self.notify("session");
     }
 
     pub fn loading(&self) -> bool {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-        self.request_sent() && priv_.list.borrow().is_empty()
+        self.request_sent() && self.imp().list.borrow().is_empty()
     }
 
     pub fn empty(&self) -> bool {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-        !self.request_sent() && priv_.list.borrow().is_empty()
+        !self.request_sent() && self.imp().list.borrow().is_empty()
     }
 
     pub fn complete(&self) -> bool {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-        priv_.next_batch.borrow().is_none()
+        self.imp().next_batch.borrow().is_none()
     }
 
     fn request_sent(&self) -> bool {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-        priv_.request_sent.get()
+        self.imp().request_sent.get()
     }
 
     fn set_request_sent(&self, request_sent: bool) {
-        let priv_ = imp::PublicRoomList::from_instance(self);
-        priv_.request_sent.set(request_sent);
+        self.imp().request_sent.set(request_sent);
 
         self.notify("loading");
         self.notify("empty");
@@ -192,7 +184,7 @@ impl PublicRoomList {
         server: Option<String>,
         network: Option<String>,
     ) {
-        let priv_ = imp::PublicRoomList::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.search_term.borrow().as_ref() == search_term.as_ref()
             && priv_.server.borrow().as_ref() == server.as_ref()
@@ -208,7 +200,7 @@ impl PublicRoomList {
     }
 
     fn handle_public_rooms_response(&self, response: PublicRoomsResponse) {
-        let priv_ = imp::PublicRoomList::from_instance(self);
+        let priv_ = self.imp();
         let session = self.session().unwrap();
         let room_list = session.room_list();
 
@@ -260,14 +252,14 @@ impl PublicRoomList {
         server: Option<String>,
         network: Option<String>,
     ) -> bool {
-        let priv_ = imp::PublicRoomList::from_instance(self);
+        let priv_ = self.imp();
         priv_.search_term.borrow().as_ref() == search_term.as_ref()
             && priv_.server.borrow().as_ref() == server.as_ref()
             && priv_.network.borrow().as_ref() == network.as_ref()
     }
 
     pub fn load_public_rooms(&self, clear: bool) {
-        let priv_ = imp::PublicRoomList::from_instance(self);
+        let priv_ = self.imp();
 
         if self.request_sent() && !clear {
             return;

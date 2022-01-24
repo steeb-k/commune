@@ -143,22 +143,19 @@ impl SessionVerification {
 
     /// The current `Session`.
     pub fn session(&self) -> Session {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     fn set_session(&self, session: Session) {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.session.set(session.downgrade()).unwrap()
+        self.imp().session.set(session.downgrade()).unwrap()
     }
 
     fn request(&self) -> Option<IdentityVerification> {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.request.borrow().clone()
+        self.imp().request.borrow().clone()
     }
 
     fn set_request(&self, request: Option<IdentityVerification>) {
-        let priv_ = imp::SessionVerification::from_instance(self);
+        let priv_ = self.imp();
         let previous_request = self.request();
 
         if previous_request == request {
@@ -197,14 +194,14 @@ impl SessionVerification {
     }
 
     fn reset(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
+        let bootstrap_button = &self.imp().bootstrap_button;
 
-        priv_.bootstrap_button.set_sensitive(true);
-        priv_.bootstrap_button.set_loading(false);
+        bootstrap_button.set_sensitive(true);
+        bootstrap_button.set_loading(false);
     }
 
     fn update_view(&self, request: &IdentityVerification) {
-        let priv_ = imp::SessionVerification::from_instance(self);
+        let priv_ = self.imp();
 
         if request.is_finished() && request.state() != VerificationState::Completed {
             self.start_request();
@@ -228,15 +225,13 @@ impl SessionVerification {
     }
 
     fn show_recovery(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
-
         // TODO: stop the request
 
-        priv_.main_stack.set_visible_child_name("recovery");
+        self.imp().main_stack.set_visible_child_name("recovery");
     }
 
     fn show_bootstrap(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
+        let priv_ = self.imp();
 
         self.set_request(None);
         priv_.bootstrap_label.set_label(&gettext("If you lost access to all other session you can create a new crypto identity. Be care full because this will reset all verified users and make previously encrypted conversations unreadable."));
@@ -247,8 +242,9 @@ impl SessionVerification {
     }
 
     fn start_request(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
-        priv_.main_stack.set_visible_child_name("wait-for-device");
+        self.imp()
+            .main_stack
+            .set_visible_child_name("wait-for-device");
 
         spawn!(clone!(@weak self as obj => async move {
             let request = IdentityVerification::create(&obj.session(), None).await;
@@ -258,16 +254,16 @@ impl SessionVerification {
     }
 
     fn previous(&self) {
-        let priv_ = imp::SessionVerification::from_instance(self);
+        let main_stack = &self.imp().main_stack;
 
-        if let Some(child_name) = priv_.main_stack.visible_child_name() {
+        if let Some(child_name) = main_stack.visible_child_name() {
             match child_name.as_str() {
                 "recovery" => {
                     self.start_request();
                     return;
                 }
                 "recovery-passphrase" | "recovery-key" => {
-                    priv_.main_stack.set_visible_child_name("recovery");
+                    main_stack.set_visible_child_name("recovery");
                     return;
                 }
                 "bootstrap" => {

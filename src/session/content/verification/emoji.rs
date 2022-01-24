@@ -50,7 +50,7 @@ impl Emoji {
     }
 
     pub fn set_emoji(&self, emoji: &MatrixEmoji) {
-        let priv_ = imp::Emoji::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.emoji.set_text(emoji.symbol);
         priv_.emoji_name.set_text(emoji.description);

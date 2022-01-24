@@ -104,7 +104,7 @@ impl RoomTitle {
     }
 
     pub fn set_title(&self, title: Option<String>) {
-        let priv_ = imp::RoomTitle::from_instance(self);
+        let priv_ = self.imp();
         // Parse and escape markup in title
         let title = title.map(|s| markup(&s));
         // If there's an existing title, check that current title and new title aren't
@@ -120,12 +120,11 @@ impl RoomTitle {
     }
 
     pub fn title(&self) -> Option<String> {
-        let priv_ = imp::RoomTitle::from_instance(self);
-        priv_.title.borrow().clone()
+        self.imp().title.borrow().clone()
     }
 
     pub fn set_subtitle(&self, subtitle: Option<String>) {
-        let priv_ = imp::RoomTitle::from_instance(self);
+        let priv_ = self.imp();
         // Parse and escape markup in subtitle
         let subtitle = subtitle.map(|s| markup(&s));
         // If there's an existing subtitle, check that current subtitle and new subtitle
@@ -141,8 +140,7 @@ impl RoomTitle {
     }
 
     pub fn subtitle(&self) -> Option<String> {
-        let priv_ = imp::RoomTitle::from_instance(self);
-        priv_.subtitle.borrow().clone()
+        self.imp().subtitle.borrow().clone()
     }
 }
 

@@ -111,12 +111,11 @@ impl DeviceRow {
     }
 
     pub fn device(&self) -> Option<Device> {
-        let priv_ = imp::DeviceRow::from_instance(self);
-        priv_.device.borrow().clone()
+        self.imp().device.borrow().clone()
     }
 
     pub fn set_device(&self, device: Option<Device>) {
-        let priv_ = imp::DeviceRow::from_instance(self);
+        let priv_ = self.imp();
 
         if self.device() == device {
             return;
@@ -151,16 +150,13 @@ impl DeviceRow {
     }
 
     fn delete(&self) {
-        let priv_ = imp::DeviceRow::from_instance(self);
-
-        priv_.delete_button.set_loading(true);
+        self.imp().delete_button.set_loading(true);
 
         if let Some(device) = self.device() {
             spawn!(clone!(@weak self as obj => async move {
                 let window: Option<gtk::Window> = obj.root().and_then(|root| root.downcast().ok());
                 let success = device.delete(window.as_ref()).await;
-                let priv_ = imp::DeviceRow::from_instance(&obj);
-                priv_.delete_button.set_loading(false);
+                obj.imp().delete_button.set_loading(false);
 
                 if success {
                     obj.hide();

@@ -91,18 +91,15 @@ impl AccountSettings {
     }
 
     pub fn user(&self) -> Option<User> {
-        let priv_ = imp::AccountSettings::from_instance(self);
-        priv_.user.borrow().clone()
+        self.imp().user.borrow().clone()
     }
 
     fn set_user(&self, user: Option<User>) {
-        let priv_ = imp::AccountSettings::from_instance(self);
-
         if self.user() == user {
             return;
         }
 
-        priv_.user.replace(user);
+        self.imp().user.replace(user);
         self.notify("user");
     }
 }

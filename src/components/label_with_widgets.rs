@@ -190,14 +190,13 @@ impl LabelWithWidgets {
     }
 
     pub fn append_child<P: IsA<gtk::Widget>>(&self, child: &P) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
-        priv_.widgets.borrow_mut().push(child.clone().upcast());
+        self.imp().widgets.borrow_mut().push(child.clone().upcast());
         child.set_parent(self);
         self.invalidate_child_widgets();
     }
 
     pub fn set_widgets<P: IsA<gtk::Widget>>(&self, widgets: Vec<P>) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.widgets.borrow_mut().clear();
         priv_
@@ -212,12 +211,11 @@ impl LabelWithWidgets {
     }
 
     pub fn widgets(&self) -> Vec<gtk::Widget> {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
-        priv_.widgets.borrow().to_owned()
+        self.imp().widgets.borrow().to_owned()
     }
 
     pub fn set_label(&self, label: Option<String>) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.text.borrow().as_ref() == label.as_ref() {
             return;
@@ -236,12 +234,11 @@ impl LabelWithWidgets {
     }
 
     pub fn label(&self) -> Option<String> {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
-        priv_.text.borrow().to_owned()
+        self.imp().text.borrow().to_owned()
     }
 
     pub fn set_placeholder(&self, placeholder: Option<String>) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.placeholder.borrow().as_ref() == placeholder.as_ref() {
             return;
@@ -259,18 +256,16 @@ impl LabelWithWidgets {
     }
 
     pub fn placeholder(&self) -> Option<String> {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
-        priv_.placeholder.borrow().to_owned()
+        self.imp().placeholder.borrow().to_owned()
     }
 
     fn invalidate_child_widgets(&self) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
-        priv_.widgets_sizes.borrow_mut().clear();
+        self.imp().widgets_sizes.borrow_mut().clear();
         self.queue_resize();
     }
 
     fn allocate_shapes(&self) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
+        let priv_ = self.imp();
         let mut widgets_sizes = priv_.widgets_sizes.borrow_mut();
 
         let mut child_size_changed = false;
@@ -321,7 +316,7 @@ impl LabelWithWidgets {
     }
 
     fn allocate_children(&self) {
-        let priv_ = imp::LabelWithWidgets::from_instance(self);
+        let priv_ = self.imp();
         let widgets = priv_.widgets.borrow();
         let widgets_sizes = priv_.widgets_sizes.borrow();
 

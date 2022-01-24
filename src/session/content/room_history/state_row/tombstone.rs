@@ -47,8 +47,7 @@ impl StateTombstone {
     }
 
     fn set_event(&self, event: &RoomTombstoneEventContent) {
-        let priv_ = imp::StateTombstone::from_instance(self);
-        priv_.new_room_btn.set_detailed_action_name(&format!(
+        self.imp().new_room_btn.set_detailed_action_name(&format!(
             "session.show-room::{}",
             event.replacement_room.as_str()
         ));

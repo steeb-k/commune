@@ -145,7 +145,7 @@ impl MessageText {
     }
 
     pub fn set_body(&self, body: Option<String>) {
-        let priv_ = imp::MessageText::from_instance(self);
+        let priv_ = self.imp();
 
         if body.as_ref() == priv_.body.borrow().as_ref() {
             return;
@@ -155,12 +155,11 @@ impl MessageText {
     }
 
     pub fn body(&self) -> Option<String> {
-        let priv_ = imp::MessageText::from_instance(self);
-        priv_.body.borrow().to_owned()
+        self.imp().body.borrow().to_owned()
     }
 
     pub fn set_sender(&self, sender: Option<Member>) {
-        let priv_ = imp::MessageText::from_instance(self);
+        let priv_ = self.imp();
 
         if sender.as_ref() == priv_.sender.borrow().as_ref() {
             return;
@@ -171,8 +170,7 @@ impl MessageText {
     }
 
     pub fn sender(&self) -> Option<Member> {
-        let priv_ = imp::MessageText::from_instance(self);
-        priv_.sender.borrow().to_owned()
+        self.imp().sender.borrow().to_owned()
     }
 
     /// Display the given emote for `sender`.

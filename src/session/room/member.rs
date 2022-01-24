@@ -76,16 +76,14 @@ impl Member {
     }
 
     pub fn power_level(&self) -> PowerLevel {
-        let priv_ = imp::Member::from_instance(self);
-        priv_.power_level.get()
+        self.imp().power_level.get()
     }
 
     fn set_power_level(&self, power_level: PowerLevel) {
         if self.power_level() == power_level {
             return;
         }
-        let priv_ = imp::Member::from_instance(self);
-        priv_.power_level.replace(power_level);
+        self.imp().power_level.replace(power_level);
         self.notify("power-level");
     }
 

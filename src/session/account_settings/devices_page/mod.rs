@@ -102,12 +102,11 @@ impl DevicesPage {
     }
 
     pub fn user(&self) -> Option<User> {
-        let priv_ = imp::DevicesPage::from_instance(self);
-        priv_.user.borrow().clone()
+        self.imp().user.borrow().clone()
     }
 
     fn set_user(&self, user: Option<User>) {
-        let priv_ = imp::DevicesPage::from_instance(self);
+        let priv_ = self.imp();
 
         if self.user() == user {
             return;
@@ -166,12 +165,11 @@ impl DevicesPage {
     }
 
     fn set_other_sessions_visibility(&self, visible: bool) {
-        let priv_ = imp::DevicesPage::from_instance(self);
-        priv_.other_sessions_group.set_visible(visible);
+        self.imp().other_sessions_group.set_visible(visible);
     }
 
     fn set_current_device(&self, device_list: &DeviceList) {
-        let priv_ = imp::DevicesPage::from_instance(self);
+        let priv_ = self.imp();
         if let Some(child) = priv_.current_session.first_child() {
             priv_.current_session.remove(&child);
         }

@@ -70,14 +70,12 @@ impl PowerLevels {
     }
 
     pub fn power_levels(&self) -> BoxedPowerLevelsEventContent {
-        let priv_ = imp::PowerLevels::from_instance(self);
-        priv_.content.borrow().clone()
+        self.imp().content.borrow().clone()
     }
 
     /// Returns the power level minimally required to perform the given action.
     pub fn min_level_for_room_action(&self, room_action: &RoomAction) -> PowerLevel {
-        let priv_ = imp::PowerLevels::from_instance(self);
-        let content = priv_.content.borrow();
+        let content = self.imp().content.borrow();
         min_level_for_room_action(&content.0, room_action)
     }
 
@@ -103,9 +101,8 @@ impl PowerLevels {
 
     /// Updates the power levels from the given event.
     pub fn update_from_event(&self, event: SyncStateEvent<RoomPowerLevelsEventContent>) {
-        let priv_ = imp::PowerLevels::from_instance(self);
         let content = BoxedPowerLevelsEventContent(event.content);
-        priv_.content.replace(content);
+        self.imp().content.replace(content);
         self.notify("power-levels");
     }
 }

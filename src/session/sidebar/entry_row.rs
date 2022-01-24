@@ -83,18 +83,15 @@ impl EntryRow {
     }
 
     pub fn entry(&self) -> Option<Entry> {
-        let priv_ = imp::EntryRow::from_instance(self);
-        priv_.entry.borrow().clone()
+        self.imp().entry.borrow().clone()
     }
 
     pub fn set_entry(&self, entry: Option<Entry>) {
-        let priv_ = imp::EntryRow::from_instance(self);
-
         if self.entry() == entry {
             return;
         }
 
-        priv_.entry.replace(entry);
+        self.imp().entry.replace(entry);
         self.notify("entry");
     }
 }

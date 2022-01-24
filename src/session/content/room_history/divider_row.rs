@@ -82,12 +82,10 @@ impl DividerRow {
     }
 
     pub fn set_label(&self, label: &str) {
-        let priv_ = imp::DividerRow::from_instance(self);
-        priv_.label.set_text(label);
+        self.imp().label.set_text(label);
     }
 
     pub fn label(&self) -> String {
-        let priv_ = imp::DividerRow::from_instance(self);
-        priv_.label.text().as_str().to_owned()
+        self.imp().label.text().as_str().to_owned()
     }
 }

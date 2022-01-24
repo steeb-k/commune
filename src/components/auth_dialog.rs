@@ -209,8 +209,7 @@ impl AuthDialog {
     }
 
     pub fn session(&self) -> Session {
-        let priv_ = imp::AuthDialog::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     pub async fn authenticate<
@@ -221,7 +220,7 @@ impl AuthDialog {
         &self,
         callback: FN,
     ) -> Option<Result<Response, Error>> {
-        let priv_ = imp::AuthDialog::from_instance(self);
+        let priv_ = self.imp();
         let client = self.session().client();
         let mut auth_data = None;
 
@@ -315,7 +314,7 @@ impl AuthDialog {
     }
 
     fn show_auth_error(&self, auth_error: &Option<ErrorBody>) {
-        let priv_ = imp::AuthDialog::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(auth_error) = auth_error {
             priv_.error.set_label(&auth_error.message);
@@ -326,7 +325,7 @@ impl AuthDialog {
     }
 
     fn setup_fallback_page(&self, homeserver: &str, auth_type: &str, session: &str) {
-        let priv_ = imp::AuthDialog::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(handler) = priv_.open_browser_btn_handler.take() {
             priv_.open_browser_btn.disconnect(handler);

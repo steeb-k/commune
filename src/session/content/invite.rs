@@ -144,7 +144,7 @@ impl Invite {
     }
 
     pub fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::Invite::from_instance(self);
+        let priv_ = self.imp();
 
         if self.room() == room {
             return;
@@ -176,7 +176,7 @@ impl Invite {
                 Some("category"),
                 clone!(@weak self as obj => move |room, _| {
                         if room.category() != RoomType::Invited {
-                                let priv_ = imp::Invite::from_instance(&obj);
+                                let priv_ = obj.imp();
                                 priv_.reject_requests.borrow_mut().remove(room);
                                 priv_.accept_requests.borrow_mut().remove(room);
                                 obj.reset();
@@ -195,12 +195,11 @@ impl Invite {
     }
 
     pub fn room(&self) -> Option<Room> {
-        let priv_ = imp::Invite::from_instance(self);
-        priv_.room.borrow().clone()
+        self.imp().room.borrow().clone()
     }
 
     fn reset(&self) {
-        let priv_ = imp::Invite::from_instance(self);
+        let priv_ = self.imp();
         priv_.accept_button.set_loading(false);
         priv_.reject_button.set_loading(false);
         self.action_set_enabled("invite.accept", true);
@@ -208,7 +207,7 @@ impl Invite {
     }
 
     fn accept(&self) -> Option<()> {
-        let priv_ = imp::Invite::from_instance(self);
+        let priv_ = self.imp();
         let room = self.room()?;
 
         self.action_set_enabled("invite.accept", false);
@@ -218,10 +217,9 @@ impl Invite {
 
         spawn!(
             clone!(@weak self as obj, @strong room => move || async move {
-                    let priv_ = imp::Invite::from_instance(&obj);
                     let result = room.accept_invite().await;
                     if result.is_err() {
-                        priv_.accept_requests.borrow_mut().remove(&room);
+                        obj.imp().accept_requests.borrow_mut().remove(&room);
                         obj.reset();
                     }
             })()
@@ -231,7 +229,7 @@ impl Invite {
     }
 
     fn reject(&self) -> Option<()> {
-        let priv_ = imp::Invite::from_instance(self);
+        let priv_ = self.imp();
         let room = self.room()?;
 
         self.action_set_enabled("invite.accept", false);
@@ -241,10 +239,9 @@ impl Invite {
 
         spawn!(
             clone!(@weak self as obj, @strong room => move || async move {
-                    let priv_ = imp::Invite::from_instance(&obj);
                     let result = room.reject_invite().await;
                     if result.is_err() {
-                        priv_.reject_requests.borrow_mut().remove(&room);
+                        obj.imp().reject_requests.borrow_mut().remove(&room);
                         obj.reset();
                     }
             })()

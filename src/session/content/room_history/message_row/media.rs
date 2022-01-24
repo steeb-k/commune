@@ -272,44 +272,37 @@ impl MessageMedia {
     }
 
     pub fn width(&self) -> i32 {
-        let priv_ = imp::MessageMedia::from_instance(self);
-        priv_.width.get()
+        self.imp().width.get()
     }
 
     fn set_width(&self, width: i32) {
-        let priv_ = imp::MessageMedia::from_instance(self);
-
         if self.width() == width {
             return;
         }
 
-        priv_.width.set(width);
+        self.imp().width.set(width);
         self.notify("width");
     }
 
     pub fn height(&self) -> i32 {
-        let priv_ = imp::MessageMedia::from_instance(self);
-        priv_.height.get()
+        self.imp().height.get()
     }
 
     fn set_height(&self, height: i32) {
-        let priv_ = imp::MessageMedia::from_instance(self);
-
         if self.height() == height {
             return;
         }
 
-        priv_.height.set(height);
+        self.imp().height.set(height);
         self.notify("height");
     }
 
     pub fn state(&self) -> MediaState {
-        let priv_ = imp::MessageMedia::from_instance(self);
-        priv_.state.get()
+        self.imp().state.get()
     }
 
     fn set_state(&self, state: MediaState) {
-        let priv_ = imp::MessageMedia::from_instance(self);
+        let priv_ = self.imp();
 
         if self.state() == state {
             return;
@@ -335,13 +328,11 @@ impl MessageMedia {
     }
 
     fn compact(&self) -> bool {
-        let priv_ = imp::MessageMedia::from_instance(self);
-        priv_.compact.get()
+        self.imp().compact.get()
     }
 
     fn set_compact(&self, compact: bool) {
-        let priv_ = imp::MessageMedia::from_instance(self);
-        priv_.compact.set(compact);
+        self.imp().compact.set(compact);
         self.notify("compact");
     }
 
@@ -421,7 +412,7 @@ impl MessageMedia {
         spawn!(
             glib::PRIORITY_LOW,
             clone!(@weak self as obj => async move {
-                let priv_ = imp::MessageMedia::from_instance(&obj);
+                let priv_ = obj.imp();
 
                 match handle.await.unwrap() {
                     Ok((Some(data), id)) => {

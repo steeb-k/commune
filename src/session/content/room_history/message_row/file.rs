@@ -97,7 +97,7 @@ impl MessageFile {
     }
 
     pub fn set_filename(&self, filename: Option<String>) {
-        let priv_ = imp::MessageFile::from_instance(self);
+        let priv_ = self.imp();
 
         let name = filename.filter(|name| !name.is_empty());
 
@@ -110,24 +110,20 @@ impl MessageFile {
     }
 
     pub fn filename(&self) -> Option<String> {
-        let priv_ = imp::MessageFile::from_instance(self);
-        priv_.filename.borrow().to_owned()
+        self.imp().filename.borrow().to_owned()
     }
 
     pub fn set_compact(&self, compact: bool) {
-        let priv_ = imp::MessageFile::from_instance(self);
-
         if self.compact() == compact {
             return;
         }
 
-        priv_.compact.set(compact);
+        self.imp().compact.set(compact);
         self.notify("compact");
     }
 
     pub fn compact(&self) -> bool {
-        let priv_ = imp::MessageFile::from_instance(self);
-        priv_.compact.get()
+        self.imp().compact.get()
     }
 }
 

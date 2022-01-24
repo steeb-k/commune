@@ -103,7 +103,7 @@ impl Login {
     }
 
     fn enable_next_action(&self) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
         let homeserver = priv_.homeserver_entry.text();
         let username_length = priv_.username_entry.text_length();
         let password_length = priv_.password_entry.text().len();
@@ -122,7 +122,7 @@ impl Login {
     }
 
     fn login(&self) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
         let homeserver = priv_.homeserver_entry.text().to_string();
         let username = priv_.username_entry.text().to_string();
         let password = priv_.password_entry.text().to_string();
@@ -141,7 +141,7 @@ impl Login {
     }
 
     pub fn clean(&self) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
         priv_.homeserver_entry.set_text("");
         priv_.username_entry.set_text("");
         priv_.password_entry.set_text("");
@@ -150,7 +150,7 @@ impl Login {
     }
 
     fn freeze(&self) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
 
         self.action_set_enabled("login.next", false);
         priv_
@@ -160,7 +160,7 @@ impl Login {
     }
 
     fn unfreeze(&self) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
 
         self.action_set_enabled("login.next", true);
         priv_.next_stack.set_visible_child(&priv_.next_label.get());
@@ -182,7 +182,7 @@ impl Login {
     }
 
     fn drop_session_reference(&self) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(session) = priv_.current_session.take() {
             if let Some(id) = priv_.prepared_source_id.take() {
@@ -198,17 +198,15 @@ impl Login {
     }
 
     pub fn default_widget(&self) -> gtk::Widget {
-        imp::Login::from_instance(self).next_button.get().upcast()
+        self.imp().next_button.get().upcast()
     }
 
     pub fn show_back_to_session_button(&self, show: bool) {
-        let priv_ = imp::Login::from_instance(self);
-
-        priv_.back_to_session_button.set_visible(show);
+        self.imp().back_to_session_button.set_visible(show);
     }
 
     fn set_handler_for_prepared_session(&self, session: &Session) {
-        let priv_ = imp::Login::from_instance(self);
+        let priv_ = self.imp();
         priv_
             .prepared_source_id
             .replace(Some(session.connect_prepared(

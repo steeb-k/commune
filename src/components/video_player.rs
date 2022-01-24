@@ -91,24 +91,21 @@ impl VideoPlayer {
     }
 
     pub fn compact(&self) -> bool {
-        let priv_ = imp::VideoPlayer::from_instance(self);
-        priv_.compact.get()
+        self.imp().compact.get()
     }
 
     pub fn set_compact(&self, compact: bool) {
-        let priv_ = imp::VideoPlayer::from_instance(self);
-
         if self.compact() == compact {
             return;
         }
 
-        priv_.compact.set(compact);
+        self.imp().compact.set(compact);
         self.notify("compact");
     }
 
     /// Set the media_file to display.
     pub fn set_media_file(&self, media_file: &gtk::MediaFile) {
-        let priv_ = imp::VideoPlayer::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(handler_id) = priv_.duration_handler.take() {
             if let Some(paintable) = priv_.video.paintable() {

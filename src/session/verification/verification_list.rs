@@ -131,8 +131,7 @@ impl VerificationList {
     }
 
     pub fn session(&self) -> Session {
-        let priv_ = imp::VerificationList::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn handle_response_to_device(&self, to_device: ToDevice) {
@@ -221,15 +220,13 @@ impl VerificationList {
 
     /// Add a new `IdentityVerification` request
     pub fn add(&self, request: IdentityVerification) {
-        let priv_ = imp::VerificationList::from_instance(self);
-
         // Don't add requests that are already finished
         if request.is_finished() {
             return;
         }
 
         let length = {
-            let mut list = priv_.list.borrow_mut();
+            let mut list = self.imp().list.borrow_mut();
             let length = list.len();
             request.connect_notify_local(
                 Some("state"),
@@ -250,10 +247,8 @@ impl VerificationList {
     }
 
     pub fn remove(&self, request: &IdentityVerification) {
-        let priv_ = imp::VerificationList::from_instance(self);
-
         let position = if let Some((position, ..)) =
-            priv_
+            self.imp()
                 .list
                 .borrow_mut()
                 .shift_remove_full(&FlowIdUnowned::new(
@@ -273,9 +268,7 @@ impl VerificationList {
         user_id: &UserId,
         flow_id: &impl AsRef<str>,
     ) -> Option<IdentityVerification> {
-        let priv_ = imp::VerificationList::from_instance(self);
-
         let flow_id = FlowIdUnowned::new(user_id, flow_id.as_ref());
-        priv_.list.borrow().get(&flow_id).cloned()
+        self.imp().list.borrow().get(&flow_id).cloned()
     }
 }

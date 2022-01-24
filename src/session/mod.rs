@@ -126,8 +126,7 @@ mod imp {
 
             klass.install_action("session.logout", None, move |session, _, _| {
                 spawn!(clone!(@weak session => async move {
-                    let priv_ = imp::Session::from_instance(&session);
-                    priv_.logout_on_dispose.set(false);
+                    session.imp().logout_on_dispose.set(false);
                     session.logout().await
                 }));
             });
@@ -228,7 +227,7 @@ mod imp {
             self.sidebar.connect_notify_local(
                 Some("selected-item"),
                 clone!(@weak obj => move |_, _| {
-                    let priv_ = imp::Session::from_instance(&obj);
+                    let priv_ = obj.imp();
 
                     if priv_.sidebar.selected_item().is_none() {
                         priv_.content.navigate(adw::NavigationDirection::Back);
@@ -268,15 +267,13 @@ impl Session {
     }
 
     pub fn select_room(&self, room: Option<Room>) {
-        let priv_ = imp::Session::from_instance(self);
-        priv_
+        self.imp()
             .sidebar
             .set_selected_item(room.map(|item| item.upcast()));
     }
 
     pub fn select_item(&self, item: Option<glib::Object>) {
-        let priv_ = imp::Session::from_instance(self);
-        priv_.sidebar.set_selected_item(item);
+        self.imp().sidebar.set_selected_item(item);
     }
 
     pub fn select_room_by_id(&self, room_id: &RoomId) {
@@ -288,8 +285,7 @@ impl Session {
     }
 
     pub fn login_with_password(&self, homeserver: Url, username: String, password: String) {
-        let priv_ = imp::Session::from_instance(self);
-        priv_.logout_on_dispose.set(true);
+        self.imp().logout_on_dispose.set(true);
         let mut path = glib::user_data_dir();
         path.push(
             &Uuid::new_v4()
@@ -346,8 +342,7 @@ impl Session {
     }
 
     fn toggle_room_search(&self) {
-        let priv_ = imp::Session::from_instance(self);
-        let room_search = priv_.sidebar.room_search_bar();
+        let room_search = self.imp().sidebar.room_search_bar();
         room_search.set_search_mode(!room_search.is_search_mode());
     }
 
@@ -382,7 +377,7 @@ impl Session {
         result: Result<(Client, StoredSession), matrix_sdk::Error>,
         store_session: bool,
     ) {
-        let priv_ = imp::Session::from_instance(self);
+        let priv_ = self.imp();
         let error = match result {
             Ok((client, session)) => {
                 priv_.client.replace(Some(client.clone()));
@@ -459,7 +454,6 @@ impl Session {
     }
 
     fn sync(&self) {
-        let priv_ = imp::Session::from_instance(self);
         let sender = self.create_new_sync_response_sender();
         let client = self.client();
         let handle = spawn_tokio!(async move {
@@ -490,23 +484,22 @@ impl Session {
             }
         });
 
-        priv_.sync_tokio_handle.replace(Some(handle));
+        self.imp().sync_tokio_handle.replace(Some(handle));
     }
 
     async fn create_session_verification(&self) {
-        let priv_ = imp::Session::from_instance(self);
+        let stack = &self.imp().stack;
 
         let widget = SessionVerification::new(self);
-        priv_.stack.add_named(&widget, Some("session-verification"));
-        priv_.stack.set_visible_child(&widget);
+        stack.add_named(&widget, Some("session-verification"));
+        stack.set_visible_child(&widget);
     }
 
     fn mark_ready(&self) {
-        let priv_ = imp::Session::from_instance(self);
         let client = self.client();
         let user_id = self.user().unwrap().user_id();
 
-        priv_.is_ready.set(true);
+        self.imp().is_ready.set(true);
 
         let has_cross_signing_keys = spawn_tokio!(async move {
             if let Some(cross_signing_status) = client.cross_signing_status().await {
@@ -529,7 +522,7 @@ impl Session {
         });
 
         spawn!(clone!(@weak self as obj => async move {
-            let priv_ = imp::Session::from_instance(&obj);
+            let priv_ = obj.imp();
             if !has_cross_signing_keys.await.unwrap() {
                 if need_new_identity.await.unwrap() {
                     let client = obj.client();
@@ -552,8 +545,7 @@ impl Session {
     }
 
     fn is_ready(&self) -> bool {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_.is_ready.get()
+        self.imp().is_ready.get()
     }
 
     pub fn room_list(&self) -> &RoomList {
@@ -565,20 +557,17 @@ impl Session {
     }
 
     pub fn item_list(&self) -> &ItemList {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_
+        self.imp()
             .item_list
             .get_or_init(|| ItemList::new(&RoomList::new(self), &VerificationList::new(self)))
     }
 
     pub fn user(&self) -> Option<&User> {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_.user.get()
+        self.imp().user.get()
     }
 
     pub fn client(&self) -> Client {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_
+        self.imp()
             .client
             .borrow()
             .clone()
@@ -589,7 +578,6 @@ impl Session {
     fn create_new_sync_response_sender(
         &self,
     ) -> SyncSender<Result<SyncResponse, matrix_sdk::Error>> {
-        let priv_ = imp::Session::from_instance(self);
         let (sender, receiver) = glib::MainContext::sync_channel::<
             Result<SyncResponse, matrix_sdk::Error>,
         >(Default::default(), 100);
@@ -602,7 +590,7 @@ impl Session {
             }),
         );
 
-        priv_.source_id.replace(Some(source_id));
+        self.imp().source_id.replace(Some(source_id));
 
         sender
     }
@@ -669,8 +657,7 @@ impl Session {
     }
 
     pub fn set_logged_in_users(&self, sessions_stack_pages: &SelectionModel) {
-        let priv_ = &imp::Session::from_instance(self);
-        priv_
+        self.imp()
             .sidebar
             .set_logged_in_users(sessions_stack_pages, self);
     }
@@ -693,14 +680,14 @@ impl Session {
     }
 
     pub async fn logout(&self) {
-        let priv_ = imp::Session::from_instance(self);
+        let stack = &self.imp().stack;
         self.emit_by_name::<()>("logged-out", &[]);
 
         debug!("The session is about to be logout");
 
         // First stop the verification in progress
-        if let Some(session_verificiation) = priv_.stack.child_by_name("session-verification") {
-            priv_.stack.remove(&session_verificiation);
+        if let Some(session_verificiation) = stack.child_by_name("session-verification") {
+            stack.remove(&session_verificiation);
         }
 
         let client = self.client();
@@ -726,7 +713,7 @@ impl Session {
     }
 
     fn cleanup_session(&self) {
-        let priv_ = imp::Session::from_instance(self);
+        let priv_ = self.imp();
         let info = priv_.info.get().unwrap();
 
         priv_.is_ready.set(false);
@@ -755,7 +742,7 @@ impl Session {
 
     /// Show the content of the session
     pub fn show_content(&self) {
-        let priv_ = imp::Session::from_instance(self);
+        let priv_ = self.imp();
 
         // FIXME: we should actually check if we have now the keys
         priv_.stack.set_visible_child(&*priv_.content);
@@ -770,7 +757,7 @@ impl Session {
 
     /// Show a media event
     pub fn show_media(&self, event: &Event) {
-        let priv_ = imp::Session::from_instance(self);
+        let priv_ = self.imp();
         priv_.media_viewer.set_event(Some(event.clone()));
 
         priv_.stack.set_visible_child(&*priv_.media_viewer);

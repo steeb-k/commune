@@ -270,7 +270,7 @@ mod imp {
             main_receiver.attach(
                 None,
                 clone!(@weak obj => @default-return glib::Continue(false), move |message| {
-                    let priv_ = imp::IdentityVerification::from_instance(&obj);
+                    let priv_ = obj.imp();
                     match message {
                         MainMessage::QrCode(data) => { let _ = priv_.qr_code.set(data); },
                         MainMessage::CancelInfo(data) => priv_.cancel_info.set(data).unwrap(),
@@ -390,7 +390,7 @@ impl IdentityVerification {
     }
 
     fn start_handler(&self) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
+        let priv_ = self.imp();
 
         let main_sender = if let Some(main_sender) = priv_.main_sender.take() {
             main_sender
@@ -421,7 +421,6 @@ impl IdentityVerification {
         spawn!(async move {
             let result = handle.await.unwrap();
             if let Some(obj) = weak_obj.upgrade() {
-                let priv_ = imp::IdentityVerification::from_instance(&obj);
                 match result {
                     Ok(result) => obj.set_state(result),
                     Err(error) => {
@@ -430,31 +429,27 @@ impl IdentityVerification {
                         obj.set_state(State::Error);
                     }
                 }
-                priv_.sync_sender.take();
+                obj.imp().sync_sender.take();
             }
         });
     }
 
     /// The user to be verified.
     pub fn user(&self) -> &User {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.user.get().unwrap()
+        self.imp().user.get().unwrap()
     }
 
     fn set_user(&self, user: User) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.user.set(user).unwrap()
+        self.imp().user.set(user).unwrap()
     }
 
     /// The current `Session`.
     pub fn session(&self) -> Session {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     fn set_session(&self, session: Session) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.session.set(session.downgrade()).unwrap()
+        self.imp().session.set(session.downgrade()).unwrap()
     }
 
     fn setup_timeout(&self) {
@@ -492,30 +487,24 @@ impl IdentityVerification {
 
     /// The time and date when this verification request was started.
     pub fn start_time(&self) -> &glib::DateTime {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.start_time.get().unwrap()
+        self.imp().start_time.get().unwrap()
     }
 
     fn set_start_time(&self, time: glib::DateTime) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.start_time.set(time).unwrap();
+        self.imp().start_time.set(time).unwrap();
     }
 
     pub fn receive_time(&self) -> &glib::DateTime {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.receive_time.get().unwrap()
+        self.imp().receive_time.get().unwrap()
     }
 
     fn supported_methods(&self) -> SupportedMethods {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.supported_methods.get()
+        self.imp().supported_methods.get()
     }
 
     pub fn emoji_match(&self) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
         if self.state() == State::SasV1 {
-            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+            if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
                 let result = sync_sender.try_send(Message::UserAction(UserAction::Match));
 
                 if let Err(error) = result {
@@ -526,10 +515,8 @@ impl IdentityVerification {
     }
 
     pub fn emoji_not_match(&self) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
         if self.state() == State::SasV1 {
-            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+            if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
                 let result = sync_sender.try_send(Message::UserAction(UserAction::NotMatch));
 
                 if let Err(error) = result {
@@ -540,13 +527,10 @@ impl IdentityVerification {
     }
 
     pub fn state(&self) -> State {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.state.get()
+        self.imp().state.get()
     }
 
     fn set_state(&self, state: State) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
         if self.state() == state {
             return;
         }
@@ -556,13 +540,12 @@ impl IdentityVerification {
             _ => {}
         }
 
-        priv_.state.set(state);
+        self.imp().state.set(state);
         self.notify("state");
     }
 
     pub fn mode(&self) -> Mode {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        *priv_.mode.get_or_init(|| {
+        *self.imp().mode.get_or_init(|| {
             let session = self.session();
             let our_user = session.user().unwrap();
             if our_user.user_id() == self.user().user_id() {
@@ -574,9 +557,7 @@ impl IdentityVerification {
     }
 
     fn set_mode(&self, mode: Mode) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        priv_.mode.set(mode).unwrap();
+        self.imp().mode.set(mode).unwrap();
     }
 
     /// Whether this request is finished
@@ -588,8 +569,7 @@ impl IdentityVerification {
     }
 
     fn hide_error(&self) -> bool {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_.hide_error.get()
+        self.imp().hide_error.get()
     }
 
     fn show_error(&self) {
@@ -642,17 +622,14 @@ impl IdentityVerification {
     }
 
     pub fn flow_id(&self) -> &str {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-        priv_
+        self.imp()
             .flow_id
             .get()
             .expect("Flow Id isn't always set on verifications with error state.")
     }
 
     fn set_flow_id(&self, flow_id: String) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        priv_.flow_id.set(flow_id).unwrap();
+        self.imp().flow_id.set(flow_id).unwrap();
     }
 
     /// Get the QrCode for this verification request
@@ -660,9 +637,7 @@ impl IdentityVerification {
     /// This is only set once the request reached the `State::Ready`
     /// and if QrCode verification is possible
     pub fn qr_code(&self) -> Option<&QrCode> {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        priv_.qr_code.get()
+        self.imp().qr_code.get()
     }
 
     /// Get the Emojis for this verification request
@@ -670,16 +645,12 @@ impl IdentityVerification {
     /// This is only set once the request reached the `State::Ready`
     /// and if a Sas verification was started
     pub fn sas_data(&self) -> Option<&SasData> {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        priv_.sas_data.get()
+        self.imp().sas_data.get()
     }
 
     pub fn start_sas(&self) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
         if self.state() != State::SasV1 {
-            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+            if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
                 let result = sync_sender.try_send(Message::UserAction(UserAction::StartSas));
 
                 if let Err(error) = result {
@@ -690,9 +661,7 @@ impl IdentityVerification {
     }
 
     pub fn scanned_qr_code(&self, data: QrVerificationData) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+        if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
             let result = sync_sender.try_send(Message::UserAction(UserAction::Scanned(data)));
 
             if let Err(error) = result {
@@ -703,9 +672,8 @@ impl IdentityVerification {
 
     /// Accept an incoming request
     pub fn accept(&self) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
         if self.state() == State::Requested {
-            if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+            if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
                 let result = sync_sender.try_send(Message::UserAction(UserAction::Accept));
                 if let Err(error) = result {
                     error!("Failed to send message to tokio runtime: {}", error);
@@ -715,7 +683,7 @@ impl IdentityVerification {
     }
 
     pub fn cancel(&self, hide_error: bool) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.hide_error.set(hide_error);
 
@@ -733,15 +701,11 @@ impl IdentityVerification {
 
     /// Get information about why the request was cancelled
     pub fn cancel_info(&self) -> Option<&CancelInfo> {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        priv_.cancel_info.get()
+        self.imp().cancel_info.get()
     }
 
     pub fn notify_state(&self) {
-        let priv_ = imp::IdentityVerification::from_instance(self);
-
-        if let Some(sync_sender) = &*priv_.sync_sender.borrow() {
+        if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
             let result = sync_sender.try_send(Message::NotifyState);
             if let Err(error) = result {
                 error!("Failed to send message to tokio runtime: {}", error);

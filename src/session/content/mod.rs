@@ -147,7 +147,7 @@ mod imp {
             self.parent_constructed(obj);
             self.stack
                 .connect_visible_child_notify(clone!(@weak obj => move |stack| {
-                    let priv_ = imp::Content::from_instance(&obj);
+                    let priv_ = obj.imp();
                     if stack.visible_child().as_ref() != Some(priv_.verification_page.upcast_ref::<gtk::Widget>()) {
                         priv_.identity_verification_widget.set_request(None);
                     }
@@ -170,8 +170,7 @@ impl Content {
     }
 
     pub fn session(&self) -> Option<Session> {
-        let priv_ = imp::Content::from_instance(self);
-        priv_
+        self.imp()
             .session
             .borrow()
             .as_ref()
@@ -179,20 +178,18 @@ impl Content {
     }
 
     pub fn set_session(&self, session: Option<Session>) {
-        let priv_ = imp::Content::from_instance(self);
-
         if session == self.session() {
             return;
         }
 
-        priv_
+        self.imp()
             .session
             .replace(session.map(|session| session.downgrade()));
         self.notify("session");
     }
 
     pub fn set_item(&self, item: Option<glib::Object>) {
-        let priv_ = imp::Content::from_instance(self);
+        let priv_ = self.imp();
 
         if self.item() == item {
             return;
@@ -236,12 +233,11 @@ impl Content {
     }
 
     pub fn item(&self) -> Option<glib::Object> {
-        let priv_ = imp::Content::from_instance(self);
-        priv_.item.borrow().clone()
+        self.imp().item.borrow().clone()
     }
 
     fn set_visible_child(&self) {
-        let priv_ = imp::Content::from_instance(self);
+        let priv_ = self.imp();
 
         match self.item() {
             None => {

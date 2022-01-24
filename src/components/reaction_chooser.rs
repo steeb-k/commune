@@ -118,12 +118,11 @@ impl ReactionChooser {
     }
 
     pub fn reactions(&self) -> Option<ReactionList> {
-        let priv_ = imp::ReactionChooser::from_instance(self);
-        priv_.reactions.borrow().clone()
+        self.imp().reactions.borrow().clone()
     }
 
     pub fn set_reactions(&self, reactions: Option<ReactionList>) {
-        let priv_ = imp::ReactionChooser::from_instance(self);
+        let priv_ = self.imp();
         let prev_reactions = self.reactions();
 
         if prev_reactions == reactions {
@@ -151,7 +150,7 @@ impl ReactionChooser {
     }
 
     fn update_reactions(&self) {
-        let priv_ = imp::ReactionChooser::from_instance(self);
+        let priv_ = self.imp();
         let mut reaction_bindings = priv_.reaction_bindings.borrow_mut();
         let reactions = self.reactions();
 

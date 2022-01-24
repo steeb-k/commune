@@ -145,22 +145,19 @@ impl Selection {
     }
 
     pub fn model(&self) -> Option<gio::ListModel> {
-        let priv_ = imp::Selection::from_instance(self);
-        priv_.model.borrow().clone()
+        self.imp().model.borrow().clone()
     }
 
     pub fn selected(&self) -> u32 {
-        let priv_ = imp::Selection::from_instance(self);
-        priv_.selected.get()
+        self.imp().selected.get()
     }
 
     pub fn selected_item(&self) -> Option<glib::Object> {
-        let priv_ = imp::Selection::from_instance(self);
-        priv_.selected_item.borrow().clone()
+        self.imp().selected_item.borrow().clone()
     }
 
     pub fn set_model<P: IsA<gio::ListModel>>(&self, model: Option<&P>) {
-        let priv_ = imp::Selection::from_instance(self);
+        let priv_ = self.imp();
 
         let _guard = self.freeze_notify();
 
@@ -211,7 +208,7 @@ impl Selection {
     }
 
     pub fn set_selected(&self, position: u32) {
-        let priv_ = imp::Selection::from_instance(self);
+        let priv_ = self.imp();
 
         let old_selected = self.selected();
         if old_selected == position {
@@ -252,7 +249,7 @@ impl Selection {
     }
 
     fn set_selected_item(&self, item: Option<glib::Object>) {
-        let priv_ = imp::Selection::from_instance(self);
+        let priv_ = self.imp();
 
         let selected_item = self.selected_item();
         if selected_item == item {
@@ -299,7 +296,7 @@ impl Selection {
     }
 
     fn items_changed_cb(&self, model: &gio::ListModel, position: u32, removed: u32, added: u32) {
-        let priv_ = imp::Selection::from_instance(self);
+        let priv_ = self.imp();
 
         let _guard = self.freeze_notify();
 

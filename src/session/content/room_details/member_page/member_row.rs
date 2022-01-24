@@ -101,12 +101,11 @@ impl MemberRow {
     }
 
     pub fn member(&self) -> Option<Member> {
-        let priv_ = imp::MemberRow::from_instance(self);
-        priv_.member.borrow().clone()
+        self.imp().member.borrow().clone()
     }
 
     pub fn set_member(&self, member: Option<Member>) {
-        let priv_ = imp::MemberRow::from_instance(self);
+        let priv_ = self.imp();
 
         if self.member() == member {
             return;

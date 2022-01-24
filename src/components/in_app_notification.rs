@@ -82,8 +82,7 @@ mod imp {
             self.parent_constructed(obj);
             self.revealer
                 .connect_child_revealed_notify(clone!(@weak obj => move |revealer| {
-                    let priv_ = imp::InAppNotification::from_instance(&obj);
-                    revealer.set_visible(priv_.shows_error.get());
+                    revealer.set_visible(obj.imp().shows_error.get());
                 }));
         }
 
@@ -111,7 +110,7 @@ impl InAppNotification {
     }
 
     pub fn set_error_list(&self, error_list: Option<gio::ListStore>) {
-        let priv_ = imp::InAppNotification::from_instance(self);
+        let priv_ = self.imp();
         if self.error_list() == error_list {
             return;
         }
@@ -123,13 +122,12 @@ impl InAppNotification {
         if let Some(ref error_list) = error_list {
             let handler = error_list.connect_items_changed(
                 clone!(@weak self as obj => move |_, position, removed, added| {
-                        let priv_ = imp::InAppNotification::from_instance(&obj);
                         // If the first error is removed we need to display the next error
                         if position == 0 && removed > 0 {
                                 obj.next();
                         }
 
-                        if added > 0  && !priv_.shows_error.get() {
+                        if added > 0  && !obj.imp().shows_error.get() {
                                 obj.next();
                         }
 
@@ -144,13 +142,12 @@ impl InAppNotification {
     }
 
     pub fn error_list(&self) -> Option<gio::ListStore> {
-        let priv_ = imp::InAppNotification::from_instance(self);
-        priv_.error_list.borrow().to_owned()
+        self.imp().error_list.borrow().to_owned()
     }
 
     /// Show the next message in the `error-list`
     fn next(&self) {
-        let priv_ = imp::InAppNotification::from_instance(self);
+        let priv_ = self.imp();
 
         let shows_error = if let Some(widget) = priv_
             .error_list
@@ -178,8 +175,7 @@ impl InAppNotification {
     }
 
     fn dismiss(&self) {
-        let priv_ = imp::InAppNotification::from_instance(self);
-        if let Some(error_list) = &*priv_.error_list.borrow() {
+        if let Some(error_list) = &*self.imp().error_list.borrow() {
             error_list.remove(0);
         }
     }

@@ -193,25 +193,22 @@ impl Event {
     }
 
     pub fn room(&self) -> Room {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.room.get().unwrap().upgrade().unwrap()
+        self.imp().room.get().unwrap().upgrade().unwrap()
     }
 
     /// Get the matrix event
     ///
     /// If the `SyncRoomEvent` couldn't be deserialized this is `None`
     pub fn matrix_event(&self) -> Option<AnySyncRoomEvent> {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.event.borrow().clone()
+        self.imp().event.borrow().clone()
     }
 
     pub fn matrix_pure_event(&self) -> SyncRoomEvent {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.pure_event.borrow().clone().unwrap()
+        self.imp().pure_event.borrow().clone().unwrap()
     }
 
     pub fn set_matrix_pure_event(&self, event: SyncRoomEvent) {
-        let priv_ = imp::Event::from_instance(self);
+        let priv_ = self.imp();
 
         if let Ok(deserialized) = event.event.deserialize() {
             priv_.event.replace(Some(deserialized));
@@ -226,7 +223,7 @@ impl Event {
     }
 
     pub fn matrix_sender(&self) -> Arc<UserId> {
-        let priv_ = imp::Event::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(event) = priv_.event.borrow().as_ref() {
             event.sender().into()
@@ -244,7 +241,7 @@ impl Event {
     }
 
     pub fn matrix_event_id(&self) -> Box<EventId> {
-        let priv_ = imp::Event::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(event) = priv_.event.borrow().as_ref() {
             event.event_id().to_owned()
@@ -262,9 +259,7 @@ impl Event {
     }
 
     pub fn matrix_transaction_id(&self) -> Option<String> {
-        let priv_ = imp::Event::from_instance(self);
-
-        priv_
+        self.imp()
             .pure_event
             .borrow()
             .as_ref()
@@ -278,12 +273,10 @@ impl Event {
 
     /// The pretty-formatted JSON of this matrix event.
     pub fn original_source(&self) -> String {
-        let priv_ = imp::Event::from_instance(self);
-
         // We have to convert it to a Value, because a RawValue cannot be
         // pretty-printed.
         let json: serde_json::Value = serde_json::from_str(
-            priv_
+            self.imp()
                 .pure_event
                 .borrow()
                 .as_ref()
@@ -308,8 +301,7 @@ impl Event {
     }
 
     pub fn timestamp(&self) -> DateTime {
-        let priv_ = imp::Event::from_instance(self);
-
+        let priv_ = self.imp();
         let ts = if let Some(event) = priv_.event.borrow().as_ref() {
             event.origin_server_ts().as_secs()
         } else {
@@ -347,9 +339,7 @@ impl Event {
 
     /// Find the related event if any
     pub fn related_matrix_event(&self) -> Option<Box<EventId>> {
-        let priv_ = imp::Event::from_instance(self);
-
-        match priv_.event.borrow().as_ref()? {
+        match self.imp().event.borrow().as_ref()? {
             AnySyncRoomEvent::Message(ref message) => match message {
                 AnySyncMessageEvent::RoomRedaction(event) => Some(event.redacts.clone()),
                 _ => match message.content() {
@@ -375,7 +365,7 @@ impl Event {
     /// Whether this event is hidden from the user or displayed in the room
     /// history.
     pub fn is_hidden_event(&self) -> bool {
-        let priv_ = imp::Event::from_instance(self);
+        let priv_ = self.imp();
 
         if self.related_matrix_event().is_some() {
             if let Some(AnySyncRoomEvent::Message(message)) = priv_.event.borrow().as_ref() {
@@ -466,7 +456,7 @@ impl Event {
     }
 
     pub fn set_show_header(&self, visible: bool) {
-        let priv_ = imp::Event::from_instance(self);
+        let priv_ = self.imp();
         if priv_.show_header.get() == visible {
             return;
         }
@@ -475,9 +465,7 @@ impl Event {
     }
 
     pub fn show_header(&self) -> bool {
-        let priv_ = imp::Event::from_instance(self);
-
-        priv_.show_header.get()
+        self.imp().show_header.get()
     }
 
     /// The content of this message.
@@ -526,12 +514,11 @@ impl Event {
     }
 
     pub fn prepend_replacing_events(&self, events: Vec<Event>) {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.replacing_events.borrow_mut().splice(..0, events);
+        self.imp().replacing_events.borrow_mut().splice(..0, events);
     }
 
     pub fn append_replacing_events(&self, events: Vec<Event>) {
-        let priv_ = imp::Event::from_instance(self);
+        let priv_ = self.imp();
         let old_replacement = self.replacement();
 
         priv_.replacing_events.borrow_mut().extend(events);
@@ -563,8 +550,7 @@ impl Event {
     }
 
     pub fn replacing_events(&self) -> Vec<Event> {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.replacing_events.borrow().clone()
+        self.imp().replacing_events.borrow().clone()
     }
 
     /// The `Event` that replaces this one, if any.
@@ -603,14 +589,12 @@ impl Event {
 
     /// The reactions for this event.
     pub fn reactions(&self) -> &ReactionList {
-        let priv_ = imp::Event::from_instance(self);
-        &priv_.reactions
+        &self.imp().reactions
     }
 
     /// Add reactions to this event.
     pub fn add_reactions(&self, reactions: Vec<Event>) {
-        let priv_ = imp::Event::from_instance(self);
-        priv_.reactions.add_reactions(reactions);
+        self.imp().reactions.add_reactions(reactions);
     }
 
     /// The content of this matrix event.

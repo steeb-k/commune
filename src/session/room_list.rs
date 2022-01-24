@@ -123,31 +123,26 @@ impl RoomList {
     }
 
     pub fn session(&self) -> Session {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn is_pending_room(&self, identifier: &RoomOrAliasId) -> bool {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_.pending_rooms.borrow().contains(identifier)
+        self.imp().pending_rooms.borrow().contains(identifier)
     }
 
     fn pending_rooms_remove(&self, identifier: &RoomOrAliasId) {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_.pending_rooms.borrow_mut().remove(identifier);
+        self.imp().pending_rooms.borrow_mut().remove(identifier);
         self.emit_by_name::<()>("pending-rooms-changed", &[]);
     }
 
     fn pending_rooms_insert(&self, identifier: Box<RoomOrAliasId>) {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_.pending_rooms.borrow_mut().insert(identifier);
+        self.imp().pending_rooms.borrow_mut().insert(identifier);
         self.emit_by_name::<()>("pending-rooms-changed", &[]);
     }
 
     fn pending_rooms_replace_or_remove(&self, identifier: &RoomOrAliasId, room_id: &RoomId) {
-        let priv_ = imp::RoomList::from_instance(self);
         {
-            let mut pending_rooms = priv_.pending_rooms.borrow_mut();
+            let mut pending_rooms = self.imp().pending_rooms.borrow_mut();
             pending_rooms.remove(identifier);
             if !self.contains_key(room_id) {
                 pending_rooms.insert(room_id.to_owned().into());
@@ -157,14 +152,12 @@ impl RoomList {
     }
 
     pub fn get(&self, room_id: &RoomId) -> Option<Room> {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_.list.borrow().get(room_id).cloned()
+        self.imp().list.borrow().get(room_id).cloned()
     }
 
     /// Waits till the Room becomes available
     pub async fn get_wait(&self, room_id: Box<RoomId>) -> Option<Room> {
-        let priv_ = imp::RoomList::from_instance(self);
-        if let Some(room) = priv_.list.borrow().get(&*room_id) {
+        if let Some(room) = self.imp().list.borrow().get(&*room_id) {
             Some(room.clone())
         } else {
             let (sender, receiver) = futures::channel::oneshot::channel();
@@ -186,8 +179,7 @@ impl RoomList {
     }
 
     fn get_full(&self, room_id: &RoomId) -> Option<(usize, Box<RoomId>, Room)> {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_
+        self.imp()
             .list
             .borrow()
             .get_full(room_id)
@@ -195,15 +187,12 @@ impl RoomList {
     }
 
     pub fn contains_key(&self, room_id: &RoomId) -> bool {
-        let priv_ = imp::RoomList::from_instance(self);
-        priv_.list.borrow().contains_key(room_id)
+        self.imp().list.borrow().contains_key(room_id)
     }
 
     pub fn remove(&self, room_id: &RoomId) {
-        let priv_ = imp::RoomList::from_instance(self);
-
         let removed = {
-            let mut list = priv_.list.borrow_mut();
+            let mut list = self.imp().list.borrow_mut();
 
             list.shift_remove_full(room_id)
         };
@@ -214,9 +203,7 @@ impl RoomList {
     }
 
     fn items_added(&self, added: usize) {
-        let priv_ = imp::RoomList::from_instance(self);
-
-        let list = priv_.list.borrow();
+        let list = self.imp().list.borrow();
 
         let position = list.len() - added;
 
@@ -239,7 +226,6 @@ impl RoomList {
     /// Note that the `Store` currently doesn't store all events, therefore, we
     /// aren't really loading much via this function.
     pub fn load(&self) {
-        let priv_ = imp::RoomList::from_instance(self);
         let session = self.session();
         let client = session.client();
         let matrix_rooms = client.rooms();
@@ -247,7 +233,7 @@ impl RoomList {
 
         if added > 0 {
             {
-                let mut list = priv_.list.borrow_mut();
+                let mut list = self.imp().list.borrow_mut();
                 for matrix_room in matrix_rooms {
                     let room_id = matrix_room.room_id().to_owned();
                     let room = Room::new(&session, &room_id);
@@ -260,7 +246,7 @@ impl RoomList {
     }
 
     pub fn handle_response_rooms(&self, rooms: ResponseRooms) {
-        let priv_ = imp::RoomList::from_instance(self);
+        let priv_ = self.imp();
         let session = self.session();
 
         let mut added = 0;

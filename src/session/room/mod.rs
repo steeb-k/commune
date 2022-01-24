@@ -336,23 +336,20 @@ impl Room {
     }
 
     pub fn session(&self) -> Session {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn room_id(&self) -> &RoomId {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.room_id.get().unwrap()
+        self.imp().room_id.get().unwrap()
     }
 
     fn matrix_room(&self) -> MatrixRoom {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.matrix_room.borrow().as_ref().unwrap().clone()
+        self.imp().matrix_room.borrow().as_ref().unwrap().clone()
     }
 
     /// Set the new sdk room struct represented by this `Room`
     fn set_matrix_room(&self, matrix_room: MatrixRoom) {
-        let priv_ = imp::Room::from_instance(self);
+        let priv_ = self.imp();
 
         // Check if the previous type was different
         if let Some(ref old_matrix_room) = *priv_.matrix_room.borrow() {
@@ -427,18 +424,15 @@ impl Room {
     }
 
     pub fn category(&self) -> RoomType {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.category.get()
+        self.imp().category.get()
     }
 
     fn set_category_internal(&self, category: RoomType) {
-        let priv_ = imp::Room::from_instance(self);
-
         if self.category() == category {
             return;
         }
 
-        priv_.category.set(category);
+        self.imp().category.set(category);
         self.notify("category");
         self.emit_by_name::<()>("order-changed", &[]);
     }
@@ -618,13 +612,11 @@ impl Room {
     }
 
     pub fn timeline(&self) -> &Timeline {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.timeline.get().unwrap()
+        self.imp().timeline.get().unwrap()
     }
 
     pub fn members(&self) -> &MemberList {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.members.get().unwrap()
+        self.imp().members.get().unwrap()
     }
 
     fn notify_notification_count(&self) {
@@ -633,8 +625,8 @@ impl Room {
     }
 
     pub fn highlight(&self) -> HighlightFlags {
-        let priv_ = imp::Room::from_instance(self);
-        let count = priv_
+        let count = self
+            .imp()
             .matrix_room
             .borrow()
             .as_ref()
@@ -651,19 +643,16 @@ impl Room {
     }
 
     pub fn display_name(&self) -> String {
-        let priv_ = imp::Room::from_instance(self);
-        let display_name = priv_.name.borrow().clone();
+        let display_name = self.imp().name.borrow().clone();
         display_name.unwrap_or_else(|| gettext("Unknown"))
     }
 
     fn set_display_name(&self, display_name: Option<String>) {
-        let priv_ = imp::Room::from_instance(self);
-
         if Some(self.display_name()) == display_name {
             return;
         }
 
-        priv_.name.replace(display_name);
+        self.imp().name.replace(display_name);
         self.notify("display-name");
     }
 
@@ -722,8 +711,7 @@ impl Room {
     }
 
     pub fn avatar(&self) -> &Avatar {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.avatar.get().unwrap()
+        self.imp().avatar.get().unwrap()
     }
 
     pub fn topic(&self) -> Option<String> {
@@ -763,20 +751,17 @@ impl Room {
     }
 
     pub fn power_levels(&self) -> PowerLevels {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.power_levels.borrow().clone()
+        self.imp().power_levels.borrow().clone()
     }
 
     pub fn inviter(&self) -> Option<Member> {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.inviter.borrow().clone()
+        self.imp().inviter.borrow().clone()
     }
 
     /// Handle stripped state events.
     ///
     /// Events passed to this function aren't added to the timeline.
     pub fn handle_invite_events(&self, events: Vec<AnyStrippedStateEvent>) {
-        let priv_ = imp::Room::from_instance(self);
         let invite_event = events
             .iter()
             .find(|event| {
@@ -804,13 +789,13 @@ impl Room {
             inviter.update_from_member_event(event);
         }
 
-        priv_.inviter.replace(Some(inviter));
+        self.imp().inviter.replace(Some(inviter));
         self.notify("inviter");
     }
 
     /// Add new events to the timeline
     pub fn append_events(&self, batch: Vec<Event>) {
-        let priv_ = imp::Room::from_instance(self);
+        let priv_ = self.imp();
 
         // FIXME: notify only when the count has changed
         self.notify_notification_count();
@@ -855,12 +840,11 @@ impl Room {
 
     /// Returns the point in time this room received its latest event.
     pub fn latest_change(&self) -> Option<glib::DateTime> {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.latest_change.borrow().clone()
+        self.imp().latest_change.borrow().clone()
     }
 
     pub fn load_members(&self) {
-        let priv_ = imp::Room::from_instance(self);
+        let priv_ = self.imp();
         if priv_.members_loaded.get() {
             return;
         }
@@ -872,7 +856,7 @@ impl Room {
             glib::PRIORITY_LOW,
             clone!(@weak self as obj => async move {
                 // FIXME: We should retry to load the room members if the request failed
-                let priv_ = imp::Room::from_instance(&obj);
+                let priv_ = obj.imp();
                 match handle.await.unwrap() {
                     Ok(members) => {
                         // Add all members needed to display room events.
@@ -924,15 +908,17 @@ impl Room {
 
     /// Send the given `event` in this room, with the temporary ID `txn_id`.
     fn send_room_message_event(&self, event: AnySyncMessageEvent, txn_id: Uuid) {
-        let priv_ = imp::Room::from_instance(self);
-
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let content = event.content();
             let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
             let raw_event: Raw<AnySyncRoomEvent> =
                 Raw::from_json(RawValue::from_string(json).unwrap());
             let event = Event::new(raw_event.into(), self);
-            priv_.timeline.get().unwrap().append_pending(txn_id, event);
+            self.imp()
+                .timeline
+                .get()
+                .unwrap()
+                .append_pending(txn_id, event);
 
             let handle = spawn_tokio!(async move { matrix_room.send(content, Some(txn_id)).await });
 
@@ -994,13 +980,16 @@ impl Room {
             unsigned: Unsigned::default(),
         });
 
-        let priv_ = imp::Room::from_instance(self);
         if let MatrixRoom::Joined(matrix_room) = self.matrix_room() {
             let json = serde_json::to_string(&AnySyncRoomEvent::Message(event)).unwrap();
             let raw_event: Raw<AnySyncRoomEvent> =
                 Raw::from_json(RawValue::from_string(json).unwrap());
             let event = Event::new(raw_event.into(), self);
-            priv_.timeline.get().unwrap().append_pending(txn_id, event);
+            self.imp()
+                .timeline
+                .get()
+                .unwrap()
+                .append_pending(txn_id, event);
 
             let handle = spawn_tokio!(async move {
                 matrix_room
@@ -1185,12 +1174,11 @@ impl Room {
     }
 
     pub fn predecessor(&self) -> Option<&RoomId> {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.predecessor.get().map(std::ops::Deref::deref)
+        self.imp().predecessor.get().map(std::ops::Deref::deref)
     }
 
     fn load_predecessor(&self) -> Option<()> {
-        let priv_ = imp::Room::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.predecessor.get().is_some() {
             return None;
@@ -1205,12 +1193,11 @@ impl Room {
     }
 
     pub fn successor(&self) -> Option<&RoomId> {
-        let priv_ = imp::Room::from_instance(self);
-        priv_.successor.get().map(std::ops::Deref::deref)
+        self.imp().successor.get().map(std::ops::Deref::deref)
     }
 
     pub fn load_successor(&self) -> Option<()> {
-        let priv_ = imp::Room::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.successor.get().is_some() {
             return None;

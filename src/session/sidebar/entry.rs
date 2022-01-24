@@ -96,8 +96,7 @@ impl Entry {
     }
 
     pub fn type_(&self) -> EntryType {
-        let priv_ = imp::Entry::from_instance(self);
-        priv_.type_.get()
+        self.imp().type_.get()
     }
 
     pub fn icon_name(&self) -> Option<&str> {

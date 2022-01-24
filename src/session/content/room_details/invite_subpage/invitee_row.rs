@@ -87,12 +87,11 @@ impl InviteeRow {
     }
 
     pub fn user(&self) -> Option<Invitee> {
-        let priv_ = imp::InviteeRow::from_instance(self);
-        priv_.user.borrow().clone()
+        self.imp().user.borrow().clone()
     }
 
     pub fn set_user(&self, user: Option<Invitee>) {
-        let priv_ = imp::InviteeRow::from_instance(self);
+        let priv_ = self.imp();
 
         if self.user() == user {
             return;

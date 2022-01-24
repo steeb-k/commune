@@ -116,12 +116,11 @@ impl DeviceList {
     }
 
     pub fn session(&self) -> Session {
-        let priv_ = imp::DeviceList::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     fn set_loading(&self, loading: bool) {
-        let priv_ = imp::DeviceList::from_instance(self);
+        let priv_ = self.imp();
 
         if loading == priv_.loading.get() {
             return;
@@ -134,35 +133,33 @@ impl DeviceList {
     }
 
     fn loading(&self) -> bool {
-        let priv_ = imp::DeviceList::from_instance(self);
-        priv_.loading.get()
+        self.imp().loading.get()
     }
 
     pub fn current_device(&self) -> DeviceItem {
-        let priv_ = imp::DeviceList::from_instance(self);
-
-        priv_.current_device.borrow().clone().unwrap_or_else(|| {
-            if self.loading() {
-                DeviceItem::for_loading_spinner()
-            } else {
-                DeviceItem::for_error(gettext("Failed to load connected device."))
-            }
-        })
+        self.imp()
+            .current_device
+            .borrow()
+            .clone()
+            .unwrap_or_else(|| {
+                if self.loading() {
+                    DeviceItem::for_loading_spinner()
+                } else {
+                    DeviceItem::for_error(gettext("Failed to load connected device."))
+                }
+            })
     }
 
     fn set_current_device(&self, device: Option<DeviceItem>) {
-        let priv_ = imp::DeviceList::from_instance(self);
-
-        priv_.current_device.replace(device);
+        self.imp().current_device.replace(device);
 
         self.notify("current-device");
     }
 
     fn update_list(&self, devices: Vec<DeviceItem>) {
-        let priv_ = imp::DeviceList::from_instance(self);
         let added = devices.len();
 
-        let prev_devices = priv_.list.replace(devices);
+        let prev_devices = self.imp().list.replace(devices);
 
         self.items_changed(0, prev_devices.len() as u32, added as u32);
     }

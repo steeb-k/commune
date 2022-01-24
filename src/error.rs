@@ -37,14 +37,12 @@ impl Error {
     /// Set a function that builds the widget used to display this error in the
     /// UI
     pub fn set_widget_builder<F: Fn(&Self) -> Option<gtk::Widget> + 'static>(&self, f: F) {
-        let priv_ = imp::Error::from_instance(self);
-        priv_.widget_builder.replace(Some(Box::new(f)));
+        self.imp().widget_builder.replace(Some(Box::new(f)));
     }
 
     /// Produces a widget via the function set in `Self::set_widget_builder()`
     pub fn widget(&self) -> Option<gtk::Widget> {
-        let priv_ = imp::Error::from_instance(self);
-        let widget_builder = priv_.widget_builder.borrow();
+        let widget_builder = self.imp().widget_builder.borrow();
         let widget_builder = widget_builder.as_ref()?;
         widget_builder(self)
     }

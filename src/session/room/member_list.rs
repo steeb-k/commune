@@ -98,8 +98,7 @@ impl MemberList {
     }
 
     pub fn room(&self) -> Room {
-        let priv_ = imp::MemberList::from_instance(self);
-        priv_.room.get().unwrap().upgrade().unwrap()
+        self.imp().room.get().unwrap().upgrade().unwrap()
     }
 
     /// Updates members with the given RoomMember values.
@@ -107,7 +106,7 @@ impl MemberList {
     /// If some of the values do not correspond to existing members, new members
     /// are created.
     pub fn update_from_room_members(&self, new_members: &[matrix_sdk::RoomMember]) {
-        let mut members = imp::MemberList::from_instance(self).members.borrow_mut();
+        let mut members = self.imp().members.borrow_mut();
         let prev_len = members.len();
         for member in new_members {
             members
@@ -130,7 +129,7 @@ impl MemberList {
     ///
     /// Creates a new member first if there is no member with the given ID.
     pub fn member_by_id(&self, user_id: Arc<UserId>) -> Member {
-        let mut members = imp::MemberList::from_instance(self).members.borrow_mut();
+        let mut members = self.imp().members.borrow_mut();
         let mut was_member_added = false;
         let prev_len = members.len();
         let member = members
@@ -163,8 +162,6 @@ impl MemberList {
 
     /// Returns whether the given user id is present in `MemberList`
     pub fn contains(&self, user_id: &UserId) -> bool {
-        let priv_ = imp::MemberList::from_instance(self);
-
-        priv_.members.borrow().contains_key(user_id)
+        self.imp().members.borrow().contains_key(user_id)
     }
 }

@@ -128,12 +128,12 @@ impl MessageRow {
     }
 
     pub fn show_header(&self) -> bool {
-        let priv_ = imp::MessageRow::from_instance(self);
+        let priv_ = self.imp();
         priv_.avatar.is_visible() && priv_.header.is_visible()
     }
 
     pub fn set_show_header(&self, visible: bool) {
-        let priv_ = imp::MessageRow::from_instance(self);
+        let priv_ = self.imp();
         priv_.avatar.set_visible(visible);
         priv_.header.set_visible(visible);
 
@@ -149,7 +149,7 @@ impl MessageRow {
     }
 
     pub fn set_event(&self, event: Event) {
-        let priv_ = imp::MessageRow::from_instance(self);
+        let priv_ = self.imp();
         // Remove signals and bindings from the previous event
         if let Some(event) = priv_.event.take() {
             if let Some(source_changed_handler) = priv_.source_changed_handler.take() {
@@ -200,13 +200,11 @@ impl MessageRow {
     }
 
     fn update_content(&self, event: &Event) {
-        let priv_ = imp::MessageRow::from_instance(self);
-
         if event.is_reply() {
             spawn!(
                 glib::PRIORITY_HIGH,
                 clone!(@weak self as obj, @weak event => async move {
-                    let priv_ = imp::MessageRow::from_instance(&obj);
+                    let priv_ = obj.imp();
 
                     if let Ok(Some(related_event)) = event.reply_to_event().await {
                         let reply = MessageReply::new();
@@ -220,7 +218,7 @@ impl MessageRow {
                 })
             );
         } else {
-            build_content(&*priv_.content, event, false);
+            build_content(&*self.imp().content, event, false);
         }
     }
 }

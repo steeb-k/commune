@@ -83,18 +83,15 @@ impl VerificationRow {
     }
 
     pub fn identity_verification(&self) -> Option<IdentityVerification> {
-        let priv_ = imp::VerificationRow::from_instance(self);
-        priv_.verification.borrow().clone()
+        self.imp().verification.borrow().clone()
     }
 
     pub fn set_identity_verification(&self, verification: Option<IdentityVerification>) {
-        let priv_ = imp::VerificationRow::from_instance(self);
-
         if self.identity_verification() == verification {
             return;
         }
 
-        priv_.verification.replace(verification);
+        self.imp().verification.replace(verification);
         self.notify("identity-verification");
     }
 }

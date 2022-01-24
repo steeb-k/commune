@@ -229,7 +229,7 @@ mod imp {
             let adj = self.listview.vadjustment().unwrap();
 
             adj.connect_value_changed(clone!(@weak obj => move |adj| {
-                let priv_ = imp::RoomHistory::from_instance(&obj);
+                let priv_ = obj.imp();
 
                 if priv_.is_auto_scrolling.get() {
                     if adj.value() + adj.page_size() == adj.upper() {
@@ -306,7 +306,7 @@ impl RoomHistory {
     }
 
     pub fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::RoomHistory::from_instance(self);
+        let priv_ = self.imp();
 
         if self.room() == room {
             return;
@@ -353,9 +353,8 @@ impl RoomHistory {
                 Some("loading"),
                 clone!(@weak self as obj => move |timeline, _| {
                     // We need to make sure that we loaded enough events to fill the `ScrolledWindow`
-                    let priv_ = imp::RoomHistory::from_instance(&obj);
                     if !timeline.loading() {
-                        let adj = priv_.listview.vadjustment().unwrap();
+                        let adj = obj.imp().listview.vadjustment().unwrap();
                         obj.load_more_messages(&adj);
                     }
                 }),
@@ -382,12 +381,11 @@ impl RoomHistory {
     }
 
     pub fn room(&self) -> Option<Room> {
-        let priv_ = imp::RoomHistory::from_instance(self);
-        priv_.room.borrow().clone()
+        self.imp().room.borrow().clone()
     }
 
     pub fn send_text_message(&self) {
-        let priv_ = imp::RoomHistory::from_instance(self);
+        let priv_ = self.imp();
         let buffer = priv_.message_entry.buffer();
         let (start_iter, end_iter) = buffer.bounds();
         let body_len = buffer.text(&start_iter, &end_iter, true).len();
@@ -484,9 +482,7 @@ impl RoomHistory {
     }
 
     pub fn leave(&self) {
-        let priv_ = imp::RoomHistory::from_instance(self);
-
-        if let Some(room) = &*priv_.room.borrow() {
+        if let Some(room) = &*self.imp().room.borrow() {
             room.set_category(RoomType::Left);
         }
     }
@@ -510,7 +506,7 @@ impl RoomHistory {
     }
 
     fn update_room_state(&self) {
-        let priv_ = imp::RoomHistory::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(room) = &*priv_.room.borrow() {
             if room.category() == RoomType::Left {
@@ -524,7 +520,7 @@ impl RoomHistory {
     }
 
     fn set_empty_timeline(&self) {
-        let priv_ = imp::RoomHistory::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(room) = &*priv_.room.borrow() {
             if room.timeline().is_empty() {
@@ -555,13 +551,11 @@ impl RoomHistory {
     }
 
     pub fn sticky(&self) -> bool {
-        let priv_ = imp::RoomHistory::from_instance(self);
-
-        priv_.sticky.get()
+        self.imp().sticky.get()
     }
 
     pub fn set_sticky(&self, sticky: bool) {
-        let priv_ = imp::RoomHistory::from_instance(self);
+        let priv_ = self.imp();
 
         if self.sticky() == sticky {
             return;
@@ -575,7 +569,7 @@ impl RoomHistory {
 
     /// Scroll to the newest message in the timeline
     pub fn scroll_down(&self) {
-        let priv_ = imp::RoomHistory::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.is_auto_scrolling.set(true);
 

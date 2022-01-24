@@ -156,17 +156,15 @@ mod imp {
             self.parent_constructed(obj);
             self.accept_btn
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.decline_btn.set_sensitive(false);
+                    obj.imp().decline_btn.set_sensitive(false);
                     obj.accept();
                 }));
 
             self.emoji_match_btn
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.emoji_not_match_btn.set_sensitive(false);
+                    obj.imp().emoji_not_match_btn.set_sensitive(false);
                     if let Some(request) = obj.request() {
                         request.emoji_match();
                     }
@@ -174,9 +172,8 @@ mod imp {
 
             self.emoji_not_match_btn
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.emoji_match_btn.set_sensitive(false);
+                    obj.imp().emoji_match_btn.set_sensitive(false);
                     if let Some(request) = obj.request() {
                         request.emoji_not_match();
                     }
@@ -184,27 +181,24 @@ mod imp {
 
             self.start_emoji_btn
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.scan_qr_code_btn.set_sensitive(false);
+                    obj.imp().scan_qr_code_btn.set_sensitive(false);
                     if let Some(request) = obj.request() {
                         request.start_sas();
                     }
                 }));
             self.start_emoji_btn2
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.take_screenshot_btn2.set_sensitive(false);
+                    obj.imp().take_screenshot_btn2.set_sensitive(false);
                     if let Some(request) = obj.request() {
                         request.start_sas();
                     }
                 }));
             self.start_emoji_btn3
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.take_screenshot_btn3.set_sensitive(false);
+                    obj.imp().take_screenshot_btn3.set_sensitive(false);
                     if let Some(request) = obj.request() {
                         request.start_sas();
                     }
@@ -212,7 +206,7 @@ mod imp {
 
             self.scan_qr_code_btn
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
+                    let priv_ = obj.imp();
                     button.set_loading(true);
                     priv_.start_emoji_btn.set_sensitive(false);
                     if priv_.qr_code_scanner.has_camera() {
@@ -224,17 +218,15 @@ mod imp {
 
             self.take_screenshot_btn2
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.start_emoji_btn2.set_sensitive(false);
+                    obj.imp().start_emoji_btn2.set_sensitive(false);
                     obj.take_screenshot();
                 }));
 
             self.take_screenshot_btn3
                 .connect_clicked(clone!(@weak obj => move |button| {
-                    let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
                     button.set_loading(true);
-                    priv_.start_emoji_btn3.set_sensitive(false);
+                    obj.imp().start_emoji_btn3.set_sensitive(false);
                     obj.take_screenshot();
                 }));
 
@@ -294,12 +286,11 @@ impl IdentityVerificationWidget {
     }
 
     pub fn request(&self) -> Option<IdentityVerification> {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
-        priv_.request.borrow().clone()
+        self.imp().request.borrow().clone()
     }
 
     pub fn set_request(&self, request: Option<IdentityVerification>) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
         let previous_request = self.request();
 
         if previous_request == request {
@@ -345,7 +336,7 @@ impl IdentityVerificationWidget {
     }
 
     fn reset(&self) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
         priv_.accept_btn.set_loading(false);
         priv_.accept_btn.set_sensitive(true);
         priv_.decline_btn.set_sensitive(true);
@@ -370,7 +361,7 @@ impl IdentityVerificationWidget {
     }
 
     fn clean_emoji(&self) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
 
         while let Some(child) = priv_.emoji_row_1.first_child() {
             priv_.emoji_row_1.remove(&child);
@@ -394,7 +385,7 @@ impl IdentityVerificationWidget {
     }
 
     fn update_view(&self) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
         if let Some(request) = self.request() {
             match request.state() {
                 VerificationState::Requested => {
@@ -455,7 +446,7 @@ impl IdentityVerificationWidget {
 
     fn start_scanning(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            let priv_ = imp::IdentityVerificationWidget::from_instance(&obj);
+            let priv_ = obj.imp();
             if priv_.qr_code_scanner.start().await {
                 priv_.main_stack.set_visible_child_name("scan-qr-code");
             } else {
@@ -476,7 +467,7 @@ impl IdentityVerificationWidget {
     }
 
     fn finish_scanning(&self, data: QrVerificationData) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
         priv_.qr_code_scanner.stop();
         if let Some(request) = self.request() {
             request.scanned_qr_code(data);
@@ -485,7 +476,7 @@ impl IdentityVerificationWidget {
     }
 
     fn update_camera_state(&self) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
         if priv_.qr_code_scanner.has_camera() {
             priv_
                 .scan_qr_code_btn
@@ -498,7 +489,7 @@ impl IdentityVerificationWidget {
     }
 
     fn init_mode(&self) {
-        let priv_ = imp::IdentityVerificationWidget::from_instance(self);
+        let priv_ = self.imp();
         let request = if let Some(request) = self.request() {
             request
         } else {

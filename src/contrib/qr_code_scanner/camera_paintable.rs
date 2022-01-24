@@ -193,15 +193,13 @@ mod camera_sink {
 
     impl CameraSink {
         pub fn new(sender: Sender<Action>) -> Self {
-            let sink = glib::Object::new(&[]).expect("Failed to create a CameraSink");
-            let priv_ = imp::CameraSink::from_instance(&sink);
-            priv_.sender.lock().unwrap().replace(sender);
+            let sink = glib::Object::new::<Self>(&[]).expect("Failed to create a CameraSink");
+            sink.imp().sender.lock().unwrap().replace(sender);
             sink
         }
 
         pub fn pending_frame(&self) -> Option<Frame> {
-            let self_ = imp::CameraSink::from_instance(self);
-            self_.pending_frame.lock().unwrap().take()
+            self.imp().pending_frame.lock().unwrap().take()
         }
     }
 }
@@ -347,7 +345,7 @@ impl CameraPaintable {
     }
 
     fn init_pipeline(&self, pipewire_src: gst::Element) {
-        let self_ = imp::CameraPaintable::from_instance(self);
+        let self_ = self.imp();
         let pipeline = gst::Pipeline::new(None);
         let detector = QrCodeDetector::new(self_.sender.clone()).upcast();
 
@@ -408,16 +406,13 @@ impl CameraPaintable {
     }
 
     pub fn close_pipeline(&self) {
-        let self_ = imp::CameraPaintable::from_instance(self);
-        if let Some(pipeline) = self_.pipeline.borrow_mut().take() {
+        if let Some(pipeline) = self.imp().pipeline.borrow_mut().take() {
             pipeline.set_state(gst::State::Null).unwrap();
         }
     }
 
     pub fn init_widgets(&self) {
-        let self_ = imp::CameraPaintable::from_instance(self);
-
-        let receiver = self_.receiver.borrow_mut().take().unwrap();
+        let receiver = self.imp().receiver.borrow_mut().take().unwrap();
         receiver.attach(
             None,
             glib::clone!(@weak self as paintable => @default-return glib::Continue(false), move |action| paintable.do_action(action)),
@@ -425,7 +420,7 @@ impl CameraPaintable {
     }
 
     fn do_action(&self, action: Action) -> glib::Continue {
-        let self_ = imp::CameraPaintable::from_instance(self);
+        let self_ = self.imp();
         match action {
             Action::FrameChanged => {
                 if let Some(frame) = self_

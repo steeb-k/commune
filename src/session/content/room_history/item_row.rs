@@ -105,8 +105,7 @@ impl ItemRow {
 
     /// Get the row's `Item`.
     pub fn item(&self) -> Option<Item> {
-        let priv_ = imp::ItemRow::from_instance(self);
-        priv_.item.borrow().clone()
+        self.imp().item.borrow().clone()
     }
 
     /// This method sets this row to a new `Item`.
@@ -115,7 +114,7 @@ impl ItemRow {
     /// possible, but it will create a new widget and drop the old one if it
     /// has to.
     fn set_item(&self, item: Option<Item>) {
-        let priv_ = imp::ItemRow::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(ItemType::Event(event)) = priv_.item.borrow().as_ref().map(|item| item.type_())
         {
@@ -246,7 +245,7 @@ impl ItemRow {
     ///
     /// If it doesn't exist, it is created
     fn set_reaction_chooser(&self, reactions: &ReactionList) {
-        let priv_ = imp::ItemRow::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.reaction_chooser.borrow().is_none() {
             let reaction_chooser = ReactionChooser::new();
@@ -265,7 +264,7 @@ impl ItemRow {
 
     /// Remove the reaction chooser and the emoji chooser, if they exist.
     fn remove_reaction_chooser(&self) {
-        let priv_ = imp::ItemRow::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(reaction_chooser) = priv_.reaction_chooser.take() {
             reaction_chooser.unparent();
@@ -277,7 +276,7 @@ impl ItemRow {
     }
 
     fn show_emoji_chooser(&self) {
-        let priv_ = imp::ItemRow::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.emoji_chooser.borrow().is_none() {
             let emoji_chooser = gtk::EmojiChooser::builder().has_arrow(false).build();

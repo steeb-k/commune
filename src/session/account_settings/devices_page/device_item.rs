@@ -92,7 +92,6 @@ impl Item {
     }
 
     pub fn type_(&self) -> &ItemType {
-        let priv_ = imp::Item::from_instance(self);
-        priv_.type_.get().unwrap()
+        self.imp().type_.get().unwrap()
     }
 }

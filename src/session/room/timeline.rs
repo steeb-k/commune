@@ -172,7 +172,7 @@ impl Timeline {
     }
 
     fn items_changed(&self, position: u32, removed: u32, added: u32) {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
 
         let last_new_message_date;
 
@@ -323,9 +323,7 @@ impl Timeline {
     }
 
     fn add_hidden_events(&self, events: Vec<Event>, at_front: bool) {
-        let priv_ = imp::Timeline::from_instance(self);
-
-        let mut relates_to_events = priv_.relates_to_events.borrow_mut();
+        let mut relates_to_events = self.imp().relates_to_events.borrow_mut();
 
         // Group events by related event
         let mut new_relations: HashMap<Box<EventId>, Vec<Event>> = HashMap::new();
@@ -419,7 +417,7 @@ impl Timeline {
     /// Append the new events
     // TODO: This should be lazy, for inspiration see: https://blogs.gnome.org/ebassi/documentation/lazy-loading/
     pub fn append(&self, batch: Vec<Event>) {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
 
         if batch.is_empty() {
             return;
@@ -485,7 +483,7 @@ impl Timeline {
 
     /// Append an event that wasn't yet fully sent and received via a sync
     pub fn append_pending(&self, txn_id: Uuid, event: Event) {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
 
         priv_
             .event_map
@@ -520,8 +518,7 @@ impl Timeline {
     /// Use this method if you are sure the event has already been received.
     /// Otherwise use `fetch_event_by_id`.
     pub fn event_by_id(&self, event_id: &EventId) -> Option<Event> {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.event_map.borrow().get(event_id).cloned()
+        self.imp().event_map.borrow().get(event_id).cloned()
     }
 
     /// Fetch the event with the given id.
@@ -554,7 +551,7 @@ impl Timeline {
     /// Prepends a batch of events
     // TODO: This should be lazy, see: https://blogs.gnome.org/ebassi/documentation/lazy-loading/
     pub fn prepend(&self, batch: Vec<Event>) {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
         let mut added = batch.len();
 
         priv_
@@ -589,17 +586,15 @@ impl Timeline {
     }
 
     fn set_room(&self, room: Room) {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.room.set(room.downgrade()).unwrap();
+        self.imp().room.set(room.downgrade()).unwrap();
     }
 
     pub fn room(&self) -> Room {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.room.get().unwrap().upgrade().unwrap()
+        self.imp().room.get().unwrap().upgrade().unwrap()
     }
 
     fn set_loading(&self, loading: bool) {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
 
         if loading == priv_.loading.get() {
             return;
@@ -611,7 +606,7 @@ impl Timeline {
     }
 
     fn set_complete(&self, complete: bool) {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
 
         if complete == priv_.complete.get() {
             return;
@@ -623,27 +618,23 @@ impl Timeline {
 
     // Whether the timeline is fully loaded
     pub fn is_complete(&self) -> bool {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.complete.get()
+        self.imp().complete.get()
     }
 
     pub fn loading(&self) -> bool {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.loading.get()
+        self.imp().loading.get()
     }
 
     pub fn is_empty(&self) -> bool {
-        let priv_ = imp::Timeline::from_instance(self);
+        let priv_ = self.imp();
         priv_.list.borrow().is_empty() || (priv_.list.borrow().len() == 1 && self.loading())
     }
 
     fn oldest_event(&self) -> Option<Box<EventId>> {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.oldest_event.borrow().clone()
+        self.imp().oldest_event.borrow().clone()
     }
     fn add_loading_spinner(&self) {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_
+        self.imp()
             .list
             .borrow_mut()
             .push_front(Item::for_loading_spinner());
@@ -651,8 +642,7 @@ impl Timeline {
     }
 
     fn remove_loading_spinner(&self) {
-        let priv_ = imp::Timeline::from_instance(self);
-        priv_.list.borrow_mut().pop_front();
+        self.imp().list.borrow_mut().pop_front();
         self.upcast_ref::<gio::ListModel>().items_changed(0, 1, 0);
     }
 
@@ -707,16 +697,12 @@ impl Timeline {
     }
 
     fn set_verification(&self, verification: IdentityVerification) {
-        let priv_ = imp::Timeline::from_instance(self);
-
-        priv_.verification.replace(Some(verification));
+        self.imp().verification.replace(Some(verification));
         self.notify("verification");
     }
 
     pub fn verification(&self) -> Option<IdentityVerification> {
-        let priv_ = imp::Timeline::from_instance(self);
-
-        priv_.verification.borrow().clone()
+        self.imp().verification.borrow().clone()
     }
 
     fn handle_verification(&self, event: &Event) {

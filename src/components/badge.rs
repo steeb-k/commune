@@ -86,14 +86,12 @@ impl Badge {
     }
 
     pub fn power_level(&self) -> PowerLevel {
-        let priv_ = imp::Badge::from_instance(self);
-        priv_.power_level.get()
+        self.imp().power_level.get()
     }
 
     pub fn set_power_level(&self, power_level: PowerLevel) {
-        let priv_ = imp::Badge::from_instance(self);
         self.update_badge(power_level);
-        priv_.power_level.set(power_level);
+        self.imp().power_level.set(power_level);
         self.notify("power-level");
     }
 

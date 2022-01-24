@@ -130,12 +130,11 @@ impl LoadingListBoxRow {
     }
 
     pub fn is_loading(&self) -> bool {
-        let priv_ = imp::LoadingListBoxRow::from_instance(self);
-        !priv_.is_error.get()
+        !self.imp().is_error.get()
     }
 
     pub fn set_loading(&self, loading: bool) {
-        let priv_ = imp::LoadingListBoxRow::from_instance(self);
+        let priv_ = self.imp();
 
         if self.is_loading() == loading {
             return;
@@ -148,8 +147,7 @@ impl LoadingListBoxRow {
     }
 
     pub fn error(&self) -> Option<glib::GString> {
-        let priv_ = imp::LoadingListBoxRow::from_instance(self);
-        let message = priv_.error_label.text();
+        let message = self.imp().error_label.text();
         if message.is_empty() {
             None
         } else {
@@ -158,7 +156,7 @@ impl LoadingListBoxRow {
     }
 
     pub fn set_error(&self, message: Option<&str>) {
-        let priv_ = imp::LoadingListBoxRow::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(message) = message {
             priv_.is_error.set(true);

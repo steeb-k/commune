@@ -107,10 +107,8 @@ impl EventSourceDialog {
     }
 
     pub fn copy_to_clipboard(&self) {
-        let priv_ = imp::EventSourceDialog::from_instance(self);
-
         let clipboard = self.clipboard();
-        let buffer = priv_.source_view.buffer();
+        let buffer = self.imp().source_view.buffer();
         let (start_iter, end_iter) = buffer.bounds();
         clipboard.set_text(buffer.text(&start_iter, &end_iter, true).as_ref());
     }

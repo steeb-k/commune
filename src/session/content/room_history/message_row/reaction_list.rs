@@ -51,9 +51,7 @@ impl MessageReactionList {
     }
 
     pub fn set_reaction_list(&self, reaction_list: &ReactionList) {
-        let priv_ = imp::MessageReactionList::from_instance(self);
-
-        priv_.flow_box.bind_model(Some(reaction_list), |obj| {
+        self.imp().flow_box.bind_model(Some(reaction_list), |obj| {
             MessageReaction::new(obj.clone().downcast().unwrap()).upcast()
         });
     }

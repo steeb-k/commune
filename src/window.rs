@@ -113,7 +113,7 @@ impl Window {
     }
 
     fn add_session(&self, session: &Session) {
-        let priv_ = &imp::Window::from_instance(self);
+        let priv_ = &self.imp();
         session.set_logged_in_users(&priv_.sessions.pages());
         priv_.sessions.add_child(session);
         priv_.sessions.set_visible_child(session);
@@ -126,7 +126,7 @@ impl Window {
     }
 
     fn remove_session(&self, session: &Session) {
-        let priv_ = imp::Window::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.sessions.remove(session);
 
@@ -193,7 +193,7 @@ impl Window {
     /// If the login screen is visible, its login button becomes the default
     /// widget
     fn set_default_by_child(&self) {
-        let priv_ = imp::Window::from_instance(self);
+        let priv_ = self.imp();
         if priv_.main_stack.visible_child() == Some(priv_.login.get().upcast()) {
             self.set_default_widget(Some(&priv_.login.default_widget()));
         } else {
@@ -202,12 +202,12 @@ impl Window {
     }
 
     pub fn switch_to_sessions_page(&self) {
-        let priv_ = imp::Window::from_instance(self);
+        let priv_ = self.imp();
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
     }
 
     pub fn switch_to_login_page(&self, clean: bool) {
-        let priv_ = imp::Window::from_instance(self);
+        let priv_ = self.imp();
         if clean {
             priv_.login.clean();
         }
@@ -219,7 +219,6 @@ impl Window {
 
     /// This appends a new error to the list of errors
     pub fn append_error(&self, error: &Error) {
-        let priv_ = imp::Window::from_instance(self);
-        priv_.error_list.append(error);
+        self.imp().error_list.append(error);
     }
 }

@@ -50,7 +50,7 @@ impl StateCreation {
     }
 
     fn set_event(&self, event: &RoomCreateEventContent) {
-        let priv_ = imp::StateCreation::from_instance(self);
+        let priv_ = self.imp();
         if let Some(predecessor) = &event.predecessor {
             priv_.previous_room_btn.set_detailed_action_name(&format!(
                 "session.show-room::{}",

@@ -196,12 +196,11 @@ impl InviteSubpage {
     }
 
     pub fn room(&self) -> Option<Room> {
-        let priv_ = imp::InviteSubpage::from_instance(self);
-        priv_.room.borrow().clone()
+        self.imp().room.borrow().clone()
     }
 
     fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::InviteSubpage::from_instance(self);
+        let priv_ = self.imp();
 
         if self.room() == room {
             return;
@@ -252,7 +251,7 @@ impl InviteSubpage {
     }
 
     fn add_user_pill(&self, user: &Invitee) {
-        let priv_ = imp::InviteSubpage::from_instance(self);
+        let priv_ = self.imp();
 
         let pill = Pill::new();
         pill.set_margin_start(3);
@@ -279,22 +278,19 @@ impl InviteSubpage {
     }
 
     fn remove_user_pill(&self, user: &Invitee) {
-        let priv_ = imp::InviteSubpage::from_instance(self);
-
         if let Some(anchor) = user.take_anchor() {
             if !anchor.is_deleted() {
-                let mut start_iter = priv_.text_buffer.iter_at_child_anchor(&anchor);
+                let text_buffer = &self.imp().text_buffer;
+                let mut start_iter = text_buffer.iter_at_child_anchor(&anchor);
                 let mut end_iter = start_iter;
                 end_iter.forward_char();
-                priv_.text_buffer.delete(&mut start_iter, &mut end_iter);
+                text_buffer.delete(&mut start_iter, &mut end_iter);
             }
         }
     }
 
     fn invitee_list(&self) -> Option<InviteeList> {
-        let priv_ = imp::InviteSubpage::from_instance(self);
-
-        priv_
+        self.imp()
             .list_view
             .model()?
             .downcast::<gtk::NoSelection>()
@@ -306,9 +302,7 @@ impl InviteSubpage {
     }
 
     fn invite(&self) {
-        let priv_ = imp::InviteSubpage::from_instance(self);
-
-        priv_.invite_button.set_loading(true);
+        self.imp().invite_button.set_loading(true);
         if let Some(room) = self.room() {
             if let Some(user_list) = self.invitee_list() {
                 let invitees: Vec<User> = user_list
@@ -317,17 +311,16 @@ impl InviteSubpage {
                     .map(glib::object::Cast::upcast)
                     .collect();
                 spawn!(clone!(@weak self as obj => async move {
-                    let priv_ = imp::InviteSubpage::from_instance(&obj);
                     room.invite(invitees.as_slice()).await;
                     obj.close();
-                    priv_.invite_button.set_loading(false);
+                    obj.imp().invite_button.set_loading(false);
                 }));
             }
         }
     }
 
     fn update_view(&self) {
-        let priv_ = imp::InviteSubpage::from_instance(self);
+        let priv_ = self.imp();
         match self
             .invitee_list()
             .expect("Can't update view without an InviteeList")

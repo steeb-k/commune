@@ -89,8 +89,7 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
             self.button.connect_clicked(clone!(@weak obj => move |_| {
-                let priv_ = imp::PublicRoomRow::from_instance(&obj);
-                if let Some(public_room) = &*priv_.public_room.borrow() {
+                if let Some(public_room) = &*obj.imp().public_room.borrow() {
                     public_room.join_or_view();
                 };
             }));
@@ -123,12 +122,11 @@ impl PublicRoomRow {
     }
 
     pub fn public_room(&self) -> Option<PublicRoom> {
-        let priv_ = imp::PublicRoomRow::from_instance(self);
-        priv_.public_room.borrow().clone()
+        self.imp().public_room.borrow().clone()
     }
 
     pub fn set_public_room(&self, public_room: Option<PublicRoom>) {
-        let priv_ = imp::PublicRoomRow::from_instance(self);
+        let priv_ = self.imp();
         let old_public_room = self.public_room();
 
         if old_public_room == public_room {
@@ -222,14 +220,14 @@ impl PublicRoomRow {
     }
 
     fn update_button(&self, public_room: &PublicRoom) {
-        let priv_ = imp::PublicRoomRow::from_instance(self);
+        let button = &self.imp().button;
         if public_room.room().is_some() {
-            priv_.button.set_label(&gettext("View"));
+            button.set_label(&gettext("View"));
         } else {
-            priv_.button.set_label(&gettext("Join"));
+            button.set_label(&gettext("Join"));
         }
 
-        priv_.button.set_loading(public_room.is_pending());
+        button.set_loading(public_room.is_pending());
     }
 }
 

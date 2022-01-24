@@ -90,12 +90,11 @@ impl MemberMenu {
     }
 
     pub fn member(&self) -> Option<Member> {
-        let priv_ = imp::MemberMenu::from_instance(self);
-        priv_.member.borrow().clone()
+        self.imp().member.borrow().clone()
     }
 
     pub fn set_member(&self, member: Option<Member>) {
-        let priv_ = imp::MemberMenu::from_instance(self);
+        let priv_ = self.imp();
         let prev_member = self.member();
 
         if prev_member == member {
@@ -130,8 +129,7 @@ impl MemberMenu {
     }
 
     fn popover_menu(&self) -> &gtk::PopoverMenu {
-        let priv_ = imp::MemberMenu::from_instance(self);
-        priv_.popover.get_or_init(|| {
+        self.imp().popover.get_or_init(|| {
             gtk::PopoverMenu::from_model(Some(
                 &gtk::Builder::from_resource("/org/gnome/FractalNext/member-menu.ui")
                     .object::<gio::MenuModel>("menu_model")
@@ -145,7 +143,6 @@ impl MemberMenu {
     /// For convenience it allows to set the member for which the popover is
     /// shown
     pub fn present_popover(&self, button: &gtk::ToggleButton, member: Option<Member>) {
-        let priv_ = imp::MemberMenu::from_instance(self);
         let popover = self.popover_menu();
         let _guard = popover.freeze_notify();
 
@@ -158,18 +155,17 @@ impl MemberMenu {
             obj.unparent_popover();
         }));
 
-        priv_.destroy_handler.replace(Some(handler));
+        self.imp().destroy_handler.replace(Some(handler));
 
         popover.set_parent(button);
         popover.show();
     }
 
     fn unparent_popover(&self) {
-        let priv_ = imp::MemberMenu::from_instance(self);
         let popover = self.popover_menu();
 
         if let Some(parent) = popover.parent() {
-            if let Some(handler) = priv_.destroy_handler.take() {
+            if let Some(handler) = self.imp().destroy_handler.take() {
                 parent.disconnect(handler);
             }
 

@@ -108,7 +108,7 @@ impl Pill {
     }
 
     pub fn set_user(&self, user: Option<User>) {
-        let priv_ = imp::Pill::from_instance(self);
+        let priv_ = self.imp();
 
         if *priv_.user.borrow() == user {
             return;
@@ -136,12 +136,11 @@ impl Pill {
     }
 
     pub fn user(&self) -> Option<User> {
-        let priv_ = imp::Pill::from_instance(self);
-        priv_.user.borrow().clone()
+        self.imp().user.borrow().clone()
     }
 
     pub fn set_room(&self, room: Option<Room>) {
-        let priv_ = imp::Pill::from_instance(self);
+        let priv_ = self.imp();
 
         if *priv_.room.borrow() == room {
             return;
@@ -169,8 +168,7 @@ impl Pill {
     }
 
     pub fn room(&self) -> Option<Room> {
-        let priv_ = imp::Pill::from_instance(self);
-        priv_.room.borrow().clone()
+        self.imp().room.borrow().clone()
     }
 }
 

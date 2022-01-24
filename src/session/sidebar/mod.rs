@@ -238,17 +238,15 @@ impl Sidebar {
     }
 
     pub fn selected_item(&self) -> Option<glib::Object> {
-        let priv_ = imp::Sidebar::from_instance(self);
-        priv_.selected_item.borrow().clone()
+        self.imp().selected_item.borrow().clone()
     }
 
     pub fn room_search_bar(&self) -> gtk::SearchBar {
-        let priv_ = imp::Sidebar::from_instance(self);
-        priv_.room_search.clone()
+        self.imp().room_search.clone()
     }
 
     pub fn set_item_list(&self, item_list: Option<ItemList>) {
-        let priv_ = imp::Sidebar::from_instance(self);
+        let priv_ = self.imp();
 
         if let Some(binding) = priv_.drop_binding.take() {
             binding.unbind();
@@ -302,29 +300,24 @@ impl Sidebar {
     }
 
     pub fn set_selected_item(&self, selected_item: Option<glib::Object>) {
-        let priv_ = imp::Sidebar::from_instance(self);
-
         if self.selected_item() == selected_item {
             return;
         }
 
-        priv_.selected_item.replace(selected_item);
+        self.imp().selected_item.replace(selected_item);
         self.notify("selected-item");
     }
 
     pub fn user(&self) -> Option<User> {
-        let priv_ = &imp::Sidebar::from_instance(self);
-        priv_.user.borrow().clone()
+        self.imp().user.borrow().clone()
     }
 
     fn set_user(&self, user: Option<User>) {
-        let priv_ = imp::Sidebar::from_instance(self);
-
         if self.user() == user {
             return;
         }
 
-        priv_.user.replace(user);
+        self.imp().user.replace(user);
         self.notify("user");
     }
 
@@ -333,18 +326,17 @@ impl Sidebar {
         sessions_stack_pages: &SelectionModel,
         session_root: &Session,
     ) {
-        imp::Sidebar::from_instance(self)
+        self.imp()
             .account_switcher
             .set_logged_in_users(sessions_stack_pages, session_root);
     }
 
     pub fn drop_source_type(&self) -> Option<RoomType> {
-        let priv_ = imp::Sidebar::from_instance(self);
-        priv_.drop_source_type.get()
+        self.imp().drop_source_type.get()
     }
 
     pub fn set_drop_source_type(&self, source_type: Option<RoomType>) {
-        let priv_ = imp::Sidebar::from_instance(self);
+        let priv_ = self.imp();
 
         if self.drop_source_type() == source_type {
             return;
@@ -364,8 +356,7 @@ impl Sidebar {
 
     /// Update the disabled or empty state of drop targets.
     fn update_drop_targets(&self) {
-        let priv_ = imp::Sidebar::from_instance(self);
-        let mut child = priv_.listview.first_child();
+        let mut child = self.imp().listview.first_child();
 
         while let Some(widget) = child {
             if let Some(row) = widget
@@ -426,8 +417,7 @@ impl Sidebar {
 
     /// Update the active state of drop targets.
     fn update_active_drop_targets(&self, target_type: Option<RoomType>) {
-        let priv_ = imp::Sidebar::from_instance(self);
-        let mut child = priv_.listview.first_child();
+        let mut child = self.imp().listview.first_child();
 
         while let Some(widget) = child {
             if let Some((row, row_type)) = widget

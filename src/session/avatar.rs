@@ -140,22 +140,18 @@ impl Avatar {
     }
 
     fn session(&self) -> Session {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     pub fn image(&self) -> Option<gdk::Paintable> {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.image.borrow().clone()
+        self.imp().image.borrow().clone()
     }
 
     fn set_image_data(&self, data: Option<Vec<u8>>) {
-        let priv_ = imp::Avatar::from_instance(self);
-
         let image = data
             .and_then(|data| gdk::Texture::from_bytes(&glib::Bytes::from(&data)).ok())
             .map(|texture| texture.upcast());
-        priv_.image.replace(image);
+        self.imp().image.replace(image);
         self.notify("image");
     }
 
@@ -193,25 +189,23 @@ impl Avatar {
     }
 
     pub fn set_display_name(&self, display_name: Option<String>) {
-        let priv_ = imp::Avatar::from_instance(self);
         if self.display_name() == display_name {
             return;
         }
 
-        priv_.display_name.replace(display_name);
+        self.imp().display_name.replace(display_name);
 
         self.notify("display-name");
     }
 
     pub fn display_name(&self) -> Option<String> {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.display_name.borrow().clone()
+        self.imp().display_name.borrow().clone()
     }
 
     /// Set the needed size.
     /// Only the biggest size will be stored
     pub fn set_needed_size(&self, size: i32) {
-        let priv_ = imp::Avatar::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.needed_size.get() < size {
             priv_.needed_size.set(size);
@@ -226,12 +220,11 @@ impl Avatar {
 
     /// Get the biggest needed size
     pub fn needed_size(&self) -> i32 {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.needed_size.get()
+        self.imp().needed_size.get()
     }
 
     pub fn set_url(&self, url: Option<Box<MxcUri>>) {
-        let priv_ = imp::Avatar::from_instance(self);
+        let priv_ = self.imp();
 
         if priv_.url.borrow().as_ref() == url.as_ref() {
             return;
@@ -250,8 +243,7 @@ impl Avatar {
     }
 
     pub fn url(&self) -> Option<Box<MxcUri>> {
-        let priv_ = imp::Avatar::from_instance(self);
-        priv_.url.borrow().to_owned()
+        self.imp().url.borrow().to_owned()
     }
 }
 

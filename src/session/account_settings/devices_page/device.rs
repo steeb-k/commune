@@ -131,12 +131,11 @@ impl Device {
     }
 
     pub fn session(&self) -> Session {
-        let priv_ = imp::Device::from_instance(self);
-        priv_.session.get().unwrap().upgrade().unwrap()
+        self.imp().session.get().unwrap().upgrade().unwrap()
     }
 
     fn set_matrix_device(&self, device: MatrixDevice, crypto_device: Option<CryptoDevice>) {
-        let priv_ = imp::Device::from_instance(self);
+        let priv_ = self.imp();
         priv_.device.set(device).unwrap();
         if let Some(crypto_device) = crypto_device {
             priv_.crypto_device.set(crypto_device).unwrap();
@@ -144,13 +143,11 @@ impl Device {
     }
 
     pub fn device_id(&self) -> &DeviceId {
-        let priv_ = imp::Device::from_instance(self);
-        &priv_.device.get().unwrap().device_id
+        &self.imp().device.get().unwrap().device_id
     }
 
     pub fn display_name(&self) -> &str {
-        let priv_ = imp::Device::from_instance(self);
-        if let Some(ref display_name) = priv_.device.get().unwrap().display_name {
+        if let Some(ref display_name) = self.imp().device.get().unwrap().display_name {
             display_name
         } else {
             self.device_id().as_str()
@@ -158,15 +155,13 @@ impl Device {
     }
 
     pub fn last_seen_ip(&self) -> Option<&str> {
-        let priv_ = imp::Device::from_instance(self);
         // TODO: Would be nice to also show the location
         // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/700
-        priv_.device.get().unwrap().last_seen_ip.as_deref()
+        self.imp().device.get().unwrap().last_seen_ip.as_deref()
     }
 
     pub fn last_seen_ts(&self) -> Option<glib::DateTime> {
-        let priv_ = imp::Device::from_instance(self);
-        priv_
+        self.imp()
             .device
             .get()
             .unwrap()
@@ -214,8 +209,7 @@ impl Device {
     }
 
     pub fn is_verified(&self) -> bool {
-        let priv_ = imp::Device::from_instance(self);
-        priv_
+        self.imp()
             .crypto_device
             .get()
             .map_or(false, |device| device.verified())

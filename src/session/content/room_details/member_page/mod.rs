@@ -137,17 +137,15 @@ impl MemberPage {
     }
 
     pub fn room(&self) -> &Room {
-        let priv_ = imp::MemberPage::from_instance(self);
-        priv_.room.get().unwrap()
+        self.imp().room.get().unwrap()
     }
 
     fn set_room(&self, room: Room) {
-        let priv_ = imp::MemberPage::from_instance(self);
-        priv_.room.set(room).expect("Room already initialized");
+        self.imp().room.set(room).expect("Room already initialized");
     }
 
     fn init_member_search(&self) {
-        let priv_ = imp::MemberPage::from_instance(self);
+        let priv_ = self.imp();
         let members = self.room().members();
 
         // Sort the members list by power level, then display name.
@@ -202,10 +200,9 @@ impl MemberPage {
     }
 
     fn init_member_count(&self) {
-        let priv_ = imp::MemberPage::from_instance(self);
         let members = self.room().members();
 
-        let member_count = priv_.member_count.get();
+        let member_count = self.imp().member_count.get();
         fn set_member_count(member_count: &gtk::Label, n: u32) {
             member_count.set_text(&ngettext!("{} Member", "{} Members", n, n));
         }
@@ -216,27 +213,24 @@ impl MemberPage {
     }
 
     fn init_invite_button(&self) {
-        let priv_ = imp::MemberPage::from_instance(self);
+        let invite_button = &*self.imp().invite_button;
 
         let invite_possible = self.room().new_allowed_expr(RoomAction::Invite);
         const NONE_OBJECT: Option<&glib::Object> = None;
-        invite_possible.bind(&*priv_.invite_button, "sensitive", NONE_OBJECT);
+        invite_possible.bind(invite_button, "sensitive", NONE_OBJECT);
 
-        priv_
-            .invite_button
-            .connect_clicked(clone!(@weak self as obj => move |_| {
-                let window = obj
-                .root()
-                .unwrap()
-                .downcast::<RoomDetails>()
-                .unwrap();
-                window.present_invite_subpage();
-            }));
+        invite_button.connect_clicked(clone!(@weak self as obj => move |_| {
+            let window = obj
+            .root()
+            .unwrap()
+            .downcast::<RoomDetails>()
+            .unwrap();
+            window.present_invite_subpage();
+        }));
     }
 
     pub fn member_menu(&self) -> &MemberMenu {
-        let priv_ = imp::MemberPage::from_instance(self);
-        priv_.member_menu.get_or_init(|| {
+        self.imp().member_menu.get_or_init(|| {
             let menu = MemberMenu::new();
 
             menu.connect_notify_local(

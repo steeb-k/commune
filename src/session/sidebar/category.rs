@@ -122,12 +122,10 @@ impl Category {
     }
 
     pub fn type_(&self) -> CategoryType {
-        let priv_ = imp::Category::from_instance(self);
-        priv_.type_.get()
+        self.imp().type_.get()
     }
 
     fn set_model(&self, model: gio::ListModel) {
-        let priv_ = imp::Category::from_instance(self);
         let type_ = self.type_();
 
         // Special case room lists so that they are sorted and in the right category
@@ -158,21 +156,19 @@ impl Category {
         );
 
         self.set_is_empty(model.n_items() == 0);
-        priv_.model.set(model).unwrap();
+        self.imp().model.set(model).unwrap();
     }
 
     fn set_is_empty(&self, is_empty: bool) {
-        let priv_ = imp::Category::from_instance(self);
         if is_empty == self.is_empty() {
             return;
         }
 
-        priv_.is_empty.set(is_empty);
+        self.imp().is_empty.set(is_empty);
         self.notify("empty");
     }
 
     pub fn is_empty(&self) -> bool {
-        let priv_ = imp::Category::from_instance(self);
-        priv_.is_empty.get()
+        self.imp().is_empty.get()
     }
 }

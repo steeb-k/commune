@@ -95,41 +95,34 @@ impl Invitee {
     }
 
     pub fn is_invited(&self) -> bool {
-        let priv_ = imp::Invitee::from_instance(self);
-        priv_.invited.get()
+        self.imp().invited.get()
     }
 
     pub fn set_invited(&self, invited: bool) {
-        let priv_ = imp::Invitee::from_instance(self);
-
         if self.is_invited() == invited {
             return;
         }
 
-        priv_.invited.set(invited);
+        self.imp().invited.set(invited);
         self.notify("invited");
     }
 
     pub fn anchor(&self) -> Option<gtk::TextChildAnchor> {
-        let priv_ = imp::Invitee::from_instance(self);
-        priv_.anchor.borrow().clone()
+        self.imp().anchor.borrow().clone()
     }
 
     pub fn take_anchor(&self) -> Option<gtk::TextChildAnchor> {
-        let priv_ = imp::Invitee::from_instance(self);
-        let anchor = priv_.anchor.take();
+        let anchor = self.imp().anchor.take();
         self.notify("anchor");
         anchor
     }
 
     pub fn set_anchor(&self, anchor: Option<gtk::TextChildAnchor>) {
-        let priv_ = imp::Invitee::from_instance(self);
-
         if self.anchor() == anchor {
             return;
         }
 
-        priv_.anchor.replace(anchor);
+        self.imp().anchor.replace(anchor);
         self.notify("anchor");
     }
 }

@@ -52,18 +52,15 @@ impl MessageReply {
     }
 
     pub fn set_related_content_sender(&self, user: User) {
-        let priv_ = imp::MessageReply::from_instance(self);
-        priv_.pill.set_user(Some(user));
+        self.imp().pill.set_user(Some(user));
     }
 
     pub fn related_content(&self) -> &adw::Bin {
-        let priv_ = imp::MessageReply::from_instance(self);
-        priv_.related_content.as_ref()
+        self.imp().related_content.as_ref()
     }
 
     pub fn content(&self) -> &adw::Bin {
-        let priv_ = imp::MessageReply::from_instance(self);
-        priv_.content.as_ref()
+        self.imp().content.as_ref()
     }
 }
 

@@ -124,12 +124,11 @@ impl Row {
     }
 
     pub fn list_row(&self) -> Option<gtk::TreeListRow> {
-        let priv_ = imp::Row::from_instance(self);
-        priv_.list_row.borrow().clone()
+        self.imp().list_row.borrow().clone()
     }
 
     pub fn set_list_row(&self, list_row: Option<gtk::TreeListRow>) {
-        let priv_ = imp::Row::from_instance(self);
+        let priv_ = self.imp();
 
         if self.list_row() == list_row {
             return;

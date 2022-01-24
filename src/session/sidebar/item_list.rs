@@ -186,7 +186,7 @@ impl ItemList {
     }
 
     fn update_item(&self, position: usize) {
-        let priv_ = imp::ItemList::from_instance(self);
+        let priv_ = self.imp();
         let (item, old_visible) = priv_.list.get().unwrap().get(position).unwrap();
 
         let visible = if let Some(category) = item.downcast_ref::<Category>() {
@@ -228,12 +228,11 @@ impl ItemList {
     }
 
     pub fn show_all_for_category(&self) -> CategoryType {
-        let priv_ = imp::ItemList::from_instance(self);
-        priv_.show_all_for_category.get()
+        self.imp().show_all_for_category.get()
     }
 
     pub fn set_show_all_for_category(&self, category: CategoryType) {
-        let priv_ = imp::ItemList::from_instance(self);
+        let priv_ = self.imp();
 
         if category == self.show_all_for_category() {
             return;
@@ -248,22 +247,18 @@ impl ItemList {
     }
 
     fn set_room_list(&self, room_list: RoomList) {
-        let priv_ = imp::ItemList::from_instance(self);
-        priv_.room_list.set(room_list).unwrap();
+        self.imp().room_list.set(room_list).unwrap();
     }
 
     fn set_verification_list(&self, verification_list: VerificationList) {
-        let priv_ = imp::ItemList::from_instance(self);
-        priv_.verification_list.set(verification_list).unwrap();
+        self.imp().verification_list.set(verification_list).unwrap();
     }
 
     pub fn room_list(&self) -> &RoomList {
-        let priv_ = imp::ItemList::from_instance(self);
-        priv_.room_list.get().unwrap()
+        self.imp().room_list.get().unwrap()
     }
 
     pub fn verification_list(&self) -> &VerificationList {
-        let priv_ = imp::ItemList::from_instance(self);
-        priv_.verification_list.get().unwrap()
+        self.imp().verification_list.get().unwrap()
     }
 }

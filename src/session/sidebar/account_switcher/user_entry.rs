@@ -114,7 +114,7 @@ impl UserEntryRow {
     }
 
     pub fn set_hint(&self, hinted: bool) {
-        let priv_ = imp::UserEntryRow::from_instance(self);
+        let priv_ = self.imp();
 
         priv_.account_avatar.set_selected(hinted);
         priv_
@@ -123,9 +123,8 @@ impl UserEntryRow {
     }
 
     pub fn show_account_settings(&self) {
-        let priv_ = imp::UserEntryRow::from_instance(self);
-
-        let session = priv_
+        let session = self
+            .imp()
             .session_page
             .borrow()
             .as_ref()

@@ -40,13 +40,12 @@ mod imp {
             Self::Type::bind_template_callbacks(klass);
 
             klass.install_action("media-viewer.close", None, move |obj, _, _| {
-                let priv_ = imp::MediaViewer::from_instance(obj);
-
                 if obj.fullscreened() {
                     obj.activate_action("win.toggle-fullscreen", None).unwrap();
                 }
 
-                if let Some(stream) = priv_
+                if let Some(stream) = obj
+                    .imp()
                     .media
                     .child()
                     .and_then(|w| w.downcast::<gtk::Video>().ok())
@@ -161,8 +160,7 @@ impl MediaViewer {
     }
 
     pub fn event(&self) -> Option<Event> {
-        let priv_ = imp::MediaViewer::from_instance(self);
-        priv_
+        self.imp()
             .event
             .borrow()
             .as_ref()
@@ -170,40 +168,36 @@ impl MediaViewer {
     }
 
     pub fn set_event(&self, event: Option<Event>) {
-        let priv_ = imp::MediaViewer::from_instance(self);
-
         if event == self.event() {
             return;
         }
 
-        priv_.event.replace(event.map(|event| event.downgrade()));
+        self.imp()
+            .event
+            .replace(event.map(|event| event.downgrade()));
         self.build();
         self.notify("event");
     }
 
     pub fn body(&self) -> Option<String> {
-        let priv_ = imp::MediaViewer::from_instance(self);
-        priv_.body.borrow().clone()
+        self.imp().body.borrow().clone()
     }
 
     pub fn set_body(&self, body: Option<String>) {
-        let priv_ = imp::MediaViewer::from_instance(self);
-
         if body == self.body() {
             return;
         }
 
-        priv_.body.replace(body);
+        self.imp().body.replace(body);
         self.notify("body");
     }
 
     pub fn fullscreened(&self) -> bool {
-        let priv_ = imp::MediaViewer::from_instance(self);
-        priv_.fullscreened.get()
+        self.imp().fullscreened.get()
     }
 
     pub fn set_fullscreened(&self, fullscreened: bool) {
-        let priv_ = imp::MediaViewer::from_instance(self);
+        let priv_ = self.imp();
 
         if fullscreened == self.fullscreened() {
             return;
@@ -234,7 +228,7 @@ impl MediaViewer {
                         spawn!(
                             glib::PRIORITY_LOW,
                             clone!(@weak self as obj => async move {
-                                let priv_ = imp::MediaViewer::from_instance(&obj);
+                                let priv_ = obj.imp();
 
                                 match event.get_media_content().await {
                                     Ok((_, _, data)) => {
@@ -266,7 +260,7 @@ impl MediaViewer {
                         spawn!(
                             glib::PRIORITY_LOW,
                             clone!(@weak self as obj => async move {
-                                let priv_ = imp::MediaViewer::from_instance(&obj);
+                                let priv_ = obj.imp();
 
                                 match event.get_media_content().await {
                                     Ok((uid, filename, data)) => {

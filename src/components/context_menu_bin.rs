@@ -58,8 +58,7 @@ mod imp {
             );
 
             klass.install_action("context-menu.close", None, move |widget, _, _| {
-                let priv_ = imp::ContextMenuBin::from_instance(widget);
-                priv_.popover.popdown();
+                widget.imp().popover.popdown();
             });
         }
 
@@ -150,8 +149,7 @@ impl ContextMenuBin {
     }
 
     fn open_menu_at(&self, x: i32, y: i32) {
-        let priv_ = imp::ContextMenuBin::from_instance(self);
-        let popover = &priv_.popover;
+        let popover = &self.imp().popover;
 
         debug!("Context menu was activated");
 
@@ -177,24 +175,20 @@ pub trait ContextMenuBinExt: 'static {
 
 impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
     fn set_context_menu(&self, menu: Option<&gio::MenuModel>) {
-        let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
-
         if self.context_menu().as_ref() == menu {
             return;
         }
 
-        priv_.popover.set_menu_model(menu);
+        self.upcast_ref().imp().popover.set_menu_model(menu);
         self.notify("context-menu");
     }
 
     fn context_menu(&self) -> Option<gio::MenuModel> {
-        let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
-        priv_.popover.menu_model()
+        self.upcast_ref().imp().popover.menu_model()
     }
 
     fn popover(&self) -> &gtk::PopoverMenu {
-        let priv_ = imp::ContextMenuBin::from_instance(self.upcast_ref());
-        &priv_.popover
+        &self.upcast_ref().imp().popover
     }
 }
 

@@ -96,13 +96,11 @@ impl ReactionGroup {
     }
 
     pub fn key(&self) -> &str {
-        let priv_ = imp::ReactionGroup::from_instance(self);
-        priv_.key.get().unwrap()
+        self.imp().key.get().unwrap()
     }
 
     pub fn count(&self) -> u32 {
-        let priv_ = imp::ReactionGroup::from_instance(self);
-        priv_
+        self.imp()
             .reactions
             .borrow()
             .iter()
@@ -112,8 +110,7 @@ impl ReactionGroup {
 
     /// The reaction in this group sent by this user, if any.
     pub fn user_reaction(&self) -> Option<Event> {
-        let priv_ = imp::ReactionGroup::from_instance(self);
-        let reactions = priv_.reactions.borrow();
+        let reactions = self.imp().reactions.borrow();
         if let Some(user) = reactions
             .first()
             .and_then(|event| event.room().session().user().cloned())
@@ -138,9 +135,7 @@ impl ReactionGroup {
         let mut added_reactions = Vec::with_capacity(new_reactions.len());
 
         {
-            let mut reactions = imp::ReactionGroup::from_instance(self)
-                .reactions
-                .borrow_mut();
+            let mut reactions = self.imp().reactions.borrow_mut();
 
             reactions.reserve(new_reactions.len());
 

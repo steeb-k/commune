@@ -188,37 +188,32 @@ pub trait QRCodeExt {
 
 impl<W: IsA<QRCode>> QRCodeExt for W {
     fn set_bytes(&self, bytes: &[u8]) {
-        let this = imp::QRCode::from_instance(self.as_ref());
-
         let data = QRCodeData::try_from(bytes).unwrap_or_else(|_| {
             glib::g_warning!(None, "Failed to load QRCode from bytes");
             Default::default()
         });
-        this.data.replace(data);
+        self.as_ref().imp().data.replace(data);
 
         self.as_ref().queue_draw();
         self.as_ref().queue_resize();
     }
 
     fn set_qrcode(&self, qrcode: qrcode::QrCode) {
-        let this = imp::QRCode::from_instance(self.as_ref());
-
-        this.data.replace(QRCodeData::from(qrcode));
+        self.as_ref().imp().data.replace(QRCodeData::from(qrcode));
 
         self.as_ref().queue_draw();
         self.as_ref().queue_resize();
     }
 
     fn block_size(&self) -> u32 {
-        let this = imp::QRCode::from_instance(self.as_ref());
-
-        this.block_size.get()
+        self.as_ref().imp().block_size.get()
     }
 
     fn set_block_size(&self, block_size: u32) {
-        let this = imp::QRCode::from_instance(self.as_ref());
-
-        this.block_size.set(std::cmp::max(block_size, 1));
+        self.as_ref()
+            .imp()
+            .block_size
+            .set(std::cmp::max(block_size, 1));
         self.notify("block-size");
         self.as_ref().queue_draw();
         self.as_ref().queue_resize();
