@@ -41,6 +41,11 @@ mod imp {
 
             klass.install_action("media-viewer.close", None, move |obj, _, _| {
                 let priv_ = imp::MediaViewer::from_instance(obj);
+
+                if obj.fullscreened() {
+                    obj.activate_action("win.toggle-fullscreen", None).unwrap();
+                }
+
                 if let Some(stream) = priv_
                     .media
                     .child()
