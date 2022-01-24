@@ -2,7 +2,7 @@ project('fractal',
         'rust',
         version: '0.0.1',
         license: 'GPL-3.0-or-later',
-  meson_version: '>= 0.57')
+        meson_version: '>= 0.59')
 
 i18n = import('i18n')
 gnome = import('gnome')
@@ -80,4 +80,8 @@ subdir('data')
 subdir('po')
 subdir('src')
 
-meson.add_install_script('build-aux/meson_post_install.py')
+gnome.post_install(
+  gtk_update_icon_cache: true,
+  glib_compile_schemas: true,
+  update_desktop_database: true,
+)
