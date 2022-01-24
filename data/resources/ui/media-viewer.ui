@@ -1,93 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="MediaViewer" parent="AdwBin">
-    <property name="child">
-      <object class="GtkOverlay">
-        <child>
-          <object class="GtkBox">
-            <property name="orientation">vertical</property>
-            <child>
-              <object class="GtkHeaderBar">
-                <property name="visible" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create | invert-boolean"/>
-                <property name="title-widget">
-                  <object class="GtkLabel">
-                    <binding name="label">
-                      <lookup name="body">MediaViewer</lookup>
-                    </binding>
-                    <property name="single-line-mode">True</property>
-                    <property name="ellipsize">end</property>
-                    <style>
-                      <class name="title"/>
-                    </style>
-                  </object>
-                </property>
-                <child type="start">
-                  <object class="GtkButton" id="back">
-                    <property name="icon-name">go-previous-symbolic</property>
-                    <property name="action-name">media-viewer.close</property>
-                  </object>
-                </child>
-                <child type="end">
-                  <object class="GtkMenuButton" id="menu_unfull">
-                    <property name="icon-name">view-more-symbolic</property>
-                  </object>
-                </child>
-                <child type="end">
-                  <object class="GtkButton">
-                    <property name="icon-name">view-fullscreen-symbolic</property>
-                    <property name="action-name">win.toggle-fullscreen</property>
-                  </object>
-                </child>
+    <child>
+      <object class="AdwFlap" id="flap">
+        <property name="orientation">vertical</property>
+        <property name="locked" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+        <property name="reveal-flap" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+        <child type="flap">
+          <object class="GtkHeaderBar">
+            <property name="title-widget">
+              <object class="GtkLabel">
+                <binding name="label">
+                  <lookup name="body">MediaViewer</lookup>
+                </binding>
+                <property name="single-line-mode">True</property>
+                <property name="ellipsize">end</property>
+                <style>
+                  <class name="title"/>
+                </style>
+              </object>
+            </property>
+            <child type="start">
+              <object class="GtkButton" id="back">
+                <property name="icon-name">go-previous-symbolic</property>
+                <property name="action-name">media-viewer.close</property>
               </object>
             </child>
-            <child>
-              <object class="AdwBin" id="media">
-                <property name="halign">center</property>
-                <property name="valign">center</property>
-                <property name="vexpand">true</property>
+            <child type="end">
+              <object class="GtkMenuButton" id="menu">
+                <property name="icon-name">view-more-symbolic</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton">
+                <property name="visible" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+                <property name="icon-name">view-fullscreen-symbolic</property>
+                <property name="action-name">win.toggle-fullscreen</property>
+              </object>
+            </child>
+            <child type="end">
+              <object class="GtkButton">
+                <property name="visible" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create"/>
+                <property name="icon-name">view-restore-symbolic</property>
+                <property name="action-name">win.toggle-fullscreen</property>
               </object>
             </child>
           </object>
         </child>
-        <child type="overlay">
-          <object class="GtkRevealer" id="headerbar_revealer">
-            <property name="visible" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create"/>
-            <property name="valign">GTK_ALIGN_START</property>
-            <property name="transition-type">GTK_REVEALER_TRANSITION_TYPE_SLIDE_DOWN</property>
-            <child>
-              <object class="GtkHeaderBar">
-                <property name="show-title-buttons">false</property>
-                <property name="title-widget">
-                  <object class="GtkLabel">
-                    <binding name="label">
-                      <lookup name="body">MediaViewer</lookup>
-                    </binding>
-                    <property name="single-line-mode">True</property>
-                    <property name="ellipsize">end</property>
-                    <style>
-                      <class name="title"/>
-                    </style>
-                  </object>
-                </property>
-                <child type="end">
-                  <object class="GtkMenuButton" id="menu_full">
-                    <property name="icon-name">view-more-symbolic</property>
-                  </object>
-                </child>
-                <child type="end">
-                  <object class="GtkButton">
-                    <property name="icon-name">view-restore-symbolic</property>
-                    <property name="action-name">win.toggle-fullscreen</property>
-                  </object>
-                </child>
-              </object>
-            </child>
-            <layout>
-              <property name="measure">True</property>
-            </layout>
+        <child>
+          <object class="AdwBin" id="media">
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="vexpand">true</property>
           </object>
         </child>
       </object>
-    </property>
+    </child>
+    <child>
+      <object class="GtkEventControllerMotion">
+        <signal name="motion" handler="handle_motion" swapped="yes"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkGestureClick">
+        <property name="touch-only">true</property>
+        <signal name="pressed" handler="handle_touch" swapped="yes"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkGestureClick">
+        <signal name="pressed" handler="handle_click" swapped="yes"/>
+      </object>
+    </child>
   </template>
 </interface>

@@ -22,11 +22,9 @@ mod imp {
         pub event: RefCell<Option<WeakRef<Event>>>,
         pub body: RefCell<Option<String>>,
         #[template_child]
-        pub headerbar_revealer: TemplateChild<gtk::Revealer>,
+        pub flap: TemplateChild<adw::Flap>,
         #[template_child]
-        pub menu_unfull: TemplateChild<gtk::MenuButton>,
-        #[template_child]
-        pub menu_full: TemplateChild<gtk::MenuButton>,
+        pub menu: TemplateChild<gtk::MenuButton>,
         #[template_child]
         pub media: TemplateChild<adw::Bin>,
     }
@@ -39,6 +37,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
 
             klass.install_action("media-viewer.close", None, move |obj, _, _| {
                 let priv_ = imp::MediaViewer::from_instance(obj);
@@ -125,9 +124,8 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            let menu_model = Some(Self::Type::event_media_menu_model());
-            self.menu_full.set_menu_model(menu_model);
-            self.menu_unfull.set_menu_model(menu_model);
+            self.menu
+                .set_menu_model(Some(Self::Type::event_media_menu_model()));
 
             // Bind `fullscreened` to the window property of the same name.
             obj.connect_notify_local(Some("root"), |obj, _| {
@@ -138,37 +136,6 @@ mod imp {
                         .build();
                 }
             });
-
-            // Toggle fullscreen on double click.
-            let click_gesture = gtk::GestureClick::builder().button(1).build();
-            click_gesture.connect_pressed(clone!(@weak obj => move |_, n_pressed, _, _| {
-                if n_pressed == 2 {
-                    obj.activate_action("win.toggle-fullscreen", None).unwrap();
-                }
-            }));
-            obj.add_controller(&click_gesture);
-
-            // Show headerbar when revealer is hovered.
-            let revealer: &gtk::Revealer = &*self.headerbar_revealer;
-            let menu: &gtk::MenuButton = &*self.menu_full;
-            let motion_controller = gtk::EventControllerMotion::new();
-            motion_controller.connect_enter(clone!(@weak revealer => move |_, _, _| {
-                revealer.set_reveal_child(true);
-            }));
-            // Hide the headerbar when revealer is not hovered and header menu is closed.
-            motion_controller.connect_leave(clone!(@weak revealer, @weak menu => move |_| {
-                if menu.popover().filter(|popover| popover.is_visible()).is_none() {
-                    revealer.set_reveal_child(false);
-                }
-            }));
-            menu.popover().unwrap().connect_closed(
-                clone!(@weak revealer, @weak motion_controller, => move |_| {
-                    if !motion_controller.contains_pointer() {
-                        revealer.set_reveal_child(false);
-                    }
-                }),
-            );
-            revealer.add_controller(&motion_controller);
         }
     }
 
@@ -181,6 +148,7 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl MediaViewer {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
@@ -238,11 +206,13 @@ impl MediaViewer {
 
         priv_.fullscreened.set(fullscreened);
 
-        // Upscale the media on fullscreen
         if fullscreened {
+            // Upscale the media on fullscreen
             priv_.media.set_halign(gtk::Align::Fill);
+            priv_.flap.set_fold_policy(adw::FlapFoldPolicy::Always);
         } else {
             priv_.media.set_halign(gtk::Align::Center);
+            priv_.flap.set_fold_policy(adw::FlapFoldPolicy::Never);
         }
 
         self.notify("fullscreened");
@@ -325,6 +295,31 @@ impl MediaViewer {
                     _ => {}
                 }
             }
+        }
+    }
+
+    fn reveal_headerbar(&self, reveal: bool) {
+        if self.fullscreened() {
+            self.imp().flap.set_reveal_flap(reveal);
+        }
+    }
+
+    #[template_callback]
+    fn handle_motion(&self, _x: f64, y: f64) {
+        if y <= 50.0 {
+            self.reveal_headerbar(true);
+        }
+    }
+
+    #[template_callback]
+    fn handle_touch(&self) {
+        self.reveal_headerbar(true);
+    }
+
+    #[template_callback]
+    fn handle_click(&self, n_pressed: i32) {
+        if n_pressed == 2 {
+            self.activate_action("win.toggle-fullscreen", None).unwrap();
         }
     }
 }
