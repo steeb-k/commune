@@ -30,8 +30,6 @@ mod imp {
         pub username_entry: TemplateChild<gtk::Entry>,
         #[template_child]
         pub password_entry: TemplateChild<gtk::PasswordEntry>,
-        #[template_child]
-        pub back_to_session_button: TemplateChild<gtk::Button>,
         pub prepared_source_id: RefCell<Option<SignalHandlerId>>,
         pub logged_out_source_id: RefCell<Option<SignalHandlerId>>,
         pub ready_source_id: RefCell<Option<SignalHandlerId>>,
@@ -193,10 +191,6 @@ impl Login {
         self.imp().next_button.get().upcast()
     }
 
-    pub fn show_back_to_session_button(&self, show: bool) {
-        self.imp().back_to_session_button.set_visible(show);
-    }
-
     fn set_handler_for_prepared_session(&self, session: &Session) {
         let priv_ = self.imp();
         priv_
@@ -226,7 +220,7 @@ impl Login {
             .logged_out_source_id
             .replace(Some(session.connect_logged_out(
                 clone!(@weak self as login => move |_| {
-                    login.parent_window().switch_to_login_page(false);
+                    login.parent_window().switch_to_login_page();
                     login.drop_session_reference();
                     login.unfreeze();
                 }),

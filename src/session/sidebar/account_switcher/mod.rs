@@ -69,7 +69,7 @@ mod imp {
                                 .set_visible_child(&session_widget);
                         }
                         AccountSwitcherItem::AddAccount => {
-                            list_view.activate_action("app.new-login", None).unwrap();
+                            list_view.activate_action("app.new-session", None).unwrap();
                         }
                         _ => {}
                     }

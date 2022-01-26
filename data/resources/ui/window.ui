@@ -16,8 +16,11 @@
         </child>
         <child>
           <object class="GtkStack" id="main_stack">
-            <property name="visible-child">login</property>
+            <property name="visible-child">greeter</property>
             <property name="transition-type">crossfade</property>
+            <child>
+              <object class="Greeter" id="greeter"/>
+            </child>
             <child>
               <object class="Login" id="login"/>
             </child>
@@ -32,4 +35,3 @@
     </property>
   </template>
 </interface>
-

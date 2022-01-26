@@ -116,19 +116,41 @@ impl Application {
 
         action!(
             self,
-            "new-login",
+            "new-session",
             clone!(@weak self as app => move |_, _| {
-                app.get_main_window().switch_to_login_page(true);
+                app.get_main_window().switch_to_greeter_page(true);
             })
         );
 
         action!(
             self,
-            "switch-to-sessions",
+            "show-greeter",
             clone!(@weak self as app => move |_, _| {
-                app.get_main_window().switch_to_sessions_page();
+                app.get_main_window().switch_to_greeter_page(false);
             })
         );
+
+        action!(
+            self,
+            "show-login",
+            clone!(@weak self as app => move |_, _| {
+                app.get_main_window().switch_to_login_page();
+            })
+        );
+
+        let show_sessions_action = gio::SimpleAction::new("show-sessions", None);
+        show_sessions_action.connect_activate(clone!(@weak self as app => move |_, _| {
+            app.get_main_window().switch_to_sessions_page();
+        }));
+        self.add_action(&show_sessions_action);
+        let win = self.get_main_window();
+        win.connect_notify_local(
+            Some("has-sessions"),
+            clone!(@weak show_sessions_action => move |win, _| {
+                show_sessions_action.set_enabled(win.has_sessions());
+            }),
+        );
+        show_sessions_action.set_enabled(win.has_sessions());
     }
 
     /// Sets up keyboard shortcuts for application and window actions.

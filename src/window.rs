@@ -7,11 +7,12 @@ use log::warn;
 use crate::{
     components::InAppNotification,
     config::{APP_ID, PROFILE},
-    secret, Application, Error, Login, Session, UserFacingError,
+    secret, Application, Error, Greeter, Login, Session, UserFacingError,
 };
 
 mod imp {
     use glib::subclass::InitializingObject;
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -20,6 +21,8 @@ mod imp {
     pub struct Window {
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        pub greeter: TemplateChild<Greeter>,
         #[template_child]
         pub login: TemplateChild<Login>,
         #[template_child]
@@ -46,6 +49,27 @@ mod imp {
     }
 
     impl ObjectImpl for Window {
+        fn properties() -> &'static [glib::ParamSpec] {
+            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
+                vec![glib::ParamSpecBoolean::new(
+                    "has-sessions",
+                    "Has Sessions",
+                    "Whether this window has sessions",
+                    false,
+                    glib::ParamFlags::READABLE,
+                )]
+            });
+
+            PROPERTIES.as_ref()
+        }
+
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "has-sessions" => obj.has_sessions().to_value(),
+                _ => unimplemented!(),
+            }
+        }
+
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
@@ -114,6 +138,8 @@ impl Window {
 
     fn add_session(&self, session: &Session) {
         let priv_ = &self.imp();
+        let prev_has_sessions = self.has_sessions();
+
         session.set_logged_in_users(&priv_.sessions.pages());
         priv_.sessions.add_child(session);
         priv_.sessions.set_visible_child(session);
@@ -123,6 +149,10 @@ impl Window {
         session.connect_logged_out(clone!(@weak self as obj => move |session| {
             obj.remove_session(session)
         }));
+
+        if !prev_has_sessions {
+            self.notify("has-sessions");
+        }
     }
 
     fn remove_session(&self, session: &Session) {
@@ -133,7 +163,8 @@ impl Window {
         if let Some(child) = priv_.sessions.first_child() {
             priv_.sessions.set_visible_child(&child);
         } else {
-            self.switch_to_login_page(false);
+            self.notify("has-sessions");
+            self.switch_to_greeter_page(false);
         }
     }
 
@@ -165,6 +196,11 @@ impl Window {
         }
     }
 
+    /// Whether this window has sessions.
+    pub fn has_sessions(&self) -> bool {
+        self.imp().sessions.pages().n_items() > 0
+    }
+
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
         let settings = Application::default().settings();
 
@@ -189,12 +225,17 @@ impl Window {
         self.set_property("maximized", &is_maximized);
     }
 
-    /// Change the default widget of the window based on the visible child
-    /// If the login screen is visible, its login button becomes the default
-    /// widget
+    /// Change the default widget of the window based on the visible child.
+    ///
+    /// These are the default widgets:
+    /// - `Greeter` screen => `Login` button.
+    /// - `Login screen` => `Next` button.
     fn set_default_by_child(&self) {
         let priv_ = self.imp();
-        if priv_.main_stack.visible_child() == Some(priv_.login.get().upcast()) {
+
+        if priv_.main_stack.visible_child() == Some(priv_.greeter.get().upcast()) {
+            self.set_default_widget(Some(&priv_.greeter.default_widget()));
+        } else if priv_.main_stack.visible_child() == Some(priv_.login.get().upcast()) {
             self.set_default_widget(Some(&priv_.login.default_widget()));
         } else {
             self.set_default_widget(gtk::Widget::NONE);
@@ -206,15 +247,17 @@ impl Window {
         priv_.main_stack.set_visible_child(&priv_.sessions.get());
     }
 
-    pub fn switch_to_login_page(&self, clean: bool) {
+    pub fn switch_to_login_page(&self) {
+        let priv_ = self.imp();
+        priv_.main_stack.set_visible_child(&*priv_.login);
+    }
+
+    pub fn switch_to_greeter_page(&self, clean: bool) {
         let priv_ = self.imp();
         if clean {
             priv_.login.clean();
         }
-        priv_
-            .login
-            .show_back_to_session_button(priv_.sessions.get().pages().n_items() > 0);
-        priv_.main_stack.set_visible_child(&*priv_.login);
+        priv_.main_stack.set_visible_child(&*priv_.greeter);
     }
 
     /// This appends a new error to the list of errors

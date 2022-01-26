@@ -23,6 +23,7 @@ data/resources/ui/content-state-tombstone.ui
 data/resources/ui/content.ui
 data/resources/ui/event-menu.ui
 data/resources/ui/event-source-dialog.ui
+data/resources/ui/greeter.ui
 data/resources/ui/identity-verification-widget.ui
 data/resources/ui/login.ui
 data/resources/ui/member-menu.ui
