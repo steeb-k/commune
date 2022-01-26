@@ -113,7 +113,11 @@ impl SpinnerButton {
             return;
         }
 
-        self.set_sensitive(!loading);
+        // The action should have been enabled or disabled so the sensitive
+        // state should update itself.
+        if self.action_name().is_none() {
+            self.set_sensitive(!loading);
+        }
 
         if loading {
             priv_.stack.set_visible_child(&*priv_.spinner);
