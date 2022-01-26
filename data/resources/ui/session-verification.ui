@@ -65,7 +65,7 @@
                         </child>
                         <child>
                           <object class="GtkPicture">
-                            <property name="file">resource:///org/gnome/FractalNext/icons/scalable/status/other-device.svg</property>
+                            <property name="file">resource:///org/gnome/FractalNext/assets/other-device.svg</property>
                           </object>
                         </child>
                         <child>
@@ -358,4 +358,3 @@
     </child>
   </template>
 </interface>
-

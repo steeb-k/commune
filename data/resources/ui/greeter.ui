@@ -48,7 +48,7 @@
                             <property name="spacing">24</property>
                             <child>
                               <object class="GtkPicture">
-                                <property name="file">resource:///org/gnome/FractalNext/icons/scalable/status/welcome.svg</property>
+                                <property name="file">resource:///org/gnome/FractalNext/assets/welcome.svg</property>
                                 <property name="height-request">120</property>
                               </object>
                             </child>

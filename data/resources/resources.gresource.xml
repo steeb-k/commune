@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/FractalNext/">
+    <file preprocess="xml-stripblanks">assets/other-device.svg</file>
+    <file preprocess="xml-stripblanks">assets/setup-complete.svg</file>
+    <file preprocess="xml-stripblanks">assets/welcome.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/send-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/devices-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/empty-page.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/other-device.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/setup-complete.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
-    <file preprocess="xml-stripblanks">icons/scalable/status/welcome.svg</file>
     <file compressed="true">style-dark.css</file>
     <file compressed="true">style.css</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-device-row.ui">ui/account-settings-device-row.ui</file>
