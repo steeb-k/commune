@@ -26,7 +26,7 @@ use crate::{
 mod imp {
     use std::{
         cell::{Cell, RefCell},
-        collections::VecDeque,
+        collections::{HashSet, VecDeque},
     };
 
     use glib::object::WeakRef;
@@ -46,6 +46,8 @@ mod imp {
         /// Maps the temporary `EventId` of the pending Event to the real
         /// `EventId`
         pub pending_events: RefCell<HashMap<String, Box<EventId>>>,
+        /// A Hashset of `EventId`s that where just redacted.
+        pub redacted_events: RefCell<HashSet<Box<EventId>>>,
         pub loading: Cell<bool>,
         pub complete: Cell<bool>,
         pub oldest_event: RefCell<Option<Box<EventId>>>,
@@ -285,6 +287,7 @@ impl Timeline {
         {
             let list = priv_.list.borrow();
             let mut relates_to_events = priv_.relates_to_events.borrow_mut();
+            let mut redacted_events = priv_.redacted_events.borrow_mut();
 
             for event in list
                 .range(position as usize..(position + added) as usize)
@@ -312,6 +315,10 @@ impl Timeline {
                         event.prepend_replacing_events(replacing_events);
                     }
                     event.add_reactions(reactions);
+
+                    if event.redacted() {
+                        redacted_events.insert(event.matrix_event_id());
+                    }
                 }
             }
         }
@@ -320,10 +327,85 @@ impl Timeline {
 
         self.upcast_ref::<gio::ListModel>()
             .items_changed(position, removed, added);
+
+        self.remove_redacted_events();
+    }
+
+    fn remove_redacted_events(&self) {
+        let priv_ = self.imp();
+        let mut redacted_events_pos = Vec::with_capacity(priv_.redacted_events.borrow().len());
+
+        // Find redacted events in the list
+        {
+            let mut redacted_events = priv_.redacted_events.borrow_mut();
+            let list = priv_.list.borrow();
+            let mut i = list.len();
+            let mut list = list.iter();
+
+            while let Some(item) = list.next_back() {
+                if let ItemType::Event(event) = item.type_() {
+                    if redacted_events.remove(&event.matrix_event_id()) {
+                        redacted_events_pos.push(i - 1);
+                    }
+                    if redacted_events.is_empty() {
+                        break;
+                    }
+                }
+                i -= 1;
+            }
+        }
+
+        let mut redacted_events_pos = &mut redacted_events_pos[..];
+        // Sort positions to start from the end so positions are still valid
+        // and to group calls to `items_changed`.
+        redacted_events_pos.sort_unstable_by(|a, b| b.partial_cmp(a).unwrap());
+        while let Some(pos) = redacted_events_pos.first() {
+            let mut pos = pos.to_owned();
+            let mut removed = 1;
+
+            {
+                let mut list = priv_.list.borrow_mut();
+                list.remove(pos);
+
+                // Remove all consecutive previous redacted events.
+                while let Some(next_pos) = redacted_events_pos.get(removed) {
+                    if next_pos == &(pos - 1) {
+                        pos -= 1;
+                        removed += 1;
+                        list.remove(pos);
+                    } else {
+                        break;
+                    }
+                }
+                redacted_events_pos = &mut redacted_events_pos[removed..];
+
+                // Remove the day divider before this event if it's not useful anymore.
+                let day_divider_before = pos >= 1
+                    && matches!(
+                        list.get(pos - 1).map(|item| item.type_()),
+                        Some(ItemType::DayDivider(_))
+                    );
+                let after = pos == list.len()
+                    || matches!(
+                        list.get(pos).map(|item| item.type_()),
+                        Some(ItemType::DayDivider(_))
+                    );
+
+                if day_divider_before && after {
+                    pos -= 1;
+                    removed += 1;
+                    list.remove(pos);
+                }
+            }
+
+            self.upcast_ref::<gio::ListModel>()
+                .items_changed(pos as u32, removed as u32, 0);
+        }
     }
 
     fn add_hidden_events(&self, events: Vec<Event>, at_front: bool) {
-        let mut relates_to_events = self.imp().relates_to_events.borrow_mut();
+        let priv_ = self.imp();
+        let mut relates_to_events = priv_.relates_to_events.borrow_mut();
 
         // Group events by related event
         let mut new_relations: HashMap<Box<EventId>, Vec<Event>> = HashMap::new();
@@ -359,6 +441,7 @@ impl Timeline {
         }
 
         // Handle new relations
+        let mut redacted_events = priv_.redacted_events.borrow_mut();
         for (relates_to_event_id, new_relations) in new_relations {
             if let Some(relates_to_event) = self.event_by_id(&relates_to_event_id) {
                 // Get the relations in relates_to_event otherwise they will be added in
@@ -396,6 +479,10 @@ impl Timeline {
                     relates_to_event.prepend_replacing_events(replacing_events);
                 }
                 relates_to_event.add_reactions(reactions);
+
+                if relates_to_event.redacted() {
+                    redacted_events.insert(relates_to_event.matrix_event_id());
+                }
             } else {
                 // Store the new event if the `related_to` event isn't known, we will update the
                 // `relates_to` once the `related_to` event is added to the list

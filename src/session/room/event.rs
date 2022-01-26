@@ -12,12 +12,9 @@ use matrix_sdk::{
     media::MediaEventContent,
     ruma::{
         events::{
-            room::{
-                message::{MessageType, Relation},
-                redaction::RoomRedactionEventContent,
-            },
-            AnyMessageEventContent, AnyRedactedSyncMessageEvent, AnyRedactedSyncStateEvent,
-            AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent, Unsigned,
+            room::message::{MessageType, Relation},
+            AnyMessageEventContent, AnySyncMessageEvent, AnySyncRoomEvent, AnySyncStateEvent,
+            Unsigned,
         },
         identifiers::{EventId, UserId},
         MilliSecondsSinceUnixEpoch,
@@ -416,41 +413,8 @@ impl Event {
                     | AnySyncStateEvent::SpaceParent(_)
                     | AnySyncStateEvent::SpaceChild(_)
             ),
-            Some(AnySyncRoomEvent::RedactedMessage(message)) => matches!(
-                message,
-                AnyRedactedSyncMessageEvent::CallAnswer(_)
-                    | AnyRedactedSyncMessageEvent::CallInvite(_)
-                    | AnyRedactedSyncMessageEvent::CallHangup(_)
-                    | AnyRedactedSyncMessageEvent::CallCandidates(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationReady(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationStart(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationCancel(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationAccept(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationKey(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationMac(_)
-                    | AnyRedactedSyncMessageEvent::KeyVerificationDone(_)
-                    | AnyRedactedSyncMessageEvent::RoomMessageFeedback(_)
-                    | AnyRedactedSyncMessageEvent::RoomRedaction(_)
-                    | AnyRedactedSyncMessageEvent::Sticker(_)
-            ),
-            Some(AnySyncRoomEvent::RedactedState(state)) => matches!(
-                state,
-                AnyRedactedSyncStateEvent::PolicyRuleRoom(_)
-                    | AnyRedactedSyncStateEvent::PolicyRuleServer(_)
-                    | AnyRedactedSyncStateEvent::PolicyRuleUser(_)
-                    | AnyRedactedSyncStateEvent::RoomAliases(_)
-                    | AnyRedactedSyncStateEvent::RoomAvatar(_)
-                    | AnyRedactedSyncStateEvent::RoomCanonicalAlias(_)
-                    | AnyRedactedSyncStateEvent::RoomEncryption(_)
-                    | AnyRedactedSyncStateEvent::RoomJoinRules(_)
-                    | AnyRedactedSyncStateEvent::RoomName(_)
-                    | AnyRedactedSyncStateEvent::RoomPinnedEvents(_)
-                    | AnyRedactedSyncStateEvent::RoomPowerLevels(_)
-                    | AnyRedactedSyncStateEvent::RoomServerAcl(_)
-                    | AnyRedactedSyncStateEvent::RoomTopic(_)
-                    | AnyRedactedSyncStateEvent::SpaceParent(_)
-                    | AnyRedactedSyncStateEvent::SpaceChild(_)
-            ),
+            Some(AnySyncRoomEvent::RedactedMessage(_)) => true,
+            Some(AnySyncRoomEvent::RedactedState(_)) => true,
             _ => false,
         }
     }
@@ -601,28 +565,6 @@ impl Event {
     pub fn original_content(&self) -> Option<AnyMessageEventContent> {
         match self.matrix_event()? {
             AnySyncRoomEvent::Message(message) => Some(message.content()),
-            AnySyncRoomEvent::RedactedMessage(message) => {
-                if let Some(ref redaction_event) = message.unsigned().redacted_because {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        redaction_event.content.clone(),
-                    ))
-                } else {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        RoomRedactionEventContent::new(),
-                    ))
-                }
-            }
-            AnySyncRoomEvent::RedactedState(state) => {
-                if let Some(ref redaction_event) = state.unsigned().redacted_because {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        redaction_event.content.clone(),
-                    ))
-                } else {
-                    Some(AnyMessageEventContent::RoomRedaction(
-                        RoomRedactionEventContent::new(),
-                    ))
-                }
-            }
             _ => None,
         }
     }
