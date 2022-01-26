@@ -14,9 +14,13 @@ pub trait UserFacingError {
 impl UserFacingError for HttpError {
     fn to_user_facing(self) -> String {
         match self {
-            HttpError::Reqwest(_) => {
+            HttpError::Reqwest(error) => {
                 // TODO: Add more information based on the error
-                gettext("Unable to connect to the homeserver.")
+                if error.is_timeout() {
+                    gettext("The connection timed out. Try again later.")
+                } else {
+                    gettext("Unable to connect to the homeserver.")
+                }
             }
             HttpError::ClientApi(FromHttpResponseError::Http(ServerError::Known(error))) => {
                 match error.kind {
@@ -25,11 +29,11 @@ impl UserFacingError for HttpError {
                     LimitExceeded { retry_after_ms } => {
                         if let Some(ms) = retry_after_ms {
                             gettext!(
-                                "You exceeded the homeservers rate limit, retry in {} seconds.",
+                                "You exceeded the homeserver’s rate limit, retry in {} seconds.",
                                 ms.as_secs()
                             )
                         } else {
-                            gettext("You exceeded the homeservers rate limit, try again later.")
+                            gettext("You exceeded the homeserver’s rate limit, try again later.")
                         }
                     }
                     _ => {
