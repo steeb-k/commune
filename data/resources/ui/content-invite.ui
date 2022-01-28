@@ -109,7 +109,8 @@
                             <property name="label" translatable="yes">_Reject</property>
                             <property name="action-name">invite.reject</property>
                             <style>
-                              <class name="pill-button"/>
+                              <class name="pill"/>
+                              <class name="large"/>
                             </style>
                           </object>
                         </child>
@@ -119,7 +120,8 @@
                             <property name="action-name">invite.accept</property>
                             <style>
                               <class name="suggested-action"/>
-                              <class name="pill-button"/>
+                              <class name="pill"/>
+                              <class name="large"/>
                             </style>
                           </object>
                         </child>
@@ -135,4 +137,3 @@
     </child>
   </template>
 </interface>
-

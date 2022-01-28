@@ -1,20 +1,4 @@
-#new-login-icon {
-  background-color: alpha(black, 0.8);
-}
-
 .devnotice {
   background: @warning_bg_color;
   color: @warning_fg_color;
-}
-
-button.cutout {
-  color: alpha(black, 0.8);
-}
-
-message-reactions .toggle {
-  border-color: @dark_2;
-}
-
-message-reactions .toggle:checked {
-  border-color: @blue_5;
 }

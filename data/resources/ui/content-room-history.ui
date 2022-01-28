@@ -210,6 +210,8 @@
                           <object class="GtkSourceView" id="message_entry">
                             <property name="hexpand">True</property>
                             <property name="accepts-tab">False</property>
+                            <property name="top-margin">7</property>
+                            <property name="bottom-margin">7</property>
                           </object>
                         </property>
                       </object>
@@ -236,4 +238,3 @@
     </child>
   </template>
 </interface>
-

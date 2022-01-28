@@ -27,27 +27,39 @@
                   </object>
                 </child>
                 <child type="overlay">
-                  <object class="GtkButton" id="avatar_remove_button">
-                    <property name="icon-name">user-trash-symbolic</property>
-                    <property name="action-name">details.remove-avatar</property>
+                  <object class="AdwBin" id="avatar_remove_button">
+                    <style>
+                      <class name="cutout-button" />
+                    </style>
                     <property name="halign">end</property>
                     <property name="valign">start</property>
-                    <style>
-                      <class name="cutout" />
-                      <class name="circular" />
-                    </style>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="icon-name">user-trash-symbolic</property>
+                        <property name="action-name">details.remove-avatar</property>
+                        <style>
+                          <class name="circular" />
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child type="overlay">
-                  <object class="GtkButton" id="avatar_edit_button">
-                    <property name="icon-name">document-edit-symbolic</property>
-                    <property name="action-name">details.choose-avatar</property>
+                  <object class="AdwBin" id="avatar_edit_button">
+                    <style>
+                      <class name="cutout-button" />
+                    </style>
                     <property name="halign">end</property>
                     <property name="valign">end</property>
-                    <style>
-                      <class name="cutout" />
-                      <class name="circular" />
-                    </style>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="icon-name">document-edit-symbolic</property>
+                        <property name="action-name">details.choose-avatar</property>
+                        <style>
+                          <class name="circular" />
+                        </style>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

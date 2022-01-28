@@ -50,7 +50,7 @@
                 </binding>
                 <style>
                   <class name="dim-label"/>
-                  <class name="user-id"/>
+                  <class name="caption"/>
                 </style>
               </object>
             </child>
@@ -71,4 +71,3 @@
     </child>
   </template>
 </interface>
-

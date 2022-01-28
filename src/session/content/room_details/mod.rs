@@ -30,9 +30,9 @@ mod imp {
         pub room: OnceCell<Room>,
         pub avatar_chooser: OnceCell<gtk::FileChooserNative>,
         #[template_child]
-        pub avatar_remove_button: TemplateChild<gtk::Button>,
+        pub avatar_remove_button: TemplateChild<adw::Bin>,
         #[template_child]
-        pub avatar_edit_button: TemplateChild<gtk::Button>,
+        pub avatar_edit_button: TemplateChild<adw::Bin>,
         #[template_child]
         pub edit_toggle: TemplateChild<gtk::ToggleButton>,
         #[template_child]
