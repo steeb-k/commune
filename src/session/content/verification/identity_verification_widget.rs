@@ -503,7 +503,7 @@ impl IdentityVerificationWidget {
                     .label2
                     .set_label(&gettext("Verify the new session with the current session."));
                 priv_.label3.set_label(&gettext("Verify Session"));
-                priv_.label4.set_label(&gettext("Scan the Qr code with this session from another session logged into this account."));
+                priv_.label4.set_label(&gettext("Scan the QR code with this session from another session logged into this account."));
                 priv_.label5.set_label(&gettext("You scanned to qr code successfully. You may need to confirm the verification in the other session."));
                 priv_.label6.set_label(&gettext("Verify Session"));
                 priv_
@@ -531,7 +531,7 @@ impl IdentityVerificationWidget {
                     .label2
                     .set_label(&gettext("Verify the new session with the current session."));
                 priv_.label3.set_label(&gettext("Verify Session"));
-                priv_.label4.set_label(&gettext("Scan the Qr code with this session from another session logged into this account."));
+                priv_.label4.set_label(&gettext("Scan the QR code with this session from another session logged into this account."));
                 priv_.label5.set_label(&gettext("You scanned to qr code successfully. You may need to confirm the verification in the other session."));
                 priv_.label6.set_label(&gettext("Verify Session"));
                 priv_
@@ -562,21 +562,21 @@ impl IdentityVerificationWidget {
                     .set_markup(&gettext!("<b>{}</b> asked do be verified. Verifying an user increases the security of the conversation.", name));
                 priv_.label3.set_markup(&gettext("Verification Request"));
                 priv_.label4.set_markup(&gettext!(
-                    "Scan the Qr code shown on the device of <b>{}</b>.",
+                    "Scan the QR code shown on the device of <b>{}</b>.",
                     name
                 ));
-                priv_.label5.set_markup(&gettext!("You scanned the Qr code successfully. <b>{}</b> may need to confirm the verification.", name));
+                priv_.label5.set_markup(&gettext!("You scanned the QR code successfully. <b>{}</b> may need to confirm the verification.", name));
                 priv_.label6.set_markup(&gettext("Verification Request"));
                 priv_
                     .label7
                     .set_markup(&gettext!("Select an option to verify <b>{}</b>", name));
                 priv_.label8.set_markup(&gettext("Verification Request"));
                 priv_.label9.set_markup(&gettext(
-                    "Ask <b>{}</b> to scan this Qr code with there device.",
+                    "Ask <b>{}</b> to scan this QR code with their device.",
                 ));
                 priv_.label10.set_markup(&gettext("Verification Request"));
                 priv_.label11.set_markup(&gettext!(
-                    "Ask <b>{}</b> if they see the following emoji appear in the same order on there screen.",
+                    "Ask <b>{}</b> if they see the following emoji appear in the same order on their screen.",
                     name
                 ));
                 priv_.label12.set_markup(&gettext("Verification Complete"));
