@@ -1,38 +1,59 @@
-.room-details-group overlay {
-  margin-bottom: 6px;
-}
+/* Global */
 
-.room-details-group avatar * {
-  /* Undo non-sensitive style. */
-  filter: none;
-}
-
-.room-details-group entry:disabled {
-  border-color: transparent;
-  /* Undo non-sensitive style. */
-  color: @view_fg_color;
+textview, text {
+  color: inherit;
   background: none;
 }
 
-.room-details-group entry textview {
-  /* Undo non-sensitive style. */
-  color: @view_fg_color;
-  background: none;
+.bold {
+  font-weight: bold;
 }
 
-.room-details-group entry text {
-  /* Undo non-sensitive style. */
-  color: @view_fg_color;
-  background: none;
+button.pill.large {
+  padding: 12px 40px;
 }
 
-.room-details-name {
+.emoji {
   font-size: 2em;
-  margin-bottom: 6px;
 }
 
-.room-details-topic {
-  margin-bottom: 6px;
+listview.content {
+	border-radius: 9px;
+	border-width: 1px;
+	border-style: solid;
+}
+
+listview.content row:last-child {
+	border-bottom-width: 0px;
+}
+
+
+/* Components */
+
+.inline-pill {
+  border-radius: 9999px;
+  background-color: alpha(@view_fg_color, 0.1);
+  padding-right: 6px;
+}
+
+.app-notification {
+  border-radius: 9999px;
+  padding-left: 24px;
+}
+
+.app-notification .inline-pill {
+  background-color: alpha(@window_bg_color, 0.2);
+}
+
+.selected-avatar avatar {
+  border: 2px solid @accent_bg_color;
+}
+
+.blue-checkmark {
+  color: @light_1;
+  border-radius: 9999px;
+  border: solid @accent_bg_color 2px;
+  background-color: @accent_bg_color;
 }
 
 .badge {
@@ -53,38 +74,11 @@
   background-color: @yellow_5;
 }
 
-button.pill.large {
-  padding: 12px 40px;
-}
-
-.inline-pill {
-  border-radius: 9999px;
-  background-color: alpha(@view_fg_color, 0.1);
-  padding-right: 6px;
-}
-
-.app-notification .inline-pill {
-  background-color: alpha(@window_bg_color, 0.2);
-}
-
-.selected-avatar avatar {
-  border: 2px solid @accent_bg_color;
-}
-
-.blue-checkmark {
-  color: @light_1;
-  border-radius: 9999px;
-  border: solid @accent_bg_color 2px;
-  background-color: @accent_bg_color;
-}
 
 /* Login */
+
 .login {
   min-width: 250px;
-}
-
-.session-verification .text-button {
- min-width: 200px;
 }
 
 .devnotice {
@@ -93,13 +87,24 @@ button.pill.large {
   padding: 12px 24px;
 }
 
+
 /* Session */
+
 .session-loading-spinner {
   min-width: 32px;
   min-height: 32px;
 }
 
+
+/* Verification */
+
+.session-verification .text-button {
+  min-width: 200px;
+ }
+
+
 /* Account switcher */
+
 #account-switcher row {
   border-radius: 10px;
   margin-top: 2px;
@@ -109,15 +114,14 @@ button.pill.large {
 }
 
 #new-login-icon {
-  /*
-   *  2 * padding + pixel-size = size (of avatar)
-   */
-  padding: 12px;
+  padding: 12px; /* 2 * padding + pixel-size = size (of avatar) */
   background-color: alpha(currentColor, .1);
   border-radius: 9999px;
 }
 
-/* Sidebar List */
+
+/* Sidebar */
+
 .sidebar-list row {
   margin: 0;
   padding: 0;
@@ -238,7 +242,9 @@ button.pill.large {
   opacity: 1;
 }
 
-/* Content */
+
+/* Room History */
+
 .room-history {
   background: @view_bg_color;
 }
@@ -340,49 +346,69 @@ message-reactions .reaction-count {
   color: @view_fg_color;
 }
 
-.invite-room-name {
-  font-size: 1.6em;
-}
-
-.app-notification {
-  border-radius: 9999px;
-  padding-left: 24px;
-}
 
 /* Event Source Dialog */
+
 .event-source-dialog .sourceview {
   font-family: monospace;
 }
+
+
+/* Explore */
 
 .explore listview row {
   padding: 12px;
 }
 
-listview.content {
-	border-radius: 9px;
-	border-width: 1px;
-	border-style: solid;
+
+/* Invite */
+
+.invite-room-name {
+  font-size: 1.6em;
 }
 
-listview.content row:last-child {
-	border-bottom-width: 0px;
+
+/* Room Details */
+
+.room-details-group overlay {
+  margin-bottom: 6px;
 }
 
-.bold {
-  font-weight: bold;
+.room-details-group avatar * {
+  /* Undo non-sensitive style. */
+  filter: none;
+}
+
+.room-details-group entry:disabled {
+  border-color: transparent;
+  /* Undo non-sensitive style. */
+  color: @view_fg_color;
+  background: none;
+}
+
+.room-details-group entry textview {
+  /* Undo non-sensitive style. */
+  color: @view_fg_color;
+  background: none;
+}
+
+.room-details-group entry text {
+  /* Undo non-sensitive style. */
+  color: @view_fg_color;
+  background: none;
+}
+
+.room-details-name {
+  font-size: 2em;
+  margin-bottom: 6px;
+}
+
+.room-details-topic {
+  margin-bottom: 6px;
 }
 
 .cutout-button {
   background-color: @window_bg_color;
   border-radius: 9999px;
   padding: 2px;
-}
-
-.emoji {
-  font-size: 2em;
-}
-
-textview, text {
-  color: inherit;
-  background: none;
 }
