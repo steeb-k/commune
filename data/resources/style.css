@@ -85,13 +85,6 @@ headerbar .suggested-action {
   min-width: 250px;
 }
 
-.devnotice {
-  background: @warning_bg_color;
-  color: @warning_fg_color;
-  padding: 12px 24px;
-}
-
-
 /* Session */
 
 .session-loading-spinner {

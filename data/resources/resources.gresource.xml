@@ -9,7 +9,6 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/empty-page.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
-    <file compressed="true">style-dark.css</file>
     <file compressed="true">style.css</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-device-row.ui">ui/account-settings-device-row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="account-settings-devices-page.ui">ui/account-settings-devices-page.ui</file>
