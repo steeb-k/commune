@@ -65,7 +65,6 @@ impl Default for Mode {
 
 #[glib::flags(name = "VerificationSupportedMethods")]
 pub enum SupportedMethods {
-    NONE = 0b00000000,
     SAS = 0b00000001,
     QR_SHOW = 0b00000010,
     QR_SCAN = 0b00000100,
@@ -77,14 +76,49 @@ impl From<VerificationMethod> for SupportedMethods {
             VerificationMethod::SasV1 => Self::SAS,
             VerificationMethod::QrCodeScanV1 => Self::QR_SHOW,
             VerificationMethod::QrCodeShowV1 => Self::QR_SCAN,
-            _ => Self::NONE,
+            _ => Self::empty(),
+        }
+    }
+}
+
+impl From<SupportedMethods> for Vec<VerificationMethod> {
+    fn from(methods: SupportedMethods) -> Self {
+        let mut result = Vec::new();
+        if methods.contains(SupportedMethods::SAS) {
+            result.push(VerificationMethod::SasV1);
+        }
+
+        if methods.contains(SupportedMethods::QR_SHOW) {
+            result.push(VerificationMethod::QrCodeShowV1);
+        }
+
+        if methods.contains(SupportedMethods::QR_SCAN) {
+            result.push(VerificationMethod::QrCodeScanV1);
+        }
+
+        if methods.intersects(SupportedMethods::QR_SCAN | SupportedMethods::QR_SHOW) {
+            result.push(VerificationMethod::ReciprocateV1);
+        }
+
+        result
+    }
+}
+
+impl SupportedMethods {
+    fn with_camera(has_camera: bool) -> Self {
+        if has_camera {
+            Self::all()
+        } else {
+            let mut methods = Self::all();
+            methods.remove(SupportedMethods::QR_SCAN);
+            methods
         }
     }
 }
 
 impl Default for SupportedMethods {
     fn default() -> Self {
-        Self::NONE
+        Self::empty()
     }
 }
 
@@ -192,7 +226,7 @@ mod imp {
                         "The supported methods of this verification",
                         SupportedMethods::static_type(),
                         SupportedMethods::default().bits(),
-                        glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT_ONLY,
                     ),
                     glib::ParamSpecString::new(
                         "display-name",
@@ -242,6 +276,7 @@ mod imp {
                 "mode" => obj.set_mode(value.get().unwrap()),
                 "flow-id" => obj.set_flow_id(value.get().unwrap()),
                 "start-time" => obj.set_start_time(value.get().unwrap()),
+                "supported-methods" => obj.set_supported_methods(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -275,7 +310,7 @@ mod imp {
                         MainMessage::QrCode(data) => { let _ = priv_.qr_code.set(data); },
                         MainMessage::CancelInfo(data) => priv_.cancel_info.set(data).unwrap(),
                         MainMessage::SasData(data) => priv_.sas_data.set(data).unwrap(),
-                        MainMessage::SupportedMethods(flags) => priv_.supported_methods.set(flags),
+                        MainMessage::SupportedMethods(flags) => obj.set_supported_methods(flags),
                         MainMessage::State(state) => obj.set_state(state),
                     }
 
@@ -336,6 +371,7 @@ impl IdentityVerification {
             ("flow-id", &flow_id),
             ("session", session),
             ("user", user),
+            ("supported-methods", &SupportedMethods::with_camera(true)),
             ("start-time", start_time),
         ])
         .expect("Failed to create IdentityVerification")
@@ -352,15 +388,12 @@ impl IdentityVerification {
             (Mode::CurrentSession, session.user().unwrap())
         };
 
+        let supported_methods = SupportedMethods::with_camera(true);
+
         if let Some(identity) = user.crypto_identity().await {
             let handle = spawn_tokio!(async move {
                 identity
-                    .request_verification_with_methods(vec![
-                        VerificationMethod::SasV1,
-                        VerificationMethod::QrCodeScanV1,
-                        VerificationMethod::QrCodeShowV1,
-                        VerificationMethod::ReciprocateV1,
-                    ])
+                    .request_verification_with_methods(supported_methods.into())
                     .await
             });
 
@@ -369,6 +402,7 @@ impl IdentityVerification {
                     let obj = glib::Object::new(&[
                         ("state", &State::RequestSend),
                         ("mode", &mode),
+                        ("supported-methods", &supported_methods),
                         ("flow-id", &request.flow_id()),
                         ("session", session),
                         ("user", user),
@@ -405,10 +439,18 @@ impl IdentityVerification {
 
         let (sync_sender, sync_receiver) = mpsc::channel(100);
         priv_.sync_sender.replace(Some(sync_sender));
+        let supported_methods = self.supported_methods();
 
         let handle = spawn_tokio!(async move {
-            if let Some(context) =
-                Context::new(client, &user_id, &flow_id, main_sender, sync_receiver).await
+            if let Some(context) = Context::new(
+                client,
+                &user_id,
+                &flow_id,
+                main_sender,
+                sync_receiver,
+                supported_methods,
+            )
+            .await
             {
                 context.start().await
             } else {
@@ -498,7 +540,16 @@ impl IdentityVerification {
         self.imp().receive_time.get().unwrap()
     }
 
-    fn supported_methods(&self) -> SupportedMethods {
+    fn set_supported_methods(&self, supported_methods: SupportedMethods) {
+        if self.supported_methods() == supported_methods {
+            return;
+        }
+
+        self.imp().supported_methods.set(supported_methods);
+        self.notify("supported-methods");
+    }
+
+    pub fn supported_methods(&self) -> SupportedMethods {
         self.imp().supported_methods.get()
     }
 
@@ -719,6 +770,7 @@ struct Context {
     main_sender: glib::SyncSender<MainMessage>,
     sync_receiver: mpsc::Receiver<Message>,
     request: VerificationRequest,
+    supported_methods: SupportedMethods,
 }
 
 macro_rules! wait {
@@ -843,6 +895,7 @@ impl Context {
         flow_id: &str,
         main_sender: glib::SyncSender<MainMessage>,
         sync_receiver: mpsc::Receiver<Message>,
+        supported_methods: SupportedMethods,
     ) -> Option<Self> {
         let request = client.get_verification_request(user_id, flow_id).await?;
 
@@ -851,6 +904,7 @@ impl Context {
             request,
             main_sender,
             sync_receiver,
+            supported_methods,
         })
     }
 
@@ -893,16 +947,11 @@ impl Context {
             wait![self];
 
             self.request
-                .accept_with_methods(vec![
-                    VerificationMethod::SasV1,
-                    VerificationMethod::QrCodeScanV1,
-                    VerificationMethod::QrCodeShowV1,
-                    VerificationMethod::ReciprocateV1,
-                ])
+                .accept_with_methods(self.supported_methods.into())
                 .await?;
         }
 
-        let supported_methods: SupportedMethods = self
+        let their_supported_methods: SupportedMethods = self
             .request
             .their_supported_methods()
             .unwrap()
@@ -910,9 +959,11 @@ impl Context {
             .map(Into::into)
             .collect();
 
-        self.send_supported_methods(supported_methods);
+        self.supported_methods &= their_supported_methods;
 
-        let request = if supported_methods.contains(SupportedMethods::QR_SHOW) {
+        self.send_supported_methods(self.supported_methods);
+
+        let request = if self.supported_methods.contains(SupportedMethods::QR_SHOW) {
             let request = self
                 .request
                 .generate_qr_code()
@@ -930,7 +981,7 @@ impl Context {
             self.send_state(State::QrV1Show);
 
             request
-        } else if supported_methods.contains(SupportedMethods::QR_SCAN) {
+        } else if self.supported_methods.contains(SupportedMethods::QR_SCAN) {
             self.send_state(State::QrV1Scan);
 
             // Wait for scanned data
