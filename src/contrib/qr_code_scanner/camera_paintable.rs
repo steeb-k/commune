@@ -7,231 +7,41 @@
 //                         /
 //     pipewiresrc -- tee
 //                         \
-//                            queue -- videoconvert -- our fancy sink
+//                            queue -- videoconvert -- gst paintable sink
 
 use std::{
     os::unix::io::AsRawFd,
     sync::{Arc, Mutex},
 };
 
-use glib::{clone, Receiver, Sender};
 use gst::prelude::*;
 use gtk::{
-    gdk, gdk::prelude::TextureExt, glib, glib::subclass::prelude::*, graphene, prelude::*,
+    gdk, glib,
+    glib::{clone, subclass::prelude::*},
+    graphene,
+    prelude::*,
     subclass::prelude::*,
 };
 use matrix_sdk::encryption::verification::QrVerificationData;
-use once_cell::sync::Lazy;
 
 use crate::contrib::qr_code_scanner::{qr_code_detector::QrCodeDetector, QrVerificationDataBoxed};
 
 pub enum Action {
-    FrameChanged,
     QrCodeDetected(QrVerificationData),
-}
-
-mod camera_sink {
-    use std::convert::AsRef;
-
-    #[derive(Debug)]
-    pub struct Frame(pub gst_video::VideoFrame<gst_video::video_frame::Readable>);
-
-    impl AsRef<[u8]> for Frame {
-        fn as_ref(&self) -> &[u8] {
-            self.0.plane_data(0).unwrap()
-        }
-    }
-
-    impl From<Frame> for gdk::Texture {
-        fn from(f: Frame) -> gdk::Texture {
-            let format = match f.0.format() {
-                gst_video::VideoFormat::Bgra => gdk::MemoryFormat::B8g8r8a8,
-                gst_video::VideoFormat::Argb => gdk::MemoryFormat::A8r8g8b8,
-                gst_video::VideoFormat::Rgba => gdk::MemoryFormat::R8g8b8a8,
-                gst_video::VideoFormat::Abgr => gdk::MemoryFormat::A8b8g8r8,
-                gst_video::VideoFormat::Rgb => gdk::MemoryFormat::R8g8b8,
-                gst_video::VideoFormat::Bgr => gdk::MemoryFormat::B8g8r8,
-                _ => unreachable!(),
-            };
-            let width = f.0.width() as i32;
-            let height = f.0.height() as i32;
-            let rowstride = f.0.plane_stride()[0] as usize;
-
-            gdk::MemoryTexture::new(
-                width,
-                height,
-                format,
-                &glib::Bytes::from_owned(f),
-                rowstride,
-            )
-            .upcast()
-        }
-    }
-
-    impl Frame {
-        pub fn new(buffer: &gst::Buffer, info: &gst_video::VideoInfo) -> Self {
-            let video_frame =
-                gst_video::VideoFrame::from_buffer_readable(buffer.clone(), info).unwrap();
-            Self(video_frame)
-        }
-
-        pub fn width(&self) -> u32 {
-            self.0.width()
-        }
-
-        pub fn height(&self) -> u32 {
-            self.0.height()
-        }
-    }
-
-    use super::*;
-
-    mod imp {
-        use std::sync::Mutex;
-
-        use gst::subclass::prelude::*;
-        use gst_base::subclass::prelude::*;
-        use gst_video::subclass::prelude::*;
-        use once_cell::sync::Lazy;
-
-        use super::*;
-
-        #[derive(Default)]
-        pub struct CameraSink {
-            pub info: Mutex<Option<gst_video::VideoInfo>>,
-            pub sender: Mutex<Option<Sender<Action>>>,
-            pub pending_frame: Mutex<Option<Frame>>,
-        }
-
-        #[glib::object_subclass]
-        impl ObjectSubclass for CameraSink {
-            const NAME: &'static str = "CameraSink";
-            type Type = super::CameraSink;
-            type ParentType = gst_video::VideoSink;
-        }
-
-        impl ObjectImpl for CameraSink {}
-        impl GstObjectImpl for CameraSink {}
-        impl ElementImpl for CameraSink {
-            fn metadata() -> Option<&'static gst::subclass::ElementMetadata> {
-                static ELEMENT_METADATA: Lazy<gst::subclass::ElementMetadata> = Lazy::new(|| {
-                    gst::subclass::ElementMetadata::new(
-                        "GTK Camera Sink",
-                        "Sink/Camera/Video",
-                        "A GTK Camera sink",
-                        "Bilal Elmoussaoui <bil.elmoussaoui@gmail.com>",
-                    )
-                });
-
-                Some(&*ELEMENT_METADATA)
-            }
-
-            fn pad_templates() -> &'static [gst::PadTemplate] {
-                static PAD_TEMPLATES: Lazy<Vec<gst::PadTemplate>> = Lazy::new(|| {
-                    let caps = gst_video::video_make_raw_caps(&[
-                        gst_video::VideoFormat::Bgra,
-                        gst_video::VideoFormat::Argb,
-                        gst_video::VideoFormat::Rgba,
-                        gst_video::VideoFormat::Abgr,
-                        gst_video::VideoFormat::Rgb,
-                        gst_video::VideoFormat::Bgr,
-                    ])
-                    .any_features()
-                    .build();
-
-                    vec![gst::PadTemplate::new(
-                        "sink",
-                        gst::PadDirection::Sink,
-                        gst::PadPresence::Always,
-                        &caps,
-                    )
-                    .unwrap()]
-                });
-
-                PAD_TEMPLATES.as_ref()
-            }
-        }
-        impl BaseSinkImpl for CameraSink {
-            fn set_caps(
-                &self,
-                _element: &Self::Type,
-                caps: &gst::Caps,
-            ) -> Result<(), gst::LoggableError> {
-                let video_info = gst_video::VideoInfo::from_caps(caps).unwrap();
-                let mut info = self.info.lock().unwrap();
-                info.replace(video_info);
-
-                Ok(())
-            }
-        }
-        impl VideoSinkImpl for CameraSink {
-            fn show_frame(
-                &self,
-                _element: &Self::Type,
-                buffer: &gst::Buffer,
-            ) -> Result<gst::FlowSuccess, gst::FlowError> {
-                if let Some(info) = &*self.info.lock().unwrap() {
-                    let frame = Frame::new(buffer, info);
-                    let mut last_frame = self.pending_frame.lock().unwrap();
-
-                    last_frame.replace(frame);
-                    let sender = self.sender.lock().unwrap();
-
-                    sender.as_ref().unwrap().send(Action::FrameChanged).unwrap();
-                }
-                Ok(gst::FlowSuccess::Ok)
-            }
-        }
-    }
-
-    glib::wrapper! {
-        pub struct CameraSink(ObjectSubclass<imp::CameraSink>) @extends gst_video::VideoSink, gst_base::BaseSink, gst::Element, gst::Object;
-    }
-    #[allow(clippy::non_send_fields_in_send_ty)]
-    unsafe impl Send for CameraSink {}
-    unsafe impl Sync for CameraSink {}
-
-    impl CameraSink {
-        pub fn new(sender: Sender<Action>) -> Self {
-            let sink = glib::Object::new::<Self>(&[]).expect("Failed to create a CameraSink");
-            sink.imp().sender.lock().unwrap().replace(sender);
-            sink
-        }
-
-        pub fn pending_frame(&self) -> Option<Frame> {
-            self.imp().pending_frame.lock().unwrap().take()
-        }
-    }
 }
 
 mod imp {
     use std::cell::RefCell;
 
     use glib::subclass;
+    use once_cell::sync::Lazy;
 
     use super::*;
 
+    #[derive(Debug, Default)]
     pub struct CameraPaintable {
-        pub sink: camera_sink::CameraSink,
         pub pipeline: RefCell<Option<gst::Pipeline>>,
-        pub sender: Sender<Action>,
-        pub image: RefCell<Option<gdk::Texture>>,
-        pub receiver: RefCell<Option<Receiver<Action>>>,
-    }
-
-    impl Default for CameraPaintable {
-        fn default() -> Self {
-            let (sender, r) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
-            let receiver = RefCell::new(Some(r));
-
-            Self {
-                pipeline: RefCell::default(),
-                sink: camera_sink::CameraSink::new(sender.clone()),
-                image: RefCell::new(None),
-                sender,
-                receiver,
-            }
-        }
+        pub sink_paintable: RefCell<Option<gdk::Paintable>>,
     }
 
     #[glib::object_subclass]
@@ -243,10 +53,6 @@ mod imp {
     }
 
     impl ObjectImpl for CameraPaintable {
-        fn constructed(&self, obj: &Self::Type) {
-            obj.init_widgets();
-            self.parent_constructed(obj);
-        }
         fn dispose(&self, paintable: &Self::Type) {
             paintable.close_pipeline();
         }
@@ -267,16 +73,16 @@ mod imp {
 
     impl PaintableImpl for CameraPaintable {
         fn intrinsic_height(&self, _paintable: &Self::Type) -> i32 {
-            if let Some(frame) = &*self.image.borrow() {
-                frame.height()
+            if let Some(paintable) = self.sink_paintable.borrow().as_ref() {
+                paintable.intrinsic_height()
             } else {
                 0
             }
         }
 
         fn intrinsic_width(&self, _paintable: &Self::Type) -> i32 {
-            if let Some(frame) = &*self.image.borrow() {
-                frame.width()
+            if let Some(paintable) = self.sink_paintable.borrow().as_ref() {
+                paintable.intrinsic_width()
             } else {
                 0
             }
@@ -291,10 +97,9 @@ mod imp {
         ) {
             let snapshot = snapshot.downcast_ref::<gtk::Snapshot>().unwrap();
 
-            if let Some(ref image) = *self.image.borrow() {
+            if let Some(image) = self.sink_paintable.borrow().as_ref() {
                 // Transformation to avoid stretching the camera. We translate and scale the
                 // image.
-
                 let aspect = width / height.max(std::f64::EPSILON); // Do not divide by zero.
                 let image_aspect = image.intrinsic_aspect_ratio();
 
@@ -337,17 +142,16 @@ impl Default for CameraPaintable {
 
 impl CameraPaintable {
     pub fn set_pipewire_fd<F: AsRawFd>(&self, fd: F, node_id: u32) {
+        // Make sure that the previous pipeline is closed so that we can be sure that it
+        // doesn't use the webcam
         self.close_pipeline();
-        let pipewire_element = gst::ElementFactory::make("pipewiresrc", None).unwrap();
-        pipewire_element.set_property("fd", &fd.as_raw_fd());
-        pipewire_element.set_property("path", &node_id.to_string());
-        self.init_pipeline(pipewire_element);
-    }
 
-    fn init_pipeline(&self, pipewire_src: gst::Element) {
-        let self_ = self.imp();
+        let pipewire_src = gst::ElementFactory::make("pipewiresrc", None).unwrap();
+        pipewire_src.set_property("fd", &fd.as_raw_fd());
+        pipewire_src.set_property("path", &node_id.to_string());
+
         let pipeline = gst::Pipeline::new(None);
-        let detector = QrCodeDetector::new(self_.sender.clone()).upcast();
+        let detector = QrCodeDetector::new(self.create_sender()).upcast();
 
         let tee = gst::ElementFactory::make("tee", None).unwrap();
         let queue = gst::ElementFactory::make("queue", None).unwrap();
@@ -368,6 +172,7 @@ impl CameraPaintable {
         });
 
         let queue2 = gst::ElementFactory::make("queue", None).unwrap();
+        let sink = gst::ElementFactory::make("gtk4paintablesink", None).unwrap();
 
         pipeline
             .add_many(&[
@@ -378,14 +183,15 @@ impl CameraPaintable {
                 &detector,
                 &queue2,
                 &videoconvert2,
-                self_.sink.upcast_ref(),
+                &sink,
             ])
             .unwrap();
 
         gst::Element::link_many(&[&pipewire_src, &tee, &queue, &videoconvert1, &detector]).unwrap();
 
         tee.link_pads(None, &queue2, None).unwrap();
-        gst::Element::link_many(&[&queue2, &videoconvert2, self_.sink.upcast_ref()]).unwrap();
+        gst::Element::link_many(&[&queue2, &videoconvert2, &sink]).unwrap();
+
         let bus = pipeline.bus().unwrap();
         bus.add_watch_local(
             clone!(@weak self as paintable => @default-return glib::Continue(false), move |_, msg| {
@@ -401,54 +207,62 @@ impl CameraPaintable {
             }),
         )
         .expect("Failed to add bus watch");
-        pipeline.set_state(gst::State::Playing).ok();
-        self_.pipeline.replace(Some(pipeline));
+
+        self.set_sink_paintable(sink.property::<gdk::Paintable>("paintable"));
+        pipeline.set_state(gst::State::Playing).unwrap();
+        self.set_pipeline(Some(pipeline));
+    }
+
+    fn set_sink_paintable(&self, paintable: gdk::Paintable) {
+        let priv_ = self.imp();
+
+        paintable.connect_invalidate_contents(clone!(@weak self as obj => move |_| {
+            obj.invalidate_contents();
+        }));
+
+        paintable.connect_invalidate_size(clone!(@weak self as obj => move |_| {
+            obj.invalidate_size();
+        }));
+
+        priv_.sink_paintable.replace(Some(paintable));
+
+        self.invalidate_contents();
+        self.invalidate_size();
+    }
+
+    fn set_pipeline(&self, pipeline: Option<gst::Pipeline>) {
+        let priv_ = self.imp();
+
+        if let Some(pipeline) = priv_.pipeline.take() {
+            pipeline.set_state(gst::State::Null).unwrap();
+        }
+
+        if pipeline.is_none() {
+            return;
+        }
+
+        priv_.pipeline.replace(pipeline);
     }
 
     pub fn close_pipeline(&self) {
-        if let Some(pipeline) = self.imp().pipeline.borrow_mut().take() {
-            pipeline.set_state(gst::State::Null).unwrap();
-        }
+        self.set_pipeline(None);
     }
 
-    pub fn init_widgets(&self) {
-        let receiver = self.imp().receiver.borrow_mut().take().unwrap();
+    fn create_sender(&self) -> glib::Sender<Action> {
+        let (sender, receiver) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
+
         receiver.attach(
             None,
-            glib::clone!(@weak self as paintable => @default-return glib::Continue(false), move |action| paintable.do_action(action)),
-        );
-    }
-
-    fn do_action(&self, action: Action) -> glib::Continue {
-        let self_ = self.imp();
-        match action {
-            Action::FrameChanged => {
-                if let Some(frame) = self_
-                    .sink
-                    .pending_frame()
-                    .map::<gdk::Texture, _>(Into::into)
-                {
-                    let width = frame.width();
-                    let height = frame.height();
-
-                    let prev_frame = self_.image.replace(Some(frame));
-
-                    let (prev_width, prev_height) = if let Some(frame) = prev_frame {
-                        (frame.width(), frame.height())
-                    } else {
-                        (0, 0)
-                    };
-
-                    if prev_width != width || prev_height != height {
-                        self.invalidate_size();
+            glib::clone!(@weak self as obj => @default-return glib::Continue(false), move |action| {
+                match action {
+                    Action::QrCodeDetected(code) => {
+                        obj.emit_by_name::<()>("code-detected", &[&QrVerificationDataBoxed(code)]);
                     }
-                    self.invalidate_contents();
                 }
-            }
-            Action::QrCodeDetected(code) => {
-                self.emit_by_name::<()>("code-detected", &[&QrVerificationDataBoxed(code)]);
-            }
-        }
-        glib::Continue(true)
+                glib::Continue(true)
+            }),
+        );
+
+        sender
     }
 }

@@ -44,6 +44,7 @@ fn main() {
 
     gtk::init().expect("Unable to start GTK4");
     gst::init().expect("Failed to initialize gst");
+    gst_gtk::plugin_register_static().expect("Failed to initialize gstreamer gtk plugins");
 
     let res = gio::Resource::load(RESOURCES_FILE).expect("Could not load gresource file");
     gio::resources_register(&res);
