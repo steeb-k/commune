@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="LoginAdvancedDialog" parent="AdwPreferencesWindow">
+    <property name="modal">True</property>
+    <property name="title" translatable="yes">Homeserver Discovery</property>
+    <property name="destroy-with-parent">True</property>
+    <property name="default-width">500</property>
+    <property name="default-height">300</property>
+    <property name="search-enabled">false</property>
+    <child>
+      <object class="AdwPreferencesPage">
+        <child>
+          <object class="AdwPreferencesGroup">
+            <property name="description" translatable="yes">Auto-discovery, also known as "well-known lookup", allows to discover the URL of a Matrix homeserver from a domain name. This should only be disabled if your homeserver doesn’t support auto-discovery or if you want to provide the URL yourself.</property>
+            <child>
+              <object class="AdwActionRow">
+                <property name="title" translatable="yes">_Auto-discovery</property>
+                <property name="use-underline">true</property>
+                <child>
+                  <object class="GtkSwitch">
+                    <property name="valign">center</property>
+                    <property name="active" bind-source="LoginAdvancedDialog" bind-property="autodiscovery" bind-flags="sync-create|bidirectional"/>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

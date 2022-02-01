@@ -12,6 +12,7 @@ mod contrib;
 mod error;
 mod greeter;
 mod login;
+mod login_advanced_dialog;
 mod secret;
 mod session;
 mod user_facing_error;

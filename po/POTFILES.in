@@ -25,6 +25,7 @@ data/resources/ui/event-menu.ui
 data/resources/ui/event-source-dialog.ui
 data/resources/ui/greeter.ui
 data/resources/ui/identity-verification-widget.ui
+data/resources/ui/login-advanced-dialog.ui
 data/resources/ui/login.ui
 data/resources/ui/member-menu.ui
 data/resources/ui/room-creation.ui
@@ -35,6 +36,7 @@ data/resources/ui/sidebar.ui
 
 # Rust files
 src/application.rs
+src/login.rs
 src/secret.rs
 src/session/account_settings/devices_page/device_list.rs
 src/session/account_settings/devices_page/device_row.rs

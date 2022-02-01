@@ -284,7 +284,13 @@ impl Session {
         }
     }
 
-    pub fn login_with_password(&self, homeserver: Url, username: String, password: String) {
+    pub fn login_with_password(
+        &self,
+        homeserver: Url,
+        username: String,
+        password: String,
+        use_discovery: bool,
+    ) {
         self.imp().logout_on_dispose.set(true);
         let mut path = glib::user_data_dir();
         path.push(
@@ -306,6 +312,12 @@ impl Session {
                 .request_config(RequestConfig::new().retry_limit(2))
                 .passphrase(passphrase.clone())
                 .store_path(path.clone());
+
+            let config = if use_discovery {
+                config.use_discovery_response()
+            } else {
+                config
+            };
 
             let client = Client::new_with_config(homeserver.clone(), config).unwrap();
             let response = client

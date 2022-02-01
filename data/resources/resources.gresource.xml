@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/FractalNext/">
+    <file preprocess="xml-stripblanks">assets/homeserver.svg</file>
     <file preprocess="xml-stripblanks">assets/other-device.svg</file>
     <file preprocess="xml-stripblanks">assets/setup-complete.svg</file>
     <file preprocess="xml-stripblanks">assets/welcome.svg</file>
@@ -52,6 +53,7 @@
     <file compressed="true" preprocess="xml-stripblanks" alias="greeter.ui">ui/greeter.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="identity-verification-widget.ui">ui/identity-verification-widget.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="in-app-notification.ui">ui/in-app-notification.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="login-advanced-dialog.ui">ui/login-advanced-dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="login.ui">ui/login.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="media-viewer.ui">ui/media-viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="member-menu.ui">ui/member-menu.ui</file>

@@ -1,12 +1,25 @@
-use adw::subclass::prelude::BinImpl;
-use gtk::{self, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use log::debug;
+use adw::{prelude::*, subclass::prelude::BinImpl};
+use gettextrs::gettext;
+use gtk::{self, glib, glib::clone, subclass::prelude::*, CompositeTemplate};
+use log::{debug, warn};
+use matrix_sdk::{
+    config::RequestConfig,
+    ruma::{
+        api::client::unversioned::get_supported_versions, identifiers::Error as IdentifierError,
+        ServerName, UserId,
+    },
+    Client, Result as MatrixResult,
+};
+use tokio::task::JoinHandle;
 use url::{ParseError, Url};
 
-use crate::{components::SpinnerButton, Session};
+use crate::{
+    components::SpinnerButton, error::Error, login_advanced_dialog::LoginAdvancedDialog, spawn,
+    spawn_tokio, user_facing_error::UserFacingError, Session,
+};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::{
         subclass::{InitializingObject, Signal},
@@ -21,11 +34,17 @@ mod imp {
     pub struct Login {
         pub current_session: RefCell<Option<Session>>,
         #[template_child]
+        pub back_button: TemplateChild<gtk::Button>,
+        #[template_child]
         pub next_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub homeserver_entry: TemplateChild<gtk::Entry>,
+        #[template_child]
+        pub homeserver_help: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub password_title: TemplateChild<gtk::Label>,
         #[template_child]
         pub username_entry: TemplateChild<gtk::Entry>,
         #[template_child]
@@ -33,6 +52,10 @@ mod imp {
         pub prepared_source_id: RefCell<Option<SignalHandlerId>>,
         pub logged_out_source_id: RefCell<Option<SignalHandlerId>>,
         pub ready_source_id: RefCell<Option<SignalHandlerId>>,
+        /// Whether auto-discovery is enabled.
+        pub autodiscovery: Cell<bool>,
+        /// The homeserver to log into.
+        pub homeserver: RefCell<Option<Url>>,
     }
 
     #[glib::object_subclass]
@@ -43,8 +66,15 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            klass.set_css_name("login");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
             klass.install_action("login.next", None, move |widget, _, _| widget.forward());
+            klass.install_action("login.prev", None, move |widget, _, _| widget.backward());
+            klass.install_action("login.open-advanced", None, move |widget, _, _| {
+                spawn!(clone!(@weak widget => async move {
+                    widget.open_advanced_dialog().await;
+                }));
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -65,17 +95,67 @@ mod imp {
             SIGNALS.as_ref()
         }
 
+        fn properties() -> &'static [glib::ParamSpec] {
+            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
+                vec![
+                    glib::ParamSpecString::new(
+                        "homeserver",
+                        "Homeserver",
+                        "The homeserver to log into",
+                        None,
+                        glib::ParamFlags::READABLE,
+                    ),
+                    glib::ParamSpecBoolean::new(
+                        "autodiscovery",
+                        "Auto-discovery",
+                        "Whether auto-discovery is enabled",
+                        true,
+                        glib::ParamFlags::READWRITE | glib::ParamFlags::CONSTRUCT,
+                    ),
+                ]
+            });
+
+            PROPERTIES.as_ref()
+        }
+
+        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            match pspec.name() {
+                "homeserver" => obj.homeserver_pretty().to_value(),
+                "autodiscovery" => obj.autodiscovery().to_value(),
+                _ => unimplemented!(),
+            }
+        }
+
+        fn set_property(
+            &self,
+            obj: &Self::Type,
+            _id: usize,
+            value: &glib::Value,
+            pspec: &glib::ParamSpec,
+        ) {
+            match pspec.name() {
+                "autodiscovery" => obj.set_autodiscovery(value.get().unwrap()),
+                _ => unimplemented!(),
+            }
+        }
+
         fn constructed(&self, obj: &Self::Type) {
             obj.action_set_enabled("login.next", false);
 
             self.parent_constructed(obj);
 
+            self.main_stack
+                .connect_visible_child_notify(clone!(@weak obj => move |_|
+                    obj.update_next_action()
+                ));
+            obj.update_next_action();
+
             self.homeserver_entry
-                .connect_changed(clone!(@weak obj => move |_| obj.enable_next_action()));
+                .connect_changed(clone!(@weak obj => move |_| obj.update_next_action()));
             self.username_entry
-                .connect_changed(clone!(@weak obj => move |_| obj.enable_next_action()));
+                .connect_changed(clone!(@weak obj => move |_| obj.update_next_action()));
             self.password_entry
-                .connect_changed(clone!(@weak obj => move |_| obj.enable_next_action()));
+                .connect_changed(clone!(@weak obj => move |_| obj.update_next_action()));
         }
     }
 
@@ -85,6 +165,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A widget handling the login flows.
     pub struct Login(ObjectSubclass<imp::Login>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -94,28 +175,223 @@ impl Login {
         glib::Object::new(&[]).expect("Failed to create Login")
     }
 
-    fn enable_next_action(&self) {
-        let priv_ = self.imp();
-        let homeserver = priv_.homeserver_entry.text();
-        let username_length = priv_.username_entry.text_length();
-        let password_length = priv_.password_entry.text().len();
+    pub fn homeserver(&self) -> Option<Url> {
+        self.imp().homeserver.borrow().clone()
+    }
 
-        self.action_set_enabled(
-            "login.next",
-            homeserver.len() != 0
-                && build_homeserver_url(homeserver.as_str()).is_ok()
-                && username_length != 0
-                && password_length != 0,
-        );
+    pub fn homeserver_pretty(&self) -> Option<String> {
+        let homeserver = self.homeserver();
+        homeserver
+            .as_ref()
+            .and_then(|url| url.as_ref().strip_suffix('/').map(ToOwned::to_owned))
+            .or_else(|| homeserver.as_ref().map(ToString::to_string))
+    }
+
+    pub fn set_homeserver(&self, homeserver: Option<Url>) {
+        let priv_ = imp::Login::from_instance(self);
+
+        if self.homeserver() == homeserver {
+            return;
+        }
+
+        priv_.homeserver.replace(homeserver);
+        self.notify("homeserver");
+    }
+
+    fn visible_child(&self) -> String {
+        let priv_ = imp::Login::from_instance(self);
+        priv_.main_stack.visible_child_name().unwrap().into()
+    }
+
+    fn set_visible_child(&self, visible_child: &str) {
+        let priv_ = imp::Login::from_instance(self);
+        priv_.main_stack.set_visible_child_name(visible_child);
+    }
+
+    fn update_next_action(&self) {
+        let priv_ = imp::Login::from_instance(self);
+        match self.visible_child().as_ref() {
+            "homeserver" => {
+                let homeserver = priv_.homeserver_entry.text();
+                let enabled = if self.autodiscovery() {
+                    build_server_name(homeserver.as_str()).is_ok()
+                } else {
+                    build_homeserver_url(homeserver.as_str()).is_ok()
+                };
+                self.action_set_enabled("login.next", enabled);
+                priv_.next_button.set_visible(true);
+            }
+            "password" => {
+                let username_length = priv_.username_entry.text_length();
+                let password_length = priv_.password_entry.text().len();
+                self.action_set_enabled("login.next", username_length != 0 && password_length != 0);
+                priv_.next_button.set_visible(true);
+            }
+            _ => {
+                priv_.next_button.set_visible(false);
+            }
+        }
     }
 
     fn forward(&self) {
-        self.login();
+        match self.visible_child().as_ref() {
+            "homeserver" => {
+                if self.autodiscovery() {
+                    self.try_autodiscovery();
+                } else {
+                    self.check_homeserver();
+                }
+            }
+            "password" => self.login_with_password(),
+            _ => {}
+        }
     }
 
-    fn login(&self) {
+    fn backward(&self) {
+        match self.visible_child().as_ref() {
+            "password" => self.set_visible_child("homeserver"),
+            _ => {
+                self.activate_action("app.show-greeter", None).unwrap();
+            }
+        }
+    }
+
+    pub fn autodiscovery(&self) -> bool {
+        self.imp().autodiscovery.get()
+    }
+
+    fn set_autodiscovery(&self, autodiscovery: bool) {
         let priv_ = self.imp();
-        let homeserver = priv_.homeserver_entry.text().to_string();
+
+        priv_.autodiscovery.set(autodiscovery);
+        if autodiscovery {
+            priv_
+                .homeserver_entry
+                .set_placeholder_text(Some(&gettext("Domain Name…")));
+            priv_.homeserver_help.set_markup(&gettext(
+                "The domain of your Matrix homeserver, for example gnome.org",
+            ));
+        } else {
+            priv_
+                .homeserver_entry
+                .set_placeholder_text(Some(&gettext("Homeserver URL…")));
+            priv_.homeserver_help.set_markup(&gettext("The URL of your Matrix homeserver, for example <span segment=\"word\">https://gnome.modular.im</span>"));
+        }
+        self.update_next_action();
+    }
+
+    async fn open_advanced_dialog(&self) {
+        let dialog =
+            LoginAdvancedDialog::new(self.root().unwrap().downcast_ref::<gtk::Window>().unwrap());
+        self.bind_property("autodiscovery", &dialog, "autodiscovery")
+            .flags(glib::BindingFlags::SYNC_CREATE | glib::BindingFlags::BIDIRECTIONAL)
+            .build();
+        dialog.run_future().await;
+    }
+
+    fn try_autodiscovery(&self) {
+        let server = build_server_name(self.imp().homeserver_entry.text().as_str()).unwrap();
+        let mxid = UserId::parse_with_server_name("user", &server).unwrap();
+
+        self.freeze();
+
+        let handle = spawn_tokio!(async move { Client::new_from_user_id(&mxid).await });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
+                    Ok(client) => {
+                        let homeserver = client.homeserver().await;
+                        obj.set_homeserver(Some(homeserver));
+                        obj.show_password_page();
+                    }
+                    Err(error) => {
+                        warn!("Failed to discover homeserver: {}", error);
+                        let error_string = error.to_user_facing();
+
+                        obj.parent_window().append_error(&Error::new(move |_| {
+                            let error_label = gtk::Label::builder()
+                                .label(&error_string)
+                                .wrap(true)
+                                .build();
+                            Some(error_label.upcast())
+                        }));
+                    }
+                };
+                obj.unfreeze();
+            })
+        );
+    }
+
+    fn check_homeserver(&self) {
+        let homeserver = build_homeserver_url(self.imp().homeserver_entry.text().as_str()).unwrap();
+        let homeserver_clone = homeserver.clone();
+
+        self.freeze();
+
+        let handle: JoinHandle<MatrixResult<_>> = spawn_tokio!(async move {
+            let client = Client::new(homeserver_clone)?;
+            Ok(client
+                .send(
+                    get_supported_versions::Request::new(),
+                    Some(RequestConfig::new().disable_retry()),
+                )
+                .await?)
+        });
+
+        spawn!(
+            glib::PRIORITY_DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                match handle.await.unwrap() {
+                    Ok(_) => {
+                        obj.set_homeserver(Some(homeserver));
+                        obj.show_password_page();
+                    }
+                    Err(error) => {
+                        warn!("Failed to check homeserver: {}", error);
+                        let error_string = error.to_user_facing();
+
+                        obj.parent_window().append_error(&Error::new(move |_| {
+                            let error_label = gtk::Label::builder()
+                                .label(&error_string)
+                                .wrap(true)
+                                .build();
+                            Some(error_label.upcast())
+                        }));
+                    }
+                };
+                obj.unfreeze();
+            })
+        );
+    }
+
+    fn show_password_page(&self) {
+        let priv_ = self.imp();
+        if self.autodiscovery() {
+            // Translators: the variable is a domain name, eg. gnome.org.
+            priv_.password_title.set_markup(&gettext!(
+                "Connecting to {}",
+                format!(
+                    "<span segment=\"word\">{}</span>",
+                    priv_.homeserver_entry.text()
+                )
+            ));
+        } else {
+            priv_.password_title.set_markup(&gettext!(
+                "Connecting to {}",
+                format!(
+                    "<span segment=\"word\">{}</span>",
+                    self.homeserver_pretty().unwrap()
+                )
+            ));
+        }
+        self.set_visible_child("password");
+    }
+
+    fn login_with_password(&self) {
+        let priv_ = self.imp();
+        let homeserver = self.homeserver().unwrap();
         let username = priv_.username_entry.text().to_string();
         let password = priv_.password_entry.text().to_string();
 
@@ -124,11 +400,7 @@ impl Login {
         let session = Session::new();
         self.set_handler_for_prepared_session(&session);
 
-        session.login_with_password(
-            build_homeserver_url(homeserver.as_str()).unwrap(),
-            username,
-            password,
-        );
+        session.login_with_password(homeserver, username, password, self.autodiscovery());
         priv_.current_session.replace(Some(session));
     }
 
@@ -137,6 +409,7 @@ impl Login {
         priv_.homeserver_entry.set_text("");
         priv_.username_entry.set_text("");
         priv_.password_entry.set_text("");
+        priv_.autodiscovery.set(true);
         self.unfreeze();
         self.drop_session_reference();
     }
@@ -152,9 +425,9 @@ impl Login {
     fn unfreeze(&self) {
         let priv_ = self.imp();
 
-        self.action_set_enabled("login.next", true);
         priv_.next_button.set_loading(false);
         priv_.main_stack.set_sensitive(true);
+        self.update_next_action();
     }
 
     pub fn connect_new_session<F: Fn(&Self, Session) + 'static>(
@@ -238,6 +511,14 @@ impl Default for Login {
     fn default() -> Self {
         Self::new()
     }
+}
+
+fn build_server_name(server: &str) -> Result<Box<ServerName>, IdentifierError> {
+    let server = server
+        .strip_prefix("http://")
+        .or_else(|| server.strip_prefix("https://"))
+        .unwrap_or(server);
+    ServerName::parse(server)
 }
 
 fn build_homeserver_url(server: &str) -> Result<Url, ParseError> {
