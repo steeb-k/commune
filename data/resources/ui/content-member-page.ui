@@ -34,8 +34,9 @@
           </object>
         </child>
         <child>
-          <object class="GtkScrolledWindow">
+          <object class="GtkScrolledWindow" id="members_scroll">
             <property name="propagate-natural-height">True</property>
+            <property name="max-content-height">300</property>
             <child>
               <object class="GtkListView" id="members_list_view">
                 <property name="show-separators">True</property>
@@ -53,6 +54,28 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="invited_section">
+        <child>
+          <object class="GtkScrolledWindow" id="invited_scroll">
+            <property name="propagate-natural-height">True</property>
+            <property name="max-content-height">300</property>
+            <child>
+              <object class="GtkListView" id="invited_list_view">
+                <property name="show-separators">True</property>
+                <property name="factory">
+                  <object class="GtkBuilderListItemFactory">
+                    <property name="resource">/org/gnome/FractalNext/content-member-item.ui</property>
+                  </object>
+                </property>
+                <style>
+                  <class name="content"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>
-

@@ -5,10 +5,10 @@ use gtk::{
     subclass::prelude::*,
     CompositeTemplate,
 };
+use log::warn;
 
 mod member_menu;
 mod member_row;
-use log::warn;
 
 use self::{member_menu::MemberMenu, member_row::MemberRow};
 use crate::{
@@ -16,11 +16,13 @@ use crate::{
     prelude::*,
     session::{
         content::RoomDetails,
-        room::{Member, RoomAction},
+        room::{Member, Membership, RoomAction},
         Room, User, UserActions,
     },
     spawn,
 };
+
+const MAX_LIST_HEIGHT: i32 = 300;
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -40,7 +42,15 @@ mod imp {
         pub members_search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
         pub members_list_view: TemplateChild<gtk::ListView>,
+        #[template_child]
+        pub members_scroll: TemplateChild<gtk::ScrolledWindow>,
         pub member_menu: OnceCell<MemberMenu>,
+        #[template_child]
+        pub invited_section: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        pub invited_list_view: TemplateChild<gtk::ListView>,
+        #[template_child]
+        pub invited_scroll: TemplateChild<gtk::ScrolledWindow>,
     }
 
     #[glib::object_subclass]
@@ -117,8 +127,8 @@ mod imp {
         fn constructed(&self, obj: &Self::Type) {
             self.parent_constructed(obj);
 
-            obj.init_member_search();
-            obj.init_member_count();
+            obj.init_members_list();
+            obj.init_invited_list();
             obj.init_invite_button();
         }
     }
@@ -144,9 +154,27 @@ impl MemberPage {
         self.imp().room.set(room).expect("Room already initialized");
     }
 
-    fn init_member_search(&self) {
+    fn init_members_list(&self) {
         let priv_ = self.imp();
         let members = self.room().members();
+
+        // Only keep the members that are in the join membership state
+        let joined_expression = gtk::PropertyExpression::new(
+            Member::static_type(),
+            gtk::Expression::NONE,
+            "membership",
+        )
+        .chain_closure::<bool>(closure!(
+            |_: Option<glib::Object>, membership: Membership| { membership == Membership::Join }
+        ));
+        let joined_filter = gtk::BoolFilter::new(Some(joined_expression));
+        let joined_members = gtk::FilterListModel::new(Some(members), Some(&joined_filter));
+
+        // Set up the members count.
+        self.member_count_changed(joined_members.n_items());
+        joined_members.connect_items_changed(clone!(@weak self as obj => move |members, _, _, _| {
+            obj.member_count_changed(members.n_items());
+        }));
 
         // Sort the members list by power level, then display name.
         let sorter = gtk::MultiSorter::new();
@@ -167,7 +195,7 @@ impl MemberPage {
                 "display-name",
             ),
         )));
-        let sorted_members = gtk::SortListModel::new(Some(members), Some(&sorter));
+        let sorted_members = gtk::SortListModel::new(Some(&joined_members), Some(&sorter));
 
         fn search_string(member: Member) -> String {
             format!(
@@ -199,17 +227,71 @@ impl MemberPage {
         priv_.members_list_view.set_model(Some(&model));
     }
 
-    fn init_member_count(&self) {
+    fn member_count_changed(&self, n: u32) {
+        let priv_ = self.imp();
+        priv_
+            .member_count
+            .set_text(&ngettext!("{} Member", "{} Members", n, n));
+        // FIXME: This won't be needed when we can request the natural height
+        // on AdwPreferencesPage
+        // See: https://gitlab.gnome.org/GNOME/libadwaita/-/issues/77
+        if n > 5 {
+            priv_.members_scroll.set_min_content_height(MAX_LIST_HEIGHT);
+        } else {
+            priv_.members_scroll.set_min_content_height(-1);
+        }
+    }
+
+    fn init_invited_list(&self) {
+        let priv_ = self.imp();
         let members = self.room().members();
 
-        let member_count = self.imp().member_count.get();
-        fn set_member_count(member_count: &gtk::Label, n: u32) {
-            member_count.set_text(&ngettext!("{} Member", "{} Members", n, n));
+        // Only keep the members that are in the join membership state
+        let invited_expression = gtk::PropertyExpression::new(
+            Member::static_type(),
+            gtk::Expression::NONE,
+            "membership",
+        )
+        .chain_closure::<bool>(closure!(
+            |_: Option<glib::Object>, membership: Membership| { membership == Membership::Invite }
+        ));
+        let invited_filter = gtk::BoolFilter::new(Some(invited_expression));
+        let invited_members = gtk::FilterListModel::new(Some(members), Some(&invited_filter));
+
+        // Set up the invited section visibility and the invited count.
+        self.invited_count_changed(invited_members.n_items());
+        invited_members.connect_items_changed(
+            clone!(@weak self as obj => move |members, _, _, _| {
+                obj.invited_count_changed(members.n_items());
+            }),
+        );
+
+        // Sort the invited list by display name.
+        let sorter = gtk::StringSorter::new(Some(&gtk::PropertyExpression::new(
+            Member::static_type(),
+            gtk::Expression::NONE,
+            "display-name",
+        )));
+        let sorted_invited = gtk::SortListModel::new(Some(&invited_members), Some(&sorter));
+
+        let model = gtk::NoSelection::new(Some(&sorted_invited));
+        priv_.invited_list_view.set_model(Some(&model));
+    }
+
+    fn invited_count_changed(&self, n: u32) {
+        let priv_ = self.imp();
+        priv_.invited_section.set_visible(n > 0);
+        priv_
+            .invited_section
+            .set_title(&ngettext!("{} Invited", "{} Invited", n, n));
+        // FIXME: This won't be needed when we can request the natural height
+        // on AdwPreferencesPage
+        // See: https://gitlab.gnome.org/GNOME/libadwaita/-/issues/77
+        if n > 5 {
+            priv_.invited_scroll.set_min_content_height(MAX_LIST_HEIGHT);
+        } else {
+            priv_.invited_scroll.set_min_content_height(-1);
         }
-        set_member_count(&member_count, members.n_items());
-        members.connect_items_changed(clone!(@weak member_count => move |members, _, _, _| {
-            set_member_count(&member_count, members.n_items());
-        }));
     }
 
     fn init_invite_button(&self) {

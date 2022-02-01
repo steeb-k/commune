@@ -48,7 +48,7 @@ pub use self::{
     event_actions::EventActions,
     highlight_flags::HighlightFlags,
     item::{Item, ItemType},
-    member::Member,
+    member::{Member, Membership},
     member_role::MemberRole,
     power_levels::{PowerLevel, PowerLevels, RoomAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
     reaction_group::ReactionGroup,
