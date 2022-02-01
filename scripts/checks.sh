@@ -1,6 +1,8 @@
 #!/bin/bash
 # Source: https://gitlab.gnome.org/GNOME/fractal/blob/master/hooks/pre-commit.hook
 
+export LC_ALL=C
+
 # Usage info
 show_help() {
 cat << EOF
