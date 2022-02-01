@@ -138,7 +138,7 @@ impl Avatar {
     fn request_custom_avatar(&self) {
         if let Some(item) = &*self.imp().item.borrow() {
             // FIXME: update on size changes
-            item.set_needed_size(self.size());
+            item.set_needed_size(self.size() as u32);
         }
     }
 }

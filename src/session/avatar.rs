@@ -26,7 +26,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct Avatar {
         pub image: RefCell<Option<gdk::Paintable>>,
-        pub needed_size: Cell<i32>,
+        pub needed_size: Cell<u32>,
         pub url: RefCell<Option<Box<MxcUri>>>,
         pub display_name: RefCell<Option<String>>,
         pub session: OnceCell<WeakRef<Session>>,
@@ -50,13 +50,13 @@ mod imp {
                         gdk::Paintable::static_type(),
                         glib::ParamFlags::READABLE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
-                    glib::ParamSpecInt::new(
+                    glib::ParamSpecUInt::new(
                         "needed-size",
                         "Needed Size",
-                        "The size needed of the user defined image. If -1 no image will be loaded",
-                        -1,
-                        i32::MAX,
-                        -1,
+                        "The size needed of the user defined image. If 0 no image will be loaded",
+                        0,
+                        u32::MAX,
+                        0,
                         glib::ParamFlags::READWRITE | glib::ParamFlags::EXPLICIT_NOTIFY,
                     ),
                     glib::ParamSpecString::new(
@@ -157,14 +157,13 @@ impl Avatar {
 
     fn load(&self) {
         // Don't do anything here if we don't need the avatar
-        if self.needed_size() < 0 {
+        if self.needed_size() == 0 {
             return;
         }
 
-        let needed_size = self.needed_size() as u16;
-
         if let Some(url) = self.url() {
             let client = self.session().client();
+            let needed_size = self.needed_size();
             let request = MediaRequest {
                 media_type: MediaType::Uri(url),
                 format: MediaFormat::Thumbnail(MediaThumbnailSize {
@@ -204,22 +203,20 @@ impl Avatar {
 
     /// Set the needed size.
     /// Only the biggest size will be stored
-    pub fn set_needed_size(&self, size: i32) {
+    pub fn set_needed_size(&self, size: u32) {
         let priv_ = self.imp();
 
         if priv_.needed_size.get() < size {
             priv_.needed_size.set(size);
 
-            if priv_.needed_size.get() > -1 {
-                self.load();
-            }
+            self.load();
         }
 
         self.notify("needed-size");
     }
 
     /// Get the biggest needed size
-    pub fn needed_size(&self) -> i32 {
+    pub fn needed_size(&self) -> u32 {
         self.imp().needed_size.get()
     }
 
