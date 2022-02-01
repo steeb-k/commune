@@ -540,6 +540,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17cc5e6b5ab06331c33589842070416baa137e8b0eb912b008cfd4a78ada7919"
 
 [[package]]
+name = "chrono"
+version = "0.4.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
+dependencies = [
+ "libc",
+ "num-integer",
+ "num-traits",
+ "winapi",
+]
+
+[[package]]
 name = "cipher"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -971,8 +983,10 @@ dependencies = [
  "ashpd",
  "futures",
  "gettext-rs",
+ "gst-plugin-gtk4",
  "gstreamer",
  "gstreamer-base",
+ "gstreamer-player",
  "gstreamer-video",
  "gtk-macros",
  "gtk4",
@@ -1524,6 +1538,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "gst-plugin-gtk4"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f70501fa85dfdbeebecea35d747791351d04266f5c2c4aa23014d9fe74132290"
+dependencies = [
+ "fragile",
+ "gst-plugin-version-helper",
+ "gstreamer",
+ "gstreamer-base",
+ "gstreamer-video",
+ "gtk4",
+ "once_cell",
+]
+
+[[package]]
+name = "gst-plugin-version-helper"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a6a4dd1cb931cc6b49af354a68f21b3aee46b5b07370215d942f3a71542123f"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "gstreamer"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1571,6 +1609,35 @@ dependencies = [
  "glib-sys",
  "gobject-sys",
  "gstreamer-sys",
+ "libc",
+ "system-deps 6.0.0",
+]
+
+[[package]]
+name = "gstreamer-player"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f14ee02352ba73cadebe640bfb33f12fe8d03cbcad816a102d55a0251fb99bb"
+dependencies = [
+ "bitflags",
+ "glib",
+ "gstreamer",
+ "gstreamer-player-sys",
+ "gstreamer-video",
+ "libc",
+ "once_cell",
+]
+
+[[package]]
+name = "gstreamer-player-sys"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1f9b674b39a4d0e18710f6e3d2b109f1793d8028ee4e39da3909b55b4529d399"
+dependencies = [
+ "glib-sys",
+ "gobject-sys",
+ "gstreamer-sys",
+ "gstreamer-video-sys",
  "libc",
  "system-deps 6.0.0",
 ]

@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
+  <object class="GstPlayer" id="player">
+    <property name="video-renderer">
+      <object class="ComponentsVideoPlayerRenderer" id="video_renderer"/>
+    </property>
+    <property name="signal-dispatcher">
+      <object class="GstPlayerGMainContextSignalDispatcher"/>
+    </property>
+    <signal name="duration-changed" handler="duration_changed" swapped="true"/>
+  </object>
   <template class="ComponentsVideoPlayer" parent="AdwBin">
     <child>
       <object class="GtkOverlay">
         <child>
-          <object class="GtkPicture" id="video"/>
+          <object class="GtkPicture" id="video">
+            <property name="paintable" bind-source="video_renderer" bind-property="paintable" bind-flags="sync-create"/>
+          </object>
         </child>
         <child type="overlay">
           <object class="GtkLabel" id="timestamp">
@@ -17,7 +28,6 @@
             <property name="valign">GTK_ALIGN_START</property>
             <property name="margin-start">5</property>
             <property name="margin-top">5</property>
-            <property name="label">00:00</property>
             <layout>
               <property name="measure">true</property>
             </layout>

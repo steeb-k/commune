@@ -461,9 +461,6 @@ impl MessageMedia {
                                     gio::Cancellable::NONE,
                                 )
                                 .unwrap();
-                                let media_file = gtk::MediaFile::for_file(&file);
-                                media_file.set_muted(true);
-                                media_file.connect_prepared_notify(|media_file| media_file.play());
 
                                 let child = if let Some(Ok(child)) =
                                     priv_.media.child().map(|w| w.downcast::<VideoPlayer>())
@@ -475,7 +472,7 @@ impl MessageMedia {
                                     child
                                 };
                                 child.set_compact(obj.compact());
-                                child.set_media_file(&media_file)
+                                child.play_media_file(&file)
                             }
                         };
 

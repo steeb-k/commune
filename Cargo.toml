@@ -37,6 +37,8 @@ ashpd = { version = "0.2.0-beta-1", features = [
 gst = { version = "0.18", package = "gstreamer" }
 gst_base = { version = "0.18", package = "gstreamer-base" }
 gst_video = { version = "0.18", package = "gstreamer-video" }
+gst_player = { version = "0.18", package = "gstreamer-player" }
+gst_gtk = { version = "0.1.0", package = "gst-plugin-gtk4" }
 image = { version = "0.23", default-features = false, features = ["png"] }
 regex = "1.5.4"
 mime_guess = "2.0.3"

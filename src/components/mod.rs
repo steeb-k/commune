@@ -11,6 +11,7 @@ mod reaction_chooser;
 mod room_title;
 mod spinner_button;
 mod video_player;
+mod video_player_renderer;
 
 pub use self::{
     auth_dialog::{AuthData, AuthDialog},
@@ -26,4 +27,5 @@ pub use self::{
     room_title::RoomTitle,
     spinner_button::SpinnerButton,
     video_player::VideoPlayer,
+    video_player_renderer::VideoPlayerRenderer,
 };
