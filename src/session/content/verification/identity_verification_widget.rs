@@ -7,10 +7,13 @@ use matrix_sdk::encryption::verification::QrVerificationData;
 use super::Emoji;
 use crate::{
     components::SpinnerButton,
-    contrib::{screenshot, QRCode, QRCodeExt, QrCodeScanner},
+    contrib::{QRCode, QRCodeExt, QrCodeScanner},
     session::{
         user::UserExt,
-        verification::{IdentityVerification, SasData, VerificationMode, VerificationState},
+        verification::{
+            IdentityVerification, SasData, VerificationMode, VerificationState,
+            VerificationSupportedMethods,
+        },
     },
     spawn,
 };
@@ -41,17 +44,11 @@ mod imp {
         #[template_child]
         pub start_emoji_btn2: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub start_emoji_btn3: TemplateChild<SpinnerButton>,
-        #[template_child]
         pub scan_qr_code_btn: TemplateChild<SpinnerButton>,
         #[template_child]
         pub accept_btn: TemplateChild<SpinnerButton>,
         #[template_child]
         pub decline_btn: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub take_screenshot_btn2: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub take_screenshot_btn3: TemplateChild<SpinnerButton>,
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -60,6 +57,7 @@ mod imp {
         pub done_btn: TemplateChild<gtk::Button>,
         pub state_handler: RefCell<Option<SignalHandlerId>>,
         pub name_handler: RefCell<Option<SignalHandlerId>>,
+        pub supported_methods_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub label1: TemplateChild<gtk::Label>,
         #[template_child]
@@ -70,10 +68,6 @@ mod imp {
         pub label4: TemplateChild<gtk::Label>,
         #[template_child]
         pub label5: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub label6: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub label7: TemplateChild<gtk::Label>,
         #[template_child]
         pub label8: TemplateChild<gtk::Label>,
         #[template_child]
@@ -190,15 +184,6 @@ mod imp {
             self.start_emoji_btn2
                 .connect_clicked(clone!(@weak obj => move |button| {
                     button.set_loading(true);
-                    obj.imp().take_screenshot_btn2.set_sensitive(false);
-                    if let Some(request) = obj.request() {
-                        request.start_sas();
-                    }
-                }));
-            self.start_emoji_btn3
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    button.set_loading(true);
-                    obj.imp().take_screenshot_btn3.set_sensitive(false);
                     if let Some(request) = obj.request() {
                         request.start_sas();
                     }
@@ -210,20 +195,6 @@ mod imp {
                     button.set_loading(true);
                     priv_.start_emoji_btn.set_sensitive(false);
                     obj.start_scanning();
-                }));
-
-            self.take_screenshot_btn2
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    button.set_loading(true);
-                    obj.imp().start_emoji_btn2.set_sensitive(false);
-                    obj.take_screenshot();
-                }));
-
-            self.take_screenshot_btn3
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    button.set_loading(true);
-                    obj.imp().start_emoji_btn3.set_sensitive(false);
-                    obj.take_screenshot();
                 }));
 
             self.done_btn.connect_clicked(clone!(@weak obj => move |_| {
@@ -238,14 +209,6 @@ mod imp {
                 .connect_code_detected(clone!(@weak obj => move |_, data| {
                     obj.finish_scanning(data);
                 }));
-
-            self.qr_code_scanner.connect_notify_local(
-                Some("has-camera"),
-                clone!(@weak obj => move |_, _| {
-                    obj.update_camera_state();
-                }),
-            );
-            obj.update_camera_state();
         }
 
         fn dispose(&self, obj: &Self::Type) {
@@ -256,6 +219,10 @@ mod imp {
 
                 if let Some(handler) = self.name_handler.take() {
                     request.user().disconnect(handler);
+                }
+
+                if let Some(handler) = self.supported_methods_handler.take() {
+                    request.disconnect(handler);
                 }
             }
         }
@@ -303,6 +270,10 @@ impl IdentityVerificationWidget {
             if let Some(handler) = priv_.name_handler.take() {
                 previous_request.user().disconnect(handler);
             }
+
+            if let Some(handler) = priv_.supported_methods_handler.take() {
+                previous_request.disconnect(handler);
+            }
         }
 
         if let Some(ref request) = request {
@@ -323,11 +294,21 @@ impl IdentityVerificationWidget {
             );
 
             priv_.name_handler.replace(Some(handler));
+
+            let handler = request.connect_notify_local(
+                Some("supported-methods"),
+                clone!(@weak self as obj => move |_, _| {
+                    obj.update_supported_methods();
+                }),
+            );
+
+            priv_.supported_methods_handler.replace(Some(handler));
         }
 
         priv_.request.replace(request);
         self.init_mode();
         self.update_view();
+        self.update_supported_methods();
         self.notify("request");
     }
 
@@ -346,12 +327,6 @@ impl IdentityVerificationWidget {
         priv_.start_emoji_btn.set_sensitive(true);
         priv_.start_emoji_btn2.set_loading(false);
         priv_.start_emoji_btn2.set_sensitive(true);
-        priv_.start_emoji_btn3.set_loading(false);
-        priv_.start_emoji_btn3.set_sensitive(true);
-        priv_.take_screenshot_btn2.set_loading(false);
-        priv_.take_screenshot_btn2.set_sensitive(true);
-        priv_.take_screenshot_btn3.set_loading(false);
-        priv_.take_screenshot_btn3.set_sensitive(true);
 
         self.clean_emoji();
     }
@@ -448,17 +423,6 @@ impl IdentityVerificationWidget {
         }));
     }
 
-    fn take_screenshot(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            let root = obj.root().unwrap();
-            if let Some(code) = screenshot::capture(&root).await {
-                obj.finish_scanning(code);
-            } else {
-                obj.reset();
-            }
-        }));
-    }
-
     fn finish_scanning(&self, data: QrVerificationData) {
         let priv_ = self.imp();
         priv_.qr_code_scanner.stop();
@@ -468,10 +432,15 @@ impl IdentityVerificationWidget {
         priv_.main_stack.set_visible_child_name("qr-code-scanned");
     }
 
-    fn update_camera_state(&self) {
-        self.imp()
-            .scan_qr_code_btn
-            .set_label(&gettext("Scan QR code with this session"))
+    fn update_supported_methods(&self) {
+        let priv_ = self.imp();
+        if let Some(request) = self.request() {
+            priv_.scan_qr_code_btn.set_visible(
+                request
+                    .supported_methods()
+                    .contains(VerificationSupportedMethods::QR_SCAN),
+            );
+        }
     }
 
     fn init_mode(&self) {
@@ -491,10 +460,6 @@ impl IdentityVerificationWidget {
                 priv_.label3.set_label(&gettext("Verify Session"));
                 priv_.label4.set_label(&gettext("Scan the QR code with this session from another session logged into this account."));
                 priv_.label5.set_label(&gettext("You scanned to qr code successfully. You may need to confirm the verification in the other session."));
-                priv_.label6.set_label(&gettext("Verify Session"));
-                priv_
-                    .label7
-                    .set_label(&gettext("Select an option to verify the new session."));
                 priv_.label8.set_label(&gettext("Verify Session"));
                 priv_.label9.set_label(&gettext(
                     "Scan this qr code with the newly logged in session.",
@@ -519,10 +484,6 @@ impl IdentityVerificationWidget {
                 priv_.label3.set_label(&gettext("Verify Session"));
                 priv_.label4.set_label(&gettext("Scan the QR code with this session from another session logged into this account."));
                 priv_.label5.set_label(&gettext("You scanned to qr code successfully. You may need to confirm the verification in the other session."));
-                priv_.label6.set_label(&gettext("Verify Session"));
-                priv_
-                    .label7
-                    .set_label(&gettext("Select an option to verify the new session."));
                 priv_.label8.set_label(&gettext("Verify Session"));
                 priv_.label9.set_label(&gettext(
                     "Scan this qr code with the newly logged in session.",
@@ -552,10 +513,6 @@ impl IdentityVerificationWidget {
                     name
                 ));
                 priv_.label5.set_markup(&gettext!("You scanned the QR code successfully. <b>{}</b> may need to confirm the verification.", name));
-                priv_.label6.set_markup(&gettext("Verification Request"));
-                priv_
-                    .label7
-                    .set_markup(&gettext!("Select an option to verify <b>{}</b>", name));
                 priv_.label8.set_markup(&gettext("Verification Request"));
                 priv_.label9.set_markup(&gettext(
                     "Ask <b>{}</b> to scan this QR code with their device.",

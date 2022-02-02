@@ -5,7 +5,6 @@ use matrix_sdk::encryption::verification::QrVerificationData;
 mod camera;
 mod camera_paintable;
 mod qr_code_detector;
-pub mod screenshot;
 
 pub use camera::Camera;
 
