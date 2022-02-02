@@ -209,11 +209,7 @@ mod imp {
                     let priv_ = obj.imp();
                     button.set_loading(true);
                     priv_.start_emoji_btn.set_sensitive(false);
-                    if priv_.qr_code_scanner.has_camera() {
-                        obj.start_scanning();
-                    } else {
-                        obj.take_screenshot();
-                    }
+                    obj.start_scanning();
                 }));
 
             self.take_screenshot_btn2
@@ -447,11 +443,8 @@ impl IdentityVerificationWidget {
     fn start_scanning(&self) {
         spawn!(clone!(@weak self as obj => async move {
             let priv_ = obj.imp();
-            if priv_.qr_code_scanner.start().await {
-                priv_.main_stack.set_visible_child_name("scan-qr-code");
-            } else {
-                priv_.main_stack.set_visible_child_name("no-camera");
-            }
+            priv_.qr_code_scanner.start().await;
+            priv_.main_stack.set_visible_child_name("scan-qr-code");
         }));
     }
 
@@ -476,16 +469,9 @@ impl IdentityVerificationWidget {
     }
 
     fn update_camera_state(&self) {
-        let priv_ = self.imp();
-        if priv_.qr_code_scanner.has_camera() {
-            priv_
-                .scan_qr_code_btn
-                .set_label(&gettext("Scan QR code with this session"))
-        } else {
-            priv_
-                .scan_qr_code_btn
-                .set_label(&gettext("Take a Screenshot of a Qr Code"))
-        }
+        self.imp()
+            .scan_qr_code_btn
+            .set_label(&gettext("Scan QR code with this session"))
     }
 
     fn init_mode(&self) {

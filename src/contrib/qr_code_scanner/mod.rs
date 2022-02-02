@@ -1,37 +1,31 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-use std::os::unix::prelude::RawFd;
-
-use ashpd::{desktop::camera, zbus};
-use glib::{clone, subclass};
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::subclass, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::verification::QrVerificationData;
 
-use crate::spawn;
-
+mod camera;
 mod camera_paintable;
 mod qr_code_detector;
 pub mod screenshot;
 
-use camera_paintable::CameraPaintable;
+pub use camera::Camera;
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::RefCell;
 
     use adw::subclass::prelude::*;
     use gtk::CompositeTemplate;
     use once_cell::sync::Lazy;
-    use tokio::sync::OnceCell;
 
     use super::*;
 
     #[derive(Debug, CompositeTemplate, Default)]
     #[template(resource = "/org/gnome/FractalNext/qr-code-scanner.ui")]
     pub struct QrCodeScanner {
-        pub paintable: CameraPaintable,
+        #[template_child]
+        pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub picture: TemplateChild<gtk::Picture>,
-        pub connection: OnceCell<zbus::Connection>,
-        pub has_camera: Cell<bool>,
+        pub handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -49,41 +43,6 @@ mod imp {
         }
     }
     impl ObjectImpl for QrCodeScanner {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::new(
-                    "has-camera",
-                    "Has Camera",
-                    "Whether we have a working camera",
-                    false,
-                    glib::ParamFlags::READABLE,
-                )]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, obj: &Self::Type, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "has-camera" => obj.has_camera().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn constructed(&self, obj: &Self::Type) {
-            self.picture.set_paintable(Some(&self.paintable));
-
-            let callback = glib::clone!(@weak obj => @default-return None, move |args: &[glib::Value]| {
-                let code = args.get(1).unwrap().get::<QrVerificationDataBoxed>().unwrap();
-                obj.emit_by_name::<()>("code-detected", &[&code]);
-
-                None
-            });
-            self.paintable
-                .connect_local("code-detected", false, callback);
-            obj.init_has_camera();
-        }
-
         fn signals() -> &'static [subclass::Signal] {
             static SIGNALS: Lazy<Vec<subclass::Signal>> = Lazy::new(|| {
                 vec![subclass::Signal::builder(
@@ -116,64 +75,41 @@ impl QrCodeScanner {
         glib::Object::new(&[]).expect("Failed to create a QrCodeScanner")
     }
 
-    async fn connection(&self) -> Result<&zbus::Connection, ashpd::Error> {
-        Ok(self
-            .imp()
-            .connection
-            .get_or_try_init(zbus::Connection::session)
-            .await?)
-    }
-
     pub fn stop(&self) {
-        self.imp().paintable.close_pipeline();
-    }
+        let priv_ = self.imp();
 
-    pub async fn start(&self) -> bool {
-        if let Ok(stream_fd) = self.stream().await {
-            if let Ok(node_id) = camera::pipewire_node_id(stream_fd).await {
-                self.imp().paintable.set_pipewire_fd(stream_fd, node_id);
-                self.set_has_camera(true);
-                return true;
+        if let Some(paintable) = priv_.picture.paintable() {
+            priv_.picture.set_paintable(gdk::Paintable::NONE);
+            if let Some(handler) = priv_.handler.take() {
+                paintable.disconnect(handler);
             }
         }
-
-        self.set_has_camera(false);
-        false
     }
 
-    async fn has_camera_internal(&self) -> Result<bool, ashpd::Error> {
-        let proxy = camera::CameraProxy::new(self.connection().await?).await?;
+    pub async fn start(&self) {
+        let priv_ = self.imp();
+        let camera = camera::Camera::default();
 
-        proxy.is_camera_present().await
-    }
+        if let Some(paintable) = camera.paintable().await {
+            self.stop();
 
-    async fn stream(&self) -> Result<RawFd, ashpd::Error> {
-        let proxy = camera::CameraProxy::new(self.connection().await?).await?;
+            priv_.picture.set_paintable(Some(&paintable));
 
-        proxy.access_camera().await?;
-        proxy.open_pipe_wire_remote().await
-    }
+            let callback = glib::clone!(@weak self as obj => @default-return None, move |args: &[glib::Value]| {
+                let code = args.get(1).unwrap().get::<QrVerificationDataBoxed>().unwrap();
+                obj.emit_by_name::<()>("code-detected", &[&code]);
 
-    fn init_has_camera(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.set_has_camera(obj.has_camera_internal().await.unwrap_or_default());
-        }));
-    }
+                None
+            });
+            let handler = paintable.connect_local("code-detected", false, callback);
 
-    pub fn has_camera(&self) -> bool {
-        self.imp().has_camera.get()
-    }
-
-    fn set_has_camera(&self, has_camera: bool) {
-        if has_camera == self.has_camera() {
-            return;
+            priv_.handler.replace(Some(handler));
+            priv_.stack.set_visible_child_name("camera");
+        } else {
+            priv_.stack.set_visible_child_name("no-camera");
         }
-
-        self.imp().has_camera.set(has_camera);
-        self.notify("has-camera");
     }
 
-    /// Connects the prepared signals to the function f given in input
     pub fn connect_code_detected<F: Fn(&Self, QrVerificationData) + 'static>(
         &self,
         f: F,

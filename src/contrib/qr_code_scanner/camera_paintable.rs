@@ -10,6 +10,7 @@
 //                            queue -- videoconvert -- gst paintable sink
 
 use std::{
+    cell::Cell,
     os::unix::io::AsRawFd,
     sync::{Arc, Mutex},
 };
@@ -54,7 +55,7 @@ mod imp {
 
     impl ObjectImpl for CameraPaintable {
         fn dispose(&self, paintable: &Self::Type) {
-            paintable.close_pipeline();
+            paintable.set_pipeline(None);
         }
 
         fn signals() -> &'static [subclass::Signal] {
@@ -120,11 +121,6 @@ mod imp {
                 snapshot.translate(&p);
 
                 image.snapshot(snapshot.upcast_ref(), new_width, new_height);
-            } else {
-                snapshot.append_color(
-                    &gdk::RGBA::BLACK,
-                    &graphene::Rect::new(0f32, 0f32, width as f32, height as f32),
-                );
             }
         }
     }
@@ -134,21 +130,24 @@ glib::wrapper! {
     pub struct CameraPaintable(ObjectSubclass<imp::CameraPaintable>) @implements gdk::Paintable;
 }
 
-impl Default for CameraPaintable {
-    fn default() -> Self {
-        glib::Object::new(&[]).expect("Failed to create a CameraPaintable")
-    }
-}
-
 impl CameraPaintable {
-    pub fn set_pipewire_fd<F: AsRawFd>(&self, fd: F, node_id: u32) {
+    pub async fn new<F: AsRawFd>(fd: F, node_id: Option<u32>) -> Self {
+        let self_: Self = glib::Object::new(&[]).expect("Failed to create a CameraPaintable");
+
+        self_.set_pipewire_fd(fd, node_id).await;
+        self_
+    }
+
+    async fn set_pipewire_fd<F: AsRawFd>(&self, fd: F, node_id: Option<u32>) {
         // Make sure that the previous pipeline is closed so that we can be sure that it
         // doesn't use the webcam
-        self.close_pipeline();
+        self.set_pipeline(None);
 
         let pipewire_src = gst::ElementFactory::make("pipewiresrc", None).unwrap();
         pipewire_src.set_property("fd", &fd.as_raw_fd());
-        pipewire_src.set_property("path", &node_id.to_string());
+        if let Some(node_id) = node_id {
+            pipewire_src.set_property("path", &node_id.to_string());
+        }
 
         let pipeline = gst::Pipeline::new(None);
         let detector = QrCodeDetector::new(self.create_sender()).upcast();
@@ -208,9 +207,22 @@ impl CameraPaintable {
         )
         .expect("Failed to add bus watch");
 
-        self.set_sink_paintable(sink.property::<gdk::Paintable>("paintable"));
+        let paintable = sink.property::<gdk::Paintable>("paintable");
+
+        // Workaround: we wait for the first frame so that we don't show a black frame
+        let (sender, receiver) = futures::channel::oneshot::channel();
+        let sender = Cell::new(Some(sender));
+
+        paintable.connect_invalidate_contents(move |_| {
+            if let Some(sender) = sender.take() {
+                sender.send(()).unwrap();
+            }
+        });
+
+        self.set_sink_paintable(paintable);
         pipeline.set_state(gst::State::Playing).unwrap();
         self.set_pipeline(Some(pipeline));
+        receiver.await.unwrap();
     }
 
     fn set_sink_paintable(&self, paintable: gdk::Paintable) {
@@ -242,10 +254,6 @@ impl CameraPaintable {
         }
 
         priv_.pipeline.replace(pipeline);
-    }
-
-    pub fn close_pipeline(&self) {
-        self.set_pipeline(None);
     }
 
     fn create_sender(&self) -> glib::Sender<Action> {

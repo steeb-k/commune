@@ -33,6 +33,7 @@ data/resources/ui/session-verification.ui
 data/resources/ui/shortcuts.ui
 data/resources/ui/sidebar-room-row.ui
 data/resources/ui/sidebar.ui
+data/resources/ui/qr-code-scanner.ui
 
 # Rust files
 src/application.rs

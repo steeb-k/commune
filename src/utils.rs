@@ -214,3 +214,25 @@ pub fn pending_event_ids() -> (Uuid, Box<EventId>) {
     let event_id = EventId::parse(format!("${}:fractal.gnome.org", txn_id)).unwrap();
     (txn_id, event_id)
 }
+
+pub enum TimeoutFuture {
+    Timeout,
+}
+
+use futures::{
+    future::{self, Either, Future},
+    pin_mut,
+};
+
+pub async fn timeout_future<T>(
+    timeout: std::time::Duration,
+    fut: impl Future<Output = T>,
+) -> Result<T, TimeoutFuture> {
+    let timeout = glib::timeout_future(timeout);
+    pin_mut!(fut);
+
+    match future::select(fut, timeout).await {
+        Either::Left((x, _)) => Ok(x),
+        _ => Err(TimeoutFuture::Timeout),
+    }
+}
