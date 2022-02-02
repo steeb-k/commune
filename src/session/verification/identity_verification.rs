@@ -22,6 +22,7 @@ use tokio::sync::mpsc;
 
 use super::{VERIFICATION_CREATION_TIMEOUT, VERIFICATION_RECEIVE_TIMEOUT};
 use crate::{
+    contrib::Camera,
     session::{user::UserExt, Session, User},
     spawn, spawn_tokio, Error,
 };
@@ -388,7 +389,8 @@ impl IdentityVerification {
             (Mode::CurrentSession, session.user().unwrap())
         };
 
-        let supported_methods = SupportedMethods::with_camera(true);
+        let supported_methods =
+            SupportedMethods::with_camera(Camera::default().has_camera().await.unwrap_or_default());
 
         if let Some(identity) = user.crypto_identity().await {
             let handle = spawn_tokio!(async move {
@@ -439,6 +441,7 @@ impl IdentityVerification {
 
         let (sync_sender, sync_receiver) = mpsc::channel(100);
         priv_.sync_sender.replace(Some(sync_sender));
+
         let supported_methods = self.supported_methods();
 
         let handle = spawn_tokio!(async move {
@@ -945,6 +948,11 @@ impl Context {
             debug!("Wait for user action accept or cancel");
             // Wait for the user to accept or cancel the request
             wait![self];
+
+            // Check whether we have a camera
+            if !Camera::default().has_camera().await.unwrap_or_default() {
+                self.supported_methods.remove(SupportedMethods::QR_SCAN);
+            }
 
             self.request
                 .accept_with_methods(self.supported_methods.into())
