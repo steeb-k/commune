@@ -11,6 +11,10 @@ use matrix_sdk::{
 };
 use tracing::error;
 
+mod room_list_metainfo;
+
+use self::room_list_metainfo::RoomListMetainfo;
+pub use self::room_list_metainfo::RoomMetainfo;
 use crate::{
     gettext_f,
     session::model::{Room, Session},
@@ -27,10 +31,20 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct RoomList {
+        /// The list of rooms.
         pub list: RefCell<IndexMap<OwnedRoomId, Room>>,
+        /// The list of rooms we are currently joining.
         pub pending_rooms: RefCell<HashSet<OwnedRoomOrAliasId>>,
+        /// The list of rooms that were upgraded and for which we haven't joined
+        /// the successor yet.
         pub tombstoned_rooms: RefCell<HashSet<OwnedRoomId>>,
         pub session: WeakRef<Session>,
+        /// The rooms metainfo that allow to restore the RoomList in its
+        /// previous state.
+        ///
+        /// This is in a Mutex because updating the data in the store is async
+        /// and we don't want to overwrite newer data with older data.
+        pub metainfo: RoomListMetainfo,
     }
 
     #[glib::object_subclass]
@@ -53,7 +67,7 @@ mod imp {
 
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
             match pspec.name() {
-                "session" => self.session.set(value.get().ok().as_ref()),
+                "session" => self.obj().set_session(value.get().ok().as_ref()),
                 _ => unimplemented!(),
             }
         }
@@ -70,15 +84,22 @@ mod imp {
                 Lazy::new(|| vec![Signal::builder("pending-rooms-changed").build()]);
             SIGNALS.as_ref()
         }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+            self.metainfo.set_room_list(&self.obj());
+        }
     }
 
     impl ListModelImpl for RoomList {
         fn item_type(&self) -> glib::Type {
             Room::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.list.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
@@ -107,9 +128,19 @@ impl RoomList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
+    /// The ancestor session.
     pub fn session(&self) -> Session {
         self.imp().session.upgrade().unwrap()
+    }
+
+    /// Set the ancestor session.
+    fn set_session(&self, session: Option<&Session>) {
+        let Some(session) = session else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.session.set(Some(session));
     }
 
     pub fn is_pending_room(&self, identifier: &RoomOrAliasId) -> bool {
@@ -241,28 +272,18 @@ impl RoomList {
     ///
     /// Note that the `Store` currently doesn't store all events, therefore, we
     /// aren't really loading much via this function.
-    pub fn load(&self) {
-        let session = self.session();
-        let client = session.client();
-        let matrix_rooms = client.rooms();
-        let added = matrix_rooms.len();
+    pub async fn load(&self) {
+        let imp = self.imp();
 
-        if added > 0 {
-            {
-                let mut added = Vec::with_capacity(matrix_rooms.len());
-                for matrix_room in matrix_rooms {
-                    let room_id = matrix_room.room_id().to_owned();
-                    let room = Room::new(&session, &room_id);
-                    added.push((room_id, room));
-                }
-                self.imp().list.borrow_mut().extend(added);
-            }
+        let rooms = imp.metainfo.load_rooms().await;
+        let added = rooms.len();
+        imp.list.borrow_mut().extend(rooms);
 
-            self.items_added(added);
-        }
+        self.items_added(added);
     }
 
     pub fn handle_response_rooms(&self, rooms: ResponseRooms) {
+        let imp = self.imp();
         let session = self.session();
 
         let mut new_rooms = HashMap::new();
@@ -272,7 +293,7 @@ impl RoomList {
                 Some(room) => room,
                 None => new_rooms
                     .entry(room_id.clone())
-                    .or_insert_with_key(|room_id| Room::new(&session, room_id))
+                    .or_insert_with_key(|room_id| Room::new(&session, room_id, None))
                     .clone(),
             };
 
@@ -286,11 +307,12 @@ impl RoomList {
                 Some(room) => room,
                 None => new_rooms
                     .entry(room_id.clone())
-                    .or_insert_with_key(|room_id| Room::new(&session, room_id))
+                    .or_insert_with_key(|room_id| Room::new(&session, room_id, None))
                     .clone(),
             };
 
             self.pending_rooms_remove((*room_id).into());
+            imp.metainfo.watch_room(&room);
             room.update_room();
             room.handle_joined_response(joined_room);
         }
@@ -300,17 +322,18 @@ impl RoomList {
                 Some(room) => room,
                 None => new_rooms
                     .entry(room_id.clone())
-                    .or_insert_with_key(|room_id| Room::new(&session, room_id))
+                    .or_insert_with_key(|room_id| Room::new(&session, room_id, None))
                     .clone(),
             };
 
             self.pending_rooms_remove((*room_id).into());
+            imp.metainfo.watch_room(&room);
             room.update_room();
         }
 
         if !new_rooms.is_empty() {
             let added = new_rooms.len();
-            self.imp().list.borrow_mut().extend(new_rooms);
+            imp.list.borrow_mut().extend(new_rooms);
             self.items_added(added);
         }
     }

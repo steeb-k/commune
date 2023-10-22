@@ -29,7 +29,7 @@ src/session/model/session.rs
 src/session/model/room/member.rs
 src/session/model/room/member_role.rs
 src/session/model/room/mod.rs
-src/session/model/room_list.rs
+src/session/model/room_list/mod.rs
 src/session/model/sidebar/category/category_type.rs
 src/session/model/sidebar/entry/entry_type.rs
 src/session/view/account_settings/devices_page/device_list.rs

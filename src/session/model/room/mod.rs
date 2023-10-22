@@ -46,8 +46,8 @@ pub use self::{
     typing_list::TypingList,
 };
 use super::{
-    AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Session, SidebarItem,
-    SidebarItemImpl, User,
+    room_list::RoomMetainfo, AvatarData, AvatarImage, AvatarUriSource, IdentityVerification,
+    Session, SidebarItem, SidebarItemImpl, User,
 };
 use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
@@ -284,11 +284,24 @@ glib::wrapper! {
 }
 
 impl Room {
-    pub fn new(session: &Session, room_id: &RoomId) -> Self {
-        glib::Object::builder()
+    pub fn new(session: &Session, room_id: &RoomId, metainfo: Option<&RoomMetainfo>) -> Self {
+        let this = glib::Object::builder::<Self>()
             .property("session", session)
             .property("room-id", &room_id.to_string())
-            .build()
+            .build();
+
+        if let Some(&RoomMetainfo {
+            latest_activity,
+            is_read,
+        }) = metainfo
+        {
+            this.set_latest_activity(latest_activity);
+            this.set_is_read(is_read);
+
+            this.update_highlight();
+        }
+
+        this
     }
 
     /// The current session.

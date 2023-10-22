@@ -236,7 +236,7 @@ impl Session {
         self.update_user_profile();
         self.update_offline().await;
 
-        self.room_list().load();
+        self.room_list().load().await;
         self.setup_direct_room_handler();
         self.setup_room_encrypted_changes();
 
