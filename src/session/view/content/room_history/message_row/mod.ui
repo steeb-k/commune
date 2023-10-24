@@ -4,7 +4,6 @@
     <child>
       <object class="GtkGrid">
         <property name="column-spacing">10</property>
-        <property name="row-spacing">10</property>
         <child>
           <object class="ComponentsAvatar" id="avatar">
             <property name="size">36</property>
@@ -19,6 +18,7 @@
         <child>
           <object class="GtkBox" id="header">
             <property name="spacing">10</property>
+            <property name="margin-bottom">10</property>
             <layout>
               <property name="column">1</property>
               <property name="row">0</property>
