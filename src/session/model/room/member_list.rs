@@ -17,6 +17,21 @@ use tracing::error;
 use super::{Event, Member, Membership, Room};
 use crate::{spawn, spawn_tokio};
 
+/// The state of a resource that can be loaded.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "LoadingState")]
+pub enum LoadingState {
+    /// It hasn't been loaded yet.
+    #[default]
+    Initial,
+    /// It is currently loading.
+    Loading,
+    /// It has been fully loaded.
+    Ready,
+    /// An error occurred while loading it.
+    Error,
+}
+
 mod imp {
     use std::cell::{Cell, RefCell};
 
@@ -31,8 +46,8 @@ mod imp {
         pub members: RefCell<IndexMap<OwnedUserId, Member>>,
         /// The room these members belong to.
         pub room: WeakRef<Room>,
-        /// Whether all the members are loaded.
-        pub is_loaded: Cell<bool>,
+        /// The loading state of the list.
+        pub state: Cell<LoadingState>,
     }
 
     #[glib::object_subclass]
@@ -49,7 +64,7 @@ mod imp {
                     glib::ParamSpecObject::builder::<Room>("room")
                         .construct_only()
                         .build(),
-                    glib::ParamSpecBoolean::builder("is-loaded")
+                    glib::ParamSpecEnum::builder::<LoadingState>("state")
                         .read_only()
                         .build(),
                 ]
@@ -70,7 +85,7 @@ mod imp {
 
             match pspec.name() {
                 "room" => obj.room().to_value(),
-                "is-loaded" => obj.is_loaded().to_value(),
+                "state" => obj.state().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -80,9 +95,11 @@ mod imp {
         fn item_type(&self) -> glib::Type {
             Member::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.members.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             let members = self.members.borrow();
 
@@ -123,23 +140,23 @@ impl MemberList {
         );
     }
 
-    /// Whether this list is fully loaded.
-    pub fn is_loaded(&self) -> bool {
-        self.imp().is_loaded.get()
+    /// The state of this list.
+    pub fn state(&self) -> LoadingState {
+        self.imp().state.get()
     }
 
-    /// Set whether this list is fully loaded.
-    fn set_is_loaded(&self, is_loaded: bool) {
-        if self.is_loaded() == is_loaded {
+    /// Set whether this list is being loaded.
+    fn set_state(&self, state: LoadingState) {
+        if self.state() == state {
             return;
         }
 
-        self.imp().is_loaded.set(is_loaded);
-        self.notify("is-loaded");
+        self.imp().state.set(state);
+        self.notify("state");
     }
 
     pub fn reload(&self) {
-        self.set_is_loaded(false);
+        self.set_state(LoadingState::Initial);
 
         spawn!(clone!(@weak self as obj => async move {
             obj.load().await;
@@ -148,14 +165,40 @@ impl MemberList {
 
     /// Load this list.
     async fn load(&self) {
-        if self.is_loaded() {
+        if matches!(self.state(), LoadingState::Loading | LoadingState::Ready) {
             return;
         }
 
-        self.set_is_loaded(true);
+        self.set_state(LoadingState::Loading);
 
         let room = self.room();
         let matrix_room = room.matrix_room();
+
+        // First load what we have locally.
+        let matrix_room_clone = matrix_room.clone();
+        let handle = spawn_tokio!(async move {
+            let mut memberships = RoomMemberships::all();
+            memberships.remove(RoomMemberships::LEAVE);
+
+            matrix_room_clone.members_no_sync(memberships).await
+        });
+
+        match handle.await.unwrap() {
+            Ok(members) => {
+                self.update_from_room_members(&members);
+
+                if matrix_room.are_members_synced() {
+                    // Nothing more to do, we can stop here.
+                    self.set_state(LoadingState::Ready);
+                    return;
+                }
+            }
+            Err(error) => {
+                error!("Failed to load room members from store: {error}");
+            }
+        }
+
+        // We don't have everything locally, request the rest from the server.
         let handle = spawn_tokio!(async move {
             let mut memberships = RoomMemberships::all();
             memberships.remove(RoomMemberships::LEAVE);
@@ -168,30 +211,11 @@ impl MemberList {
             Ok(members) => {
                 // Add all members needed to display room events.
                 self.update_from_room_members(&members);
-                return;
+                self.set_state(LoadingState::Ready);
             }
             Err(error) => {
-                self.set_is_loaded(false);
+                self.set_state(LoadingState::Error);
                 error!(%error, "Failed to load room members from server");
-            }
-        }
-
-        // Use the members already received by the SDK as a fallback.
-        let matrix_room = room.matrix_room();
-        let handle = spawn_tokio!(async move {
-            let mut memberships = RoomMemberships::all();
-            memberships.remove(RoomMemberships::LEAVE);
-
-            matrix_room.members_no_sync(memberships).await
-        });
-
-        match handle.await.unwrap() {
-            Ok(members) => {
-                // Add all members needed to display room events.
-                self.update_from_room_members(&members);
-            }
-            Err(error) => {
-                error!(%error, "Failed to load room members from store");
             }
         }
     }
