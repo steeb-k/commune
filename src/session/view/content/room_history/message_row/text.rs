@@ -7,7 +7,6 @@ use html2pango::{
     html_escape, markup_links,
 };
 use matrix_sdk::ruma::events::room::message::{FormattedBody, MessageFormat};
-use sourceview::prelude::*;
 
 use super::ContentFormat;
 use crate::{
@@ -403,14 +402,17 @@ fn create_widget_for_html_block(
             } else {
                 let scrolled = gtk::ScrolledWindow::new();
                 scrolled.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Never);
-                let buffer = sourceview::Buffer::new(None);
-                buffer.set_highlight_matching_brackets(false);
-                buffer.set_text(s);
+                let buffer = sourceview::Buffer::builder()
+                    .highlight_matching_brackets(false)
+                    .text(s)
+                    .build();
                 crate::utils::sourceview::setup_style_scheme(&buffer);
-                let view = sourceview::View::with_buffer(&buffer);
-                view.set_editable(false);
-                view.add_css_class("codeview");
-                view.add_css_class("frame");
+                let view = sourceview::View::builder()
+                    .buffer(&buffer)
+                    .editable(false)
+                    .css_classes(["codeview", "frame"])
+                    .hexpand(true)
+                    .build();
                 scrolled.set_child(Some(&view));
                 scrolled.upcast()
             }
