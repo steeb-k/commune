@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-10-04 13:03+0000\n"
-"PO-Revision-Date: 2023-10-05 20:01+0300\n"
+"POT-Creation-Date: 2023-10-26 12:19+0000\n"
+"PO-Revision-Date: 2023-10-26 23:19+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -170,7 +170,7 @@ msgstr "Вибраний файл не є файлом зображення"
 msgid "Could not determine the type of the chosen file"
 msgstr "Не вдалося визначити тип вибраного файла"
 
-#: src/components/loading_listbox_row.ui:31
+#: src/components/loading_row.ui:31
 msgid "Try again"
 msgstr "Спробувати ще раз"
 
@@ -282,11 +282,11 @@ msgstr ""
 "Ознайомтеся із журналом програми та документацією до вашого дистрибутива, "
 "щоб дізнатися більше."
 
-#: src/greeter.rs:75 src/login/mod.rs:636 src/window.rs:497
+#: src/greeter.rs:75 src/login/mod.rs:626 src/window.rs:497
 msgid "No network connection"
 msgstr "Немає з'єднання з мережею"
 
-#: src/greeter.rs:79 src/login/mod.rs:641 src/window.rs:501
+#: src/greeter.rs:79 src/login/mod.rs:631 src/window.rs:501
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
@@ -387,7 +387,7 @@ msgstr "За_були пароль?"
 msgid "More SSO Providers"
 msgstr "Додаткові надавачі SSO"
 
-#: src/login/mod.rs:524
+#: src/login/mod.rs:514
 msgid "Unable to store session"
 msgstr "Не вдалося зберегти сеанс"
 
@@ -588,24 +588,24 @@ msgstr "Модератор"
 msgid "Normal user"
 msgstr "Звичайний користувач"
 
-#: src/session/model/room/mod.rs:960
+#: src/session/model/room/mod.rs:924
 msgid "Unknown"
 msgstr "Невідомий"
 
 #. Translators: This is the name of a room that is empty but had another user before.
 #. Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:988
+#: src/session/model/room/mod.rs:952
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:990
+#: src/session/model/room/mod.rs:954
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list.rs:347
+#: src/session/model/room_list/mod.rs:370
 msgid "Failed to join room {room_name}. Try again later."
 msgstr ""
 "Не вдалося долучитися до кімнати {room_name}. Повторіть спробу пізніше."
@@ -1069,32 +1069,32 @@ msgid "Backup Encryption Keys"
 msgstr "Створити резервну копію ключів шифрування"
 
 #: src/session/view/account_settings/user_page/mod.rs:220
-#: src/session/view/content/room_details/general_page/mod.rs:240
+#: src/session/view/content/room_details/general_page/mod.rs:253
 msgid "Avatar removed successfully"
 msgstr "Аватар успішно вилучено"
 
 #: src/session/view/account_settings/user_page/mod.rs:222
-#: src/session/view/content/room_details/general_page/mod.rs:242
+#: src/session/view/content/room_details/general_page/mod.rs:255
 msgid "Avatar changed successfully"
 msgstr "Аватар успішно змінено"
 
 #: src/session/view/account_settings/user_page/mod.rs:235
-#: src/session/view/content/room_details/general_page/mod.rs:265
+#: src/session/view/content/room_details/general_page/mod.rs:278
 msgid "Could not load file"
 msgstr "Не вдалось завантажити файл"
 
 #: src/session/view/account_settings/user_page/mod.rs:250
-#: src/session/view/content/room_details/general_page/mod.rs:286
+#: src/session/view/content/room_details/general_page/mod.rs:299
 msgid "Could not upload avatar"
 msgstr "Не вдалося вивантажити аватар"
 
 #: src/session/view/account_settings/user_page/mod.rs:279
-#: src/session/view/content/room_details/general_page/mod.rs:306
+#: src/session/view/content/room_details/general_page/mod.rs:319
 msgid "Could not change avatar"
 msgstr "Не вдалося змінити аватар"
 
 #: src/session/view/account_settings/user_page/mod.rs:313
-#: src/session/view/content/room_details/general_page/mod.rs:340
+#: src/session/view/content/room_details/general_page/mod.rs:353
 msgid "Could not remove avatar"
 msgstr "Не вдалося вилучити аватар"
 
@@ -1137,13 +1137,13 @@ msgstr "Список кімнат"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:208
-#: src/session/view/content/room_history/mod.rs:1586
+#: src/session/view/content/room_history/mod.rs:1588
 #: src/session/view/content/room_history/state_row/tombstone.rs:123
 msgid "View"
 msgstr "Перегляд"
 
 #: src/session/view/content/explore/public_room_row.rs:210
-#: src/session/view/content/room_history/mod.rs:1589
+#: src/session/view/content/room_history/mod.rs:1591
 #: src/session/view/content/room_history/state_row/tombstone.rs:125
 msgid "Join"
 msgstr "Увійти"
@@ -1189,19 +1189,19 @@ msgstr "Не вибрано жодної кімнати"
 msgid "Join a room to start chatting."
 msgstr "Увійдіть до кімнати, щоб почати спілкування."
 
-#: src/session/view/content/room_details/general_page/mod.rs:432
+#: src/session/view/content/room_details/general_page/mod.rs:447
 msgid "Room name saved successfully"
 msgstr "Назву кімнати успішно збережено"
 
-#: src/session/view/content/room_details/general_page/mod.rs:457
+#: src/session/view/content/room_details/general_page/mod.rs:472
 msgid "Room topic saved successfully"
 msgstr "Тему кімнати успішно збережено"
 
-#: src/session/view/content/room_details/general_page/mod.rs:534
+#: src/session/view/content/room_details/general_page/mod.rs:550
 msgid "Could not change room name"
 msgstr "Не вдалося змінити назву кімнати"
 
-#: src/session/view/content/room_details/general_page/mod.rs:558
+#: src/session/view/content/room_details/general_page/mod.rs:574
 msgid "Could not change room topic"
 msgstr "Не вдалося змінити тему кімнати"
 
@@ -1309,6 +1309,11 @@ msgstr "Не знайдено жодного користувача, який в
 msgid "An error occurred while searching for matches."
 msgstr "Під час пошуку відповідників сталася помилка."
 
+#: src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs:203
+#| msgid "Could not open the store."
+msgid "Could not load the full list of room members"
+msgstr "Не вдалося завантажити повний список учасників кімнати."
+
 #: src/session/view/content/room_details/member_page/member_menu.ui:6
 msgid "_Verify"
 msgstr "Пере_вірити"
@@ -1325,15 +1330,15 @@ msgstr "Зробити _адміністратором"
 msgid "_Kick"
 msgstr "Ви_кинути"
 
-#: src/session/view/content/room_details/member_page/mod.rs:277
+#: src/session/view/content/room_details/member_page/mod.rs:279
 msgid "Invited Room Members"
 msgstr "Запрошені учасники кімнати"
 
-#: src/session/view/content/room_details/member_page/mod.rs:278
+#: src/session/view/content/room_details/member_page/mod.rs:280
 msgid "Banned Room Members"
 msgstr "Заблоковані учасники кімнати"
 
-#: src/session/view/content/room_details/member_page/mod.rs:279
+#: src/session/view/content/room_details/member_page/mod.rs:281
 msgid "Room Members"
 msgstr "Учасники кімнати"
 
@@ -1349,28 +1354,6 @@ msgstr "Пошук учасників в кімнаті"
 #: src/session/view/content/room_history/attachment_dialog.ui:23
 msgid "_Send"
 msgstr "_Надіслати"
-
-#: src/session/view/content/room_history/event_actions.rs:111
-#: src/session/view/content/room_history/mod.rs:952
-#: src/session/view/media_viewer.rs:575
-msgid "Permalink copied to clipboard"
-msgstr "Стале посилання скопійовано до буфера обміну"
-
-#: src/session/view/content/room_history/event_actions.rs:115
-#: src/session/view/content/room_history/mod.rs:956
-#: src/session/view/media_viewer.rs:579
-msgid "Failed to copy the permalink"
-msgstr "Не вдалося скопіювати стале посилання"
-
-#: src/session/view/content/room_history/event_actions.rs:217
-#: src/session/view/content/room_history/event_actions.rs:254
-#: src/session/view/content/room_history/event_actions.rs:281
-msgid "Message copied to clipboard"
-msgstr "Повідомлення скопійовано до буфера обміну"
-
-#: src/session/view/content/room_history/event_actions.rs:293
-msgid "Thumbnail copied to clipboard"
-msgstr "Мініатюру скопійовано до буфера обміну"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1433,24 +1416,46 @@ msgstr "П_ереглянути код"
 msgid "Re_move"
 msgstr "В_илучити"
 
-#: src/session/view/content/room_history/item_row.rs:292
+#: src/session/view/content/room_history/item_row.rs:299
 msgid "This is the start of the visible history"
 msgstr "Це початок видимого журналу"
 
 #. Translators: This is a date format in the day divider without the
 #. year
-#: src/session/view/content/room_history/item_row.rs:313
+#: src/session/view/content/room_history/item_row.rs:320
 msgid "%A, %B %e"
 msgstr "%A, %e %b"
 
 #. Translators: This is a date format in the day divider with the year
-#: src/session/view/content/room_history/item_row.rs:316
+#: src/session/view/content/room_history/item_row.rs:323
 msgid "%A, %B %e, %Y"
 msgstr "%A, %e %b %Y"
 
-#: src/session/view/content/room_history/item_row.rs:322
+#: src/session/view/content/room_history/item_row.rs:329
 msgid "New Messages"
 msgstr "Нові повідомлення"
+
+#: src/session/view/content/room_history/item_row.rs:457
+#: src/session/view/content/room_history/mod.rs:954
+#: src/session/view/media_viewer.rs:573
+msgid "Permalink copied to clipboard"
+msgstr "Стале посилання скопійовано до буфера обміну"
+
+#: src/session/view/content/room_history/item_row.rs:461
+#: src/session/view/content/room_history/mod.rs:958
+#: src/session/view/media_viewer.rs:577
+msgid "Failed to copy the permalink"
+msgstr "Не вдалося скопіювати стале посилання"
+
+#: src/session/view/content/room_history/item_row.rs:563
+#: src/session/view/content/room_history/item_row.rs:600
+#: src/session/view/content/room_history/item_row.rs:627
+msgid "Message copied to clipboard"
+msgstr "Повідомлення скопійовано до буфера обміну"
+
+#: src/session/view/content/room_history/item_row.rs:642
+msgid "Thumbnail copied to clipboard"
+msgstr "Мініатюру скопійовано до буфера обміну"
 
 #: src/session/view/content/room_history/message_row/audio.rs:224
 #: src/session/view/content/room_history/message_row/audio.rs:228
@@ -1479,7 +1484,6 @@ msgstr ""
 "щойно стануть доступними ключі."
 
 #: src/session/view/content/room_history/message_row/content.rs:374
-#| msgid "This message was removed."
 msgid "This message was redacted."
 msgstr "Це повідомлення було змінено."
 
@@ -1496,82 +1500,82 @@ msgstr "Підтримки файла зображення не передбач
 msgid "Could not retrieve media"
 msgstr "Не вдалося отримати мультимедійні дані"
 
-#: src/session/view/content/room_history/message_row/mod.ui:61
+#: src/session/view/content/room_history/message_row/mod.ui:69
 msgid "Edited"
 msgstr "Змінено"
 
-#: src/session/view/content/room_history/mod.rs:231
+#: src/session/view/content/room_history/mod.rs:229
 msgid "The location request has been cancelled."
 msgstr "Запит щодо визначення розташування було скасовано."
 
-#: src/session/view/content/room_history/mod.rs:235
+#: src/session/view/content/room_history/mod.rs:233
 msgid "Failed to retrieve current location."
 msgstr "Не вдалося отримати дані щодо поточного розташування."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/mod.rs:720
+#: src/session/view/content/room_history/mod.rs:718
 msgid "Reply to {user}"
 msgstr "Відповідь {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/mod.rs:771
+#: src/session/view/content/room_history/mod.rs:769
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Редагування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:936
+#: src/session/view/content/room_history/mod.rs:938
 #: src/session/view/sidebar/room_row.rs:389
 #: src/session/view/sidebar/room_row.rs:410 src/session/view/sidebar/row.rs:335
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}."
 
-#: src/session/view/content/room_history/mod.rs:1172
+#: src/session/view/content/room_history/mod.rs:1174
 msgid "Your Location"
 msgstr "Ваше місце перебування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/mod.rs:1184
+#: src/session/view/content/room_history/mod.rs:1186
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Розташування користувача {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/mod.rs:1229
+#: src/session/view/content/room_history/mod.rs:1231
 msgid "Select File"
 msgstr "Виберіть файл"
 
-#: src/session/view/content/room_history/mod.rs:1231
+#: src/session/view/content/room_history/mod.rs:1233
 msgid "Select"
 msgstr "Вибрати"
 
-#: src/session/view/content/room_history/mod.rs:1246
+#: src/session/view/content/room_history/mod.rs:1248
 msgid "Could not open file"
 msgstr "Не вдалося відкрити файл"
 
-#: src/session/view/content/room_history/mod.rs:1291
+#: src/session/view/content/room_history/mod.rs:1293
 msgid "Error reading file"
 msgstr "Помилка при зчитуванні файла"
 
-#: src/session/view/content/room_history/mod.rs:1317
+#: src/session/view/content/room_history/mod.rs:1319
 msgid "Error getting file from drop"
 msgstr "Помилка під час отримання файла зі скидання"
 
-#: src/session/view/content/room_history/mod.rs:1349
+#: src/session/view/content/room_history/mod.rs:1351
 msgid "Error getting image from clipboard"
 msgstr "Помилка під час отримання зображення з буфера обміну"
 
-#: src/session/view/content/room_history/mod.rs:1366
+#: src/session/view/content/room_history/mod.rs:1368
 msgid "Error getting file from clipboard"
 msgstr "Помилка під час отримання файла з буфера обміну"
 
-#: src/session/view/content/room_history/mod.rs:1584
-#: src/session/view/content/room_history/mod.rs:1588
+#: src/session/view/content/room_history/mod.rs:1586
+#: src/session/view/content/room_history/mod.rs:1590
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:1591
+#: src/session/view/content/room_history/mod.rs:1593
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
@@ -2209,7 +2213,7 @@ msgstr ""
 "Введіть ідентифікатор кімнати, альтернативну назву кімнати або постійне "
 "посилання."
 
-#: src/session/view/media_viewer.rs:533
+#: src/session/view/media_viewer.rs:531
 msgid "Image copied to clipboard"
 msgstr "Зображення скопійовано до буфера обміну"
 
