@@ -183,19 +183,20 @@ impl GeneralPage {
                     obj.topic_changed(room.topic());
                 }),
             ),
+            room.connect_notify_local(
+                Some("joined-members-count"),
+                clone!(@weak self as obj => move |room, _| {
+                    obj.member_count_changed(room.joined_members_count());
+                }),
+            ),
         ];
 
+        self.member_count_changed(room.joined_members_count());
         self.init_avatar(room);
         self.init_edit_mode(room);
 
-        let members = room.get_or_create_members();
-        members.connect_items_changed(clone!(@weak self as obj => move |members, _, _, _| {
-            obj.member_count_changed(members.n_items());
-        }));
-
-        self.member_count_changed(members.n_items());
         // Keep strong reference to members list.
-        imp.room_members.replace(Some(members));
+        imp.room_members.replace(Some(room.get_or_create_members()));
 
         imp.room.set(room, room_handler_ids);
         self.notify("room");
@@ -578,7 +579,7 @@ impl GeneralPage {
         }
     }
 
-    fn member_count_changed(&self, n: u32) {
+    fn member_count_changed(&self, n: u64) {
         self.imp().members_count.set_text(&format!("{n}"));
     }
 
