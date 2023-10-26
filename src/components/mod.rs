@@ -10,7 +10,7 @@ mod drag_overlay;
 mod editable_avatar;
 mod image_paintable;
 mod label_with_widgets;
-mod loading_listbox_row;
+mod loading_row;
 mod location_viewer;
 mod media_content_viewer;
 mod overlapping_box;
@@ -37,7 +37,7 @@ pub use self::{
     editable_avatar::{EditableAvatar, EditableAvatarState},
     image_paintable::ImagePaintable,
     label_with_widgets::{LabelWithWidgets, DEFAULT_PLACEHOLDER},
-    loading_listbox_row::LoadingListBoxRow,
+    loading_row::LoadingRow,
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
     overlapping_box::OverlappingBox,

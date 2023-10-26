@@ -8,7 +8,7 @@ src/account_switcher/mod.ui
 src/application.rs
 src/components/auth_dialog.ui
 src/components/editable_avatar.rs
-src/components/loading_listbox_row.ui
+src/components/loading_row.ui
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
 src/contrib/qr_code_scanner/mod.ui

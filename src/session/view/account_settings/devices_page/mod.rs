@@ -9,7 +9,7 @@ mod device_item;
 use self::device_item::Item as DeviceItem;
 mod device_list;
 use self::device_list::DeviceList;
-use crate::{components::LoadingListBoxRow, prelude::*, session::model::User};
+use crate::{components::LoadingRow, prelude::*, session::model::User};
 
 mod imp {
     use std::cell::RefCell;
@@ -107,7 +107,7 @@ impl DevicesPage {
                     match item.downcast_ref::<DeviceItem>().unwrap().type_() {
                         device_item::ItemType::Device(device) => DeviceRow::new(device, false).upcast(),
                         device_item::ItemType::Error(error) => {
-                            let row = LoadingListBoxRow::new();
+                            let row = LoadingRow::new();
                             row.set_error(Some(error));
                             row.connect_retry(clone!(@weak device_list => move|_| {
                                 device_list.load_devices()
@@ -115,7 +115,7 @@ impl DevicesPage {
                             row.upcast()
                         }
                         device_item::ItemType::LoadingSpinner => {
-                            LoadingListBoxRow::new().upcast()
+                            LoadingRow::new().upcast()
                         }
                     }
                 }),
@@ -161,14 +161,14 @@ impl DevicesPage {
         let row: gtk::Widget = match device_list.current_device().type_() {
             device_item::ItemType::Device(device) => DeviceRow::new(device, true).upcast(),
             device_item::ItemType::Error(error) => {
-                let row = LoadingListBoxRow::new();
+                let row = LoadingRow::new();
                 row.set_error(Some(error));
                 row.connect_retry(clone!(@weak device_list => move|_| {
                     device_list.load_devices()
                 }));
                 row.upcast()
             }
-            device_item::ItemType::LoadingSpinner => LoadingListBoxRow::new().upcast(),
+            device_item::ItemType::LoadingSpinner => LoadingRow::new().upcast(),
         };
         imp.current_session.append(&row);
     }

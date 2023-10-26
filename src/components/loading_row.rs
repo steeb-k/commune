@@ -12,8 +12,8 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/loading_listbox_row.ui")]
-    pub struct LoadingListBoxRow {
+    #[template(resource = "/org/gnome/Fractal/ui/components/loading_row.ui")]
+    pub struct LoadingRow {
         #[template_child]
         pub spinner: TemplateChild<Spinner>,
         #[template_child]
@@ -28,9 +28,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for LoadingListBoxRow {
-        const NAME: &'static str = "ComponentsLoadingListBoxRow";
-        type Type = super::LoadingListBoxRow;
+    impl ObjectSubclass for LoadingRow {
+        const NAME: &'static str = "ComponentsLoadingRow";
+        type Type = super::LoadingRow;
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
@@ -42,7 +42,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for LoadingListBoxRow {
+    impl ObjectImpl for LoadingRow {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
@@ -99,19 +99,20 @@ mod imp {
                 }));
         }
     }
-    impl WidgetImpl for LoadingListBoxRow {}
-    impl ListBoxRowImpl for LoadingListBoxRow {}
+
+    impl WidgetImpl for LoadingRow {}
+    impl ListBoxRowImpl for LoadingRow {}
 }
 
 glib::wrapper! {
     /// This is a `ListBoxRow` containing a loading spinner.
     ///
     /// It's also possible to set an error once the loading fails including a retry button.
-    pub struct LoadingListBoxRow(ObjectSubclass<imp::LoadingListBoxRow>)
+    pub struct LoadingRow(ObjectSubclass<imp::LoadingRow>)
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
-impl LoadingListBoxRow {
+impl LoadingRow {
     pub fn new() -> Self {
         glib::Object::new()
     }

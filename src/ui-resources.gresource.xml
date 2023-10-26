@@ -11,7 +11,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/button_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/editable_avatar.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/loading_listbox_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/location_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/media_content_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/pill.ui</file>
