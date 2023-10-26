@@ -191,13 +191,15 @@ impl MemberPage {
 
         // We should have a strong reference to the list in the main page so we can use
         // `get_or_create_members()`.
-        let members = gtk::SortListModel::new(Some(room.get_or_create_members()), Some(sorter));
+        let members = room.get_or_create_members();
+        let sorted_members = gtk::SortListModel::new(Some(members.clone()), Some(sorter));
 
-        let joined_members = self.build_filtered_list(members.clone(), Membership::Join);
-        let invited_members = self.build_filtered_list(members.clone(), Membership::Invite);
-        let banned_members = self.build_filtered_list(members, Membership::Ban);
+        let joined_members = self.build_filtered_list(sorted_members.clone(), Membership::Join);
+        let invited_members = self.build_filtered_list(sorted_members.clone(), Membership::Invite);
+        let banned_members = self.build_filtered_list(sorted_members, Membership::Ban);
 
         let extra_list = ExtraLists::new(
+            &members,
             &MembershipSubpageItem::new(Membership::Invite, &invited_members),
             &MembershipSubpageItem::new(Membership::Ban, &banned_members),
         );

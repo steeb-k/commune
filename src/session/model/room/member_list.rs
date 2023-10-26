@@ -15,22 +15,7 @@ use matrix_sdk::{
 use tracing::error;
 
 use super::{Event, Member, Membership, Room};
-use crate::{spawn, spawn_tokio};
-
-/// The state of a resource that can be loaded.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, glib::Enum)]
-#[enum_type(name = "LoadingState")]
-pub enum LoadingState {
-    /// It hasn't been loaded yet.
-    #[default]
-    Initial,
-    /// It is currently loading.
-    Loading,
-    /// It has been fully loaded.
-    Ready,
-    /// An error occurred while loading it.
-    Error,
-}
+use crate::{components::LoadingState, spawn, spawn_tokio};
 
 mod imp {
     use std::cell::{Cell, RefCell};

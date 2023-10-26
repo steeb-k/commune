@@ -66,6 +66,7 @@ src/session/view/content/room_details/history_viewer/media.ui
 src/session/view/content/room_details/invite_subpage/invitee_list.rs
 src/session/view/content/room_details/invite_subpage/mod.rs
 src/session/view/content/room_details/invite_subpage/mod.ui
+src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs
 src/session/view/content/room_details/member_page/member_menu.ui
 src/session/view/content/room_details/member_page/mod.rs
 src/session/view/content/room_details/member_page/mod.ui

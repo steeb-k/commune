@@ -2,7 +2,7 @@ use adw::{prelude::BinExt, subclass::prelude::*};
 use gtk::{glib, glib::prelude::*};
 
 use super::{MemberRow, MembershipSubpageItem, MembershipSubpageRow};
-use crate::session::model::Member;
+use crate::{components::LoadingRow, session::model::Member};
 
 mod imp {
     use std::cell::RefCell;
@@ -98,6 +98,8 @@ impl ItemRow {
                 };
 
                 child.set_item(Some(item.clone()));
+            } else if let Some(child) = item.downcast_ref::<LoadingRow>() {
+                self.set_child(Some(child))
             } else {
                 unimplemented!("The object {item:?} doesn't have a widget implementation");
             }
