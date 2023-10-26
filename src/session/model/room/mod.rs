@@ -699,7 +699,7 @@ impl Room {
                 ctx.spawn(async move {
                     spawn!(async move {
                         if let Some(obj) = room_weak.upgrade() {
-                            obj.handle_typing_event(event.content).await
+                            obj.handle_typing_event(event.content)
                         }
                     });
                 });
@@ -718,7 +718,7 @@ impl Room {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = room_weak.upgrade() {
-                                obj.handle_receipt_event(event.content).await
+                                obj.handle_receipt_event(event.content)
                             }
                         });
                     });
@@ -727,7 +727,7 @@ impl Room {
         );
     }
 
-    async fn handle_receipt_event(&self, content: ReceiptEventContent) {
+    fn handle_receipt_event(&self, content: ReceiptEventContent) {
         let own_user_id = self.session().user().unwrap().user_id();
 
         for (_event_id, receipts) in content.iter() {
@@ -739,7 +739,7 @@ impl Room {
         }
     }
 
-    async fn handle_typing_event(&self, content: TypingEventContent) {
+    fn handle_typing_event(&self, content: TypingEventContent) {
         let typing_list = &self.imp().typing_list;
 
         let Some(members) = self.members() else {
