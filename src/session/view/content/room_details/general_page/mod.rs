@@ -27,7 +27,7 @@ use crate::{
         media::{get_image_info, load_file},
         not_expr, or_expr,
         template_callbacks::TemplateCallbacks,
-        OngoingAsyncAction,
+        BoundObjectWeakRef, OngoingAsyncAction,
     },
 };
 
@@ -43,7 +43,7 @@ mod imp {
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/general_page/mod.ui"
     )]
     pub struct GeneralPage {
-        pub room: glib::WeakRef<Room>,
+        pub room: BoundObjectWeakRef<Room>,
         pub room_members: RefCell<Option<MemberList>>,
         #[template_child]
         pub avatar: TemplateChild<EditableAvatar>,
@@ -66,6 +66,7 @@ mod imp {
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
+        pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
     }
 
     #[glib::object_subclass]
@@ -121,6 +122,10 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
+
+        fn dispose(&self) {
+            self.obj().disconnect_all();
+        }
     }
 
     impl WidgetImpl for GeneralPage {}
@@ -141,7 +146,7 @@ impl GeneralPage {
 
     /// The room backing all the details of the preference window.
     pub fn room(&self) -> Option<Room> {
-        self.imp().room.upgrade()
+        self.imp().room.obj()
     }
 
     /// Set the room backing all the details of the preference window.
@@ -152,8 +157,10 @@ impl GeneralPage {
         };
         let imp = self.imp();
 
+        self.disconnect_all();
+
         let avatar_data = room.avatar_data();
-        AvatarData::this_expression("image")
+        let expr_watch = AvatarData::this_expression("image")
             .chain_property::<AvatarImage>("uri")
             .watch(
                 Some(avatar_data),
@@ -161,18 +168,22 @@ impl GeneralPage {
                     obj.avatar_changed(avatar_data.image().uri());
                 }),
             );
-        room.connect_notify_local(
-            Some("name"),
-            clone!(@weak self as obj => move |room, _| {
-                obj.name_changed(room.name());
-            }),
-        );
-        room.connect_notify_local(
-            Some("topic"),
-            clone!(@weak self as obj => move |room, _| {
-                obj.topic_changed(room.topic());
-            }),
-        );
+        imp.expr_watches.borrow_mut().push(expr_watch);
+
+        let room_handler_ids = vec![
+            room.connect_notify_local(
+                Some("name"),
+                clone!(@weak self as obj => move |room, _| {
+                    obj.name_changed(room.name());
+                }),
+            ),
+            room.connect_notify_local(
+                Some("topic"),
+                clone!(@weak self as obj => move |room, _| {
+                    obj.topic_changed(room.topic());
+                }),
+            ),
+        ];
 
         self.init_avatar(room);
         self.init_edit_mode(room);
@@ -186,7 +197,7 @@ impl GeneralPage {
         // Keep strong reference to members list.
         imp.room_members.replace(Some(members));
 
-        imp.room.set(Some(room));
+        imp.room.set(room, room_handler_ids);
         self.notify("room");
     }
 
@@ -216,7 +227,8 @@ impl GeneralPage {
         let room_avatar_changeable = room
             .own_user_is_allowed_to_expr(PowerLevelAction::SendState(StateEventType::RoomAvatar));
 
-        room_avatar_changeable.bind(avatar, "editable", gtk::Widget::NONE);
+        let expr_watch = room_avatar_changeable.bind(avatar, "editable", gtk::Widget::NONE);
+        self.imp().expr_watches.borrow_mut().push(expr_watch);
     }
 
     fn avatar_changed(&self, uri: Option<OwnedMxcUri>) {
@@ -397,7 +409,9 @@ impl GeneralPage {
         let details_changeable = or_expr(room_name_changeable, room_topic_changeable);
         let edit_details_visible = and_expr(edit_mode_disabled, details_changeable);
 
-        edit_details_visible.bind(&*imp.edit_details_btn, "visible", gtk::Widget::NONE);
+        let expr_watch =
+            edit_details_visible.bind(&*imp.edit_details_btn, "visible", gtk::Widget::NONE);
+        imp.expr_watches.borrow_mut().push(expr_watch);
     }
 
     /// Finish the details changes if none are ongoing.
@@ -566,5 +580,14 @@ impl GeneralPage {
 
     fn member_count_changed(&self, n: u32) {
         self.imp().members_count.set_text(&format!("{n}"));
+    }
+
+    fn disconnect_all(&self) {
+        let imp = self.imp();
+        imp.room.disconnect_signals();
+
+        for watch in imp.expr_watches.take() {
+            watch.unwatch();
+        }
     }
 }
