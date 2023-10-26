@@ -10,6 +10,7 @@ mod typing_list;
 
 use std::{cell::RefCell, io::Cursor};
 
+use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
@@ -17,7 +18,7 @@ use matrix_sdk::{
     deserialized_responses::{MemberEvent, SyncOrStrippedState, SyncTimelineEvent},
     room::Room as MatrixRoom,
     sync::{JoinedRoom, LeftRoom},
-    DisplayName, Result as MatrixResult, RoomMemberships, RoomState,
+    DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
     events::{
@@ -69,6 +70,9 @@ mod imp {
         pub category: Cell<RoomType>,
         pub timeline: OnceCell<Timeline>,
         pub members: WeakRef<MemberList>,
+        /// The number of joined members in the room, according to the
+        /// homeserver.
+        pub joined_members_count: Cell<u64>,
         /// The user who sent the invite to this room. This is only set when
         /// this room is an invitation.
         pub inviter: RefCell<Option<Member>>,
@@ -147,6 +151,9 @@ mod imp {
                     glib::ParamSpecObject::builder::<MemberList>("members")
                         .read_only()
                         .build(),
+                    glib::ParamSpecUInt64::builder("joined-members-count")
+                        .read_only()
+                        .build(),
                     glib::ParamSpecString::builder("predecessor-id")
                         .read_only()
                         .build(),
@@ -204,6 +211,7 @@ mod imp {
                 "highlight" => obj.highlight().to_value(),
                 "topic" => obj.topic().to_value(),
                 "members" => obj.members().to_value(),
+                "joined-members-count" => obj.joined_members_count().to_value(),
                 "notification-count" => obj.notification_count().to_value(),
                 "latest-activity" => obj.latest_activity().to_value(),
                 "is-read" => obj.is_read().to_value(),
@@ -331,6 +339,8 @@ impl Room {
     fn set_matrix_room(&self, matrix_room: MatrixRoom) {
         let imp = self.imp();
 
+        self.set_joined_members_count(matrix_room.joined_members_count());
+
         imp.matrix_room.replace(Some(matrix_room));
 
         self.load_display_name();
@@ -339,6 +349,10 @@ impl Room {
         self.load_category();
         self.setup_receipts();
         self.setup_typing();
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.watch_room_info().await;
+        }));
 
         spawn!(clone!(@weak self as obj => async move {
             obj.load_inviter().await;
@@ -681,6 +695,32 @@ impl Room {
         };
     }
 
+    async fn watch_room_info(&self) {
+        let matrix_room = self.matrix_room();
+        let subscriber = matrix_room.subscribe_info();
+
+        let room_weak = glib::SendWeakRef::from(self.downgrade());
+        subscriber
+            .for_each(move |room_info| {
+                let room_weak = room_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = room_weak.upgrade() {
+                                obj.update_room_info(room_info)
+                            }
+                        });
+                    });
+                }
+            })
+            .await;
+    }
+
+    fn update_room_info(&self, room_info: RoomInfo) {
+        self.set_joined_members_count(room_info.joined_members_count());
+    }
+
     pub fn typing_list(&self) -> &TypingList {
         &self.imp().typing_list
     }
@@ -782,6 +822,22 @@ impl Room {
     /// The members of this room, if a strong reference to the list exists.
     pub fn members(&self) -> Option<MemberList> {
         self.imp().members.upgrade()
+    }
+
+    /// The number of joined members in the room, according to the homeserver.
+    pub fn joined_members_count(&self) -> u64 {
+        self.imp().joined_members_count.get()
+    }
+
+    /// Set the number of joined members in the room, according to the
+    /// homeserver.
+    fn set_joined_members_count(&self, count: u64) {
+        if self.joined_members_count() == count {
+            return;
+        }
+
+        self.imp().joined_members_count.set(count);
+        self.notify("joined-members-count");
     }
 
     fn notify_notification_count(&self) {
