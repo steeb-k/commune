@@ -440,7 +440,7 @@ impl ItemRow {
             ]);
         }
 
-        if event.event_id().is_some() {
+        if !event.is_redacted() && event.event_id().is_some() {
             action_group.add_action_entries([
                 // Create a permalink
                 gio::ActionEntry::builder("permalink")

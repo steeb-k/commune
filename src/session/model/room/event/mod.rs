@@ -365,6 +365,14 @@ impl Event {
         }
     }
 
+    /// Whether this `Event` is redacted.
+    pub fn is_redacted(&self) -> bool {
+        matches!(
+            self.imp().item.borrow().as_ref().unwrap().content(),
+            TimelineItemContent::RedactedMessage
+        )
+    }
+
     /// The content to display for this `Event`.
     pub fn content(&self) -> TimelineItemContent {
         self.imp().item.borrow().as_ref().unwrap().content().clone()
