@@ -47,8 +47,7 @@ mod imp {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
                     glib::ParamSpecBoolean::builder("loading")
-                        .default_value(true)
-                        .explicit_notify()
+                        .read_only()
                         .build(),
                     glib::ParamSpecString::builder("error")
                         .explicit_notify()
@@ -63,9 +62,6 @@ mod imp {
             let obj = self.obj();
 
             match pspec.name() {
-                "loading" => {
-                    obj.set_loading(value.get().unwrap());
-                }
                 "error" => {
                     obj.set_error(value.get().unwrap());
                 }
@@ -120,20 +116,6 @@ impl LoadingRow {
     /// Whether to show the loading spinner.
     pub fn is_loading(&self) -> bool {
         !self.imp().is_error.get()
-    }
-
-    /// Set whether to show the loading spinner.
-    pub fn set_loading(&self, loading: bool) {
-        let imp = self.imp();
-
-        if self.is_loading() == loading {
-            return;
-        }
-
-        imp.stack.set_visible_child(&*imp.spinner);
-        imp.is_error.set(false);
-
-        self.notify("loading");
     }
 
     /// The error message to display.
