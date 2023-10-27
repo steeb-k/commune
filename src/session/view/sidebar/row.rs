@@ -8,7 +8,7 @@ use crate::{
         Category, CategoryType, Entry, EntryType, IdentityVerification, Room, RoomType, SidebarItem,
     },
     spawn, toast,
-    utils::BoundObjectWeakRef,
+    utils::{message_dialog, BoundObjectWeakRef},
 };
 
 mod imp {
@@ -325,8 +325,15 @@ impl Row {
 
     /// Change the category of the given room room.
     async fn set_room_category(&self, room: &Room, category: RoomType) {
-        let previous_category = room.category();
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
 
+        if category == RoomType::Left && !message_dialog::confirm_leave_room(room, &window).await {
+            return;
+        }
+
+        let previous_category = room.category();
         if room.set_category(category).await.is_err() {
             toast!(
                 self,

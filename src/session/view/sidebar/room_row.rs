@@ -1,12 +1,13 @@
-use adw::subclass::prelude::BinImpl;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
 use super::Row;
 use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     session::model::{HighlightFlags, Room, RoomType},
     spawn, toast,
+    utils::message_dialog,
 };
 
 mod imp {
@@ -397,10 +398,17 @@ impl RoomRow {
 
     /// Change the category of this room.
     async fn set_category(&self, category: RoomType) {
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
         let Some(room) = self.room() else {
             return;
         };
         let previous_category = room.category();
+
+        if category == RoomType::Left && !message_dialog::confirm_leave_room(&room, &window).await {
+            return;
+        }
 
         if room.set_category(category).await.is_err() {
             toast!(
