@@ -7,6 +7,7 @@ use crate::{
     gettext_f,
     session::model::{MemberList, Room, RoomType},
     toast,
+    utils::message_dialog,
 };
 
 mod imp {
@@ -235,10 +236,17 @@ impl Invite {
 
     /// Decline the invite.
     async fn decline(&self) {
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
         let Some(room) = self.room() else {
             return;
         };
         let imp = self.imp();
+
+        if !message_dialog::confirm_leave_room(&room, &window).await {
+            return;
+        }
 
         self.action_set_enabled("invite.accept", false);
         self.action_set_enabled("invite.decline", false);
