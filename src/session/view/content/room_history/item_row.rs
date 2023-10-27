@@ -478,16 +478,16 @@ impl ItemRow {
 
                 // Remove message
                 fn update_remove_action(
+                    obj: &ItemRow,
                     action_group: &gio::SimpleActionGroup,
-                    event: &Event,
                     allowed: bool,
                 ) {
                     if allowed {
                         action_group.add_action_entries([gio::ActionEntry::builder("remove")
-                            .activate(clone!(@weak event, => move |_, _, _| {
-                                if let Some(event_id) = event.event_id() {
-                                    event.room().redact(event_id, None);
-                                }
+                            .activate(clone!(@weak obj, => move |_, _, _| {
+                                spawn!(clone!(@weak obj => async move {
+                                    obj.redact_message().await;
+                                }));
                             }))
                             .build()]);
                     } else {
@@ -496,24 +496,24 @@ impl ItemRow {
                 }
 
                 if is_from_own_user {
-                    update_remove_action(&action_group, event, true);
+                    update_remove_action(self, &action_group, true);
                 } else {
                     let remove_watch = event
                         .room()
                         .own_user_is_allowed_to_expr(PowerLevelAction::Redact)
                         .watch(
                             glib::Object::NONE,
-                            clone!(@weak self as widget, @weak action_group, @weak event => move || {
-                                let Some(allowed) = widget.expression_watch(&"remove").and_then(|e| e.evaluate_as::<bool>()) else {
+                            clone!(@weak self as obj, @weak action_group => move || {
+                                let Some(allowed) = obj.expression_watch(&"remove").and_then(|e| e.evaluate_as::<bool>()) else {
                                     return;
                                 };
 
-                                update_remove_action(&action_group, &event, allowed);
+                                update_remove_action(&obj, &action_group, allowed);
                             }),
                         );
 
                     let allowed = remove_watch.evaluate_as::<bool>().unwrap();
-                    update_remove_action(&action_group, event, allowed);
+                    update_remove_action(self, &action_group, allowed);
 
                     self.set_expression_watch("remove", remove_watch);
                 }
@@ -549,7 +549,7 @@ impl ItemRow {
                                 );
                             }
                         }))
-                    .build()
+                        .build(),
                 ]);
 
                 match message.msgtype() {
@@ -715,6 +715,39 @@ impl ItemRow {
         for expr_watch in self.imp().actions_expression_watches.take().values() {
             expr_watch.unwatch();
         }
+    }
+
+    /// Redact the event of this row.
+    async fn redact_message(&self) {
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+        let Some(event) = self.item().and_downcast::<Event>() else {
+            return;
+        };
+        let Some(event_id) = event.event_id() else {
+            return;
+        };
+
+        let confirm_dialog = adw::MessageDialog::builder()
+            .transient_for(&window)
+            .default_response("cancel")
+            .heading(gettext("Remove Message?"))
+            .body(gettext(
+                "Do you really want to remove this message? This cannot be undone.",
+            ))
+            .build();
+        confirm_dialog.add_responses(&[
+            ("cancel", &gettext("Cancel")),
+            ("remove", &gettext("Remove")),
+        ]);
+        confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
+
+        if confirm_dialog.choose_future().await != "remove" {
+            return;
+        }
+
+        event.room().redact(event_id, None);
     }
 }
 
