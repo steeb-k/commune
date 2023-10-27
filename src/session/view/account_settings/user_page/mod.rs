@@ -284,6 +284,27 @@ impl UserPage {
     }
 
     async fn remove_avatar(&self) {
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        // Ask for confirmation.
+        let confirm_dialog = adw::MessageDialog::builder()
+            .transient_for(&window)
+            .default_response("cancel")
+            .heading(gettext("Remove Avatar?"))
+            .body(gettext("Do you really want to remove your avatar?"))
+            .build();
+        confirm_dialog.add_responses(&[
+            ("cancel", &gettext("Cancel")),
+            ("remove", &gettext("Remove")),
+        ]);
+        confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
+
+        if confirm_dialog.choose_future().await != "remove" {
+            return;
+        }
+
         let imp = self.imp();
         let avatar = &*imp.avatar;
         avatar.removal_in_progress();
