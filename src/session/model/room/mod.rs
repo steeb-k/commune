@@ -25,7 +25,10 @@ use ruma::{
         reaction::ReactionEventContent,
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
-        room::power_levels::{PowerLevelAction, RoomPowerLevelsEventContent},
+        room::{
+            join_rules::JoinRule,
+            power_levels::{PowerLevelAction, RoomPowerLevelsEventContent},
+        },
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
@@ -100,6 +103,8 @@ mod imp {
         pub is_encrypted: Cell<bool>,
         /// The list of members currently typing in this room.
         pub typing_list: TypingList,
+        /// Whether anyone can join this room.
+        pub is_join_rule_public: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -175,6 +180,9 @@ mod imp {
                     glib::ParamSpecObject::builder::<TypingList>("typing-list")
                         .read_only()
                         .build(),
+                    glib::ParamSpecBoolean::builder("is-join-rule-public")
+                        .explicit_notify()
+                        .build(),
                 ]
             });
 
@@ -222,6 +230,7 @@ mod imp {
                 "verification" => obj.verification().to_value(),
                 "encrypted" => obj.is_encrypted().to_value(),
                 "typing-list" => obj.typing_list().to_value(),
+                "is-join-rule-public" => obj.is_join_rule_public().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -340,6 +349,7 @@ impl Room {
         let imp = self.imp();
 
         self.set_joined_members_count(matrix_room.joined_members_count());
+        self.set_is_join_rule_public(matrix_room.join_rule() == JoinRule::Public);
 
         imp.matrix_room.replace(Some(matrix_room));
 
@@ -1088,6 +1098,9 @@ impl Room {
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();
                     }
+                    AnySyncStateEvent::RoomJoinRules(event) => {
+                        self.set_is_join_rule_public(*event.join_rule() == JoinRule::Public);
+                    }
                     _ => {}
                 }
             }
@@ -1672,5 +1685,20 @@ impl Room {
         }
 
         self.avatar_data().image().set_uri(avatar_url);
+    }
+
+    /// Whether anyone can join this room.
+    pub fn is_join_rule_public(&self) -> bool {
+        self.imp().is_join_rule_public.get()
+    }
+
+    /// Set whether anyone can join this room.
+    fn set_is_join_rule_public(&self, is_public: bool) {
+        if self.is_join_rule_public() == is_public {
+            return;
+        }
+
+        self.imp().is_join_rule_public.set(is_public);
+        self.notify("is-join-rule-public");
     }
 }
