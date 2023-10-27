@@ -10,7 +10,7 @@ mod verification_info_bar;
 
 use std::time::Duration;
 
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use ashpd::{
     desktop::location::{Accuracy, LocationProxy},
     WindowIdentifier,
@@ -21,7 +21,6 @@ use gettextrs::{gettext, pgettext};
 use gtk::{
     gdk, gio,
     glib::{self, clone, FromVariant},
-    prelude::*,
     CompositeTemplate,
 };
 use matrix_sdk::{
@@ -75,6 +74,7 @@ use crate::{
     utils::{
         matrix::extract_mentions,
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
+        message_dialog,
         template_callbacks::TemplateCallbacks,
     },
     Window,
@@ -925,21 +925,25 @@ impl RoomHistory {
 
     /// Leave the room.
     pub async fn leave(&self) {
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
         let Some(room) = self.room() else {
             return;
         };
-        let previous_category = room.category();
+
+        if !message_dialog::confirm_leave_room(&room, &window).await {
+            return;
+        }
 
         if room.set_category(RoomType::Left).await.is_err() {
             toast!(
                 self,
                 gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Failed to move {room} from {previous_category} to {new_category}.",
+                    "Failed to leave {room}",
                 ),
                 @room,
-                previous_category = previous_category.to_string(),
-                new_category = RoomType::Left.to_string(),
             );
         }
     }
