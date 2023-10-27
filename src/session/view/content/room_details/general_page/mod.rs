@@ -332,6 +332,28 @@ impl GeneralPage {
             error!("Cannot remove avatar of room not joined");
             return;
         }
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        // Ask for confirmation.
+        let confirm_dialog = adw::MessageDialog::builder()
+            .transient_for(&window)
+            .default_response("cancel")
+            .heading(gettext("Remove Avatar?"))
+            .body(gettext(
+                "Do you really want to remove the avatar for this room?",
+            ))
+            .build();
+        confirm_dialog.add_responses(&[
+            ("cancel", &gettext("Cancel")),
+            ("remove", &gettext("Remove")),
+        ]);
+        confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
+
+        if confirm_dialog.choose_future().await != "remove" {
+            return;
+        }
 
         let imp = self.imp();
         let avatar = &*imp.avatar;
