@@ -522,21 +522,14 @@ impl ItemRow {
                     // Send/redact a reaction
                     gio::ActionEntry::builder("toggle-reaction")
                         .parameter_type(Some(&String::static_variant_type()))
-                        .activate(clone!(@weak event => move |_, _, variant| {
-                            let key: String = variant.unwrap().get().unwrap();
-                            let room = event.room();
+                        .activate(clone!(@weak self as obj => move |_, _, variant| {
+                            let Some(key) = variant.unwrap().get::<String>() else {
+                                return;
+                            };
 
-                            let reaction_group = event.reactions().reaction_group_by_key(&key);
-
-                            if let Some(reaction_key) = reaction_group.and_then(|group| group.user_reaction_event_key()) {
-                                // The user already sent that reaction, redact it if it has been sent.
-                                if let EventKey::EventId(reaction_id) = reaction_key {
-                                    room.redact(reaction_id, None);
-                                }
-                            } else if let Some(event_id) = event.event_id() {
-                                // The user didn't send that reaction, send it.
-                                room.send_reaction(key, event_id);
-                            }
+                            spawn!(clone!(@weak obj => async move {
+                                obj.toggle_reaction(key).await;
+                            }));
                         }))
                         .build(),
                     // Reply
@@ -747,7 +740,39 @@ impl ItemRow {
             return;
         }
 
-        event.room().redact(event_id, None);
+        if let Err(error) = event.room().redact(event_id, None).await {
+            error!("Failed to redact event: {error}");
+            toast!(self, gettext("Failed to remove message"));
+        }
+    }
+
+    /// Toggle the reaction with the given key for the event of this row.
+    async fn toggle_reaction(&self, key: String) {
+        let Some(event) = self.item().and_downcast::<Event>() else {
+            return;
+        };
+        let Some(event_id) = event.event_id() else {
+            return;
+        };
+        let room = event.room();
+        let reaction_group = event.reactions().reaction_group_by_key(&key);
+
+        if let Some(reaction_key) = reaction_group.and_then(|group| group.user_reaction_event_key())
+        {
+            // The user already sent that reaction, redact it if it has been sent.
+            if let EventKey::EventId(reaction_id) = reaction_key {
+                if let Err(error) = room.redact(reaction_id, None).await {
+                    error!("Failed to remove reaction: {error}");
+                    toast!(self, gettext("Failed to remove reaction"));
+                }
+            }
+        } else {
+            // The user didn't send that reaction, send it.
+            if let Err(error) = room.send_reaction(key, event_id).await {
+                error!("Failed to add reaction: {error}");
+                toast!(self, gettext("Failed to add reaction"));
+            }
+        }
     }
 }
 

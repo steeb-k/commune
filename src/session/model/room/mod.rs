@@ -18,7 +18,7 @@ use matrix_sdk::{
     deserialized_responses::{MemberEvent, SyncOrStrippedState, SyncTimelineEvent},
     room::Room as MatrixRoom,
     sync::{JoinedRoom, LeftRoom},
-    DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
+    DisplayName, HttpError, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
     events::{
@@ -1165,15 +1165,32 @@ impl Room {
     }
 
     /// Send a `key` reaction for the `relates_to` event ID in this room.
-    pub fn send_reaction(&self, key: String, relates_to: OwnedEventId) {
-        self.send_room_message_event(ReactionEventContent::new(Annotation::new(relates_to, key)));
+    pub async fn send_reaction(&self, key: String, relates_to: OwnedEventId) -> MatrixResult<()> {
+        let matrix_room = self.matrix_room();
+
+        spawn_tokio!(async move {
+            matrix_room
+                .send(
+                    ReactionEventContent::new(Annotation::new(relates_to, key)),
+                    None,
+                )
+                .await
+        })
+        .await
+        .unwrap()?;
+
+        Ok(())
     }
 
     /// Redact `redacted_event_id` in this room because of `reason`.
-    pub fn redact(&self, redacted_event_id: OwnedEventId, reason: Option<String>) {
+    pub async fn redact(
+        &self,
+        redacted_event_id: OwnedEventId,
+        reason: Option<String>,
+    ) -> Result<(), HttpError> {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
-            return;
+            return Ok(());
         };
 
         let handle = spawn_tokio!(async move {
@@ -1182,16 +1199,10 @@ impl Room {
                 .await
         });
 
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                // FIXME: We should retry the request if it fails
-                match handle.await.unwrap() {
-                    Ok(_) => {},
-                    Err(error) => error!("Couldn’t redact event: {error}"),
-                };
-            })
-        );
+        // FIXME: We should retry the request if it fails
+        handle.await.unwrap()?;
+
+        Ok(())
     }
 
     pub fn send_typing_notification(&self, is_typing: bool) {
