@@ -6,7 +6,7 @@ use crate::{
     components::{Avatar, LabelWithWidgets, Pill, SpinnerButton},
     gettext_f,
     session::model::{MemberList, Room, RoomType},
-    spawn, toast,
+    toast,
 };
 
 mod imp {
@@ -46,11 +46,11 @@ mod imp {
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
-            klass.install_action("invite.decline", None, move |widget, _, _| {
-                widget.decline();
+            klass.install_action_async("invite.decline", None, move |widget, _, _| async move {
+                widget.decline().await;
             });
-            klass.install_action("invite.accept", None, move |widget, _, _| {
-                widget.accept();
+            klass.install_action_async("invite.accept", None, move |widget, _, _| async move {
+                widget.accept().await;
             });
         }
 
@@ -205,7 +205,7 @@ impl Invite {
     }
 
     /// Accept the invite.
-    fn accept(&self) {
+    async fn accept(&self) {
         let Some(room) = self.room() else {
             return;
         };
@@ -216,27 +216,25 @@ impl Invite {
         imp.accept_button.set_loading(true);
         imp.accept_requests.borrow_mut().insert(room.clone());
 
-        spawn!(clone!(@weak self as obj, @strong room => async move {
-            let result = room.accept_invite().await;
-            if result.is_err() {
-                toast!(
-                    obj,
-                    gettext(
-                        // Translators: Do NOT translate the content between '{' and '}', this
-                        // is a variable name.
-                        "Failed to accept invitation for {room}. Try again later.",
-                    ),
-                    @room,
-                );
+        let result = room.accept_invite().await;
+        if result.is_err() {
+            toast!(
+                self,
+                gettext(
+                    // Translators: Do NOT translate the content between '{' and '}', this
+                    // is a variable name.
+                    "Failed to accept invitation for {room}. Try again later.",
+                ),
+                @room,
+            );
 
-                obj.imp().accept_requests.borrow_mut().remove(&room);
-                obj.reset();
-            }
-        }));
+            imp.accept_requests.borrow_mut().remove(&room);
+            self.reset();
+        }
     }
 
     /// Decline the invite.
-    fn decline(&self) {
+    async fn decline(&self) {
         let Some(room) = self.room() else {
             return;
         };
@@ -247,22 +245,20 @@ impl Invite {
         imp.decline_button.set_loading(true);
         imp.decline_requests.borrow_mut().insert(room.clone());
 
-        spawn!(clone!(@weak self as obj, @strong room => async move {
-            let result = room.decline_invite().await;
-            if result.is_err() {
-                toast!(
-                    obj,
-                    gettext(
-                        // Translators: Do NOT translate the content between '{' and '}', this
-                        // is a variable name.
-                        "Failed to decline invitation for {room}. Try again later.",
-                    ),
-                    @room,
-                );
+        let result = room.decline_invite().await;
+        if result.is_err() {
+            toast!(
+                self,
+                gettext(
+                    // Translators: Do NOT translate the content between '{' and '}', this
+                    // is a variable name.
+                    "Failed to decline invitation for {room}. Try again later.",
+                ),
+                @room,
+            );
 
-                obj.imp().decline_requests.borrow_mut().remove(&room);
-                obj.reset();
-            }
-        }));
+            imp.decline_requests.borrow_mut().remove(&room);
+            self.reset();
+        }
     }
 }
