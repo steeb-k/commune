@@ -406,7 +406,7 @@ impl Event {
 
         if local_time.ends_with("am") || local_time.ends_with("pm") {
             // Use 12h time format (AM/PM)
-            datetime.format("%l∶%M %p").unwrap().to_string()
+            datetime.format("%-l∶%M %p").unwrap().to_string()
         } else {
             // Use 24 time format
             datetime.format("%R").unwrap().to_string()
