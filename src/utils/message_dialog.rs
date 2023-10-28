@@ -13,7 +13,7 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
         let body = if room.is_join_rule_public() {
-            gettext("Do you really want to decline this invite? You can join this room on you own later.")
+            gettext("Do you really want to decline this invite? You can join this room on your own later.")
         } else {
             gettext(
                 "Do you really want to decline this invite? You won’t be able to join this room without it.",
