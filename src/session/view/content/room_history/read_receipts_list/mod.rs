@@ -6,8 +6,9 @@ mod member_read_receipt;
 use self::member_read_receipt::MemberReadReceipt;
 use crate::{
     components::{Avatar, OverlappingBox},
+    i18n::{gettext_f, ngettext_f},
     prelude::*,
-    session::model::{MemberList, UserReadReceipt},
+    session::model::{Member, MemberList, UserReadReceipt},
     utils::BoundObjectWeakRef,
 };
 
@@ -29,6 +30,8 @@ mod imp {
     )]
     pub struct ReadReceiptsList {
         #[template_child]
+        pub container: TemplateChild<gtk::Box>,
+        #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
         pub overlapping_box: TemplateChild<OverlappingBox>,
@@ -38,16 +41,20 @@ mod imp {
         pub list: gio::ListStore,
         /// The read receipts used as a source.
         pub source: BoundObjectWeakRef<gio::ListStore>,
+        /// The displayed member if there is only one receipt.
+        pub receipt_member: BoundObjectWeakRef<Member>,
     }
 
     impl Default for ReadReceiptsList {
         fn default() -> Self {
             Self {
+                container: Default::default(),
                 label: Default::default(),
                 overlapping_box: Default::default(),
                 members: Default::default(),
                 list: gio::ListStore::new::<MemberReadReceipt>(),
                 source: Default::default(),
+                receipt_member: Default::default(),
             }
         }
     }
@@ -122,6 +129,7 @@ mod imp {
 
             self.list
                 .connect_items_changed(clone!(@weak obj => move |_, _,_,_| {
+                    obj.update_tooltip();
                     obj.update_label();
                 }));
         }
@@ -212,6 +220,54 @@ impl ReadReceiptsList {
         }
 
         self.list().splice(pos, removed, &new_receipts);
+    }
+
+    fn update_tooltip(&self) {
+        let imp = self.imp();
+        imp.receipt_member.disconnect_signals();
+        let n_items = self.list().n_items();
+
+        if n_items == 1 {
+            if let Some(member) = self
+                .list()
+                .item(0)
+                .and_downcast::<MemberReadReceipt>()
+                .and_then(|r| r.member())
+            {
+                // Listen to changes of the display name.
+                let handler_id = member.connect_notify_local(
+                    Some("display-name"),
+                    clone!(@weak self as obj => move |member, _| {
+                        obj.update_member_tooltip(member);
+                    }),
+                );
+
+                imp.receipt_member.set(&member, vec![handler_id]);
+                self.update_member_tooltip(&member);
+                return;
+            }
+        }
+
+        let text = (n_items > 0).then(|| {
+            ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "Seen by 1 member",
+                "Seen by {n} members",
+                n_items,
+                &[("n", &n_items.to_string())],
+            )
+        });
+
+        self.imp().container.set_tooltip_text(text.as_deref())
+    }
+
+    fn update_member_tooltip(&self, member: &Member) {
+        // Translators: Do NOT translate the content between '{' and '}', this is a
+        // variable name.
+        let text = gettext_f("Seen by {name}", &[("name", &member.display_name())]);
+
+        self.imp().container.set_tooltip_text(Some(&text));
     }
 
     fn update_label(&self) {

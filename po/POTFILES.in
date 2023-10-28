@@ -91,6 +91,7 @@ src/session/view/content/room_history/message_toolbar/mod.rs
 src/session/view/content/room_history/message_toolbar/mod.ui
 src/session/view/content/room_history/mod.rs
 src/session/view/content/room_history/mod.ui
+src/session/view/content/room_history/read_receipts_list/mod.rs
 src/session/view/content/room_history/state_row/creation.rs
 src/session/view/content/room_history/state_row/creation.ui
 src/session/view/content/room_history/state_row/mod.rs

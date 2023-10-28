@@ -2,7 +2,7 @@
 <interface>
   <template class="ContentReadReceiptsList" parent="AdwBin">
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="container">
         <property name="halign">end</property>
         <property name="spacing">6</property>
         <child>
