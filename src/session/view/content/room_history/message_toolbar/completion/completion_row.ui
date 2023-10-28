@@ -9,7 +9,7 @@
         <property name="spacing">10</property>
         <child>
           <object class="ComponentsAvatar" id="avatar">
-            <property name="size">40</property>
+            <property name="size">36</property>
           </object>
         </child>
         <child>
