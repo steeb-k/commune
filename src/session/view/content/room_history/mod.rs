@@ -1,5 +1,6 @@
 mod divider_row;
 mod item_row;
+mod member_timestamp;
 mod message_row;
 mod message_toolbar;
 mod read_receipts_list;

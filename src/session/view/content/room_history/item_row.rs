@@ -321,10 +321,13 @@ impl ItemRow {
 
                         let fmt = if date.year() == glib::DateTime::now_local().unwrap().year() {
                             // Translators: This is a date format in the day divider without the
-                            // year
+                            // year. For ex. "Friday, May 5". See the documentation of
+                            // g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                             gettext("%A, %B %e")
                         } else {
-                            // Translators: This is a date format in the day divider with the year
+                            // Translators: This is a date format in the day divider with the year.
+                            // For ex. "Friday, May 5, 2023". See the documentation of
+                            // g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                             gettext("%A, %B %e, %Y")
                         };
 

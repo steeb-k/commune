@@ -2,16 +2,14 @@ use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 use matrix_sdk_ui::timeline::ReactionSenderData as SdkReactionSenderData;
 
-mod member_reaction_sender;
 mod reaction_popover;
-mod reaction_sender_row;
 
-use self::{
-    member_reaction_sender::MemberReactionSender, reaction_popover::ReactionPopover,
-    reaction_sender_row::ReactionSenderRow,
-};
+use self::reaction_popover::ReactionPopover;
 use crate::{
-    session::model::{MemberList, ReactionGroup},
+    session::{
+        model::{MemberList, ReactionGroup},
+        view::content::room_history::member_timestamp::MemberTimestamp,
+    },
     utils::{BoundObjectWeakRef, EMOJI_REGEX},
 };
 
@@ -46,7 +44,7 @@ mod imp {
         fn default() -> Self {
             Self {
                 group: Default::default(),
-                list: gio::ListStore::new::<MemberReactionSender>(),
+                list: gio::ListStore::new::<MemberTimestamp>(),
                 members: Default::default(),
                 button: Default::default(),
                 reaction_key: Default::default(),
@@ -209,7 +207,7 @@ impl MessageReaction {
             let sender_data = boxed.borrow::<SdkReactionSenderData>();
             let member = members.get_or_create(sender_data.sender_id.clone());
             let timestamp = sender_data.timestamp.as_secs().into();
-            let sender = MemberReactionSender::new(&member, timestamp);
+            let sender = MemberTimestamp::new(&member, Some(timestamp));
 
             new_senders.push(sender);
         }

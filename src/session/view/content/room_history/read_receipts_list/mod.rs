@@ -1,9 +1,10 @@
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 
-mod member_read_receipt;
+mod read_receipts_popover;
 
-use self::member_read_receipt::MemberReadReceipt;
+use self::read_receipts_popover::ReadReceiptsPopover;
+use super::member_timestamp::MemberTimestamp;
 use crate::{
     components::{Avatar, OverlappingBox},
     i18n::{gettext_f, ngettext_f},
@@ -30,7 +31,7 @@ mod imp {
     )]
     pub struct ReadReceiptsList {
         #[template_child]
-        pub container: TemplateChild<gtk::Box>,
+        pub toggle_button: TemplateChild<gtk::ToggleButton>,
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
@@ -48,11 +49,11 @@ mod imp {
     impl Default for ReadReceiptsList {
         fn default() -> Self {
             Self {
-                container: Default::default(),
+                toggle_button: Default::default(),
                 label: Default::default(),
                 overlapping_box: Default::default(),
                 members: Default::default(),
-                list: gio::ListStore::new::<MemberReadReceipt>(),
+                list: gio::ListStore::new::<MemberTimestamp>(),
                 source: Default::default(),
                 receipt_member: Default::default(),
             }
@@ -67,6 +68,8 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+
             klass.set_css_name("read-receipts-list");
         }
 
@@ -118,7 +121,7 @@ mod imp {
                     let avatar = Avatar::new();
                     avatar.set_size(20);
 
-                    if let Some(member) = item.downcast_ref::<MemberReadReceipt>().and_then(|r| r.member()) {
+                    if let Some(member) = item.downcast_ref::<MemberTimestamp>().and_then(|r| r.member()) {
                         avatar.set_data(Some(member.avatar_data().clone()));
                     }
 
@@ -140,7 +143,6 @@ mod imp {
     }
 
     impl WidgetImpl for ReadReceiptsList {}
-
     impl BinImpl for ReadReceiptsList {}
 }
 
@@ -150,6 +152,7 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl ReadReceiptsList {
     pub fn new(members: &MemberList) -> Self {
         glib::Object::builder().property("members", members).build()
@@ -196,27 +199,25 @@ impl ReadReceiptsList {
     }
 
     fn items_changed(&self, source: &gio::ListStore, pos: u32, removed: u32, added: u32) {
+        let Some(members) = &*self.imp().members.borrow() else {
+            return;
+        };
+
         let mut new_receipts = Vec::with_capacity(added as usize);
 
-        {
-            let Some(members) = &*self.imp().members.borrow() else {
-                return;
+        for i in pos..pos + added {
+            let Some(boxed) = source.item(i).and_downcast::<glib::BoxedAnyObject>() else {
+                break;
             };
 
-            for i in pos..pos + added {
-                let Some(boxed) = source.item(i).and_downcast::<glib::BoxedAnyObject>() else {
-                    break;
-                };
+            let source_receipt = boxed.borrow::<UserReadReceipt>();
+            let member = members.get_or_create(source_receipt.user_id.clone());
+            let receipt = MemberTimestamp::new(
+                &member,
+                source_receipt.receipt.ts.map(|ts| ts.as_secs().into()),
+            );
 
-                let source_receipt = boxed.borrow::<UserReadReceipt>();
-                let member = members.get_or_create(source_receipt.user_id.clone());
-                let receipt = MemberReadReceipt::new(
-                    &member,
-                    source_receipt.receipt.ts.map(|ts| ts.0.into()),
-                );
-
-                new_receipts.push(receipt);
-            }
+            new_receipts.push(receipt);
         }
 
         self.list().splice(pos, removed, &new_receipts);
@@ -231,7 +232,7 @@ impl ReadReceiptsList {
             if let Some(member) = self
                 .list()
                 .item(0)
-                .and_downcast::<MemberReadReceipt>()
+                .and_downcast::<MemberTimestamp>()
                 .and_then(|r| r.member())
             {
                 // Listen to changes of the display name.
@@ -259,7 +260,7 @@ impl ReadReceiptsList {
             )
         });
 
-        self.imp().container.set_tooltip_text(text.as_deref())
+        self.imp().toggle_button.set_tooltip_text(text.as_deref())
     }
 
     fn update_member_tooltip(&self, member: &Member) {
@@ -267,7 +268,7 @@ impl ReadReceiptsList {
         // variable name.
         let text = gettext_f("Seen by {name}", &[("name", &member.display_name())]);
 
-        self.imp().container.set_tooltip_text(Some(&text));
+        self.imp().toggle_button.set_tooltip_text(Some(&text));
     }
 
     fn update_label(&self) {
@@ -276,8 +277,30 @@ impl ReadReceiptsList {
 
         if n_items > MAX_RECEIPTS_SHOWN {
             label.set_text(&format!("{} +", n_items - MAX_RECEIPTS_SHOWN));
+            label.set_visible(true);
         } else {
-            label.set_text("");
+            label.set_visible(false);
         }
+    }
+
+    /// Handle a click on the container.
+    ///
+    /// Shows a popover with the list of receipts if there are any.
+    #[template_callback]
+    fn show_popover(&self) {
+        if self.list().n_items() == 0 {
+            // No popover.
+            return;
+        }
+
+        let toggle_button = &*self.imp().toggle_button;
+        let popover = ReadReceiptsPopover::new(self.list());
+        popover.set_parent(toggle_button);
+        popover.connect_closed(clone!(@weak toggle_button => move |popover| {
+            popover.unparent();
+            toggle_button.set_active(false);
+        }));
+
+        popover.popup();
     }
 }

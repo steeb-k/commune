@@ -2,6 +2,8 @@ use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 
+pub mod row;
+
 use crate::session::model::Member;
 
 mod imp {
@@ -12,23 +14,22 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default)]
-    pub struct MemberReactionSender {
-        /// The room member of this reaction sender.
+    pub struct MemberTimestamp {
+        /// The room member.
         pub member: glib::WeakRef<Member>,
-        /// The timestamp of when the reaction was sent, in seconds since Unix
-        /// Epoch, if any.
+        /// The timestamp, in milliseconds since Unix Epoch.
         ///
         /// A value of 0 means no timestamp.
         pub timestamp: Cell<u64>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MemberReactionSender {
-        const NAME: &'static str = "ContentMemberReactionSender";
-        type Type = super::MemberReactionSender;
+    impl ObjectSubclass for MemberTimestamp {
+        const NAME: &'static str = "ContentMemberTimestamp";
+        type Type = super::MemberTimestamp;
     }
 
-    impl ObjectImpl for MemberReactionSender {
+    impl ObjectImpl for MemberTimestamp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
@@ -71,25 +72,26 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A reaction sender's room member.
-    pub struct MemberReactionSender(ObjectSubclass<imp::MemberReactionSender>);
+    /// A room member and a timestamp.
+    pub struct MemberTimestamp(ObjectSubclass<imp::MemberTimestamp>);
 }
 
-impl MemberReactionSender {
-    /// Constructs a new `MemberReactionSender` with the given member.
-    pub fn new(member: &Member, timestamp: u64) -> Self {
+impl MemberTimestamp {
+    /// Constructs a new `MemberTimestamp` with the given member and
+    /// timestamp.
+    pub fn new(member: &Member, timestamp: Option<u64>) -> Self {
         glib::Object::builder()
             .property("member", member)
-            .property("timestamp", timestamp)
+            .property("timestamp", timestamp.unwrap_or_default())
             .build()
     }
 
-    /// The room member of this reaction sender.
+    /// The room member of this read receipt.
     pub fn member(&self) -> Option<Member> {
         self.imp().member.upgrade()
     }
 
-    /// Set the room member of this reaction sender.
+    /// Set the room member of this read receipt.
     fn set_member(&self, member: Option<&Member>) {
         let Some(member) = member else {
             // Ignore if there is no member.
@@ -100,15 +102,15 @@ impl MemberReactionSender {
         self.notify("member");
     }
 
-    /// The timestamp of when the reaction was sent, in seconds since Unix
-    /// Epoch, if any.
+    /// The timestamp of this read receipt, in milliseconds since Unix Epoch, if
+    /// any.
     ///
     /// A value of 0 means no timestamp.
     pub fn timestamp(&self) -> u64 {
         self.imp().timestamp.get()
     }
 
-    /// Set the timestamp of when the reaction was sent.
+    /// Set the timestamp of this read receipt.
     pub fn set_timestamp(&self, ts: u64) {
         if self.timestamp() == ts {
             return;
@@ -118,7 +120,7 @@ impl MemberReactionSender {
         self.notify("timestamp");
     }
 
-    /// The formatted date and time of when the reaction was sent.
+    /// The formatted date and time of this receipt.
     pub fn datetime(&self) -> String {
         let timestamp = self.timestamp();
 
@@ -127,7 +129,7 @@ impl MemberReactionSender {
             return String::new();
         }
 
-        let datetime = glib::DateTime::from_unix_utc(timestamp as i64)
+        let datetime = glib::DateTime::from_unix_utc((timestamp / 1000) as i64)
             .and_then(|t| t.to_local())
             .unwrap();
 
@@ -148,7 +150,7 @@ impl MemberReactionSender {
             // Do not change the time format as it will follow the system settings.
             // Please use `-` before specifiers that add spaces on single digits.
             // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %-k∶%M %p")
+            gettext("%B %-e at %-k∶%M")
         };
         datetime.format(&format).unwrap().to_string()
     }

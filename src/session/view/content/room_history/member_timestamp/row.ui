@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentMessageReactionSenderRow" parent="AdwBin">
+  <template class="ContentMemberTimestampRow" parent="AdwBin">
     <style>
       <class name="list-popover-row"/>
     </style>
@@ -13,7 +13,7 @@
             <binding name="data">
               <lookup name="avatar-data">
                 <lookup name="member">
-                  <lookup name="sender">ContentMessageReactionSenderRow</lookup>
+                  <lookup name="data">ContentMemberTimestampRow</lookup>
                 </lookup>
               </lookup>
             </binding>
@@ -31,7 +31,7 @@
                 <binding name="label">
                   <lookup name="display-name">
                     <lookup name="member">
-                      <lookup name="sender">ContentMessageReactionSenderRow</lookup>
+                      <lookup name="data">ContentMemberTimestampRow</lookup>
                     </lookup>
                   </lookup>
                 </binding>
@@ -44,7 +44,7 @@
                 <property name="ellipsize">end</property>
                 <binding name="label">
                   <lookup name="datetime">
-                    <lookup name="sender">ContentMessageReactionSenderRow</lookup>
+                    <lookup name="data">ContentMemberTimestampRow</lookup>
                   </lookup>
                 </binding>
                 <style>
@@ -59,4 +59,3 @@
     </child>
   </template>
 </interface>
-

@@ -22,8 +22,8 @@
     <property name="activatable">False</property>
     <property name="selectable">False</property>
     <property name="child">
-      <object class="ContentMessageReactionSenderRow">
-        <binding name="sender">
+      <object class="ContentMemberTimestampRow">
+        <binding name="data">
           <lookup name="item">GtkListItem</lookup>
         </binding>
       </object>
@@ -39,4 +39,3 @@
     </property>
   </template>
 </interface>
-

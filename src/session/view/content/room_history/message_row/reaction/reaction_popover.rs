@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, prelude::*, CompositeTemplate};
 
-use super::ReactionSenderRow;
+use crate::session::view::content::room_history::member_timestamp::row::MemberTimestampRow;
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -27,7 +27,7 @@ mod imp {
         type ParentType = gtk::Popover;
 
         fn class_init(klass: &mut Self::Class) {
-            ReactionSenderRow::static_type();
+            MemberTimestampRow::static_type();
             Self::bind_template(klass);
         }
 
