@@ -77,7 +77,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/tombstone.ui</file>

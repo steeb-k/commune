@@ -15,6 +15,13 @@
                 <lookup name="event">ContentStateRow</lookup>
               </lookup>
             </binding>
+            <binding name="members">
+              <lookup name="members" type="Room">
+                <lookup name="room" type="RoomEvent">
+                  <lookup name="event">ContentStateRow</lookup>
+                </lookup>
+              </lookup>
+            </binding>
           </object>
         </child>
       </object>

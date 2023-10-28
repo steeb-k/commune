@@ -825,6 +825,7 @@ impl Room {
         } else {
             let list = MemberList::new(self);
             members.set(Some(&list));
+            self.notify("members");
             list
         }
     }

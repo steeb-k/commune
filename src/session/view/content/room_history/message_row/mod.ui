@@ -99,6 +99,13 @@
                 <lookup name="event">ContentMessageRow</lookup>
               </lookup>
             </binding>
+            <binding name="members">
+              <lookup name="members" type="Room">
+                <lookup name="room" type="RoomEvent">
+                  <lookup name="event">ContentMessageRow</lookup>
+                </lookup>
+              </lookup>
+            </binding>
             <layout>
               <property name="column">1</property>
               <property name="row">3</property>

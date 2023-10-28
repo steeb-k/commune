@@ -216,8 +216,7 @@ impl MessageRow {
 
         imp.reactions
             .set_reaction_list(&event.room().get_or_create_members(), event.reactions());
-        imp.read_receipts
-            .set_list(&event.room(), event.read_receipts());
+        imp.read_receipts.set_source(event.read_receipts());
         imp.event.replace(Some(event));
         self.notify("event");
     }

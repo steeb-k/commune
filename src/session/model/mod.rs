@@ -14,7 +14,8 @@ pub use self::{
     room::{
         Event, EventKey, HighlightFlags, Member, MemberList, MemberRole, Membership, PowerLevel,
         ReactionGroup, ReactionList, Room, RoomType, Timeline, TimelineItem, TimelineItemExt,
-        TimelineState, TypingList, VirtualItem, VirtualItemKind, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
+        TimelineState, TypingList, UserReadReceipt, VirtualItem, VirtualItemKind, POWER_LEVEL_MAX,
+        POWER_LEVEL_MIN,
     },
     room_list::RoomList,
     session::{Session, SessionState},

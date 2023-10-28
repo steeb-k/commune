@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt};
 
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, Error as TimelineError, EventTimelineItem, RepliedToEvent,
@@ -71,6 +71,13 @@ impl glib::FromVariant for EventKey {
 #[boxed_type(name = "BoxedEventTimelineItem")]
 pub struct BoxedEventTimelineItem(EventTimelineItem);
 
+/// A user's read receipt.
+#[derive(Clone, Debug)]
+pub struct UserReadReceipt {
+    pub user_id: OwnedUserId,
+    pub receipt: Receipt,
+}
+
 mod imp {
     use std::cell::RefCell;
 
@@ -79,7 +86,7 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug)]
     pub struct Event {
         /// The underlying SDK timeline item.
         pub item: RefCell<Option<EventTimelineItem>>,
@@ -91,7 +98,18 @@ mod imp {
         pub reactions: ReactionList,
 
         /// The read receipts on this event.
-        pub read_receipts: gtk::StringList,
+        pub read_receipts: gio::ListStore,
+    }
+
+    impl Default for Event {
+        fn default() -> Self {
+            Self {
+                item: Default::default(),
+                room: Default::default(),
+                reactions: Default::default(),
+                read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
+            }
+        }
     }
 
     #[glib::object_subclass]
@@ -120,6 +138,9 @@ mod imp {
                         .read_only()
                         .build(),
                     glib::ParamSpecBoolean::builder("is-highlighted")
+                        .read_only()
+                        .build(),
+                    glib::ParamSpecObject::builder::<gio::ListStore>("read-receipts")
                         .read_only()
                         .build(),
                     glib::ParamSpecBoolean::builder("has-read-receipts")
@@ -156,6 +177,7 @@ mod imp {
                 "reactions" => obj.reactions().to_value(),
                 "is-edited" => obj.is_edited().to_value(),
                 "is-highlighted" => obj.is_highlighted().to_value(),
+                "read-receipts" => obj.read_receipts().to_value(),
                 "has-read-receipts" => obj.has_read_receipts().to_value(),
                 _ => unimplemented!(),
             }
@@ -441,7 +463,7 @@ impl Event {
     }
 
     /// The read receipts on this event.
-    pub fn read_receipts(&self) -> &gtk::StringList {
+    pub fn read_receipts(&self) -> &gio::ListStore {
         &self.imp().read_receipts
     }
 
@@ -456,21 +478,18 @@ impl Event {
         let old_count = read_receipts.n_items();
         let new_count = new_read_receipts.len() as u32;
 
-        let new_user_ids = new_read_receipts
-            .keys()
-            .map(|u| u.as_str())
-            .collect::<Vec<_>>();
-
         if old_count == new_count {
             let mut is_all_same = true;
-            for i in 0..old_count {
-                let Some(old_user_id) = read_receipts.string(i) else {
+            for (i, new_user_id) in new_read_receipts.keys().enumerate() {
+                let Some(old_receipt) = read_receipts
+                    .item(i as u32)
+                    .and_downcast::<glib::BoxedAnyObject>()
+                else {
                     is_all_same = false;
                     break;
                 };
-                let new_user_id = new_user_ids[i as usize];
 
-                if old_user_id != new_user_id {
+                if old_receipt.borrow::<UserReadReceipt>().user_id != *new_user_id {
                     is_all_same = false;
                     break;
                 }
@@ -481,7 +500,16 @@ impl Event {
             }
         }
 
-        read_receipts.splice(0, old_count, &new_user_ids);
+        let new_read_receipts = new_read_receipts
+            .into_iter()
+            .map(|(user_id, receipt)| {
+                glib::BoxedAnyObject::new(UserReadReceipt {
+                    user_id: user_id.clone(),
+                    receipt: receipt.clone(),
+                })
+            })
+            .collect::<Vec<_>>();
+        read_receipts.splice(0, old_count, &new_read_receipts);
 
         let had_read_receipts = old_count > 0;
         let has_read_receipts = new_count > 0;
