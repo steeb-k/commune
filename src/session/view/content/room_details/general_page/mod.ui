@@ -56,14 +56,14 @@
                   <property name="sensitive">false</property>
                   <property name="margin-bottom">18</property>
                   <child>
-                    <object class="GtkTextView" id="room_topic_text_view">
+                    <object class="GtkSourceView" id="room_topic_text_view">
                       <property name="justification">center</property>
                       <property name="wrap-mode">word-char</property>
                       <property name="accepts-tab">False</property>
                       <property name="top-margin">7</property>
                       <property name="bottom-margin">7</property>
                       <property name="buffer">
-                        <object class="GtkTextBuffer" id="room_topic_buffer">
+                        <object class="GtkSourceBuffer" id="room_topic_buffer">
                           <binding name="text">
                             <closure type="gchararray" function="unwrap_string_or_empty">
                               <lookup name="topic">
