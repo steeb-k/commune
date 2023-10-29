@@ -340,6 +340,27 @@ mod imp {
         }
 
         fn constructed(&self) {
+            self.setup_listview();
+            self.setup_message_entry();
+            self.setup_drop_target();
+
+            self.parent_constructed();
+        }
+
+        fn dispose(&self) {
+            self.completion.unparent();
+
+            for (_, expr_watch) in self.room_expr_watches.take() {
+                expr_watch.unwatch();
+            }
+        }
+    }
+
+    impl WidgetImpl for RoomHistory {}
+    impl BinImpl for RoomHistory {}
+
+    impl RoomHistory {
+        fn setup_listview(&self) {
             let obj = self.obj();
 
             let factory = gtk::SignalListItemFactory::new();
@@ -406,8 +427,12 @@ mod imp {
                 }
                 obj.start_loading();
             }));
+        }
 
-            let key_events = gtk::EventControllerKey::new();
+        fn setup_message_entry(&self) {
+            let obj = self.obj();
+
+            // Clipboard.
             self.message_entry
                 .connect_paste_clipboard(clone!(@weak obj => move |entry| {
                     let formats = obj.clipboard().formats();
@@ -433,6 +458,8 @@ mod imp {
                     entry.buffer().delete_selection(true, true);
                 }));
 
+            // Key bindings.
+            let key_events = gtk::EventControllerKey::new();
             key_events
                 .connect_key_pressed(clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_, key, _, modifier| {
                 if modifier.is_empty() && (key == gdk::Key::Return || key == gdk::Key::KP_Enter) {
@@ -453,17 +480,20 @@ mod imp {
                 .downcast::<sourceview::Buffer>()
                 .unwrap();
 
+            crate::utils::sourceview::setup_style_scheme(&buffer);
+
+            // Actions on changes in message entry.
             buffer.connect_text_notify(clone!(@weak obj => move |buffer| {
                let (start_iter, end_iter) = buffer.bounds();
                let is_empty = start_iter == end_iter;
                obj.action_set_enabled("room-history.send-text-message", !is_empty);
                obj.send_typing_notification(!is_empty);
             }));
-            crate::utils::sourceview::setup_style_scheme(&buffer);
 
             let (start_iter, end_iter) = buffer.bounds();
             obj.action_set_enabled("room-history.send-text-message", start_iter != end_iter);
 
+            // Markdown highlighting.
             let md_lang = sourceview::LanguageManager::default().language("markdown");
             buffer.set_language(md_lang.as_ref());
             obj.bind_property("markdown-enabled", &buffer, "highlight-syntax")
@@ -475,24 +505,43 @@ mod imp {
                 .bind("markdown-enabled", &*obj, "markdown-enabled")
                 .build();
 
+            // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
-
-            obj.setup_drop_target();
-
-            self.parent_constructed();
         }
 
-        fn dispose(&self) {
-            self.completion.unparent();
+        fn setup_drop_target(&self) {
+            let obj = self.obj();
 
-            for (_, expr_watch) in self.room_expr_watches.take() {
-                expr_watch.unwatch();
-            }
+            let target = gtk::DropTarget::new(
+                gio::File::static_type(),
+                gdk::DragAction::COPY | gdk::DragAction::MOVE,
+            );
+
+            target.connect_drop(
+                clone!(@weak obj => @default-return false, move |_, value, _, _| {
+                    match value.get::<gio::File>() {
+                        Ok(file) => {
+                            spawn!(clone!(@weak obj => async move {
+                                obj.send_file(file).await;
+                            }));
+                            true
+                        }
+                        Err(error) => {
+                            warn!("Could not get file from drop: {error:?}");
+                            toast!(
+                                obj,
+                                gettext("Error getting file from drop")
+                            );
+
+                            false
+                        }
+                    }
+                }),
+            );
+
+            self.drag_overlay.set_drop_target(target);
         }
     }
-
-    impl WidgetImpl for RoomHistory {}
-    impl BinImpl for RoomHistory {}
 }
 
 glib::wrapper! {
@@ -1297,39 +1346,6 @@ impl RoomHistory {
                 toast!(self, gettext("Error reading file"));
             }
         }
-    }
-
-    fn setup_drop_target(&self) {
-        let imp = self.imp();
-
-        let target = gtk::DropTarget::new(
-            gio::File::static_type(),
-            gdk::DragAction::COPY | gdk::DragAction::MOVE,
-        );
-
-        target.connect_drop(
-            clone!(@weak self as obj => @default-return false, move |_, value, _, _| {
-                match value.get::<gio::File>() {
-                    Ok(file) => {
-                        spawn!(clone!(@weak obj => async move {
-                            obj.send_file(file).await;
-                        }));
-                        true
-                    }
-                    Err(error) => {
-                        warn!("Could not get file from drop: {error:?}");
-                        toast!(
-                            obj,
-                            gettext("Error getting file from drop")
-                        );
-
-                        false
-                    }
-                }
-            }),
-        );
-
-        imp.drag_overlay.set_drop_target(target);
     }
 
     async fn read_clipboard(&self) {
