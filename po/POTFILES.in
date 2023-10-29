@@ -108,7 +108,7 @@ src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
 src/shortcuts.ui
 src/user_facing_error.rs
-src/utils/matrix.rs
+src/utils/matrix/mod.rs
 src/utils/media.rs
 src/utils/message_dialog.rs
 src/window.rs
