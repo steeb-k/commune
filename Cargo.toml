@@ -72,6 +72,7 @@ gst_video = { version = "0.21", package = "gstreamer-video" }
 gtk = { package = "gtk4", version = "0.7", features = ["v4_10"] }
 shumate = { package = "libshumate", version = "0.4" }
 sourceview = { package = "sourceview5", version = "0.7" }
+spelling = { package = "libspelling", version = "0.1" }
 
 [dependencies.matrix-sdk]
 git = "https://github.com/zecakeh/matrix-rust-sdk.git"
