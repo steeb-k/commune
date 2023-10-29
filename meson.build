@@ -20,20 +20,22 @@ dependency(
   fallback: ['libadwaita', 'libadwaita_dep'],
   default_options: ['tests=false', 'examples=false', 'vapi=false']
 )
-dependency(
-  'gtksourceview-5', version: '>= 5.0.0',
-  fallback: ['gtksourceview', 'gtksource_dep'],
-  default_options: ['gtk_doc=false', 'sysprof=false', 'gir=false', 'vapi=false', 'install_tests=false']
-)
+
+# Please keep these dependencies sorted.
 dependency('gstreamer-1.0', version: '>= 1.20')
 dependency('gstreamer-base-1.0', version: '>= 1.20')
 dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
 dependency('gstreamer-play-1.0', version: '>= 1.20')
 dependency('gstreamer-video-1.0', version: '>= 1.20')
-dependency('openssl', version: '>= 1.0.1')
-dependency('sqlite3', version: '>= 3.24.0')
+dependency(
+  'gtksourceview-5', version: '>= 5.0.0',
+  fallback: ['gtksourceview', 'gtksource_dep'],
+  default_options: ['gtk_doc=false', 'sysprof=false', 'gir=false', 'vapi=false', 'install_tests=false']
+)
 dependency('libpipewire-0.3', version: '>= 0.3.0')
+dependency('openssl', version: '>= 1.0.1')
 dependency('shumate-1.0', version: '>= 1.0.0')
+dependency('sqlite3', version: '>= 3.24.0')
 dependency('xdg-desktop-portal', version: '>= 1.14.1')
 
 glib_compile_resources = find_program('glib-compile-resources', required: true)
