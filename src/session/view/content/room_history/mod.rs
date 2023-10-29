@@ -76,6 +76,7 @@ use crate::{
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
         message_dialog,
         template_callbacks::TemplateCallbacks,
+        RoomSpellChecker,
     },
     Window,
 };
@@ -159,6 +160,7 @@ mod imp {
         // TODO: use gtk::MultiSelection to allow selection
         pub selection_model: OnceCell<gtk::NoSelection>,
         pub room_expr_watches: RefCell<HashMap<&'static str, gtk::ExpressionWatch>>,
+        pub spell_checker: RoomSpellChecker,
     }
 
     #[glib::object_subclass]
@@ -509,13 +511,7 @@ mod imp {
             self.completion.set_parent(&*self.message_entry);
 
             // Spellchecker.
-            let spell_checker = spelling::Checker::default();
-            let adapter = spelling::TextBufferAdapter::new(&buffer, &spell_checker);
-            let extra_menu = adapter.menu_model();
-            self.message_entry.set_extra_menu(Some(&extra_menu));
-            self.message_entry
-                .insert_action_group("spelling", Some(&adapter));
-            adapter.set_enabled(true);
+            self.spell_checker.set_up_sourceview(&self.message_entry);
         }
 
         fn setup_drop_target(&self) {
@@ -661,6 +657,8 @@ impl RoomHistory {
             self.init_invite_action(room);
             self.scroll_down();
         }
+
+        imp.spell_checker.set_room(room.as_ref());
 
         // Keep a strong reference to the members list before changing the model, so all
         // events use the same list.

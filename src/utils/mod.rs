@@ -6,6 +6,7 @@ pub mod matrix;
 pub mod media;
 pub mod message_dialog;
 pub mod notifications;
+mod room_spell_checker;
 pub mod sourceview;
 pub mod template_callbacks;
 
@@ -27,7 +28,7 @@ use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
 use tracing::error;
 
-pub use self::expression_list_model::ExpressionListModel;
+pub use self::{expression_list_model::ExpressionListModel, room_spell_checker::RoomSpellChecker};
 use crate::RUNTIME;
 
 /// Returns an expression that is the and’ed result of the given boolean
