@@ -33,12 +33,6 @@ futures-channel = "0.3"
 futures-util = "0.3"
 geo-uri = "0.2"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
-gst = { version = "0.21", package = "gstreamer" }
-gst_base = { version = "0.21", package = "gstreamer-base" }
-gst_gtk = { version = "0.11", package = "gst-plugin-gtk4" }
-gst_pbutils = { version = "0.21", package = "gstreamer-pbutils" }
-gst_play = { version = "0.21", package = "gstreamer-play" }
-gst_video = { version = "0.21", package = "gstreamer-video" }
 html-escape = "0.2"
 html2pango = "0.6"
 html5gum = "0.5"
@@ -68,15 +62,17 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
 
-[dependencies.adw]
-package = "libadwaita"
-version = "0.5"
-features = ["v1_4"]
-
-[dependencies.gtk]
-package = "gtk4"
-version = "0.7"
-features = ["v4_10"]
+# gtk-rs project and dependents. These usually need to be updated together.
+adw = { package = "libadwaita", version = "0.5", features = ["v1_4"] }
+gst = { version = "0.21", package = "gstreamer" }
+gst_base = { version = "0.21", package = "gstreamer-base" }
+gst_gtk = { version = "0.11", package = "gst-plugin-gtk4" }
+gst_pbutils = { version = "0.21", package = "gstreamer-pbutils" }
+gst_play = { version = "0.21", package = "gstreamer-play" }
+gst_video = { version = "0.21", package = "gstreamer-video" }
+gtk = { package = "gtk4", version = "0.7", features = ["v4_10"] }
+shumate = { package = "libshumate", version = "0.4" }
+sourceview = { package = "sourceview5", version = "0.7" }
 
 [dependencies.matrix-sdk]
 git = "https://github.com/zecakeh/matrix-rust-sdk.git"
@@ -111,11 +107,3 @@ features = [
     "compat-get-3pids",
     "html",
 ]
-
-[dependencies.shumate]
-package = "libshumate"
-version = "0.4"
-
-[dependencies.sourceview]
-package = "sourceview5"
-version = "0.7"
