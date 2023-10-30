@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use adw::{prelude::BinExt, subclass::prelude::*};
-use gtk::{glib, pango, prelude::*};
+use gtk::{glib, glib::clone, pango, prelude::*};
 use html2pango::{
     block::{markup_html, HtmlBlock},
     html_escape, markup_links,
@@ -13,7 +13,7 @@ use crate::{
     components::LabelWithWidgets,
     prelude::*,
     session::model::{Member, Room},
-    utils::{matrix::extract_mentions, EMOJI_REGEX},
+    utils::{matrix::extract_mentions, BoundObjectWeakRef, EMOJI_REGEX},
 };
 
 enum WithMentions<'a> {
@@ -32,8 +32,14 @@ mod imp {
     pub struct MessageText {
         /// The original text of the message that is displayed.
         pub original_text: RefCell<String>,
+        /// Whether the original text is HTML.
+        ///
+        /// Only used for emotes.
+        pub is_html: Cell<bool>,
         /// The text format.
         pub format: Cell<ContentFormat>,
+        /// The sender of the message, if we need to listen to changes.
+        pub sender: BoundObjectWeakRef<Member>,
     }
 
     #[glib::object_subclass]
@@ -50,6 +56,9 @@ mod imp {
                     glib::ParamSpecString::builder("original-text")
                         .read_only()
                         .build(),
+                    glib::ParamSpecBoolean::builder("is-html")
+                        .read_only()
+                        .build(),
                     glib::ParamSpecEnum::builder::<ContentFormat>("format")
                         .read_only()
                         .build(),
@@ -64,6 +73,7 @@ mod imp {
 
             match pspec.name() {
                 "original-text" => obj.original_text().to_value(),
+                "is-html" => obj.is_html().to_value(),
                 "format" => obj.format().to_value(),
                 _ => unimplemented!(),
             }
@@ -95,10 +105,11 @@ impl MessageText {
             return;
         }
 
+        self.reset();
         self.set_original_text(body.clone());
         self.set_format(format);
 
-        self.build_text(body, WithMentions::No);
+        self.build_text(body, WithMentions::No, false);
     }
 
     /// Display the given text with markup.
@@ -117,6 +128,7 @@ impl MessageText {
             }
 
             if let Some(html_blocks) = parse_formatted_body(&formatted) {
+                self.reset();
                 self.set_original_text(formatted);
                 self.set_format(format);
 
@@ -131,10 +143,11 @@ impl MessageText {
 
         let linkified_body = linkify(&body);
 
+        self.reset();
         self.set_original_text(body);
         self.set_format(format);
 
-        self.build_text(linkified_body, WithMentions::Yes(room));
+        self.build_text(linkified_body, WithMentions::Yes(room), false);
     }
 
     /// Display the given emote for `sender`.
@@ -149,34 +162,77 @@ impl MessageText {
         format: ContentFormat,
     ) {
         if let Some(body) = formatted.filter(is_valid_formatted_body).map(|f| f.body) {
-            let formatted = format!("{} {}", sender.html_mention(), &body);
-
-            if !self.original_text_changed(&formatted) && !self.format_changed(format) {
+            if !self.original_text_changed(&body)
+                && !self.format_changed(format)
+                && !self.sender_changed(&sender)
+            {
                 return;
             }
 
-            if let Some(html_blocks) = parse_formatted_body(&formatted) {
-                self.set_original_text(formatted);
+            let with_sender = format!("<b>{}</b> {body}", sender.display_name());
+
+            if let Some(html_blocks) = parse_formatted_body(&with_sender) {
+                self.reset();
+                self.add_css_class("emote");
+                self.set_original_text(body);
+                self.set_is_html(true);
                 self.set_format(format);
+
+                let handler = sender.connect_notify_local(
+                    Some("display-name"),
+                    clone!(@weak self as obj, @weak room => move |sender, _| {
+                        obj.update_emote(&room, &sender.display_name());
+                    }),
+                );
+                self.imp().sender.set(&sender, vec![handler]);
 
                 self.build_html(html_blocks, room);
                 return;
             }
         }
 
-        let body = format!("{} {}", sender.html_mention(), linkify(&body));
+        let body = linkify(&body);
 
-        if !self.original_text_changed(&body) && !self.format_changed(format) {
+        if !self.original_text_changed(&body)
+            && !self.format_changed(format)
+            && !self.sender_changed(&sender)
+        {
             return;
         }
 
+        let with_sender = format!("<b>{}</b> {body}", sender.display_name());
+
+        self.reset();
+        self.add_css_class("emote");
         self.set_original_text(body.clone());
+        self.set_is_html(false);
         self.set_format(format);
 
-        self.build_text(body, WithMentions::Yes(room));
+        let handler = sender.connect_notify_local(
+            Some("display-name"),
+            clone!(@weak self as obj, @weak room => move |sender, _| {
+                obj.update_emote(&room, &sender.display_name());
+            }),
+        );
+        self.imp().sender.set(&sender, vec![handler]);
+
+        self.build_text(with_sender, WithMentions::Yes(room), true);
     }
 
-    fn build_text(&self, text: String, with_mentions: WithMentions) {
+    fn update_emote(&self, room: &Room, sender_name: &str) {
+        let with_sender = format!("<b>{sender_name}</b> {}", self.original_text());
+
+        if self.is_html() {
+            if let Some(html_blocks) = parse_formatted_body(&with_sender) {
+                self.build_html(html_blocks, room);
+                return;
+            }
+        }
+
+        self.build_text(with_sender, WithMentions::Yes(room), true);
+    }
+
+    fn build_text(&self, text: String, with_mentions: WithMentions, use_markup: bool) {
         let ellipsize = self.format() == ContentFormat::Ellipsized;
 
         let (linkified, (label, widgets)) = match with_mentions {
@@ -209,7 +265,7 @@ impl MessageText {
                 pango::EllipsizeMode::None
             });
 
-            child.set_use_markup(linkified);
+            child.set_use_markup(use_markup || linkified);
             child.set_label(label);
         } else {
             let widgets = widgets.into_iter().map(|(w, _)| w).collect();
@@ -265,6 +321,21 @@ impl MessageText {
         self.notify("original-text");
     }
 
+    /// Whether the original text of the message is HTML.
+    pub fn is_html(&self) -> bool {
+        self.imp().is_html.get()
+    }
+
+    /// Set whether the original text of the message is HTML.
+    fn set_is_html(&self, is_html: bool) {
+        if self.is_html() == is_html {
+            return;
+        }
+
+        self.imp().is_html.set(is_html);
+        self.notify("is-html");
+    }
+
     /// The text format.
     pub fn format(&self) -> ContentFormat {
         self.imp().format.get()
@@ -279,6 +350,17 @@ impl MessageText {
     fn set_format(&self, format: ContentFormat) {
         self.imp().format.set(format);
         self.notify("format");
+    }
+
+    /// Whether the sender of the message changed.
+    fn sender_changed(&self, sender: &Member) -> bool {
+        self.imp().sender.obj().as_ref() == Some(sender)
+    }
+
+    /// Reset this `MessageText`.
+    fn reset(&self) {
+        self.imp().sender.disconnect_signals();
+        self.remove_css_class("emote");
     }
 }
 

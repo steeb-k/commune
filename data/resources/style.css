@@ -441,6 +441,10 @@ room-history-row .event-content .emoji {
   font-size: 3em;
 }
 
+room-history-row .event-content .emote {
+  color: @accent_color;
+}
+
 .content-thumbnail {
   border-radius: 6px;
   background-color: @borders;
