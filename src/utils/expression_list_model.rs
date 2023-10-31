@@ -13,8 +13,8 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct ExpressionListModel {
         pub model: BoundObject<gio::ListModel>,
-        pub expression: RefCell<Option<gtk::Expression>>,
-        pub watches: RefCell<Vec<gtk::ExpressionWatch>>,
+        pub expressions: RefCell<Vec<gtk::Expression>>,
+        pub watches: RefCell<Vec<Vec<gtk::ExpressionWatch>>>,
     }
 
     #[glib::object_subclass]
@@ -27,27 +27,12 @@ mod imp {
     impl ObjectImpl for ExpressionListModel {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gio::ListModel>("model")
-                        .explicit_notify()
-                        .build(),
-                    gtk::ParamSpecExpression::builder("expression")
-                        .explicit_notify()
-                        .build(),
-                ]
+                vec![glib::ParamSpecObject::builder::<gio::ListModel>("model")
+                    .read_only()
+                    .build()]
             });
 
             PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "model" => obj.set_model(value.get().unwrap()),
-                "expression" => obj.set_expression(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
         }
 
         fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
@@ -55,7 +40,6 @@ mod imp {
 
             match pspec.name() {
                 "model" => obj.model().to_value(),
-                "expression" => obj.expression().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -63,7 +47,7 @@ mod imp {
         fn dispose(&self) {
             self.model.disconnect_signals();
 
-            for watch in self.watches.take() {
+            for watch in self.watches.take().iter().flatten() {
                 watch.unwatch()
             }
         }
@@ -94,11 +78,8 @@ glib::wrapper! {
 }
 
 impl ExpressionListModel {
-    pub fn new(model: impl IsA<gio::ListModel>, expression: impl AsRef<gtk::Expression>) -> Self {
-        glib::Object::builder()
-            .property("model", model.upcast())
-            .property("expression", expression.as_ref())
-            .build()
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
     /// The underlying model.
@@ -110,14 +91,10 @@ impl ExpressionListModel {
     pub fn set_model(&self, model: Option<gio::ListModel>) {
         let imp = self.imp();
 
-        if imp.model.obj() == model {
-            return;
-        }
-
         let removed = self.n_items();
 
         imp.model.disconnect_signals();
-        for watch in imp.watches.take() {
+        for watch in imp.watches.take().iter().flatten() {
             watch.unwatch();
         }
 
@@ -132,7 +109,7 @@ impl ExpressionListModel {
             let added = model.n_items();
             imp.model.set(model, vec![items_changed_handler]);
 
-            self.watch_items(0, removed, added);
+            self.watch_items(0, 0, added);
             added
         } else {
             0
@@ -142,41 +119,34 @@ impl ExpressionListModel {
         self.notify("model");
     }
 
-    /// The watched expression.
-    pub fn expression(&self) -> Option<gtk::Expression> {
-        self.imp().expression.borrow().clone()
+    /// The expressions to watch.
+    pub fn expressions(&self) -> Vec<gtk::Expression> {
+        self.imp().expressions.borrow().clone()
     }
 
-    /// Set the watched expression.
-    pub fn set_expression(&self, expression: Option<gtk::Expression>) {
-        if self.expression().is_none() && expression.is_none() {
-            return;
-        }
-
+    /// Set the expressions to watch.
+    pub fn set_expressions(&self, expressions: Vec<gtk::Expression>) {
         let imp = self.imp();
 
-        // Reset expression watches.
-        for watch in imp.watches.take() {
+        for watch in imp.watches.take().iter().flatten() {
             watch.unwatch();
         }
 
-        imp.expression.replace(expression);
-
-        // Watch items again.
-        let added = self.n_items();
-        self.watch_items(0, 0, added);
-
-        self.notify("expression");
+        imp.expressions.replace(expressions);
+        self.watch_items(0, 0, self.n_items());
     }
 
     /// Watch and unwatch items according to changes in the underlying model.
     fn watch_items(&self, pos: u32, removed: u32, added: u32) {
-        let Some(expression) = self.expression() else {
-            return;
-        };
         let Some(model) = self.model() else {
             return;
         };
+
+        let expressions = self.expressions();
+        if expressions.is_empty() {
+            return;
+        }
+
         let imp = self.imp();
 
         let mut new_watches = Vec::with_capacity(added as usize);
@@ -186,18 +156,23 @@ impl ExpressionListModel {
                 break;
             };
 
-            new_watches.push(expression.watch(
-                Some(&item),
-                clone!(@weak self as obj, @weak item => move || {
-                    obj.item_expr_changed(&item);
-                }),
-            ));
+            let mut item_watches = Vec::with_capacity(expressions.len());
+            for expression in &expressions {
+                item_watches.push(expression.watch(
+                    Some(&item),
+                    clone!(@weak self as obj, @weak item => move || {
+                        obj.item_expr_changed(&item);
+                    }),
+                ));
+            }
+
+            new_watches.push(item_watches);
         }
 
         let mut watches = imp.watches.borrow_mut();
         let removed_range = (pos as usize)..((pos + removed) as usize);
-        for watch in watches.splice(removed_range, new_watches) {
-            watch.unwatch()
+        for watch in watches.splice(removed_range, new_watches).flatten() {
+            watch.unwatch();
         }
     }
 
@@ -212,5 +187,11 @@ impl ExpressionListModel {
                 break;
             }
         }
+    }
+}
+
+impl Default for ExpressionListModel {
+    fn default() -> Self {
+        Self::new()
     }
 }
