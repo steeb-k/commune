@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-10-27 14:43+0000\n"
-"PO-Revision-Date: 2023-10-27 21:13+0300\n"
+"POT-Creation-Date: 2023-10-28 21:06+0000\n"
+"PO-Revision-Date: 2023-10-31 21:27+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -1099,19 +1099,16 @@ msgstr "Не вдалося змінити аватар"
 
 #: src/session/view/account_settings/user_page/mod.rs:295
 #: src/session/view/content/room_details/general_page/mod.rs:343
-#| msgid "Choose Avatar"
 msgid "Remove Avatar?"
 msgstr "Вилучити аватар?"
 
 #: src/session/view/account_settings/user_page/mod.rs:296
-#| msgid "Are you sure you want to delete your account?"
 msgid "Do you really want to remove your avatar?"
 msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
 #: src/session/view/account_settings/user_page/mod.rs:300
 #: src/session/view/content/room_details/general_page/mod.rs:350
 #: src/session/view/content/room_history/item_row.rs:735
-#| msgid "Re_move"
 msgid "Remove"
 msgstr "Вилучити"
 
@@ -1483,28 +1480,24 @@ msgid "Thumbnail copied to clipboard"
 msgstr "Мініатюру скопійовано до буфера обміну"
 
 #: src/session/view/content/room_history/item_row.rs:728
-#| msgid "New Messages"
 msgid "Remove Message?"
 msgstr "Вилучити повідомлення?"
 
 #: src/session/view/content/room_history/item_row.rs:730
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
-"Ви справді хочете вилучити це повідомлення? Наслідки цієї дії не може бути"
-" скасовано."
+"Ви справді хочете вилучити це повідомлення? Наслідки цієї дії не може бути "
+"скасовано."
 
 #: src/session/view/content/room_history/item_row.rs:745
-#| msgid "Failed to restore previous sessions"
 msgid "Failed to remove message"
 msgstr "Не вдалося вилучити повідомлення"
 
 #: src/session/view/content/room_history/item_row.rs:766
-#| msgid "Failed to retrieve current location."
 msgid "Failed to remove reaction"
 msgstr "Не вдалося вилучити реакцію"
 
 #: src/session/view/content/room_history/item_row.rs:773
-#| msgid "Failed to load connected device."
 msgid "Failed to add reaction"
 msgstr "Не вдалося додати реакцію"
 
@@ -1577,7 +1570,6 @@ msgstr "Редагування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:944
-#| msgid "Failed to forget {room}."
 msgid "Failed to leave {room}"
 msgstr "Не вдалося полишити {room}."
 
@@ -2653,29 +2645,30 @@ msgstr "Не вдалося зберегти файл"
 
 #. We are rejecting an invite.
 #: src/utils/message_dialog.rs:14
-#| msgid "Reject Invite"
 msgid "Decline Invite?"
 msgstr "Відхилити запрошення?"
 
 #: src/utils/message_dialog.rs:16
+#| msgid ""
+#| "Do you really want to decline this invite? You can join this room on you "
+#| "own later."
 msgid ""
-"Do you really want to decline this invite? You can join this room on you own "
-"later."
+"Do you really want to decline this invite? You can join this room on your "
+"own later."
 msgstr ""
-"Ви справді хочете відхилити це запрошення? Ви зможете долучитися до цієї"
-" кімнати власноруч пізніше."
+"Ви справді хочете відхилити це запрошення? Ви зможете долучитися до цієї "
+"кімнати власноруч пізніше."
 
 #: src/utils/message_dialog.rs:19
 msgid ""
 "Do you really want to decline this invite? You won’t be able to join this "
 "room without it."
 msgstr ""
-"Ви справді хочете відхилити це запрошення? Ви не зможете долучитися до цієї"
-" кімнати без запрошення."
+"Ви справді хочете відхилити це запрошення? Ви не зможете долучитися до цієї "
+"кімнати без запрошення."
 
 #. We are leaving a room that was joined.
 #: src/utils/message_dialog.rs:27
-#| msgid "Leave Room"
 msgid "Leave Room?"
 msgstr "Полишити кімнату?"
 
@@ -2689,11 +2682,10 @@ msgid ""
 "Do you really want to leave this room? You won’t be able to come back "
 "without an invitation."
 msgstr ""
-"Ви справді хочете полишити цю кімнату? Ви не зможете повернутися до неї"
-" пізніше без запрошення."
+"Ви справді хочете полишити цю кімнату? Ви не зможете повернутися до неї "
+"пізніше без запрошення."
 
 #: src/utils/message_dialog.rs:35
-#| msgid "Leave?"
 msgid "Leave"
 msgstr "Полишити"
 
