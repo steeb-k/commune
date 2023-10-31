@@ -1425,7 +1425,7 @@ impl RoomHistory {
         completion.set_user_id(Some(room.session().user().unwrap().user_id().to_string()));
         // We should have a strong reference to the list so we can use
         // `get_or_create_members()`.
-        completion.set_members(Some(&room_members))
+        completion.set_members(Some(room_members))
     }
 
     // Copy the selection in the message entry to the clipboard while replacing

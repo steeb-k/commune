@@ -6,34 +6,22 @@ use gtk::{
     CompositeTemplate,
 };
 use pulldown_cmark::{Event, Parser, Tag};
-use ruma::{OwnedUserId, UserId};
 use secular::lower_lay_string;
-use tracing::error;
 
 use super::CompletionRow;
 use crate::{
     components::Pill,
-    prelude::*,
     session::model::{Member, MemberList, Membership},
+    utils::ExpressionListModel,
 };
 
 const MAX_MEMBERS: usize = 32;
 
-#[derive(Debug, Default)]
-pub struct MemberWatch {
-    handlers: Vec<glib::SignalHandlerId>,
-    // The position of the member in the list model.
-    position: u32,
-}
-
 mod imp {
-    use std::{
-        cell::{Cell, RefCell},
-        collections::HashMap,
-    };
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::{Lazy, OnceCell};
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -46,6 +34,8 @@ mod imp {
         pub list: TemplateChild<gtk::ListBox>,
         /// The user ID of the current session.
         pub user_id: RefCell<Option<String>>,
+        /// The members list with expression watches.
+        pub members_expr: ExpressionListModel,
         /// The sorted and filtered room members.
         pub filtered_members: gtk::FilterListModel,
         /// The rows in the popover.
@@ -58,14 +48,6 @@ mod imp {
         pub inhibit: Cell<bool>,
         /// The buffer to complete with its cursor position signal handler ID.
         pub buffer_handler: RefCell<Option<(gtk::TextBuffer, glib::SignalHandlerId)>>,
-        /// The signal handler ID for when them members change.
-        pub members_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
-        /// List of signal handler IDs for properties of members of the current
-        /// list model with their position in it.
-        pub members_watch: RefCell<HashMap<OwnedUserId, MemberWatch>>,
-        /// A channel sender to reevaluate a member when one of its properties
-        /// changes.
-        pub reevaluate_member_sender: OnceCell<glib::Sender<OwnedUserId>>,
     }
 
     #[glib::object_subclass]
@@ -132,15 +114,14 @@ mod imp {
             let obj = self.obj();
 
             // Filter the members that are joined and that are not our user.
-            let joined =
-                gtk::BoolFilter::builder()
-                    .expression(Member::this_expression("membership").chain_closure::<bool>(
-                        closure!(|_obj: Option<glib::Object>, membership: Membership| {
-                            membership == Membership::Join
-                        }),
-                    ))
-                    .build();
-            let not_user = gtk::BoolFilter::builder()
+            let joined_expr = Member::this_expression("membership").chain_closure::<bool>(
+                closure!(|_obj: Option<glib::Object>, membership: Membership| {
+                    membership == Membership::Join
+                }),
+            );
+            let joined = gtk::BoolFilter::new(Some(&joined_expr));
+
+            let not_own_user = gtk::BoolFilter::builder()
                 .expression(gtk::ClosureExpression::new::<bool>(
                     &[
                         Member::this_expression("user-id"),
@@ -155,18 +136,25 @@ mod imp {
                 .build();
             let filter = gtk::EveryFilter::new();
             filter.append(joined);
-            filter.append(not_user);
-            let first_model = gtk::FilterListModel::builder().filter(&filter).build();
+            filter.append(not_own_user);
+            let first_model = gtk::FilterListModel::builder()
+                .filter(&filter)
+                .model(&self.members_expr)
+                .build();
 
             // Sort the members list by activity, then display name.
+            let latest_activity_expr = Member::this_expression("latest-activity");
             let activity = gtk::NumericSorter::builder()
                 .sort_order(gtk::SortType::Descending)
-                .expression(Member::this_expression("latest-activity"))
+                .expression(&latest_activity_expr)
                 .build();
+
+            let display_name_expr = Member::this_expression("display-name");
             let display_name = gtk::StringSorter::builder()
                 .ignore_case(true)
-                .expression(Member::this_expression("display-name"))
+                .expression(&display_name_expr)
                 .build();
+
             let sorter = gtk::MultiSorter::new();
             sorter.append(activity);
             sorter.append(display_name);
@@ -193,6 +181,12 @@ mod imp {
                 .build();
             self.filtered_members.set_filter(Some(&search));
             self.filtered_members.set_model(Some(&second_model));
+
+            self.members_expr.set_expressions(vec![
+                joined_expr.upcast(),
+                latest_activity_expr.upcast(),
+                display_name_expr.upcast(),
+            ]);
 
             for row in &self.rows {
                 self.list.append(row);
@@ -313,133 +307,19 @@ impl CompletionPopover {
         self.notify("user-id");
     }
 
-    fn first_model(&self) -> Option<gtk::FilterListModel> {
-        self.imp()
-            .filtered_members
-            .model()
-            .and_downcast::<gtk::SortListModel>()
-            .and_then(|second_model| second_model.model())
-            .and_downcast()
-    }
-
     /// The room members used for completion.
     pub fn members(&self) -> Option<MemberList> {
-        self.first_model()
-            .and_then(|first_model| first_model.model())
-            .and_downcast()
+        self.imp().members_expr.model().and_downcast()
     }
 
     /// Set the room members used for completion.
-    pub fn set_members(&self, members: Option<&MemberList>) {
-        if let Some(first_model) = self.first_model() {
-            let imp = self.imp();
-
-            // Remove the old handlers. We don't need to disconnect them since the members
-            // list is dropped anyway.
-            imp.members_changed_handler.take();
-            imp.members_watch.take();
-
-            first_model.set_model(members);
-
-            if let Some(members) = members {
-                self.members_changed(members, 0, 0, members.n_items());
-
-                imp.members_changed_handler
-                    .replace(Some(members.connect_items_changed(
-                        clone!(@weak self as obj => move |members, pos, removed, added| {
-                            obj.members_changed(members, pos, removed, added);
-                        }),
-                    )));
-            }
+    pub fn set_members(&self, members: Option<MemberList>) {
+        if self.members() == members {
+            return;
         }
 
+        self.imp().members_expr.set_model(members.and_upcast());
         self.notify("members");
-    }
-
-    fn members_changed(&self, members: &MemberList, pos: u32, removed: u32, added: u32) {
-        let mut members_watch = self.imp().members_watch.borrow_mut();
-
-        // Remove the old members. We don't care about disconnecting them since
-        // they are gone.
-        for idx in pos..(pos + removed) {
-            let user_id = members_watch
-                .iter()
-                .find_map(|(user_id, watch)| (watch.position == idx).then(|| user_id.to_owned()));
-
-            if let Some(user_id) = user_id {
-                members_watch.remove(&user_id);
-            }
-        }
-
-        let upper_bound = if removed != added {
-            members.n_items()
-        } else {
-            // If there are as many removed as added, we don't need to update
-            // the position of the following members.
-            pos + added
-        };
-        for idx in pos..upper_bound {
-            if let Some(member) = members.item(idx).and_downcast::<Member>() {
-                let watch = members_watch.entry(member.user_id()).or_default();
-
-                // Update the position of all members after pos.
-                watch.position = idx;
-
-                // Listen to property changes for added members because the list
-                // models don't reevaluate the expressions when the membership
-                // or latest-activity change.
-                if idx < (pos + added) {
-                    let sender = self.reevaluate_member_sender().clone();
-                    watch.handlers.push(member.connect_notify_local(
-                        None,
-                        move |member, param_spec| {
-                            if matches!(param_spec.name(), "membership" | "latest-activity") {
-                                if let Err(error) = sender.send(member.user_id()) {
-                                    error!(
-                                        "Failed to send member ID to reevaluate member: {error}"
-                                    );
-                                }
-                            }
-                        },
-                    ));
-                }
-            }
-        }
-    }
-
-    fn reevaluate_member_sender(&self) -> &glib::Sender<OwnedUserId> {
-        self.imp()
-            .reevaluate_member_sender
-            .get_or_init(|| {
-                let (sender, receiver) = glib::MainContext::channel::<OwnedUserId>(glib::Priority::DEFAULT_IDLE);
-
-                receiver.attach(
-                    None,
-                    clone!(@weak self as obj => @default-return glib::ControlFlow::Break, move |member_id| {
-                        obj.reevaluate_member(&member_id);
-                        glib::ControlFlow::Continue
-                    }),
-                );
-
-                sender
-            })
-    }
-
-    /// Force the given member to be reevaluated.
-    fn reevaluate_member(&self, member_id: &UserId) {
-        if let Some(members) = self.members() {
-            let pos = self
-                .imp()
-                .members_watch
-                .borrow()
-                .get(member_id)
-                .map(|watch| watch.position);
-
-            if let Some(pos) = pos {
-                // We pretend the item changed to get it reevaluated.
-                members.items_changed(pos, 1, 1)
-            }
-        }
     }
 
     /// The sorted and filtered room members.
