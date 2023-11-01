@@ -143,6 +143,11 @@ impl RoomList {
         imp.session.set(Some(session));
     }
 
+    /// Get a snapshot of the rooms list.
+    pub fn snapshot(&self) -> Vec<Room> {
+        self.imp().list.borrow().values().cloned().collect()
+    }
+
     pub fn is_pending_room(&self, identifier: &RoomOrAliasId) -> bool {
         self.imp().pending_rooms.borrow().contains(identifier)
     }

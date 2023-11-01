@@ -1,4 +1,4 @@
-use std::{collections::HashSet, time::Duration};
+use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
 use futures_util::StreamExt;
@@ -527,24 +527,17 @@ impl Session {
     fn setup_direct_room_handler(&self) {
         let session_weak = glib::SendWeakRef::from(self.downgrade());
         self.client().add_event_handler(
-            move |event: GlobalAccountDataEvent<DirectEventContent>| {
+            move |_event: GlobalAccountDataEvent<DirectEventContent>| {
                 let session_weak = session_weak.clone();
                 async move {
                     let ctx = glib::MainContext::default();
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(session) = session_weak.upgrade() {
-                                let room_ids = event.content.iter().fold(
-                                    HashSet::new(),
-                                    |mut acc, (_, rooms)| {
-                                        acc.extend(rooms);
-                                        acc
-                                    },
-                                );
-                                for room_id in room_ids {
-                                    if let Some(room) = session.room_list().get(room_id) {
-                                        room.load_category();
-                                    }
+                                // We update all rooms as we don't know which
+                                // ones are no longer direct.
+                                for room in session.room_list().snapshot() {
+                                    room.load_is_direct().await;
                                 }
                             }
                         });

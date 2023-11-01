@@ -7,13 +7,13 @@ use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     session::model::{HighlightFlags, Room, RoomType},
     spawn, toast,
-    utils::message_dialog,
+    utils::{message_dialog, BoundObject},
 };
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{subclass::InitializingObject, SignalHandlerId};
+    use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
 
     use super::*;
@@ -21,13 +21,15 @@ mod imp {
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/room_row.ui")]
     pub struct RoomRow {
-        pub room: RefCell<Option<Room>>,
+        pub room: BoundObject<Room>,
         pub binding: RefCell<Option<glib::Binding>>,
-        pub signal_handler: RefCell<Option<SignalHandlerId>>,
+        #[template_child]
+        pub display_name_box: TemplateChild<gtk::Box>,
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
         pub notification_count: TemplateChild<gtk::Label>,
+        pub direct_icon: RefCell<Option<gtk::Image>>,
     }
 
     #[glib::object_subclass]
@@ -139,10 +141,10 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.take() {
-                if let Some(id) = self.signal_handler.take() {
-                    room.disconnect(id);
-                }
+            self.room.disconnect_signals();
+
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
             }
         }
     }
@@ -178,7 +180,7 @@ impl RoomRow {
 
     /// The room represented by this row.
     pub fn room(&self) -> Option<Room> {
-        self.imp().room.borrow().clone()
+        self.imp().room.obj()
     }
 
     /// Set the room represented by this row.
@@ -189,17 +191,13 @@ impl RoomRow {
             return;
         }
 
-        if let Some(room) = imp.room.take() {
-            if let Some(id) = imp.signal_handler.take() {
-                room.disconnect(id);
-            }
-            if let Some(binding) = imp.binding.take() {
-                binding.unbind();
-            }
-            imp.display_name.remove_css_class("dim-label");
+        imp.room.disconnect_signals();
+        if let Some(binding) = imp.binding.take() {
+            binding.unbind();
         }
+        imp.display_name.remove_css_class("dim-label");
 
-        if let Some(ref room) = room {
+        if let Some(room) = room {
             imp.binding.replace(Some(
                 room.bind_property(
                     "notification-count",
@@ -211,27 +209,35 @@ impl RoomRow {
                 .build(),
             ));
 
-            imp.signal_handler.replace(Some(room.connect_notify_local(
+            let highlight_handler = room.connect_notify_local(
                 Some("highlight"),
                 clone!(@weak self as obj => move |_, _| {
                         obj.update_highlight();
                 }),
-            )));
+            );
+            let direct_handler = room.connect_notify_local(
+                Some("is-direct"),
+                clone!(@weak self as obj => move |_, _| {
+                        obj.update_direct_icon();
+                }),
+            );
 
             if room.category() == RoomType::Left {
                 imp.display_name.add_css_class("dim-label");
             }
+
+            imp.room.set(room, vec![highlight_handler, direct_handler]);
         }
-        imp.room.replace(room);
 
         self.update_highlight();
+        self.update_direct_icon();
         self.update_actions();
         self.notify("room");
     }
 
     fn update_highlight(&self) {
         let imp = self.imp();
-        if let Some(room) = &*imp.room.borrow() {
+        if let Some(room) = self.room() {
             let flags = room.highlight();
 
             if flags.contains(HighlightFlags::HIGHLIGHT) {
@@ -310,8 +316,7 @@ impl RoomRow {
                     self.action_set_enabled("room-row.forget", true);
                     return;
                 }
-                RoomType::Outdated => {}
-                RoomType::Space => {}
+                RoomType::Outdated | RoomType::Space => {}
             }
         }
 
@@ -388,6 +393,26 @@ impl RoomRow {
                 gettext("Failed to forget {room}."),
                 @room,
             );
+        }
+    }
+
+    fn update_direct_icon(&self) {
+        let imp = self.imp();
+        let is_direct = self.room().is_some_and(|room| room.is_direct());
+
+        if is_direct {
+            if imp.direct_icon.borrow().is_none() {
+                let icon = gtk::Image::builder()
+                    .icon_name("avatar-default-symbolic")
+                    .icon_size(gtk::IconSize::Normal)
+                    .css_classes(["dim-label"])
+                    .build();
+
+                imp.display_name_box.prepend(&icon);
+                imp.direct_icon.replace(Some(icon));
+            }
+        } else if let Some(icon) = imp.direct_icon.take() {
+            imp.display_name_box.remove(&icon);
         }
     }
 }

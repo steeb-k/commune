@@ -105,6 +105,8 @@ mod imp {
         pub typing_list: TypingList,
         /// Whether anyone can join this room.
         pub is_join_rule_public: Cell<bool>,
+        /// Whether this room is a DM.
+        pub is_direct: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -181,7 +183,10 @@ mod imp {
                         .read_only()
                         .build(),
                     glib::ParamSpecBoolean::builder("is-join-rule-public")
-                        .explicit_notify()
+                        .read_only()
+                        .build(),
+                    glib::ParamSpecBoolean::builder("is-direct")
+                        .read_only()
                         .build(),
                 ]
             });
@@ -231,6 +236,7 @@ mod imp {
                 "encrypted" => obj.is_encrypted().to_value(),
                 "typing-list" => obj.typing_list().to_value(),
                 "is-join-rule-public" => obj.is_join_rule_public().to_value(),
+                "is-direct" => obj.is_direct().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -352,6 +358,10 @@ impl Room {
         self.setup_typing();
 
         spawn!(clone!(@weak self as obj => async move {
+            obj.load_is_direct().await;
+        }));
+
+        spawn!(clone!(@weak self as obj => async move {
             obj.watch_room_info().await;
         }));
 
@@ -363,6 +373,33 @@ impl Room {
     /// The state of the room.
     pub fn state(&self) -> RoomState {
         self.matrix_room().state()
+    }
+
+    /// Whether this room is direct or not.
+    pub fn is_direct(&self) -> bool {
+        self.imp().is_direct.get()
+    }
+
+    /// Set whether this room is direct.
+    fn set_is_direct(&self, is_direct: bool) {
+        if self.is_direct() == is_direct {
+            return;
+        }
+
+        self.imp().is_direct.set(is_direct);
+        self.notify("is-direct");
+    }
+
+    pub async fn load_is_direct(&self) {
+        let matrix_room = self.matrix_room();
+        let handle = spawn_tokio!(async move { matrix_room.is_direct().await });
+
+        match handle.await.unwrap() {
+            Ok(is_direct) => self.set_is_direct(is_direct),
+            Err(error) => {
+                error!(room_id = %self.room_id(), "Failed to load whether room is direct: {error}");
+            }
+        }
     }
 
     /// Forget a room that is left.

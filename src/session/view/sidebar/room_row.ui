@@ -20,13 +20,18 @@
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="display_name">
-            <property name="ellipsize">end</property>
-            <binding name="label">
-              <lookup name="display-name">
-                <lookup name="room">SidebarRoomRow</lookup>
-              </lookup>
-            </binding>
+          <object class="GtkBox" id="display_name_box">
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="display_name">
+                <property name="ellipsize">end</property>
+                <binding name="label">
+                  <lookup name="display-name">
+                    <lookup name="room">SidebarRoomRow</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
           </object>
         </child>
         <child type="end">
