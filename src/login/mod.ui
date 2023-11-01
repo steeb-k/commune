@@ -107,6 +107,7 @@
                             </child>
                             <child>
                               <object class="GtkButton" id="done_button">
+                                <property name="can-shrink">true</property>
                                 <property name="label" translatable="yes">Start Chatting</property>
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="finish_login" swapped="yes"/>

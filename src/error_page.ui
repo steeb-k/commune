@@ -82,6 +82,7 @@
                                   <class name="pill"/>
                                 </style>
                                 <property name="halign">center</property>
+                                <property name="can-shrink">true</property>
                                 <property name="label" translatable="yes">Disconnect the corrupted session</property>
                                 <property name="action-name">error-page.remove-secret-error-session</property>
                               </object>

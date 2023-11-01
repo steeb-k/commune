@@ -6,6 +6,7 @@
         <property name="transition-type">crossfade</property>
         <child>
           <object class="GtkLabel" id="label">
+            <property name="ellipsize">end</property>
             <property name="use_underline">True</property>
             <property name="mnemonic_widget">SpinnerButton</property>
             <style>
@@ -23,4 +24,3 @@
     </property>
   </template>
 </interface>
-

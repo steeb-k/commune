@@ -57,6 +57,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Recovery</property>
                         <property name="halign">center</property>
                         <property name="action-name">verification.show-recovery</property>
@@ -67,6 +68,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Reset</property>
                         <property name="halign">center</property>
                         <property name="action-name">session-verification.reset-identity</property>
@@ -133,6 +135,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="bootstrap_restart_button">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Restart verification</property>
                         <property name="halign">center</property>
                         <property name="action-name">session-verification.start</property>
@@ -181,6 +184,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Recovery Passphrase</property>
                         <property name="halign">center</property>
                         <style>
@@ -190,6 +194,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Recovery Key</property>
                         <property name="halign">center</property>
                         <style>
@@ -207,6 +212,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="halign">center</property>
                         <property name="label" translatable="yes">Reset Identity</property>
                         <style>
@@ -271,6 +277,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Next</property>
                         <property name="halign">center</property>
                         <style>
@@ -336,6 +343,7 @@
                     </child>
                     <child>
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Next</property>
                         <property name="halign">center</property>
                         <style>

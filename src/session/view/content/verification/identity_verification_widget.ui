@@ -43,6 +43,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="decline_btn">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Decline</property>
                         <property name="halign">center</property>
                         <property name="action-name">verification.decline</property>

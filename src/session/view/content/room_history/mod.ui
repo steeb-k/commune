@@ -113,6 +113,7 @@
                     <property name="description" translatable="yes">Check your network connection.</property>
                     <property name="child">
                       <object class="GtkButton">
+                        <property name="can-shrink">true</property>
                         <property name="label" translatable="yes">Try Again</property>
                         <property name="action-name">room-history.try-again</property>
                         <property name="halign">center</property>

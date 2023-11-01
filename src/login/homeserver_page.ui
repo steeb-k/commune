@@ -75,6 +75,7 @@
                 </child>
                 <child>
                   <object class="GtkButton">
+                    <property name="can-shrink">true</property>
                     <property name="halign">center</property>
                     <!-- Translators: As in 'Advanced Settings'. -->
                     <property name="label" translatable="yes">Advanced…</property>

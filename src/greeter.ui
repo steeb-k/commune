@@ -99,6 +99,7 @@
                                       <class name="pill"/>
                                       <class name="suggested-action"/>
                                     </style>
+                                    <property name="can-shrink">true</property>
                                     <property name="label" translatable="yes">_Log in</property>
                                     <property name="use-underline">true</property>
                                     <property name="action-name">app.show-login</property>
@@ -110,6 +111,7 @@
                                       <class name="pill"/>
                                     </style>
                                     <property name="visible">false</property>
+                                    <property name="can-shrink">true</property>
                                     <property name="label" translatable="yes">_Create Account</property>
                                     <property name="use-underline">true</property>
                                     <property name="action-name">app.create-account</property>

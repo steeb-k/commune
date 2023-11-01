@@ -82,6 +82,7 @@
               </child>
               <child>
                 <object class="GtkButton" id="edit_details_btn">
+                  <property name="can-shrink">true</property>
                   <property name="halign">center</property>
                   <property name="label" translatable="yes">Edit Details</property>
                   <signal name="clicked" handler="edit_details_clicked" swapped="yes"/>
