@@ -19,7 +19,6 @@ pub enum RoomType {
     Left = 4,
     Outdated = 5,
     Space = 6,
-    Direct = 7,
 }
 
 impl RoomType {
@@ -29,41 +28,23 @@ impl RoomType {
             Self::Invited => {
                 matches!(
                     category,
-                    Self::Favorite | Self::Normal | Self::Direct | Self::LowPriority | Self::Left
-                )
-            }
-            Self::Favorite => {
-                matches!(
-                    category,
-                    Self::Normal | Self::Direct | Self::LowPriority | Self::Left
-                )
-            }
-            Self::Normal => {
-                matches!(
-                    category,
-                    Self::Favorite | Self::Direct | Self::LowPriority | Self::Left
-                )
-            }
-            Self::LowPriority => {
-                matches!(
-                    category,
-                    Self::Favorite | Self::Direct | Self::Normal | Self::Left
-                )
-            }
-            Self::Left => {
-                matches!(
-                    category,
-                    Self::Favorite | Self::Direct | Self::Normal | Self::LowPriority
-                )
-            }
-            Self::Outdated => false,
-            Self::Space => false,
-            Self::Direct => {
-                matches!(
-                    category,
                     Self::Favorite | Self::Normal | Self::LowPriority | Self::Left
                 )
             }
+            Self::Favorite => {
+                matches!(category, Self::Normal | Self::LowPriority | Self::Left)
+            }
+            Self::Normal => {
+                matches!(category, Self::Favorite | Self::LowPriority | Self::Left)
+            }
+            Self::LowPriority => {
+                matches!(category, Self::Favorite | Self::Normal | Self::Left)
+            }
+            Self::Left => {
+                matches!(category, Self::Favorite | Self::Normal | Self::LowPriority)
+            }
+            Self::Outdated => false,
+            Self::Space => false,
         }
     }
 
@@ -75,8 +56,7 @@ impl RoomType {
             | RoomType::Normal
             | RoomType::LowPriority
             | RoomType::Outdated
-            | RoomType::Space
-            | RoomType::Direct => state == RoomState::Joined,
+            | RoomType::Space => state == RoomState::Joined,
             RoomType::Left => state == RoomState::Left,
         }
     }
@@ -112,7 +92,6 @@ impl TryFrom<&CategoryType> for RoomType {
                 Err("CategoryType::VerificationRequest cannot be a RoomType")
             }
             CategoryType::Space => Ok(Self::Space),
-            CategoryType::Direct => Ok(Self::Direct),
         }
     }
 }

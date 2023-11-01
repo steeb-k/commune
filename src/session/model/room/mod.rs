@@ -331,15 +331,6 @@ impl Room {
         self.imp().room_id.get().unwrap()
     }
 
-    /// Whether this room is direct or not.
-    pub async fn is_direct(&self) -> bool {
-        let matrix_room = self.matrix_room();
-
-        spawn_tokio!(async move { matrix_room.is_direct().await.unwrap_or_default() })
-            .await
-            .unwrap()
-    }
-
     pub fn matrix_room(&self) -> MatrixRoom {
         self.imp().matrix_room.borrow().as_ref().unwrap().clone()
     }
@@ -409,7 +400,6 @@ impl Room {
                 | RoomType::LowPriority
                 | RoomType::Outdated
                 | RoomType::Space
-                | RoomType::Direct
         )
     }
 
@@ -513,22 +503,6 @@ impl Room {
                     }
                     RoomType::Outdated => unimplemented!(),
                     RoomType::Space => unimplemented!(),
-                    RoomType::Direct => {
-                        if !matrix_room.is_direct().await.unwrap_or_default() {
-                            matrix_room.set_is_direct(true).await?;
-                        }
-
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                        }
-
-                        matrix_room.join().await?;
-                    }
                 },
                 RoomState::Joined => match category {
                     RoomType::Invited => {}
@@ -540,20 +514,15 @@ impl Room {
                             matrix_room.remove_tag(TagName::LowPriority).await?;
                         }
                     }
-                    RoomType::Normal => {
-                        if matrix_room.is_direct().await.unwrap_or_default() {
-                            matrix_room.set_is_direct(false).await?;
+                    RoomType::Normal => match previous_category {
+                        RoomType::Favorite => {
+                            matrix_room.remove_tag(TagName::Favorite).await?;
                         }
-                        match previous_category {
-                            RoomType::Favorite => {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                            RoomType::LowPriority => {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                            _ => {}
+                        RoomType::LowPriority => {
+                            matrix_room.remove_tag(TagName::LowPriority).await?;
                         }
-                    }
+                        _ => {}
+                    },
                     RoomType::LowPriority => {
                         matrix_room
                             .set_tag(TagName::LowPriority, TagInfo::new())
@@ -567,20 +536,6 @@ impl Room {
                     }
                     RoomType::Outdated => unimplemented!(),
                     RoomType::Space => unimplemented!(),
-                    RoomType::Direct => {
-                        if !matrix_room.is_direct().await.unwrap_or_default() {
-                            matrix_room.set_is_direct(true).await?;
-                        }
-
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                        }
-                    }
                 },
                 RoomState::Left => match category {
                     RoomType::Invited => {}
@@ -624,22 +579,6 @@ impl Room {
                     RoomType::Left => {}
                     RoomType::Outdated => unimplemented!(),
                     RoomType::Space => unimplemented!(),
-                    RoomType::Direct => {
-                        if !matrix_room.is_direct().await.unwrap_or_default() {
-                            matrix_room.set_is_direct(true).await?;
-                        }
-
-                        if let Some(tags) = matrix_room.tags().await? {
-                            if tags.contains_key(&TagName::LowPriority) {
-                                matrix_room.remove_tag(TagName::LowPriority).await?;
-                            }
-                            if tags.contains_key(&TagName::Favorite) {
-                                matrix_room.remove_tag(TagName::Favorite).await?;
-                            }
-                        }
-
-                        matrix_room.join().await?;
-                    }
                 },
             }
 
@@ -672,20 +611,12 @@ impl Room {
                 if matrix_room.is_space() {
                     self.set_category_internal(RoomType::Space);
                 } else {
-                    let matrix_room_clone = matrix_room.clone();
-                    let is_direct = spawn_tokio!(async move {
-                        matrix_room_clone.is_direct().await.unwrap_or_default()
-                    });
                     let tags = spawn_tokio!(async move { matrix_room.tags().await });
 
                     spawn!(
                         glib::Priority::DEFAULT_IDLE,
                         clone!(@weak self as obj => async move {
-                            let mut category = if is_direct.await.unwrap() {
-                                RoomType::Direct
-                            } else {
-                                RoomType::Normal
-                            };
+                            let mut category = RoomType::Normal;
 
                             if let Ok(Some(tags)) = tags.await.unwrap() {
                                 if tags.get(&TagName::Favorite).is_some() {

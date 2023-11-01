@@ -44,7 +44,7 @@ mod imp {
 
             klass.install_action("room-row.accept-invite", None, move |obj, _, _| {
                 spawn!(clone!(@weak obj => async move {
-                    obj.set_room_as_normal_or_direct().await;
+                    obj.set_category(RoomType::Normal).await;
                 }));
             });
             klass.install_action("room-row.reject-invite", None, move |obj, _, _| {
@@ -68,11 +68,6 @@ mod imp {
                     obj.set_category(RoomType::LowPriority).await
                 }));
             });
-            klass.install_action("room-row.set-direct", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Direct).await
-                }));
-            });
 
             klass.install_action("room-row.leave", None, move |obj, _, _| {
                 spawn!(clone!(@weak obj => async move {
@@ -81,7 +76,7 @@ mod imp {
             });
             klass.install_action("room-row.join", None, move |obj, _, _| {
                 spawn!(clone!(@weak obj => async move {
-                    obj.set_room_as_normal_or_direct().await;
+                    obj.set_category(RoomType::Normal).await;
                 }));
             });
             klass.install_action("room-row.forget", None, move |obj, _, _| {
@@ -269,7 +264,6 @@ impl RoomRow {
                     self.action_set_enabled("room-row.leave", false);
                     self.action_set_enabled("room-row.join", false);
                     self.action_set_enabled("room-row.forget", false);
-                    self.action_set_enabled("room-row.set-direct", false);
                     return;
                 }
                 RoomType::Favorite => {
@@ -281,7 +275,6 @@ impl RoomRow {
                     self.action_set_enabled("room-row.leave", true);
                     self.action_set_enabled("room-row.join", false);
                     self.action_set_enabled("room-row.forget", false);
-                    self.action_set_enabled("room-row.set-direct", true);
                     return;
                 }
                 RoomType::Normal => {
@@ -293,7 +286,6 @@ impl RoomRow {
                     self.action_set_enabled("room-row.leave", true);
                     self.action_set_enabled("room-row.join", false);
                     self.action_set_enabled("room-row.forget", false);
-                    self.action_set_enabled("room-row.set-direct", true);
                     return;
                 }
                 RoomType::LowPriority => {
@@ -305,7 +297,6 @@ impl RoomRow {
                     self.action_set_enabled("room-row.leave", true);
                     self.action_set_enabled("room-row.join", false);
                     self.action_set_enabled("room-row.forget", false);
-                    self.action_set_enabled("room-row.set-direct", true);
                     return;
                 }
                 RoomType::Left => {
@@ -317,23 +308,10 @@ impl RoomRow {
                     self.action_set_enabled("room-row.leave", false);
                     self.action_set_enabled("room-row.join", true);
                     self.action_set_enabled("room-row.forget", true);
-                    self.action_set_enabled("room-row.set-direct", false);
                     return;
                 }
                 RoomType::Outdated => {}
                 RoomType::Space => {}
-                RoomType::Direct => {
-                    self.action_set_enabled("room-row.accept-invite", false);
-                    self.action_set_enabled("room-row.reject-invite", false);
-                    self.action_set_enabled("room-row.set-favorite", true);
-                    self.action_set_enabled("room-row.set-normal", true);
-                    self.action_set_enabled("room-row.set-lowpriority", true);
-                    self.action_set_enabled("room-row.leave", true);
-                    self.action_set_enabled("room-row.join", false);
-                    self.action_set_enabled("room-row.forget", false);
-                    self.action_set_enabled("room-row.set-direct", false);
-                    return;
-                }
             }
         }
 
@@ -345,7 +323,6 @@ impl RoomRow {
         self.action_set_enabled("room-row.leave", false);
         self.action_set_enabled("room-row.join", false);
         self.action_set_enabled("room-row.forget", false);
-        self.action_set_enabled("room-row.set-direct", false);
     }
 
     fn drag_prepare(&self, drag: &gtk::DragSource, x: f64, y: f64) -> Option<gdk::ContentProvider> {
@@ -368,32 +345,6 @@ impl RoomRow {
         let row = self.parent().and_downcast::<Row>().unwrap();
         row.sidebar().set_drop_source_type(None);
         row.remove_css_class("drag");
-    }
-
-    async fn set_room_as_normal_or_direct(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let previous_category = room.category();
-
-        let category = if room.is_direct().await {
-            RoomType::Direct
-        } else {
-            RoomType::Normal
-        };
-
-        if room.set_category(category).await.is_err() {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Failed to move {room} from {previous_category} to {new_category}.",
-                ),
-                @room,
-                previous_category = previous_category.to_string(),
-                new_category = category.to_string(),
-            );
-        }
     }
 
     /// Change the category of this room.

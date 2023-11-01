@@ -19,7 +19,6 @@ pub enum CategoryType {
     Left = 5,
     Outdated = 6,
     Space = 7,
-    Direct = 8,
 }
 
 impl fmt::Display for CategoryType {
@@ -34,7 +33,6 @@ impl fmt::Display for CategoryType {
             CategoryType::Left => gettext("Historical"),
             // These categories are hidden.
             CategoryType::Outdated | CategoryType::Space => unimplemented!(),
-            CategoryType::Direct => gettext("People"),
         };
         f.write_str(&label)
     }
@@ -56,7 +54,6 @@ impl From<&RoomType> for CategoryType {
             RoomType::Left => Self::Left,
             RoomType::Outdated => Self::Outdated,
             RoomType::Space => Self::Space,
-            RoomType::Direct => Self::Direct,
         }
     }
 }
