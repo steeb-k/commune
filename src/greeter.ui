@@ -100,7 +100,7 @@
                                       <class name="suggested-action"/>
                                     </style>
                                     <property name="can-shrink">true</property>
-                                    <property name="label" translatable="yes">_Log in</property>
+                                    <property name="label" translatable="yes">_Log In</property>
                                     <property name="use-underline">true</property>
                                     <property name="action-name">app.show-login</property>
                                   </object>
