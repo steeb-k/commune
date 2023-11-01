@@ -109,6 +109,7 @@
                                     <style>
                                       <class name="pill"/>
                                     </style>
+                                    <property name="visible">false</property>
                                     <property name="label" translatable="yes">_Create Account</property>
                                     <property name="use-underline">true</property>
                                     <property name="action-name">app.create-account</property>
