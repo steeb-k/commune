@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-10-28 21:06+0000\n"
-"PO-Revision-Date: 2023-10-31 21:27+0200\n"
+"POT-Creation-Date: 2023-11-01 12:03+0000\n"
+"PO-Revision-Date: 2023-11-01 22:51+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -96,7 +96,7 @@ msgstr ""
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
-#: src/account_switcher/mod.ui:36
+#: src/account_switcher/mod.ui:37
 msgid "_Add Account"
 msgstr "Д_одати обліковий запис"
 
@@ -129,23 +129,23 @@ msgstr ""
 "Будь ласка, пройдіть розпізнавання за допомогою браузера, а потім "
 "поверніться сюди і натисніть кнопку «Підтвердити»."
 
-#: src/components/auth_dialog.ui:80
+#: src/components/auth_dialog.ui:81
 msgid "Authenticate via Browser"
 msgstr "Розпізнавання за допомогою браузера"
 
-#: src/components/auth_dialog.ui:113
+#: src/components/auth_dialog.ui:114
 #: src/session/view/account_settings/user_page/mod.rs:299
-#: src/session/view/content/room_details/general_page/mod.rs:349
+#: src/session/view/content/room_details/general_page/mod.rs:367
 #: src/session/view/content/room_history/item_row.rs:734
-#: src/session/view/content/room_history/mod.ui:247
+#: src/session/view/content/room_history/mod.ui:248
 #: src/session/view/content/room_history/verification_info_bar.rs:181
-#: src/session/view/content/verification/identity_verification_widget.ui:442
+#: src/session/view/content/verification/identity_verification_widget.ui:443
 #: src/utils/message_dialog.rs:47
 msgid "Cancel"
 msgstr "Скасувати"
 
-#: src/components/auth_dialog.ui:118
-#: src/session/view/content/verification/identity_verification_widget.ui:432
+#: src/components/auth_dialog.ui:119
+#: src/session/view/content/verification/identity_verification_widget.ui:433
 msgid "Confirm"
 msgstr "Підтвердити"
 
@@ -174,7 +174,7 @@ msgstr "Вибраний файл не є файлом зображення"
 msgid "Could not determine the type of the chosen file"
 msgstr "Не вдалося визначити тип вибраного файла"
 
-#: src/components/loading_row.ui:31
+#: src/components/loading_row.ui:32
 msgid "Try again"
 msgstr "Спробувати ще раз"
 
@@ -246,11 +246,12 @@ msgid "Clicking this button might disconnect more than one session!"
 msgstr ""
 "Натискання цієї кнопки може призвести до від'єднання декількох сеансів!"
 
-#: src/error_page.ui:85
-msgid "Disconnect the corrupted session"
-msgstr "Від'єднати пошкоджений сеанс"
+#: src/error_page.ui:86
+#: src/session/view/account_settings/devices_page/device_row.rs:103
+msgid "Disconnect Session"
+msgstr "Від'єднати сеанс"
 
-#: src/error_page.ui:108
+#: src/error_page.ui:109
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -260,25 +261,25 @@ msgstr ""
 "«Секретну службу». Під час спроби зберегти або отримати дані вашого сеансу "
 "сталася помилка."
 
-#: src/error_page.ui:123
+#: src/error_page.ui:124
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr ""
 "Ось декілька порад, які можуть допомогти вам виправити проблеми із "
 "«Секретною службою»:"
 
-#: src/error_page.ui:146
+#: src/error_page.ui:147
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr ""
 "Переконайтеся, що встановлено обгортку «Секретної служби», наприклад gnome-"
 "keyring."
 
-#: src/error_page.ui:171
+#: src/error_page.ui:172
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Перевірте, чи є у вас типова в'язка ключів і чи її розблоковано."
 
-#: src/error_page.ui:186
+#: src/error_page.ui:187
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -303,11 +304,12 @@ msgstr "Про «Фрактал»"
 msgid "Welcome to Fractal"
 msgstr "Вітаємо у «Фракталі»"
 
-#: src/greeter.ui:102
-msgid "_Log in"
-msgstr "_Увійти"
+#: src/greeter.ui:103
+#| msgid "Log In"
+msgid "_Log In"
+msgstr "Уві_йти"
 
-#: src/greeter.ui:112
+#: src/greeter.ui:115
 msgid "_Create Account"
 msgstr "С_творити обліковий запис"
 
@@ -354,14 +356,14 @@ msgstr "Адреса вашого домашнього сервера Matrix, н
 msgid "Homeserver"
 msgstr "Домашній сервер"
 
-#: src/login/homeserver_page.ui:66 src/login/method_page.ui:123
-#: src/session/view/content/verification/session_verification.ui:274
-#: src/session/view/content/verification/session_verification.ui:339
+#: src/login/homeserver_page.ui:66 src/login/method_page.ui:124
+#: src/session/view/content/verification/session_verification.ui:281
+#: src/session/view/content/verification/session_verification.ui:347
 msgid "Next"
 msgstr "Далі"
 
 #. Translators: As in 'Advanced Settings'.
-#: src/login/homeserver_page.ui:80
+#: src/login/homeserver_page.ui:81
 msgid "Advanced…"
 msgstr "Додатково…"
 
@@ -387,7 +389,7 @@ msgstr "Пароль"
 msgid "_Forgot Password?"
 msgstr "За_були пароль?"
 
-#: src/login/method_page.ui:116
+#: src/login/method_page.ui:117
 msgid "More SSO Providers"
 msgstr "Додаткові надавачі SSO"
 
@@ -404,7 +406,7 @@ msgstr "Вхід завершено"
 msgid "This session is ready to send and receive secure messages."
 msgstr "Цей сеанс готовий до надсилання і отримання захищених повідомлень."
 
-#: src/login/mod.ui:110
+#: src/login/mod.ui:111
 msgid "Start Chatting"
 msgstr "Почати спілкування"
 
@@ -592,18 +594,18 @@ msgstr "Модератор"
 msgid "Normal user"
 msgstr "Звичайний користувач"
 
-#: src/session/model/room/mod.rs:934
+#: src/session/model/room/mod.rs:952
 msgid "Unknown"
 msgstr "Невідомий"
 
 #. Translators: This is the name of a room that is empty but had another user before.
 #. Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:962
+#: src/session/model/room/mod.rs:980
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:964
+#: src/session/model/room/mod.rs:982
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
@@ -662,10 +664,6 @@ msgstr "Не вдалося завантажити дані з'єднаного 
 #: src/session/view/account_settings/devices_page/device_list.rs:180
 msgid "Failed to load the list of connected devices."
 msgstr "Не вдалося завантажити список з'єднаних пристроїв."
-
-#: src/session/view/account_settings/devices_page/device_row.rs:103
-msgid "Disconnect Session"
-msgstr "Від'єднати сеанс"
 
 #: src/session/view/account_settings/devices_page/device_row.rs:105
 #: src/session/view/account_settings/user_page/mod.ui:112
@@ -900,7 +898,7 @@ msgid "Could not import the keys"
 msgstr "Не вдалося імпортувати ключі"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:64
-#: src/session/view/content/verification/session_verification.ui:269
+#: src/session/view/content/verification/session_verification.ui:275
 msgid "Passphrase"
 msgstr "Пароль"
 
@@ -909,7 +907,7 @@ msgid "Confirm Passphrase"
 msgstr "Підтвердьте пароль"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:112
-#: src/session/view/content/room_details/general_page/mod.ui:147
+#: src/session/view/content/room_details/general_page/mod.ui:148
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 msgid "File"
 msgstr "Файл"
@@ -1015,7 +1013,7 @@ msgstr "Підтвердження нового пароля"
 
 #: src/session/view/account_settings/user_page/change_password_subpage.ui:148
 #: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:76
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:78
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:79
 #: src/session/view/content/room_history/verification_info_bar.rs:180
 msgid "Continue"
 msgstr "Продовжити"
@@ -1068,37 +1066,37 @@ msgstr ""
 "Перш ніж продовжувати, рекомендуємо створити резервну копію ваших ключів "
 "шифрування."
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:69
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:70
 msgid "Backup Encryption Keys"
 msgstr "Створити резервну копію ключів шифрування"
 
 #: src/session/view/account_settings/user_page/mod.rs:220
-#: src/session/view/content/room_details/general_page/mod.rs:253
+#: src/session/view/content/room_details/general_page/mod.rs:271
 msgid "Avatar removed successfully"
 msgstr "Аватар успішно вилучено"
 
 #: src/session/view/account_settings/user_page/mod.rs:222
-#: src/session/view/content/room_details/general_page/mod.rs:255
+#: src/session/view/content/room_details/general_page/mod.rs:273
 msgid "Avatar changed successfully"
 msgstr "Аватар успішно змінено"
 
 #: src/session/view/account_settings/user_page/mod.rs:235
-#: src/session/view/content/room_details/general_page/mod.rs:278
+#: src/session/view/content/room_details/general_page/mod.rs:296
 msgid "Could not load file"
 msgstr "Не вдалось завантажити файл"
 
 #: src/session/view/account_settings/user_page/mod.rs:250
-#: src/session/view/content/room_details/general_page/mod.rs:299
+#: src/session/view/content/room_details/general_page/mod.rs:317
 msgid "Could not upload avatar"
 msgstr "Не вдалося вивантажити аватар"
 
 #: src/session/view/account_settings/user_page/mod.rs:279
-#: src/session/view/content/room_details/general_page/mod.rs:319
+#: src/session/view/content/room_details/general_page/mod.rs:337
 msgid "Could not change avatar"
 msgstr "Не вдалося змінити аватар"
 
 #: src/session/view/account_settings/user_page/mod.rs:295
-#: src/session/view/content/room_details/general_page/mod.rs:343
+#: src/session/view/content/room_details/general_page/mod.rs:361
 msgid "Remove Avatar?"
 msgstr "Вилучити аватар?"
 
@@ -1107,13 +1105,13 @@ msgid "Do you really want to remove your avatar?"
 msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
 #: src/session/view/account_settings/user_page/mod.rs:300
-#: src/session/view/content/room_details/general_page/mod.rs:350
+#: src/session/view/content/room_details/general_page/mod.rs:368
 #: src/session/view/content/room_history/item_row.rs:735
 msgid "Remove"
 msgstr "Вилучити"
 
 #: src/session/view/account_settings/user_page/mod.rs:334
-#: src/session/view/content/room_details/general_page/mod.rs:375
+#: src/session/view/content/room_details/general_page/mod.rs:393
 msgid "Could not remove avatar"
 msgstr "Не вдалося вилучити аватар"
 
@@ -1156,13 +1154,13 @@ msgstr "Список кімнат"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:208
-#: src/session/view/content/room_history/mod.rs:1592
+#: src/session/view/content/room_history/mod.rs:1615
 #: src/session/view/content/room_history/state_row/tombstone.rs:123
 msgid "View"
 msgstr "Перегляд"
 
 #: src/session/view/content/explore/public_room_row.rs:210
-#: src/session/view/content/room_history/mod.rs:1595
+#: src/session/view/content/room_history/mod.rs:1618
 #: src/session/view/content/room_history/state_row/tombstone.rs:125
 msgid "Join"
 msgstr "Увійти"
@@ -1208,23 +1206,23 @@ msgstr "Не вибрано жодної кімнати"
 msgid "Join a room to start chatting."
 msgstr "Увійдіть до кімнати, щоб почати спілкування."
 
-#: src/session/view/content/room_details/general_page/mod.rs:345
+#: src/session/view/content/room_details/general_page/mod.rs:363
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Ви справді хочете вилучити аватар для цієї кімнати?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:469
+#: src/session/view/content/room_details/general_page/mod.rs:487
 msgid "Room name saved successfully"
 msgstr "Назву кімнати успішно збережено"
 
-#: src/session/view/content/room_details/general_page/mod.rs:494
+#: src/session/view/content/room_details/general_page/mod.rs:512
 msgid "Room topic saved successfully"
 msgstr "Тему кімнати успішно збережено"
 
-#: src/session/view/content/room_details/general_page/mod.rs:572
+#: src/session/view/content/room_details/general_page/mod.rs:590
 msgid "Could not change room name"
 msgstr "Не вдалося змінити назву кімнати"
 
-#: src/session/view/content/room_details/general_page/mod.rs:596
+#: src/session/view/content/room_details/general_page/mod.rs:614
 msgid "Could not change room topic"
 msgstr "Не вдалося змінити тему кімнати"
 
@@ -1237,25 +1235,25 @@ msgstr "Інформація про кімнату"
 msgid "Description"
 msgstr "Опис"
 
-#: src/session/view/content/room_details/general_page/mod.ui:86
+#: src/session/view/content/room_details/general_page/mod.ui:87
 msgid "Edit Details"
 msgstr "Редагувати параметри"
 
-#: src/session/view/content/room_details/general_page/mod.ui:94
+#: src/session/view/content/room_details/general_page/mod.ui:95
 msgid "Save Details"
 msgstr "Зберегти параметри"
 
-#: src/session/view/content/room_details/general_page/mod.ui:106
+#: src/session/view/content/room_details/general_page/mod.ui:107
 msgid "Members"
 msgstr "Учасники"
 
-#: src/session/view/content/room_details/general_page/mod.ui:132
+#: src/session/view/content/room_details/general_page/mod.ui:133
 #: src/session/view/content/room_details/history_viewer/media.ui:4
 msgid "Media"
 msgstr "Мультимедіа"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:163
+#: src/session/view/content/room_details/general_page/mod.ui:164
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 msgid "Audio"
 msgstr "Звук"
@@ -1458,13 +1456,13 @@ msgid "New Messages"
 msgstr "Нові повідомлення"
 
 #: src/session/view/content/room_history/item_row.rs:457
-#: src/session/view/content/room_history/mod.rs:958
+#: src/session/view/content/room_history/mod.rs:1014
 #: src/session/view/media_viewer.rs:573
 msgid "Permalink copied to clipboard"
 msgstr "Стале посилання скопійовано до буфера обміну"
 
 #: src/session/view/content/room_history/item_row.rs:461
-#: src/session/view/content/room_history/mod.rs:962
+#: src/session/view/content/room_history/mod.rs:1018
 #: src/session/view/media_viewer.rs:577
 msgid "Failed to copy the permalink"
 msgstr "Не вдалося скопіювати стале посилання"
@@ -1548,76 +1546,76 @@ msgstr "Не вдалося отримати мультимедійні дані
 msgid "Edited"
 msgstr "Змінено"
 
-#: src/session/view/content/room_history/mod.rs:229
+#: src/session/view/content/room_history/mod.rs:231
 msgid "The location request has been cancelled."
 msgstr "Запит щодо визначення розташування було скасовано."
 
-#: src/session/view/content/room_history/mod.rs:233
+#: src/session/view/content/room_history/mod.rs:235
 msgid "Failed to retrieve current location."
 msgstr "Не вдалося отримати дані щодо поточного розташування."
 
+#: src/session/view/content/room_history/mod.rs:538
+msgid "Error getting file from drop"
+msgstr "Помилка під час отримання файла зі скидання"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/mod.rs:718
+#: src/session/view/content/room_history/mod.rs:774
 msgid "Reply to {user}"
 msgstr "Відповідь {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/mod.rs:769
+#: src/session/view/content/room_history/mod.rs:825
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Редагування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:944
+#: src/session/view/content/room_history/mod.rs:1000
 msgid "Failed to leave {room}"
 msgstr "Не вдалося полишити {room}."
 
-#: src/session/view/content/room_history/mod.rs:1178
+#: src/session/view/content/room_history/mod.rs:1234
 msgid "Your Location"
 msgstr "Ваше місце перебування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/mod.rs:1190
+#: src/session/view/content/room_history/mod.rs:1246
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Розташування користувача {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/mod.rs:1235
+#: src/session/view/content/room_history/mod.rs:1291
 msgid "Select File"
 msgstr "Виберіть файл"
 
-#: src/session/view/content/room_history/mod.rs:1237
+#: src/session/view/content/room_history/mod.rs:1293
 msgid "Select"
 msgstr "Вибрати"
 
-#: src/session/view/content/room_history/mod.rs:1252
+#: src/session/view/content/room_history/mod.rs:1308
 msgid "Could not open file"
 msgstr "Не вдалося відкрити файл"
 
-#: src/session/view/content/room_history/mod.rs:1297
+#: src/session/view/content/room_history/mod.rs:1353
 msgid "Error reading file"
 msgstr "Помилка при зчитуванні файла"
 
-#: src/session/view/content/room_history/mod.rs:1323
-msgid "Error getting file from drop"
-msgstr "Помилка під час отримання файла зі скидання"
-
-#: src/session/view/content/room_history/mod.rs:1355
+#: src/session/view/content/room_history/mod.rs:1378
 msgid "Error getting image from clipboard"
 msgstr "Помилка під час отримання зображення з буфера обміну"
 
-#: src/session/view/content/room_history/mod.rs:1372
+#: src/session/view/content/room_history/mod.rs:1395
 msgid "Error getting file from clipboard"
 msgstr "Помилка під час отримання файла з буфера обміну"
 
-#: src/session/view/content/room_history/mod.rs:1590
-#: src/session/view/content/room_history/mod.rs:1594
+#: src/session/view/content/room_history/mod.rs:1613
+#: src/session/view/content/room_history/mod.rs:1617
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:1597
+#: src/session/view/content/room_history/mod.rs:1620
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
@@ -1658,39 +1656,39 @@ msgstr "Не вдалося завантажити кімнату"
 msgid "Check your network connection."
 msgstr "Перевірте ваше з'єднання з мережею."
 
-#: src/session/view/content/room_history/mod.ui:116
+#: src/session/view/content/room_history/mod.ui:117
 msgid "Try Again"
 msgstr "Повторити спробу"
 
-#: src/session/view/content/room_history/mod.ui:141
+#: src/session/view/content/room_history/mod.ui:142
 msgid "Scroll to bottom"
 msgstr "Прокрутіть донизу"
 
-#: src/session/view/content/room_history/mod.ui:153
+#: src/session/view/content/room_history/mod.ui:154
 msgid "Drop Here to Send"
 msgstr "Скиньте сюди, щоб надіслати"
 
-#: src/session/view/content/room_history/mod.ui:174
+#: src/session/view/content/room_history/mod.ui:175
 msgid "Room History"
 msgstr "Журнал кімнати"
 
-#: src/session/view/content/room_history/mod.ui:263
+#: src/session/view/content/room_history/mod.ui:264
 msgid "Browse Attachment"
 msgstr "Навігація долученням"
 
-#: src/session/view/content/room_history/mod.ui:273
+#: src/session/view/content/room_history/mod.ui:274
 msgid "Open Emoji Picker"
 msgstr "Відкрити вибір емодзі"
 
-#: src/session/view/content/room_history/mod.ui:294
+#: src/session/view/content/room_history/mod.ui:295
 msgid "Message Entry"
 msgstr "Введення повідомлення"
 
-#: src/session/view/content/room_history/mod.ui:309
+#: src/session/view/content/room_history/mod.ui:310
 msgid "Open Message Menu"
 msgstr "Відкрити меню повідомлення"
 
-#: src/session/view/content/room_history/mod.ui:324
+#: src/session/view/content/room_history/mod.ui:325
 msgid "Send Message"
 msgstr "Надіслати повідомлення"
 
@@ -1702,7 +1700,7 @@ msgstr "Це продовження оновленої кімнати."
 msgid "This is the beginning of this room."
 msgstr "Це початок цієї кімнати."
 
-#: src/session/view/content/room_history/state_row/creation.ui:19
+#: src/session/view/content/room_history/state_row/creation.ui:20
 msgid "Previous room"
 msgstr "Попередня кімната"
 
@@ -1868,12 +1866,12 @@ msgid "{user_name} wants to be verified"
 msgstr "{user_name} хоче пройти перевірку"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:175
-#: src/session/view/content/verification/identity_verification_widget.ui:56
+#: src/session/view/content/verification/identity_verification_widget.ui:57
 msgid "Verify"
 msgstr "Перевірити"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:176
-#: src/session/view/content/verification/identity_verification_widget.ui:46
+#: src/session/view/content/verification/identity_verification_widget.ui:47
 #: src/utils/message_dialog.rs:22
 msgid "Decline"
 msgstr "Відхилити"
@@ -2052,33 +2050,33 @@ msgstr "Емодзі не збігаються."
 msgid "An unknown error occurred during the verification process."
 msgstr "Під час процедури перевірки сталася невідома помилка."
 
-#: src/session/view/content/verification/identity_verification_widget.ui:109
-#: src/session/view/content/verification/identity_verification_widget.ui:213
+#: src/session/view/content/verification/identity_verification_widget.ui:110
+#: src/session/view/content/verification/identity_verification_widget.ui:214
 msgid "Can’t scan QR code?"
 msgstr "Не вдалося сканувати QR-код?"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:117
-#: src/session/view/content/verification/identity_verification_widget.ui:230
+#: src/session/view/content/verification/identity_verification_widget.ui:118
+#: src/session/view/content/verification/identity_verification_widget.ui:231
 msgid "Compare Emoji"
 msgstr "Порівняти емодзі"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:144
+#: src/session/view/content/verification/identity_verification_widget.ui:145
 msgid "Scan Complete"
 msgstr "Сканування завершено"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:222
+#: src/session/view/content/verification/identity_verification_widget.ui:223
 msgid "Scan QR code with this session"
 msgstr "Сканувати QR-код з цим сеансом"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:290
+#: src/session/view/content/verification/identity_verification_widget.ui:291
 msgid "Do Not Match"
 msgstr "Не збігається"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:300
+#: src/session/view/content/verification/identity_verification_widget.ui:301
 msgid "Match"
 msgstr "Збігається"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:409
+#: src/session/view/content/verification/identity_verification_widget.ui:410
 msgid "Confirm Scan"
 msgstr "Підтвердити сканування"
 
@@ -2106,7 +2104,7 @@ msgstr ""
 
 #: src/session/view/content/verification/session_verification.rs:282
 #: src/session/view/content/verification/session_verification.rs:290
-#: src/session/view/content/verification/session_verification.ui:70
+#: src/session/view/content/verification/session_verification.ui:72
 msgid "Reset"
 msgstr "Скинути"
 
@@ -2134,20 +2132,20 @@ msgstr "Під час створення профілю шифрування с�
 msgid "No other devices logged into this account?"
 msgstr "З цим обліковим записом не пов'язано інших пристроїв?"
 
-#: src/session/view/content/verification/session_verification.ui:60
-#: src/session/view/content/verification/session_verification.ui:165
+#: src/session/view/content/verification/session_verification.ui:61
+#: src/session/view/content/verification/session_verification.ui:168
 msgid "Recovery"
 msgstr "Відновлення"
 
-#: src/session/view/content/verification/session_verification.ui:109
+#: src/session/view/content/verification/session_verification.ui:111
 msgid "Set Up Encryption Identity"
 msgstr "Налаштовування профілю шифрування"
 
-#: src/session/view/content/verification/session_verification.ui:136
+#: src/session/view/content/verification/session_verification.ui:139
 msgid "Restart verification"
 msgstr "Перезапустити перевірку"
 
-#: src/session/view/content/verification/session_verification.ui:176
+#: src/session/view/content/verification/session_verification.ui:179
 msgid ""
 "Without another device you need a recovery passphrase or key to access your "
 "messages"
@@ -2155,17 +2153,17 @@ msgstr ""
 "Без іншого пристрою вам знадобиться пароль чи ключ для відновлення для "
 "доступу до ваших повідомлень"
 
-#: src/session/view/content/verification/session_verification.ui:184
-#: src/session/view/content/verification/session_verification.ui:239
+#: src/session/view/content/verification/session_verification.ui:188
+#: src/session/view/content/verification/session_verification.ui:245
 msgid "Recovery Passphrase"
 msgstr "Пароль для відновлення"
 
-#: src/session/view/content/verification/session_verification.ui:193
-#: src/session/view/content/verification/session_verification.ui:303
+#: src/session/view/content/verification/session_verification.ui:198
+#: src/session/view/content/verification/session_verification.ui:310
 msgid "Recovery Key"
 msgstr "Ключ відновлення"
 
-#: src/session/view/content/verification/session_verification.ui:202
+#: src/session/view/content/verification/session_verification.ui:207
 msgid ""
 "If you don’t have any of these you can reset your identity, but be aware "
 "this makes your old messages inaccessible forever."
@@ -2173,31 +2171,31 @@ msgstr ""
 "Якщо у вас немає цих даних, ви можете скинути ваш профіль, але, варто "
 "зауважити, це призведе до втрати доступу до ваших старих повідомлень."
 
-#: src/session/view/content/verification/session_verification.ui:211
+#: src/session/view/content/verification/session_verification.ui:217
 msgid "Reset Identity"
 msgstr "Скинути профіль"
 
-#: src/session/view/content/verification/session_verification.ui:250
+#: src/session/view/content/verification/session_verification.ui:256
 msgid ""
 "Your Recovery Passphrase was set up when you first created this account."
 msgstr ""
 "Ваш пароль для відновлення було налаштовано під час створення цього "
 "облікового запису."
 
-#: src/session/view/content/verification/session_verification.ui:258
+#: src/session/view/content/verification/session_verification.ui:264
 msgid ""
 "If you opted for a Recovery Key instead go back and choose that option."
 msgstr ""
 "Якщо ви хочете вибрати ключ відновлення, поверніться і виберіть відповідний "
 "пункт."
 
-#: src/session/view/content/verification/session_verification.ui:314
+#: src/session/view/content/verification/session_verification.ui:321
 msgid "Your Recovery Key was set up when you first created this account."
 msgstr ""
 "Ваш ключ для відновлення було налаштовано під час створення цього облікового "
 "запису."
 
-#: src/session/view/content/verification/session_verification.ui:322
+#: src/session/view/content/verification/session_verification.ui:329
 msgid ""
 "If you opted for a Recovery Passphrase instead go back and choose that "
 "option."
@@ -2586,36 +2584,36 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Не вдалося відкрити сховище."
 
-#: src/utils/matrix.rs:109
+#: src/utils/matrix/mod.rs:111
 msgid "{user} sent an audio file."
 msgstr "Користувачем {user} надіслано звуковий файл."
 
-#: src/utils/matrix.rs:112 src/utils/matrix.rs:123 src/utils/matrix.rs:127
-#: src/utils/matrix.rs:131
+#: src/utils/matrix/mod.rs:114 src/utils/matrix/mod.rs:125
+#: src/utils/matrix/mod.rs:129 src/utils/matrix/mod.rs:133
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
-#: src/utils/matrix.rs:115
+#: src/utils/matrix/mod.rs:117
 msgid "{user} sent a file."
 msgstr "Користувачем {user} надіслано файл."
 
-#: src/utils/matrix.rs:117
+#: src/utils/matrix/mod.rs:119
 msgid "{user} sent an image."
 msgstr "Користувачем {user} надіслано зображення."
 
-#: src/utils/matrix.rs:120
+#: src/utils/matrix/mod.rs:122
 msgid "{user} sent their location."
 msgstr "Користувачем {user} надіслано дані щодо місця перебування."
 
-#: src/utils/matrix.rs:135
+#: src/utils/matrix/mod.rs:137
 msgid "{user} sent a video."
 msgstr "Користувачем {user} надіслано відео."
 
-#: src/utils/matrix.rs:138
+#: src/utils/matrix/mod.rs:140
 msgid "{user} sent a verification request."
 msgstr "Користувачем {user} надіслано запит щодо перевірки."
 
-#: src/utils/matrix.rs:146
+#: src/utils/matrix/mod.rs:148
 msgid "{user} sent a sticker."
 msgstr "Користувачем {user} надіслано наліпку."
 
@@ -2649,9 +2647,6 @@ msgid "Decline Invite?"
 msgstr "Відхилити запрошення?"
 
 #: src/utils/message_dialog.rs:16
-#| msgid ""
-#| "Do you really want to decline this invite? You can join this room on you "
-#| "own later."
 msgid ""
 "Do you really want to decline this invite? You can join this room on your "
 "own later."
@@ -2693,6 +2688,12 @@ msgstr "Полишити"
 msgid "Failed to restore previous sessions"
 msgstr "Не вдалося відновити попередні сеанси"
 
+#~ msgid "Disconnect the corrupted session"
+#~ msgstr "Від'єднати пошкоджений сеанс"
+
+#~ msgid "_Log in"
+#~ msgstr "_Увійти"
+
 #~ msgid "Files"
 #~ msgstr "Файли"
 
@@ -2727,9 +2728,6 @@ msgstr "Не вдалося відновити попередні сеанси"
 
 #~ msgid "Get Started"
 #~ msgstr "Початок"
-
-#~ msgid "Log In"
-#~ msgstr "Увійти"
 
 #~ msgid "_Next"
 #~ msgstr "_Далі"
