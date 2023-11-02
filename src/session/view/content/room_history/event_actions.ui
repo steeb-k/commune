@@ -82,26 +82,12 @@
   <menu id="state_menu_model">
     <section>
       <item>
-        <!-- Translators: In this string, 'Forward' is a verb. -->
-        <attribute name="label" translatable="yes">_Forward</attribute>
-        <attribute name="action">event.forward</attribute>
-        <attribute name="hidden-when">action-missing</attribute>
-      </item>
-    </section>
-    <section>
-      <item>
         <attribute name="label" translatable="yes">_Select</attribute>
         <attribute name="action">event.select</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
     <section>
-      <item>
-        <attribute name="label" translatable="yes">_Copy Text</attribute>
-        <attribute name="action">event.copy-text</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
-        <attribute name="hidden-when">action-missing</attribute>
-      </item>
       <item>
         <attribute name="label" translatable="yes">_Permalink</attribute>
         <attribute name="action">event.permalink</attribute>
