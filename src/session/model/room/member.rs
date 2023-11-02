@@ -1,4 +1,3 @@
-use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
     room::RoomMember,
@@ -30,20 +29,6 @@ pub enum Membership {
     Ban = 3,
     Knock = 4,
     Custom = 5,
-}
-
-impl std::fmt::Display for Membership {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let label = match self {
-            Membership::Leave => gettext("Left"),
-            Membership::Join => gettext("Joined"),
-            Membership::Invite => gettext("Invited"),
-            Membership::Ban => gettext("Banned"),
-            Membership::Knock => gettext("Knocked"),
-            Membership::Custom => gettext("Custom"),
-        };
-        f.write_str(&label)
-    }
 }
 
 impl From<&MembershipState> for Membership {

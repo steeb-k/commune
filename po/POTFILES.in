@@ -26,7 +26,6 @@ src/login/mod.ui
 src/login/sso_page.ui
 src/secret.rs
 src/session/model/session.rs
-src/session/model/room/member.rs
 src/session/model/room/member_role.rs
 src/session/model/room/mod.rs
 src/session/model/room_list/mod.rs
@@ -67,6 +66,7 @@ src/session/view/content/room_details/invite_subpage/invitee_list.rs
 src/session/view/content/room_details/invite_subpage/mod.rs
 src/session/view/content/room_details/invite_subpage/mod.ui
 src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs
+src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs
 src/session/view/content/room_details/member_page/member_menu.ui
 src/session/view/content/room_details/member_page/mod.rs
 src/session/view/content/room_details/member_page/mod.ui

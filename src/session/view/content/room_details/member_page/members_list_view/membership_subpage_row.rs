@@ -1,7 +1,9 @@
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 
 use super::MembershipSubpageItem;
+use crate::session::model::Membership;
 
 mod imp {
     use std::cell::RefCell;
@@ -149,7 +151,13 @@ impl MembershipSubpageRow {
 
     /// The label of this row.
     pub fn label(&self) -> Option<String> {
-        Some(self.item()?.state().to_string())
+        match self.item()?.state() {
+            // Translators: As in 'Invited Room Members'.
+            Membership::Invite => Some(gettext("Invited")),
+            // Translators: As in 'Banned Room Members'.
+            Membership::Ban => Some(gettext("Banned")),
+            _ => None,
+        }
     }
 
     fn member_count_changed(&self, n: u32) {
