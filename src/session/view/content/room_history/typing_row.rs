@@ -34,7 +34,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            klass.set_css_name("typing-bar");
+            klass.set_css_name("typing-row");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -130,7 +130,12 @@ impl TypingRow {
                 let avatar = Avatar::new();
                 avatar.set_data(Some(avatar_data));
                 avatar.set_size(30);
-                avatar.upcast()
+
+                let cutout = adw::Bin::builder()
+                    .child(&avatar)
+                    .css_classes(["cutout"])
+                    .build();
+                cutout.upcast()
             });
 
             imp.bound_list.set(
