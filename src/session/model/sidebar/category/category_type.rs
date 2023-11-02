@@ -32,9 +32,8 @@ impl fmt::Display for CategoryType {
             CategoryType::Normal => gettext("Rooms"),
             CategoryType::LowPriority => gettext("Low Priority"),
             CategoryType::Left => gettext("Historical"),
-            // Translators: This shouldn't ever be visible to the user,
-            CategoryType::Outdated => gettext("Outdated"),
-            CategoryType::Space => gettext("Spaces"),
+            // These categories are hidden.
+            CategoryType::Outdated | CategoryType::Space => unimplemented!(),
             CategoryType::Direct => gettext("People"),
         };
         f.write_str(&label)
