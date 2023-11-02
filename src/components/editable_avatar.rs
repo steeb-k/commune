@@ -65,8 +65,6 @@ mod imp {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub button_remove_bin: TemplateChild<adw::Bin>,
-        #[template_child]
         pub button_remove: TemplateChild<ActionButton>,
         #[template_child]
         pub button_edit: TemplateChild<ActionButton>,
@@ -80,6 +78,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            klass.set_css_name("editable-avatar");
 
             klass.install_action("editable-avatar.edit-avatar", None, |obj, _, _| {
                 spawn!(clone!(@weak obj => async move {

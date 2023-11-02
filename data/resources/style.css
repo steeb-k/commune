@@ -163,7 +163,7 @@ entry .inline-pill {
 	margin-bottom: -0.5em;
 }
 
-.cutout-button {
+editable-avatar .cutout {
   background-color: @window_bg_color;
   border-radius: 9999px;
   padding: 2px;

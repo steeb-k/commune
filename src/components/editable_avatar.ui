@@ -42,7 +42,7 @@
         <child type="overlay">
           <object class="AdwBin" id="button_remove_bin">
             <style>
-              <class name="cutout-button" />
+              <class name="cutout" />
             </style>
             <property name="halign">end</property>
             <property name="valign">start</property>
@@ -57,7 +57,7 @@
         <child type="overlay">
           <object class="AdwBin">
             <style>
-              <class name="cutout-button" />
+              <class name="cutout" />
             </style>
             <property name="visible" bind-source="ComponentsEditableAvatar" bind-property="editable" bind-flags="sync-create"/>
             <property name="halign">end</property>
