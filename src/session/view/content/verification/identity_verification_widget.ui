@@ -288,6 +288,7 @@
                     </child>
                     <child>
                       <object class="SpinnerButton" id="emoji_not_match_btn">
+                        <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis do not match. -->
                         <property name="label" translatable="yes">Do Not Match</property>
                         <property name="halign">center</property>
                         <style>
@@ -298,6 +299,7 @@
                     </child>
                     <child>
                       <object class="SpinnerButton" id="emoji_match_btn">
+                        <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis match. -->
                         <property name="label" translatable="yes">Match</property>
                         <property name="halign">center</property>
                         <style>

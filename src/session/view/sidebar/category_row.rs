@@ -151,8 +151,12 @@ impl CategoryRow {
 
         let label = match from_type {
             CategoryType::Invited => match to_type {
+                // Translators: This is an action to join a room and put it in the "Favorites"
+                // section.
                 CategoryType::Favorite => gettext("Join Room as Favorite"),
                 CategoryType::Normal => gettext("Join Room"),
+                // Translators: This is an action to join a room and put it in the "Low Priority"
+                // section.
                 CategoryType::LowPriority => gettext("Join Room as Low Priority"),
                 CategoryType::Left => gettext("Reject Invite"),
                 CategoryType::Direct => gettext("Join Room as People"),
@@ -180,8 +184,12 @@ impl CategoryRow {
                 _ => to_type.to_string(),
             },
             CategoryType::Left => match to_type {
-                CategoryType::Favorite => gettext("Rejoin Room as Favorites"),
+                // Translators: This is an action to rejoin a room and put it in the "Favorites"
+                // section.
+                CategoryType::Favorite => gettext("Rejoin Room as Favorite"),
                 CategoryType::Normal => gettext("Rejoin Room"),
+                // Translators: This is an action to rejoin a room and put it in the "Low Priority"
+                // section.
                 CategoryType::LowPriority => gettext("Rejoin Room as Low Priority"),
                 CategoryType::Direct => gettext("Rejoin Room as People"),
                 _ => to_type.to_string(),

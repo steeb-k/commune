@@ -205,6 +205,7 @@ impl PublicRoomRow {
     fn update_button(&self, public_room: &PublicRoom) {
         let button = &self.imp().button;
         if public_room.room().is_some() {
+            // Translators: This is a verb, as in 'View Room'.
             button.set_label(&gettext("View"));
         } else {
             button.set_label(&gettext("Join"));

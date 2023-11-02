@@ -167,10 +167,12 @@ fn update_cross_signing_key_status(label: &gtk::Label, available: bool) {
     if available {
         label.add_css_class("success");
         label.remove_css_class("error");
+        // Translators: As in "The signing key is available".
         label.set_text(&gettext("Available"));
     } else {
         label.add_css_class("error");
         label.remove_css_class("success");
+        // Translators: As in "The signing key is not available".
         label.set_text(&gettext("Not available"));
     }
 }

@@ -207,8 +207,10 @@ impl ImportExportKeysSubpage {
         let imp = self.imp();
 
         if self.mode() == KeysSubpageMode::Export {
+            // Translators: 'Room encryption keys' are encryption keys for all rooms.
             self.set_title(&gettext("Export Room Encryption Keys"));
             imp.description.set_label(&gettext(
+                // Translators: 'Room encryption keys' are encryption keys for all rooms.
                 "Exporting your room encryption keys allows you to make a backup to be able to decrypt your messages in end-to-end encrypted rooms on another device or with another Matrix client.",
             ));
             imp.instructions.set_label(&gettext(
@@ -217,8 +219,10 @@ impl ImportExportKeysSubpage {
             imp.confirm_passphrase_box.set_visible(true);
             imp.proceed_button.set_label(&gettext("Export Keys"));
         } else {
+            // Translators: 'Room encryption keys' are encryption keys for all rooms.
             self.set_title(&gettext("Import Room Encryption Keys"));
             imp.description.set_label(&gettext(
+                // Translators: 'Room encryption keys' are encryption keys for all rooms.
                 "Importing your room encryption keys allows you to decrypt your messages in end-to-end encrypted rooms with a previous backup from a Matrix client.",
             ));
             imp.instructions.set_label(&gettext(

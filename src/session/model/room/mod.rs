@@ -931,6 +931,7 @@ impl Room {
     /// The display name of this room.
     pub fn display_name(&self) -> String {
         let display_name = self.imp().name.borrow().clone();
+        // Translators: This is displayed when the room name is unknown yet.
         display_name.unwrap_or_else(|| gettext("Unknown"))
     }
 

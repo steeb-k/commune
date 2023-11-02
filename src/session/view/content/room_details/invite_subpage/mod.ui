@@ -83,6 +83,7 @@
               <object class="AdwStatusPage" id="no_search_page">
                 <property name="vexpand">True</property>
                 <property name="icon-name">system-search-symbolic</property>
+                <!-- Translators: In this string, this is a verb. -->
                 <property name="title" translatable="yes">Search</property>
                 <property name="description" translatable="yes">Search for users to invite them to this room.</property>
               </object>

@@ -74,7 +74,8 @@
                                     <property name="wrap">True</property>
                                     <property name="wrap-mode">word-char</property>
                                     <property name="justify">center</property>
-                                    <property name="label" translatable="yes" comments="Fractal is the application name and shouldn't be translated">Welcome to Fractal</property>
+                                    <!-- Translators: Fractal is the application name. -->
+                                    <property name="label" translatable="yes">Welcome to Fractal</property>
                                     <style>
                                       <class name="title-1"/>
                                     </style>

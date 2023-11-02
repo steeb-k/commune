@@ -20,7 +20,8 @@
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
-        <!-- Translators: In this string, 'Forward' is a verb. -->
+        <!-- Translators: In this string, 'Forward' is a verb, this is to
+          re-send the same message in another room, like forwarding an e-mail. -->
         <attribute name="label" translatable="yes">_Forward</attribute>
         <attribute name="action">event.forward</attribute>
         <attribute name="hidden-when">action-missing</attribute>

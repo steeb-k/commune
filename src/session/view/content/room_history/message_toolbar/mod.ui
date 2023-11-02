@@ -113,7 +113,9 @@
                     <property name="bottom-margin">7</property>
                     <property name="wrap-mode">word</property>
                     <accessibility>
-                      <property name="label" translatable="yes">Message Entry</property>
+                      <!-- Translators: This is the name of the input widget where messages
+                        are entered before being sent, for accessibility tools. -->
+                      <property name="label" translatable="yes">Message Composer</property>
                     </accessibility>
                   </object>
                 </property>

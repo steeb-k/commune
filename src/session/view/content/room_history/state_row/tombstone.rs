@@ -120,6 +120,7 @@ impl StateTombstone {
     fn update_button_label(&self, room: &Room) {
         let button = &self.imp().new_room_btn;
         if room.successor().is_some() {
+            // Translators: This is a verb, as in 'View Room'.
             button.set_label(&gettext("View"));
         } else {
             button.set_label(&gettext("Join"));

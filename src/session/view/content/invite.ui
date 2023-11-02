@@ -9,6 +9,7 @@
           <object class="AdwHeaderBar">
             <child type="title">
               <object class="AdwWindowTitle">
+                <!-- Translators: This is a verb. -->
                 <property name="title" translatable="yes">Invite</property>
               </object>
             </child>
@@ -34,6 +35,7 @@
                     <property name="spacing">24</property>
                     <property name="orientation">vertical</property>
                     <accessibility>
+                      <!-- Translators: This is a verb. -->
                       <property name="label" translatable="yes">Invite</property>
                     </accessibility>
                     <child>

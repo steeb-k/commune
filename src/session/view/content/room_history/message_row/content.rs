@@ -371,7 +371,7 @@ fn build_content(
                 parent.set_child(Some(&child));
                 child
             };
-            child.with_text(gettext("This message was redacted."), format);
+            child.with_text(gettext("This message was removed."), format);
         }
         content => {
             warn!("Unsupported event content: {content:?}");

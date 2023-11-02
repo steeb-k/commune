@@ -140,6 +140,7 @@ impl JoinRoomDialog {
             .joined_room((&*room_id).into())
             .is_some()
         {
+            // Translators: This is a verb, as in 'View Room'.
             self.set_response_label("join", &gettext("_View"));
         } else {
             self.set_response_label("join", &gettext("_Join"));

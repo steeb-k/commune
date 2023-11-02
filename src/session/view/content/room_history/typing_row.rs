@@ -3,7 +3,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
     components::{Avatar, OverlappingBox},
-    i18n::{gettext_f, ngettext_f},
+    i18n::ngettext_f,
     prelude::*,
     session::model::{Member, TypingList},
     utils::BoundObjectWeakRef,
@@ -162,43 +162,24 @@ impl TypingRow {
     }
 
     fn update_label(&self, list: &TypingList) {
-        let len = list.n_items();
-        if len == 0 {
+        let n = list.n_items();
+        if n == 0 {
             // Don't update anything, the `is-empty` property should trigger a revealer
             // animation.
             return;
         }
 
         let members = list.members();
+        let user = members[0].display_name();
 
-        let label = if len == 1 {
-            let user = members[0].display_name();
-            // Translators: Do NOT translate the content between '{' and '}', this is a
-            // variable name.
-            gettext_f("<b>{user}</b> is typing…", &[("user", &user)])
-        } else {
-            let user1 = members[0].display_name();
-            let user2 = members[1].display_name();
-            let n = len - 2;
-
-            if n == 0 {
-                gettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}', these are
-                    // variable names.
-                    "<b>{user1}</b> and <b>{user2}</b> are typing…",
-                    &[("user1", &user1), ("user2", &user2)],
-                )
-            } else {
-                ngettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}', these are
-                    // variable names.
-                    "<b>{user1}</b>, <b>{user2}</b> and 1 other are typing…",
-                    "<b>{user1}</b>, <b>{user2}</b> and {n} others are typing…",
-                    n,
-                    &[("user1", &user1), ("user2", &user2), ("n", &n.to_string())],
-                )
-            }
-        };
+        let label = ngettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', these are
+            // variable names.
+            "<b>{user}</b> is typing…",
+            "{n} members are typing…",
+            n,
+            &[("user", &user), ("n", &n.to_string())],
+        );
         self.imp().label.set_label(&label);
     }
 }

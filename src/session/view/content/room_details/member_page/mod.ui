@@ -60,6 +60,7 @@
                     </child>
                     <child>
                       <object class="GtkLabel">
+                        <!-- Translators: This is a verb. -->
                         <property name="label" translatable="yes">Invite</property>
                       </object>
                     </child>

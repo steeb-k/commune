@@ -174,7 +174,7 @@ impl NotificationsPage {
                     error!("Could not deserialize push rules: {error}");
                     toast!(
                         self,
-                        gettext("Could not load notifications settings. Try again later")
+                        gettext("Could not load notifications settings. Try again later.")
                     );
                 }
             },
@@ -187,7 +187,7 @@ impl NotificationsPage {
                 error!("Could not get push rules: {error}");
                 toast!(
                     self,
-                    gettext("Could not load notifications settings. Try again later")
+                    gettext("Could not load notifications settings. Try again later.")
                 );
             }
         }
