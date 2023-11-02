@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-10-30 13:00+0000\n"
-"PO-Revision-Date: 2023-10-31 11:29+0800\n"
+"POT-Creation-Date: 2023-11-01 13:10+0000\n"
+"PO-Revision-Date: 2023-11-02 09:16+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese - China <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -89,7 +89,7 @@ msgstr ""
 msgid "The Fractal Team"
 msgstr "Fractal 团队"
 
-#: src/account_switcher/mod.ui:36
+#: src/account_switcher/mod.ui:37
 msgid "_Add Account"
 msgstr "添加账号(_A)"
 
@@ -120,23 +120,23 @@ msgid ""
 "confirm."
 msgstr "请通过浏览器认证该操作并在完成后按确认。"
 
-#: src/components/auth_dialog.ui:80
+#: src/components/auth_dialog.ui:81
 msgid "Authenticate via Browser"
 msgstr "通过浏览器认证"
 
-#: src/components/auth_dialog.ui:113
+#: src/components/auth_dialog.ui:114
 #: src/session/view/account_settings/user_page/mod.rs:299
 #: src/session/view/content/room_details/general_page/mod.rs:367
 #: src/session/view/content/room_history/item_row.rs:734
-#: src/session/view/content/room_history/mod.ui:247
+#: src/session/view/content/room_history/mod.ui:248
 #: src/session/view/content/room_history/verification_info_bar.rs:181
-#: src/session/view/content/verification/identity_verification_widget.ui:442
+#: src/session/view/content/verification/identity_verification_widget.ui:443
 #: src/utils/message_dialog.rs:47
 msgid "Cancel"
 msgstr "取消"
 
-#: src/components/auth_dialog.ui:118
-#: src/session/view/content/verification/identity_verification_widget.ui:432
+#: src/components/auth_dialog.ui:119
+#: src/session/view/content/verification/identity_verification_widget.ui:433
 msgid "Confirm"
 msgstr "确认"
 
@@ -165,7 +165,7 @@ msgstr "选择的文件不是图像"
 msgid "Could not determine the type of the chosen file"
 msgstr "无法判断选择文件的类型"
 
-#: src/components/loading_row.ui:31
+#: src/components/loading_row.ui:32
 msgid "Try again"
 msgstr "重试"
 
@@ -233,11 +233,12 @@ msgstr ""
 msgid "Clicking this button might disconnect more than one session!"
 msgstr "点击该按钮可能会断开不止一个会话连接！"
 
-#: src/error_page.ui:85
-msgid "Disconnect the corrupted session"
-msgstr "断开已损坏的会话连接"
+#: src/error_page.ui:86
+#: src/session/view/account_settings/devices_page/device_row.rs:103
+msgid "Disconnect Session"
+msgstr "断开会话连接"
 
-#: src/error_page.ui:108
+#: src/error_page.ui:109
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -246,21 +247,21 @@ msgstr ""
 "Fractal 依赖于保密服务提供者来管理您的敏感会话信息且在我们尝试存储或获取您的"
 "会话时发生了错误。"
 
-#: src/error_page.ui:123
+#: src/error_page.ui:124
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr "这里有一些方法可能会帮助您修复与保密服务的问题："
 
-#: src/error_page.ui:146
+#: src/error_page.ui:147
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr "请确保您已安装了保密服务提供者，比如 gnome-keyring。"
 
-#: src/error_page.ui:171
+#: src/error_page.ui:172
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "请检查您有一个默认的密钥环并已解锁。"
 
-#: src/error_page.ui:186
+#: src/error_page.ui:187
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -283,11 +284,11 @@ msgstr "关于 Fractal"
 msgid "Welcome to Fractal"
 msgstr "欢迎使用 Fractal"
 
-#: src/greeter.ui:102
-msgid "_Log in"
+#: src/greeter.ui:103
+msgid "_Log In"
 msgstr "登录(_L)"
 
-#: src/greeter.ui:112
+#: src/greeter.ui:115
 msgid "_Create Account"
 msgstr "创建账号(_C)"
 
@@ -332,14 +333,14 @@ msgstr "您的 Matrix 主服务器网址，比如 {address}"
 msgid "Homeserver"
 msgstr "主服务器"
 
-#: src/login/homeserver_page.ui:66 src/login/method_page.ui:123
-#: src/session/view/content/verification/session_verification.ui:274
-#: src/session/view/content/verification/session_verification.ui:339
+#: src/login/homeserver_page.ui:66 src/login/method_page.ui:124
+#: src/session/view/content/verification/session_verification.ui:281
+#: src/session/view/content/verification/session_verification.ui:347
 msgid "Next"
 msgstr "下一步"
 
 #. Translators: As in 'Advanced Settings'.
-#: src/login/homeserver_page.ui:80
+#: src/login/homeserver_page.ui:81
 msgid "Advanced…"
 msgstr "高级…"
 
@@ -365,7 +366,7 @@ msgstr "密码"
 msgid "_Forgot Password?"
 msgstr "忘记了密码？(_F)"
 
-#: src/login/method_page.ui:116
+#: src/login/method_page.ui:117
 msgid "More SSO Providers"
 msgstr "更多 SSO 提供者"
 
@@ -382,7 +383,7 @@ msgstr "登录完成"
 msgid "This session is ready to send and receive secure messages."
 msgstr "该会话已准备好发送和接收安全消息。"
 
-#: src/login/mod.ui:110
+#: src/login/mod.ui:111
 msgid "Start Chatting"
 msgstr "开始聊天"
 
@@ -620,10 +621,6 @@ msgstr "加载已连接设备失败。"
 msgid "Failed to load the list of connected devices."
 msgstr "加载已连接设备列表失败。"
 
-#: src/session/view/account_settings/devices_page/device_row.rs:103
-msgid "Disconnect Session"
-msgstr "断开会话连接"
-
 #: src/session/view/account_settings/devices_page/device_row.rs:105
 #: src/session/view/account_settings/user_page/mod.ui:112
 msgid "Log Out"
@@ -847,7 +844,7 @@ msgid "Could not import the keys"
 msgstr "无法导入该密钥"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:64
-#: src/session/view/content/verification/session_verification.ui:269
+#: src/session/view/content/verification/session_verification.ui:275
 msgid "Passphrase"
 msgstr "密语"
 
@@ -856,7 +853,7 @@ msgid "Confirm Passphrase"
 msgstr "确认密语"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:112
-#: src/session/view/content/room_details/general_page/mod.ui:147
+#: src/session/view/content/room_details/general_page/mod.ui:148
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 msgid "File"
 msgstr "文件"
@@ -961,7 +958,7 @@ msgstr "确认新密码"
 
 #: src/session/view/account_settings/user_page/change_password_subpage.ui:148
 #: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:76
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:78
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:79
 #: src/session/view/content/room_history/verification_info_bar.rs:180
 msgid "Continue"
 msgstr "继续"
@@ -1007,7 +1004,7 @@ msgstr ""
 msgid "It is recommended to backup your encryption keys before proceeding."
 msgstr "推荐在执行前备份您的加密密钥。"
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:69
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:70
 msgid "Backup Encryption Keys"
 msgstr "备份加密密钥"
 
@@ -1176,25 +1173,25 @@ msgstr "聊天室详情"
 msgid "Description"
 msgstr "说明"
 
-#: src/session/view/content/room_details/general_page/mod.ui:86
+#: src/session/view/content/room_details/general_page/mod.ui:87
 msgid "Edit Details"
 msgstr "编辑详情"
 
-#: src/session/view/content/room_details/general_page/mod.ui:94
+#: src/session/view/content/room_details/general_page/mod.ui:95
 msgid "Save Details"
 msgstr "保存详情"
 
-#: src/session/view/content/room_details/general_page/mod.ui:106
+#: src/session/view/content/room_details/general_page/mod.ui:107
 msgid "Members"
 msgstr "成员"
 
-#: src/session/view/content/room_details/general_page/mod.ui:132
+#: src/session/view/content/room_details/general_page/mod.ui:133
 #: src/session/view/content/room_details/history_viewer/media.ui:4
 msgid "Media"
 msgstr "媒体"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:163
+#: src/session/view/content/room_details/general_page/mod.ui:164
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 msgid "Audio"
 msgstr "音频"
@@ -1587,39 +1584,39 @@ msgstr "无法加载聊天室"
 msgid "Check your network connection."
 msgstr "检查您的网络连接。"
 
-#: src/session/view/content/room_history/mod.ui:116
+#: src/session/view/content/room_history/mod.ui:117
 msgid "Try Again"
 msgstr "重试"
 
-#: src/session/view/content/room_history/mod.ui:141
+#: src/session/view/content/room_history/mod.ui:142
 msgid "Scroll to bottom"
 msgstr "滚动到底部"
 
-#: src/session/view/content/room_history/mod.ui:153
+#: src/session/view/content/room_history/mod.ui:154
 msgid "Drop Here to Send"
 msgstr "拖到这里发送"
 
-#: src/session/view/content/room_history/mod.ui:174
+#: src/session/view/content/room_history/mod.ui:175
 msgid "Room History"
 msgstr "聊天室历史"
 
-#: src/session/view/content/room_history/mod.ui:263
+#: src/session/view/content/room_history/mod.ui:264
 msgid "Browse Attachment"
 msgstr "浏览附件"
 
-#: src/session/view/content/room_history/mod.ui:273
+#: src/session/view/content/room_history/mod.ui:274
 msgid "Open Emoji Picker"
 msgstr "打开表情选择器"
 
-#: src/session/view/content/room_history/mod.ui:294
+#: src/session/view/content/room_history/mod.ui:295
 msgid "Message Entry"
 msgstr "消息条目"
 
-#: src/session/view/content/room_history/mod.ui:309
+#: src/session/view/content/room_history/mod.ui:310
 msgid "Open Message Menu"
 msgstr "打开消息菜单"
 
-#: src/session/view/content/room_history/mod.ui:324
+#: src/session/view/content/room_history/mod.ui:325
 msgid "Send Message"
 msgstr "发送消息"
 
@@ -1631,7 +1628,7 @@ msgstr "这是已升级聊天室的延续。"
 msgid "This is the beginning of this room."
 msgstr "这是该聊天室的开始。"
 
-#: src/session/view/content/room_history/state_row/creation.ui:19
+#: src/session/view/content/room_history/state_row/creation.ui:20
 msgid "Previous room"
 msgstr "上个聊天室"
 
@@ -1794,12 +1791,12 @@ msgid "{user_name} wants to be verified"
 msgstr "{user_name} 想要被验证"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:175
-#: src/session/view/content/verification/identity_verification_widget.ui:56
+#: src/session/view/content/verification/identity_verification_widget.ui:57
 msgid "Verify"
 msgstr "验证"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:176
-#: src/session/view/content/verification/identity_verification_widget.ui:46
+#: src/session/view/content/verification/identity_verification_widget.ui:47
 #: src/utils/message_dialog.rs:22
 msgid "Decline"
 msgstr "拒绝"
@@ -1962,33 +1959,33 @@ msgstr "表情不匹配。"
 msgid "An unknown error occurred during the verification process."
 msgstr "验证进程中发生了未知错误。"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:109
-#: src/session/view/content/verification/identity_verification_widget.ui:213
+#: src/session/view/content/verification/identity_verification_widget.ui:110
+#: src/session/view/content/verification/identity_verification_widget.ui:214
 msgid "Can’t scan QR code?"
 msgstr "无法扫描二维码吗？"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:117
-#: src/session/view/content/verification/identity_verification_widget.ui:230
+#: src/session/view/content/verification/identity_verification_widget.ui:118
+#: src/session/view/content/verification/identity_verification_widget.ui:231
 msgid "Compare Emoji"
 msgstr "比对表情"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:144
+#: src/session/view/content/verification/identity_verification_widget.ui:145
 msgid "Scan Complete"
 msgstr "扫描完成"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:222
+#: src/session/view/content/verification/identity_verification_widget.ui:223
 msgid "Scan QR code with this session"
 msgstr "用该会话扫描二维码"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:290
+#: src/session/view/content/verification/identity_verification_widget.ui:291
 msgid "Do Not Match"
 msgstr "不匹配"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:300
+#: src/session/view/content/verification/identity_verification_widget.ui:301
 msgid "Match"
 msgstr "匹配"
 
-#: src/session/view/content/verification/identity_verification_widget.ui:409
+#: src/session/view/content/verification/identity_verification_widget.ui:410
 msgid "Confirm Scan"
 msgstr "确认扫描"
 
@@ -2013,7 +2010,7 @@ msgstr ""
 
 #: src/session/view/content/verification/session_verification.rs:282
 #: src/session/view/content/verification/session_verification.rs:290
-#: src/session/view/content/verification/session_verification.ui:70
+#: src/session/view/content/verification/session_verification.ui:72
 msgid "Reset"
 msgstr "重置"
 
@@ -2039,36 +2036,36 @@ msgstr "创建加密身份的过程中发生了错误。"
 msgid "No other devices logged into this account?"
 msgstr "没有其它设备已登录该账户吗？"
 
-#: src/session/view/content/verification/session_verification.ui:60
-#: src/session/view/content/verification/session_verification.ui:165
+#: src/session/view/content/verification/session_verification.ui:61
+#: src/session/view/content/verification/session_verification.ui:168
 msgid "Recovery"
 msgstr "恢复"
 
-#: src/session/view/content/verification/session_verification.ui:109
+#: src/session/view/content/verification/session_verification.ui:111
 msgid "Set Up Encryption Identity"
 msgstr "设置加密身份"
 
-#: src/session/view/content/verification/session_verification.ui:136
+#: src/session/view/content/verification/session_verification.ui:139
 msgid "Restart verification"
 msgstr "重新开始验证"
 
-#: src/session/view/content/verification/session_verification.ui:176
+#: src/session/view/content/verification/session_verification.ui:179
 msgid ""
 "Without another device you need a recovery passphrase or key to access your "
 "messages"
 msgstr "没有另一个设备则您需要恢复密语或密钥来访问您的消息"
 
-#: src/session/view/content/verification/session_verification.ui:184
-#: src/session/view/content/verification/session_verification.ui:239
+#: src/session/view/content/verification/session_verification.ui:188
+#: src/session/view/content/verification/session_verification.ui:245
 msgid "Recovery Passphrase"
 msgstr "恢复密语"
 
-#: src/session/view/content/verification/session_verification.ui:193
-#: src/session/view/content/verification/session_verification.ui:303
+#: src/session/view/content/verification/session_verification.ui:198
+#: src/session/view/content/verification/session_verification.ui:310
 msgid "Recovery Key"
 msgstr "恢复密钥"
 
-#: src/session/view/content/verification/session_verification.ui:202
+#: src/session/view/content/verification/session_verification.ui:207
 msgid ""
 "If you don’t have any of these you can reset your identity, but be aware "
 "this makes your old messages inaccessible forever."
@@ -2076,24 +2073,24 @@ msgstr ""
 "如果这些您都没有则可以重置您的身份，但请注意这会使您永久失去对旧消息的访问权"
 "限。"
 
-#: src/session/view/content/verification/session_verification.ui:211
+#: src/session/view/content/verification/session_verification.ui:217
 msgid "Reset Identity"
 msgstr "重置身份"
 
-#: src/session/view/content/verification/session_verification.ui:250
+#: src/session/view/content/verification/session_verification.ui:256
 msgid ""
 "Your Recovery Passphrase was set up when you first created this account."
 msgstr "当您第一次创建该账户时您的恢复密语就已经设定。"
 
-#: src/session/view/content/verification/session_verification.ui:258
+#: src/session/view/content/verification/session_verification.ui:264
 msgid "If you opted for a Recovery Key instead go back and choose that option."
 msgstr "如果您当时选择了恢复密钥则请返回并选择密钥选项。"
 
-#: src/session/view/content/verification/session_verification.ui:314
+#: src/session/view/content/verification/session_verification.ui:321
 msgid "Your Recovery Key was set up when you first created this account."
 msgstr "当您第一次创建该账户时您的恢复密钥就已设定。"
 
-#: src/session/view/content/verification/session_verification.ui:322
+#: src/session/view/content/verification/session_verification.ui:329
 msgid ""
 "If you opted for a Recovery Passphrase instead go back and choose that "
 "option."
@@ -2556,6 +2553,12 @@ msgstr "离开"
 msgid "Failed to restore previous sessions"
 msgstr "恢复上次会话失败"
 
+#~ msgid "Disconnect the corrupted session"
+#~ msgstr "断开已损坏的会话连接"
+
+#~ msgid "_Log in"
+#~ msgstr "登录(_L)"
+
 #~ msgid "Files"
 #~ msgstr "文件"
 
@@ -2823,9 +2826,6 @@ msgstr "恢复上次会话失败"
 
 #~ msgid "The domain may not be empty."
 #~ msgstr "域名不能为空。"
-
-#~ msgid "Log In"
-#~ msgstr "登录"
 
 #~ msgid "_User ID"
 #~ msgstr "用户标识(_U)"
