@@ -41,6 +41,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            klass.set_css_name("read-receipts-list");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -112,7 +113,9 @@ impl ReadReceiptsList {
                 let avatar = Avatar::new();
                 avatar.set_size(20);
                 avatar.set_data(Some(avatar_data.clone()));
-                avatar.upcast()
+
+                let cutout = adw::Bin::builder().child(&avatar).css_classes(["cutout"]).build();
+                cutout.upcast()
             }),
         );
 

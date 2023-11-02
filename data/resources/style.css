@@ -505,6 +505,12 @@ message-reactions .reaction-count {
   padding: 2px;
 }
 
+read-receipts-list .cutout {
+  background-color: @view_bg_color;
+  border-radius: 999px;
+  padding: 1px;
+}
+
 .divider-row {
   font-size: 0.9em;
   font-weight: bold;
