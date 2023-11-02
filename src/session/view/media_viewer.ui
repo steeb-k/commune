@@ -67,6 +67,7 @@
                 <accessibility>
                   <property name="label" translatable="yes">Media Menu</property>
                 </accessibility>
+                <property name="primary">True</property>
               </object>
             </child>
             <child type="end">
