@@ -27,7 +27,7 @@ use crate::{
         media::{get_image_info, load_file},
         not_expr, or_expr,
         template_callbacks::TemplateCallbacks,
-        BoundObjectWeakRef, OngoingAsyncAction, RoomSpellChecker,
+        BoundObjectWeakRef, OngoingAsyncAction,
     },
 };
 
@@ -67,7 +67,6 @@ mod imp {
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
         pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
-        pub spell_checker: RoomSpellChecker,
     }
 
     #[glib::object_subclass]
@@ -135,8 +134,13 @@ mod imp {
             crate::utils::sourceview::setup_style_scheme(&buffer);
 
             // Spell checker.
-            self.spell_checker
-                .set_up_sourceview(&self.room_topic_text_view);
+            let spell_checker = spelling::Checker::default();
+            let adapter = spelling::TextBufferAdapter::new(&buffer, &spell_checker);
+            let extra_menu = adapter.menu_model();
+            self.room_topic_text_view.set_extra_menu(Some(&extra_menu));
+            self.room_topic_text_view
+                .insert_action_group("spelling", Some(&adapter));
+            adapter.set_enabled(true);
         }
 
         fn dispose(&self) {
@@ -210,8 +214,6 @@ impl GeneralPage {
         self.member_count_changed(room.joined_members_count());
         self.init_avatar(room);
         self.init_edit_mode(room);
-
-        imp.spell_checker.set_room(Some(room));
 
         // Keep strong reference to members list.
         imp.room_members.replace(Some(room.get_or_create_members()));
