@@ -434,8 +434,13 @@ impl Timeline {
 
     /// Get the position of the event with the given key in this `Timeline`.
     pub fn find_event_position(&self, key: &EventKey) -> Option<usize> {
-        for (pos, item) in self.items().iter::<TimelineItem>().enumerate() {
-            let Ok(item) = item else {
+        for (pos, item) in self
+            .items()
+            .iter::<glib::Object>()
+            .map(|o| o.ok().and_downcast::<TimelineItem>())
+            .enumerate()
+        {
+            let Some(item) = item else {
                 break;
             };
 
