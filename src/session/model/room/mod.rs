@@ -21,7 +21,6 @@ use matrix_sdk::{
     DisplayName, HttpError, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
-    api::client::config::set_room_account_data,
     events::{
         reaction::ReactionEventContent,
         receipt::{ReceiptEventContent, ReceiptType},
@@ -35,7 +34,6 @@ use ruma::{
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
         AnySyncTimelineEvent, SyncEphemeralRoomEvent, SyncStateEvent,
     },
-    serde::Raw,
     OwnedEventId, OwnedRoomId, OwnedUserId, RoomId,
 };
 use tracing::{debug, error, warn};
@@ -55,13 +53,7 @@ use super::{
     room_list::RoomMetainfo, AvatarData, AvatarImage, AvatarUriSource, IdentityVerification,
     Session, SidebarItem, SidebarItemImpl, User,
 };
-use crate::{
-    components::Pill,
-    gettext_f,
-    prelude::*,
-    spawn, spawn_tokio,
-    utils::matrix::custom_events::{LanguageEvent, LanguageEventContent},
-};
+use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
 mod imp {
     use std::cell::Cell;
@@ -113,8 +105,6 @@ mod imp {
         pub typing_list: TypingList,
         /// Whether anyone can join this room.
         pub is_join_rule_public: Cell<bool>,
-        /// The language to spell check in this room.
-        pub language: RefCell<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -193,9 +183,6 @@ mod imp {
                     glib::ParamSpecBoolean::builder("is-join-rule-public")
                         .explicit_notify()
                         .build(),
-                    glib::ParamSpecString::builder("language")
-                        .read_only()
-                        .build(),
                 ]
             });
 
@@ -244,7 +231,6 @@ mod imp {
                 "encrypted" => obj.is_encrypted().to_value(),
                 "typing-list" => obj.typing_list().to_value(),
                 "is-join-rule-public" => obj.is_join_rule_public().to_value(),
-                "language" => obj.language().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -373,10 +359,6 @@ impl Room {
         self.load_category();
         self.setup_receipts();
         self.setup_typing();
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_language().await;
-        }));
 
         spawn!(clone!(@weak self as obj => async move {
             obj.watch_room_info().await;
@@ -1332,26 +1314,19 @@ impl Room {
     }
 
     pub fn handle_left_response(&self, response_room: LeftRoom) {
-        self.update_for_room_account_data(response_room.account_data);
         self.update_for_events(response_room.timeline.events);
     }
 
     pub fn handle_joined_response(&self, response_room: JoinedRoom) {
-        self.update_for_room_account_data(response_room.account_data);
-        self.update_for_events(response_room.timeline.events);
-    }
-
-    fn update_for_room_account_data(&self, room_account_data: Vec<Raw<AnyRoomAccountDataEvent>>) {
-        for raw in room_account_data {
-            if let Ok(AnyRoomAccountDataEvent::Tag(_)) = raw.deserialize() {
-                self.load_category();
-                continue;
-            }
-
-            if let Ok(language) = raw.deserialize_as::<LanguageEvent>() {
-                self.set_language_inner(Some(language.content.input_language));
-            }
+        if response_room
+            .account_data
+            .iter()
+            .any(|e| matches!(e.deserialize(), Ok(AnyRoomAccountDataEvent::Tag(_))))
+        {
+            self.load_category();
         }
+
+        self.update_for_events(response_room.timeline.events);
     }
 
     /// Connect to the signal sent when a room was forgotten.
@@ -1725,86 +1700,5 @@ impl Room {
 
         self.imp().is_join_rule_public.set(is_public);
         self.notify("is-join-rule-public");
-    }
-
-    async fn load_language(&self) {
-        let matrix_room = self.matrix_room();
-
-        let handle = spawn_tokio!(async move {
-            matrix_room
-                .account_data_static::<LanguageEventContent>()
-                .await
-        });
-
-        let raw = match handle.await.unwrap() {
-            Ok(Some(raw)) => raw,
-            Ok(None) => return,
-            Err(error) => {
-                error!(room_id = %self.room_id(), "Failed to load language room account data: {error}");
-                return;
-            }
-        };
-
-        match raw.deserialize() {
-            Ok(ev) => {
-                self.set_language_inner(Some(ev.content.input_language));
-            }
-            Err(error) => {
-                error!(room_id = %self.room_id(), "Failed to deserialize language room account data: {error}");
-            }
-        }
-    }
-
-    /// The language to spell check in this room.
-    pub fn language(&self) -> Option<String> {
-        self.imp().language.borrow().clone()
-    }
-
-    /// Set the language to spell check in this room.
-    pub fn set_language(&self, language: Option<String>) {
-        if !self.set_language_inner(language.clone()) {
-            return;
-        }
-
-        if let Some(language) = language {
-            spawn!(clone!(@weak self as obj => async move {
-                obj.set_room_account_data_language(language).await;
-            }));
-        }
-    }
-
-    fn set_language_inner(&self, language: Option<String>) -> bool {
-        let imp = self.imp();
-        if imp.language.borrow().as_ref() == language.as_ref() {
-            return false;
-        }
-
-        imp.language.replace(language.clone());
-        self.notify("language");
-        true
-    }
-
-    async fn set_room_account_data_language(&self, input_language: String) {
-        let client = self.session().client();
-        let user_id = client.user_id().unwrap().to_owned();
-        let room_id = self.room_id().to_owned();
-
-        let request = match set_room_account_data::v3::Request::new(
-            user_id,
-            room_id,
-            &LanguageEventContent { input_language },
-        ) {
-            Ok(req) => req,
-            Err(error) => {
-                error!(room_id = %self.room_id(), "Failed to build request for language room account data: {error}");
-                return;
-            }
-        };
-
-        let handle = spawn_tokio!(async move { client.send(request, None,).await });
-
-        if let Err(error) = handle.await.unwrap() {
-            error!(room_id = %self.room_id(), "Failed to send language room account data: {error}");
-        }
     }
 }

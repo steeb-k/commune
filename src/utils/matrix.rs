@@ -13,8 +13,6 @@ use ruma::{
 };
 use thiserror::Error;
 
-pub mod custom_events;
-
 use super::media::filename_for_mime;
 use crate::{
     components::{Pill, DEFAULT_PLACEHOLDER},
