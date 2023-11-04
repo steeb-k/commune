@@ -50,7 +50,7 @@ mod imp {
         #[template_child]
         pub room_name_entry: TemplateChild<gtk::Entry>,
         #[template_child]
-        pub room_topic_text_view: TemplateChild<sourceview::View>,
+        pub room_topic_text_view: TemplateChild<gtk::TextView>,
         #[template_child]
         pub room_topic_entry: TemplateChild<CustomEntry>,
         #[template_child]
@@ -121,26 +121,6 @@ mod imp {
                 "edit-mode-enabled" => obj.edit_mode_enabled().to_value(),
                 _ => unimplemented!(),
             }
-        }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            let buffer = self
-                .room_topic_text_view
-                .buffer()
-                .downcast::<sourceview::Buffer>()
-                .unwrap();
-            crate::utils::sourceview::setup_style_scheme(&buffer);
-
-            // Spell checker.
-            let spell_checker = spelling::Checker::default();
-            let adapter = spelling::TextBufferAdapter::new(&buffer, &spell_checker);
-            let extra_menu = adapter.menu_model();
-            self.room_topic_text_view.set_extra_menu(Some(&extra_menu));
-            self.room_topic_text_view
-                .insert_action_group("spelling", Some(&adapter));
-            adapter.set_enabled(true);
         }
 
         fn dispose(&self) {
