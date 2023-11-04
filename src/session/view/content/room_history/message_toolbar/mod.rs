@@ -20,11 +20,14 @@ use matrix_sdk::{
     },
 };
 use ruma::events::{
-    room::message::{
-        AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
-        OriginalSyncRoomMessageEvent, RoomMessageEventContent,
+    room::{
+        message::{
+            AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
+            OriginalSyncRoomMessageEvent, RoomMessageEventContent,
+        },
+        power_levels::PowerLevelAction,
     },
-    AnyMessageLikeEventContent,
+    AnyMessageLikeEventContent, MessageLikeEventType,
 };
 use sourceview::prelude::*;
 use tracing::{debug, error, warn};
@@ -38,7 +41,7 @@ use crate::{
     components::{CustomEntry, LabelWithWidgets, Pill},
     gettext_f,
     prelude::*,
-    session::model::{Event, EventKey, Room},
+    session::model::{Event, EventKey, Member, Membership, Room},
     spawn, spawn_tokio, toast,
     utils::{
         matrix::extract_mentions,
@@ -71,6 +74,10 @@ mod imp {
     )]
     pub struct MessageToolbar {
         pub room: glib::WeakRef<Room>,
+        /// Whether our own user can send messages in the current room.
+        pub can_send_messages: Cell<bool>,
+        pub own_member: glib::WeakRef<Member>,
+        pub power_levels_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub md_enabled: Cell<bool>,
         pub completion: CompletionPopover,
         #[template_child]
@@ -157,6 +164,9 @@ mod imp {
                     glib::ParamSpecObject::builder::<Room>("room")
                         .explicit_notify()
                         .build(),
+                    glib::ParamSpecBoolean::builder("can-send-messages")
+                        .read_only()
+                        .build(),
                     glib::ParamSpecBoolean::builder("markdown-enabled")
                         .explicit_notify()
                         .build(),
@@ -187,6 +197,7 @@ mod imp {
 
             match pspec.name() {
                 "room" => obj.room().to_value(),
+                "can-send-messages" => obj.can_send_messages().to_value(),
                 "markdown-enabled" => obj.markdown_enabled().to_value(),
                 "related-event-type" => obj.related_event_type().to_value(),
                 "related-event" => obj.related_event().to_value(),
@@ -201,6 +212,10 @@ mod imp {
             // Clipboard.
             self.message_entry
                 .connect_paste_clipboard(clone!(@weak obj => move |entry| {
+                    if !obj.can_send_messages() {
+                        return;
+                    }
+
                     let formats = obj.clipboard().formats();
 
                     // We only handle files and supported images.
@@ -273,6 +288,8 @@ mod imp {
 
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
+
+            obj.set_sensitive(obj.can_send_messages());
         }
 
         fn dispose(&self) {
@@ -303,19 +320,33 @@ impl MessageToolbar {
 
     /// Set the room currently displayed.
     pub fn set_room(&self, room: Option<&Room>) {
-        if self.room().as_ref() == room {
+        let old_room = self.room();
+        if old_room.as_ref() == room {
             return;
         }
 
         let imp = self.imp();
+
+        if let Some(room) = old_room {
+            if let Some(handler) = imp.power_levels_handler.take() {
+                room.power_levels().disconnect(handler);
+            }
+        }
+
         self.clear_related_event();
 
         imp.room.set(room);
 
         self.update_completion(room);
+        self.set_up_can_send_messages(room);
         imp.message_entry.grab_focus();
 
         self.notify("room");
+    }
+
+    /// The `Member` for our own user in the current room.
+    pub fn own_member(&self) -> Option<Member> {
+        self.imp().own_member.upgrade()
     }
 
     /// Whether outgoing messages should be interpreted as markdown.
@@ -485,6 +516,9 @@ impl MessageToolbar {
     }
 
     fn send_text_message(&self) {
+        if !self.can_send_messages() {
+            return;
+        }
         let Some(room) = self.room() else {
             return;
         };
@@ -599,10 +633,16 @@ impl MessageToolbar {
     }
 
     fn open_emoji(&self) {
+        if !self.can_send_messages() {
+            return;
+        }
         self.imp().message_entry.emit_insert_emoji();
     }
 
     async fn send_location(&self) -> ashpd::Result<()> {
+        if !self.can_send_messages() {
+            return Ok(());
+        }
         let Some(room) = self.room() else {
             return Ok(());
         };
@@ -669,6 +709,10 @@ impl MessageToolbar {
     }
 
     async fn send_image(&self, image: gdk::Texture) {
+        if !self.can_send_messages() {
+            return;
+        }
+
         let window = self.root().and_downcast::<gtk::Window>().unwrap();
         let filename = filename_for_mime(Some(mime::IMAGE_PNG.as_ref()), None);
         let dialog = AttachmentDialog::for_image(&window, &filename, &image);
@@ -693,6 +737,10 @@ impl MessageToolbar {
     }
 
     pub async fn select_file(&self) {
+        if !self.can_send_messages() {
+            return;
+        }
+
         let dialog = gtk::FileDialog::builder()
             .title(gettext("Select File"))
             .modal(true)
@@ -814,6 +862,10 @@ impl MessageToolbar {
     }
 
     pub fn handle_paste_action(&self) {
+        if !self.can_send_messages() {
+            return;
+        }
+
         spawn!(glib::clone!(@weak self as obj => async move {
             obj.read_clipboard().await;
         }));
@@ -849,6 +901,74 @@ impl MessageToolbar {
         if let Some(room) = self.room() {
             room.send_typing_notification(typing);
         }
+    }
+
+    /// Whether our own user can send messages in the current room.
+    pub fn can_send_messages(&self) -> bool {
+        self.imp().can_send_messages.get()
+    }
+
+    /// Update whether our own user can send messages in the current room.
+    fn update_can_send_messages(&self) {
+        let can_send = self.compute_can_send_messages();
+
+        if self.can_send_messages() == can_send {
+            return;
+        }
+
+        self.imp().can_send_messages.set(can_send);
+        self.set_sensitive(can_send);
+        self.notify("can-send-messages");
+    }
+
+    fn set_up_can_send_messages(&self, room: Option<&Room>) {
+        if let Some(room) = room {
+            if let Some(own_user_id) = room.session().user().map(|u| u.user_id().to_owned()) {
+                let imp = self.imp();
+
+                let own_member = room
+                    .get_or_create_members()
+                    .get_or_create(own_user_id.clone());
+
+                // We don't need to keep the handler around, the member should be dropped when
+                // switching rooms.
+                own_member.connect_notify_local(
+                    Some("membership"),
+                    clone!(@weak self as obj => move |_, _| {
+                        obj.update_can_send_messages();
+                    }),
+                );
+                imp.own_member.set(Some(&own_member));
+
+                let power_levels_handler = room.power_levels().connect_notify_local(
+                    Some("power-levels"),
+                    clone!(@weak self as obj => move |_, _| {
+                        obj.update_can_send_messages();
+                    }),
+                );
+                imp.power_levels_handler.replace(Some(power_levels_handler));
+            }
+        }
+
+        self.update_can_send_messages();
+    }
+
+    fn compute_can_send_messages(&self) -> bool {
+        let Some(room) = self.room() else {
+            return false;
+        };
+        let Some(member) = self.own_member() else {
+            return false;
+        };
+
+        if member.membership() != Membership::Join {
+            return false;
+        }
+
+        room.power_levels().member_is_allowed_to(
+            &member.user_id(),
+            PowerLevelAction::SendMessage(MessageLikeEventType::RoomMessage),
+        )
     }
 }
 
