@@ -86,6 +86,9 @@
                   <property name="halign">center</property>
                   <property name="label" translatable="yes">Edit Details</property>
                   <signal name="clicked" handler="edit_details_clicked" swapped="yes"/>
+                  <style>
+                    <class name="pill" />
+                  </style>
                 </object>
               </child>
               <child>
