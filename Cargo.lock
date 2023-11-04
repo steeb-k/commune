@@ -1515,7 +1515,6 @@ dependencies = [
  "indexmap 2.1.0",
  "libadwaita",
  "libshumate",
- "libspelling",
  "matrix-sdk",
  "matrix-sdk-ui",
  "mime",
@@ -3037,35 +3036,6 @@ checksum = "79cf5b88f52534df7ca88d451ae9628e22124e3cc5c60966465a7db479534c7a"
 dependencies = [
  "bindgen",
  "cc",
- "system-deps",
-]
-
-[[package]]
-name = "libspelling"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "850363056ea48497686407e7e583c50c793896c151bbe7139ad4ea02fbf15e76"
-dependencies = [
- "gio",
- "glib",
- "gtk4",
- "libc",
- "libspelling-sys",
- "sourceview5",
-]
-
-[[package]]
-name = "libspelling-sys"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "377675d9465da676ebc05742743d5e5bc53a49be1138f463583181aea97da3c6"
-dependencies = [
- "gio-sys",
- "glib-sys",
- "gobject-sys",
- "gtk4-sys",
- "libc",
- "sourceview5-sys",
  "system-deps",
 ]
 

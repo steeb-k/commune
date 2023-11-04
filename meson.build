@@ -33,7 +33,6 @@ dependency(
   default_options: ['gtk_doc=false', 'sysprof=false', 'gir=false', 'vapi=false', 'install_tests=false']
 )
 dependency('libpipewire-0.3', version: '>= 0.3.0')
-dependency('libspelling-1', version: '>= 0.2.0')
 dependency('openssl', version: '>= 1.0.1')
 dependency('shumate-1.0', version: '>= 1.0.0')
 dependency('sqlite3', version: '>= 3.24.0')

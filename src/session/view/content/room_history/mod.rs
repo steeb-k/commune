@@ -507,15 +507,6 @@ mod imp {
 
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
-
-            // Spellchecker.
-            let spell_checker = spelling::Checker::default();
-            let adapter = spelling::TextBufferAdapter::new(&buffer, &spell_checker);
-            let extra_menu = adapter.menu_model();
-            self.message_entry.set_extra_menu(Some(&extra_menu));
-            self.message_entry
-                .insert_action_group("spelling", Some(&adapter));
-            adapter.set_enabled(true);
         }
 
         fn setup_drop_target(&self) {
