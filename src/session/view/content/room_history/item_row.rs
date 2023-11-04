@@ -15,22 +15,21 @@ use crate::{
         view::EventSourceDialog,
     },
     spawn, spawn_tokio, toast,
-    utils::{media::save_to_file, BoundObjectWeakRef},
+    utils::media::save_to_file,
 };
 
 mod imp {
     use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-    use glib::signal::SignalHandlerId;
-
     use super::*;
 
     #[derive(Debug, Default)]
     pub struct ItemRow {
-        pub room_history: BoundObjectWeakRef<RoomHistory>,
+        pub room_history: glib::WeakRef<RoomHistory>,
+        pub message_toolbar_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub item: RefCell<Option<TimelineItem>>,
         pub action_group: RefCell<Option<gio::SimpleActionGroup>>,
-        pub notify_handlers: RefCell<Vec<SignalHandlerId>>,
+        pub notify_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         pub binding: RefCell<Option<glib::Binding>>,
         pub reaction_chooser: RefCell<Option<ReactionChooser>>,
         pub emoji_chooser: RefCell<Option<gtk::EmojiChooser>>,
@@ -105,7 +104,11 @@ mod imp {
                 expr_watch.unwatch();
             }
 
-            self.room_history.disconnect_signals();
+            if let Some(room_history) = self.room_history.upgrade() {
+                if let Some(handler) = self.message_toolbar_handler.take() {
+                    room_history.message_toolbar().disconnect(handler);
+                }
+            }
         }
     }
 
@@ -188,25 +191,27 @@ impl ItemRow {
 
     /// The ancestor room history of this row.
     pub fn room_history(&self) -> RoomHistory {
-        self.imp().room_history.obj().unwrap()
+        self.imp().room_history.upgrade().unwrap()
     }
 
     /// Set the ancestor room history of this row.
     fn set_room_history(&self, room_history: Option<&RoomHistory>) {
         let Some(room_history) = room_history else {
+            // Ignore missing `RoomHistory`.
             return;
         };
 
-        let related_event_handler = room_history.connect_notify_local(
+        let imp = self.imp();
+        imp.room_history.set(Some(room_history));
+
+        let related_event_handler = room_history.message_toolbar().connect_notify_local(
             Some("related-event"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_for_related_event();
+            clone!(@weak self as obj => move |message_toolbar, _| {
+                obj.update_for_related_event(message_toolbar.related_event());
             }),
         );
-
-        self.imp()
-            .room_history
-            .set(room_history, vec![related_event_handler]);
+        imp.message_toolbar_handler
+            .replace(Some(related_event_handler));
     }
 
     pub fn action_group(&self) -> Option<gio::SimpleActionGroup> {
@@ -402,8 +407,7 @@ impl ItemRow {
     }
 
     /// Update this row for the currently related event.
-    fn update_for_related_event(&self) {
-        let related_event = self.room_history().related_event();
+    fn update_for_related_event(&self, related_event: Option<Event>) {
         let event = self.item().and_downcast::<Event>();
 
         if event.is_some() && event == related_event {

@@ -1,5 +1,5 @@
 mod audio;
-pub mod content;
+mod content;
 mod file;
 mod location;
 mod media;
@@ -17,8 +17,8 @@ use gtk::{
 use matrix_sdk::ruma::events::room::message::MessageType;
 use tracing::warn;
 
-pub use self::content::ContentFormat;
-use self::{content::MessageContent, media::MessageMedia, reaction_list::MessageReactionList};
+pub use self::content::{ContentFormat, MessageContent};
+use self::{media::MessageMedia, reaction_list::MessageReactionList};
 use super::ReadReceiptsList;
 use crate::{components::Avatar, prelude::*, session::model::Event, Window};
 

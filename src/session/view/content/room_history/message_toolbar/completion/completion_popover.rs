@@ -27,7 +27,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/completion/completion_popover.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/completion/completion_popover.ui"
     )]
     pub struct CompletionPopover {
         #[template_child]

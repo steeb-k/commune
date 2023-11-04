@@ -12,7 +12,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/completion/completion_row.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/completion/completion_row.ui"
     )]
     pub struct CompletionRow {
         #[template_child]

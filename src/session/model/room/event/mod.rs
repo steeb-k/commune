@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{borrow::Cow, fmt};
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
@@ -9,7 +9,7 @@ use matrix_sdk_ui::timeline::{
 use ruma::{
     events::{receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent},
     serde::Raw,
-    MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
+    EventId, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
 };
 
 mod reaction_group;
@@ -37,6 +37,32 @@ impl fmt::Display for EventKey {
         match self {
             EventKey::TransactionId(txn_id) => write!(f, "transaction_id:{txn_id}"),
             EventKey::EventId(event_id) => write!(f, "event_id:{event_id}"),
+        }
+    }
+}
+
+impl glib::StaticVariantType for EventKey {
+    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
+        Cow::Borrowed(glib::VariantTy::STRING)
+    }
+}
+
+impl glib::ToVariant for EventKey {
+    fn to_variant(&self) -> glib::Variant {
+        self.to_string().to_variant()
+    }
+}
+
+impl glib::FromVariant for EventKey {
+    fn from_variant(variant: &glib::Variant) -> Option<Self> {
+        let s = variant.str()?;
+
+        if let Some(s) = s.strip_prefix("transaction_id:") {
+            Some(EventKey::TransactionId(s.into()))
+        } else if let Some(s) = s.strip_prefix("event_id:") {
+            EventId::parse(s).ok().map(EventKey::EventId)
+        } else {
+            None
         }
     }
 }
