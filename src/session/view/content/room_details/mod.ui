@@ -4,7 +4,7 @@
     <property name="title" translatable="yes">Room Details</property>
     <property name="modal">True</property>
     <property name="destroy_with_parent">True</property>
-    <property name="default-width">500</property>
+    <property name="default-width">360</property>
     <property name="search-enabled">false</property>
     <child>
       <object class="ContentRoomDetailsGeneralPage">
