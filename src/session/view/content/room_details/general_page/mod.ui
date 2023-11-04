@@ -97,6 +97,9 @@
                   <property name="halign">center</property>
                   <property name="label" translatable="yes">Save Details</property>
                   <signal name="clicked" handler="save_details_clicked" swapped="yes"/>
+                  <style>
+                    <class name="pill" />
+                  </style>
                 </object>
               </child>
             </object>
