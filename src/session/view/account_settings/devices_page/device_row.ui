@@ -26,6 +26,12 @@
             <child>
               <object class="GtkImage" id="verified_icon">
                 <property name="icon-name">verified-symbolic</property>
+                <!-- Translators: As in 'A verified session'. -->
+                <property name="tooltip-text" translatable="yes">Verified</property>
+                <accessibility>
+                  <!-- Translators: As in 'A verified session'. -->
+                  <property name="label" translatable="yes">Verified</property>
+                </accessibility>
               </object>
             </child>
           </object>

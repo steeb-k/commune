@@ -53,12 +53,20 @@
               <object class="GtkButton" id="back">
                 <property name="icon-name">go-previous-symbolic</property>
                 <property name="action-name">media-viewer.close</property>
+                <property name="tooltip-text" translatable="yes">Back</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Back</property>
+                </accessibility>
               </object>
             </child>
             <child type="end">
               <object class="GtkMenuButton" id="menu">
                 <property name="icon-name">view-more-symbolic</property>
                 <property name="menu-model">media-menu-model</property>
+                <property name="tooltip-text" translatable="yes">Media Menu</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Media Menu</property>
+                </accessibility>
               </object>
             </child>
             <child type="end">
@@ -66,6 +74,10 @@
                 <property name="visible" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
                 <property name="icon-name">view-fullscreen-symbolic</property>
                 <property name="action-name">win.toggle-fullscreen</property>
+                <property name="tooltip-text" translatable="yes">Fullscreen</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Fullscreen</property>
+                </accessibility>
               </object>
             </child>
             <child type="end">
@@ -73,6 +85,10 @@
                 <property name="visible" bind-source="MediaViewer" bind-property="fullscreened" bind-flags="sync-create"/>
                 <property name="icon-name">view-restore-symbolic</property>
                 <property name="action-name">win.toggle-fullscreen</property>
+                <property name="tooltip-text" translatable="yes">Exit Fullscreen</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Exit Fullscreen</property>
+                </accessibility>
               </object>
             </child>
           </object>

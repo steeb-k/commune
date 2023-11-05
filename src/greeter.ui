@@ -10,6 +10,10 @@
                 <property name="action-name">app.show-session</property>
                 <property name="visible" bind-source="back_button" bind-property="sensitive" bind-flags="sync-create"/>
                 <property name="icon-name">go-previous-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Back</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Back</property>
+                </accessibility>
               </object>
             </child>
             <child type="start">
@@ -18,6 +22,9 @@
                 <property name="action-name">app.about</property>
                 <property name="tooltip-text" translatable="yes">About Fractal</property>
                 <property name="icon-name">help-about-symbolic</property>
+                <accessibility>
+                  <property name="label" translatable="yes">About Fractal</property>
+                </accessibility>
               </object>
             </child>
             <child type="end">
@@ -26,6 +33,9 @@
                 <property name="action-name">app.about</property>
                 <property name="tooltip-text" translatable="yes">About Fractal</property>
                 <property name="icon-name">help-about-symbolic</property>
+                <accessibility>
+                  <property name="label" translatable="yes">About Fractal</property>
+                </accessibility>
               </object>
             </child>
           </object>

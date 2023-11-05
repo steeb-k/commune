@@ -67,6 +67,9 @@
             <property name="icon-name">window-close-symbolic</property>
             <property name="action-name">message-toolbar.clear-related-event</property>
             <property name="tooltip-text" translatable="yes">Cancel</property>
+            <accessibility>
+              <property name="label" translatable="yes">Cancel</property>
+            </accessibility>
           </object>
         </child>
       </object>
@@ -81,8 +84,9 @@
             <property name="valign">end</property>
             <property name="icon-name">mail-attachment-symbolic</property>
             <property name="action-name">message-toolbar.select-file</property>
+            <property name="tooltip-text" translatable="yes">Send a File</property>
             <accessibility>
-              <property name="label" translatable="yes">Browse Attachment</property>
+              <property name="label" translatable="yes">Send a File</property>
             </accessibility>
           </object>
         </child>
@@ -91,8 +95,9 @@
             <property name="valign">end</property>
             <property name="icon-name">emoji-people-symbolic</property>
             <property name="action-name">message-toolbar.open-emoji</property>
+            <property name="tooltip-text" translatable="yes">Insert an Emoji</property>
             <accessibility>
-              <property name="label" translatable="yes">Open Emoji Picker</property>
+              <property name="label" translatable="yes">Insert an Emoji</property>
             </accessibility>
           </object>
         </child>
@@ -129,8 +134,9 @@
             <property name="direction">up</property>
             <property name="icon-name">view-more-horizontal-symbolic</property>
             <property name="menu-model">message-menu-model</property>
+            <property name="tooltip-text" translatable="yes">More Options</property>
             <accessibility>
-              <property name="label" translatable="yes">Open Message Menu</property>
+              <property name="label" translatable="yes">More Options</property>
             </accessibility>
           </object>
         </child>
@@ -140,6 +146,7 @@
             <property name="icon-name">send-symbolic</property>
             <property name="focus-on-click">False</property>
             <property name="action-name">message-toolbar.send-text-message</property>
+            <property name="tooltip-text" translatable="yes">Send Message</property>
             <style>
               <class name="suggested-action"/>
               <class name="circular"/>

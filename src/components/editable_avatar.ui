@@ -50,6 +50,10 @@
               <object class="ComponentsActionButton" id="button_remove">
                 <property name="icon-name">user-trash-symbolic</property>
                 <property name="action-name">editable-avatar.remove-avatar</property>
+                <property name="tooltip-text" translatable="yes">Remove Avatar</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Remove Avatar</property>
+                </accessibility>
               </object>
             </child>
           </object>
@@ -66,6 +70,10 @@
               <object class="ComponentsActionButton" id="button_edit">
                 <property name="icon-name">document-edit-symbolic</property>
                 <property name="action-name">editable-avatar.edit-avatar</property>
+                <property name="tooltip-text" translatable="yes">Select New Avatar</property>
+                <accessibility>
+                  <property name="label" translatable="yes">Select New Avatar</property>
+                </accessibility>
               </object>
             </child>
           </object>

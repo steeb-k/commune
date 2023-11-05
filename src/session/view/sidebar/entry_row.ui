@@ -6,7 +6,6 @@
         <property name="spacing">12</property>
         <child>
           <object class="GtkImage">
-            <property name="icon-name">explore2-symbolic</property>
             <binding name="icon-name">
               <lookup name="icon-name" type="Entry">
                 <lookup name="entry">SidebarEntryRow</lookup>

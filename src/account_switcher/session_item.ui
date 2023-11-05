@@ -61,6 +61,10 @@
             <property name="icon-name">applications-system-symbolic</property>
             <property name="valign">center</property>
             <property name="halign">center</property>
+            <property name="tooltip-text" translatable="yes">Account Settings</property>
+            <accessibility>
+              <property name="label" translatable="yes">Account Settings</property>
+            </accessibility>
             <signal name="clicked" handler="show_account_settings" swapped="true"/>
             <style>
               <class name="circular"/>

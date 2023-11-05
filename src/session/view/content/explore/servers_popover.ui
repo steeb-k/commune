@@ -39,6 +39,10 @@
                   <object class="GtkButton">
                     <property name="icon-name">list-add-symbolic</property>
                     <property name="action-name">explore-servers-popover.add-server</property>
+                    <property name="tooltip-text" translatable="yes">Add Server</property>
+                    <accessibility>
+                      <property name="label" translatable="yes">Add Server</property>
+                    </accessibility>
                   </object>
                 </child>
               </object>

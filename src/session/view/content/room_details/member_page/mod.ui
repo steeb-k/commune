@@ -9,8 +9,9 @@
             <child type="end">
               <object class="GtkToggleButton" id="search_button">
                 <property name="icon-name">system-search-symbolic</property>
+                <property name="tooltip-text" translatable="yes">Toggle Room Members Search</property>
                 <accessibility>
-                  <property name="label" translatable="yes">Search for Room Members</property>
+                  <property name="label" translatable="yes">Toggle Room Members Search</property>
                 </accessibility>
               </object>
             </child>

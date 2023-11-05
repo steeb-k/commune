@@ -46,6 +46,12 @@
                 <child>
                   <object class="GtkImage" id="verified_icon">
                     <property name="icon-name">verified-symbolic</property>
+                    <!-- Translators: As in "Verified room member". -->
+                    <property name="tooltip-text" translatable="yes">Verified</property>
+                    <accessibility>
+                      <!-- Translators: As in "Verified room member". -->
+                      <property name="label" translatable="yes">Verified</property>
+                    </accessibility>
                     <binding name="visible">
                       <lookup name="verified" type="User">
                         <lookup name="member">ContentMemberRow</lookup>
@@ -85,6 +91,10 @@
           <object class="GtkToggleButton" id="menu_btn">
             <property name="has-frame">False</property>
             <property name="icon-name">view-more-symbolic</property>
+            <property name="tooltip-text" translatable="yes">Member Menu</property>
+            <accessibility>
+              <property name="label" translatable="yes">Member Menu</property>
+            </accessibility>
           </object>
         </child>
       </object>

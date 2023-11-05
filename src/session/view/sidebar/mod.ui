@@ -88,6 +88,7 @@
             <property name="show-title">False</property>
             <child type="start">
               <object class="GtkMenuButton" id="account_switcher_button">
+                <property name="tooltip-text" translatable="yes">Switch Accounts</property>
                 <accessibility>
                   <property name="label" translatable="yes">Switch Accounts</property>
                 </accessibility>
@@ -110,8 +111,9 @@
               <object class="GtkMenuButton" id="appmenu_button">
                 <property name="icon-name">open-menu-symbolic</property>
                 <property name="menu-model">primary_menu</property>
+                <property name="tooltip-text" translatable="yes">Main Menu</property>
                 <accessibility>
-                  <property name="label" translatable="yes">App Settings Menu</property>
+                  <property name="label" translatable="yes">Main Menu</property>
                 </accessibility>
               </object>
             </child>
@@ -120,6 +122,7 @@
                 <property name="icon-name">system-search-symbolic</property>
                 <property name="active" bind-source="room_search" bind-property="search-mode-enabled" bind-flags="sync-create"/>
                 <property name="action-name">session.toggle-room-search</property>
+                <property name="tooltip-text" translatable="yes">Toggle Room Search</property>
                 <accessibility>
                   <property name="label" translatable="yes">Toggle Room Search</property>
                 </accessibility>

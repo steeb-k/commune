@@ -5,9 +5,11 @@ data/org.gnome.Fractal.gschema.xml.in
 data/org.gnome.Fractal.metainfo.xml.in.in
 
 src/account_switcher/mod.ui
+src/account_switcher/session_item.ui
 src/application.rs
 src/components/auth_dialog.ui
 src/components/editable_avatar.rs
+src/components/editable_avatar.ui
 src/components/loading_row.ui
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
@@ -52,20 +54,24 @@ src/session/view/account_settings/user_page/mod.ui
 src/session/view/content/explore/mod.ui
 src/session/view/content/explore/public_room_row.rs
 src/session/view/content/explore/servers_popover.ui
+src/session/view/content/explore/server_row.ui
 src/session/view/content/invite.rs
 src/session/view/content/invite.ui
 src/session/view/content/mod.ui
 src/session/view/content/room_details/general_page/mod.rs
 src/session/view/content/room_details/general_page/mod.ui
 src/session/view/content/room_details/history_viewer/audio_row.rs
+src/session/view/content/room_details/history_viewer/audio_row.ui
 src/session/view/content/room_details/history_viewer/audio.ui
 src/session/view/content/room_details/history_viewer/file_row.rs
+src/session/view/content/room_details/history_viewer/file_row.ui
 src/session/view/content/room_details/history_viewer/file.ui
 src/session/view/content/room_details/history_viewer/media.ui
 src/session/view/content/room_details/invite_subpage/invitee_list.rs
 src/session/view/content/room_details/invite_subpage/mod.rs
 src/session/view/content/room_details/invite_subpage/mod.ui
 src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs
+src/session/view/content/room_details/member_page/members_list_view/member_row.ui
 src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs
 src/session/view/content/room_details/member_page/member_menu.ui
 src/session/view/content/room_details/member_page/mod.rs

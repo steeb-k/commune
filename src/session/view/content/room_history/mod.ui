@@ -53,8 +53,9 @@
               <object class="GtkMenuButton" id="room_menu">
                 <property name="icon-name">view-more-symbolic</property>
                 <property name="menu-model">room-menu-model</property>
+                <property name="tooltip-text" translatable="yes">Room Menu</property>
                 <accessibility>
-                  <property name="label" translatable="yes">Room Settings</property>
+                  <property name="label" translatable="yes">Room Menu</property>
                 </accessibility>
               </object>
             </child>
@@ -125,6 +126,7 @@
                           <object class="GtkButton" id="scroll_btn">
                             <property name="icon-name">go-bottom-symbolic</property>
                             <property name="action-name">room-history.scroll-down</property>
+                            <property name="tooltip-text" translatable="yes">Scroll to Bottom</property>
                             <accessibility>
                               <property name="label" translatable="yes">Scroll to bottom</property>
                             </accessibility>

@@ -9,6 +9,10 @@
             <property name="action-name">file-row.save-file</property>
             <property name="icon-name">folder-download-symbolic</property>
             <property name="valign">center</property>
+            <property name="tooltip-text" translatable="yes">Save File</property>
+            <accessibility>
+              <property name="label" translatable="yes">Save File</property>
+            </accessibility>
             <style>
               <class name="circular"/>
               <class name="suggested-action"/>

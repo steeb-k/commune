@@ -66,7 +66,12 @@
               <class name="dim-label"/>
             </style>
             <property name="icon-name">document-edit-symbolic</property>
+            <!-- Translators: As in 'Edited message'. -->
             <property name="tooltip-text" translatable="yes">Edited</property>
+            <accessibility>
+              <!-- Translators: As in 'Edited message'. -->
+              <property name="label" translatable="yes">Edited</property>
+            </accessibility>
             <binding name="visible">
               <lookup name="is-edited" type="RoomEvent">
                 <lookup name="event">ContentMessageRow</lookup>

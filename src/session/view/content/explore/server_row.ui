@@ -25,6 +25,10 @@
             <property name="icon-name">window-close-symbolic</property>
             <property name="valign">center</property>
             <property name="halign">center</property>
+            <property name="tooltip-text" translatable="yes">Remove Server</property>
+            <accessibility>
+              <property name="label" translatable="yes">Remove Server</property>
+            </accessibility>
             <style>
               <class name="circular"/>
               <class name="flat"/>
