@@ -1,8 +1,8 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use super::reaction::MessageReaction;
-use crate::session::model::ReactionList;
+use crate::session::model::{MemberList, ReactionList};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -52,9 +52,15 @@ impl MessageReactionList {
         glib::Object::new()
     }
 
-    pub fn set_reaction_list(&self, reaction_list: &ReactionList) {
-        self.imp().flow_box.bind_model(Some(reaction_list), |obj| {
-            MessageReaction::new(obj.clone().downcast().unwrap()).upcast()
-        });
+    pub fn set_reaction_list(&self, members: &MemberList, reaction_list: &ReactionList) {
+        self.imp().flow_box.bind_model(
+            Some(reaction_list),
+            clone!(
+                @weak members => @default-return { gtk::FlowBoxChild::new().upcast() },
+                move |obj| {
+                    MessageReaction::new(members, obj.clone().downcast().unwrap()).upcast()
+                }
+            ),
+        );
     }
 }

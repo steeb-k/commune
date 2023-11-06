@@ -28,7 +28,22 @@
             </child>
           </object>
         </child>
+        <child>
+          <object class="GtkGestureClick" id="click_gesture">
+            <property name="button">3</property>
+            <property name="exclusive">True</property>
+            <signal name="released" handler="show_popover" swapped="true"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkGestureLongPress" id="long_press_gesture">
+            <property name="touch_only">True</property>
+            <property name="exclusive">True</property>
+            <signal name="pressed" handler="show_popover" swapped="true"/>
+          </object>
+        </child>
       </object>
     </child>
   </template>
 </interface>
+

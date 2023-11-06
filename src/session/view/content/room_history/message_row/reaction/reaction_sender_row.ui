@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentMessageReactionSenderRow" parent="AdwBin">
+    <style>
+      <class name="list-popover-row"/>
+    </style>
+    <child>
+      <object class="GtkBox">
+        <property name="spacing">10</property>
+        <child>
+          <object class="ComponentsAvatar">
+            <property name="size">36</property>
+            <binding name="data">
+              <lookup name="avatar-data">
+                <lookup name="member">
+                  <lookup name="sender">ContentMessageReactionSenderRow</lookup>
+                </lookup>
+              </lookup>
+            </binding>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">3</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="xalign">0.0</property>
+                <property name="hexpand">True</property>
+                <property name="ellipsize">end</property>
+                <binding name="label">
+                  <lookup name="display-name">
+                    <lookup name="member">
+                      <lookup name="sender">ContentMessageReactionSenderRow</lookup>
+                    </lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="xalign">1.0</property>
+                <property name="hexpand">True</property>
+                <property name="ellipsize">end</property>
+                <binding name="label">
+                  <lookup name="datetime">
+                    <lookup name="sender">ContentMessageReactionSenderRow</lookup>
+                  </lookup>
+                </binding>
+                <style>
+                  <class name="dim-label"/>
+                  <class name="caption"/>
+                </style>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>
+
