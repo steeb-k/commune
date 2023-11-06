@@ -1,4 +1,4 @@
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::timeline::ReactionGroup as SdkReactionGroup;
 
 use super::EventKey;
@@ -27,6 +27,7 @@ mod imp {
     impl ObjectSubclass for ReactionGroup {
         const NAME: &'static str = "ReactionGroup";
         type Type = super::ReactionGroup;
+        type Interfaces = (gio::ListModel,);
     }
 
     impl ObjectImpl for ReactionGroup {
@@ -67,17 +68,41 @@ mod imp {
             match pspec.name() {
                 "user" => obj.user().to_value(),
                 "key" => obj.key().to_value(),
-                "count" => (obj.count() as u32).to_value(),
+                "count" => obj.count().to_value(),
                 "has-user" => obj.has_user().to_value(),
                 _ => unimplemented!(),
             }
         }
     }
+
+    impl ListModelImpl for ReactionGroup {
+        fn item_type(&self) -> glib::Type {
+            glib::BoxedAnyObject::static_type()
+        }
+
+        fn n_items(&self) -> u32 {
+            self.reactions
+                .borrow()
+                .as_ref()
+                .map(|reactions| reactions.senders().count())
+                .unwrap_or_default() as u32
+        }
+
+        fn item(&self, position: u32) -> Option<glib::Object> {
+            self.reactions.borrow().as_ref().and_then(|reactions| {
+                reactions
+                    .senders()
+                    .nth(position as usize)
+                    .map(|sd| glib::BoxedAnyObject::new(sd.clone()).upcast())
+            })
+        }
+    }
 }
 
 glib::wrapper! {
-    /// Reactions grouped by a given key.
-    pub struct ReactionGroup(ObjectSubclass<imp::ReactionGroup>);
+    /// Reactions grouped by a given key. Implements `ListModel`.
+    pub struct ReactionGroup(ObjectSubclass<imp::ReactionGroup>)
+        @implements gio::ListModel;
 }
 
 impl ReactionGroup {
@@ -99,13 +124,8 @@ impl ReactionGroup {
     }
 
     /// The number of reactions in this group
-    pub fn count(&self) -> u64 {
-        self.imp()
-            .reactions
-            .borrow()
-            .as_ref()
-            .map(|reactions| reactions.len() as u64)
-            .unwrap_or_default()
+    pub fn count(&self) -> u32 {
+        self.imp().n_items()
     }
 
     /// The event ID of the reaction in this group sent by the logged-in user,
@@ -143,8 +163,29 @@ impl ReactionGroup {
     pub fn update(&self, new_reactions: SdkReactionGroup) {
         let prev_has_user = self.has_user();
         let prev_count = self.count();
+        let new_count = new_reactions.senders().count() as u32;
+        let reactions = &self.imp().reactions;
 
-        *self.imp().reactions.borrow_mut() = Some(new_reactions);
+        let same_reactions = match reactions.borrow().as_ref() {
+            Some(old_reactions) => {
+                prev_count == new_count
+                    && new_reactions.senders().zip(old_reactions.senders()).all(
+                        |(old_sender, new_sender)| {
+                            old_sender.sender_id == new_sender.sender_id
+                                && old_sender.timestamp == new_sender.timestamp
+                        },
+                    )
+            }
+            // There were no reactions before, now there are, so it is definitely not the same.
+            None => false,
+        };
+        if same_reactions {
+            return;
+        }
+
+        *reactions.borrow_mut() = Some(new_reactions);
+
+        self.items_changed(0, prev_count, new_count);
 
         if self.count() != prev_count {
             self.notify("count");
