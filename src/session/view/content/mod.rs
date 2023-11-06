@@ -16,7 +16,7 @@ use crate::session::model::{
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::{object::WeakRef, signal::SignalHandlerId, subclass::InitializingObject};
     use once_cell::sync::Lazy;
@@ -27,6 +27,8 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/mod.ui")]
     pub struct Content {
         pub session: WeakRef<Session>,
+        /// Whether this is the only visible view, i.e. there is no sidebar.
+        pub only_view: Cell<bool>,
         pub item_binding: RefCell<Option<glib::Binding>>,
         pub item: RefCell<Option<glib::Object>>,
         pub signal_handler: RefCell<Option<SignalHandlerId>>,
@@ -67,6 +69,7 @@ mod imp {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
                     glib::ParamSpecObject::builder::<Session>("session").build(),
+                    glib::ParamSpecBoolean::builder("only-view").build(),
                     glib::ParamSpecObject::builder::<glib::Object>("item")
                         .explicit_notify()
                         .build(),
@@ -81,6 +84,7 @@ mod imp {
 
             match pspec.name() {
                 "session" => obj.set_session(value.get().unwrap()),
+                "only-view" => self.only_view.set(value.get().unwrap()),
                 "item" => obj.set_item(value.get().unwrap()),
                 _ => unimplemented!(),
             }
@@ -91,6 +95,7 @@ mod imp {
 
             match pspec.name() {
                 "session" => obj.session().to_value(),
+                "only-view" => self.only_view.get().to_value(),
                 "item" => obj.item().to_value(),
                 _ => unimplemented!(),
             }

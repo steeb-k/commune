@@ -53,6 +53,7 @@
               <object class="GtkMenuButton" id="room_menu">
                 <property name="icon-name">view-more-symbolic</property>
                 <property name="menu-model">room-menu-model</property>
+                <property name="primary" bind-source="ContentRoomHistory" bind-property="only-view" bind-flags="sync-create"/>
                 <property name="tooltip-text" translatable="yes">Room Menu</property>
                 <accessibility>
                   <property name="label" translatable="yes">Room Menu</property>

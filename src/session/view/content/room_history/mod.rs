@@ -58,6 +58,8 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/mod.ui")]
     pub struct RoomHistory {
         pub room: RefCell<Option<Room>>,
+        /// Whether this is the only view visible, i.e. there is no sidebar.
+        pub only_view: Cell<bool>,
         pub room_members: RefCell<Option<MemberList>>,
         pub room_handlers: RefCell<Vec<SignalHandlerId>>,
         pub timeline_handlers: RefCell<Vec<SignalHandlerId>>,
@@ -197,6 +199,7 @@ mod imp {
                     glib::ParamSpecObject::builder::<Room>("room")
                         .explicit_notify()
                         .build(),
+                    glib::ParamSpecBoolean::builder("only-view").build(),
                     glib::ParamSpecBoolean::builder("empty")
                         .explicit_notify()
                         .build(),
@@ -214,6 +217,7 @@ mod imp {
 
             match pspec.name() {
                 "room" => obj.set_room(value.get().unwrap()),
+                "only-view" => self.only_view.set(value.get().unwrap()),
                 "sticky" => obj.set_sticky(value.get().unwrap()),
                 _ => unimplemented!(),
             }
@@ -224,6 +228,7 @@ mod imp {
 
             match pspec.name() {
                 "room" => obj.room().to_value(),
+                "only-view" => self.only_view.get().to_value(),
                 "empty" => obj.is_empty().to_value(),
                 "sticky" => obj.sticky().to_value(),
                 _ => unimplemented!(),

@@ -36,6 +36,11 @@
                 <property name="content">
                   <object class="Content" id="content">
                     <property name="session" bind-source="SessionView" bind-property="session" bind-flags="sync-create"/>
+                    <binding name="only-view">
+                      <lookup type="Window" name="compact">
+                        <lookup name="root">SessionView</lookup>
+                      </lookup>
+                    </binding>
                   </object>
                 </property>
               </object>
