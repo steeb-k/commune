@@ -2,7 +2,7 @@
 <interface>
   <template class="ContentCompletionRow" parent="GtkListBoxRow">
     <style>
-      <class name="completion-row"/>
+      <class name="list-popover-row"/>
     </style>
     <child>
       <object class="GtkBox">

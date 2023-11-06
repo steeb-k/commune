@@ -529,29 +529,29 @@ read-receipts-list .cutout {
   color: @view_fg_color;
 }
 
-.completion-popover contents {
+.list-popover contents {
   padding: 0;
 }
 
-.completion-popover viewport {
+.list-popover viewport, .list-popover listview {
   padding: 8px;
 }
 
-.completion-popover list {
+.list-popover list, .list-popover listview {
   background-color: transparent;
 }
 
-.completion-popover .completion-row {
+.list-popover .list-popover-row {
   border-radius: 6px;
   margin: 3px 0px;
   padding: 6px;
 }
 
-.completion-popover .completion-row:first-child {
+.list-popover .list-popover-row:first-child {
   margin-top: 0px;
 }
 
-.completion-popover .completion-row:last-child {
+.list-popover .list-popover-row:last-child {
   margin-bottom: 0px;
 }
 

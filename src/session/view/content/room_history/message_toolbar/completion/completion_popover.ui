@@ -2,7 +2,7 @@
 <interface>
   <template class="ContentCompletionPopover" parent="GtkPopover">
     <style>
-      <class name="completion-popover"/>
+      <class name="list-popover"/>
     </style>
     <property name="autohide">false</property>
     <property name="has-arrow">false</property>
