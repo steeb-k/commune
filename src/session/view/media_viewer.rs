@@ -295,6 +295,7 @@ impl MediaViewer {
         let imp = self.imp();
 
         self.set_visible(true);
+        imp.menu.grab_focus();
 
         imp.swipe_progress.set(0.0);
         imp.revealer.set_source_widget(Some(source_widget));
@@ -413,7 +414,6 @@ impl MediaViewer {
             return;
         };
 
-        // self.set_event_actions(Some(&event));
         let client = room.session().client();
 
         match &message {
