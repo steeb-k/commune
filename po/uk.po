@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-05 14:46+0000\n"
-"PO-Revision-Date: 2023-11-05 20:24+0200\n"
+"POT-Creation-Date: 2023-11-06 20:33+0000\n"
+"PO-Revision-Date: 2023-11-06 22:52+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -182,12 +182,10 @@ msgid "Could not determine the type of the chosen file"
 msgstr "Не вдалося визначити тип вибраного файла"
 
 #: src/components/editable_avatar.ui:53 src/components/editable_avatar.ui:55
-#| msgid "Remove Avatar?"
 msgid "Remove Avatar"
 msgstr "Вилучити аватар"
 
 #: src/components/editable_avatar.ui:73 src/components/editable_avatar.ui:75
-#| msgid "Select a new avatar"
 msgid "Select New Avatar"
 msgstr "Виберіть новий аватар"
 
@@ -744,7 +742,6 @@ msgstr "Востаннє бачили %-e %B %Y о %l:%M %p"
 #: src/session/view/account_settings/devices_page/device_row.ui:33
 #: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:50
 #: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:53
-#| msgid "Verify"
 msgid "Verified"
 msgstr "Перевірено"
 
@@ -774,7 +771,6 @@ msgstr "Інші активні сеанси"
 
 #: src/session/view/account_settings/notifications_page.rs:177
 #: src/session/view/account_settings/notifications_page.rs:190
-#| msgid "Could not load notifications settings. Try again later"
 msgid "Could not load notifications settings. Try again later."
 msgstr "Не вдалося завантажити параметри сповіщень. Повторіть спробу пізніше."
 
@@ -1161,13 +1157,13 @@ msgstr "Список кімнат"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:209
-#: src/session/view/content/room_history/mod.rs:897
+#: src/session/view/content/room_history/mod.rs:902
 #: src/session/view/content/room_history/state_row/tombstone.rs:124
 msgid "View"
 msgstr "Перегляд"
 
 #: src/session/view/content/explore/public_room_row.rs:211
-#: src/session/view/content/room_history/mod.rs:900
+#: src/session/view/content/room_history/mod.rs:905
 #: src/session/view/content/room_history/state_row/tombstone.rs:126
 msgid "Join"
 msgstr "Увійти"
@@ -1178,13 +1174,11 @@ msgstr "Додати сервер…"
 
 #: src/session/view/content/explore/servers_popover.ui:42
 #: src/session/view/content/explore/servers_popover.ui:44
-#| msgid "Add server…"
 msgid "Add Server"
 msgstr "Додати сервер"
 
 #: src/session/view/content/explore/server_row.ui:28
 #: src/session/view/content/explore/server_row.ui:30
-#| msgid "Remove Avatar?"
 msgid "Remove Server"
 msgstr "Вилучити сервер"
 
@@ -1372,7 +1366,6 @@ msgstr "Не вдалося завантажити повний список у�
 
 #: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:94
 #: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:96
-#| msgid "Member"
 msgid "Member Menu"
 msgstr "Меню учасника"
 
@@ -1406,7 +1399,6 @@ msgstr "Учасники кімнати"
 
 #: src/session/view/content/room_details/member_page/mod.ui:12
 #: src/session/view/content/room_details/member_page/mod.ui:14
-#| msgid "Toggle Room Search"
 msgid "Toggle Room Members Search"
 msgstr "Увімкнути або вимкнути пошук учасників кімнати"
 
@@ -1495,13 +1487,13 @@ msgid "New Messages"
 msgstr "Нові повідомлення"
 
 #: src/session/view/content/room_history/item_row.rs:461
-#: src/session/view/content/room_history/mod.rs:548
+#: src/session/view/content/room_history/mod.rs:553
 #: src/session/view/media_viewer.rs:573
 msgid "Permalink copied to clipboard"
 msgstr "Стале посилання скопійовано до буфера обміну"
 
 #: src/session/view/content/room_history/item_row.rs:465
-#: src/session/view/content/room_history/mod.rs:552
+#: src/session/view/content/room_history/mod.rs:557
 #: src/session/view/media_viewer.rs:577
 msgid "Failed to copy the permalink"
 msgstr "Не вдалося скопіювати стале посилання"
@@ -1565,7 +1557,6 @@ msgstr ""
 "щойно стануть доступними ключі."
 
 #: src/session/view/content/room_history/message_row/content.rs:374
-#| msgid "This message was redacted."
 msgid "This message was removed."
 msgstr "Це повідомлення було вилучено."
 
@@ -1587,6 +1578,26 @@ msgstr "Не вдалося отримати мультимедійні дані
 #: src/session/view/content/room_history/message_row/mod.ui:73
 msgid "Edited"
 msgstr "Змінено"
+
+#. Translators: this is a date and a time in 12h format.
+#. For example, "May 5 at 1:20 PM".
+#. Do not change the time format as it will follow the system settings.
+#. Please use `-` before specifiers that add spaces on single digits.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/message_row/reaction/member_reaction_sender.rs:144
+#| msgid "Last seen %B %-e at %l:%M %p"
+msgid "%B %-e at %-l∶%M %p"
+msgstr "%-e %B о %-l:%M %p"
+
+#. Translators: this is a date and a time in 24h format.
+#. For example, "May 5 at 13:20".
+#. Do not change the time format as it will follow the system settings.
+#. Please use `-` before specifiers that add spaces on single digits.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/message_row/reaction/member_reaction_sender.rs:151
+#| msgid "Last seen %B %-e at %l:%M %p"
+msgid "%B %-e at %-k∶%M %p"
+msgstr "%-e %B о %-k:%M %p"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:23
 msgid "_Send"
@@ -1656,7 +1667,6 @@ msgstr "_Markdown"
 
 #: src/session/view/content/room_history/message_toolbar/mod.ui:87
 #: src/session/view/content/room_history/message_toolbar/mod.ui:89
-#| msgid "Save File"
 msgid "Send a File"
 msgstr "Надіслати файл"
 
@@ -1668,7 +1678,6 @@ msgstr "Вставити емоційку"
 #. Translators: This is the name of the input widget where messages
 #. are entered before being sent, for accessibility tools.
 #: src/session/view/content/room_history/message_toolbar/mod.ui:123
-#| msgid "Message Entry"
 msgid "Message Composer"
 msgstr "Редактор повідомлень"
 
@@ -1682,22 +1691,22 @@ msgstr "Додаткові параметри"
 msgid "Send Message"
 msgstr "Надіслати повідомлення"
 
-#: src/session/view/content/room_history/mod.rs:351
+#: src/session/view/content/room_history/mod.rs:356
 msgid "Error getting file from drop"
 msgstr "Помилка під час отримання файла зі скидання"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:534
+#: src/session/view/content/room_history/mod.rs:539
 msgid "Failed to leave {room}"
 msgstr "Не вдалося полишити {room}."
 
-#: src/session/view/content/room_history/mod.rs:895
-#: src/session/view/content/room_history/mod.rs:899
+#: src/session/view/content/room_history/mod.rs:900
+#: src/session/view/content/room_history/mod.rs:904
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:902
+#: src/session/view/content/room_history/mod.rs:907
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
@@ -1718,37 +1727,36 @@ msgstr "С_тале посилання кімнати"
 msgid "_Leave Room"
 msgstr "По_лишити кімнату"
 
-#: src/session/view/content/room_history/mod.ui:56
-#: src/session/view/content/room_history/mod.ui:58
+#: src/session/view/content/room_history/mod.ui:57
+#: src/session/view/content/room_history/mod.ui:59
 msgid "Room Menu"
 msgstr "Меню кімнати"
 
-#: src/session/view/content/room_history/mod.ui:100
+#: src/session/view/content/room_history/mod.ui:101
 msgid "Unable to load room"
 msgstr "Не вдалося завантажити кімнату"
 
-#: src/session/view/content/room_history/mod.ui:101
+#: src/session/view/content/room_history/mod.ui:102
 msgid "Check your network connection."
 msgstr "Перевірте ваше з'єднання з мережею."
 
-#: src/session/view/content/room_history/mod.ui:105
+#: src/session/view/content/room_history/mod.ui:106
 msgid "Try Again"
 msgstr "Повторити спробу"
 
-#: src/session/view/content/room_history/mod.ui:129
-#| msgid "Scroll to bottom"
+#: src/session/view/content/room_history/mod.ui:130
 msgid "Scroll to Bottom"
 msgstr "Гортати до кінця"
 
-#: src/session/view/content/room_history/mod.ui:131
+#: src/session/view/content/room_history/mod.ui:132
 msgid "Scroll to bottom"
 msgstr "Прокрутіть донизу"
 
-#: src/session/view/content/room_history/mod.ui:143
+#: src/session/view/content/room_history/mod.ui:144
 msgid "Drop Here to Send"
 msgstr "Скиньте сюди, щоб надіслати"
 
-#: src/session/view/content/room_history/mod.ui:164
+#: src/session/view/content/room_history/mod.ui:165
 msgid "Room History"
 msgstr "Журнал кімнати"
 
@@ -1900,7 +1908,6 @@ msgstr "{user} змінено аватар."
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
 #: src/session/view/content/room_history/typing_row.rs:178
-#| msgid "<b>{user}</b> is typing…"
 msgid "<b>{user}</b> is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "<b>{user}</b> вводить повідомлення…"
@@ -2288,7 +2295,6 @@ msgstr "Джерело подій"
 
 #: src/session/view/event_source_dialog.ui:18
 #: src/session/view/event_source_dialog.ui:20
-#| msgid "Copy To Clipboard"
 msgid "Copy to Clipboard"
 msgstr "Скопіювати до буфера"
 
@@ -2321,17 +2327,14 @@ msgid "_Copy Image"
 msgstr "_Копіювати зображення"
 
 #: src/session/view/media_viewer.ui:66 src/session/view/media_viewer.ui:68
-#| msgid "Media"
 msgid "Media Menu"
 msgstr "Меню дисків"
 
-#: src/session/view/media_viewer.ui:77 src/session/view/media_viewer.ui:79
-#| msgid "Toggle fullscreen"
+#: src/session/view/media_viewer.ui:78 src/session/view/media_viewer.ui:80
 msgid "Fullscreen"
 msgstr "На весь екран"
 
-#: src/session/view/media_viewer.ui:88 src/session/view/media_viewer.ui:90
-#| msgid "Toggle fullscreen"
+#: src/session/view/media_viewer.ui:89 src/session/view/media_viewer.ui:91
 msgid "Exit Fullscreen"
 msgstr "Вийти з повноекранного режиму"
 
@@ -2464,7 +2467,6 @@ msgstr "Пересунути до «Улюблених»"
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
 #: src/session/view/sidebar/category_row.rs:189
-#| msgid "Rejoin Room as Favorites"
 msgid "Rejoin Room as Favorite"
 msgstr "Повторно увійти як до улюбленої кімнати"
 
@@ -2534,31 +2536,31 @@ msgstr "За_бути про кімнату"
 msgid "Switch Accounts"
 msgstr "Перемкнути обліковий запис"
 
-#: src/session/view/sidebar/mod.ui:114 src/session/view/sidebar/mod.ui:116
+#: src/session/view/sidebar/mod.ui:115 src/session/view/sidebar/mod.ui:117
 msgid "Main Menu"
 msgstr "Головне меню"
 
-#: src/session/view/sidebar/mod.ui:125 src/session/view/sidebar/mod.ui:127
+#: src/session/view/sidebar/mod.ui:126 src/session/view/sidebar/mod.ui:128
 msgid "Toggle Room Search"
 msgstr "Увімкнути або вимкнути пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:141
+#: src/session/view/sidebar/mod.ui:142
 msgid "Room Search"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:142
+#: src/session/view/sidebar/mod.ui:143
 msgid "Search for a room"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:151
+#: src/session/view/sidebar/mod.ui:152
 msgid "Offline"
 msgstr "Поза мережею"
 
-#: src/session/view/sidebar/mod.ui:166
+#: src/session/view/sidebar/mod.ui:167
 msgid "Sidebar"
 msgstr "Бічна панель"
 
-#: src/session/view/sidebar/mod.ui:167
+#: src/session/view/sidebar/mod.ui:168
 msgid "Allows to navigate between rooms"
 msgstr "Дозволяє навігацію між кімнатами"
 
