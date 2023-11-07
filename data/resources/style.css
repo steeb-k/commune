@@ -612,6 +612,23 @@ typing-row .cutout {
   font-size: 11pt;
 }
 
+roomtitle {
+  margin-top: -6px;
+  margin-bottom: -6px;
+  min-height: 12px;
+}
+
+roomtitle .title {
+  padding-left: 12px;
+  padding-right: 12px;
+  font-weight: bold;
+}
+
+roomtitle .subtitle {
+  font-size: smaller;
+  padding-left: 12px;
+  padding-right: 12px;
+}
 
 
 /* Event Source Dialog */
