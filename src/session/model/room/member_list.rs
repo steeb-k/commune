@@ -226,9 +226,9 @@ impl MemberList {
         std::mem::drop(members);
 
         {
-            let members = imp.members.borrow();
             for room_member in new_members {
-                if let Some(member) = members.get(room_member.user_id()) {
+                let member = imp.members.borrow().get(room_member.user_id()).cloned();
+                if let Some(member) = member {
                     member.update_from_room_member(room_member);
                 }
             }
@@ -246,7 +246,8 @@ impl MemberList {
                     continue;
                 }
 
-                if let Some(member) = members.get(&event.sender_id()) {
+                let member = imp.members.borrow().get(&event.sender_id()).cloned();
+                if let Some(member) = member {
                     member.set_latest_activity(event.origin_server_ts_u64());
                 }
             }
