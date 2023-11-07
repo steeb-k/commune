@@ -1,6 +1,7 @@
 use adw::{prelude::BinExt, subclass::prelude::BinImpl};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use ruma::ServerName;
 
 use super::PublicRoom;
 use crate::{
@@ -227,10 +228,22 @@ impl PublicRoomRow {
                 window.show_room(session.session_id(), room.room_id());
             }
         } else if let Some(matrix_public_room) = public_room.matrix_public_room() {
-            let room_id = matrix_public_room.room_id.clone();
+            // Prefer the alias as we are sure the server can find the room that way.
+            let (room_id, via) = matrix_public_room
+                .canonical_alias
+                .clone()
+                .map(|id| (id.into(), vec![]))
+                .unwrap_or_else(|| {
+                    let id = matrix_public_room.room_id.clone().into();
+                    let via = ServerName::parse(public_room.server())
+                        .ok()
+                        .into_iter()
+                        .collect();
+                    (id, via)
+                });
 
             spawn!(clone!(@weak self as obj, @weak room_list => async move {
-                if let Err(error) = room_list.join_by_id_or_alias(room_id.into(), vec![]).await {
+                if let Err(error) = room_list.join_by_id_or_alias(room_id, via).await {
                     toast!(obj, error);
                 }
             }));

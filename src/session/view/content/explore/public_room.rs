@@ -14,6 +14,8 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct PublicRoom {
         pub room_list: OnceCell<RoomList>,
+        /// The server that returned the room.
+        pub server: OnceCell<String>,
         pub matrix_public_room: OnceCell<PublicRoomsChunk>,
         pub avatar_data: OnceCell<AvatarData>,
         pub room: OnceCell<Room>,
@@ -34,6 +36,9 @@ mod imp {
                     glib::ParamSpecObject::builder::<RoomList>("room-list")
                         .construct_only()
                         .build(),
+                    glib::ParamSpecString::builder("server")
+                        .construct_only()
+                        .build(),
                     glib::ParamSpecObject::builder::<Room>("room")
                         .read_only()
                         .build(),
@@ -52,6 +57,7 @@ mod imp {
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
             match pspec.name() {
                 "room-list" => self.room_list.set(value.get().unwrap()).unwrap(),
+                "server" => self.server.set(value.get().unwrap()).unwrap(),
                 _ => unimplemented!(),
             }
         }
@@ -61,6 +67,7 @@ mod imp {
 
             match pspec.name() {
                 "room-list" => obj.room_list().to_value(),
+                "server" => obj.server().to_value(),
                 "avatar-data" => obj.avatar_data().to_value(),
                 "room" => obj.room().to_value(),
                 "pending" => obj.is_pending().to_value(),
@@ -103,15 +110,21 @@ glib::wrapper! {
 }
 
 impl PublicRoom {
-    pub fn new(room_list: &RoomList) -> Self {
+    pub fn new(room_list: &RoomList, server: &str) -> Self {
         glib::Object::builder()
             .property("room-list", room_list)
+            .property("server", server)
             .build()
     }
 
     /// The list of rooms in this session.
     pub fn room_list(&self) -> &RoomList {
         self.imp().room_list.get().unwrap()
+    }
+
+    /// The server that returned the room.
+    pub fn server(&self) -> &str {
+        self.imp().server.get().unwrap()
     }
 
     /// The [`AvatarData`] of this room.

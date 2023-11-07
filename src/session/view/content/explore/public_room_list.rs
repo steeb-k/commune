@@ -181,17 +181,20 @@ impl PublicRoomList {
             let mut list = imp.list.borrow_mut();
             let position = list.len();
             let added = response.chunk.len();
+            let server = imp.server.borrow().clone().unwrap_or_default();
             let mut new_rooms = response
                 .chunk
                 .into_iter()
                 .map(|matrix_room| {
-                    let room = PublicRoom::new(room_list);
+                    let room = PublicRoom::new(room_list, &server);
                     room.set_matrix_public_room(matrix_room);
                     room
                 })
                 .collect();
 
-            let empty_row = list.pop().unwrap_or_else(|| PublicRoom::new(room_list));
+            let empty_row = list
+                .pop()
+                .unwrap_or_else(|| PublicRoom::new(room_list, &server));
             list.append(&mut new_rooms);
 
             if !self.complete() {
