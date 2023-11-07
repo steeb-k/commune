@@ -75,7 +75,7 @@ sourceview = { package = "sourceview5", version = "0.7" }
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "f945a50d22aabb14e018d74303d6d6d26779d423"
+rev = "8895ce40d13faa79012144c97044990284215758"
 features = [
     "socks",
     "sso-login",
@@ -86,7 +86,7 @@ features = [
 
 [dependencies.matrix-sdk-ui]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "f945a50d22aabb14e018d74303d6d6d26779d423"
+rev = "8895ce40d13faa79012144c97044990284215758"
 default-features = false
 features = ["e2e-encryption", "native-tls"]
 

@@ -126,6 +126,20 @@ impl UserFacingError for oo7::dbus::Error {
             oo7::dbus::Error::Deleted => gettext(
                 "The item was deleted.",
             ),
+            oo7::dbus::Error::Service(s) => match s {
+                oo7::dbus::ServiceError::ZBus(_) => gettext(
+                    "An unknown error occurred when interacting with the D-Bus Secret Service.",
+                ),
+                oo7::dbus::ServiceError::IsLocked => gettext(
+                    "The collection or item is locked.",
+                ),
+                oo7::dbus::ServiceError::NoSession => gettext(
+                    "The D-Bus Secret Service session does not exist.",
+                ),
+                oo7::dbus::ServiceError::NoSuchObject => gettext(
+                    "The collection or item does not exist.",
+                ),
+            },
             oo7::dbus::Error::Dismissed => gettext(
                 "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",
             ),

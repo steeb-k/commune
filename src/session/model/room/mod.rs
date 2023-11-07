@@ -1184,10 +1184,7 @@ impl Room {
 
         spawn_tokio!(async move {
             matrix_room
-                .send(
-                    ReactionEventContent::new(Annotation::new(relates_to, key)),
-                    None,
-                )
+                .send(ReactionEventContent::new(Annotation::new(relates_to, key)))
                 .await
         })
         .await
