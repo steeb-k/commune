@@ -47,6 +47,42 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="5~rc1" type="development" date="2023-11-08">
+      <description>
+        <p>Fractal 5.rc1 is the first release candidate since the rewrite of
+          Fractal to take advantage of GTK 4 and the Matrix Rust SDK, an effort
+          that started in March 2021.</p>
+
+        <p>The most notable changes since Fractal 5.beta2, that was released 2
+          months ago, are:</p>
+        
+        <ul>
+          <li>An awesome new look thanks to libadwaita 1.4</li>
+          <li>Read receipts tracking has been largely improved thanks to some
+            upstream work in the Matrix Rust SDK</li>
+          <li>The same upstream work allows to have much better tracking of the
+            activity in the rooms list</li>
+          <li>The full lists of read receipts and reactions on messages can be
+            perused in popovers</li>
+          <li>Destructive actions like removing a message or leaving a room now
+            ask for confirmation</li>
+          <li>The most noticeable performance issues and memory leaks were fixed
+            to make Fractal run as smoothly as ever</li>
+        </ul>
+              
+        <p>This list is far from complete and hides more enhancements, including
+          bug fixes and new translations thanks to all our contributors, and our
+          upstream projects.</p>
+        
+        <p>As the version implies, if we don’t find any major bug in the next 2
+          weeks, our next release should be the long-awaited Fractal 5 stable
+          version!</p>
+
+        <p>In the meantime, if you want to fix bugs, implement new features, or
+          any other kind of contribution, you can get inspired by taking a look
+          at our issues tracker on GitLab. Any help is greatly appreciated!</p>
+      </description>
+    </release>
     <release version="5~beta2" type="development" date="2023-08-17">
       <description>
         <p>Fractal 5.beta2 is the second beta release 🎉 since the rewrite of

@@ -1,6 +1,6 @@
 project('fractal',
         'rust',
-        version: '5.beta2',
+        version: '5.rc1',
         license: 'GPL-3.0-or-later',
         meson_version: '>= 0.59')
 
@@ -10,7 +10,7 @@ gnome = import('gnome')
 base_id = 'org.gnome.Fractal'
 
 major_version = '5'
-pre_release_version = 'beta2'
+pre_release_version = 'rc1'
 
 dependency('glib-2.0', version: '>= 2.72') # update when changing gtk version
 dependency('gio-2.0', version: '>= 2.72') # always same version as glib
