@@ -17,7 +17,7 @@ mod imp {
     pub struct MemberTimestamp {
         /// The room member.
         pub member: glib::WeakRef<Member>,
-        /// The timestamp, in milliseconds since Unix Epoch.
+        /// The timestamp, in seconds since Unix Epoch.
         ///
         /// A value of 0 means no timestamp.
         pub timestamp: Cell<u64>,
@@ -102,7 +102,7 @@ impl MemberTimestamp {
         self.notify("member");
     }
 
-    /// The timestamp of this read receipt, in milliseconds since Unix Epoch, if
+    /// The timestamp of this read receipt, in seconds since Unix Epoch, if
     /// any.
     ///
     /// A value of 0 means no timestamp.
@@ -129,7 +129,7 @@ impl MemberTimestamp {
             return String::new();
         }
 
-        let datetime = glib::DateTime::from_unix_utc((timestamp / 1000) as i64)
+        let datetime = glib::DateTime::from_unix_utc(timestamp as i64)
             .and_then(|t| t.to_local())
             .unwrap();
 
