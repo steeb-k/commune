@@ -18,6 +18,7 @@
         <child type="end">
           <object class="GtkImage" id="arrow">
             <property name="icon-name">expander-arrow-symbolic</property>
+            <property name="accessible-role">presentation</property>
             <style>
               <class name="arrow"/>
               <class name="dim-label"/>

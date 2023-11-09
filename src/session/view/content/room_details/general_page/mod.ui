@@ -119,6 +119,7 @@
                 <object class="GtkLabel" id="members_count">
                   <property name="valign">center</property>
                   <property name="halign">center</property>
+                  <property name="accessible-role">presentation</property>
                 </object>
               </child>
               <child type="suffix">
@@ -126,6 +127,7 @@
                   <property name="valign">center</property>
                   <property name="halign">center</property>
                   <property name="icon-name">go-next-symbolic</property>
+                  <property name="accessible-role">presentation</property>
                 </object>
               </child>
             </object>
@@ -145,6 +147,7 @@
                   <property name="valign">center</property>
                   <property name="halign">center</property>
                   <property name="icon-name">go-next-symbolic</property>
+                  <property name="accessible-role">presentation</property>
                 </object>
               </child>
             </object>
@@ -160,6 +163,7 @@
                   <property name="valign">center</property>
                   <property name="halign">center</property>
                   <property name="icon-name">go-next-symbolic</property>
+                  <property name="accessible-role">presentation</property>
                 </object>
               </child>
             </object>
@@ -176,6 +180,7 @@
                   <property name="valign">center</property>
                   <property name="halign">center</property>
                   <property name="icon-name">go-next-symbolic</property>
+                  <property name="accessible-role">presentation</property>
                 </object>
               </child>
             </object>
