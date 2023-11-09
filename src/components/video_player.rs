@@ -105,6 +105,10 @@ mod imp {
                 .unwrap();
             self.bus_guard.set(bus_guard).unwrap();
         }
+
+        fn dispose(&self) {
+            self.player.message_bus().set_flushing(true);
+        }
     }
 
     impl WidgetImpl for VideoPlayer {}
