@@ -1,4 +1,4 @@
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
 mod imp {
     use std::cell::RefCell;
@@ -78,6 +78,14 @@ mod imp {
             self.status.set_icon_name(Some("attachment-symbolic"));
 
             self.revealer.set_child(Some(&self.status));
+
+            self.revealer.connect_child_revealed_notify(|revealer| {
+                // Hide the revealer when we don't want to show the child and the animation is
+                // finished.
+                if !revealer.reveals_child() && !revealer.is_child_revealed() {
+                    revealer.set_visible(false);
+                }
+            });
         }
 
         fn dispose(&self) {
@@ -136,8 +144,14 @@ impl DragOverlay {
         }
 
         let handler_id = drop_target.connect_current_drop_notify(
-            glib::clone!(@weak imp.revealer as revealer => move |target| {
-                revealer.set_reveal_child(target.current_drop().is_some());
+            clone!(@weak imp.revealer as revealer => move |target| {
+                let reveal = target.current_drop().is_some();
+
+                if reveal {
+                    revealer.set_visible(true);
+                }
+
+                revealer.set_reveal_child(reveal);
             }),
         );
         imp.handler_id.replace(Some(handler_id));
