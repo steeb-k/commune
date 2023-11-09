@@ -122,3 +122,4 @@ src/utils/matrix.rs
 src/utils/media.rs
 src/utils/message_dialog.rs
 src/window.rs
+src/window.ui
