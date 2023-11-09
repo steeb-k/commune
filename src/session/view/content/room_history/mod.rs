@@ -240,6 +240,15 @@ mod imp {
             self.setup_listview();
             self.setup_drop_target();
 
+            self.scroll_btn_revealer
+                .connect_child_revealed_notify(|revealer| {
+                    // Hide the revealer when we don't want to show the child and the animation is
+                    // finished.
+                    if !revealer.reveals_child() && !revealer.is_child_revealed() {
+                        revealer.set_visible(false);
+                    }
+                });
+
             self.parent_constructed();
         }
 
@@ -704,6 +713,9 @@ impl RoomHistory {
             return;
         }
 
+        if !sticky {
+            imp.scroll_btn_revealer.set_visible(true);
+        }
         imp.scroll_btn_revealer.set_reveal_child(!sticky);
 
         imp.sticky.set(sticky);
