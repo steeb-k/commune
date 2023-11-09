@@ -19,7 +19,7 @@
             </style>
             <property name="halign">center</property>
             <property name="valign">center</property>
-            <property name="icon-name">dialog-error-symbolic</property>
+            <property name="icon-name">error-symbolic</property>
             <property name="icon-size">large</property>
             <layout>
               <property name="measure">true</property>

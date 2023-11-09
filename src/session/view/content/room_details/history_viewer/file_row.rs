@@ -125,7 +125,7 @@ impl FileRow {
             let imp = self.imp();
 
             imp.file.replace(Some(file));
-            imp.button.set_icon_name("folder-documents-symbolic");
+            imp.button.set_icon_name("document-symbolic");
             imp.button.set_action_name(Some("file-row.open-file"));
         }
     }

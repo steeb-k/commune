@@ -32,7 +32,7 @@
                   <class name="suggested-action"/>
                 </style>
                 <property name="valign">center</property>
-                <property name="icon-name">emblem-ok-symbolic</property>
+                <property name="icon-name">checkmark-symbolic</property>
                 <property name="action-name" bind-source="ComponentsActionButton" bind-property="action-name" bind-flags="sync-create"/>
                 <property name="action-target" bind-source="ComponentsActionButton" bind-property="action-target" bind-flags="sync-create"/>
                 <signal name="clicked" handler="button_clicked" swapped="true"/>
@@ -51,7 +51,7 @@
                   <class name="suggested-action"/>
                 </style>
                 <property name="valign">center</property>
-                <property name="icon-name">view-refresh-symbolic</property>
+                <property name="icon-name">refresh-symbolic</property>
                 <property name="action-name" bind-source="ComponentsActionButton" bind-property="action-name" bind-flags="sync-create"/>
                 <property name="action-target" bind-source="ComponentsActionButton" bind-property="action-target" bind-flags="sync-create"/>
                 <signal name="clicked" handler="button_clicked" swapped="true"/>
@@ -92,7 +92,7 @@
                 <property name="focusable">false</property>
                 <property name="can-target">false</property>
                 <property name="valign">center</property>
-                <property name="icon-name">emblem-ok-symbolic</property>
+                <property name="icon-name">checkmark-symbolic</property>
               </object>
             </property>
           </object>
@@ -109,7 +109,7 @@
                 <property name="focusable">false</property>
                 <property name="can-target">false</property>
                 <property name="valign">center</property>
-                <property name="icon-name">dialog-warning-symbolic</property>
+                <property name="icon-name">warning-symbolic</property>
               </object>
             </property>
           </object>
@@ -126,7 +126,7 @@
                 <property name="focusable">false</property>
                 <property name="can-target">false</property>
                 <property name="valign">center</property>
-                <property name="icon-name">dialog-error-symbolic</property>
+                <property name="icon-name">error-symbolic</property>
               </object>
             </property>
           </object>

@@ -12,7 +12,7 @@
                 <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkImage">
-                    <property name="icon-name">camera-hardware-disabled-symbolic</property>
+                    <property name="icon-name">no-camera-symbolic</property>
                     <property name="pixel-size">148</property>
                   </object>
                 </child>
@@ -44,4 +44,3 @@
     </child>
   </template>
 </interface>
-

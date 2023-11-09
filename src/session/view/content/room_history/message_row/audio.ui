@@ -11,7 +11,7 @@
             <child>
               <object class="GtkImage">
                 <property name="visible" bind-source="ContentMessageAudio" bind-property="compact" bind-flags="sync-create"/>
-                <property name="icon-name">audio-x-generic-symbolic</property>
+                <property name="icon-name">audio-symbolic</property>
               </object>
             </child>
             <child>
@@ -27,7 +27,7 @@
             </child>
             <child type="end">
               <object class="GtkImage" id="state_error">
-                <property name="icon-name">dialog-error-symbolic</property>
+                <property name="icon-name">error-symbolic</property>
               </object>
             </child>
           </object>

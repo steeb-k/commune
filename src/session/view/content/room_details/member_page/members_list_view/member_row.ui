@@ -29,6 +29,7 @@
             </style>
             <child>
               <object class="GtkBox">
+                <property name="spacing">3</property>
                 <child>
                   <object class="GtkLabel" id="title">
                     <property name="halign">start</property>
@@ -90,7 +91,7 @@
         <child>
           <object class="GtkToggleButton" id="menu_btn">
             <property name="has-frame">False</property>
-            <property name="icon-name">view-more-symbolic</property>
+            <property name="icon-name">menu-secondary-symbolic</property>
             <property name="tooltip-text" translatable="yes">Member Menu</property>
             <accessibility>
               <property name="label" translatable="yes">Member Menu</property>

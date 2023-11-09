@@ -9,7 +9,7 @@
         <child>
           <object class="GtkImage">
             <property name="visible" bind-source="ContentMessageFile" bind-property="compact" bind-flags="sync-create"/>
-            <property name="icon-name">folder-documents-symbolic</property>
+            <property name="icon-name">document-symbolic</property>
           </object>
         </child>
         <child>
@@ -21,7 +21,7 @@
         <child>
           <object class="GtkButton" id="save">
             <property name="visible" bind-source="ContentMessageFile" bind-property="compact" bind-flags="sync-create | invert-boolean"/>
-            <property name="icon-name">document-save-symbolic</property>
+            <property name="icon-name">save-symbolic</property>
             <property name="tooltip-text" translatable="yes">Save File</property>
             <accessibility>
               <property name="label" translatable="yes">Save File</property>

@@ -19,10 +19,10 @@ pub enum ContentType {
 impl ContentType {
     pub fn icon_name(&self) -> &'static str {
         match self {
-            ContentType::Image => "image-x-generic-symbolic",
-            ContentType::Audio => "audio-x-generic-symbolic",
-            ContentType::Video => "video-x-generic-symbolic",
-            ContentType::Unknown => "text-x-generic-symbolic",
+            ContentType::Image => "image-symbolic",
+            ContentType::Audio => "audio-symbolic",
+            ContentType::Video => "video-symbolic",
+            ContentType::Unknown => "document-symbolic",
         }
     }
 }

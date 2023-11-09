@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="NotificationsPage" parent="AdwPreferencesPage">
-    <property name="icon-name">preferences-system-notifications-symbolic</property>
+    <property name="icon-name">notifications-symbolic</property>
     <property name="title" translatable="yes">Notifications</property>
     <property name="name">notifications</property>
     <child>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="SecurityPage" parent="AdwPreferencesPage">
-    <property name="icon-name">channel-secure-symbolic</property>
+    <property name="icon-name">security-symbolic</property>
     <property name="title" translatable="yes">Security</property>
     <property name="name">security</property>
     <child>

@@ -135,7 +135,7 @@
             </child>
             <child>
               <object class="AdwStatusPage" id="error_page">
-                <property name="icon-name">dialog-error-symbolic</property>
+                <property name="icon-name">error-symbolic</property>
                 <property name="title" translatable="yes">Error</property>
                 <property name="description" translatable="yes">An error occurred while searching for matches.</property>
               </object>

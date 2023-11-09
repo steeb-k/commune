@@ -22,7 +22,7 @@
                 <lookup name="server">ExploreServerRow</lookup>
               </lookup>
             </binding>
-            <property name="icon-name">window-close-symbolic</property>
+            <property name="icon-name">close-symbolic</property>
             <property name="valign">center</property>
             <property name="halign">center</property>
             <property name="tooltip-text" translatable="yes">Remove Server</property>

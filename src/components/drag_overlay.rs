@@ -75,7 +75,7 @@ mod imp {
                 .set_transition_type(gtk::RevealerTransitionType::Crossfade);
             self.revealer.set_reveal_child(false);
 
-            self.status.set_icon_name(Some("document-send-symbolic"));
+            self.status.set_icon_name(Some("attachment-symbolic"));
 
             self.revealer.set_child(Some(&self.status));
         }

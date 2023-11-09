@@ -14,6 +14,7 @@
         <property name="margin-end">12</property>
         <child>
           <object class="GtkBox">
+            <property name="spacing">3</property>
             <child>
               <object class="GtkLabel" id="display_name">
                 <property name="xalign">0.0</property>

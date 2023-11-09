@@ -43,7 +43,7 @@
                         <property name="tooltip-text" translatable="yes">Homeserver URL</property>
                         <child>
                           <object class="GtkImage">
-                            <property name="icon-name">user-home-symbolic</property>
+                            <property name="icon-name">home-symbolic</property>
                           </object>
                         </child>
                         <child>

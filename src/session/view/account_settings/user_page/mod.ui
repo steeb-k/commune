@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="UserPage" parent="AdwPreferencesPage">
-    <property name="icon-name">preferences-system-symbolic</property>
+    <property name="icon-name">settings-symbolic</property>
     <property name="title" translatable="yes">General</property>
     <property name="name">general</property>
     <child>

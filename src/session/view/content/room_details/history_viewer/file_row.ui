@@ -7,7 +7,7 @@
         <child>
           <object class="GtkButton" id="button">
             <property name="action-name">file-row.save-file</property>
-            <property name="icon-name">folder-download-symbolic</property>
+            <property name="icon-name">save-symbolic</property>
             <property name="valign">center</property>
             <property name="tooltip-text" translatable="yes">Save File</property>
             <accessibility>

@@ -65,7 +65,7 @@
             <style>
               <class name="dim-label"/>
             </style>
-            <property name="icon-name">document-edit-symbolic</property>
+            <property name="icon-name">edit-symbolic</property>
             <!-- Translators: As in 'Edited message'. -->
             <property name="tooltip-text" translatable="yes">Edited</property>
             <accessibility>

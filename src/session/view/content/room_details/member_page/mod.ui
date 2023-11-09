@@ -56,7 +56,7 @@
                     <property name="spacing">6</property>
                     <child>
                       <object class="GtkImage">
-                        <property name="icon-name">system-users-symbolic</property>
+                        <property name="icon-name">users-symbolic</property>
                       </object>
                     </child>
                     <child>

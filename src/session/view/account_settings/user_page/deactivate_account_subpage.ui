@@ -27,7 +27,7 @@
                           <class name="extra-large-icon"/>
                           <class name="error"/>
                         </style>
-                        <property name="icon-name">dialog-warning-symbolic</property>
+                        <property name="icon-name">warning-symbolic</property>
                       </object>
                     </child>
                     <child>

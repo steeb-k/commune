@@ -12,7 +12,7 @@
           <object class="GtkHeaderBar">
             <child type="start">
               <object class="GtkButton">
-                <property name="icon-name">edit-copy-symbolic</property>
+                <property name="icon-name">copy-symbolic</property>
                 <property name="focus-on-click">False</property>
                 <property name="action-name">event-source-dialog.copy</property>
                 <property name="tooltip-text" translatable="yes">Copy to Clipboard</property>

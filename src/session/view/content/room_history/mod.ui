@@ -51,7 +51,7 @@
             </child>
             <child type="end">
               <object class="GtkMenuButton" id="room_menu">
-                <property name="icon-name">view-more-symbolic</property>
+                <property name="icon-name">menu-secondary-symbolic</property>
                 <property name="menu-model">room-menu-model</property>
                 <property name="primary" bind-source="ContentRoomHistory" bind-property="only-view" bind-flags="sync-create"/>
                 <property name="tooltip-text" translatable="yes">Room Menu</property>
@@ -97,7 +97,7 @@
                     <property name="visible">True</property>
                     <property name="hexpand">True</property>
                     <property name="vexpand">True</property>
-                    <property name="icon-name">dialog-error-symbolic</property>
+                    <property name="icon-name">error-symbolic</property>
                     <property name="title" translatable="yes">Unable to load room</property>
                     <property name="description" translatable="yes">Check your network connection.</property>
                     <property name="child">

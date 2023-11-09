@@ -21,7 +21,7 @@
                 <property name="visible" bind-source="back_button" bind-property="visible" bind-flags="sync-create | invert-boolean"/>
                 <property name="action-name">app.about</property>
                 <property name="tooltip-text" translatable="yes">About Fractal</property>
-                <property name="icon-name">help-about-symbolic</property>
+                <property name="icon-name">about-symbolic</property>
                 <accessibility>
                   <property name="label" translatable="yes">About Fractal</property>
                 </accessibility>
@@ -32,7 +32,7 @@
                 <property name="visible" bind-source="back_button" bind-property="visible" bind-flags="sync-create"/>
                 <property name="action-name">app.about</property>
                 <property name="tooltip-text" translatable="yes">About Fractal</property>
-                <property name="icon-name">help-about-symbolic</property>
+                <property name="icon-name">about-symbolic</property>
                 <accessibility>
                   <property name="label" translatable="yes">About Fractal</property>
                 </accessibility>

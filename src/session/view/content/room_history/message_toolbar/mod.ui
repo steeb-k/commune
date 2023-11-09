@@ -64,7 +64,7 @@
             </style>
             <property name="halign">end</property>
             <property name="valign">start</property>
-            <property name="icon-name">window-close-symbolic</property>
+            <property name="icon-name">close-symbolic</property>
             <property name="action-name">message-toolbar.clear-related-event</property>
             <property name="tooltip-text" translatable="yes">Cancel</property>
             <accessibility>
@@ -82,7 +82,7 @@
         <child>
           <object class="GtkButton">
             <property name="valign">end</property>
-            <property name="icon-name">mail-attachment-symbolic</property>
+            <property name="icon-name">attachment-symbolic</property>
             <property name="action-name">message-toolbar.select-file</property>
             <property name="tooltip-text" translatable="yes">Send a File</property>
             <accessibility>
@@ -93,7 +93,7 @@
         <child>
           <object class="GtkButton">
             <property name="valign">end</property>
-            <property name="icon-name">emoji-people-symbolic</property>
+            <property name="icon-name">emoji-symbolic</property>
             <property name="action-name">message-toolbar.open-emoji</property>
             <property name="tooltip-text" translatable="yes">Insert an Emoji</property>
             <accessibility>
@@ -132,7 +132,7 @@
           <object class="GtkMenuButton">
             <property name="valign">end</property>
             <property name="direction">up</property>
-            <property name="icon-name">view-more-horizontal-symbolic</property>
+            <property name="icon-name">more-symbolic</property>
             <property name="menu-model">message-menu-model</property>
             <property name="tooltip-text" translatable="yes">More Options</property>
             <accessibility>
