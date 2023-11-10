@@ -751,7 +751,7 @@ impl RoomHistory {
     pub fn item_context_menu(&self) -> &gtk::PopoverMenu {
         self.imp()
             .item_context_menu
-            .get_or_init(|| gtk::PopoverMenu::from_model(gio::MenuModel::NONE))
+            .get_or_init(|| gtk::PopoverMenu::builder().has_arrow(false).build())
     }
 
     pub fn item_reaction_chooser(&self) -> &ReactionChooser {

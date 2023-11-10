@@ -350,8 +350,12 @@ impl Sidebar {
 
     pub fn room_row_popover(&self) -> &gtk::PopoverMenu {
         let imp = self.imp();
-        imp.room_row_popover
-            .get_or_init(|| gtk::PopoverMenu::from_model(Some(&*imp.room_row_menu)))
+        imp.room_row_popover.get_or_init(|| {
+            gtk::PopoverMenu::builder()
+                .menu_model(&*imp.room_row_menu)
+                .has_arrow(false)
+                .build()
+        })
     }
 
     /// Returns the parent `Window` containing the `Sidebar`
