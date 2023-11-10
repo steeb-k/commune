@@ -5,7 +5,7 @@
       <class name="list-popover"/>
     </style>
     <property name="autohide">true</property>
-    <property name="width-request">260</property>
+    <property name="width-request">220</property>
     <property name="has-arrow">false</property>
     <property name="child">
       <object class="GtkScrolledWindow" id="scrolled_window">
