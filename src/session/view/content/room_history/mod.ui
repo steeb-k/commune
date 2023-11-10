@@ -35,6 +35,7 @@
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">
+            <property name="centering-policy">strict</property>
             <child type="title">
               <object class="RoomTitle" id="room_title">
                 <binding name="title">
