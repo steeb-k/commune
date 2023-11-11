@@ -74,6 +74,7 @@ mod imp {
             self.revealer
                 .set_transition_type(gtk::RevealerTransitionType::Crossfade);
             self.revealer.set_reveal_child(false);
+            self.revealer.set_visible(false);
 
             self.status.set_icon_name(Some("attachment-symbolic"));
 
