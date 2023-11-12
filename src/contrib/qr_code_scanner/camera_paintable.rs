@@ -25,7 +25,7 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::encryption::verification::QrVerificationData;
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::contrib::qr_code_scanner::{qr_code_detector::QrCodeDetector, QrVerificationDataBoxed};
 
@@ -213,14 +213,19 @@ impl CameraPaintable {
 
         paintable.connect_invalidate_contents(move |_| {
             if let Some(sender) = sender.take() {
-                sender.send(()).unwrap();
+                if sender.send(()).is_err() {
+                    error!("Failed to send camera paintable `invalidate-contents` signal");
+                }
             }
         });
 
         self.set_sink_paintable(paintable);
         pipeline.set_state(gst::State::Playing).unwrap();
         self.set_pipeline(Some((pipeline, bus_guard)));
-        receiver.await.unwrap();
+
+        if receiver.await.is_err() {
+            debug!("Camera paintable `invalidate-contents` signal sender was dropped");
+        }
     }
 
     fn set_sink_paintable(&self, paintable: gdk::Paintable) {
