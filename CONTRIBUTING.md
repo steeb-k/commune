@@ -82,7 +82,7 @@ After that, move into the directory where you cloned Fractal and setup the proje
 fenv gen build-aux/org.gnome.Fractal.Hack.json
 
 # Initialize the build system
-fenv exec -- meson setup --prefix=/app _build
+fenv exec -- meson setup -Dprofile=hack --prefix=/app _build
 ```
 
 Finally, build and run the application:
