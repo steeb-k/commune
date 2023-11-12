@@ -19,6 +19,7 @@
                 <lookup name="user">ContentInviteInviteeRow</lookup>
               </lookup>
             </binding>
+            <property name="accessible-role">presentation</property>
           </object>
         </child>
         <child>

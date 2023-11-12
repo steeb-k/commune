@@ -8,6 +8,7 @@
           <object class="ComponentsAvatar" id="avatar">
             <property name="size">36</property>
             <property name="valign">start</property>
+            <property name="accessible-role">presentation</property>
             <layout>
               <property name="column">0</property>
               <property name="row">0</property>

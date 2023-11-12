@@ -14,6 +14,7 @@
                 <lookup name="user">CreateDmDialogUserRow</lookup>
               </lookup>
             </binding>
+            <property name="accessible-role">presentation</property>
           </object>
         </child>
         <child>
@@ -57,4 +58,3 @@
     </property>
   </template>
 </interface>
-

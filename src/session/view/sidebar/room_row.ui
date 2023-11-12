@@ -17,6 +17,7 @@
                 <lookup name="room">SidebarRoomRow</lookup>
               </lookup>
             </binding>
+            <property name="accessible-role">presentation</property>
           </object>
         </child>
         <child>
