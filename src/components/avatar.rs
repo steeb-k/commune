@@ -29,6 +29,8 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             AvatarImage::static_type();
             Self::bind_template(klass);
+
+            klass.set_accessible_role(gtk::AccessibleRole::Img);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -84,8 +86,14 @@ mod imp {
     }
 
     impl WidgetImpl for Avatar {}
-
     impl BinImpl for Avatar {}
+
+    impl AccessibleImpl for Avatar {
+        fn first_accessible_child(&self) -> Option<gtk::Accessible> {
+            // Hide the children in the a11y tree.
+            None
+        }
+    }
 }
 
 glib::wrapper! {
