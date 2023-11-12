@@ -111,7 +111,17 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for VideoPlayer {}
+    impl WidgetImpl for VideoPlayer {
+        fn map(&self) {
+            self.parent_map();
+            self.player.play();
+        }
+
+        fn unmap(&self) {
+            self.player.stop();
+            self.parent_unmap();
+        }
+    }
 
     impl BinImpl for VideoPlayer {}
 }
@@ -155,7 +165,6 @@ impl VideoPlayer {
         let player = self.player();
         player.set_uri(Some(file.uri().as_ref()));
         player.set_audio_track_enabled(false);
-        player.play();
     }
 
     fn duration_changed(&self, duration: Option<ClockTime>) {
