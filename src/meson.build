@@ -78,6 +78,7 @@ rustdoc_flags = ' '.join([
   '--extern-html-root-url=gtk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
   '--extern-html-root-url=libadwaita=https://world.pages.gitlab.gnome.org/Rust/libadwaita-rs/stable/latest/docs/',
   '--cfg=docsrs',
+  '-Dwarnings',
 ])
 doc_env = ['RUSTDOCFLAGS=' + rustdoc_flags ]
 doc_deps = [
