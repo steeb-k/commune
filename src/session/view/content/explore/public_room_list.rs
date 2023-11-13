@@ -28,7 +28,6 @@ mod imp {
         pub network: RefCell<Option<String>>,
         pub server: RefCell<Option<String>>,
         pub next_batch: RefCell<Option<String>>,
-        pub loading: Cell<bool>,
         pub request_sent: Cell<bool>,
         pub total_room_count_estimate: Cell<Option<u64>>,
         pub session: WeakRef<Session>,
