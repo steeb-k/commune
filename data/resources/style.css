@@ -505,6 +505,25 @@ message-reactions .reaction-count {
   padding: 2px;
 }
 
+read-receipts-list {
+  min-height: 24px;
+  min-width: 16px;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+read-receipts-list:hover {
+  background-color: alpha(currentColor, .07);
+}
+
+read-receipts-list:active {
+  background-color: alpha(currentColor, .16);
+}
+
+read-receipts-list:checked {
+  background-color: alpha(currentColor, .1);
+}
+
 read-receipts-list .cutout {
   background-color: @view_bg_color;
   border-radius: 999px;

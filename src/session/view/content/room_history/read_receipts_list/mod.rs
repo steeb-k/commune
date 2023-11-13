@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{gdk, gio, glib, glib::clone, prelude::*, CompositeTemplate};
 
 mod read_receipts_popover;
 
@@ -18,7 +18,7 @@ use crate::{
 const MAX_RECEIPTS_SHOWN: u32 = 10;
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
@@ -31,11 +31,13 @@ mod imp {
     )]
     pub struct ReadReceiptsList {
         #[template_child]
-        pub toggle_button: TemplateChild<gtk::ToggleButton>,
-        #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
         pub avatar_list: TemplateChild<OverlappingAvatars>,
+        /// Whether this list is active.
+        ///
+        /// This list is active when the popover is displayed.
+        pub active: Cell<bool>,
         /// The list of room members.
         pub members: RefCell<Option<MemberList>>,
         /// The list of read receipts.
@@ -49,9 +51,9 @@ mod imp {
     impl Default for ReadReceiptsList {
         fn default() -> Self {
             Self {
-                toggle_button: Default::default(),
                 label: Default::default(),
                 avatar_list: Default::default(),
+                active: Default::default(),
                 members: Default::default(),
                 list: gio::ListStore::new::<MemberTimestamp>(),
                 source: Default::default(),
@@ -71,6 +73,7 @@ mod imp {
             Self::Type::bind_template_callbacks(klass);
 
             klass.set_css_name("read-receipts-list");
+            klass.set_accessible_role(gtk::AccessibleRole::ToggleButton);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -82,6 +85,9 @@ mod imp {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
+                    glib::ParamSpecBoolean::builder("active")
+                        .read_only()
+                        .build(),
                     glib::ParamSpecObject::builder::<MemberList>("members").build(),
                     glib::ParamSpecObject::builder::<gio::ListStore>("list")
                         .read_only()
@@ -96,6 +102,7 @@ mod imp {
             let obj = self.obj();
 
             match pspec.name() {
+                "active" => obj.active().to_value(),
                 "members" => obj.members().to_value(),
                 "list" => obj.list().to_value(),
                 _ => unimplemented!(),
@@ -128,6 +135,8 @@ mod imp {
                     obj.update_tooltip();
                     obj.update_label();
                 }));
+
+            obj.set_pressed_state(false);
         }
 
         fn dispose(&self) {
@@ -137,6 +146,13 @@ mod imp {
 
     impl WidgetImpl for ReadReceiptsList {}
     impl BinImpl for ReadReceiptsList {}
+
+    impl AccessibleImpl for ReadReceiptsList {
+        fn first_accessible_child(&self) -> Option<gtk::Accessible> {
+            // Hide the children in the a11y tree.
+            None
+        }
+    }
 }
 
 glib::wrapper! {
@@ -149,6 +165,40 @@ glib::wrapper! {
 impl ReadReceiptsList {
     pub fn new(members: &MemberList) -> Self {
         glib::Object::builder().property("members", members).build()
+    }
+
+    /// Whether this list is active.
+    ///
+    /// This list is active when the popover is displayed.
+    pub fn active(&self) -> bool {
+        self.imp().active.get()
+    }
+
+    /// Set whether this list is active.
+    fn set_active(&self, active: bool) {
+        if self.active() == active {
+            return;
+        }
+
+        self.imp().active.set(active);
+        self.notify("active");
+        self.set_pressed_state(active);
+    }
+
+    /// Set the CSS and a11 states.
+    fn set_pressed_state(&self, pressed: bool) {
+        if pressed {
+            self.set_state_flags(gtk::StateFlags::CHECKED, false);
+        } else {
+            self.unset_state_flags(gtk::StateFlags::CHECKED);
+        }
+
+        let tristate = if pressed {
+            gtk::AccessibleTristate::True
+        } else {
+            gtk::AccessibleTristate::False
+        };
+        self.update_state(&[gtk::accessible::State::Pressed(tristate)]);
     }
 
     /// The list of room members.
@@ -253,7 +303,7 @@ impl ReadReceiptsList {
             )
         });
 
-        self.imp().toggle_button.set_tooltip_text(text.as_deref())
+        self.set_tooltip_text(text.as_deref())
     }
 
     fn update_member_tooltip(&self, member: &Member) {
@@ -261,7 +311,7 @@ impl ReadReceiptsList {
         // variable name.
         let text = gettext_f("Seen by {name}", &[("name", &member.display_name())]);
 
-        self.imp().toggle_button.set_tooltip_text(Some(&text));
+        self.set_tooltip_text(Some(&text));
     }
 
     fn update_label(&self) {
@@ -280,18 +330,19 @@ impl ReadReceiptsList {
     ///
     /// Shows a popover with the list of receipts if there are any.
     #[template_callback]
-    fn show_popover(&self) {
+    fn show_popover(&self, _n_press: i32, x: f64, y: f64) {
         if self.list().n_items() == 0 {
             // No popover.
             return;
         }
+        self.set_active(true);
 
-        let toggle_button = &*self.imp().toggle_button;
         let popover = ReadReceiptsPopover::new(self.list());
-        popover.set_parent(toggle_button);
-        popover.connect_closed(clone!(@weak toggle_button => move |popover| {
+        popover.set_parent(self);
+        popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 0, 0)));
+        popover.connect_closed(clone!(@weak self as obj => move |popover| {
             popover.unparent();
-            toggle_button.set_active(false);
+            obj.set_active(false);
         }));
 
         popover.popup();

@@ -1,32 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentReadReceiptsList" parent="AdwBin">
+    <property name="halign">end</property>
     <child>
-      <object class="GtkToggleButton" id="toggle_button">
-        <style>
-          <class name="flat"/>
-        </style>
-        <property name="halign">end</property>
-        <signal name="clicked" handler="show_popover" swapped="true"/>
+      <object class="GtkBox">
+        <property name="spacing">6</property>
         <child>
-          <object class="GtkBox">
-            <property name="spacing">6</property>
-            <child>
-              <object class="GtkLabel" id="label">
-                <style>
-                  <class name="caption"/>
-                  <class name="dim-label"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="OverlappingAvatars" id="avatar_list">
-                <property name="avatar-size">20</property>
-                <property name="max-avatars">10</property>
-              </object>
-            </child>
+          <object class="GtkLabel" id="label">
+            <style>
+              <class name="caption"/>
+              <class name="dim-label"/>
+            </style>
           </object>
         </child>
+        <child>
+          <object class="OverlappingAvatars" id="avatar_list">
+            <property name="avatar-size">20</property>
+            <property name="max-avatars">10</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkGestureClick">
+        <signal name="released" handler="show_popover" swapped="true"/>
       </object>
     </child>
   </template>
