@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-11 11:36+0000\n"
-"PO-Revision-Date: 2023-11-12 08:00+0300\n"
+"POT-Creation-Date: 2023-11-13 08:59+0000\n"
+"PO-Revision-Date: 2023-11-13 14:31+0300\n"
 "Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
@@ -134,7 +134,7 @@ msgid ""
 "Please authenticate the operation via the browser and once completed press "
 "confirm."
 msgstr ""
-"Lütfen işlemi tarayıcıyla doğrulayın ve tamamlandıktan sonra onaylaʼya basın."
+"Lütfen işlemi tarayıcıyla doğrulayın ve tamamlandıktan sonra onaylayın."
 
 #: src/components/auth_dialog.ui:81
 msgid "Authenticate via Browser"
@@ -341,6 +341,10 @@ msgid ""
 "if your homeserver doesn’t support auto-discovery or if you want to provide "
 "the URL yourself."
 msgstr ""
+"“well-known lookup” olarak da bilinen kendiliğinden keşfet, Matrix ana "
+"sunucu URL’sini alan adından keşfetmeyi sağlar. Yalnızca ana sunucunuz "
+"kendiliğinden keşfetmeyi desteklemiyorsa ya da URL’yi kendiniz belirlemek "
+"istiyorsanız devre dışı bırakın."
 
 #: src/login/advanced_dialog.ui:17
 msgid "_Auto-discovery"
@@ -436,7 +440,7 @@ msgstr "Lütfen tarayıcıdaki adımları izleyin."
 #. variable name.
 #: src/secret.rs:62
 msgid "Found stored session with unsupported version {version_nb}"
-msgstr ""
+msgstr "Desteklenmeyen {version_nb} sürümüne ait depolanan oturum bulundu"
 
 #: src/secret.rs:93
 msgid "The secret storage file is corrupted."
@@ -507,12 +511,16 @@ msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
+"D-Bus Giz Hizmeti’ne yapılan istek iptal edildi. Erişmek için sorulan istemi "
+"kabul ettiğinizden emin olun."
 
 #: src/secret.rs:147
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
 msgstr ""
+"Öntanımlı derlemeye erişilemedi. Anahtarlık oluşturulduğundan ve öntanımlı "
+"olarak ayarlandığından emin olun."
 
 #: src/secret.rs:190
 msgid "Malformed version in stored session"
@@ -725,8 +733,8 @@ msgstr "Son görülme: %-e %B %Y, %l:%M %p"
 #. Translators: As in "Verified room member".
 #: src/session/view/account_settings/devices_page/device_row.ui:31
 #: src/session/view/account_settings/devices_page/device_row.ui:34
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:51
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:54
+#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:52
+#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "Doğrulanmış"
 
@@ -792,12 +800,17 @@ msgid ""
 "to decrypt your messages in end-to-end encrypted rooms on another device or "
 "with another Matrix client."
 msgstr ""
+"Oda şifreleme anahtarlarınızı dışa aktarmak, uçtan uca şifrelenmiş "
+"odalardaki iletilerinizin şifresini başka aygıtta ya da başka bir Matrix "
+"istemcisinde çözebilmek için yedeklemenizi sağlar."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:217
 msgid ""
 "The backup must be stored in a safe place and must be protected with a "
 "strong passphrase that will be used to encrypt the data."
 msgstr ""
+"Yedek, güvenli bir yerde saklanmalı ve verileri şifrelemek için kullanılacak "
+"güçlü bir parola metniyle korunmalıdır."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:220
 msgid "Export Keys"
@@ -815,10 +828,13 @@ msgid ""
 "Importing your room encryption keys allows you to decrypt your messages in "
 "end-to-end encrypted rooms with a previous backup from a Matrix client."
 msgstr ""
+"Oda şifreleme anahtarlarınızı içe aktarmak, Matrix istemcisinde önceki "
+"yedeklemeyle uçtan uca şifrelenmiş odalardaki iletilerinizin şifresini "
+"çözmenizi sağlar."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:229
 msgid "Enter the passphrase provided when the backup file was created."
-msgstr ""
+msgstr "Yedekleme dosyası oluşturulurken belirlenen parola metnini girin."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:232
 msgid "Import Keys"
@@ -973,6 +989,9 @@ msgid ""
 "your encrypted message history. It is recommended to backup your encryption "
 "keys before proceeding."
 msgstr ""
+"Fractal’ın şifreleme desteği kararsızdır. Bu nedenle şifrelenmiş ileti "
+"geçmişinize erişiminizi yitirebilirsiniz. Sürdürmeden önce şifreleme "
+"anahtarlarınızı yedeklemeniz önerilir."
 
 #: src/session/view/account_settings/user_page/change_password_subpage.ui:78
 msgid "New Password"
@@ -987,7 +1006,7 @@ msgstr "Yeni Parolayı Doğrula"
 #: src/session/view/account_settings/user_page/log_out_subpage.ui:79
 #: src/session/view/content/room_history/verification_info_bar.rs:180
 msgid "Continue"
-msgstr "Devam"
+msgstr "Sürdür"
 
 #: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:175
 msgid "Account successfully deactivated"
@@ -1007,12 +1026,17 @@ msgid ""
 "Deactivating your account means you will lose access to all your messages, "
 "contacts, files, and more, forever."
 msgstr ""
+"Hesabınızı devre dışı bırakmak; tüm iletilerinize, bağlantılarınıza, "
+"dosyalarınıza ve daha çoğuna erişiminizi sonsuza dek yitireceğiniz anlamına "
+"gelir."
 
 #: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:55
 msgid ""
 "To confirm that you really want to deactivate this account, type in your "
 "Matrix user ID:"
 msgstr ""
+"Bu hesabı gerçekten devre dışı bırakmak istediğinizi onaylamak için Matrix "
+"kullanıcı kimliğinizi yazın:"
 
 #: src/session/view/account_settings/user_page/log_out_subpage.ui:7
 msgid "Log Out of this Session"
@@ -1023,10 +1047,12 @@ msgid ""
 "Fractal doesn’t support online backup of room encryption keys so you might "
 "lose access to your encrypted message history."
 msgstr ""
+"Fractal, oda şifreleme anahtarlarını çevrim içi yedeklemeyi desteklemiyor. "
+"Bu nedenle şifrelenmiş ileti geçmişinize erişimi yitirebilirsiniz."
 
 #: src/session/view/account_settings/user_page/log_out_subpage.ui:55
 msgid "It is recommended to backup your encryption keys before proceeding."
-msgstr ""
+msgstr "Sürdürmeden önce şifreleme anahtarlarınızı yedeklemeniz önerilir."
 
 #: src/session/view/account_settings/user_page/log_out_subpage.ui:70
 msgid "Backup Encryption Keys"
@@ -1163,11 +1189,11 @@ msgstr "{room} için davetiye reddedilemedi. Daha sonra yeniden deneyin."
 msgid "Invite"
 msgstr "Davet Et"
 
-#: src/session/view/content/invite.ui:99
+#: src/session/view/content/invite.ui:100
 msgid "_Decline"
 msgstr "_Reddet"
 
-#: src/session/view/content/invite.ui:109 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:110 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "_Kabul Et"
 
@@ -1318,8 +1344,8 @@ msgstr "Eşleşmeler aranırken hata oluştu."
 msgid "Could not load the full list of room members"
 msgstr "Oda üyelerinin tam listesi yüklenemedi"
 
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:95
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:97
+#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:98
 msgid "Member Menu"
 msgstr "Üye Menüsü"
 
@@ -1457,7 +1483,7 @@ msgstr "Kalıcı bağlantı panoya kopyalandı"
 #: src/session/view/content/room_history/mod.rs:567
 #: src/session/view/media_viewer.rs:577
 msgid "Failed to copy the permalink"
-msgstr "Kalıcı bağlantı kopyalanamadı."
+msgstr "Kalıcı bağlantı kopyalanamadı"
 
 #: src/session/view/content/room_history/item_row.rs:565
 #: src/session/view/content/room_history/item_row.rs:602
@@ -1534,8 +1560,8 @@ msgid "Could not retrieve media"
 msgstr "Ortam alınamadı"
 
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/mod.ui:70
-#: src/session/view/content/room_history/message_row/mod.ui:73
+#: src/session/view/content/room_history/message_row/mod.ui:71
+#: src/session/view/content/room_history/message_row/mod.ui:74
 msgid "Edited"
 msgstr "Düzenlendi"
 
@@ -1880,10 +1906,16 @@ msgstr "{user} avatarını değiştirdi."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:178
+#: src/session/view/content/room_history/typing_row.rs:179
 msgid "<b>{user}</b> is typing…"
+msgstr "<b>{user}</b> yazıyor…"
+
+#. Translators: Do NOT translate the content between '{' and '}', these are
+#. variable names.
+#: src/session/view/content/room_history/typing_row.rs:186
+msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
-msgstr[0] "<b>{n}</b> üye yazıyor…"
+msgstr[0] "{n} üye yazıyor…"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1941,7 +1973,7 @@ msgstr "İstek Tamamlandı"
 #: src/session/view/content/verification/identity_verification_widget.rs:523
 #: src/session/view/content/verification/identity_verification_widget.rs:552
 msgid "Does the other session show a confirmation?"
-msgstr ""
+msgstr "Diğer oturum onay gösteriyor mu?"
 
 #: src/session/view/content/verification/identity_verification_widget.rs:527
 msgid "Login Request From Another Session"
@@ -1957,7 +1989,7 @@ msgstr "Yeni giriş yaptığınız oturumdan bu QR kodunu tarayın."
 
 #: src/session/view/content/verification/identity_verification_widget.rs:544
 msgid "The new session is now ready to send and receive secure messages."
-msgstr ""
+msgstr "Yeni oturum artık güvenli ileti göndermeye ve almaya hazır."
 
 #: src/session/view/content/verification/identity_verification_widget.rs:547
 #: src/session/view/content/verification/session_verification.ui:28
@@ -1983,6 +2015,8 @@ msgid ""
 "{user} asked to be verified. Verifying a user increases the security of the "
 "conversation."
 msgstr ""
+"{user} doğrulanmak istedi. Kullanıcının doğrulanması konuşma güvenliğini "
+"artırır."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -2011,6 +2045,8 @@ msgid ""
 "Ask {user} if they see the following emoji appear in the same order on their "
 "screen."
 msgstr ""
+"{user} kullanıcısına aşağıdaki emojilerin ekranlarında aynı sırada görünüp "
+"görünmediğini sorun."
 
 #: src/session/view/content/verification/identity_verification_widget.rs:590
 msgid "Verification Complete"
@@ -2023,6 +2059,8 @@ msgid ""
 "{user} is verified and you can now be sure that your communication will be "
 "private."
 msgstr ""
+"{user} doğrulandı ve artık iletişiminizin gizli olacağından emin "
+"olabilirsiniz."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -2040,7 +2078,7 @@ msgstr "{user} kullanıcısına doğrulama isteğini kabul etmesini sor."
 #. variable name.
 #: src/session/view/content/verification/identity_verification_widget.rs:609
 msgid "Does {user} see a confirmation on their session?"
-msgstr ""
+msgstr "{user} oturumunda onay görüyor mu?"
 
 #: src/session/view/content/verification/identity_verification_widget.rs:650
 msgid "You cancelled the verification process."
@@ -2100,6 +2138,8 @@ msgid ""
 "You need to set up an encryption identity, since this is the first time you "
 "logged into your account."
 msgstr ""
+"Hesabınıza ilk kez giriş yaptığınız için şifreleme kimliği oluşturmanız "
+"gerekiyor."
 
 #: src/session/view/content/verification/session_verification.rs:274
 msgid "Set Up"
@@ -2111,6 +2151,9 @@ msgid ""
 "restore cross-signing from another device and restart this process or reset "
 "the encryption identity."
 msgstr ""
+"Bu oturumu doğrulamak için başka aygıt yok. Çapraz imzalamayı başka aygıttan "
+"geri yükleyebilir ve bu işlemi yeniden başlatabilir ya da şifreleme "
+"kimliğini sıfırlayabilirsiniz."
 
 #: src/session/view/content/verification/session_verification.rs:282
 #: src/session/view/content/verification/session_verification.rs:290
@@ -2124,6 +2167,9 @@ msgid ""
 "identity. Be careful because this will cancel the verifications of all users "
 "and sessions."
 msgstr ""
+"Diğer tüm oturumlara erişiminizi yitirdiyseniz, yeni şifreleme kimliği "
+"oluşturabilirsiniz. Bu işlem tüm kullanıcıların ve oturumların "
+"doğrulamalarını iptal edeceğinden dikkatli olun."
 
 #: src/session/view/content/verification/session_verification.rs:435
 msgid ""
@@ -2159,6 +2205,8 @@ msgid ""
 "Without another device you need a recovery passphrase or key to access your "
 "messages"
 msgstr ""
+"Başka aygıt olmadan iletilerinize erişmek için kurtarma parola metnine ya da "
+"anahtarına gereksinirsiniz"
 
 #: src/session/view/content/verification/session_verification.ui:188
 #: src/session/view/content/verification/session_verification.ui:245
@@ -2175,6 +2223,8 @@ msgid ""
 "If you don’t have any of these you can reset your identity, but be aware "
 "this makes your old messages inaccessible forever."
 msgstr ""
+"Bunlardan herhangi biri elinizde yoksa kimliğinizi sıfırlayabilirsiniz, "
+"ancak bunun eski iletilerinizi erişilemez yapacağını unutmayın."
 
 #: src/session/view/content/verification/session_verification.ui:217
 msgid "Reset Identity"
@@ -2188,6 +2238,8 @@ msgstr "Kurtarma Parola Metniniz bu hesabı ilk oluşturduğunuzda ayarlanmışt
 #: src/session/view/content/verification/session_verification.ui:264
 msgid "If you opted for a Recovery Key instead go back and choose that option."
 msgstr ""
+"Bunun yerine bir Kurtarma Anahtarı seçtiyseniz geri dönün ve bu seçeneği "
+"seçin."
 
 #: src/session/view/content/verification/session_verification.ui:321
 msgid "Your Recovery Key was set up when you first created this account."
@@ -2198,6 +2250,8 @@ msgid ""
 "If you opted for a Recovery Passphrase instead go back and choose that "
 "option."
 msgstr ""
+"Bunun yerine bir Kurtarma Parola Metnini seçtiyseniz geri dönün ve bu "
+"seçeneği seçin."
 
 #: src/session/view/create_dm_dialog/mod.rs:162
 msgid "An error occurred while searching for users"
@@ -2225,7 +2279,7 @@ msgstr "Arama deseniyle eşleşen kullanıcı bulunamadı."
 
 #: src/session/view/create_dm_dialog/mod.ui:104
 msgid "An error occurred while searching for matches"
-msgstr "Eşleşmeler aranırken hata oluştu."
+msgstr "Eşleşmeler aranırken hata oluştu"
 
 #: src/session/view/event_source_dialog.ui:5
 msgid "Event Source"
@@ -2332,6 +2386,9 @@ msgid ""
 "need to back them up manually or your message history will be lost if you "
 "lose access to all your sessions."
 msgstr ""
+"Fractal, henüz şifreleme anahtarları için çevrim içi yedeklemeyi "
+"desteklemiyor. Bu nedenle bunları elle yedeklemeniz gerekecek ya da tüm "
+"oturumlarınıza erişimi yitirirseniz ileti geçmişiniz yitecektir."
 
 #: src/session/view/room_creation.ui:134
 msgid "Room Address"
@@ -2446,31 +2503,31 @@ msgstr "Odayı _Unut"
 msgid "Switch Accounts"
 msgstr "Hesap Değiştir"
 
-#: src/session/view/sidebar/mod.ui:110 src/session/view/sidebar/mod.ui:112
+#: src/session/view/sidebar/mod.ui:111 src/session/view/sidebar/mod.ui:113
 msgid "Main Menu"
 msgstr "Ana Menü"
 
-#: src/session/view/sidebar/mod.ui:121 src/session/view/sidebar/mod.ui:123
+#: src/session/view/sidebar/mod.ui:122 src/session/view/sidebar/mod.ui:124
 msgid "Toggle Room Search"
 msgstr "Oda Aramayı Aç/Kapat"
 
-#: src/session/view/sidebar/mod.ui:137
+#: src/session/view/sidebar/mod.ui:138
 msgid "Room Search"
 msgstr "Oda Arama"
 
-#: src/session/view/sidebar/mod.ui:138
+#: src/session/view/sidebar/mod.ui:139
 msgid "Search for a room"
 msgstr "Oda ara"
 
-#: src/session/view/sidebar/mod.ui:147
+#: src/session/view/sidebar/mod.ui:148
 msgid "Offline"
 msgstr "Çevrim Dışı"
 
-#: src/session/view/sidebar/mod.ui:162
+#: src/session/view/sidebar/mod.ui:163
 msgid "Sidebar"
 msgstr "Kenar Çubuğu"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:164
 msgid "Allows to navigate between rooms"
 msgstr "Odalar arasında gezinmeye izin verir"
 
@@ -2534,10 +2591,11 @@ msgstr "Hesap pasifleştirildi."
 msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
 msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
 msgstr[0] ""
+"Ana sunucunun hız sınırını aştınız. {n} saniye sonra yeniden deneyin."
 
 #: src/user_facing_error.rs:51
 msgid "You exceeded the homeserver’s rate limit, try again later."
-msgstr ""
+msgstr "Ana sunucunun hız sınırını aştınız. Daha sonra yeniden deneyin."
 
 #: src/user_facing_error.rs:61
 msgid "An unknown connection error occurred."
@@ -2553,11 +2611,13 @@ msgstr "Bilinmeyen hata oluştu."
 
 #: src/user_facing_error.rs:79
 msgid "This is not a valid URL"
-msgstr "URL geçersiz."
+msgstr "URL geçersiz"
 
 #: src/user_facing_error.rs:81
 msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
 msgstr ""
+"Ev sunucusunu kendiliğinden keşfet başarısız oldu. Tam URL’yi elle girmeyi "
+"deneyin."
 
 #: src/user_facing_error.rs:84
 msgid "Could not open the store."
@@ -2655,7 +2715,8 @@ msgid ""
 "Do you really want to leave this room? You won’t be able to come back "
 "without an invitation."
 msgstr ""
-"Gerçekten bu odadan çıkmak istiyor musunuz? Davetiye olmadan geri gelemezsiniz."
+"Gerçekten bu odadan çıkmak istiyor musunuz? Davetiye olmadan geri "
+"gelemezsiniz."
 
 #: src/utils/message_dialog.rs:35
 msgid "Leave"
