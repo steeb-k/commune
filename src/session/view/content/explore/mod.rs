@@ -147,11 +147,13 @@ impl Explore {
         let imp = self.imp();
 
         imp.servers_popover.init();
-        imp.servers_button
-            .set_label(imp.servers_popover.selected_server().unwrap().name());
+
+        if let Some(server) = imp.servers_popover.selected_server() {
+            imp.servers_button.set_label(server.name());
+        }
 
         if let Some(public_room_list) = &*imp.public_room_list.borrow() {
-            public_room_list.load_public_rooms(true);
+            public_room_list.init();
         }
 
         self.imp().search_entry.grab_focus();

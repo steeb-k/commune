@@ -150,6 +150,13 @@ impl PublicRoomList {
         self.notify("complete");
     }
 
+    pub fn init(&self) {
+        // Initialize the list if it's not loading nor loaded.
+        if !self.request_sent() && self.imp().list.borrow().is_empty() {
+            self.load_public_rooms(true);
+        }
+    }
+
     pub fn search(&self, search_term: Option<String>, server: Server) {
         let imp = self.imp();
         let network = Some(server.network());
