@@ -31,7 +31,12 @@ macro_rules! spawn_tokio {
 /// The simplest way to use this macros is for displaying a simple message. It
 /// can be anything that implements `AsRef<str>`.
 ///
-/// ```ignore
+/// ```no_run
+/// use gettextts::gettext;
+///
+/// use crate::toast;
+///
+/// # let widget = unimplemented!();
 /// toast!(widget, gettext("Something happened"));
 /// ```
 ///
@@ -39,7 +44,13 @@ macro_rules! spawn_tokio {
 /// supports both the `var` and the `var = expr` syntax. In this case the
 /// message and the variables must be `String`s.
 ///
-/// ```ignore
+/// ```no_run
+/// use gettextts::gettext;
+///
+/// use crate::toast;
+///
+/// # let widget = unimplemented!();
+/// # let error_nb = 0;
 /// toast!(
 ///     widget,
 ///     gettext("Error number {n}: {msg}"),
@@ -51,13 +62,20 @@ macro_rules! spawn_tokio {
 /// To add `Pill`s to the toast, you can precede a [`Room`] or [`User`] with
 /// `@`.
 ///
-/// ```ignore
+/// ```no_run
+/// use gettextts::gettext;
+/// use crate::toast;
+/// use crate::session::model::{Room, User};
+///
+/// # let session = unimplemented!();
+/// # let room_id = unimplemented!();
+/// # let user_id = unimplemented!();
 /// let room = Room::new(session, room_id);
 /// let member = Member::new(room, user_id);
 ///
 /// toast!(
 ///     widget,
-///     gettext("Could not contact {user} in {room}",
+///     gettext("Could not contact {user} in {room}"),
 ///     @user = member,
 ///     @room,
 /// );
@@ -66,8 +84,8 @@ macro_rules! spawn_tokio {
 /// For this macro to work, the ancestor window be a [`Window`](crate::Window)
 /// or an [`adw::PreferencesWindow`].
 ///
-/// [`Room`]: crate::session::room::Room
-/// [`User`]: crate::session::user::User
+/// [`Room`]: crate::session::model::Room
+/// [`User`]: crate::session::model::User
 #[macro_export]
 macro_rules! toast {
     ($widget:expr, $message:expr) => {
