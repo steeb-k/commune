@@ -3,7 +3,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
     components::{Avatar, OverlappingBox},
-    i18n::ngettext_f,
+    i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{Member, TypingList},
     utils::BoundObjectWeakRef,
@@ -172,14 +172,23 @@ impl TypingRow {
         let members = list.members();
         let user = members[0].display_name();
 
-        let label = ngettext_f(
-            // Translators: Do NOT translate the content between '{' and '}', these are
-            // variable names.
-            "<b>{user}</b> is typing…",
-            "{n} members are typing…",
-            n,
-            &[("user", &user), ("n", &n.to_string())],
-        );
+        let label = if n == 1 {
+            gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "<b>{user}</b> is typing…",
+                &[("user", &user)],
+            )
+        } else {
+            ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', these are
+                // variable names.
+                "{n} member is typing…",
+                "{n} members are typing…",
+                n,
+                &[("n", &n.to_string())],
+            )
+        };
         self.imp().label.set_label(&label);
     }
 }
