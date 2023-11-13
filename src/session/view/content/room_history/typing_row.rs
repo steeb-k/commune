@@ -2,7 +2,7 @@ use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{Avatar, OverlappingBox},
+    components::OverlappingAvatars,
     i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{Member, TypingList},
@@ -19,7 +19,7 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/typing_row.ui")]
     pub struct TypingRow {
         #[template_child]
-        pub avatar_box: TemplateChild<OverlappingBox>,
+        pub avatar_list: TemplateChild<OverlappingAvatars>,
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         /// The list of members that are currently typing.
@@ -125,17 +125,8 @@ impl TypingRow {
                 clone!(@weak self as obj => move |_, _| obj.notify("is-empty")),
             );
 
-            imp.avatar_box.bind_model(Some(list), |item| {
-                let avatar_data = item.downcast_ref::<Member>().unwrap().avatar_data().clone();
-                let avatar = Avatar::new();
-                avatar.set_data(Some(avatar_data));
-                avatar.set_size(30);
-
-                let cutout = adw::Bin::builder()
-                    .child(&avatar)
-                    .css_classes(["cutout"])
-                    .build();
-                cutout.upcast()
+            imp.avatar_list.bind_model(Some(list.clone()), |item| {
+                item.downcast_ref::<Member>().unwrap().avatar_data().clone()
             });
 
             imp.bound_list.set(

@@ -6,14 +6,14 @@ mod read_receipts_popover;
 use self::read_receipts_popover::ReadReceiptsPopover;
 use super::member_timestamp::MemberTimestamp;
 use crate::{
-    components::{Avatar, OverlappingBox},
+    components::OverlappingAvatars,
     i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{Member, MemberList, UserReadReceipt},
     utils::BoundObjectWeakRef,
 };
 
-// Keep in sync with the `max-children` property of the `overlapping_box` in the
+// Keep in sync with the `max-avatars` property of the `avatar_list` in the
 // UI file.
 const MAX_RECEIPTS_SHOWN: u32 = 10;
 
@@ -35,7 +35,7 @@ mod imp {
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub overlapping_box: TemplateChild<OverlappingBox>,
+        pub avatar_list: TemplateChild<OverlappingAvatars>,
         /// The list of room members.
         pub members: RefCell<Option<MemberList>>,
         /// The list of read receipts.
@@ -51,7 +51,7 @@ mod imp {
             Self {
                 toggle_button: Default::default(),
                 label: Default::default(),
-                overlapping_box: Default::default(),
+                avatar_list: Default::default(),
                 members: Default::default(),
                 list: gio::ListStore::new::<MemberTimestamp>(),
                 source: Default::default(),
@@ -115,20 +115,13 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.overlapping_box.bind_model(
-                Some(&self.list),
-                clone!(@weak obj => @default-return { Avatar::new().upcast() }, move |item| {
-                    let avatar = Avatar::new();
-                    avatar.set_size(20);
-
-                    if let Some(member) = item.downcast_ref::<MemberTimestamp>().and_then(|r| r.member()) {
-                        avatar.set_data(Some(member.avatar_data().clone()));
-                    }
-
-                    let cutout = adw::Bin::builder().child(&avatar).css_classes(["cutout"]).build();
-                    cutout.upcast()
-                }),
-            );
+            self.avatar_list
+                .bind_model(Some(self.list.clone()), |item| {
+                    item.downcast_ref::<MemberTimestamp>()
+                        .and_then(|m| m.member())
+                        .map(|m| m.avatar_data().clone())
+                        .unwrap()
+                });
 
             self.list
                 .connect_items_changed(clone!(@weak obj => move |_, _,_,_| {

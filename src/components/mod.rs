@@ -13,7 +13,7 @@ mod label_with_widgets;
 mod loading_row;
 mod location_viewer;
 mod media_content_viewer;
-mod overlapping_box;
+mod overlapping_avatars;
 mod pill;
 mod reaction_chooser;
 mod room_title;
@@ -40,7 +40,7 @@ pub use self::{
     loading_row::{LoadingRow, LoadingState},
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
-    overlapping_box::OverlappingBox,
+    overlapping_avatars::OverlappingAvatars,
     pill::Pill,
     reaction_chooser::ReactionChooser,
     room_title::RoomTitle,

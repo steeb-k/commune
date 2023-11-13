@@ -9,9 +9,10 @@
           <object class="GtkBox">
             <property name="spacing">6</property>
             <child>
-              <object class="OverlappingBox" id="avatar_box">
-                <property name="overlap">16</property>
-                <property name="max-children">10</property>
+              <object class="OverlappingAvatars" id="avatar_list">
+                <property name="avatar-size">30</property>
+                <property name="max-avatars">10</property>
+                <property name="accessible-role">presentation</property>
               </object>
             </child>
             <child>
