@@ -62,22 +62,8 @@
           </object>
         </child>
         <child>
-          <object class="GtkImage">
-            <style>
-              <class name="dim-label"/>
-            </style>
-            <property name="icon-name">edit-symbolic</property>
-            <!-- Translators: As in 'Edited message'. -->
-            <property name="tooltip-text" translatable="yes">Edited</property>
-            <accessibility>
-              <!-- Translators: As in 'Edited message'. -->
-              <property name="label" translatable="yes">Edited</property>
-            </accessibility>
-            <binding name="visible">
-              <lookup name="is-edited" type="RoomEvent">
-                <lookup name="event">ContentMessageRow</lookup>
-              </lookup>
-            </binding>
+          <object class="MessageStateStack" id="message_state">
+            <property name="visible">false</property>
             <layout>
               <property name="column">2</property>
               <property name="row">1</property>

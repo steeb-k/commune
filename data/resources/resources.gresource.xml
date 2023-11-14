@@ -43,6 +43,7 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/checkmark-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/devices-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/document-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/done-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/empty-page-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/error-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/explore-symbolic.svg</file>

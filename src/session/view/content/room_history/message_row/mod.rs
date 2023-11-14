@@ -3,24 +3,23 @@ mod content;
 mod file;
 mod location;
 mod media;
+mod message_state_stack;
 mod reaction;
 mod reaction_list;
 mod reply;
 mod text;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{
-    gdk, glib,
-    glib::{clone, signal::SignalHandlerId},
-    CompositeTemplate,
-};
+use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::ruma::events::room::message::MessageType;
 use tracing::warn;
 
 pub use self::content::{ContentFormat, MessageContent};
-use self::{media::MessageMedia, reaction_list::MessageReactionList};
+use self::{
+    media::MessageMedia, message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
+};
 use super::ReadReceiptsList;
-use crate::{components::Avatar, prelude::*, session::model::Event, Window};
+use crate::{components::Avatar, prelude::*, session::model::Event, utils::BoundObject, Window};
 
 mod imp {
     use std::cell::RefCell;
@@ -46,12 +45,13 @@ mod imp {
         #[template_child]
         pub content: TemplateChild<MessageContent>,
         #[template_child]
+        pub message_state: TemplateChild<MessageStateStack>,
+        #[template_child]
         pub reactions: TemplateChild<MessageReactionList>,
         #[template_child]
         pub read_receipts: TemplateChild<ReadReceiptsList>,
-        pub source_changed_handler: RefCell<Option<SignalHandlerId>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
-        pub event: RefCell<Option<Event>>,
+        pub event: BoundObject<Event>,
     }
 
     #[glib::object_subclass]
@@ -118,6 +118,14 @@ mod imp {
                 ),
             );
         }
+
+        fn dispose(&self) {
+            self.event.disconnect_signals();
+
+            while let Some(binding) = self.bindings.borrow_mut().pop() {
+                binding.unbind();
+            }
+        }
     }
 
     impl WidgetImpl for MessageRow {}
@@ -164,20 +172,16 @@ impl MessageRow {
     }
 
     pub fn event(&self) -> Option<Event> {
-        self.imp().event.borrow().clone()
+        self.imp().event.obj()
     }
 
     pub fn set_event(&self, event: Event) {
         let imp = self.imp();
-        // Remove signals and bindings from the previous event
-        if let Some(event) = imp.event.take() {
-            if let Some(source_changed_handler) = imp.source_changed_handler.take() {
-                event.disconnect(source_changed_handler);
-            }
 
-            while let Some(binding) = imp.bindings.borrow_mut().pop() {
-                binding.unbind();
-            }
+        // Remove signals and bindings from the previous event.
+        imp.event.disconnect_signals();
+        while let Some(binding) = imp.bindings.borrow_mut().pop() {
+            binding.unbind();
         }
 
         imp.avatar
@@ -199,25 +203,30 @@ impl MessageRow {
             .sync_create()
             .build();
 
+        let state_binding = event
+            .bind_property("state", &*imp.message_state, "state")
+            .sync_create()
+            .build();
+
         imp.bindings.borrow_mut().append(&mut vec![
             display_name_binding,
             show_header_binding,
             timestamp_binding,
+            state_binding,
         ]);
 
-        imp.source_changed_handler
-            .replace(Some(event.connect_notify_local(
-                Some("source"),
-                clone!(@weak self as obj => move |event, _| {
-                    obj.update_content(event);
-                }),
-            )));
+        let source_handler = event.connect_notify_local(
+            Some("source"),
+            clone!(@weak self as obj => move |event, _| {
+                obj.update_content(event);
+            }),
+        );
         self.update_content(&event);
 
         imp.reactions
             .set_reaction_list(&event.room().get_or_create_members(), event.reactions());
         imp.read_receipts.set_source(event.read_receipts());
-        imp.event.replace(Some(event));
+        imp.event.set(event, vec![source_handler]);
         self.notify("event");
     }
 
@@ -232,12 +241,10 @@ impl MessageRow {
 
     /// Open the media viewer with the media content of this row.
     fn show_media(&self) {
-        let imp = self.imp();
         let Some(window) = self.root().and_downcast::<Window>() else {
             return;
         };
-        let borrowed_event = imp.event.borrow();
-        let Some(event) = borrowed_event.as_ref() else {
+        let Some(event) = self.event() else {
             return;
         };
         let Some(message) = event.message() else {
@@ -245,13 +252,17 @@ impl MessageRow {
         };
 
         if matches!(message, MessageType::Image(_) | MessageType::Video(_)) {
-            let Some(media_widget) = imp.content.content_widget().and_downcast::<MessageMedia>()
+            let Some(media_widget) = self
+                .imp()
+                .content
+                .content_widget()
+                .and_downcast::<MessageMedia>()
             else {
                 warn!("Trying to show media of a non-media message");
                 return;
             };
 
-            window.session_view().show_media(event, &media_widget);
+            window.session_view().show_media(&event, &media_widget);
         }
     }
 }

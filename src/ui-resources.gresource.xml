@@ -67,6 +67,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/file.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/location.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/media.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/message_state_stack.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reaction/reaction_popover.ui</file>

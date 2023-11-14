@@ -3,14 +3,15 @@ use std::{borrow::Cow, fmt};
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
-    AnyOtherFullStateEventContent, Error as TimelineError, EventTimelineItem, RepliedToEvent,
-    TimelineDetails, TimelineItemContent,
+    AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
+    RepliedToEvent, TimelineDetails, TimelineItemContent,
 };
 use ruma::{
     events::{receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent},
     serde::Raw,
     EventId, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
 };
+use tracing::error;
 
 mod reaction_group;
 mod reaction_list;
@@ -67,6 +68,18 @@ impl glib::FromVariant for EventKey {
     }
 }
 
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+#[repr(u32)]
+#[enum_type(name = "MessageState")]
+pub enum MessageState {
+    #[default]
+    None = 0,
+    Sending = 1,
+    Error = 2,
+    Cancelled = 3,
+    Edited = 4,
+}
+
 #[derive(Clone, Debug, glib::Boxed)]
 #[boxed_type(name = "BoxedEventTimelineItem")]
 pub struct BoxedEventTimelineItem(EventTimelineItem);
@@ -79,7 +92,7 @@ pub struct UserReadReceipt {
 }
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::object::WeakRef;
     use once_cell::sync::Lazy;
@@ -99,6 +112,9 @@ mod imp {
 
         /// The read receipts on this event.
         pub read_receipts: gio::ListStore,
+
+        /// The state of this event.
+        pub state: Cell<MessageState>,
     }
 
     impl Default for Event {
@@ -108,6 +124,7 @@ mod imp {
                 room: Default::default(),
                 reactions: Default::default(),
                 read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
+                state: Default::default(),
             }
         }
     }
@@ -146,6 +163,9 @@ mod imp {
                     glib::ParamSpecBoolean::builder("has-read-receipts")
                         .read_only()
                         .build(),
+                    glib::ParamSpecEnum::builder::<MessageState>("state")
+                        .read_only()
+                        .build(),
                 ]
             });
 
@@ -179,6 +199,7 @@ mod imp {
                 "is-highlighted" => obj.is_highlighted().to_value(),
                 "read-receipts" => obj.read_receipts().to_value(),
                 "has-read-receipts" => obj.has_read_receipts().to_value(),
+                "state" => obj.state().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -291,6 +312,7 @@ impl Event {
         if self.is_highlighted() != was_highlighted {
             self.notify("is-highlighted");
         }
+        self.update_state();
     }
 
     /// The raw JSON source for this `Event`, if it has been echoed back
@@ -445,6 +467,51 @@ impl Event {
             TimelineItemContent::Message(msg) => msg.is_edited(),
             _ => false,
         }
+    }
+
+    /// The state of this `Event`.
+    pub fn state(&self) -> MessageState {
+        self.imp().state.get()
+    }
+
+    /// Compute the current state of this `Event`.
+    fn compute_state(&self) -> MessageState {
+        let item_ref = self.imp().item.borrow();
+        let Some(item) = item_ref.as_ref() else {
+            return MessageState::None;
+        };
+
+        if let Some(send_state) = item.send_state() {
+            match send_state {
+                EventSendState::NotSentYet => return MessageState::Sending,
+                EventSendState::SendingFailed { error } => {
+                    if self.state() != MessageState::Error {
+                        error!("Failed to send message: {error}");
+                    }
+
+                    return MessageState::Error;
+                }
+                EventSendState::Cancelled => return MessageState::Cancelled,
+                EventSendState::Sent { .. } => {}
+            }
+        }
+
+        match item.content() {
+            TimelineItemContent::Message(msg) if msg.is_edited() => MessageState::Edited,
+            _ => MessageState::None,
+        }
+    }
+
+    /// Update the state of this `Event`.
+    fn update_state(&self) {
+        let state = self.compute_state();
+
+        if self.state() == state {
+            return;
+        }
+
+        self.imp().state.set(state);
+        self.notify("state");
     }
 
     /// Whether this `Event` should be highlighted.
