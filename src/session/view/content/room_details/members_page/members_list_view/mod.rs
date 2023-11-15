@@ -31,6 +31,8 @@ mod imp {
     )]
     pub struct MembersListView {
         #[template_child]
+        pub search_bar: TemplateChild<gtk::SearchBar>,
+        #[template_child]
         pub search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
         pub list_view: TemplateChild<gtk::ListView>,
@@ -88,6 +90,10 @@ mod imp {
 
         fn constructed(&self) {
             self.parent_constructed();
+
+            // Needed because the GtkSearchEntry is not the direct child of the
+            // GtkSearchBear.
+            self.search_bar.connect_entry(&*self.search_entry);
 
             fn search_string(member: Member) -> String {
                 format!(
