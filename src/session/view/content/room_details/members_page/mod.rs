@@ -1,5 +1,4 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
 use gtk::{
     gio,
     glib::{self, clone, closure},
@@ -15,16 +14,12 @@ use ruma::events::room::power_levels::PowerLevelAction;
 
 use self::member_menu::MemberMenu;
 use crate::{
-    prelude::*,
-    session::model::{Member, Membership, PowerLevel, Room, User, UserActions},
+    session::model::{Member, Membership, Room, User, UserActions},
     spawn,
 };
 
 mod imp {
-    use std::{
-        cell::{Cell, RefCell},
-        collections::HashMap,
-    };
+    use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
     use once_cell::{sync::Lazy, unsync::OnceCell};
@@ -38,15 +33,9 @@ mod imp {
     pub struct MembersPage {
         pub room: glib::WeakRef<Room>,
         #[template_child]
-        pub members_search_entry: TemplateChild<gtk::SearchEntry>,
-        #[template_child]
-        pub list_stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub invite_button: TemplateChild<gtk::Button>,
+        pub navigation_view: TemplateChild<adw::NavigationView>,
         pub member_menu: OnceCell<MemberMenu>,
-        pub list_stack_children: RefCell<HashMap<Membership, glib::WeakRef<MembersListView>>>,
-        pub state: Cell<Membership>,
-        pub invite_action_watch: RefCell<Option<gtk::ExpressionWatch>>,
+        pub can_invite_watch: RefCell<Option<gtk::ExpressionWatch>>,
     }
 
     #[glib::object_subclass]
@@ -67,21 +56,18 @@ mod imp {
             });
 
             klass.install_action("members.subpage", Some("u"), move |widget, _, param| {
-                let state = param.and_then(|variant| variant.get::<Membership>());
+                let Some(membership) = param.and_then(|variant| variant.get::<Membership>()) else {
+                    return;
+                };
 
-                if let Some(state) = state {
-                    widget.set_state(state);
-                }
-            });
+                let subpage = match membership {
+                    Membership::Join => "joined",
+                    Membership::Invite => "invited",
+                    Membership::Ban => "banned",
+                    _ => return,
+                };
 
-            klass.install_action("members.previous", None, move |widget, _, _| {
-                if widget.state() == Membership::Join {
-                    widget
-                        .activate_action("details.previous-page", None)
-                        .unwrap();
-                } else {
-                    widget.set_state(Membership::Join);
-                }
+                widget.imp().navigation_view.push_by_tag(subpage);
             });
         }
 
@@ -97,11 +83,8 @@ mod imp {
                     glib::ParamSpecObject::builder::<Room>("room")
                         .construct_only()
                         .build(),
-                    glib::ParamSpecObject::builder::<MemberMenu>("member-menu")
+                    glib::ParamSpecBoolean::builder("can-invite")
                         .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<Membership>("state")
-                        .explicit_notify()
                         .build(),
                 ]
             });
@@ -114,8 +97,6 @@ mod imp {
 
             match pspec.name() {
                 "room" => obj.set_room(value.get().unwrap()),
-                "state" => obj.set_state(value.get().unwrap()),
-
                 _ => unimplemented!(),
             }
         }
@@ -125,15 +106,14 @@ mod imp {
 
             match pspec.name() {
                 "room" => obj.room().to_value(),
-                "member-menu" => obj.member_menu().to_value(),
-                "state" => obj.state().to_value(),
+                "can-invite" => obj.can_invite().to_value(),
                 _ => unimplemented!(),
             }
         }
 
         fn dispose(&self) {
-            if let Some(invite_action) = self.invite_action_watch.take() {
-                invite_action.unwatch();
+            if let Some(watch) = self.can_invite_watch.take() {
+                watch.unwatch();
             }
         }
     }
@@ -161,13 +141,12 @@ impl MembersPage {
     fn set_room(&self, room: &Room) {
         let imp = self.imp();
 
-        if let Some(invite_action) = imp.invite_action_watch.take() {
-            invite_action.unwatch();
+        if let Some(watch) = imp.can_invite_watch.take() {
+            watch.unwatch();
         }
 
         self.init_members_list(room);
-        self.init_invite_button(room);
-        self.set_state(Membership::Join);
+        self.init_can_invite(room);
 
         imp.room.set(Some(room));
         self.notify("room");
@@ -211,16 +190,21 @@ impl MembersPage {
 
         let main_list = gtk::FlattenListModel::new(Some(model_list));
 
-        let mut list_stack_children = imp.list_stack_children.borrow_mut();
-        let joined_view = MembersListView::new(&main_list);
-        imp.list_stack.add_child(&joined_view);
-        list_stack_children.insert(Membership::Join, joined_view.downgrade());
-        let invited_view = MembersListView::new(&invited_members);
-        imp.list_stack.add_child(&invited_view);
-        list_stack_children.insert(Membership::Invite, invited_view.downgrade());
-        let banned_view = MembersListView::new(&banned_members);
-        imp.list_stack.add_child(&banned_view);
-        list_stack_children.insert(Membership::Ban, banned_view.downgrade());
+        let joined_view = MembersListView::new(&main_list, Membership::Join);
+        self.bind_property("can-invite", &joined_view, "can-invite")
+            .sync_create()
+            .build();
+        imp.navigation_view.add(&joined_view);
+        let invited_view = MembersListView::new(&invited_members, Membership::Invite);
+        self.bind_property("can-invite", &invited_view, "can-invite")
+            .sync_create()
+            .build();
+        imp.navigation_view.add(&invited_view);
+        let banned_view = MembersListView::new(&banned_members, Membership::Ban);
+        self.bind_property("can-invite", &banned_view, "can-invite")
+            .sync_create()
+            .build();
+        imp.navigation_view.add(&banned_view);
     }
 
     /// The object holding information needed for the menu of each `MemberRow`.
@@ -253,48 +237,6 @@ impl MembersPage {
         }));
     }
 
-    /// The membership state of the displayed members.
-    pub fn state(&self) -> Membership {
-        self.imp().state.get()
-    }
-
-    /// Set the membership state of the displayed members.
-    pub fn set_state(&self, state: Membership) {
-        let imp = self.imp();
-
-        if self.state() == state {
-            return;
-        }
-
-        if state == Membership::Join {
-            imp.list_stack
-                .set_transition_type(gtk::StackTransitionType::SlideRight)
-        } else {
-            imp.list_stack
-                .set_transition_type(gtk::StackTransitionType::SlideLeft)
-        }
-
-        if let Some(window) = self.root().and_downcast::<adw::Window>() {
-            match state {
-                Membership::Invite => window.set_title(Some(&gettext("Invited Room Members"))),
-                Membership::Ban => window.set_title(Some(&gettext("Banned Room Members"))),
-                _ => window.set_title(Some(&gettext("Room Members"))),
-            }
-        }
-
-        if let Some(view) = imp
-            .list_stack_children
-            .borrow()
-            .get(&state)
-            .and_then(glib::WeakRef::upgrade)
-        {
-            imp.list_stack.set_visible_child(&view);
-        }
-
-        self.imp().state.set(state);
-        self.notify("state");
-    }
-
     fn build_filtered_list(
         &self,
         model: impl IsA<gio::ListModel>,
@@ -306,68 +248,33 @@ impl MembersPage {
 
         let membership_filter = gtk::BoolFilter::new(Some(&membership_expression));
 
-        fn search_string(member: Member) -> String {
-            format!(
-                "{} {} {} {}",
-                member.display_name(),
-                member.user_id(),
-                member.role(),
-                member.power_level(),
-            )
-        }
-
-        let member_expr = gtk::ClosureExpression::new::<String>(
-            [
-                Member::this_expression("display-name"),
-                Member::this_expression("power-level"),
-            ],
-            closure!(
-                |member: Option<Member>, _display_name: String, _power_level: PowerLevel| {
-                    member.map(search_string).unwrap_or_default()
-                }
-            ),
-        );
-        let search_filter = gtk::StringFilter::builder()
-            .match_mode(gtk::StringFilterMatchMode::Substring)
-            .expression(&member_expr)
-            .ignore_case(true)
-            .build();
-
-        self.imp()
-            .members_search_entry
-            .bind_property("text", &search_filter, "search")
-            .sync_create()
-            .build();
-
-        let filter = gtk::EveryFilter::new();
-
-        filter.append(membership_filter);
-        filter.append(search_filter);
-
-        let filter_model = gtk::FilterListModel::new(Some(model), Some(filter));
+        let filter_model = gtk::FilterListModel::new(Some(model), Some(membership_filter));
         filter_model.upcast()
     }
 
-    fn init_invite_button(&self, room: &Room) {
-        let invite_possible = room.own_user_is_allowed_to_expr(PowerLevelAction::Invite);
+    fn init_can_invite(&self, room: &Room) {
+        let can_invite = room.own_user_is_allowed_to_expr(PowerLevelAction::Invite);
 
-        let watch = invite_possible.watch(
+        let watch = can_invite.watch(
             glib::Object::NONE,
             clone!(@weak self as obj => move || {
-                obj.update_invite_button();
+                obj.notify("can-invite");
             }),
         );
 
-        self.imp().invite_action_watch.replace(Some(watch));
-        self.update_invite_button();
+        self.imp().can_invite_watch.replace(Some(watch));
+        self.notify("can-invite");
     }
 
-    fn update_invite_button(&self) {
-        if let Some(invite_action) = &*self.imp().invite_action_watch.borrow() {
-            let allow_invite = invite_action
-                .evaluate_as::<bool>()
-                .expect("Created expression needs to be valid and a boolean");
-            self.imp().invite_button.set_visible(allow_invite);
-        };
+    /// Whether our own user can send an invite in the current room.
+    pub fn can_invite(&self) -> bool {
+        self.imp()
+            .can_invite_watch
+            .borrow()
+            .as_ref()
+            .is_some_and(|w| {
+                w.evaluate_as::<bool>()
+                    .expect("Created expression is valid and a boolean")
+            })
     }
 }

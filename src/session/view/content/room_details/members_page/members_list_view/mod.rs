@@ -1,8 +1,6 @@
-use adw::{
-    prelude::*,
-    subclass::{bin::BinImpl, prelude::*},
-};
-use gtk::{gio, glib, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
+use gtk::{gio, glib, glib::closure, CompositeTemplate};
 
 mod extra_lists;
 mod item_row;
@@ -14,8 +12,14 @@ pub use self::{extra_lists::ExtraLists, membership_subpage_item::MembershipSubpa
 use self::{
     item_row::ItemRow, member_row::MemberRow, membership_subpage_row::MembershipSubpageRow,
 };
+use crate::{
+    prelude::*,
+    session::model::{Member, Membership},
+};
 
 mod imp {
+    use std::cell::Cell;
+
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
 
@@ -27,15 +31,18 @@ mod imp {
     )]
     pub struct MembersListView {
         #[template_child]
-        pub members_list_view: TemplateChild<gtk::ListView>,
-        pub model: glib::WeakRef<gio::ListModel>,
+        pub search_entry: TemplateChild<gtk::SearchEntry>,
+        #[template_child]
+        pub list_view: TemplateChild<gtk::ListView>,
+        pub filtered_model: gtk::FilterListModel,
+        pub can_invite: Cell<bool>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for MembersListView {
         const NAME: &'static str = "ContentMembersListView";
         type Type = super::MembersListView;
-        type ParentType = adw::Bin;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             ItemRow::static_type();
@@ -50,9 +57,14 @@ mod imp {
     impl ObjectImpl for MembersListView {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<gio::ListModel>("model")
-                    .explicit_notify()
-                    .build()]
+                vec![
+                    glib::ParamSpecObject::builder::<gio::ListModel>("model")
+                        .explicit_notify()
+                        .build(),
+                    glib::ParamSpecBoolean::builder("can-invite")
+                        .explicit_notify()
+                        .build(),
+                ]
             });
 
             PROPERTIES.as_ref()
@@ -61,6 +73,7 @@ mod imp {
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
             match pspec.name() {
                 "model" => self.obj().set_model(value.get::<&gio::ListModel>().ok()),
+                "can-invite" => self.obj().set_can_invite(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
@@ -68,27 +81,76 @@ mod imp {
         fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             match pspec.name() {
                 "model" => self.obj().model().to_value(),
+                "can-invite" => self.obj().can_invite().to_value(),
                 _ => unimplemented!(),
             }
         }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            fn search_string(member: Member) -> String {
+                format!(
+                    "{} {} {} {}",
+                    member.display_name(),
+                    member.user_id(),
+                    member.role(),
+                    member.power_level(),
+                )
+            }
+
+            let member_expr = gtk::ClosureExpression::new::<String>(
+                &[] as &[gtk::Expression],
+                closure!(|item: Option<glib::Object>| {
+                    item.and_downcast().map(search_string).unwrap_or_default()
+                }),
+            );
+            let search_filter = gtk::StringFilter::builder()
+                .match_mode(gtk::StringFilterMatchMode::Substring)
+                .expression(&member_expr)
+                .ignore_case(true)
+                .build();
+
+            self.search_entry
+                .bind_property("text", &search_filter, "search")
+                .sync_create()
+                .build();
+
+            self.filtered_model.set_filter(Some(&search_filter));
+
+            self.list_view.set_model(Some(&gtk::NoSelection::new(Some(
+                self.filtered_model.clone(),
+            ))));
+        }
     }
+
     impl WidgetImpl for MembersListView {}
-    impl BinImpl for MembersListView {}
+    impl NavigationPageImpl for MembersListView {}
 }
 
 glib::wrapper! {
     pub struct MembersListView(ObjectSubclass<imp::MembersListView>)
-        @extends gtk::Widget, adw::Bin;
+        @extends gtk::Widget, adw::NavigationPage;
 }
 
 impl MembersListView {
-    pub fn new(model: &impl IsA<gio::ListModel>) -> Self {
-        glib::Object::builder().property("model", model).build()
+    pub fn new(model: &impl IsA<gio::ListModel>, membership: Membership) -> Self {
+        let (tag, title) = match membership {
+            Membership::Invite => ("invited", gettext("Invited Room Members")),
+            Membership::Ban => ("banned", gettext("Banned Room Members")),
+            _ => ("joined", gettext("Room Members")),
+        };
+
+        glib::Object::builder()
+            .property("model", model)
+            .property("tag", tag)
+            .property("title", title)
+            .build()
     }
 
     /// The model used for this view.
     pub fn model(&self) -> Option<gio::ListModel> {
-        self.imp().model.upgrade()
+        self.imp().filtered_model.model()
     }
 
     /// Set the model used for this view.
@@ -98,11 +160,22 @@ impl MembersListView {
             return;
         }
 
-        self.imp()
-            .members_list_view
-            .set_model(Some(&gtk::NoSelection::new(model.cloned())));
-
-        self.imp().model.set(model);
+        self.imp().filtered_model.set_model(model);
         self.notify("model");
+    }
+
+    /// Whether our own user can send an invite in the current room.
+    pub fn can_invite(&self) -> bool {
+        self.imp().can_invite.get()
+    }
+
+    /// Set whether our own user can send an invite in the current room.
+    pub fn set_can_invite(&self, can_invite: bool) {
+        if self.can_invite() == can_invite {
+            return;
+        }
+
+        self.imp().can_invite.set(can_invite);
+        self.notify("can-invite");
     }
 }
