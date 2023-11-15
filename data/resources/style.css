@@ -470,17 +470,6 @@ room-history-row .event-content .quote,
 
 message-reactions .toggle {
   padding: 1px 4px 0 5px;
-  background-color: @view_bg_color;
-  border: 1px solid alpha(currentColor, 0.3);
-}
-
-message-reactions .toggle:checked,
-.reaction-chooser button:checked {
-  background-color: alpha(@blue_1, 0.4);
-}
-
-message-reactions .toggle:checked {
-  border-color: alpha(@accent_bg_color, 0.7);
 }
 
 message-reactions .reaction-key {
