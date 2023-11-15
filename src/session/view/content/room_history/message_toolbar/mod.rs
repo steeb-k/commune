@@ -558,6 +558,11 @@ impl MessageToolbar {
             formatted_body.replace_range(.."/me ".len(), "");
         }
 
+        if plain_body.trim().is_empty() {
+            // Don't send empty message.
+            return;
+        }
+
         let html_body = if is_markdown {
             FormattedBody::markdown(formatted_body).map(|b| b.body)
         } else if has_mentions {
