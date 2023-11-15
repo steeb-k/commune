@@ -45,15 +45,23 @@ The current beta version is 5.rc1 (released November 8th 2023).
 
 It is available as a Flatpak on Flathub Beta.
 
-To get it, first set up the Flatpak remote:
+To get it, first ensure that the Flathub remote is present to provide the necessary runtimes:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+```
+
+Or download and install the [Flathub repository file](https://dl.flathub.org/repo/flathub.flatpakrepo)
+
+Then, set up the Flathub Beta remote:
 
 ```sh
 flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
 ```
 
-Or download and install the [repository file](https://flathub.org/beta-repo/flathub-beta.flatpakrepo).
+Or download and install the [Flathub Beta repository file](https://flathub.org/beta-repo/flathub-beta.flatpakrepo).
 
-Then install the application:
+Then, install the application:
 
 ```sh
 flatpak install --user flathub-beta org.gnome.Fractal
