@@ -20,7 +20,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for MembershipSubpageItem {
-        const NAME: &'static str = "ContentMemberPageMembershipSubpageItem";
+        const NAME: &'static str = "MembersPageMembershipSubpageItem";
         type Type = super::MembershipSubpageItem;
     }
 

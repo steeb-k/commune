@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentMemberPage" parent="AdwNavigationPage">
+  <template class="MembersPage" parent="AdwNavigationPage">
     <property name="title">Room Members</property>
     <child>
       <object class="AdwToolbarView">

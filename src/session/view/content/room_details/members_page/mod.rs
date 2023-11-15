@@ -33,9 +33,9 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/member_page/mod.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/mod.ui"
     )]
-    pub struct MemberPage {
+    pub struct MembersPage {
         pub room: glib::WeakRef<Room>,
         #[template_child]
         pub members_search_entry: TemplateChild<gtk::SearchEntry>,
@@ -50,9 +50,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MemberPage {
-        const NAME: &'static str = "ContentMemberPage";
-        type Type = super::MemberPage;
+    impl ObjectSubclass for MembersPage {
+        const NAME: &'static str = "MembersPage";
+        type Type = super::MembersPage;
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
@@ -90,7 +90,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MemberPage {
+    impl ObjectImpl for MembersPage {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
@@ -138,16 +138,16 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for MemberPage {}
-    impl NavigationPageImpl for MemberPage {}
+    impl WidgetImpl for MembersPage {}
+    impl NavigationPageImpl for MembersPage {}
 }
 
 glib::wrapper! {
-    pub struct MemberPage(ObjectSubclass<imp::MemberPage>)
+    pub struct MembersPage(ObjectSubclass<imp::MembersPage>)
         @extends gtk::Widget, adw::NavigationPage;
 }
 
-impl MemberPage {
+impl MembersPage {
     pub fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
     }

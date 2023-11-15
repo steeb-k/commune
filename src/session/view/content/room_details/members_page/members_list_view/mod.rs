@@ -23,7 +23,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/member_page/members_list_view/mod.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/members_list_view/mod.ui"
     )]
     pub struct MembersListView {
         #[template_child]

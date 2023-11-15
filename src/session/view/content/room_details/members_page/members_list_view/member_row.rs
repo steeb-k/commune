@@ -1,7 +1,7 @@
 use adw::subclass::prelude::BinImpl;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use super::super::{MemberMenu, MemberPage};
+use super::super::{MemberMenu, MembersPage};
 use crate::{
     components::{Avatar, Badge},
     session::model::Member,
@@ -17,7 +17,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/member_page/members_list_view/member_row.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/members_list_view/member_row.ui"
     )]
     pub struct MemberRow {
         pub member: RefCell<Option<Member>>,
@@ -123,8 +123,8 @@ impl MemberRow {
 
     fn member_menu(&self) -> Option<MemberMenu> {
         let member_page = self
-            .ancestor(MemberPage::static_type())
-            .and_downcast::<MemberPage>()?;
+            .ancestor(MembersPage::static_type())
+            .and_downcast::<MembersPage>()?;
         Some(member_page.member_menu().clone())
     }
 }

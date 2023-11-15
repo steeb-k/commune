@@ -14,7 +14,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui"
     )]
     pub struct MembershipSubpageRow {
         /// The item of this row.
@@ -27,7 +27,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for MembershipSubpageRow {
-        const NAME: &'static str = "ContentMemberPageMembershipSubpageRow";
+        const NAME: &'static str = "MembersPageMembershipSubpageRow";
         type Type = super::MembershipSubpageRow;
         type ParentType = adw::ActionRow;
 

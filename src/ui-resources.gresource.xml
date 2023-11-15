@@ -54,11 +54,11 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/media_item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/invitee_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_page/member_menu.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_page/members_list_view/member_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_page/members_list_view/membership_subpage_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_page/members_list_view/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/member_page/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/member_menu.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/member_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/divider_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/event_actions.ui</file>

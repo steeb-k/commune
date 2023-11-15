@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentMemberPageMembershipSubpageRow" parent="AdwActionRow">
-    <property name="title" bind-source="ContentMemberPageMembershipSubpageRow" bind-property="label" bind-flags="sync-create"/>
+  <template class="MembersPageMembershipSubpageRow" parent="AdwActionRow">
+    <property name="title" bind-source="MembersPageMembershipSubpageRow" bind-property="label" bind-flags="sync-create"/>
     <property name="icon-name">users-symbolic</property>
     <property name="activatable">True</property>
     <property name="margin-top">6</property>

@@ -1,7 +1,7 @@
 mod general_page;
 mod history_viewer;
 mod invite_subpage;
-mod member_page;
+mod members_page;
 
 use std::convert::From;
 
@@ -12,7 +12,7 @@ pub use self::{
     general_page::GeneralPage,
     history_viewer::{AudioHistoryViewer, FileHistoryViewer, MediaHistoryViewer},
     invite_subpage::InviteSubpage,
-    member_page::MemberPage,
+    members_page::MembersPage,
 };
 use crate::session::model::Room;
 
@@ -160,7 +160,7 @@ impl RoomDetails {
 
         let mut subpages = imp.subpages.borrow_mut();
         let subpage = subpages.entry(name).or_insert_with(|| match name {
-            SubpageName::Members => MemberPage::new(room).upcast(),
+            SubpageName::Members => MembersPage::new(room).upcast(),
             SubpageName::Invite => InviteSubpage::new(room).upcast(),
             SubpageName::MediaHistory => MediaHistoryViewer::new(room).upcast(),
             SubpageName::FileHistory => FileHistoryViewer::new(room).upcast(),
