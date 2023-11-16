@@ -16,12 +16,21 @@ use thiserror::Error;
 use tracing::{debug, error, warn};
 use url::Url;
 
-use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
+use crate::{
+    application::AppProfile, gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE,
+};
 
-pub const CURRENT_VERSION: u8 = 3;
+pub const CURRENT_VERSION: u8 = 4;
 const SCHEMA_ATTRIBUTE: &str = "xdg:schema";
 
-static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| glib::user_data_dir().join(PROFILE.as_str()));
+static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    let dir_name = match PROFILE {
+        AppProfile::Stable => "fractal".to_owned(),
+        _ => format!("fractal-{PROFILE}"),
+    };
+
+    glib::user_data_dir().join(dir_name)
+});
 
 /// Any error that can happen when interacting with the secret service.
 #[derive(Debug, Error)]
@@ -481,12 +490,12 @@ impl StoredSession {
         Ok(())
     }
 
-    /// Migrate this session to version 3.
+    /// Migrate this session to version 4.
     ///
-    /// This implies moving the database under the profile's directory.
-    pub async fn migrate_to_v3(mut self, item: Item) {
+    /// This implies moving the database under Fractal's directory.
+    pub async fn migrate_to_v4(mut self, item: Item) {
         warn!(
-            "Session {} with version {} found for user {}, migrating to version 3…",
+            "Session {} with version {} found for user {}, migrating to version 4…",
             self.id(),
             self.version,
             self.user_id,
@@ -508,7 +517,7 @@ impl StoredSession {
             self.path = target_path;
         }
 
-        self.version = 3;
+        self.version = 4;
 
         spawn_tokio!(async move {
             if let Err(error) = item.delete().await {
