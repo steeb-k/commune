@@ -11,9 +11,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-13 08:59+0000\n"
-"PO-Revision-Date: 2023-11-13 14:31+0300\n"
-"Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
+"POT-Creation-Date: 2023-11-13 11:33+0000\n"
+"PO-Revision-Date: 2023-11-14 00:47+0300\n"
+"Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
@@ -324,7 +324,7 @@ msgstr "Fractal’a Hoş Geldiniz"
 
 #: src/greeter.ui:114
 msgid "_Log In"
-msgstr "Giriş Yap"
+msgstr "_Giriş Yap"
 
 #: src/greeter.ui:126
 msgid "_Create Account"
@@ -870,7 +870,7 @@ msgstr "Oda şifreleme anahtarları dışa aktarıldı"
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:384
 msgid "Imported 1 room encryption key"
 msgid_plural "Imported {n} room encryption keys"
-msgstr[0] "{n} oda şifreleme anahtarı içe aktarıldı"
+msgstr[0] "{n} odanın şifreleme anahtarları içe aktarıldı"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:397
 msgid "Could not export the keys"
@@ -1175,13 +1175,13 @@ msgstr "{user} sizi davet etti"
 #. is a variable name.
 #: src/session/view/content/invite.rs:227
 msgid "Failed to accept invitation for {room}. Try again later."
-msgstr "{room} için davetiye kabul edilemedi. Daha sonra yeniden deneyin."
+msgstr "{room} için davetiye kabul edilemedi. Sonra yeniden deneyin."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
 #: src/session/view/content/invite.rs:263
 msgid "Failed to decline invitation for {room}. Try again later."
-msgstr "{room} için davetiye reddedilemedi. Daha sonra yeniden deneyin."
+msgstr "{room} için davetiye reddedilemedi. Sonra yeniden deneyin."
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
@@ -2595,7 +2595,7 @@ msgstr[0] ""
 
 #: src/user_facing_error.rs:51
 msgid "You exceeded the homeserver’s rate limit, try again later."
-msgstr "Ana sunucunun hız sınırını aştınız. Daha sonra yeniden deneyin."
+msgstr "Ana sunucunun hız sınırını aştınız. Sonra yeniden deneyin."
 
 #: src/user_facing_error.rs:61
 msgid "An unknown connection error occurred."
