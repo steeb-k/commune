@@ -15,7 +15,10 @@ use ruma::events::{room::encryption::RoomEncryptionEventContent, InitialStateEve
 use tracing::error;
 
 use crate::{
-    components::SpinnerButton, prelude::*, session::model::Session, spawn, spawn_tokio, Window,
+    components::{SpinnerButton, ToastableWindow},
+    prelude::*,
+    session::model::Session,
+    spawn, spawn_tokio, toast, Window,
 };
 
 // MAX length of room addresses
@@ -30,8 +33,6 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/room_creation.ui")]
     pub struct RoomCreation {
         pub session: WeakRef<Session>,
-        #[template_child]
-        pub toast_overlay: TemplateChild<adw::ToastOverlay>,
         #[template_child]
         pub create_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -58,7 +59,7 @@ mod imp {
     impl ObjectSubclass for RoomCreation {
         const NAME: &'static str = "RoomCreation";
         type Type = super::RoomCreation;
-        type ParentType = adw::Window;
+        type ParentType = ToastableWindow;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -110,12 +111,13 @@ mod imp {
     impl WidgetImpl for RoomCreation {}
     impl WindowImpl for RoomCreation {}
     impl AdwWindowImpl for RoomCreation {}
+    impl ToastableWindowImpl for RoomCreation {}
 }
 
 glib::wrapper! {
     /// Preference Window to display and update room details.
     pub struct RoomCreation(ObjectSubclass<imp::RoomCreation>)
-        @extends gtk::Widget, gtk::Window, adw::Window, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
@@ -236,8 +238,7 @@ impl RoomCreation {
             }
         }
 
-        imp.toast_overlay
-            .add_toast(adw::Toast::new(&error.to_user_facing()));
+        toast!(self, error.to_user_facing());
     }
 
     /// Check whether a room can be created with the current input.
