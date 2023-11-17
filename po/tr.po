@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-13 11:33+0000\n"
-"PO-Revision-Date: 2023-11-14 00:47+0300\n"
+"POT-Creation-Date: 2023-11-16 11:55+0000\n"
+"PO-Revision-Date: 2023-11-17 18:08+0300\n"
 "Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
@@ -234,7 +234,7 @@ msgstr "Hata"
 
 #: src/error_page.ui:17
 msgid "Secret Service Error"
-msgstr "Gizli Hizmet Hatası"
+msgstr "Giz Hizmet Hatası"
 
 #: src/error_page.ui:39
 msgid ""
@@ -613,7 +613,7 @@ msgstr "Doğrulamalar"
 #. Translators: As in 'Invited Room Members'.
 #: src/session/model/sidebar/category/category_type.rs:29
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
 msgid "Invited"
 msgstr "Davet Edildi"
 
@@ -733,8 +733,8 @@ msgstr "Son görülme: %-e %B %Y, %l:%M %p"
 #. Translators: As in "Verified room member".
 #: src/session/view/account_settings/devices_page/device_row.ui:31
 #: src/session/view/account_settings/devices_page/device_row.ui:34
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:52
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:55
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "Doğrulanmış"
 
@@ -1185,7 +1185,7 @@ msgstr "{room} için davetiye reddedilemedi. Sonra yeniden deneyin."
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/member_page/mod.ui:65
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
 msgid "Invite"
 msgstr "Davet Et"
 
@@ -1291,7 +1291,7 @@ msgstr "Üye"
 
 #. Translators: As in 'Banned Room Members'.
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
 msgid "Banned"
 msgstr "Yasaklanmış"
 
@@ -1340,52 +1340,52 @@ msgstr "Aramayla eşleşen kullanıcı bulunamadı."
 msgid "An error occurred while searching for matches."
 msgstr "Eşleşmeler aranırken hata oluştu."
 
-#: src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs:203
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:203
 msgid "Could not load the full list of room members"
 msgstr "Oda üyelerinin tam listesi yüklenemedi"
 
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:96
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:98
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
 msgid "Member Menu"
 msgstr "Üye Menüsü"
 
-#: src/session/view/content/room_details/member_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "_Doğrula"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "_Mod Yap"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "_Yönetici Yap"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "_At"
-
-#: src/session/view/content/room_details/member_page/mod.rs:279
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
 msgid "Invited Room Members"
 msgstr "Davet Edilen Oda Üyeleri"
 
-#: src/session/view/content/room_details/member_page/mod.rs:280
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
 msgid "Banned Room Members"
 msgstr "Yasaklanmış Oda Üyeleri"
 
-#: src/session/view/content/room_details/member_page/mod.rs:281
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
 msgid "Room Members"
 msgstr "Oda Üyeleri"
 
-#: src/session/view/content/room_details/member_page/mod.ui:12
-#: src/session/view/content/room_details/member_page/mod.ui:14
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
 msgid "Toggle Room Members Search"
 msgstr "Oda Üyeleri Aramayı Aç/Kapat"
 
-#: src/session/view/content/room_details/member_page/mod.ui:30
-#: src/session/view/content/room_details/member_page/mod.ui:34
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:29
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
 msgid "Search for room members"
 msgstr "Oda üyeleri ara"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:6
+msgid "_Verify"
+msgstr "_Doğrula"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:14
+msgid "Make _Mod"
+msgstr "_Mod Yap"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:20
+msgid "Make _Admin"
+msgstr "_Yönetici Yap"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:26
+msgid "_Kick"
+msgstr "_At"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1559,9 +1559,29 @@ msgstr "Görüntü dosyası desteklenmiyor"
 msgid "Could not retrieve media"
 msgstr "Ortam alınamadı"
 
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:130
+msgid "Could not send the message"
+msgstr "İleti gönderilemedi"
+
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:136
+msgid "An error occurred with the sending queue"
+msgstr "Gönderim kuyruğunda hata oluştu"
+
+#. Translators: As in 'Sending message…'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:14
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:17
+msgid "Sending…"
+msgstr "Gönderiliyor…"
+
+#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:45
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:48
+msgid "Sent"
+msgstr "Gönderildi"
+
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/mod.ui:71
-#: src/session/view/content/room_history/message_row/mod.ui:74
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:67
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
 msgid "Edited"
 msgstr "Düzenlendi"
 
@@ -1589,37 +1609,37 @@ msgctxt "room-history"
 msgid "Edit"
 msgstr "Düzenle"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:680
+#: src/session/view/content/room_history/message_toolbar/mod.rs:685
 msgid "Your Location"
 msgstr "Konumunuz"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:692
+#: src/session/view/content/room_history/message_toolbar/mod.rs:697
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Kullanıcı konumu {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:750
 msgid "Select File"
 msgstr "Dosya Seç"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:752
 msgid "Select"
 msgstr "Seç"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "Could not open file"
 msgstr "Dosya açılamadı"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:807
+#: src/session/view/content/room_history/message_toolbar/mod.rs:812
 msgid "Error reading file"
 msgstr "Dosya okunamadı"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:832
+#: src/session/view/content/room_history/message_toolbar/mod.rs:837
 msgid "Error getting image from clipboard"
 msgstr "Panodan görüntü alınamadı"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:849
+#: src/session/view/content/room_history/message_toolbar/mod.rs:854
 msgid "Error getting file from clipboard"
 msgstr "Panodan dosya alınamadı"
 
@@ -1748,14 +1768,14 @@ msgstr "Oda Geçmişi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:256
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:299
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "{n} üye gördü"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:269
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:312
 msgid "Seen by {name}"
 msgstr "{name} gördü"
 
@@ -1906,13 +1926,13 @@ msgstr "{user} avatarını değiştirdi."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:179
+#: src/session/view/content/room_history/typing_row.rs:170
 msgid "<b>{user}</b> is typing…"
 msgstr "<b>{user}</b> yazıyor…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:186
+#: src/session/view/content/room_history/typing_row.rs:177
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} üye yazıyor…"
@@ -2562,7 +2582,7 @@ msgstr "Çık"
 #: src/shortcuts.ui:27
 msgctxt "shortcut window"
 msgid "Search Room List"
-msgstr "Oda Listesi Ara"
+msgstr "Oda Listesinde Ara"
 
 #: src/shortcuts.ui:33
 msgctxt "shortcut window"
