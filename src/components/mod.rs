@@ -34,7 +34,7 @@ pub use self::{
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     custom_entry::CustomEntry,
     drag_overlay::DragOverlay,
-    editable_avatar::{EditableAvatar, EditableAvatarState},
+    editable_avatar::EditableAvatar,
     image_paintable::ImagePaintable,
     label_with_widgets::{LabelWithWidgets, DEFAULT_PLACEHOLDER},
     loading_row::{LoadingRow, LoadingState},

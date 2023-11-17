@@ -160,7 +160,7 @@ pub async fn get_video_info(file: &gio::File) -> BaseVideoInfo {
 
     if let Some(stream_info) = media_info
         .video_streams()
-        .get(0)
+        .first()
         .and_then(|s| s.downcast_ref::<gst_pbutils::DiscovererVideoInfo>())
     {
         info.width = Some(stream_info.width().into());

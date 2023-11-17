@@ -21,7 +21,7 @@ pub use self::{
     session::{Session, SessionState},
     settings::SessionSettings,
     sidebar::{
-        Category, CategoryType, Entry, EntryType, ItemList, Selection, SidebarItem, SidebarItemExt,
+        Category, CategoryType, Entry, EntryType, ItemList, Selection, SidebarItem,
         SidebarItemImpl, SidebarListModel,
     },
     user::{User, UserActions, UserExt},
