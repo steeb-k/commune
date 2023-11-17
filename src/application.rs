@@ -47,13 +47,10 @@ mod imp {
                 return;
             }
 
-            let window = Window::new(&app);
-            self.window.set(Some(&window));
-
             app.setup_gactions();
             app.setup_accels();
 
-            app.main_window().present();
+            app.get_or_create_main_window();
         }
 
         fn startup(&self) {
@@ -80,8 +77,26 @@ impl Application {
             .build()
     }
 
-    pub fn main_window(&self) -> Window {
-        self.imp().window.upgrade().unwrap()
+    /// Get the main window, if any.
+    pub fn main_window(&self) -> Option<Window> {
+        self.imp().window.upgrade()
+    }
+
+    /// Get the main window or create it if it doesn't exist.
+    ///
+    /// This also ensures that the window is visible by calling
+    /// `Window::present()`.
+    fn get_or_create_main_window(&self) -> Window {
+        if let Some(window) = self.main_window() {
+            window.present();
+            return window;
+        }
+
+        let window = Window::new(self);
+        self.imp().window.set(Some(&window));
+        window.present();
+
+        window
     }
 
     pub fn settings(&self) -> Settings {
@@ -93,9 +108,12 @@ impl Application {
             // Quit
             gio::ActionEntry::builder("quit")
                 .activate(|app: &Application, _, _| {
-                    // This is needed to trigger the delete event
-                    // and saving the window state
-                    app.main_window().close();
+                    if let Some(window) = app.main_window() {
+                        // This is needed to trigger the delete event
+                        // and saving the window state
+                        window.close();
+                    }
+
                     app.quit();
                 })
                 .build(),
@@ -109,7 +127,7 @@ impl Application {
                 .parameter_type(Some(&AppShowRoomPayload::static_variant_type()))
                 .activate(|app: &Application, _, v| {
                     if let Some(payload) = v.and_then(|v| v.get::<AppShowRoomPayload>()) {
-                        app.main_window()
+                        app.get_or_create_main_window()
                             .show_room(&payload.session_id, &payload.room_id);
                     }
                 })
@@ -133,7 +151,6 @@ impl Application {
             .issue_url("https://gitlab.gnome.org/GNOME/fractal/-/issues")
             .support_url("https://matrix.to/#/#fractal:gnome.org")
             .version(config::VERSION)
-            .transient_for(&self.main_window())
             .modal(true)
             .copyright(gettext("© 2017-2023 The Fractal Team"))
             .developers(vec![
@@ -151,6 +168,8 @@ impl Application {
             .designers(vec!["Tobias Bernard".to_string()])
             .translator_credits(gettext("translator-credits"))
             .build();
+
+        dialog.set_transient_for(self.main_window().as_ref());
 
         // This can't be added via the builder
         dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);

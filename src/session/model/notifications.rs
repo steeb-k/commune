@@ -116,7 +116,9 @@ impl Notifications {
         let session_id = session.session_id();
 
         // Don't show notifications for the current session if the window is active.
-        if window.is_active() && window.current_session_id().as_deref() == Some(session_id) {
+        if window
+            .is_some_and(|w| w.is_active() && w.current_session_id().as_deref() == Some(session_id))
+        {
             return;
         }
 
@@ -186,7 +188,7 @@ impl Notifications {
         }
 
         let id = notification_id(session_id, room_id, event_id);
-        Application::default().send_notification(Some(&id), &notification);
+        app.send_notification(Some(&id), &notification);
 
         self.imp()
             .list
