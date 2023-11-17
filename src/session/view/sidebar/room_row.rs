@@ -141,8 +141,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            self.room.disconnect_signals();
-
             if let Some(binding) = self.binding.take() {
                 binding.unbind();
             }

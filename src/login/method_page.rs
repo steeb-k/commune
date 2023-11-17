@@ -72,10 +72,6 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn dispose(&self) {
-            self.login.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for LoginMethodPage {}

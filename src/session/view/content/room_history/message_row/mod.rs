@@ -120,8 +120,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            self.event.disconnect_signals();
-
             while let Some(binding) = self.bindings.borrow_mut().pop() {
                 binding.unbind();
             }

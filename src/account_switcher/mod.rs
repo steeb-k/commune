@@ -74,10 +74,6 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn dispose(&self) {
-            self.session_selection.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for AccountSwitcher {}

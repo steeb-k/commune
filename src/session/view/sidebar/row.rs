@@ -98,10 +98,6 @@ mod imp {
             );
             obj.add_controller(drop);
         }
-
-        fn dispose(&self) {
-            self.sidebar.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for Row {}

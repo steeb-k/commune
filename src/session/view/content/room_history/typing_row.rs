@@ -75,10 +75,6 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn dispose(&self) {
-            self.bound_list.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for TypingRow {}

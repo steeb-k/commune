@@ -65,10 +65,6 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn dispose(&self) {
-            self.room.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for StateTombstone {}

@@ -90,8 +90,6 @@ mod imp {
             for avatar in self.avatars.take() {
                 avatar.unparent();
             }
-
-            self.bound_model.disconnect_signals();
         }
     }
 

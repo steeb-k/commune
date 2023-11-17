@@ -104,10 +104,6 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn dispose(&self) {
-            self.group.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for MessageReaction {}

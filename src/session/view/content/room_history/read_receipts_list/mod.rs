@@ -138,10 +138,6 @@ mod imp {
 
             obj.set_pressed_state(false);
         }
-
-        fn dispose(&self) {
-            self.source.disconnect_signals();
-        }
     }
 
     impl WidgetImpl for ReadReceiptsList {}

@@ -45,8 +45,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            self.model.disconnect_signals();
-
             for watch in self.watches.take().iter().flatten() {
                 watch.unwatch()
             }

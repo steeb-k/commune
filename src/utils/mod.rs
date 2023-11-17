@@ -200,6 +200,12 @@ impl<T: glib::ObjectType> Default for BoundObject<T> {
     }
 }
 
+impl<T: glib::ObjectType> Drop for BoundObject<T> {
+    fn drop(&mut self) {
+        self.disconnect_signals();
+    }
+}
+
 /// Wrapper to manage a bound object.
 ///
 /// This keeps a weak reference to the object.
@@ -252,6 +258,12 @@ impl<T: glib::ObjectType> Default for BoundObjectWeakRef<T> {
             weak_obj: Default::default(),
             signal_handler_ids: Default::default(),
         }
+    }
+}
+
+impl<T: glib::ObjectType> Drop for BoundObjectWeakRef<T> {
+    fn drop(&mut self) {
+        self.disconnect_signals();
     }
 }
 

@@ -91,10 +91,6 @@ mod imp {
             self.invited_is_empty.set(invited_members.n_items() == 0);
             self.banned_is_empty.set(banned_members.n_items() == 0);
         }
-
-        fn dispose(&self) {
-            self.members.disconnect_signals();
-        }
     }
 
     impl ListModelImpl for ExtraLists {
