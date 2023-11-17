@@ -95,6 +95,24 @@ mod imp {
                     }
                 },
             );
+
+            klass.install_action("win.new-session", None, |obj, _, _| {
+                obj.switch_to_greeter_page();
+            });
+            klass.install_action("win.show-login", None, |obj, _, _| {
+                obj.switch_to_login_page();
+            });
+            klass.install_action("win.show-session", None, |obj, _, _| {
+                obj.switch_to_session_page();
+            });
+
+            klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
+                if obj.is_fullscreened() {
+                    obj.unfullscreen();
+                } else {
+                    obj.fullscreen();
+                }
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -156,16 +174,11 @@ mod imp {
 
             obj.load_window_size();
 
-            // Ask for the toggle fullscreen state
-            let fullscreen = gio::SimpleAction::new("toggle-fullscreen", None);
-            fullscreen.connect_activate(clone!(@weak obj as window => move |_, _| {
-                if window.is_fullscreened() {
-                    window.unfullscreen();
-                } else {
-                    window.fullscreen();
-                }
-            }));
-            obj.add_action(&fullscreen);
+            self.session_list
+                .connect_is_empty_notify(clone!(@weak obj => move |session_list| {
+                    obj.action_set_enabled("win.show-session", !session_list.is_empty());
+                }));
+            obj.action_set_enabled("win.show-session", !self.session_list.is_empty());
 
             self.main_stack.connect_visible_child_notify(
                 clone!(@weak obj => move |_| obj.set_default_by_child()),
@@ -492,7 +505,10 @@ impl Window {
         let imp = self.imp();
         let monitor = gio::NetworkMonitor::default();
 
-        if !monitor.is_network_available() {
+        let is_network_available = monitor.is_network_available();
+        self.action_set_enabled("win.show-login", is_network_available);
+
+        if !is_network_available {
             imp.offline_banner
                 .set_title(&gettext("No network connection"));
             imp.offline_banner.set_revealed(true);

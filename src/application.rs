@@ -2,7 +2,6 @@ use std::{borrow::Cow, fmt};
 
 use gettextrs::gettext;
 use gio::{ApplicationFlags, Settings};
-use glib::{clone, WeakRef};
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use ruma::{OwnedRoomId, RoomId};
 use tracing::{debug, info};
@@ -16,7 +15,7 @@ mod imp {
 
     #[derive(Debug)]
     pub struct Application {
-        pub window: WeakRef<Window>,
+        pub window: glib::WeakRef<Window>,
         pub settings: Settings,
     }
 
@@ -53,19 +52,6 @@ mod imp {
 
             app.setup_gactions();
             app.setup_accels();
-
-            let monitor = gio::NetworkMonitor::default();
-            monitor.connect_network_changed(clone!(@weak app => move |monitor, _| {
-                app.lookup_action("show-login")
-                    .and_downcast::<gio::SimpleAction>()
-                    .unwrap()
-                    .set_enabled(monitor.is_network_available());
-            }));
-
-            app.lookup_action("show-login")
-                .and_downcast::<gio::SimpleAction>()
-                .unwrap()
-                .set_enabled(monitor.is_network_available());
 
             app.main_window().present();
         }
@@ -119,16 +105,6 @@ impl Application {
                     app.show_about_dialog();
                 })
                 .build(),
-            gio::ActionEntry::builder("new-session")
-                .activate(|app: &Application, _, _| {
-                    app.main_window().switch_to_greeter_page();
-                })
-                .build(),
-            gio::ActionEntry::builder("show-login")
-                .activate(|app: &Application, _, _| {
-                    app.main_window().switch_to_login_page();
-                })
-                .build(),
             gio::ActionEntry::builder("show-room")
                 .parameter_type(Some(&AppShowRoomPayload::static_variant_type()))
                 .activate(|app: &Application, _, v| {
@@ -139,21 +115,6 @@ impl Application {
                 })
                 .build(),
         ]);
-
-        let show_session_action = gio::SimpleAction::new("show-session", None);
-        show_session_action.connect_activate(clone!(@weak self as app => move |_, _| {
-            app.main_window().switch_to_session_page();
-        }));
-        self.add_action(&show_session_action);
-
-        let win = self.main_window();
-        let session_list = win.session_list();
-        session_list.connect_is_empty_notify(
-            clone!(@weak show_session_action => move |session_list| {
-                show_session_action.set_enabled(!session_list.is_empty());
-            }),
-        );
-        show_session_action.set_enabled(!session_list.is_empty());
     }
 
     /// Sets up keyboard shortcuts for application and window actions.

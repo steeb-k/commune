@@ -7,7 +7,7 @@
           <object class="AdwHeaderBar">
             <child type="start">
               <object class="GtkButton" id="back_button">
-                <property name="action-name">app.show-session</property>
+                <property name="action-name">win.show-session</property>
                 <property name="visible" bind-source="back_button" bind-property="sensitive" bind-flags="sync-create"/>
                 <property name="icon-name">go-previous-symbolic</property>
                 <property name="tooltip-text" translatable="yes">Back</property>
@@ -113,7 +113,7 @@
                                     <property name="can-shrink">true</property>
                                     <property name="label" translatable="yes">_Log In</property>
                                     <property name="use-underline">true</property>
-                                    <property name="action-name">app.show-login</property>
+                                    <property name="action-name">win.show-login</property>
                                   </object>
                                 </child>
                                 <child>
