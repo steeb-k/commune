@@ -59,45 +59,27 @@
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Advanced Information</property>
         <child>
-          <object class="AdwActionRow">
+          <object class="AdwActionRow" id="homeserver">
             <property name="title" translatable="yes">Homeserver</property>
-            <child>
-              <object class="GtkLabel" id="homeserver">
-                <style>
-                  <class name="dim-label"/>
-                </style>
-                <property name="ellipsize">end</property>
-                <property name="selectable">true</property>
-              </object>
-            </child>
+            <style>
+              <class name="property"/>
+            </style>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
+          <object class="AdwActionRow" id="user_id">
             <property name="title" translatable="yes">Matrix User ID</property>
-            <child>
-              <object class="GtkLabel" id="user_id">
-                <style>
-                  <class name="dim-label"/>
-                </style>
-                <property name="ellipsize">end</property>
-                <property name="selectable">true</property>
-              </object>
-            </child>
+            <style>
+              <class name="property"/>
+            </style>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
+          <object class="AdwActionRow" id="session_id">
             <property name="title" translatable="yes">Session ID</property>
-            <child>
-              <object class="GtkLabel" id="session_id">
-                <style>
-                  <class name="dim-label"/>
-                </style>
-                <property name="ellipsize">end</property>
-                <property name="selectable">true</property>
-              </object>
-            </child>
+            <style>
+              <class name="property"/>
+            </style>
           </object>
         </child>
       </object>

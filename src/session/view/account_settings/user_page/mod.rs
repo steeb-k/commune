@@ -46,11 +46,11 @@ mod imp {
         #[template_child]
         pub change_password_subpage: TemplateChild<ChangePasswordSubpage>,
         #[template_child]
-        pub homeserver: TemplateChild<gtk::Label>,
+        pub homeserver: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub user_id: TemplateChild<gtk::Label>,
+        pub user_id: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub session_id: TemplateChild<gtk::Label>,
+        pub session_id: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub deactivate_account_subpage: TemplateChild<DeactivateAccountSubpage>,
         #[template_child]
@@ -162,13 +162,13 @@ impl UserPage {
                 let client = obj.session().unwrap().client();
 
                 let homeserver = client.homeserver();
-                imp.homeserver.set_label(homeserver.as_ref());
+                imp.homeserver.set_subtitle(homeserver.as_ref());
 
                 let user_id = client.user_id().unwrap();
-                imp.user_id.set_label(user_id.as_ref());
+                imp.user_id.set_subtitle(user_id.as_ref());
 
                 let session_id = client.device_id().unwrap();
-                imp.session_id.set_label(session_id.as_ref());
+                imp.session_id.set_subtitle(session_id.as_ref());
             })
         );
     }
