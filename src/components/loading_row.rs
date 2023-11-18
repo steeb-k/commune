@@ -3,21 +3,6 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate
 
 use super::Spinner;
 
-/// The state of a resource that can be loaded.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, glib::Enum)]
-#[enum_type(name = "LoadingState")]
-pub enum LoadingState {
-    /// It hasn't been loaded yet.
-    #[default]
-    Initial,
-    /// It is currently loading.
-    Loading,
-    /// It has been fully loaded.
-    Ready,
-    /// An error occurred while loading it.
-    Error,
-}
-
 mod imp {
     use std::cell::Cell;
 

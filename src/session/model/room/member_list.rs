@@ -15,7 +15,7 @@ use matrix_sdk::{
 use tracing::error;
 
 use super::{Event, Member, Membership, Room};
-use crate::{components::LoadingState, spawn, spawn_tokio};
+use crate::{spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::cell::{Cell, RefCell};

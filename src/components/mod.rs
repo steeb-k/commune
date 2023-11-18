@@ -37,7 +37,7 @@ pub use self::{
     editable_avatar::EditableAvatar,
     image_paintable::ImagePaintable,
     label_with_widgets::{LabelWithWidgets, DEFAULT_PLACEHOLDER},
-    loading_row::{LoadingRow, LoadingState},
+    loading_row::LoadingRow,
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
     overlapping_avatars::OverlappingAvatars,

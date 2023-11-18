@@ -3,9 +3,9 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use super::MembershipSubpageItem;
 use crate::{
-    components::{LoadingRow, LoadingState},
+    components::LoadingRow,
     session::model::MemberList,
-    utils::BoundObjectWeakRef,
+    utils::{BoundObjectWeakRef, LoadingState},
 };
 
 mod imp {
