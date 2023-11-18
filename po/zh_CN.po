@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-07 15:46+0000\n"
-"PO-Revision-Date: 2023-11-08 07:06+0800\n"
+"POT-Creation-Date: 2023-11-16 11:55+0000\n"
+"PO-Revision-Date: 2023-11-16 22:46+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese - China <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -19,7 +19,7 @@ msgstr ""
 "X-Generator: Gtranslator 45.3\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
 msgid "Fractal"
 msgstr "Fractal"
 
@@ -585,7 +585,7 @@ msgstr "验证"
 #. Translators: As in 'Invited Room Members'.
 #: src/session/model/sidebar/category/category_type.rs:29
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
 msgid "Invited"
 msgstr "已邀请"
 
@@ -703,14 +703,14 @@ msgstr "上次见于 %Y 年 %m 月 %d 日 %l:%M %p"
 
 #. Translators: As in 'A verified session'.
 #. Translators: As in "Verified room member".
-#: src/session/view/account_settings/devices_page/device_row.ui:30
-#: src/session/view/account_settings/devices_page/device_row.ui:33
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:50
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:53
+#: src/session/view/account_settings/devices_page/device_row.ui:31
+#: src/session/view/account_settings/devices_page/device_row.ui:34
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "已验证"
 
-#: src/session/view/account_settings/devices_page/device_row.ui:69
+#: src/session/view/account_settings/devices_page/device_row.ui:70
 #: src/session/view/content/verification/identity_verification_widget.rs:506
 #: src/session/view/content/verification/identity_verification_widget.rs:511
 #: src/session/view/content/verification/identity_verification_widget.rs:514
@@ -862,7 +862,7 @@ msgid "Confirm Passphrase"
 msgstr "确认密语"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:112
-#: src/session/view/content/room_details/general_page/mod.ui:148
+#: src/session/view/content/room_details/general_page/mod.ui:157
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 msgid "File"
 msgstr "文件"
@@ -1103,14 +1103,14 @@ msgid "Room List"
 msgstr "聊天室列表"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/session/view/content/explore/public_room_row.rs:209
-#: src/session/view/content/room_history/mod.rs:903
+#: src/session/view/content/explore/public_room_row.rs:210
+#: src/session/view/content/room_history/mod.rs:915
 #: src/session/view/content/room_history/state_row/tombstone.rs:124
 msgid "View"
 msgstr "查看"
 
-#: src/session/view/content/explore/public_room_row.rs:211
-#: src/session/view/content/room_history/mod.rs:906
+#: src/session/view/content/explore/public_room_row.rs:212
+#: src/session/view/content/room_history/mod.rs:918
 #: src/session/view/content/room_history/state_row/tombstone.rs:126
 msgid "Join"
 msgstr "加入"
@@ -1147,15 +1147,15 @@ msgstr "拒绝 {room} 的邀请失败。请稍后重试。"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/member_page/mod.ui:65
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
 msgid "Invite"
 msgstr "邀请"
 
-#: src/session/view/content/invite.ui:99
+#: src/session/view/content/invite.ui:100
 msgid "_Decline"
 msgstr "拒绝(_D)"
 
-#: src/session/view/content/invite.ui:109 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:110 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "接受(_A)"
 
@@ -1200,21 +1200,21 @@ msgstr "说明"
 msgid "Edit Details"
 msgstr "编辑详情"
 
-#: src/session/view/content/room_details/general_page/mod.ui:95
+#: src/session/view/content/room_details/general_page/mod.ui:98
 msgid "Save Details"
 msgstr "保存详情"
 
-#: src/session/view/content/room_details/general_page/mod.ui:107
+#: src/session/view/content/room_details/general_page/mod.ui:113
 msgid "Members"
 msgstr "成员"
 
-#: src/session/view/content/room_details/general_page/mod.ui:133
+#: src/session/view/content/room_details/general_page/mod.ui:141
 #: src/session/view/content/room_details/history_viewer/media.ui:4
 msgid "Media"
 msgstr "媒体"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:164
+#: src/session/view/content/room_details/general_page/mod.ui:174
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 msgid "Audio"
 msgstr "音频"
@@ -1253,7 +1253,7 @@ msgstr "成员"
 
 #. Translators: As in 'Banned Room Members'.
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
 msgid "Banned"
 msgstr "已封禁"
 
@@ -1301,52 +1301,52 @@ msgstr "未发现匹配搜索的用户。"
 msgid "An error occurred while searching for matches."
 msgstr "搜索匹配项时发生错误。"
 
-#: src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs:203
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:203
 msgid "Could not load the full list of room members"
 msgstr "无法加载完整的聊天室成员列表"
 
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:94
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
 msgid "Member Menu"
 msgstr "成员菜单"
 
-#: src/session/view/content/room_details/member_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "验证(_V)"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "设为仲裁员(_M)"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "设为管理员(_A)"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "踢出(_K)"
-
-#: src/session/view/content/room_details/member_page/mod.rs:279
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
 msgid "Invited Room Members"
 msgstr "邀请的聊天室成员"
 
-#: src/session/view/content/room_details/member_page/mod.rs:280
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
 msgid "Banned Room Members"
 msgstr "封禁的聊天室成员"
 
-#: src/session/view/content/room_details/member_page/mod.rs:281
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
 msgid "Room Members"
 msgstr "聊天室成员"
 
-#: src/session/view/content/room_details/member_page/mod.ui:12
-#: src/session/view/content/room_details/member_page/mod.ui:14
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
 msgid "Toggle Room Members Search"
 msgstr "切换聊天室成员搜索"
 
-#: src/session/view/content/room_details/member_page/mod.ui:30
-#: src/session/view/content/room_details/member_page/mod.ui:34
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:29
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
 msgid "Search for room members"
 msgstr "搜索聊天室成员"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:6
+msgid "_Verify"
+msgstr "验证(_V)"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:14
+msgid "Make _Mod"
+msgstr "设为仲裁员(_M)"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:20
+msgid "Make _Admin"
+msgstr "设为管理员(_A)"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:26
+msgid "_Kick"
+msgstr "踢出(_K)"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1433,13 +1433,13 @@ msgid "New Messages"
 msgstr "新消息"
 
 #: src/session/view/content/room_history/item_row.rs:466
-#: src/session/view/content/room_history/mod.rs:554
+#: src/session/view/content/room_history/mod.rs:563
 #: src/session/view/media_viewer.rs:573
 msgid "Permalink copied to clipboard"
 msgstr "永久链接已复制到剪贴板"
 
 #: src/session/view/content/room_history/item_row.rs:470
-#: src/session/view/content/room_history/mod.rs:558
+#: src/session/view/content/room_history/mod.rs:567
 #: src/session/view/media_viewer.rs:577
 msgid "Failed to copy the permalink"
 msgstr "复制该永久链接失败"
@@ -1515,9 +1515,29 @@ msgstr "不支持该图像文件"
 msgid "Could not retrieve media"
 msgstr "无法找回媒体文件"
 
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:130
+msgid "Could not send the message"
+msgstr "无法发送消息"
+
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:136
+msgid "An error occurred with the sending queue"
+msgstr "发送队列发生了错误"
+
+#. Translators: As in 'Sending message…'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:14
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:17
+msgid "Sending…"
+msgstr "正在发送…"
+
+#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:45
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:48
+msgid "Sent"
+msgstr "已发送"
+
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/mod.ui:70
-#: src/session/view/content/room_history/message_row/mod.ui:73
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:67
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
 msgid "Edited"
 msgstr "已编辑"
 
@@ -1545,37 +1565,37 @@ msgctxt "room-history"
 msgid "Edit"
 msgstr "编辑"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:680
+#: src/session/view/content/room_history/message_toolbar/mod.rs:685
 msgid "Your Location"
 msgstr "您的位置"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:692
+#: src/session/view/content/room_history/message_toolbar/mod.rs:697
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "用户定位 {geo_uri} 于 {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:750
 msgid "Select File"
 msgstr "选择文件"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:752
 msgid "Select"
 msgstr "选择"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "Could not open file"
 msgstr "无法打开文件"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:807
+#: src/session/view/content/room_history/message_toolbar/mod.rs:812
 msgid "Error reading file"
 msgstr "读取文件时出错"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:832
+#: src/session/view/content/room_history/message_toolbar/mod.rs:837
 msgid "Error getting image from clipboard"
 msgstr "从剪贴板获取图像时出错"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:849
+#: src/session/view/content/room_history/message_toolbar/mod.rs:854
 msgid "Error getting file from clipboard"
 msgstr "从剪贴板获取文件时出错"
 
@@ -1631,22 +1651,22 @@ msgstr "%m 月 %d 日 %l:%M %p"
 msgid "%B %-e at %-k∶%M"
 msgstr "%m 月 %d 日 %l:%M"
 
-#: src/session/view/content/room_history/mod.rs:357
+#: src/session/view/content/room_history/mod.rs:366
 msgid "Error getting file from drop"
 msgstr "从拖放获取文件时出错"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:540
+#: src/session/view/content/room_history/mod.rs:549
 msgid "Failed to leave {room}"
 msgstr "离开 {room} 失败"
 
-#: src/session/view/content/room_history/mod.rs:901
-#: src/session/view/content/room_history/mod.rs:905
+#: src/session/view/content/room_history/mod.rs:913
+#: src/session/view/content/room_history/mod.rs:917
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "该聊天室有新版本"
 
-#: src/session/view/content/room_history/mod.rs:908
+#: src/session/view/content/room_history/mod.rs:920
 msgid "This room was closed"
 msgstr "该聊天室已关闭"
 
@@ -1702,14 +1722,14 @@ msgstr "聊天室历史"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:256
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:299
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "{n} 个成员已阅"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:269
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:312
 msgid "Seen by {name}"
 msgstr "{name} 已阅"
 
@@ -1860,8 +1880,14 @@ msgstr "{user} 更改了他们的头像。"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:178
+#: src/session/view/content/room_history/typing_row.rs:170
 msgid "<b>{user}</b> is typing…"
+msgstr "<b>{user}</b> 正在输入…"
+
+#. Translators: Do NOT translate the content between '{' and '}', these are
+#. variable names.
+#: src/session/view/content/room_history/typing_row.rs:177
+msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} 个成员正在输入…"
 
@@ -2428,31 +2454,31 @@ msgstr "忘记聊天室(_F)"
 msgid "Switch Accounts"
 msgstr "切换账户"
 
-#: src/session/view/sidebar/mod.ui:110 src/session/view/sidebar/mod.ui:112
+#: src/session/view/sidebar/mod.ui:111 src/session/view/sidebar/mod.ui:113
 msgid "Main Menu"
 msgstr "主菜单"
 
-#: src/session/view/sidebar/mod.ui:121 src/session/view/sidebar/mod.ui:123
+#: src/session/view/sidebar/mod.ui:122 src/session/view/sidebar/mod.ui:124
 msgid "Toggle Room Search"
 msgstr "切换聊天室搜索"
 
-#: src/session/view/sidebar/mod.ui:137
+#: src/session/view/sidebar/mod.ui:138
 msgid "Room Search"
 msgstr "聊天室搜索"
 
-#: src/session/view/sidebar/mod.ui:138
+#: src/session/view/sidebar/mod.ui:139
 msgid "Search for a room"
 msgstr "搜索聊天室"
 
-#: src/session/view/sidebar/mod.ui:147
+#: src/session/view/sidebar/mod.ui:148
 msgid "Offline"
 msgstr "离线"
 
-#: src/session/view/sidebar/mod.ui:162
+#: src/session/view/sidebar/mod.ui:163
 msgid "Sidebar"
 msgstr "侧边栏"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:164
 msgid "Allows to navigate between rooms"
 msgstr "允许在聊天室间导览"
 
