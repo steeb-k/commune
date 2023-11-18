@@ -64,7 +64,7 @@ pub enum SecretError {
 }
 
 impl UserFacingError for SecretError {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             SecretError::UnsupportedVersion { version, .. } => gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
@@ -72,7 +72,7 @@ impl UserFacingError for SecretError {
                 "Found stored session with unsupported version {version_nb}",
                 &[("version_nb", &version.to_string())],
             ),
-            SecretError::Invalid(error) => error,
+            SecretError::Invalid(error) => error.clone(),
             SecretError::Oo7(error) => error.to_user_facing(),
             error => error.to_string(),
         }
@@ -80,7 +80,7 @@ impl UserFacingError for SecretError {
 }
 
 impl UserFacingError for oo7::Error {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             oo7::Error::Portal(error) => error.to_user_facing(),
             oo7::Error::DBus(error) => error.to_user_facing(),
@@ -89,7 +89,7 @@ impl UserFacingError for oo7::Error {
 }
 
 impl UserFacingError for oo7::portal::Error {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             oo7::portal::Error::FileHeaderMismatch(_) |
             oo7::portal::Error::VersionMismatch(_) |
@@ -129,7 +129,7 @@ impl UserFacingError for oo7::portal::Error {
 }
 
 impl UserFacingError for oo7::dbus::Error {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             oo7::dbus::Error::Deleted => gettext(
                 "The item was deleted.",

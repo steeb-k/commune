@@ -160,7 +160,7 @@ pub enum ClientSetupError {
 }
 
 impl UserFacingError for ClientSetupError {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             ClientSetupError::Client(err) => err.to_user_facing(),
             ClientSetupError::Sdk(err) => err.to_user_facing(),

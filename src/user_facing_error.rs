@@ -13,11 +13,11 @@ use matrix_sdk::{
 use crate::ngettext_f;
 
 pub trait UserFacingError {
-    fn to_user_facing(self) -> String;
+    fn to_user_facing(&self) -> String;
 }
 
 impl UserFacingError for HttpError {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             HttpError::Reqwest(error) => {
                 // TODO: Add more information based on the error
@@ -54,7 +54,7 @@ impl UserFacingError for HttpError {
                     _ => {
                         // TODO: The server may not give us pretty enough error message. We should
                         // add our own error message.
-                        message
+                        message.clone()
                     }
                 }
             }
@@ -64,7 +64,7 @@ impl UserFacingError for HttpError {
 }
 
 impl UserFacingError for Error {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             Error::DecryptorError(_) => gettext("Could not decrypt the event"),
             Error::Http(http_error) => http_error.to_user_facing(),
@@ -74,7 +74,7 @@ impl UserFacingError for Error {
 }
 
 impl UserFacingError for ClientBuildError {
-    fn to_user_facing(self) -> String {
+    fn to_user_facing(&self) -> String {
         match self {
             ClientBuildError::Url(_) => gettext("This is not a valid URL"),
             ClientBuildError::AutoDiscovery(_) => {
