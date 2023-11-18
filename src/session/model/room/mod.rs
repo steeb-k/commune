@@ -264,7 +264,7 @@ mod imp {
 
             // Initialize the avatar first since loading is async.
             self.avatar_data
-                .set(AvatarData::new(AvatarImage::new(
+                .set(AvatarData::with_image(AvatarImage::new(
                     &obj.session(),
                     obj.matrix_room().avatar_url().as_deref(),
                     AvatarUriSource::Room,
@@ -1651,7 +1651,7 @@ impl Room {
             }
         }
 
-        self.avatar_data().image().set_uri(avatar_url);
+        self.avatar_data().image().unwrap().set_uri(avatar_url);
     }
 
     /// Whether anyone can join this room.

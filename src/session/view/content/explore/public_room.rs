@@ -80,7 +80,7 @@ mod imp {
             let obj = self.obj();
 
             self.avatar_data
-                .set(AvatarData::new(AvatarImage::new(
+                .set(AvatarData::with_image(AvatarImage::new(
                     &obj.room_list().session(),
                     None,
                     AvatarUriSource::Room,
@@ -166,7 +166,10 @@ impl PublicRoom {
 
         let display_name = room.name.clone().map(Into::into);
         self.avatar_data().set_display_name(display_name);
-        self.avatar_data().image().set_uri(room.avatar_url.clone());
+        self.avatar_data()
+            .image()
+            .unwrap()
+            .set_uri(room.avatar_url.clone());
 
         if let Some(room) = self.room_list().get(&room.room_id) {
             self.set_room(room);

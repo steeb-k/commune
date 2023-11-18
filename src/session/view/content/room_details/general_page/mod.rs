@@ -165,7 +165,7 @@ impl GeneralPage {
             .watch(
                 Some(avatar_data),
                 clone!(@weak self as obj, @weak avatar_data => move || {
-                    obj.avatar_changed(avatar_data.image().uri());
+                    obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
                 }),
             );
         imp.expr_watches.borrow_mut().push(expr_watch);

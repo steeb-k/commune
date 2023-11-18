@@ -198,6 +198,7 @@ impl Member {
         self.set_display_name(member.display_name().map(String::from));
         self.avatar_data()
             .image()
+            .unwrap()
             .set_uri(member.avatar_url().map(std::borrow::ToOwned::to_owned));
         self.set_power_level(member.power_level());
         self.set_membership(member.membership().into());
@@ -211,7 +212,10 @@ impl Member {
         };
 
         self.set_display_name(event.display_name());
-        self.avatar_data().image().set_uri(event.avatar_url());
+        self.avatar_data()
+            .image()
+            .unwrap()
+            .set_uri(event.avatar_url());
         self.set_membership((&event.content().membership).into());
 
         let session = self.session();

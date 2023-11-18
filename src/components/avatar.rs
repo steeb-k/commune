@@ -150,9 +150,9 @@ impl Avatar {
     }
 
     fn request_custom_avatar(&self) {
-        if let Some(data) = &*self.imp().data.borrow() {
+        if let Some(image) = self.imp().data.borrow().as_ref().and_then(|d| d.image()) {
             let size = self.size() * self.scale_factor();
-            data.image().set_needed_size(size as u32);
+            image.set_needed_size(size as u32);
         }
     }
 }

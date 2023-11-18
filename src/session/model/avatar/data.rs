@@ -72,24 +72,30 @@ glib::wrapper! {
 }
 
 impl AvatarData {
-    pub fn new(image: AvatarImage) -> Self {
+    /// Construct a new empty `AvatarData`.
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// Constructs an `AvatarData` with the given image data.
+    pub fn with_image(image: AvatarImage) -> Self {
         glib::Object::builder().property("image", image).build()
     }
 
     /// The data of the user-defined image.
-    pub fn image(&self) -> AvatarImage {
-        self.imp().image.borrow().clone().unwrap()
+    pub fn image(&self) -> Option<AvatarImage> {
+        self.imp().image.borrow().clone()
     }
 
     /// Set the data of the user-defined image.
-    pub fn set_image(&self, image: AvatarImage) {
+    pub fn set_image(&self, image: Option<AvatarImage>) {
         let imp = self.imp();
 
-        if imp.image.borrow().as_ref() == Some(&image) {
+        if imp.image.borrow().as_ref() == image.as_ref() {
             return;
         }
 
-        imp.image.replace(Some(image));
+        imp.image.replace(image);
         self.notify("image");
     }
 
@@ -116,7 +122,7 @@ impl AvatarData {
     pub fn as_notification_icon(&self) -> Option<gdk::Texture> {
         let window = Application::default().main_window()?.upcast();
 
-        let icon = if let Some(paintable) = self.image().paintable() {
+        let icon = if let Some(paintable) = self.image().and_then(|i| i.paintable()) {
             paintable_as_notification_icon(paintable.upcast_ref(), &window)
         } else {
             string_as_notification_icon(&self.display_name().unwrap_or_default(), &window)
@@ -129,5 +135,11 @@ impl AvatarData {
                 None
             }
         }
+    }
+}
+
+impl Default for AvatarData {
+    fn default() -> Self {
+        Self::new()
     }
 }
