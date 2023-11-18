@@ -507,14 +507,8 @@ impl Login {
         let handle = spawn_tokio!(async move { session_info.store().await });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Couldn't store session: {error}");
-
-            let (message, item) = error.into_parts();
-            self.parent_window().switch_to_error_page(
-                &format!("{}\n\n{}", gettext("Unable to store session"), message),
-                item,
-            );
-            return;
+            error!("Could not store session: {error}");
+            toast!(self, gettext("Unable to store session"));
         }
 
         session.connect_ready(clone!(@weak self as obj => move |_| {

@@ -14,7 +14,6 @@ src/components/loading_row.ui
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
 src/contrib/qr_code_scanner/mod.ui
-src/error_page.rs
 src/error_page.ui
 src/greeter.rs
 src/greeter.ui

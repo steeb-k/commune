@@ -13,7 +13,7 @@ use crate::{
     greeter::Greeter,
     login::Login,
     prelude::*,
-    secret::{self, SecretError, StoredSession},
+    secret::{self, StoredSession},
     session::{
         model::{Session, SessionState},
         view::{AccountSettings, SessionView},
@@ -349,34 +349,15 @@ impl Window {
                     }
                 }
             }
-            Err(error) => match error {
-                SecretError::OldVersion { item, session } => {
-                    if session.version == 0 {
-                        warn!("Found old session with sled store, removing…");
-                        session.delete(Some(item), true).await
-                    } else if session.version < 4 {
-                        session.migrate_to_v4(item).await
-                    }
+            Err(error) => {
+                error!("Failed to restore previous sessions: {error}");
 
-                    // Restart.
-                    spawn!(clone!(@weak self as obj => async move {
-                        obj.restore_sessions().await;
-                    }));
-                }
-                _ => {
-                    error!("Failed to restore previous sessions: {error}");
-
-                    let (message, item) = error.into_parts();
-                    self.switch_to_error_page(
-                        &format!(
-                            "{}\n\n{}",
-                            gettext("Failed to restore previous sessions"),
-                            message,
-                        ),
-                        item,
-                    );
-                }
-            },
+                self.switch_to_error_page(&format!(
+                    "{}\n\n{}",
+                    gettext("Failed to restore previous sessions"),
+                    error.to_user_facing(),
+                ));
+            }
         }
     }
 
@@ -481,9 +462,9 @@ impl Window {
         imp.main_stack.set_visible_child(&*imp.greeter);
     }
 
-    pub fn switch_to_error_page(&self, message: &str, item: Option<oo7::Item>) {
+    pub fn switch_to_error_page(&self, message: &str) {
         let imp = self.imp();
-        imp.error_page.display_secret_error(message, item);
+        imp.error_page.display_secret_error(message);
         imp.main_stack.set_visible_child(&*imp.error_page);
     }
 

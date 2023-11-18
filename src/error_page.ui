@@ -13,88 +13,18 @@
           </object>
         </child>
         <property name="content">
-          <object class="AdwStatusPage" id="page">
-            <property name="title" translatable="yes">Secret Service Error</property>
-            <property name="icon-name">key-symbolic</property>
-            <property name="vexpand">true</property>
+          <object class="GtkStack" id="stack">
             <child>
-              <object class="AdwClamp">
-                <child>
-                  <object class="GtkStack" id="stack">
+              <object class="GtkStackPage">
+                <property name="name">secret-error</property>
+                <property name="child">
+                  <object class="AdwStatusPage" id="secret_error_page">
+                    <property name="title" translatable="yes">Secret Service Error</property>
+                    <property name="icon-name">key-symbolic</property>
+                    <property name="vexpand">true</property>
                     <child>
-                      <object class="GtkStackPage">
-                        <property name="name">secret-error-session</property>
-                        <property name="child">
-                          <object class="GtkBox">
-                            <property name="orientation">vertical</property>
-                            <property name="spacing">24</property>
-                            <child>
-                              <object class="GtkLabel">
-                                <style>
-                                  <class name="large-line-height"/>
-                                </style>
-                                <property name="wrap">true</property>
-                                <property name="wrap-mode">word-char</property>
-                                <property name="xalign">0.0</property>   
-                                <property name="label" translatable="yes">It seems like one of the Fractal sessions stored in the Secret Service is corrupted. If you know how to fix it you should do so.</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <style>
-                                  <class name="large-line-height"/>
-                                </style>
-                                <property name="wrap">true</property>
-                                <property name="wrap-mode">word-char</property>
-                                <property name="xalign">0.0</property>
-                                <property name="label" translatable="yes">Alternatively, we could disconnect this session for you. This means you will have to login again and you will lose access to your encrypted messages, unless you have a session open in another client or you have already backed up your encryption keys.</property>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkBox">
-                                <style>
-                                  <class name="warning"/>
-                                </style>
-                                <property name="halign">center</property>
-                                <property name="spacing">6</property>
-                                <child>
-                                  <object class="GtkImage">
-                                    <property name="icon-name">warning-symbolic</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <style>
-                                      <class name="large-line-height"/>
-                                    </style>
-                                    <property name="wrap">true</property>
-                                    <property name="wrap-mode">word-char</property>
-                                    <property name="xalign">0.0</property>
-                                    <property name="label" translatable="yes">Clicking this button might disconnect more than one session!</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="GtkButton">
-                                <style>
-                                  <class name="destructive-action"/>
-                                  <class name="pill"/>
-                                </style>
-                                <property name="halign">center</property>
-                                <property name="can-shrink">true</property>
-                                <property name="label" translatable="yes">Disconnect Session</property>
-                                <property name="action-name">error-page.remove-secret-error-session</property>
-                              </object>
-                            </child>
-                          </object>
-                        </property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkStackPage">
-                        <property name="name">secret-error-other</property>
-                        <property name="child">
+                      <object class="AdwClamp">
+                        <child>
                           <object class="GtkBox">
                             <property name="orientation">vertical</property>
                             <property name="spacing">24</property>
@@ -188,11 +118,11 @@
                               </object>
                             </child>
                           </object>
-                        </property>
+                        </child>
                       </object>
                     </child>
                   </object>
-                </child>
+                </property>
               </object>
             </child>
           </object>

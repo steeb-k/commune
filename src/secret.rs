@@ -47,9 +47,12 @@ pub enum SecretError {
     #[error("Session found with old version")]
     OldVersion { item: Item, session: StoredSession },
 
-    /// A corrupted session was found.
-    #[error("{error}")]
-    CorruptSession { error: String, item: Item },
+    /// An invalid session was found.
+    ///
+    /// This should only happen if for some reason we get an item from a
+    /// different application.
+    #[error("Invalid session: {0}")]
+    Invalid(String),
 
     /// An error occurred interacting with the secret service.
     #[error(transparent)]
@@ -60,22 +63,18 @@ pub enum SecretError {
     WrongProfile,
 }
 
-impl SecretError {
-    /// Split `self` between its message and its optional `Item`.
-    pub fn into_parts(self) -> (String, Option<Item>) {
+impl UserFacingError for SecretError {
+    fn to_user_facing(self) -> String {
         match self {
-            SecretError::UnsupportedVersion { version, item, .. } => (
-                gettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a
-                    // variable name.
-                    "Found stored session with unsupported version {version_nb}",
-                    &[("version_nb", &version.to_string())],
-                ),
-                Some(item),
+            SecretError::UnsupportedVersion { version, .. } => gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "Found stored session with unsupported version {version_nb}",
+                &[("version_nb", &version.to_string())],
             ),
-            SecretError::CorruptSession { error, item } => (error, Some(item)),
-            SecretError::Oo7(error) => (error.to_user_facing(), None),
-            error => (error.to_string(), None),
+            SecretError::Invalid(error) => error,
+            SecretError::Oo7(error) => error.to_user_facing(),
+            error => error.to_string(),
         }
     }
 }
@@ -195,10 +194,9 @@ impl StoredSession {
                 Ok(version) => version,
                 Err(error) => {
                     error!("Could not parse 'version' attribute in stored session: {error}");
-                    return Err(SecretError::CorruptSession {
-                        error: gettext("Malformed version in stored session"),
-                        item,
-                    });
+                    return Err(SecretError::Invalid(gettext(
+                        "Malformed version in stored session",
+                    )));
                 }
             },
             None => 0,
@@ -219,10 +217,9 @@ impl StoredSession {
             // It's an error if the version is at least 2 but there is no profile.
             // Versions older than 2 will be migrated.
             None if version >= 2 => {
-                return Err(SecretError::CorruptSession {
-                    error: gettext("Could not find profile in stored session"),
-                    item,
-                });
+                return Err(SecretError::Invalid(gettext(
+                    "Could not find profile in stored session",
+                )));
             }
             // No issue for other cases.
             _ => {}
@@ -233,17 +230,15 @@ impl StoredSession {
                 Ok(homeserver) => homeserver,
                 Err(error) => {
                     error!("Could not parse 'homeserver' attribute in stored session: {error}");
-                    return Err(SecretError::CorruptSession {
-                        error: gettext("Malformed homeserver in stored session"),
-                        item,
-                    });
+                    return Err(SecretError::Invalid(gettext(
+                        "Malformed homeserver in stored session",
+                    )));
                 }
             },
             None => {
-                return Err(SecretError::CorruptSession {
-                    error: gettext("Could not find homeserver in stored session"),
-                    item,
-                });
+                return Err(SecretError::Invalid(gettext(
+                    "Could not find homeserver in stored session",
+                )));
             }
         };
         let user_id = match attr.get("user") {
@@ -251,35 +246,31 @@ impl StoredSession {
                 Ok(user_id) => user_id,
                 Err(error) => {
                     error!("Could not parse 'user' attribute in stored session: {error}");
-                    return Err(SecretError::CorruptSession {
-                        error: gettext("Malformed user ID in stored session"),
-                        item,
-                    });
+                    return Err(SecretError::Invalid(gettext(
+                        "Malformed user ID in stored session",
+                    )));
                 }
             },
             None => {
-                return Err(SecretError::CorruptSession {
-                    error: gettext("Could not find user ID in stored session"),
-                    item,
-                });
+                return Err(SecretError::Invalid(gettext(
+                    "Could not find user ID in stored session",
+                )));
             }
         };
         let device_id = match attr.get("device-id") {
             Some(string) => <&DeviceId>::from(string.as_str()).to_owned(),
             None => {
-                return Err(SecretError::CorruptSession {
-                    error: gettext("Could not find device ID in stored session"),
-                    item,
-                });
+                return Err(SecretError::Invalid(gettext(
+                    "Could not find device ID in stored session",
+                )));
             }
         };
         let path = match attr.get("db-path") {
             Some(string) => PathBuf::from(string),
             None => {
-                return Err(SecretError::CorruptSession {
-                    error: gettext("Could not find database path in stored session"),
-                    item,
-                });
+                return Err(SecretError::Invalid(gettext(
+                    "Could not find database path in stored session",
+                )));
             }
         };
         let secret = match item.secret().await {
@@ -289,10 +280,9 @@ impl StoredSession {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error:?}");
-                            return Err(SecretError::CorruptSession {
-                                error: gettext("Malformed secret in stored session"),
-                                item,
-                            });
+                            return Err(SecretError::Invalid(gettext(
+                                "Malformed secret in stored session",
+                            )));
                         }
                     }
                 } else {
@@ -300,20 +290,18 @@ impl StoredSession {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error}");
-                            return Err(SecretError::CorruptSession {
-                                error: gettext("Malformed secret in stored session"),
-                                item,
-                            });
+                            return Err(SecretError::Invalid(gettext(
+                                "Malformed secret in stored session",
+                            )));
                         }
                     }
                 }
             }
             Err(error) => {
                 error!("Could not get secret in stored session: {error}");
-                return Err(SecretError::CorruptSession {
-                    error: gettext("Could not get secret in stored session"),
-                    item,
-                });
+                return Err(SecretError::Invalid(gettext(
+                    "Could not get secret in stored session",
+                )));
             }
         };
 
@@ -493,7 +481,7 @@ impl StoredSession {
     /// Migrate this session to version 4.
     ///
     /// This implies moving the database under Fractal's directory.
-    pub async fn migrate_to_v4(mut self, item: Item) {
+    pub async fn migrate_to_v4(&mut self, item: Item) {
         warn!(
             "Session {} with version {} found for user {}, migrating to version 4…",
             self.id(),
@@ -519,12 +507,13 @@ impl StoredSession {
 
         self.version = 4;
 
+        let clone = self.clone();
         spawn_tokio!(async move {
             if let Err(error) = item.delete().await {
                 error!("Failed to remove outdated session: {error}");
             }
 
-            if let Err(error) = self.store().await {
+            if let Err(error) = clone.store().await {
                 error!("Failed to store updated session: {error}");
             }
         })
@@ -584,8 +573,22 @@ pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
 
         match StoredSession::try_from_secret_item(item).await {
             Ok(session) => sessions.push(session),
+            Err(SecretError::OldVersion { item, mut session }) => {
+                if session.version == 0 {
+                    warn!(
+                        "Found old session for {} with sled store, removing…",
+                        session.user_id
+                    );
+                    session.delete(Some(item), true).await;
+                } else if session.version < 4 {
+                    session.migrate_to_v4(item).await;
+                    sessions.push(session);
+                }
+            }
             Err(SecretError::WrongProfile) => {}
-            Err(error) => return Err(error),
+            Err(error) => {
+                error!("Failed to restore previous session: {error}");
+            }
         }
     }
 
