@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-07 16:54+0000\n"
-"PO-Revision-Date: 2023-11-09 22:32+0100\n"
+"POT-Creation-Date: 2023-11-16 11:55+0000\n"
+"PO-Revision-Date: 2023-11-16 14:32+0100\n"
 "Last-Translator: Anders Jonsson <anders.jonsson@norsjovallen.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "Language: sv\n"
@@ -20,7 +20,7 @@ msgstr ""
 "X-Generator: Poedit 3.4\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
 msgid "Fractal"
 msgstr "Fractal"
 
@@ -611,7 +611,7 @@ msgstr "Verifieringar"
 #. Translators: As in 'Invited Room Members'.
 #: src/session/model/sidebar/category/category_type.rs:29
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
 msgid "Invited"
 msgstr "Inbjuden"
 
@@ -729,14 +729,14 @@ msgstr "Senast sedd %-e %B %Y %l:%M %p"
 
 #. Translators: As in 'A verified session'.
 #. Translators: As in "Verified room member".
-#: src/session/view/account_settings/devices_page/device_row.ui:30
-#: src/session/view/account_settings/devices_page/device_row.ui:33
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:50
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:53
+#: src/session/view/account_settings/devices_page/device_row.ui:31
+#: src/session/view/account_settings/devices_page/device_row.ui:34
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "Verifierad"
 
-#: src/session/view/account_settings/devices_page/device_row.ui:69
+#: src/session/view/account_settings/devices_page/device_row.ui:70
 #: src/session/view/content/verification/identity_verification_widget.rs:506
 #: src/session/view/content/verification/identity_verification_widget.rs:511
 #: src/session/view/content/verification/identity_verification_widget.rs:514
@@ -895,7 +895,7 @@ msgid "Confirm Passphrase"
 msgstr "Bekräfta lösenfras"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:112
-#: src/session/view/content/room_details/general_page/mod.ui:154
+#: src/session/view/content/room_details/general_page/mod.ui:157
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 msgid "File"
 msgstr "Fil"
@@ -1145,13 +1145,13 @@ msgstr "Rumslista"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:210
-#: src/session/view/content/room_history/mod.rs:903
+#: src/session/view/content/room_history/mod.rs:915
 #: src/session/view/content/room_history/state_row/tombstone.rs:124
 msgid "View"
 msgstr "Visa"
 
 #: src/session/view/content/explore/public_room_row.rs:212
-#: src/session/view/content/room_history/mod.rs:906
+#: src/session/view/content/room_history/mod.rs:918
 #: src/session/view/content/room_history/state_row/tombstone.rs:126
 msgid "Join"
 msgstr "Gå in"
@@ -1189,15 +1189,15 @@ msgstr "Misslyckades med att neka inbjudan för {room}. Försök igen senare."
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/member_page/mod.ui:65
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
 msgid "Invite"
 msgstr "Bjud in"
 
-#: src/session/view/content/invite.ui:99
+#: src/session/view/content/invite.ui:100
 msgid "_Decline"
 msgstr "_Neka"
 
-#: src/session/view/content/invite.ui:109 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:110 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "_Acceptera"
 
@@ -1250,13 +1250,13 @@ msgstr "Spara detaljer"
 msgid "Members"
 msgstr "Medlemmar"
 
-#: src/session/view/content/room_details/general_page/mod.ui:139
+#: src/session/view/content/room_details/general_page/mod.ui:141
 #: src/session/view/content/room_details/history_viewer/media.ui:4
 msgid "Media"
 msgstr "Media"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:170
+#: src/session/view/content/room_details/general_page/mod.ui:174
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 msgid "Audio"
 msgstr "Ljud"
@@ -1295,7 +1295,7 @@ msgstr "Medlem"
 
 #. Translators: As in 'Banned Room Members'.
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
 msgid "Banned"
 msgstr "Bannlyst"
 
@@ -1346,52 +1346,52 @@ msgstr "Inga användare som matchade sökningen hittades."
 msgid "An error occurred while searching for matches."
 msgstr "Ett fel inträffade under sökning efter matchningar."
 
-#: src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs:203
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:203
 msgid "Could not load the full list of room members"
 msgstr "Kunde inte läsa in den fullständiga listan över rumsmedlemmar"
 
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:94
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
 msgid "Member Menu"
 msgstr "Medlemsmeny"
 
-#: src/session/view/content/room_details/member_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "_Verifiera"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "Gör till _moderator"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "Gör till _admin"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "Spar_ka ut"
-
-#: src/session/view/content/room_details/member_page/mod.rs:279
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
 msgid "Invited Room Members"
 msgstr "Bjöd in rumsmedlemmar"
 
-#: src/session/view/content/room_details/member_page/mod.rs:280
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
 msgid "Banned Room Members"
 msgstr "Bannlyste rumsmedlemmar"
 
-#: src/session/view/content/room_details/member_page/mod.rs:281
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
 msgid "Room Members"
 msgstr "Rumsmedlemmar"
 
-#: src/session/view/content/room_details/member_page/mod.ui:12
-#: src/session/view/content/room_details/member_page/mod.ui:14
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
 msgid "Toggle Room Members Search"
 msgstr "Växla rumsmedlemssökning"
 
-#: src/session/view/content/room_details/member_page/mod.ui:30
-#: src/session/view/content/room_details/member_page/mod.ui:34
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:29
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
 msgid "Search for room members"
 msgstr "Sök efter rumsmedlemmar"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:6
+msgid "_Verify"
+msgstr "_Verifiera"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:14
+msgid "Make _Mod"
+msgstr "Gör till _moderator"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:20
+msgid "Make _Admin"
+msgstr "Gör till _admin"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:26
+msgid "_Kick"
+msgstr "Spar_ka ut"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1478,13 +1478,13 @@ msgid "New Messages"
 msgstr "Nya meddelanden"
 
 #: src/session/view/content/room_history/item_row.rs:466
-#: src/session/view/content/room_history/mod.rs:554
+#: src/session/view/content/room_history/mod.rs:563
 #: src/session/view/media_viewer.rs:573
 msgid "Permalink copied to clipboard"
 msgstr "Permanent länk kopierad till urklipp"
 
 #: src/session/view/content/room_history/item_row.rs:470
-#: src/session/view/content/room_history/mod.rs:558
+#: src/session/view/content/room_history/mod.rs:567
 #: src/session/view/media_viewer.rs:577
 msgid "Failed to copy the permalink"
 msgstr "Misslyckades med att kopiera den permanenta länken"
@@ -1562,9 +1562,29 @@ msgstr "Bildfilen stöds inte"
 msgid "Could not retrieve media"
 msgstr "Kunde inte erhålla media"
 
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:130
+msgid "Could not send the message"
+msgstr "Kunde inte skicka meddelandet"
+
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:136
+msgid "An error occurred with the sending queue"
+msgstr "Ett fel inträffade med sändningskön"
+
+#. Translators: As in 'Sending message…'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:14
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:17
+msgid "Sending…"
+msgstr "Skickar…"
+
+#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:45
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:48
+msgid "Sent"
+msgstr "Skickat"
+
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/mod.ui:70
-#: src/session/view/content/room_history/message_row/mod.ui:73
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:67
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
 msgid "Edited"
 msgstr "Redigerat"
 
@@ -1592,37 +1612,37 @@ msgctxt "room-history"
 msgid "Edit"
 msgstr "Redigering"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:680
+#: src/session/view/content/room_history/message_toolbar/mod.rs:685
 msgid "Your Location"
 msgstr "Din plats"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:692
+#: src/session/view/content/room_history/message_toolbar/mod.rs:697
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Användarplats {geo_uri}, tid {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:750
 msgid "Select File"
 msgstr "Välj fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:752
 msgid "Select"
 msgstr "Välj"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "Could not open file"
 msgstr "Kunde inte öppna fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:807
+#: src/session/view/content/room_history/message_toolbar/mod.rs:812
 msgid "Error reading file"
 msgstr "Fel vid läsning av fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:832
+#: src/session/view/content/room_history/message_toolbar/mod.rs:837
 msgid "Error getting image from clipboard"
 msgstr "Fel då bilden skulle erhållas från urklipp"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:849
+#: src/session/view/content/room_history/message_toolbar/mod.rs:854
 msgid "Error getting file from clipboard"
 msgstr "Fel då filen skulle erhållas från urklipp"
 
@@ -1678,22 +1698,22 @@ msgstr "%-e %B %-l:%M %p"
 msgid "%B %-e at %-k∶%M"
 msgstr "%-e %B %-k:%M"
 
-#: src/session/view/content/room_history/mod.rs:357
+#: src/session/view/content/room_history/mod.rs:366
 msgid "Error getting file from drop"
 msgstr "Fel då släppt fil skulle erhållas"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:540
+#: src/session/view/content/room_history/mod.rs:549
 msgid "Failed to leave {room}"
 msgstr "Misslyckades med att lämna {room}"
 
-#: src/session/view/content/room_history/mod.rs:901
-#: src/session/view/content/room_history/mod.rs:905
+#: src/session/view/content/room_history/mod.rs:913
+#: src/session/view/content/room_history/mod.rs:917
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Det finns en nyare version av detta rum"
 
-#: src/session/view/content/room_history/mod.rs:908
+#: src/session/view/content/room_history/mod.rs:920
 msgid "This room was closed"
 msgstr "Det här rummet stängdes"
 
@@ -1749,7 +1769,7 @@ msgstr "Rumshistorik"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:256
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:299
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Sett av 1 medlem"
@@ -1757,7 +1777,7 @@ msgstr[1] "Sett av {n} medlemmar"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:269
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:312
 msgid "Seen by {name}"
 msgstr "Sett av {name}"
 
@@ -1910,10 +1930,16 @@ msgstr "{user} har ändrat sin profilbild."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:178
+#: src/session/view/content/room_history/typing_row.rs:170
 msgid "<b>{user}</b> is typing…"
+msgstr "<b>{user}</b> skriver…"
+
+#. Translators: Do NOT translate the content between '{' and '}', these are
+#. variable names.
+#: src/session/view/content/room_history/typing_row.rs:177
+msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
-msgstr[0] "<b>{user}</b> skriver…"
+msgstr[0] "{n} medlem skriver…"
 msgstr[1] "{n} medlemmar skriver…"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
@@ -2503,31 +2529,31 @@ msgstr "_Glöm rum"
 msgid "Switch Accounts"
 msgstr "Växla konton"
 
-#: src/session/view/sidebar/mod.ui:110 src/session/view/sidebar/mod.ui:112
+#: src/session/view/sidebar/mod.ui:111 src/session/view/sidebar/mod.ui:113
 msgid "Main Menu"
 msgstr "Huvudmeny"
 
-#: src/session/view/sidebar/mod.ui:121 src/session/view/sidebar/mod.ui:123
+#: src/session/view/sidebar/mod.ui:122 src/session/view/sidebar/mod.ui:124
 msgid "Toggle Room Search"
 msgstr "Växla rumssökning"
 
-#: src/session/view/sidebar/mod.ui:137
+#: src/session/view/sidebar/mod.ui:138
 msgid "Room Search"
 msgstr "Rumssökning"
 
-#: src/session/view/sidebar/mod.ui:138
+#: src/session/view/sidebar/mod.ui:139
 msgid "Search for a room"
 msgstr "Sök efter ett rum"
 
-#: src/session/view/sidebar/mod.ui:147
+#: src/session/view/sidebar/mod.ui:148
 msgid "Offline"
 msgstr "Frånkopplad"
 
-#: src/session/view/sidebar/mod.ui:162
+#: src/session/view/sidebar/mod.ui:163
 msgid "Sidebar"
 msgstr "Sidopanel"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:164
 msgid "Allows to navigate between rooms"
 msgstr "Tillåter navigering mellan rum"
 
