@@ -3,12 +3,14 @@ use gtk::{self, glib, CompositeTemplate};
 
 pub enum ErrorSubpage {
     SecretError,
+    SessionError,
 }
 
 impl ErrorSubpage {
     fn as_str(&self) -> &str {
         match self {
             Self::SecretError => "secret-error",
+            Self::SessionError => "session-error",
         }
     }
 }
@@ -22,9 +24,11 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/error_page.ui")]
     pub struct ErrorPage {
         #[template_child]
+        pub stack: TemplateChild<gtk::Stack>,
+        #[template_child]
         pub secret_error_page: TemplateChild<adw::StatusPage>,
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        pub session_error_page: TemplateChild<adw::StatusPage>,
     }
 
     #[glib::object_subclass]
@@ -64,5 +68,12 @@ impl ErrorPage {
         imp.secret_error_page.set_description(Some(message));
         imp.stack
             .set_visible_child_name(ErrorSubpage::SecretError.as_str());
+    }
+
+    pub fn display_session_error(&self, message: &str) {
+        let imp = self.imp();
+        imp.session_error_page.set_description(Some(message));
+        imp.stack
+            .set_visible_child_name(ErrorSubpage::SessionError.as_str());
     }
 }

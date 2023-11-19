@@ -104,6 +104,18 @@
                 </property>
               </object>
             </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">session-error</property>
+                <property name="child">
+                  <object class="AdwStatusPage" id="session_error_page">
+                    <property name="title" translatable="yes">Failed to Initialize the Session</property>
+                    <property name="icon-name">warning-symbolic</property>
+                    <property name="vexpand">true</property>
+                  </object>
+                </property>
+              </object>
+            </child>
           </object>
         </property>
       </object>

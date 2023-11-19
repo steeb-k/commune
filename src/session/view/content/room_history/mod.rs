@@ -33,6 +33,7 @@ use self::{
 use super::{room_details, RoomDetails};
 use crate::{
     components::{DragOverlay, ReactionChooser, RoomTitle, Spinner},
+    prelude::*,
     session::model::{Event, EventKey, MemberList, Room, RoomType, Timeline, TimelineState},
     spawn, spawn_tokio, toast,
     utils::{message_dialog, template_callbacks::TemplateCallbacks},

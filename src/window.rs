@@ -18,7 +18,7 @@ use crate::{
         model::{Session, SessionState},
         view::{AccountSettings, SessionView},
     },
-    session_list::SessionList,
+    session_list::{FailedSession, NewSession, SessionInfo, SessionList},
     spawn, spawn_tokio, toast, Application, APP_ID, PROFILE,
 };
 
@@ -58,7 +58,6 @@ mod imp {
         /// The one that is selected being the one that is visible.
         pub session_selection: gtk::SingleSelection,
         pub account_switcher: AccountSwitcher,
-        pub waiting_sessions: Cell<usize>,
     }
 
     #[glib::object_subclass]
@@ -103,7 +102,7 @@ mod imp {
                 obj.switch_to_login_page();
             });
             klass.install_action("win.show-session", None, |obj, _, _| {
-                obj.switch_to_session_page();
+                obj.show_selected_session();
             });
 
             klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
@@ -189,6 +188,11 @@ mod imp {
             self.session_selection.set_model(Some(&self.session_list));
             self.session_selection.set_autoselect(true);
 
+            self.session_selection
+                .connect_selected_item_notify(clone!(@weak obj => move |_| {
+                    obj.show_selected_session();
+                }));
+
             spawn!(clone!(@weak obj => async move {
                 obj.restore_sessions().await;
             }));
@@ -268,27 +272,16 @@ impl Window {
         &self.imp().session_selection
     }
 
-    pub fn add_session(&self, session: &Session) {
+    pub fn add_session(&self, session: Session) {
         let imp = &self.imp();
+        let session_list = self.session_list();
 
-        let index = imp.session_list.add(session.clone());
+        let index = session_list.insert(session.clone());
         let settings = Application::default().settings();
         if session.session_id() == settings.string("current-session")
-            || imp.waiting_sessions.get() == 1
+            || !session_list.has_new_sessions()
         {
-            imp.waiting_sessions.set(0);
             imp.session_selection.set_selected(index as u32);
-
-            if session.state() == SessionState::Ready {
-                imp.session.show_content();
-            } else {
-                session.connect_ready(clone!(@weak self as obj => move |_| {
-                    obj.imp().session.show_content();
-                }));
-                self.switch_to_loading_page();
-            }
-        } else if imp.waiting_sessions.get() > 0 {
-            imp.waiting_sessions.set(imp.waiting_sessions.get() - 1);
         }
 
         // Start listening to notifications when the session is ready.
@@ -303,9 +296,6 @@ impl Window {
                 }));
             });
         }
-
-        // We need to grab the focus so that keyboard shortcuts work
-        imp.session.grab_focus();
 
         session.connect_logged_out(clone!(@weak self as obj => move |session| {
             obj.remove_session(session)
@@ -330,7 +320,6 @@ impl Window {
                 if sessions.is_empty() {
                     self.switch_to_greeter_page();
                 } else {
-                    imp.waiting_sessions.set(sessions.len());
                     for stored_session in sessions {
                         info!(
                             "Restoring previous session for user: {}",
@@ -339,6 +328,8 @@ impl Window {
                         if let Some(path) = stored_session.path.to_str() {
                             info!("Database path: {path}");
                         }
+                        imp.session_list
+                            .insert(NewSession::new(stored_session.clone()));
 
                         spawn!(
                             glib::Priority::DEFAULT_IDLE,
@@ -352,25 +343,31 @@ impl Window {
             Err(error) => {
                 error!("Failed to restore previous sessions: {error}");
 
-                self.switch_to_error_page(&format!(
+                let message = format!(
                     "{}\n\n{}",
                     gettext("Failed to restore previous sessions"),
                     error.to_user_facing(),
-                ));
+                );
+
+                imp.error_page.display_secret_error(&message);
+                imp.main_stack.set_visible_child(&*imp.error_page);
             }
         }
     }
 
     /// Restore a stored session.
     async fn restore_stored_session(&self, session_info: StoredSession) {
-        match Session::restore(session_info).await {
+        match Session::restore(session_info.clone()).await {
             Ok(session) => {
                 session.prepare().await;
-                self.add_session(&session);
+                self.add_session(session);
             }
             Err(error) => {
-                warn!("Failed to restore previous login: {error}");
+                warn!("Failed to restore previous session: {error}");
                 toast!(self, error.to_user_facing());
+
+                self.session_list()
+                    .insert(FailedSession::new(session_info, error));
             }
         }
     }
@@ -381,7 +378,7 @@ impl Window {
             self.imp()
                 .session_selection
                 .selected_item()
-                .and_downcast::<Session>()?
+                .and_downcast::<SessionInfo>()?
                 .session_id()
                 .to_owned(),
         )
@@ -393,14 +390,64 @@ impl Window {
     pub fn set_current_session_by_id(&self, session_id: &str) -> bool {
         let imp = self.imp();
 
-        if let Some(index) = imp.session_list.index(session_id) {
-            imp.session_selection.set_selected(index as u32);
-        } else {
+        let Some(index) = imp.session_list.index(session_id) else {
             return false;
+        };
+
+        let index = index as u32;
+        let prev_selected = imp.session_selection.selected();
+
+        if index == prev_selected {
+            // Make sure the session is displayed;
+            self.show_selected_session();
+        } else {
+            imp.session_selection.set_selected(index);
         }
 
-        self.switch_to_session_page();
         true
+    }
+
+    /// Show the selected session.
+    ///
+    /// The displayed view will change according to the current session.
+    pub fn show_selected_session(&self) {
+        let imp = self.imp();
+
+        let Some(session) = imp
+            .session_selection
+            .selected_item()
+            .and_downcast::<SessionInfo>()
+        else {
+            return;
+        };
+
+        if let Some(session) = session.downcast_ref::<Session>() {
+            imp.session.set_session(Some(session));
+
+            if session.state() == SessionState::Ready {
+                imp.main_stack.set_visible_child(&*imp.session);
+            } else {
+                session.connect_ready(clone!(@weak imp => move |_| {
+                    imp.main_stack.set_visible_child(&*imp.session);
+                }));
+                self.switch_to_loading_page();
+            }
+
+            // We need to grab the focus so that keyboard shortcuts work.
+            imp.session.grab_focus();
+
+            return;
+        }
+
+        if let Some(failed) = session.downcast_ref::<FailedSession>() {
+            imp.error_page
+                .display_session_error(&failed.error().to_user_facing());
+            imp.main_stack.set_visible_child(&*imp.error_page);
+        } else {
+            self.switch_to_loading_page();
+        }
+
+        imp.session.set_session(None);
     }
 
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
@@ -446,11 +493,6 @@ impl Window {
         imp.main_stack.set_visible_child(&*imp.loading);
     }
 
-    pub fn switch_to_session_page(&self) {
-        let imp = self.imp();
-        imp.main_stack.set_visible_child(&imp.session.get());
-    }
-
     pub fn switch_to_login_page(&self) {
         let imp = self.imp();
         imp.main_stack.set_visible_child(&*imp.login);
@@ -460,12 +502,6 @@ impl Window {
     pub fn switch_to_greeter_page(&self) {
         let imp = self.imp();
         imp.main_stack.set_visible_child(&*imp.greeter);
-    }
-
-    pub fn switch_to_error_page(&self, message: &str) {
-        let imp = self.imp();
-        imp.error_page.display_secret_error(message);
-        imp.main_stack.set_visible_child(&*imp.error_page);
     }
 
     /// This appends a new toast to the list
@@ -524,7 +560,11 @@ impl Window {
 
     /// Open the account settings for the session with the given ID.
     pub fn open_account_settings(&self, session_id: &str) {
-        let Some(session) = self.session_list().get(session_id) else {
+        let Some(session) = self
+            .session_list()
+            .get(session_id)
+            .and_downcast::<Session>()
+        else {
             error!("Tried to open account settings of unknown session with ID '{session_id}'");
             return;
         };

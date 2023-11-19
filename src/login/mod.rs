@@ -557,7 +557,7 @@ impl Login {
     #[template_callback]
     fn finish_login(&self) {
         let session = self.imp().session.take().unwrap();
-        self.parent_window().add_session(&session);
+        self.parent_window().add_session(session);
 
         self.clean();
     }

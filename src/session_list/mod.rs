@@ -1,7 +1,11 @@
 use gtk::{gio, glib, glib::SignalHandlerId, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
 
-use crate::session::model::Session;
+mod failed_session;
+mod new_session;
+mod session_info;
+
+pub use self::{failed_session::*, new_session::*, session_info::*};
 
 mod imp {
     use std::cell::RefCell;
@@ -13,7 +17,7 @@ mod imp {
     #[derive(Debug, Default)]
     pub struct SessionList {
         /// A map of session ID to session.
-        pub list: RefCell<IndexMap<String, Session>>,
+        pub list: RefCell<IndexMap<String, SessionInfo>>,
     }
 
     #[glib::object_subclass]
@@ -44,7 +48,7 @@ mod imp {
 
     impl ListModelImpl for SessionList {
         fn item_type(&self) -> glib::Type {
-            Session::static_type()
+            SessionInfo::static_type()
         }
 
         fn n_items(&self) -> u32 {
@@ -78,8 +82,17 @@ impl SessionList {
         self.imp().list.borrow().is_empty()
     }
 
+    /// Whether any of the sessions are new.
+    pub fn has_new_sessions(&self) -> bool {
+        self.imp()
+            .list
+            .borrow()
+            .values()
+            .any(|s| s.is::<NewSession>())
+    }
+
     /// The session with the given ID, if any.
-    pub fn get(&self, session_id: &str) -> Option<Session> {
+    pub fn get(&self, session_id: &str) -> Option<SessionInfo> {
         self.imp().list.borrow().get(session_id).cloned()
     }
 
@@ -88,10 +101,13 @@ impl SessionList {
         self.imp().list.borrow().get_index_of(session_id)
     }
 
-    /// Add the given session to the list.
+    /// Insert the given session to the list.
+    ///
+    /// If a session with the same ID already exists, it is replaced.
     ///
     /// Returns the index of the session.
-    pub fn add(&self, session: Session) -> usize {
+    pub fn insert(&self, session: impl IsA<SessionInfo>) -> usize {
+        let session = session.upcast();
         let was_empty = self.is_empty();
 
         let (index, replaced) = self
@@ -100,9 +116,9 @@ impl SessionList {
             .borrow_mut()
             .insert_full(session.session_id().to_owned(), session);
 
-        let added = if replaced.is_some() { 0 } else { 1 };
+        let removed = if replaced.is_some() { 1 } else { 0 };
 
-        self.items_changed(index as u32, 0, added);
+        self.items_changed(index as u32, removed, 1);
 
         if was_empty {
             self.notify("is-empty")

@@ -6,6 +6,7 @@ use ruma::ServerName;
 use super::PublicRoom;
 use crate::{
     components::{Avatar, Spinner, SpinnerButton},
+    prelude::*,
     spawn, toast, Window,
 };
 

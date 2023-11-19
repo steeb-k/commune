@@ -48,13 +48,7 @@
               <object class="Login" id="login"/>
             </child>
             <child>
-              <object class="SessionView" id="session">
-                <binding name="session">
-                  <lookup name="selected-item">
-                    <lookup name="session-selection">Window</lookup>
-                  </lookup>
-                </binding>
-              </object>
+              <object class="SessionView" id="session"/>
             </child>
             <child>
               <object class="GtkStackPage">

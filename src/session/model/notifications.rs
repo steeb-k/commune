@@ -12,7 +12,8 @@ use tracing::{debug, error, warn};
 
 use super::{Room, Session};
 use crate::{
-    application::AppShowRoomPayload, spawn, spawn_tokio, utils::matrix::get_event_body, Application,
+    application::AppShowRoomPayload, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body,
+    Application,
 };
 
 mod imp {

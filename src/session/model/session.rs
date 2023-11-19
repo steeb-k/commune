@@ -1,11 +1,12 @@
 use std::time::Duration;
 
-use adw::{prelude::*, subclass::prelude::*};
 use futures_util::StreamExt;
 use gettextrs::gettext;
 use gtk::{
-    self, gio, glib,
+    gio, glib,
     glib::{clone, signal::SignalHandlerId},
+    prelude::*,
+    subclass::prelude::*,
 };
 use matrix_sdk::{
     config::SyncSettings, matrix_auth::MatrixSession, room::Room as MatrixRoom, sync::SyncResponse,
@@ -33,6 +34,7 @@ use super::{
 use crate::{
     prelude::*,
     secret::StoredSession,
+    session_list::{BoxedStoredSession, SessionInfo, SessionInfoImpl},
     spawn, spawn_tokio,
     utils::{
         check_if_reachable,
@@ -53,10 +55,6 @@ pub enum SessionState {
     Ready = 2,
 }
 
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedStoredSession")]
-struct BoxedStoredSession(StoredSession);
-
 mod imp {
     use std::cell::{Cell, RefCell};
 
@@ -70,7 +68,6 @@ mod imp {
         pub sidebar_list_model: OnceCell<SidebarListModel>,
         pub user: OnceCell<User>,
         pub state: Cell<SessionState>,
-        pub info: OnceCell<StoredSession>,
         pub sync_tokio_handle: RefCell<Option<JoinHandle<()>>>,
         pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
         pub offline: Cell<bool>,
@@ -82,19 +79,13 @@ mod imp {
     impl ObjectSubclass for Session {
         const NAME: &'static str = "Session";
         type Type = super::Session;
+        type ParentType = SessionInfo;
     }
 
     impl ObjectImpl for Session {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpecBoxed::builder::<BoxedStoredSession>("info")
-                        .write_only()
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("session-id")
-                        .read_only()
-                        .build(),
                     glib::ParamSpecObject::builder::<SidebarListModel>("sidebar-list-model")
                         .read_only()
                         .build(),
@@ -113,21 +104,10 @@ mod imp {
             PROPERTIES.as_ref()
         }
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "info" => self
-                    .info
-                    .set(value.get::<BoxedStoredSession>().unwrap().0)
-                    .unwrap(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
             let obj = self.obj();
 
             match pspec.name() {
-                "session-id" => obj.session_id().to_value(),
                 "sidebar-list-model" => obj.sidebar_list_model().to_value(),
                 "user" => obj.user().to_value(),
                 "offline" => obj.is_offline().to_value(),
@@ -167,11 +147,14 @@ mod imp {
             }
         }
     }
+
+    impl SessionInfoImpl for Session {}
 }
 
 glib::wrapper! {
     /// A Matrix user session.
-    pub struct Session(ObjectSubclass<imp::Session>);
+    pub struct Session(ObjectSubclass<imp::Session>)
+        @extends SessionInfo;
 }
 
 impl Session {
@@ -201,16 +184,6 @@ impl Session {
         obj.notify("user");
 
         Ok(obj)
-    }
-
-    /// The info to store this session.
-    pub fn info(&self) -> &StoredSession {
-        self.imp().info.get().unwrap()
-    }
-
-    /// The unique local ID for this session.
-    pub fn session_id(&self) -> &str {
-        self.info().id()
     }
 
     /// The current state of the session.
@@ -396,11 +369,7 @@ impl Session {
         let monitor = gio::NetworkMonitor::default();
 
         let is_offline = if monitor.is_network_available() {
-            if let Some(info) = imp.info.get() {
-                !check_if_reachable(&info.homeserver).await
-            } else {
-                false
-            }
+            !check_if_reachable(&self.homeserver()).await
         } else {
             true
         };
@@ -517,7 +486,7 @@ impl Session {
             settings.delete();
         }
 
-        imp.info.get().unwrap().clone().delete(None, false).await;
+        self.info().clone().delete(None, false).await;
 
         self.notifications().clear();
 

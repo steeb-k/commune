@@ -54,19 +54,23 @@ mod imp {
         }
 
         fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
+            let obj = self.obj();
+
             match pspec.name() {
-                "data" => self.child_avatar.set_data(value.get().unwrap()),
-                "size" => self.child_avatar.set_size(value.get().unwrap()),
-                "selected" => self.obj().set_selected(value.get().unwrap()),
+                "data" => obj.set_data(value.get().unwrap()),
+                "size" => obj.set_size(value.get().unwrap()),
+                "selected" => obj.set_selected(value.get().unwrap()),
                 _ => unimplemented!(),
             }
         }
 
         fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            let obj = self.obj();
+
             match pspec.name() {
-                "data" => self.child_avatar.data().to_value(),
-                "size" => self.child_avatar.size().to_value(),
-                "selected" => self.obj().is_selected().to_value(),
+                "data" => obj.data().to_value(),
+                "size" => obj.size().to_value(),
+                "selected" => obj.is_selected().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -120,8 +124,18 @@ impl AvatarWithSelection {
         self.avatar().data()
     }
 
+    /// Set the [`AvatarData`] displayed by this widget.
+    pub fn set_data(&self, data: Option<AvatarData>) {
+        self.avatar().set_data(data);
+    }
+
     /// The size of the Avatar.
     pub fn size(&self) -> i32 {
         self.avatar().size()
+    }
+
+    /// Set the size of the Avatar.
+    pub fn set_size(&self, size: i32) {
+        self.avatar().set_size(size);
     }
 }

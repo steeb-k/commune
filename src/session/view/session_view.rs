@@ -226,12 +226,12 @@ impl SessionView {
     }
 
     /// Set the Matrix user session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if self.session() == session {
+    pub fn set_session(&self, session: Option<&Session>) {
+        if self.session().as_ref() == session {
             return;
         }
 
-        self.imp().session.set(session.as_ref());
+        self.imp().session.set(session);
         self.notify("session");
     }
 
@@ -311,7 +311,7 @@ impl SessionView {
         imp.stack.set_visible_child(&*imp.overlay);
 
         if let Some(window) = self.parent_window() {
-            window.switch_to_session_page();
+            window.show_selected_session();
         }
     }
 
