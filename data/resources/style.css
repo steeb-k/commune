@@ -253,6 +253,7 @@ login {
 
 sidebar-row > * {
   margin: 0 12px;
+  padding: 9px;
   border-radius: 6px;
   transition-property: outline, outline-width, outline-offset, outline-color;
   transition-duration: 300ms;
@@ -260,10 +261,6 @@ sidebar-row > * {
   outline: 0 solid transparent;
   outline-offset: 2px;
   margin-top: 2px;
-}
-
-sidebar-row > * > * {
-  padding: 9px;
 }
 
 sidebar-row:focus > * {
@@ -292,9 +289,13 @@ sidebar-row:not(.drop-mode) > *:hover {
   background-color: alpha(currentColor, 0.19);
 }
 
-sidebar-row entry {
+sidebar-row sidebar-entry {
   background: none;
   font-weight: bold;
+}
+
+sidebar-row sidebar-entry image {
+  min-width: 24px; /* Same width as avatars, so the text is aligned */
 }
 
 sidebar-row category {

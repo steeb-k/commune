@@ -24,7 +24,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            klass.set_css_name("entry");
+            klass.set_css_name("sidebar-entry");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
