@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-13 08:59+0000\n"
-"PO-Revision-Date: 2023-11-13 22:19+0100\n"
+"POT-Creation-Date: 2023-11-19 12:11+0000\n"
+"PO-Revision-Date: 2023-11-19 13:19+0100\n"
 "Last-Translator: AesirIvy <aesir.ivy@gmx.com>\n"
 "Language-Team: LANGUAGE TEAM <E-MAIL@ADDRESS or HOME PAGE>\n"
 "Language: fr_FR\n"
@@ -99,7 +99,7 @@ msgstr ""
 "Son interface est optimisée pour la collaboration dans les grands groupes, "
 "comme les projets de logiciels libres."
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:17 src/application.rs:169
+#: data/org.gnome.Fractal.metainfo.xml.in.in:17 src/application.rs:148
 msgid "The Fractal Team"
 msgstr "L’équipe Fractal"
 
@@ -113,18 +113,18 @@ msgstr "_Ajouter un compte"
 msgid "Account Settings"
 msgstr "Paramètres du compte"
 
-#: src/application.rs:177
+#: src/application.rs:155
 msgid "© 2017-2023 The Fractal Team"
 msgstr "© 2017-2023 L’équipe Fractal"
 
-#: src/application.rs:191
+#: src/application.rs:169
 msgid "translator-credits"
 msgstr ""
 "Eisha Chen-yen-su\n"
 "Alexandre Franke"
 
 #. This can't be added via the builder
-#: src/application.rs:195
+#: src/application.rs:175
 msgid "Name by"
 msgstr "Nommé par"
 
@@ -226,54 +226,17 @@ msgstr "Ficher non consultable"
 msgid "Unable to connect to Camera"
 msgstr "Impossible de se connecter à la caméra"
 
-#: src/error_page.rs:110
-msgid "Session removed successfully."
-msgstr "Session retirée avec succès"
-
-#: src/error_page.rs:118
-msgid "Could not remove session from secret storage"
-msgstr "Impossible de retirer la session du stockage de secrets"
-
 #: src/error_page.ui:10
 #: src/session/view/content/room_details/invite_subpage/mod.ui:139
 #: src/session/view/create_dm_dialog/mod.ui:103
 msgid "Error"
 msgstr "Erreur"
 
-#: src/error_page.ui:17
+#: src/error_page.ui:22
 msgid "Secret Service Error"
 msgstr "Erreur du service de secrets"
 
 #: src/error_page.ui:39
-msgid ""
-"It seems like one of the Fractal sessions stored in the Secret Service is "
-"corrupted. If you know how to fix it you should do so."
-msgstr ""
-"Il semble qu’une de vos sessions Fractal stockée dans le service des secrets "
-"est corrompue. Si vous savez comment la réparer, vous devriez le faire."
-
-#: src/error_page.ui:50
-msgid ""
-"Alternatively, we could disconnect this session for you. This means you will "
-"have to login again and you will lose access to your encrypted messages, "
-"unless you have a session open in another client or you have already backed "
-"up your encryption keys."
-msgstr ""
-"Sinon, nous pouvons la déconnecter pour vous. Cela signifie que vous devrez "
-"vous reconnecter et vous perdrez l’accès à vos messages chiffrés, à moins "
-"que vous n’ayez une session ouverte dans un autre client, ou que vous ayez "
-"déjà sauvegardé vos clés de chiffrement."
-
-#: src/error_page.ui:73
-msgid "Clicking this button might disconnect more than one session!"
-msgstr "Cliquer sur ce bouton pourrait déconnecter plus d’une session !"
-
-#: src/error_page.ui:86
-#: src/session/view/account_settings/devices_page/device_row.rs:103
-msgid "Disconnect Session"
-msgstr "Déconnecter la session"
-
-#: src/error_page.ui:109
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -283,26 +246,26 @@ msgstr ""
 "informations sensibles de session et une erreur s’est produite pendant que "
 "nous essayions d’y stocker ou d’en obtenir votre session."
 
-#: src/error_page.ui:124
+#: src/error_page.ui:54
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr ""
 "Voici quelques éléments qui pourraient vous aider à régler le problème avec "
 "le service des secrets :"
 
-#: src/error_page.ui:147
+#: src/error_page.ui:77
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr ""
 "Assurez-vous d’avoir un fournisseur de service de secrets installé, comme "
 "gnome-keyring."
 
-#: src/error_page.ui:172
+#: src/error_page.ui:102
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr ""
 "Vérifiez que vous avez un trousseau par défaut et qu’il est déverrouillé."
 
-#: src/error_page.ui:187
+#: src/error_page.ui:117
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -310,11 +273,11 @@ msgstr ""
 "Vérifiez le journal de l’application et la documentation de votre "
 "distribution pour plus d’informations."
 
-#: src/greeter.rs:75 src/login/mod.rs:626 src/window.rs:497
+#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:494
 msgid "No network connection"
 msgstr "Aucune connexion au réseau"
 
-#: src/greeter.rs:79 src/login/mod.rs:631 src/window.rs:501
+#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:498
 msgid "No Internet connection"
 msgstr "Aucune connexion à Internet"
 
@@ -353,28 +316,28 @@ msgid ""
 msgstr ""
 "La découverte automatique, ou encore recherche de « well-known », permet de "
 "découvrir l’URL d’un serveur d’accueil Matrix à partir d’un nom de domaine. "
-"Vous ne devriez la désactiver que si votre serveur d’accueil ne la prend pas en "
-"charge, ou si vous voulez fournir l’adresse vous-même."
+"Vous ne devriez la désactiver que si votre serveur d’accueil ne la prend pas "
+"en charge, ou si vous voulez fournir l’adresse vous-même."
 
 #: src/login/advanced_dialog.ui:17
 msgid "_Auto-discovery"
 msgstr "Découverte _automatique"
 
-#: src/login/homeserver_page.rs:130
+#: src/login/homeserver_page.rs:126
 msgid "Domain Name"
 msgstr "Nom de domaine"
 
-#: src/login/homeserver_page.rs:132
+#: src/login/homeserver_page.rs:128
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Le domaine de votre serveur d’accueil Matrix, par exemple gnome.org"
 
-#: src/login/homeserver_page.rs:135 src/login/method_page.ui:43
+#: src/login/homeserver_page.rs:131 src/login/method_page.ui:43
 msgid "Homeserver URL"
 msgstr "URL du serveur d’accueil"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/homeserver_page.rs:139
+#: src/login/homeserver_page.rs:135
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Le domaine de votre serveur d’accueil Matrix, par exemple {address}"
 
@@ -396,11 +359,11 @@ msgstr "Avancé…"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:151
+#: src/login/method_page.rs:147
 msgid "Log in to {domain_name}"
 msgstr "Connexion à {domain_name}"
 
-#: src/login/method_page.rs:158
+#: src/login/method_page.rs:154
 msgid "Log in"
 msgstr "Se connecter"
 
@@ -420,7 +383,7 @@ msgstr "Mot de passe _oublié ?"
 msgid "More SSO Providers"
 msgstr "Plus de fournisseurs d’authentification unique"
 
-#: src/login/mod.rs:514
+#: src/login/mod.rs:511
 msgid "Unable to store session"
 msgstr "Impossible de stocker la session"
 
@@ -447,41 +410,41 @@ msgstr "Veuillez suivre les indications dans le navigateur."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret.rs:62
+#: src/secret.rs:72
 msgid "Found stored session with unsupported version {version_nb}"
 msgstr ""
 "Une session enregistrée avec une version {version_nb} non prise en charge a "
 "été trouvée"
 
-#: src/secret.rs:93
+#: src/secret.rs:101
 msgid "The secret storage file is corrupted."
 msgstr "Le fichier de stockage de secrets est corrompu."
 
-#: src/secret.rs:97
+#: src/secret.rs:105
 msgid "Could not access the secret storage file location."
 msgstr ""
 "Impossible d’accéder à l’emplacement du fichier de stockage de secrets."
 
-#: src/secret.rs:100
+#: src/secret.rs:108
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr ""
 "Une erreur inconnue s’est produite lors de l’accès au fichier de stockage de "
 "secrets"
 
-#: src/secret.rs:103
+#: src/secret.rs:111
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "Le fichier de stockage de secrets a été modifié par un autre processus."
 
-#: src/secret.rs:106
+#: src/secret.rs:114
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
-"Une erreur inconnue s’est produite lors de l’interaction avec le portail "
-"D-Bus de secrets."
+"Une erreur inconnue s’est produite lors de l’interaction avec le portail D-"
+"Bus de secrets."
 
-#: src/secret.rs:109
+#: src/secret.rs:117
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -489,7 +452,7 @@ msgstr ""
 "La demande d’accès au portail de secrets de Flatpak a été annulée. Veuillez "
 "accepter toute demande d’accès à ce portail."
 
-#: src/secret.rs:112
+#: src/secret.rs:120
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -497,35 +460,35 @@ msgstr ""
 "Le portail Flatpak de secrets n’est pas disponible. Assurez-vous que xdg-"
 "desktop-portal est installé et qu’il est au moins à la version 1.5.0."
 
-#: src/secret.rs:115
+#: src/secret.rs:123
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Le portail Flatpak de secrets a fourni une clé trop faible pour être sûre."
 
-#: src/secret.rs:127
+#: src/secret.rs:135
 msgid "The item was deleted."
 msgstr "L’élément a été supprimé."
 
-#: src/secret.rs:131 src/secret.rs:151
+#: src/secret.rs:139 src/secret.rs:159
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Une erreur inconnue s’est produite lors de l’interaction avec le service D-"
 "Bus de secrets"
 
-#: src/secret.rs:134
+#: src/secret.rs:142
 msgid "The collection or item is locked."
 msgstr "La collection ou l’objet est verrouillé."
 
-#: src/secret.rs:137
+#: src/secret.rs:145
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "La session du service D-Bus de secrets n’existe pas."
 
-#: src/secret.rs:140
+#: src/secret.rs:148
 msgid "The collection or item does not exist."
 msgstr "La collection ou l’objet n’existe pas."
 
-#: src/secret.rs:144
+#: src/secret.rs:152
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -533,7 +496,7 @@ msgstr ""
 "La demande d’accès au portail D-Bus de secrets a été annulée. Veuillez "
 "accepter toute demande d’accès à ce portail."
 
-#: src/secret.rs:147
+#: src/secret.rs:155
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -541,50 +504,50 @@ msgstr ""
 "Impossible d’accéder à la collection par défaut. Assurez-vous qu'un "
 "trousseau de clés a été créé et défini par défaut."
 
-#: src/secret.rs:190
+#: src/secret.rs:198
 msgid "Malformed version in stored session"
 msgstr "Version malformée dans la session stockée"
 
-#: src/secret.rs:214
+#: src/secret.rs:221
 msgid "Could not find profile in stored session"
 msgstr "Impossible de trouver de profil dans la session stockée"
 
-#: src/secret.rs:228
+#: src/secret.rs:234
 msgid "Malformed homeserver in stored session"
 msgstr "Serveur d’accueil malformé dans la session stockée"
 
-#: src/secret.rs:235
+#: src/secret.rs:240
 msgid "Could not find homeserver in stored session"
 msgstr "Impossible de trouver le serveur d’accueil dans la session stockée"
 
-#: src/secret.rs:246
+#: src/secret.rs:250
 msgid "Malformed user ID in stored session"
 msgstr "Identifiant malformé dans la session stockée"
 
-#: src/secret.rs:253
+#: src/secret.rs:256
 msgid "Could not find user ID in stored session"
 msgstr "Impossible de trouver l’identifiant dans la session stockée"
 
-#: src/secret.rs:262
+#: src/secret.rs:264
 msgid "Could not find device ID in stored session"
 msgstr "Impossible de trouver l’identifiant d’appareil dans la session stockée"
 
-#: src/secret.rs:271
+#: src/secret.rs:272
 msgid "Could not find database path in stored session"
 msgstr ""
 "Impossible de trouver le chemin de la base de données dans la session stockée"
 
-#: src/secret.rs:284 src/secret.rs:295
+#: src/secret.rs:284 src/secret.rs:294
 msgid "Malformed secret in stored session"
 msgstr "Secret malformé dans la session stockée"
 
-#: src/secret.rs:305
+#: src/secret.rs:303
 msgid "Could not get secret in stored session"
 msgstr "Impossible d’obtenir le secret depuis la session stockée"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret.rs:420
+#: src/secret.rs:417
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal : identifiants Matrix pour {user_id}"
 
@@ -633,7 +596,7 @@ msgstr "Vérifications"
 #. Translators: As in 'Invited Room Members'.
 #: src/session/model/sidebar/category/category_type.rs:29
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
 msgid "Invited"
 msgstr "Invité"
 
@@ -668,6 +631,10 @@ msgstr "Échec du chargement de l’appareil connecté."
 #: src/session/view/account_settings/devices_page/device_list.rs:180
 msgid "Failed to load the list of connected devices."
 msgstr "Échec du chargement de la liste des appareils connectés."
+
+#: src/session/view/account_settings/devices_page/device_row.rs:103
+msgid "Disconnect Session"
+msgstr "Déconnecter la session"
 
 #: src/session/view/account_settings/devices_page/device_row.rs:105
 #: src/session/view/account_settings/user_page/mod.ui:112
@@ -753,8 +720,8 @@ msgstr "Dernière activité le %-e %B %Y à %l:%M %p"
 #. Translators: As in "Verified room member".
 #: src/session/view/account_settings/devices_page/device_row.ui:31
 #: src/session/view/account_settings/devices_page/device_row.ui:34
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:52
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:55
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "Vérifié"
 
@@ -1142,7 +1109,7 @@ msgid "General"
 msgstr "Général"
 
 #: src/session/view/account_settings/user_page/mod.ui:27
-#: src/session/view/room_creation.ui:56
+#: src/session/view/room_creation.ui:54
 msgid "Name"
 msgstr "Nom"
 
@@ -1169,13 +1136,13 @@ msgstr "Liste des salons"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:210
 #: src/session/view/content/room_history/mod.rs:915
-#: src/session/view/content/room_history/state_row/tombstone.rs:124
+#: src/session/view/content/room_history/state_row/tombstone.rs:120
 msgid "View"
 msgstr "Voir"
 
 #: src/session/view/content/explore/public_room_row.rs:212
 #: src/session/view/content/room_history/mod.rs:918
-#: src/session/view/content/room_history/state_row/tombstone.rs:126
+#: src/session/view/content/room_history/state_row/tombstone.rs:122
 msgid "Join"
 msgstr "Rejoindre"
 
@@ -1211,7 +1178,7 @@ msgstr "Impossible de refuser l’invitation pour {room}. Réessayez plus tard."
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/member_page/mod.ui:65
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
 msgid "Invite"
 msgstr "Inviter"
 
@@ -1317,7 +1284,7 @@ msgstr "Membre"
 
 #. Translators: As in 'Banned Room Members'.
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/member_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
 msgid "Banned"
 msgstr "Banni"
 
@@ -1367,52 +1334,52 @@ msgstr "Aucun membre correspondant trouvé"
 msgid "An error occurred while searching for matches."
 msgstr "Erreur lors de la recherche de correspondances."
 
-#: src/session/view/content/room_details/member_page/members_list_view/extra_lists.rs:203
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:199
 msgid "Could not load the full list of room members"
 msgstr "Impossible de charger la liste complète des membres du salon"
 
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:96
-#: src/session/view/content/room_details/member_page/members_list_view/member_row.ui:98
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
 msgid "Member Menu"
 msgstr "Menu des membres"
 
-#: src/session/view/content/room_details/member_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "_Vérifier"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "Rendre _modérateur"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "Rendre _admin"
-
-#: src/session/view/content/room_details/member_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "E_xpulser"
-
-#: src/session/view/content/room_details/member_page/mod.rs:279
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
 msgid "Invited Room Members"
 msgstr "Membres invités dans le salon"
 
-#: src/session/view/content/room_details/member_page/mod.rs:280
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
 msgid "Banned Room Members"
 msgstr "Membres bannis du salon"
 
-#: src/session/view/content/room_details/member_page/mod.rs:281
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
 msgid "Room Members"
 msgstr "Membres du salon"
 
-#: src/session/view/content/room_details/member_page/mod.ui:12
-#: src/session/view/content/room_details/member_page/mod.ui:14
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
 msgid "Toggle Room Members Search"
 msgstr "Basculer la recherche de membres du salon"
 
-#: src/session/view/content/room_details/member_page/mod.ui:30
-#: src/session/view/content/room_details/member_page/mod.ui:34
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:29
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
 msgid "Search for room members"
 msgstr "Rechercher des membres du salon"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:6
+msgid "_Verify"
+msgstr "_Vérifier"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:14
+msgid "Make _Mod"
+msgstr "Rendre _modérateur"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:20
+msgid "Make _Admin"
+msgstr "Rendre _admin"
+
+#: src/session/view/content/room_details/members_page/member_menu.ui:26
+msgid "_Kick"
+msgstr "E_xpulser"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1584,9 +1551,29 @@ msgstr "Fichier image non pris en charge"
 msgid "Could not retrieve media"
 msgstr "Impossible de récupérer le média"
 
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:130
+msgid "Could not send the message"
+msgstr "Impossible d’envoyer le message"
+
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:136
+msgid "An error occurred with the sending queue"
+msgstr "Erreur au niveau de la file d’envoi"
+
+#. Translators: As in 'Sending message…'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:14
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:17
+msgid "Sending…"
+msgstr "Envoi…"
+
+#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:45
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:48
+msgid "Sent"
+msgstr "Envoyé"
+
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/mod.ui:71
-#: src/session/view/content/room_history/message_row/mod.ui:74
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:67
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
 msgid "Edited"
 msgstr "Modifié"
 
@@ -1614,37 +1601,37 @@ msgctxt "room-history"
 msgid "Edit"
 msgstr "Modifier"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:680
+#: src/session/view/content/room_history/message_toolbar/mod.rs:685
 msgid "Your Location"
 msgstr "Votre position"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:692
+#: src/session/view/content/room_history/message_toolbar/mod.rs:697
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Position de l’utilisateur {geo_uri} à {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:745
+#: src/session/view/content/room_history/message_toolbar/mod.rs:750
 msgid "Select File"
 msgstr "Sélectionner un fichier"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:747
+#: src/session/view/content/room_history/message_toolbar/mod.rs:752
 msgid "Select"
 msgstr "Sélectionner"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:762
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "Could not open file"
 msgstr "Impossible d’ouvrir le fichier"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:807
+#: src/session/view/content/room_history/message_toolbar/mod.rs:812
 msgid "Error reading file"
 msgstr "Erreur lors de la lecture du fichier"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:832
+#: src/session/view/content/room_history/message_toolbar/mod.rs:837
 msgid "Error getting image from clipboard"
 msgstr "Erreur lors de l’obtention de l’image issue du presse-papiers"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:849
+#: src/session/view/content/room_history/message_toolbar/mod.rs:854
 msgid "Error getting file from clipboard"
 msgstr "Erreur lors de l’obtention du fichier issu du presse-papiers"
 
@@ -1771,7 +1758,7 @@ msgstr "Historique du salon"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:256
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:295
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Vu par 1 membre"
@@ -1779,7 +1766,7 @@ msgstr[1] "Vu par {n} membres"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:269
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:308
 msgid "Seen by {name}"
 msgstr "Vu par {name}"
 
@@ -1930,13 +1917,13 @@ msgstr "{user} a changé son avatar."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:179
+#: src/session/view/content/room_history/typing_row.rs:166
 msgid "<b>{user}</b> is typing…"
 msgstr "<b>{user}</b> est en train d’écrire…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:186
+#: src/session/view/content/room_history/typing_row.rs:173
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} membre écrit…"
@@ -2076,8 +2063,8 @@ msgid ""
 "Ask {user} if they see the following emoji appear in the same order on their "
 "screen."
 msgstr ""
-"Demandez à {user} si les mêmes emoji apparaissent dans le même ordre sur "
-"son appareil."
+"Demandez à {user} si les mêmes emoji apparaissent dans le même ordre sur son "
+"appareil."
 
 #: src/session/view/content/verification/identity_verification_widget.rs:590
 msgid "Verification Complete"
@@ -2200,8 +2187,8 @@ msgid ""
 "and sessions."
 msgstr ""
 "Si vous avez perdu tout accès à vos autres sessions, vous pouvez créer une "
-"nouvelle identité de chiffrement. Attention, cela réinitialise la vérification de tous les "
-"utilisateurs et de toutes les sessions."
+"nouvelle identité de chiffrement. Attention, cela réinitialise la "
+"vérification de tous les utilisateurs et de toutes les sessions."
 
 #: src/session/view/content/verification/session_verification.rs:435
 msgid ""
@@ -2364,73 +2351,73 @@ msgstr "Plein écran"
 msgid "Exit Fullscreen"
 msgstr "Quitter le plein écran"
 
-#: src/session/view/room_creation.rs:232
+#: src/session/view/room_creation.rs:234
 msgid "The address is already taken."
 msgstr "L’adresse est déjà prise."
 
-#: src/session/view/room_creation.rs:265
+#: src/session/view/room_creation.rs:266
 msgid "Can’t contain “:”"
 msgstr "Ne peut contenir « : »"
 
-#: src/session/view/room_creation.rs:270
+#: src/session/view/room_creation.rs:271
 msgid "Can’t contain “#”"
 msgstr "Ne peut contenir « # »"
 
-#: src/session/view/room_creation.rs:275
+#: src/session/view/room_creation.rs:276
 msgid "Too long. Use a shorter address."
 msgstr "Trop long. Utilisez une adresse plus courte."
 
-#: src/session/view/room_creation.ui:39
+#: src/session/view/room_creation.ui:37
 msgid "New Room"
 msgstr "Nouveau salon"
 
-#: src/session/view/room_creation.ui:63
+#: src/session/view/room_creation.ui:61
 msgid "Topic (Optional)"
 msgstr "Sujet (optionnel)"
 
-#: src/session/view/room_creation.ui:71
+#: src/session/view/room_creation.ui:69
 msgid "Room Visibility"
 msgstr "Visibilité du salon"
 
-#: src/session/view/room_creation.ui:74
+#: src/session/view/room_creation.ui:72
 msgid "Private"
 msgstr "Privé"
 
-#: src/session/view/room_creation.ui:75
+#: src/session/view/room_creation.ui:73
 msgid "Only invited people can join this room"
 msgstr "Seules les personnes invitées peuvent rejoindre ce salon"
 
-#: src/session/view/room_creation.ui:88
+#: src/session/view/room_creation.ui:86
 msgid "Public"
 msgstr "Public"
 
-#: src/session/view/room_creation.ui:89
+#: src/session/view/room_creation.ui:87
 msgid "Anyone can find and join this room"
 msgstr "Tout le monde peut trouver et rejoindre ce salon"
 
-#: src/session/view/room_creation.ui:107
+#: src/session/view/room_creation.ui:105
 msgid "End-to-End Encryption"
 msgstr "Chiffrement de bout en bout"
 
-#: src/session/view/room_creation.ui:108
+#: src/session/view/room_creation.ui:106
 msgid "Cannot be disabled later"
 msgstr "Ne peut plus être désactivé plus tard"
 
-#: src/session/view/room_creation.ui:120
+#: src/session/view/room_creation.ui:118
 msgid ""
 "Fractal does not support online backup for encryption keys yet, so you will "
 "need to back them up manually or your message history will be lost if you "
 "lose access to all your sessions."
 msgstr ""
 "Fractal ne prend pas encore en charge la sauvegarde en ligne des clés de "
-"chiffrement, vous devrez donc les sauvegarder manuellement ou l’historique de "
-"vos messages sera perdu si vous perdez l’accès à toutes vos sessions."
+"chiffrement, vous devrez donc les sauvegarder manuellement ou l’historique "
+"de vos messages sera perdu si vous perdez l’accès à toutes vos sessions."
 
-#: src/session/view/room_creation.ui:134
+#: src/session/view/room_creation.ui:132
 msgid "Room Address"
 msgstr "Adresses du salon"
 
-#: src/session/view/room_creation.ui:184
+#: src/session/view/room_creation.ui:182
 msgid "_Create Room"
 msgstr "_Créer un salon"
 
@@ -2568,13 +2555,13 @@ msgid "Allows to navigate between rooms"
 msgstr "Permet la navigation entre les salons"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:374 src/session/view/sidebar/row.rs:342
+#: src/session/view/sidebar/room_row.rs:372 src/session/view/sidebar/row.rs:338
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr ""
 "Impossible de déplacer {room} de {previous_category} vers {new_category}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:393 src/session/view/sidebar/row.rs:357
+#: src/session/view/sidebar/room_row.rs:391 src/session/view/sidebar/row.rs:353
 msgid "Failed to forget {room}."
 msgstr "Impossible d’oublier {room}."
 
@@ -2739,8 +2726,8 @@ msgid ""
 "Do you really want to decline this invite? You won’t be able to join this "
 "room without it."
 msgstr ""
-"Voulez-vous vraiment refuser cette invitation ? Vous ne pourrez pas rejoindre "
-"cette salle par vous-même plus tard."
+"Voulez-vous vraiment refuser cette invitation ? Vous ne pourrez pas "
+"rejoindre cette salle par vous-même plus tard."
 
 #. We are leaving a room that was joined.
 #: src/utils/message_dialog.rs:27
@@ -2764,9 +2751,37 @@ msgstr ""
 msgid "Leave"
 msgstr "Quitter"
 
-#: src/window.rs:360
+#: src/window.rs:357
 msgid "Failed to restore previous sessions"
 msgstr "Échec de la restauration de la session précédente"
+
+#~ msgid "Session removed successfully."
+#~ msgstr "Session retirée avec succès"
+
+#~ msgid "Could not remove session from secret storage"
+#~ msgstr "Impossible de retirer la session du stockage de secrets"
+
+#~ msgid ""
+#~ "It seems like one of the Fractal sessions stored in the Secret Service is "
+#~ "corrupted. If you know how to fix it you should do so."
+#~ msgstr ""
+#~ "Il semble qu’une de vos sessions Fractal stockée dans le service des "
+#~ "secrets est corrompue. Si vous savez comment la réparer, vous devriez le "
+#~ "faire."
+
+#~ msgid ""
+#~ "Alternatively, we could disconnect this session for you. This means you "
+#~ "will have to login again and you will lose access to your encrypted "
+#~ "messages, unless you have a session open in another client or you have "
+#~ "already backed up your encryption keys."
+#~ msgstr ""
+#~ "Sinon, nous pouvons la déconnecter pour vous. Cela signifie que vous "
+#~ "devrez vous reconnecter et vous perdrez l’accès à vos messages chiffrés, "
+#~ "à moins que vous n’ayez une session ouverte dans un autre client, ou que "
+#~ "vous ayez déjà sauvegardé vos clés de chiffrement."
+
+#~ msgid "Clicking this button might disconnect more than one session!"
+#~ msgstr "Cliquer sur ce bouton pourrait déconnecter plus d’une session !"
 
 #~ msgid "Disconnect the corrupted session"
 #~ msgstr "Déconnecter la session corrompue"
