@@ -1,9 +1,39 @@
+use std::fmt;
+
+use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-mod entry_type;
-
-pub use self::entry_type::EntryType;
 use super::{CategoryType, SidebarItem, SidebarItemExt, SidebarItemImpl};
+
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+#[repr(u32)]
+#[enum_type(name = "ItemType")]
+pub enum ItemType {
+    #[default]
+    Explore = 0,
+    Forget = 1,
+}
+
+impl ItemType {
+    /// The icon name for this item type.
+    pub fn icon_name(&self) -> &'static str {
+        match self {
+            Self::Explore => "explore-symbolic",
+            Self::Forget => "user-trash-symbolic",
+        }
+    }
+}
+
+impl fmt::Display for ItemType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let label = match self {
+            Self::Explore => gettext("Explore"),
+            Self::Forget => gettext("Forget Room"),
+        };
+
+        f.write_str(&label)
+    }
+}
 
 mod imp {
     use std::cell::Cell;
@@ -11,23 +41,23 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default)]
-    pub struct Entry {
-        pub type_: Cell<EntryType>,
+    pub struct IconItem {
+        pub type_: Cell<ItemType>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Entry {
-        const NAME: &'static str = "Entry";
-        type Type = super::Entry;
+    impl ObjectSubclass for IconItem {
+        const NAME: &'static str = "IconItem";
+        type Type = super::IconItem;
         type ParentType = SidebarItem;
     }
 
-    impl ObjectImpl for Entry {
+    impl ObjectImpl for IconItem {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
                 vec![
-                    glib::ParamSpecEnum::builder::<EntryType>("type")
+                    glib::ParamSpecEnum::builder::<ItemType>("type")
                         .construct_only()
                         .build(),
                     glib::ParamSpecString::builder("display-name")
@@ -63,46 +93,40 @@ mod imp {
         }
     }
 
-    impl SidebarItemImpl for Entry {
+    impl SidebarItemImpl for IconItem {
         fn update_visibility(&self, for_category: CategoryType) {
             let obj = self.obj();
 
             match obj.type_() {
-                EntryType::Explore => obj.set_visible(true),
-                EntryType::Forget => obj.set_visible(for_category == CategoryType::Left),
+                ItemType::Explore => obj.set_visible(true),
+                ItemType::Forget => obj.set_visible(for_category == CategoryType::Left),
             }
         }
     }
 }
 
 glib::wrapper! {
-    /// A top-level row in the sidebar without children.
-    ///
-    /// Entry is supposed to be used in a TreeListModel, but as it does not have
-    /// any children, implementing the ListModel interface is not required.
-    pub struct Entry(ObjectSubclass<imp::Entry>) @extends SidebarItem;
+    /// A top-level row in the sidebar with an icon.
+    pub struct IconItem(ObjectSubclass<imp::IconItem>) @extends SidebarItem;
 }
 
-impl Entry {
-    pub fn new(type_: EntryType) -> Self {
+impl IconItem {
+    pub fn new(type_: ItemType) -> Self {
         glib::Object::builder().property("type", type_).build()
     }
 
-    /// The type of this entry.
-    pub fn type_(&self) -> EntryType {
+    /// The type of this item.
+    pub fn type_(&self) -> ItemType {
         self.imp().type_.get()
     }
 
-    /// The display name of this entry.
+    /// The display name of this item.
     pub fn display_name(&self) -> String {
         self.type_().to_string()
     }
 
-    /// The icon name used for this entry.
-    pub fn icon_name(&self) -> Option<&str> {
-        match self.type_() {
-            EntryType::Explore => Some("explore-symbolic"),
-            EntryType::Forget => Some("user-trash-symbolic"),
-        }
+    /// The icon name used for this item.
+    pub fn icon_name(&self) -> &'static str {
+        self.type_().icon_name()
     }
 }

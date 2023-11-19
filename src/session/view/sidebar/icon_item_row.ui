@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="SidebarEntryRow" parent="AdwBin">
+  <template class="SidebarIconItemRow" parent="AdwBin">
     <child>
       <object class="GtkBox">
         <property name="spacing">12</property>
         <child>
           <object class="GtkImage">
             <binding name="icon-name">
-              <lookup name="icon-name" type="Entry">
-                <lookup name="entry">SidebarEntryRow</lookup>
+              <lookup name="icon-name" type="IconItem">
+                <lookup name="icon-item">SidebarIconItemRow</lookup>
               </lookup>
             </binding>
             <property name="accessible-role">presentation</property>
@@ -20,8 +20,8 @@
             <property name="hexpand">True</property>
             <property name="ellipsize">end</property>
             <binding name="label">
-              <lookup name="display-name" type="Entry">
-                <lookup name="entry">SidebarEntryRow</lookup>
+              <lookup name="display-name" type="IconItem">
+                <lookup name="icon-item">SidebarIconItemRow</lookup>
               </lookup>
             </binding>
           </object>

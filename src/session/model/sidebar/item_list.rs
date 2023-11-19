@@ -1,6 +1,6 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{Category, CategoryType, Entry, EntryType, SidebarItem, SidebarItemExt};
+use super::{Category, CategoryType, IconItem, ItemType, SidebarItem, SidebarItemExt};
 use crate::session::model::{RoomList, VerificationList};
 
 mod imp {
@@ -77,14 +77,14 @@ mod imp {
             let verification_list = obj.verification_list();
 
             let list: [SidebarItem; 8] = [
-                Entry::new(EntryType::Explore).upcast(),
+                IconItem::new(ItemType::Explore).upcast(),
                 Category::new(CategoryType::VerificationRequest, verification_list).upcast(),
                 Category::new(CategoryType::Invited, room_list).upcast(),
                 Category::new(CategoryType::Favorite, room_list).upcast(),
                 Category::new(CategoryType::Normal, room_list).upcast(),
                 Category::new(CategoryType::LowPriority, room_list).upcast(),
                 Category::new(CategoryType::Left, room_list).upcast(),
-                Entry::new(EntryType::Forget).upcast(),
+                IconItem::new(ItemType::Forget).upcast(),
             ];
 
             self.list.set(list.clone()).unwrap();

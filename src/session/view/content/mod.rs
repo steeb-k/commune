@@ -12,7 +12,7 @@ use self::{
     verification::IdentityVerificationWidget,
 };
 use crate::session::model::{
-    Entry, EntryType, IdentityVerification, Room, RoomType, Session, VerificationMode,
+    IconItem, IdentityVerification, ItemType, Room, RoomType, Session, VerificationMode,
 };
 
 mod imp {
@@ -252,8 +252,8 @@ impl Content {
                 }
             }
             Some(o)
-                if o.is::<Entry>()
-                    && o.downcast_ref::<Entry>().unwrap().type_() == EntryType::Explore =>
+                if o.downcast_ref::<IconItem>()
+                    .is_some_and(|i| i.type_() == ItemType::Explore) =>
             {
                 imp.explore.init();
                 imp.stack.set_visible_child(&*imp.explore);

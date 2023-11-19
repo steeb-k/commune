@@ -289,12 +289,12 @@ sidebar-row:not(.drop-mode) > *:hover {
   background-color: alpha(currentColor, 0.19);
 }
 
-sidebar-row sidebar-entry {
+sidebar-row icon-item {
   background: none;
   font-weight: bold;
 }
 
-sidebar-row sidebar-entry image {
+sidebar-row icon-item image {
   min-width: 24px; /* Same width as avatars, so the text is aligned */
 }
 
@@ -345,7 +345,7 @@ sidebar-row.drop-empty > * {
   color: @accent_color;
 }
 
-sidebar-row entry.forget {
+sidebar-row icon-item.forget {
   color: @error_color;
   background: none;
 }

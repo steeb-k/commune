@@ -2,10 +2,11 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
 
-use super::{CategoryRow, EntryRow, RoomRow, Sidebar, VerificationRow};
+use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
 use crate::{
     session::model::{
-        Category, CategoryType, Entry, EntryType, IdentityVerification, Room, RoomType, SidebarItem,
+        Category, CategoryType, IconItem, IdentityVerification, ItemType, Room, RoomType,
+        SidebarItem,
     },
     spawn, toast,
     utils::{message_dialog, BoundObjectWeakRef},
@@ -204,20 +205,16 @@ impl Row {
                 };
 
                 child.set_room(Some(room.clone()));
-            } else if let Some(entry) = item.downcast_ref::<Entry>() {
-                let child = if let Some(child) = self.child().and_downcast::<EntryRow>() {
+            } else if let Some(icon_item) = item.downcast_ref::<IconItem>() {
+                let child = if let Some(child) = self.child().and_downcast::<IconItemRow>() {
                     child
                 } else {
-                    let child = EntryRow::new();
+                    let child = IconItemRow::new();
                     self.set_child(Some(&child));
                     child
                 };
 
-                if entry.type_() == EntryType::Forget {
-                    self.add_css_class("forget");
-                }
-
-                child.set_entry(Some(entry.clone()));
+                child.set_icon_item(Some(icon_item.clone()));
             } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
                 let child = if let Some(child) = self.child().and_downcast::<VerificationRow>() {
                     child
@@ -255,13 +252,13 @@ impl Row {
         }
     }
 
-    /// Get the `EntryType` of this item.
+    /// Get the [`ItemType`] of this item.
     ///
-    /// If this is not a `Entry`, returns `None`.
-    pub fn entry_type(&self) -> Option<EntryType> {
+    /// If this is not an [`IconItem`], returns `None`.
+    pub fn item_type(&self) -> Option<ItemType> {
         self.item()
-            .and_downcast_ref::<Entry>()
-            .map(|entry| entry.type_())
+            .and_downcast_ref::<IconItem>()
+            .map(|i| i.type_())
     }
 
     /// Handle the drag-n-drop hovering this row.
@@ -278,8 +275,8 @@ impl Row {
                         .set_drop_active_target_type(Some(target_type));
                     return true;
                 }
-            } else if let Some(entry_type) = self.entry_type() {
-                if room.category() == RoomType::Left && entry_type == EntryType::Forget {
+            } else if let Some(item_type) = self.item_type() {
+                if room.category() == RoomType::Left && item_type == ItemType::Forget {
                     self.add_css_class("drop-active");
                     self.sidebar().set_drop_active_target_type(None);
                     return true;
@@ -306,9 +303,9 @@ impl Row {
                     }));
                     ret = true;
                 }
-            } else if let Some(entry_type) = self.entry_type() {
-                if room.category() == RoomType::Left && entry_type == EntryType::Forget {
-                    spawn!(clone!(@weak self as obj, @weak room => async move {
+            } else if let Some(item_type) = self.item_type() {
+                if room.category() == RoomType::Left && item_type == ItemType::Forget {
+                    spawn!(clone!(@strong self as obj, @weak room => async move {
                         obj.forget_room(&room).await;
                     }));
                     ret = true;
@@ -377,10 +374,10 @@ impl Row {
                     self.remove_css_class("drop-empty");
                 }
             } else {
-                let is_forget_entry = self
-                    .entry_type()
-                    .map_or(false, |entry_type| entry_type == EntryType::Forget);
-                if is_forget_entry && source_type == RoomType::Left {
+                let is_forget_item = self
+                    .item_type()
+                    .is_some_and(|item_type| item_type == ItemType::Forget);
+                if is_forget_item && source_type == RoomType::Left {
                     self.remove_css_class("drop-disabled");
                 } else {
                     self.add_css_class("drop-disabled");

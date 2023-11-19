@@ -1,5 +1,5 @@
 mod category_row;
-mod entry_row;
+mod icon_item_row;
 mod room_row;
 mod row;
 mod verification_row;
@@ -9,14 +9,14 @@ use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
 use self::{
-    category_row::CategoryRow, entry_row::EntryRow, room_row::RoomRow, row::Row,
+    category_row::CategoryRow, icon_item_row::IconItemRow, room_row::RoomRow, row::Row,
     verification_row::VerificationRow,
 };
 use crate::{
     components::Avatar,
     prelude::*,
     session::model::{
-        Category, CategoryType, Entry, IdentityVerification, Room, RoomType, Selection,
+        Category, CategoryType, IconItem, IdentityVerification, Room, RoomType, Selection,
         SidebarListModel, User,
     },
     Window,
@@ -162,7 +162,7 @@ mod imp {
                 match row.item() {
                     Some(o) if o.is::<Category>() => row.set_expanded(!row.is_expanded()),
                     Some(o) if o.is::<Room>() => model.set_selected(pos),
-                    Some(o) if o.is::<Entry>() => model.set_selected(pos),
+                    Some(o) if o.is::<IconItem>() => model.set_selected(pos),
                     Some(o) if o.is::<IdentityVerification>() => model.set_selected(pos),
                     _ => {}
                 }
