@@ -354,6 +354,7 @@ impl Sidebar {
             gtk::PopoverMenu::builder()
                 .menu_model(&*imp.room_row_menu)
                 .has_arrow(false)
+                .halign(gtk::Align::Start)
                 .build()
         })
     }
