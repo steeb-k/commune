@@ -28,9 +28,6 @@
                         <property name="orientation">vertical</property>
                         <child>
                           <object class="GtkLabel" id="description">
-                            <style>
-                              <class name="large-line-height"/>
-                            </style>
                             <property name="label"></property>
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
@@ -39,9 +36,6 @@
                         </child>
                         <child>
                           <object class="GtkLabel" id="instructions">
-                            <style>
-                              <class name="large-line-height"/>
-                            </style>
                             <property name="label"></property>
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>

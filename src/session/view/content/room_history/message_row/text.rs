@@ -532,7 +532,6 @@ fn new_label() -> gtk::Label {
         .wrap_mode(pango::WrapMode::WordChar)
         .xalign(0.0)
         .valign(gtk::Align::Start)
-        .css_classes(["line-height"])
         .build()
 }
 

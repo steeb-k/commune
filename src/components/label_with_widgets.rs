@@ -83,7 +83,6 @@ mod imp {
             label.set_wrap_mode(pango::WrapMode::WordChar);
             label.set_xalign(0.0);
             label.set_valign(gtk::Align::Start);
-            label.add_css_class("line-height");
         }
 
         fn dispose(&self) {

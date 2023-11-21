@@ -30,9 +30,6 @@
                             <property name="spacing">24</property>
                             <child>
                               <object class="GtkLabel">
-                                <style>
-                                  <class name="large-line-height"/>
-                                </style>
                                 <property name="wrap">true</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="xalign">0.0</property>   
@@ -45,9 +42,6 @@
                                 <property name="spacing">12</property>
                                 <child>
                                   <object class="GtkLabel">
-                                    <style>
-                                      <class name="large-line-height"/>
-                                    </style>
                                     <property name="wrap">true</property>
                                     <property name="wrap-mode">word-char</property>
                                     <property name="xalign">0.0</property>
@@ -59,18 +53,12 @@
                                     <property name="spacing">6</property>
                                     <child>
                                       <object class="GtkLabel">
-                                        <style>
-                                          <class name="large-line-height"/>
-                                        </style>
                                         <property name="valign">start</property>
                                         <property name="label">•</property>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="GtkLabel">
-                                        <style>
-                                          <class name="large-line-height"/>
-                                        </style>
                                         <property name="wrap">true</property>
                                         <property name="wrap-mode">word-char</property>
                                         <property name="xalign">0.0</property>
@@ -84,18 +72,12 @@
                                     <property name="spacing">6</property>
                                     <child>
                                       <object class="GtkLabel">
-                                        <style>
-                                          <class name="large-line-height"/>
-                                        </style>
                                         <property name="valign">start</property>
                                         <property name="label">•</property>
                                       </object>
                                     </child>
                                     <child>
                                       <object class="GtkLabel">
-                                        <style>
-                                          <class name="large-line-height"/>
-                                        </style>
                                         <property name="wrap">true</property>
                                         <property name="wrap-mode">word-char</property>
                                         <property name="xalign">0.0</property>
@@ -108,9 +90,6 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <style>
-                                  <class name="large-line-height"/>
-                                </style>
                                 <property name="wrap">true</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="xalign">0.0</property>   

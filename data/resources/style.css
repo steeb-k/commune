@@ -9,10 +9,6 @@ textview, text {
   font-weight: bold;
 }
 
-.line-height {
-  line-height: 150%;
-}
-
 button.pill.large {
   padding: 12px 40px;
 }
@@ -46,11 +42,6 @@ button.opaque.success {
 
 .extra-large-icon.error {
   color: @error_bg_color;
-}
-
-preferencesgroup .body,
-.large-line-height {
-  line-height: 140%;
 }
 
 button.row {
