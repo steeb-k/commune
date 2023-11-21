@@ -156,19 +156,18 @@ impl JoinRoomDialog {
         let Some(session) = self.session() else {
             return;
         };
+        let Some(window) = self.transient_for().and_downcast::<Window>() else {
+            return;
+        };
         let room_list = session.room_list();
 
         // Join or view the room with the given identifier.
         if let Some(room) = room_list.joined_room((&*room_id).into()) {
-            let Some(window) = self.root().and_downcast::<Window>() else {
-                return;
-            };
-
             window.session_view().select_room(Some(room));
         } else {
-            spawn!(clone!(@weak self as obj, @weak room_list => async move {
+            spawn!(clone!(@weak window, @weak room_list => async move {
                 if let Err(error) = room_list.join_by_id_or_alias(room_id, via).await {
-                    toast!(obj, error);
+                    toast!(window, error);
                 }
             }));
         }
