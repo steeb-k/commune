@@ -3,13 +3,14 @@
 # This file is distributed under the same license as the fractal package.
 #
 # Marek Černocký <marek@manet.cz>, 2018, 2019, 2020, 2021.
+# Daniel Rusek <mail@asciiwolf.com>, 2023.
 # Vojtěch Perník <translations@pervoj.cz>, 2023.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-21 09:49+0000\n"
+"POT-Creation-Date: 2023-11-23 19:02+0000\n"
 "PO-Revision-Date: 2023-11-23 20:00+0100\n"
 "Last-Translator: Vojtěch Perník <translations@pervoj.cz>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
