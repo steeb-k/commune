@@ -20,7 +20,16 @@
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/fractal.png</image>
+      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/main.png</image>
+      <caption>Fractal’s main window.</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/media-history.png</image>
+      <caption>View the media history of a Matrix room.</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/adaptive.png</image>
+      <caption>Fractal’s interface adapts to small screens.</caption>
     </screenshot>
   </screenshots>
 
@@ -40,151 +49,32 @@
     <control>pointing</control>
     <control>touch</control>
   </supports>
-  
+
   <content_rating type="oars-1.1">
     <content_attribute id="social-chat">intense</content_attribute>
     <content_attribute id="social-audio">intense</content_attribute>
   </content_rating>
 
   <releases>@development-release@
-    <release version="5~rc1" type="development" date="2023-11-08">
+    <release version="5" type="stable" date="2023-11-24">
       <description>
-        <p>Fractal 5.rc1 is the first release candidate since the rewrite of
-          Fractal to take advantage of GTK 4 and the Matrix Rust SDK, an effort
-          that started in March 2021.</p>
-
-        <p>The most notable changes since Fractal 5.beta2, that was released 2
-          months ago, are:</p>
-        
+        <p>
+          Fractal 5 is a full rewrite compared to Fractal 4, that now leverages GTK 4, libadwaita,
+          and the Matrix Rust SDK. The two-and-a-half-year effort brings a new interface that fits
+          all screens, big 🖥️ or small 📱, but should still look familiar to users of earlier versions.
+        </p>
+        <p>
+          It still offers the same old features you know and love, with a few additions.
+          Highlights (<em>italics</em> is new✨ in 5):
+        </p>
         <ul>
-          <li>An awesome new look thanks to libadwaita 1.4</li>
-          <li>Read receipts tracking has been largely improved thanks to some
-            upstream work in the Matrix Rust SDK</li>
-          <li>The same upstream work allows to have much better tracking of the
-            activity in the rooms list</li>
-          <li>The full lists of read receipts and reactions on messages can be
-            perused in popovers</li>
-          <li>Destructive actions like removing a message or leaving a room now
-            ask for confirmation</li>
-          <li>The most noticeable performance issues and memory leaks were fixed
-            to make Fractal run as smoothly as ever</li>
+          <li>Find rooms to discuss your favorite topics, or talk privately to people, securely thanks to <em>end-to-end encryption</em></li>
+          <li>Send rich formatted messages, files, or <em>your current location</em></li>
+          <li><em>Reply</em> to specific messages, <em>react</em> with emoji, <em>edit</em> or remove messages</li>
+          <li>View images, and play audio and video directly in the conversation</li>
+          <li>See <em>who has read messages</em>, and who is typing</li>
+          <li>Log into <em>multiple accounts</em> at once (with <em>Single-Sign On</em> support)</li>
         </ul>
-              
-        <p>This list is far from complete and hides more enhancements, including
-          bug fixes and new translations thanks to all our contributors, and our
-          upstream projects.</p>
-        
-        <p>As the version implies, if we don’t find any major bug in the next 2
-          weeks, our next release should be the long-awaited Fractal 5 stable
-          version!</p>
-
-        <p>In the meantime, if you want to fix bugs, implement new features, or
-          any other kind of contribution, you can get inspired by taking a look
-          at our issues tracker on GitLab. Any help is greatly appreciated!</p>
-      </description>
-    </release>
-    <release version="5~beta2" type="development" date="2023-08-17">
-      <description>
-        <p>Fractal 5.beta2 is the second beta release 🎉 since the rewrite of
-          Fractal to take advantage of GTK 4 and the Matrix Rust SDK, an effort
-          that started in March 2021.</p>
-        
-        <p>The most visible changes since Fractal 5.beta1 are:</p>
-        <ul>
-          <li>Editing text messages ✏️</li>
-          <li>Logging in with homeservers that don’t support auto-discovery 🧐
-            </li>
-          <li>A refactor of the login flow should avoid crashes when going back
-            at any step 🔙</li>
-          <li>Sometimes two day dividers 📅 would appear next to each other
-            without messages between them, this is now fixed</li>
-        </ul>
-
-        <p>Of course, there are a also a lot of less visible changes, notably a
-          lot of refactoring, 🐛 fixes and translations thanks to all our
-          contributors, and our upstream projects.</p>
-        
-        <p>As the version implies, this is still considered beta stage and might
-          trigger crashes or other bugs 😔 but overall should be pretty stable
-          👍.</p>
-        
-        <p>A list of blocking issues for the release of version 5 can be found
-          in the Fractal v5 milestone on GitLab.</p>
-      </description>
-    </release>
-    <release version="5~beta1" type="development" date="2023-05-16">
-      <description>
-        <p>Fractal 5.beta1 is the first beta release since the rewrite of
-          Fractal to take advantage of GTK 4 and the Matrix Rust SDK. It is the
-          result of over two years of work.</p>
-        
-        <p>New features since Fractal 5.alpha1:</p>
-        <ul>
-          <li>Joining room by ID, by alias or with a Matrix URI</li>
-          <li>Creation of direct chats</li>
-          <li>Sending and displaying read receipts, read markers and typing
-            notifications</li>
-          <li>Notifications on new messages</li>
-          <li>Highlight messages with mentions</li>
-          <li>Added media file history viewers in the room details, thanks to
-            our GSoC intern Marco Melorio</li>
-          <li>Displaying the other user’s avatar as a room avatar for direct
-            chats</li>
-        </ul>
-
-        <p>Of course, there are a also a lot of less visible changes, fixes and
-          translations thanks to all our contributors, and our upstream
-          projects.</p>
-        
-        <p>As the version implies, this is still considered beta stage and might
-          trigger crashes or other bugs but overall should be pretty stable.</p>
-        
-        <p>A list of blocking issues for the release of version 5 can be found
-          in the Fractal v5 milestone on GitLab.</p>
-      </description>
-    </release>
-    <release version="5~alpha1" type="development" date="2022-09-25">
-      <description>
-        <p>Fractal 5.alpha1 is the first release since Fractal has been
-          rewritten to take advantage of GTK 4 and the Matrix Rust SDK.
-          It is the result of eighteen months of work.</p>
-
-        <p>Currently supported features are:</p>
-        <ul>
-          <li> Sending and receiving messages and files </li>
-          <li> Sending files via Drag-n-Drop and pasting in the message entry</li>
-          <li>Rendering of rich formatted (HTML) messages, as well as media</li>
-          <li>Displaying edited messages, redacting messages</li>
-          <li>Showing and adding reactions</li>
-          <li>Tab completion of user names</li>
-          <li>Sending and displaying replies</li>
-          <li>Sharing the current location</li>
-          <li>Exploring the room directory</li>
-          <li>Sorting the rooms by category</li>
-          <li>Joining rooms</li>
-          <li>Sending and accepting invitations</li>
-          <li>Logging into multiple accounts at once</li>
-          <li>Logging in with Single-Sign On</li>
-          <li>Sending and reading encrypted messages</li>
-          <li>Verifying user sessions using cross-signing</li>
-          <li>Exporting and importing encryption keys</li>
-          <li>Managing the connected devices</li>
-          <li>Changing the user profile details</li>
-          <li>Deactivating the account</li>
-        </ul>
-        <p>Major missing features are:</p>
-        <ul>
-          <li>Notifications</li>
-          <li>Read markers</li>
-        </ul>
-
-        <p>As the name implies, this is still considered alpha stage and is not
-          ready for general use just yet. If you want to give this development
-          version a try, you can get it from the GNOME Apps Nightly flatpak
-          repository (See wiki.gnome.org/Apps/Nightly).</p>
-
-        <p>A list of known issues and missing features for a 5.0 release can be
-          found in the Fractal v5 milestone on Gitlab.</p>
       </description>
     </release>
     <release version="4.4" type="stable" date="2020-08-07" urgency="high">

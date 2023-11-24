@@ -5,27 +5,24 @@
 # Fractal
 
 Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
-collaboration in large groups, such as free software projects.
+collaboration in large groups, such as free software projects, and will fit all screens, big or small.
 
-![screenshot](https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/fractal.png)
+![screenshot](https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/main.png)
 
-## Work in Progress
+Highlights:
 
-Up until the 4.4 series, Fractal was built with GTK 3 and used its own implementation of the Matrix
-API. With the availability of the [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk)
-and [GTK 4](https://www.gtk.org/), the technological landscape had changed enough that a full
-rewrite made more sense than simply trying to port the complex codebase that we had. That effort
-started in March 2021 and the result is the current [Fractal 5 beta](#beta-version) (and
-[nightly](#development-version)).
-
-You can follow along our progress towards the stable release by looking at the
-[Fractal 5](https://gitlab.gnome.org/GNOME/fractal/-/milestones/18) milestone.
+* Find rooms to discuss your favorite topics, or talk privately to people, securely thanks to end-to-end encryption
+* Send rich formatted messages, files, or your current location
+* Reply to specific messages, react with emoji, edit or remove messages
+* View images, and play audio and video directly in the conversation
+* See who has read messages, and who is typing
+* Log into multiple accounts at once (with Single-Sign On support)
 
 ## Installation instructions
 
 ### Stable version
 
-The current stable version is 4.4.2 (released March 2023).
+The current stable version is 5 (released November 24th 2023).
 
 Flatpak is the recommended installation method.
 Until our next iteration is ready, you can get the official Fractal Flatpak from Flathub.
@@ -41,7 +38,7 @@ Until our next iteration is ready, you can get the official Fractal Flatpak from
 
 ### Beta version
 
-The current beta version is 5.rc1 (released November 8th 2023).
+The current beta version is 5 (same as stable, released November 24th 2023).
 
 It is available as a Flatpak on Flathub Beta.
 
@@ -179,9 +176,9 @@ They are translated on [Element’s translation platform](https://translate.elem
 
 ## Frequently Asked Questions
 
-* Does Fractal have encryption support? Will it ever?
+* Does Fractal have encryption support?
 
-Yes, the current development version (`main` branch) has encryption support using Cross-Signing. See
+**Yes**, since Fractal 5, encryption is supported using Cross-Signing. See
 <https://gitlab.gnome.org/GNOME/fractal/-/issues/717> for more info on the state of encryption.
 
 * Can I run Fractal with the window closed?
@@ -192,7 +189,7 @@ to interact with apps running in the background.
 
 ## The origin of Fractal
 
-The development version is a complete rewrite of Fractal built on top of the
+The current version is a complete rewrite of Fractal built on top of the
 [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk) using [GTK4](https://gtk.org/).
 
 The previous version of Fractal was using GTK3 and its own backend to talk to a matrix homeserver,

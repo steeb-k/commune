@@ -29,11 +29,11 @@ endif
 if is_release
   development_release = ''
 else
-  appstream_version = major_version + '~'
+  appstream_version = major_version
   if pre_release_version != ''
-    appstream_version += pre_release_version + '-'
+    appstream_version += '~' + pre_release_version
   endif
-  appstream_version += devel_version
+  appstream_version += '-' + devel_version
 
   development_release = '''
     <release version="@0@" type="development" date="@1@">

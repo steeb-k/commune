@@ -1,6 +1,6 @@
 [package]
 name = "fractal"
-version = "5.0.0-rc1"
+version = "5.0.0"
 authors = ["Julian Sparber <julian@sparber.net>"]
 edition = "2021"
 rust-version = "1.70"
@@ -96,7 +96,7 @@ version = "0.9.2"
 # rev = "4ef6d1641bdd7d1c1586d2356c183798f3900bf1"
 features = [
     "unstable-unspecified",
-    "client-api-c", 
+    "client-api-c",
     "compat-key-id",
     "compat-user-id",
     "compat-empty-string-null",
