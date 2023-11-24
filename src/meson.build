@@ -7,19 +7,11 @@ ui_resources = gnome.compile_resources(
   install_dir: pkgdatadir,
 )
 
-version = major_version
-if pre_release_version != ''
-  version += '.' + pre_release_version
-endif
-if devel_version != ''
-  version += '-' + devel_version
-endif
-
 global_conf = configuration_data()
 global_conf.set_quoted('APP_ID', application_id)
 global_conf.set_quoted('PKGDATADIR', pkgdatadir)
 global_conf.set('PROFILE', profile)
-global_conf.set_quoted('VERSION', version)
+global_conf.set_quoted('VERSION', full_version)
 global_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
 global_conf.set_quoted('LOCALEDIR', localedir)
 config = configure_file(

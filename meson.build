@@ -87,9 +87,19 @@ else
   application_id = '@0@.@1@'.format(base_id, profile)
 endif
 
+version = major_version
+if pre_release_version != ''
+  version += '.' + pre_release_version
+endif
+
+full_version = version
+if devel_version != ''
+  version += '-' + devel_version
+endif
+
 meson.add_dist_script(
   'build-aux/dist-vendor.sh',
-  meson.project_build_root() / 'meson-dist' / meson.project_name() + '-' + major_version + '.' + pre_release_version,
+  meson.project_build_root() / 'meson-dist' / meson.project_name() + '-' + version,
   meson.project_source_root()
 )
 
