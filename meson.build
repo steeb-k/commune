@@ -94,7 +94,7 @@ endif
 
 full_version = version
 if devel_version != ''
-  version += '-' + devel_version
+  full_version += '-' + devel_version
 endif
 
 meson.add_dist_script(
