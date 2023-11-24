@@ -17,7 +17,7 @@ release-tarball:
   script:
     # Create tarball with vendored rust dependencies
     - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
-    - echo "meson dist --no-test" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
+    - echo "meson dist --no-test --allow-dirty" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
     - mv .flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/meson-dist tarball
 
     # Extract release notes of latest version from appstream
