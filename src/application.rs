@@ -202,10 +202,8 @@ pub enum AppProfile {
     Stable,
     /// A beta release.
     Beta,
-    /// A nightly release.
-    Devel,
     /// A development release.
-    Hack,
+    Devel,
 }
 
 impl AppProfile {
@@ -215,13 +213,12 @@ impl AppProfile {
             Self::Stable => "stable",
             Self::Beta => "beta",
             Self::Devel => "devel",
-            Self::Hack => "hack",
         }
     }
 
     /// Whether this `AppProfile` should use the `.devel` CSS class on windows.
     pub fn should_use_devel_class(&self) -> bool {
-        matches!(self, Self::Devel | Self::Hack)
+        matches!(self, Self::Devel)
     }
 }
 

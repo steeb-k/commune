@@ -26,9 +26,7 @@ if desktop_file_validate.found()
 endif
 
 # Appdata
-if is_release
-  development_release = ''
-else
+if profile == 'Devel'
   appstream_version = major_version
   if pre_release_version != ''
     appstream_version += '~' + pre_release_version
@@ -41,6 +39,8 @@ else
         <p>Development release.</p>
       </description>
     </release>'''.format(appstream_version, release_date)
+else
+  development_release = ''
 endif
 appdata_conf = configuration_data()
 appdata_conf.set('app-id', application_id)

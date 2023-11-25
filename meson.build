@@ -8,9 +8,16 @@ i18n = import('i18n')
 gnome = import('gnome')
 
 base_id = 'org.gnome.Fractal'
+application_id = base_id
 
 major_version = '5'
 pre_release_version = ''
+
+version = major_version
+if pre_release_version != ''
+  version += '.' + pre_release_version
+endif
+full_version = version
 
 dependency('glib-2.0', version: '>= 2.72') # update when changing gtk version
 dependency('gio-2.0', version: '>= 2.72') # always same version as glib
@@ -58,43 +65,23 @@ iconsdir = datadir / 'icons'
 podir = meson.project_source_root() / 'po'
 gettext_package = meson.project_name()
 
-if get_option('profile') == 'hack'
-  is_release = false
-  profile = 'Hack'
-elif get_option('profile') == 'development'
-  is_release = false
+if get_option('profile') == 'development'
   profile = 'Devel'
-elif get_option('profile') == 'beta'
-  is_release = true
-  profile = 'Beta'
-else
-  is_release = true
-  profile = 'Stable'
-endif
 
-if is_release
-  devel_version = ''
-  release_date = '' # should be unused with released versions
-  application_id = base_id
-else
   vcs_tag = run_command('git', 'rev-parse', '--short', 'HEAD').stdout().strip()
   if vcs_tag == ''
     devel_version = profile.to_lower()
   else
     devel_version = vcs_tag
   endif
-  release_date = run_command('git', 'show', '-s', '--format=%cI').stdout().strip()
-  application_id = '@0@.@1@'.format(base_id, profile)
-endif
-
-version = major_version
-if pre_release_version != ''
-  version += '.' + pre_release_version
-endif
-
-full_version = version
-if devel_version != ''
   full_version += '-' + devel_version
+
+  release_date = run_command('git', 'show', '-s', '--format=%cI').stdout().strip()
+  application_id += '.' + profile
+elif get_option('profile') == 'beta'
+  profile = 'Beta'
+else
+  profile = 'Stable'
 endif
 
 meson.add_dist_script(
@@ -103,7 +90,7 @@ meson.add_dist_script(
   meson.project_source_root()
 )
 
-if profile == 'Hack'
+if profile == 'Devel'
   # Setup pre-commit hook for ensuring coding style is always consistent
   message('Setting up git pre-commit hook..')
   run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')

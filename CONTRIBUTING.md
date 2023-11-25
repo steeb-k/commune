@@ -51,10 +51,6 @@ If you are building the flatpak manually you will also need flatpak-builder on y
 Using [GNOME Builder](https://wiki.gnome.org/Apps/Builder) with [flatpak](https://flatpak.org/) is
 the recommended way of building and installing Fractal.
 
-By default, GNOME Builder should select the `org.gnome.Fractal.Devel.json` manifest, which is the
-manifest used for building the nightly version. It is recommended to switch to the
-`org.gnome.Fractal.Hack.json` manifest which will build much faster.
-
 ### Flatpak via fenv
 
 As an alternative, [fenv](https://gitlab.gnome.org/ZanderBrown/fenv) allows to setup a flatpak
@@ -79,10 +75,10 @@ After that, move into the directory where you cloned Fractal and setup the proje
 
 ```sh
 # Setup the flatpak environment
-fenv gen build-aux/org.gnome.Fractal.Hack.json
+fenv gen build-aux/org.gnome.Fractal.Devel.json
 
 # Initialize the build system
-fenv exec -- meson setup -Dprofile=hack --prefix=/app _build
+fenv exec -- meson setup -Dprofile=development --prefix=/app _build
 ```
 
 Finally, build and run the application:
@@ -110,13 +106,13 @@ GNOME Builder can export a flatpak of the app after it has been successfully bui
 Fractal can then be installed with:
 
 ```sh
-flatpak install --user --bundle path/to/org.gnome.Fractal.Hack.flatpak 
+flatpak install --user --bundle path/to/org.gnome.Fractal.Devel.flatpak 
 ```
 
 Alternatively, it can be built and installed with flatpak-builder:
 
 ```sh
-flatpak-builder --user --install app build-aux/org.gnome.Fractal.Hack.json
+flatpak-builder --user --install app build-aux/org.gnome.Fractal.Devel.json
 ```
 
 _Note that the `flatpak-builder` command can be replaced with `flatpak run org.flatpak.Builder`._
@@ -124,7 +120,7 @@ _Note that the `flatpak-builder` command can be replaced with `flatpak run org.f
 It can then be entirely removed from your system with:
 
 ```sh
-flatpak remove --delete-data org.gnome.Fractal.Hack
+flatpak remove --delete-data org.gnome.Fractal.Devel
 ```
 
 ### GNU/Linux

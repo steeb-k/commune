@@ -1,5 +1,4 @@
 build-aux/org.gnome.Fractal.Devel.json export-ignore
-build-aux/org.gnome.Fractal.Hack.json export-ignore
 build-aux/org.gnome.Fractal.json export-ignore
 .editorconfig export-ignore
 .gitattributes export-ignore

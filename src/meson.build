@@ -30,7 +30,7 @@ run_command(
 cargo_options = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
 cargo_options += [ '--target-dir', meson.project_build_root() / 'src' ]
 
-if profile == 'Hack'
+if profile == 'Devel'
   rust_target = 'debug'
   message('Building in debug mode')
 else

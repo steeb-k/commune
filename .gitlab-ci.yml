@@ -6,17 +6,12 @@ stages:
 
 variables:
   FLATPAK_MODULE: "fractal"
+  MANIFEST_PATH: "build-aux/org.gnome.Fractal.Devel.json"
+  APP_ID: "org.gnome.Fractal.Devel"
 
 workflow:
   rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_TAG
-      variables:
-        MANIFEST_PATH: "build-aux/org.gnome.Fractal.Devel.json"
-        APP_ID: "org.gnome.Fractal.Devel"
-    - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != "main"
-      variables:
-        MANIFEST_PATH: "build-aux/org.gnome.Fractal.Hack.json"
-        APP_ID: "org.gnome.Fractal.Hack"
+    - if: $CI_COMMIT_BRANCH || $CI_COMMIT_TAG
 
 include:
   - local: .gitlab-ci/run_checks.yml
