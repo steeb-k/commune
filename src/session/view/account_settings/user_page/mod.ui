@@ -64,6 +64,17 @@
             <style>
               <class name="property"/>
             </style>
+            <child>
+              <object class="GtkButton">
+                <property name="icon-name">copy-symbolic</property>
+                <property name="action-name">account-user.copy-homeserver</property>
+                <property name="tooltip-text" translatable="yes">Copy homeserver address to clipboard</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
           </object>
         </child>
         <child>
@@ -72,6 +83,17 @@
             <style>
               <class name="property"/>
             </style>
+            <child>
+              <object class="GtkButton">
+                <property name="icon-name">copy-symbolic</property>
+                <property name="action-name">account-user.copy-user-id</property>
+                <property name="tooltip-text" translatable="yes">Copy Matrix user ID to clipboard</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
           </object>
         </child>
         <child>
@@ -80,6 +102,17 @@
             <style>
               <class name="property"/>
             </style>
+            <child>
+              <object class="GtkButton">
+                <property name="icon-name">copy-symbolic</property>
+                <property name="action-name">account-user.copy-session-id</property>
+                <property name="tooltip-text" translatable="yes">Copy session ID to clipboard</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="flat"/>
+                </style>
+              </object>
+            </child>
           </object>
         </child>
       </object>

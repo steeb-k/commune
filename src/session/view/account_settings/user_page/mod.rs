@@ -67,9 +67,28 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             ButtonRow::static_type();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
+
+            klass.install_action("account-user.copy-homeserver", None, |obj, _, _| {
+                let text = obj.imp().homeserver.subtitle().unwrap_or_default();
+                obj.clipboard().set_text(&text);
+                toast!(obj, gettext("Homeserver address copied to clipboard"));
+            });
+
+            klass.install_action("account-user.copy-user-id", None, |obj, _, _| {
+                let text = obj.imp().user_id.subtitle().unwrap_or_default();
+                obj.clipboard().set_text(&text);
+                toast!(obj, gettext("Matrix user ID copied to clipboard"));
+            });
+
+            klass.install_action("account-user.copy-session-id", None, |obj, _, _| {
+                let text = obj.imp().session_id.subtitle().unwrap_or_default();
+                obj.clipboard().set_text(&text);
+                toast!(obj, gettext("Session ID copied to clipboard"));
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
