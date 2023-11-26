@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, prelude::*, CompositeTemplate};
 use sourceview::prelude::*;
 
 use crate::session::model::Event;
@@ -29,6 +29,13 @@ mod imp {
             klass.install_action("event-source-dialog.copy", None, move |widget, _, _| {
                 widget.copy_to_clipboard();
             });
+
+            klass.add_binding_action(
+                gdk::Key::Escape,
+                gdk::ModifierType::empty(),
+                "window.close",
+                None,
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
