@@ -35,15 +35,5 @@
         </property>
       </object>
     </property>
-    <child>
-      <object class="GtkShortcutController">
-        <child>
-          <object class="GtkShortcut">
-            <property name="trigger">Escape</property>
-            <property name="action">action(window.close)</property>
-          </object>
-        </child>
-      </object>
-    </child>
   </template>
 </interface>

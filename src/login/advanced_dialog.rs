@@ -24,10 +24,10 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.add_binding_signal(
+            klass.add_binding_action(
                 gdk::Key::Escape,
                 gdk::ModifierType::empty(),
-                "close-request",
+                "window.close",
                 None,
             );
         }
