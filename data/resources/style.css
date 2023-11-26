@@ -243,7 +243,7 @@ login {
 }
 
 sidebar-row > * {
-  margin: 0 12px;
+  margin: 0 6px;
   padding: 9px;
   border-radius: 6px;
   transition-property: outline, outline-width, outline-offset, outline-color;
