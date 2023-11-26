@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-16 11:55+0000\n"
-"PO-Revision-Date: 2023-11-16 21:58+0200\n"
+"POT-Creation-Date: 2023-11-25 13:12+0000\n"
+"PO-Revision-Date: 2023-11-26 21:54+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -92,9 +92,21 @@ msgstr ""
 "написана на Rust. Інтерфейс оптимізований для спільної роботи у великих "
 "групах, таких як проекти вільного програмного забезпечення."
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:17 src/application.rs:169
+#: data/org.gnome.Fractal.metainfo.xml.in.in:17 src/application.rs:148
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:24
+msgid "Fractal’s main window"
+msgstr "Головне вікно Fractal"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:28
+msgid "View the media history of a Matrix room"
+msgstr "Перегляд журналу мультимедіа кімнати Matrix"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:32
+msgid "Fractal’s interface adapts to small screens"
+msgstr "Інтерфейс Fractal адаптується до малих екранів"
 
 #: src/account_switcher/mod.ui:37
 msgid "_Add Account"
@@ -106,16 +118,16 @@ msgstr "Д_одати обліковий запис"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
-#: src/application.rs:177
+#: src/application.rs:155
 msgid "© 2017-2023 The Fractal Team"
 msgstr "© Команда «Фрактал», 2017-2023"
 
-#: src/application.rs:191
+#: src/application.rs:169
 msgid "translator-credits"
 msgstr "Artem Polishchuk <ego.cordatus@gmail.com>, 2019."
 
 #. This can't be added via the builder
-#: src/application.rs:195
+#: src/application.rs:175
 msgid "Name by"
 msgstr "Авторка назви"
 
@@ -140,7 +152,7 @@ msgid "Authenticate via Browser"
 msgstr "Розпізнавання за допомогою браузера"
 
 #: src/components/auth_dialog.ui:114
-#: src/session/view/account_settings/user_page/mod.rs:299
+#: src/session/view/account_settings/user_page/mod.rs:318
 #: src/session/view/content/room_details/general_page/mod.rs:349
 #: src/session/view/content/room_history/item_row.rs:743
 #: src/session/view/content/room_history/message_toolbar/mod.ui:69
@@ -217,56 +229,17 @@ msgstr "Файл не придатний до перегляду"
 msgid "Unable to connect to Camera"
 msgstr "Не вдалося встановити з'єднання з «Камерою»"
 
-#: src/error_page.rs:110
-msgid "Session removed successfully."
-msgstr "Сеанс успішно вилучено."
-
-#: src/error_page.rs:118
-msgid "Could not remove session from secret storage"
-msgstr "Не вдалося вилучити сеанс із зашифрованого сховища"
-
 #: src/error_page.ui:10
 #: src/session/view/content/room_details/invite_subpage/mod.ui:139
 #: src/session/view/create_dm_dialog/mod.ui:103
 msgid "Error"
 msgstr "Помилка"
 
-#: src/error_page.ui:17
+#: src/error_page.ui:22
 msgid "Secret Service Error"
 msgstr "Помилка «Секретної служби»"
 
-#: src/error_page.ui:39
-msgid ""
-"It seems like one of the Fractal sessions stored in the Secret Service is "
-"corrupted. If you know how to fix it you should do so."
-msgstr ""
-"Здається один із сеансів «Фрактала», який було збережено у «Секретній "
-"службі», пошкоджено. Якщо вам відомо, як виправити цю помилку, можете "
-"зробити це."
-
-#: src/error_page.ui:50
-msgid ""
-"Alternatively, we could disconnect this session for you. This means you will "
-"have to login again and you will lose access to your encrypted messages, "
-"unless you have a session open in another client or you have already backed "
-"up your encryption keys."
-msgstr ""
-"Крім того, ви можете від'єднати цей сеанс. Це означає, що вам доведеться "
-"знову увійти до системи, і ви втратите доступ до ваших шифрованих "
-"повідомлень, якщо сеанс не було відкрито у іншому клієнті або вами не було "
-"створено резервної копії ваших ключів шифрування."
-
-#: src/error_page.ui:73
-msgid "Clicking this button might disconnect more than one session!"
-msgstr ""
-"Натискання цієї кнопки може призвести до від'єднання декількох сеансів!"
-
-#: src/error_page.ui:86
-#: src/session/view/account_settings/devices_page/device_row.rs:103
-msgid "Disconnect Session"
-msgstr "Від'єднати сеанс"
-
-#: src/error_page.ui:109
+#: src/error_page.ui:36
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -276,25 +249,25 @@ msgstr ""
 "«Секретну службу». Під час спроби зберегти або отримати дані вашого сеансу "
 "сталася помилка."
 
-#: src/error_page.ui:124
+#: src/error_page.ui:48
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr ""
 "Ось декілька порад, які можуть допомогти вам виправити проблеми із "
 "«Секретною службою»:"
 
-#: src/error_page.ui:147
+#: src/error_page.ui:65
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr ""
 "Переконайтеся, що встановлено обгортку «Секретної служби», наприклад gnome-"
 "keyring."
 
-#: src/error_page.ui:172
+#: src/error_page.ui:84
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Перевірте, чи є у вас типова в'язка ключів і чи її розблоковано."
 
-#: src/error_page.ui:187
+#: src/error_page.ui:96
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -302,11 +275,11 @@ msgstr ""
 "Ознайомтеся із журналом програми та документацією до вашого дистрибутива, "
 "щоб дізнатися більше."
 
-#: src/greeter.rs:75 src/login/mod.rs:626 src/window.rs:497
+#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:494
 msgid "No network connection"
 msgstr "Немає з'єднання з мережею"
 
-#: src/greeter.rs:79 src/login/mod.rs:631 src/window.rs:501
+#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:498
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
@@ -352,21 +325,21 @@ msgstr ""
 msgid "_Auto-discovery"
 msgstr "_Автовизначення"
 
-#: src/login/homeserver_page.rs:130
+#: src/login/homeserver_page.rs:126
 msgid "Domain Name"
 msgstr "Назва домену"
 
-#: src/login/homeserver_page.rs:132
+#: src/login/homeserver_page.rs:128
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Домен вашого домашнього сервера Matrix, наприклад gnome.org"
 
-#: src/login/homeserver_page.rs:135 src/login/method_page.ui:43
+#: src/login/homeserver_page.rs:131 src/login/method_page.ui:43
 msgid "Homeserver URL"
 msgstr "Адреса домашнього сервера"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/homeserver_page.rs:139
+#: src/login/homeserver_page.rs:135
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Адреса вашого домашнього сервера Matrix, наприклад {address}"
 
@@ -388,11 +361,11 @@ msgstr "Додатково…"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:151
+#: src/login/method_page.rs:147
 msgid "Log in to {domain_name}"
 msgstr "Увійти до {domain_name}"
 
-#: src/login/method_page.rs:158
+#: src/login/method_page.rs:154
 msgid "Log in"
 msgstr "Увійти"
 
@@ -412,7 +385,7 @@ msgstr "За_були пароль?"
 msgid "More SSO Providers"
 msgstr "Додаткові надавачі SSO"
 
-#: src/login/mod.rs:514
+#: src/login/mod.rs:511
 msgid "Unable to store session"
 msgstr "Не вдалося зберегти сеанс"
 
@@ -439,32 +412,32 @@ msgstr "Будь ласка, виконайте настанови з брауз
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret.rs:62
+#: src/secret.rs:72
 msgid "Found stored session with unsupported version {version_nb}"
 msgstr "Виявлено збережений сеанс непідтримуваної версії {version_nb}"
 
-#: src/secret.rs:93
+#: src/secret.rs:101
 msgid "The secret storage file is corrupted."
 msgstr "Файл сховища реєстраційних даних пошкоджено."
 
-#: src/secret.rs:97
+#: src/secret.rs:105
 msgid "Could not access the secret storage file location."
 msgstr ""
 "Не вдалося отримати доступ до місця зберігання файл сховища реєстраційних "
 "даних."
 
-#: src/secret.rs:100
+#: src/secret.rs:108
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr ""
 "Під час спроби доступу до файла сховища реєстраційних даних сталася невідома "
 "помилка"
 
-#: src/secret.rs:103
+#: src/secret.rs:111
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
-#: src/secret.rs:106
+#: src/secret.rs:114
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -472,7 +445,7 @@ msgstr ""
 "Під час роботи із модулем порталу реєстраційних даних за допомогою D-Bus "
 "сталася невідома помилка"
 
-#: src/secret.rs:109
+#: src/secret.rs:117
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -480,7 +453,7 @@ msgstr ""
 "Запит до порталу реєстраційних даних Flatpak було скасовано. Переконайтеся, "
 "що прийнято усі запити, що вимагають доступу до нього."
 
-#: src/secret.rs:112
+#: src/secret.rs:120
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -488,37 +461,37 @@ msgstr ""
 "Немає доступу до порталу реєстраційних даних Flatpak. Переконайтеся, що "
 "встановлено пакунок xdg-desktop-portal версії, яка є не меншою за 1.5.0."
 
-#: src/secret.rs:115
+#: src/secret.rs:123
 msgid ""
 "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Портал реєстраційних даних Flatpak надав ключ, який є надто простим, щоб "
 "бути безпечним."
 
-#: src/secret.rs:127
+#: src/secret.rs:135
 msgid "The item was deleted."
 msgstr "Запис було вилучено."
 
-#: src/secret.rs:131 src/secret.rs:151
+#: src/secret.rs:139 src/secret.rs:159
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Під час роботи із службою реєстраційних даних за допомогою D-Bus сталася "
 "невідома помилка"
 
-#: src/secret.rs:134
+#: src/secret.rs:142
 msgid "The collection or item is locked."
 msgstr "Збірку або запис замкнено."
 
-#: src/secret.rs:137
+#: src/secret.rs:145
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Сеансу D-Bus «Секретної служби» не існує."
 
-#: src/secret.rs:140
+#: src/secret.rs:148
 msgid "The collection or item does not exist."
 msgstr "Збірки або запису не існує."
 
-#: src/secret.rs:144
+#: src/secret.rs:152
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -527,7 +500,7 @@ msgstr ""
 "скасовано. Переконайтеся, що прийнято усі запити, що вимагають доступу до "
 "неї."
 
-#: src/secret.rs:147
+#: src/secret.rs:155
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -535,50 +508,50 @@ msgstr ""
 "Не вдалося отримати доступу до типової збірки. Переконайтеся, що в'язку "
 "ключів було створено і зроблено типовою."
 
-#: src/secret.rs:190
+#: src/secret.rs:198
 msgid "Malformed version in stored session"
 msgstr "Помилкове форматування запису версії у збереженому сеансі"
 
-#: src/secret.rs:214
+#: src/secret.rs:221
 msgid "Could not find profile in stored session"
 msgstr "Не вдалося знайти профіль у збереженому сеансі"
 
-#: src/secret.rs:228
+#: src/secret.rs:234
 msgid "Malformed homeserver in stored session"
 msgstr "Помилкове форматування запису домашнього сервера у збереженому сеансі"
 
-#: src/secret.rs:235
+#: src/secret.rs:240
 msgid "Could not find homeserver in stored session"
 msgstr "Не вдалося знайти дані домашнього сервера у збереженому сеансі"
 
-#: src/secret.rs:246
+#: src/secret.rs:250
 msgid "Malformed user ID in stored session"
 msgstr ""
 "Помилкове форматування ідентифікатора користувача у збереженому сеансі"
 
-#: src/secret.rs:253
+#: src/secret.rs:256
 msgid "Could not find user ID in stored session"
 msgstr "Не вдалося знайти ідентифікатор користувача у збереженому сеансі"
 
-#: src/secret.rs:262
+#: src/secret.rs:264
 msgid "Could not find device ID in stored session"
 msgstr "Не вдалося знайти ідентифікатор пристрою у збереженому сеансі"
 
-#: src/secret.rs:271
+#: src/secret.rs:272
 msgid "Could not find database path in stored session"
 msgstr "Не вдалося знайти шлях до бази даних у збереженому сеансі"
 
-#: src/secret.rs:284 src/secret.rs:295
+#: src/secret.rs:284 src/secret.rs:294
 msgid "Malformed secret in stored session"
 msgstr "Помилкове форматування реєстраційних даних у збереженому сеансі"
 
-#: src/secret.rs:305
+#: src/secret.rs:303
 msgid "Could not get secret in stored session"
 msgstr "Не вдалося отримати зашифровані дані у збереженому сеансі"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret.rs:420
+#: src/secret.rs:417
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
@@ -648,11 +621,11 @@ msgstr "Низький пріоритет"
 msgid "Historical"
 msgstr "Історичні"
 
-#: src/session/model/sidebar/entry/entry_type.rs:18
+#: src/session/model/sidebar/icon_item.rs:30
 msgid "Explore"
 msgstr "Ознайомлення"
 
-#: src/session/model/sidebar/entry/entry_type.rs:19
+#: src/session/model/sidebar/icon_item.rs:31
 msgid "Forget Room"
 msgstr "Забути про кімнату"
 
@@ -664,8 +637,12 @@ msgstr "Не вдалося завантажити дані з'єднаного 
 msgid "Failed to load the list of connected devices."
 msgstr "Не вдалося завантажити список з'єднаних пристроїв."
 
+#: src/session/view/account_settings/devices_page/device_row.rs:103
+msgid "Disconnect Session"
+msgstr "Від'єднати сеанс"
+
 #: src/session/view/account_settings/devices_page/device_row.rs:105
-#: src/session/view/account_settings/user_page/mod.ui:112
+#: src/session/view/account_settings/user_page/mod.ui:127
 msgid "Log Out"
 msgstr "Вийти"
 
@@ -905,22 +882,22 @@ msgstr ""
 msgid "Could not import the keys"
 msgstr "Не вдалося імпортувати ключі"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:64
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:58
 #: src/session/view/content/verification/session_verification.ui:275
 msgid "Passphrase"
 msgstr "Пароль"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:75
 msgid "Confirm Passphrase"
 msgstr "Підтвердьте пароль"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:112
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:106
 #: src/session/view/content/room_details/general_page/mod.ui:157
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 msgid "File"
 msgstr "Файл"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:116
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:110
 msgid "Choose…"
 msgstr "Вибрати…"
 
@@ -1000,11 +977,11 @@ msgstr "Не вдалося змінити пароль"
 msgid "Change Password"
 msgstr "Зміна пароля"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:44
+#: src/session/view/account_settings/user_page/change_password_subpage.ui:41
 msgid "Changing your password will log you out of your other sessions."
 msgstr "Зміна пароля призведе до виходу з інших ваших сеансів."
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:55
+#: src/session/view/account_settings/user_page/change_password_subpage.ui:49
 msgid ""
 "Fractal’s support for encryption is unstable so you might lose access to "
 "your encrypted message history. It is recommended to backup your encryption "
@@ -1014,17 +991,17 @@ msgstr ""
 "доступ до вашого зашифрованого журналу повідомлень. Перш ніж продовжувати, "
 "рекомендуємо створити резервну копію ваших ключів шифрування."
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:78
+#: src/session/view/account_settings/user_page/change_password_subpage.ui:72
 msgid "New Password"
 msgstr "Новий пароль"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:118
+#: src/session/view/account_settings/user_page/change_password_subpage.ui:112
 msgid "Confirm New Password"
 msgstr "Підтвердження нового пароля"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:148
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:76
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:79
+#: src/session/view/account_settings/user_page/change_password_subpage.ui:142
+#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:70
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:73
 #: src/session/view/content/room_history/verification_info_bar.rs:180
 msgid "Continue"
 msgstr "Продовжити"
@@ -1038,11 +1015,11 @@ msgid "Could not deactivate account"
 msgstr "Не вдалося вимкнути обліковий запис"
 
 #: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:126
+#: src/session/view/account_settings/user_page/mod.ui:141
 msgid "Deactivate Account"
 msgstr "Деактивувати обліковий запис"
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:44
+#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:41
 msgid ""
 "Deactivating your account means you will lose access to all your messages, "
 "contacts, files, and more, forever."
@@ -1050,7 +1027,7 @@ msgstr ""
 "Деактивація вашого облікового запису означає, що ви назавжди втратите доступ "
 "до всіх своїх повідомлень, контактів, файли та інших даних."
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:55
+#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:49
 msgid ""
 "To confirm that you really want to deactivate this account, type in your "
 "Matrix user ID:"
@@ -1062,7 +1039,7 @@ msgstr ""
 msgid "Log Out of this Session"
 msgstr "Вийти з цього сеансу"
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:44
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:41
 msgid ""
 "Fractal doesn’t support online backup of room encryption keys so you might "
 "lose access to your encrypted message history."
@@ -1071,66 +1048,81 @@ msgstr ""
 "ключів шифрування кімнати, тому ви можете втратити доступ до журналу ваших "
 "шифрованих повідомлень."
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:55
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:49
 msgid "It is recommended to backup your encryption keys before proceeding."
 msgstr ""
 "Перш ніж продовжувати, рекомендуємо створити резервну копію ваших ключів "
 "шифрування."
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:70
+#: src/session/view/account_settings/user_page/log_out_subpage.ui:64
 msgid "Backup Encryption Keys"
 msgstr "Створити резервну копію ключів шифрування"
 
-#: src/session/view/account_settings/user_page/mod.rs:220
+#: src/session/view/account_settings/user_page/mod.rs:78
+#| msgid "Message copied to clipboard"
+msgid "Homeserver address copied to clipboard"
+msgstr "Адресу домашнього сервера скопійовано до буфера обміну"
+
+#: src/session/view/account_settings/user_page/mod.rs:84
+#| msgid "Message copied to clipboard"
+msgid "Matrix user ID copied to clipboard"
+msgstr "Ідентифікатор користувача Matrix скопійовано до буфера обміну"
+
+#: src/session/view/account_settings/user_page/mod.rs:90
+#| msgid "Message copied to clipboard"
+msgid "Session ID copied to clipboard"
+msgstr "Ідентифікатор сеансу скопійовано до буфера обміну"
+
+#: src/session/view/account_settings/user_page/mod.rs:239
 #: src/session/view/content/room_details/general_page/mod.rs:253
 msgid "Avatar removed successfully"
 msgstr "Аватар успішно вилучено"
 
-#: src/session/view/account_settings/user_page/mod.rs:222
+#: src/session/view/account_settings/user_page/mod.rs:241
 #: src/session/view/content/room_details/general_page/mod.rs:255
 msgid "Avatar changed successfully"
 msgstr "Аватар успішно змінено"
 
-#: src/session/view/account_settings/user_page/mod.rs:235
+#: src/session/view/account_settings/user_page/mod.rs:254
 #: src/session/view/content/room_details/general_page/mod.rs:278
 msgid "Could not load file"
 msgstr "Не вдалось завантажити файл"
 
-#: src/session/view/account_settings/user_page/mod.rs:250
+#: src/session/view/account_settings/user_page/mod.rs:269
 #: src/session/view/content/room_details/general_page/mod.rs:299
 msgid "Could not upload avatar"
 msgstr "Не вдалося вивантажити аватар"
 
-#: src/session/view/account_settings/user_page/mod.rs:279
+#: src/session/view/account_settings/user_page/mod.rs:298
 #: src/session/view/content/room_details/general_page/mod.rs:319
 msgid "Could not change avatar"
 msgstr "Не вдалося змінити аватар"
 
-#: src/session/view/account_settings/user_page/mod.rs:295
+#: src/session/view/account_settings/user_page/mod.rs:314
 #: src/session/view/content/room_details/general_page/mod.rs:343
 msgid "Remove Avatar?"
 msgstr "Вилучити аватар?"
 
-#: src/session/view/account_settings/user_page/mod.rs:296
+#: src/session/view/account_settings/user_page/mod.rs:315
 msgid "Do you really want to remove your avatar?"
 msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
-#: src/session/view/account_settings/user_page/mod.rs:300
+#: src/session/view/account_settings/user_page/mod.rs:319
 #: src/session/view/content/room_details/general_page/mod.rs:350
 #: src/session/view/content/room_history/item_row.rs:744
 msgid "Remove"
 msgstr "Вилучити"
 
-#: src/session/view/account_settings/user_page/mod.rs:334
+#: src/session/view/account_settings/user_page/mod.rs:353
 #: src/session/view/content/room_details/general_page/mod.rs:375
 msgid "Could not remove avatar"
 msgstr "Не вдалося вилучити аватар"
 
-#: src/session/view/account_settings/user_page/mod.rs:373
+#: src/session/view/account_settings/user_page/mod.rs:392
 msgid "Name changed successfully"
 msgstr "Ім'я успішно змінено"
 
-#: src/session/view/account_settings/user_page/mod.rs:414
+#: src/session/view/account_settings/user_page/mod.rs:433
 msgid "Could not change display name"
 msgstr "Не вдалося змінити показане ім'я"
 
@@ -1139,7 +1131,7 @@ msgid "General"
 msgstr "Загальні"
 
 #: src/session/view/account_settings/user_page/mod.ui:27
-#: src/session/view/room_creation.ui:56
+#: src/session/view/room_creation.ui:54
 msgid "Name"
 msgstr "Ім'я"
 
@@ -1147,13 +1139,28 @@ msgstr "Ім'я"
 msgid "Advanced Information"
 msgstr "Додаткова інформація"
 
-#: src/session/view/account_settings/user_page/mod.ui:77
+#: src/session/view/account_settings/user_page/mod.ui:71
+#| msgid "Copy to Clipboard"
+msgid "Copy homeserver address to clipboard"
+msgstr "Скопіювати адресу домашнього сервера до буфера"
+
+#: src/session/view/account_settings/user_page/mod.ui:82
 msgid "Matrix User ID"
 msgstr "Ідентифікатор користувача Matrix"
 
-#: src/session/view/account_settings/user_page/mod.ui:91
+#: src/session/view/account_settings/user_page/mod.ui:90
+#| msgid "Copy to Clipboard"
+msgid "Copy Matrix user ID to clipboard"
+msgstr "Скопіювати ідентифікатор користувача Matrix до буфера"
+
+#: src/session/view/account_settings/user_page/mod.ui:101
 msgid "Session ID"
 msgstr "Ідентифікатор сеансу"
+
+#: src/session/view/account_settings/user_page/mod.ui:109
+#| msgid "Copy to Clipboard"
+msgid "Copy session ID to clipboard"
+msgstr "Скопіювати ідентифікатор сеансу до буфера"
 
 #: src/session/view/content/explore/mod.ui:58
 msgid "No rooms matching the search were found"
@@ -1165,14 +1172,14 @@ msgstr "Список кімнат"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:210
-#: src/session/view/content/room_history/mod.rs:915
-#: src/session/view/content/room_history/state_row/tombstone.rs:124
+#: src/session/view/content/room_history/mod.rs:918
+#: src/session/view/content/room_history/state_row/tombstone.rs:120
 msgid "View"
 msgstr "Перегляд"
 
 #: src/session/view/content/explore/public_room_row.rs:212
-#: src/session/view/content/room_history/mod.rs:918
-#: src/session/view/content/room_history/state_row/tombstone.rs:126
+#: src/session/view/content/room_history/mod.rs:921
+#: src/session/view/content/room_history/state_row/tombstone.rs:122
 msgid "Join"
 msgstr "Увійти"
 
@@ -1368,7 +1375,7 @@ msgstr "Не знайдено жодного користувача, який в
 msgid "An error occurred while searching for matches."
 msgstr "Під час пошуку відповідників сталася помилка."
 
-#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:203
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:199
 msgid "Could not load the full list of room members"
 msgstr "Не вдалося завантажити повний список учасників кімнати."
 
@@ -1587,12 +1594,10 @@ msgid "Could not retrieve media"
 msgstr "Не вдалося отримати мультимедійні дані"
 
 #: src/session/view/content/room_history/message_row/message_state_stack.rs:130
-#| msgid "Could not open the store."
 msgid "Could not send the message"
 msgstr "Не вдалося надіслати повідомлення"
 
 #: src/session/view/content/room_history/message_row/message_state_stack.rs:136
-#| msgid "An error occurred while searching for users"
 msgid "An error occurred with the sending queue"
 msgstr "Сталася помилка у черзі надсилання"
 
@@ -1733,13 +1738,13 @@ msgstr "Помилка під час отримання файла зі скид
 msgid "Failed to leave {room}"
 msgstr "Не вдалося полишити {room}."
 
-#: src/session/view/content/room_history/mod.rs:913
-#: src/session/view/content/room_history/mod.rs:917
+#: src/session/view/content/room_history/mod.rs:916
+#: src/session/view/content/room_history/mod.rs:920
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:920
+#: src/session/view/content/room_history/mod.rs:923
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
@@ -1795,7 +1800,7 @@ msgstr "Журнал кімнати"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:299
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:295
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Переглянуто {n} учасником"
@@ -1805,7 +1810,7 @@ msgstr[3] "Переглянуто 1 учасником"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:312
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:308
 msgid "Seen by {name}"
 msgstr "Переглянуто {name}"
 
@@ -1956,13 +1961,13 @@ msgstr "{user} змінено аватар."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:170
+#: src/session/view/content/room_history/typing_row.rs:166
 msgid "<b>{user}</b> is typing…"
 msgstr "<b>{user}</b> вводить повідомлення…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:177
+#: src/session/view/content/room_history/typing_row.rs:173
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "<b>{n}</b> учасник вводить повідомлення…"
@@ -2393,59 +2398,59 @@ msgstr "На весь екран"
 msgid "Exit Fullscreen"
 msgstr "Вийти з повноекранного режиму"
 
-#: src/session/view/room_creation.rs:232
+#: src/session/view/room_creation.rs:234
 msgid "The address is already taken."
 msgstr "Адресу вже використано."
 
-#: src/session/view/room_creation.rs:265
+#: src/session/view/room_creation.rs:266
 msgid "Can’t contain “:”"
 msgstr "Не може містити «:»"
 
-#: src/session/view/room_creation.rs:270
+#: src/session/view/room_creation.rs:271
 msgid "Can’t contain “#”"
 msgstr "Не може містити «#»"
 
-#: src/session/view/room_creation.rs:275
+#: src/session/view/room_creation.rs:276
 msgid "Too long. Use a shorter address."
 msgstr "Задовга. Скористайтеся коротшою адресою."
 
-#: src/session/view/room_creation.ui:39
+#: src/session/view/room_creation.ui:37
 msgid "New Room"
 msgstr "Нова кімната"
 
-#: src/session/view/room_creation.ui:63
+#: src/session/view/room_creation.ui:61
 msgid "Topic (Optional)"
 msgstr "Тема (необов'язкова)"
 
-#: src/session/view/room_creation.ui:71
+#: src/session/view/room_creation.ui:69
 msgid "Room Visibility"
 msgstr "Видимість кімнати"
 
-#: src/session/view/room_creation.ui:74
+#: src/session/view/room_creation.ui:72
 msgid "Private"
 msgstr "Приватна"
 
-#: src/session/view/room_creation.ui:75
+#: src/session/view/room_creation.ui:73
 msgid "Only invited people can join this room"
 msgstr "До цієї кімнати можуть долучатися лише запрошені люди"
 
-#: src/session/view/room_creation.ui:88
+#: src/session/view/room_creation.ui:86
 msgid "Public"
 msgstr "Відкрита"
 
-#: src/session/view/room_creation.ui:89
+#: src/session/view/room_creation.ui:87
 msgid "Anyone can find and join this room"
 msgstr "Цю кімнати може знаходити і долучатися до неї будь-хто"
 
-#: src/session/view/room_creation.ui:107
+#: src/session/view/room_creation.ui:105
 msgid "End-to-End Encryption"
 msgstr "Міжвузлове шифрування"
 
-#: src/session/view/room_creation.ui:108
+#: src/session/view/room_creation.ui:106
 msgid "Cannot be disabled later"
 msgstr "Не можна вимикати пізніше"
 
-#: src/session/view/room_creation.ui:120
+#: src/session/view/room_creation.ui:118
 msgid ""
 "Fractal does not support online backup for encryption keys yet, so you will "
 "need to back them up manually or your message history will be lost if you "
@@ -2456,11 +2461,11 @@ msgstr ""
 "вручну, інакше ви втратите ваш журнал повідомлень, якщо втратите доступ до "
 "усіх ваших сеансів."
 
-#: src/session/view/room_creation.ui:134
+#: src/session/view/room_creation.ui:132
 msgid "Room Address"
 msgstr "Адреса кімнати"
 
-#: src/session/view/room_creation.ui:184
+#: src/session/view/room_creation.ui:182
 msgid "_Create Room"
 msgstr "С_творити кімнату"
 
@@ -2598,12 +2603,12 @@ msgid "Allows to navigate between rooms"
 msgstr "Дозволяє навігацію між кімнатами"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:374 src/session/view/sidebar/row.rs:342
+#: src/session/view/sidebar/room_row.rs:372 src/session/view/sidebar/row.rs:335
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:393 src/session/view/sidebar/row.rs:357
+#: src/session/view/sidebar/room_row.rs:391 src/session/view/sidebar/row.rs:350
 msgid "Failed to forget {room}."
 msgstr "Не вдалося забути про {room}."
 
@@ -2801,9 +2806,38 @@ msgstr ""
 msgid "Leave"
 msgstr "Полишити"
 
-#: src/window.rs:360
+#: src/window.rs:357
 msgid "Failed to restore previous sessions"
 msgstr "Не вдалося відновити попередні сеанси"
+
+#~ msgid "Session removed successfully."
+#~ msgstr "Сеанс успішно вилучено."
+
+#~ msgid "Could not remove session from secret storage"
+#~ msgstr "Не вдалося вилучити сеанс із зашифрованого сховища"
+
+#~ msgid ""
+#~ "It seems like one of the Fractal sessions stored in the Secret Service is "
+#~ "corrupted. If you know how to fix it you should do so."
+#~ msgstr ""
+#~ "Здається один із сеансів «Фрактала», який було збережено у «Секретній "
+#~ "службі», пошкоджено. Якщо вам відомо, як виправити цю помилку, можете "
+#~ "зробити це."
+
+#~ msgid ""
+#~ "Alternatively, we could disconnect this session for you. This means you "
+#~ "will have to login again and you will lose access to your encrypted "
+#~ "messages, unless you have a session open in another client or you have "
+#~ "already backed up your encryption keys."
+#~ msgstr ""
+#~ "Крім того, ви можете від'єднати цей сеанс. Це означає, що вам доведеться "
+#~ "знову увійти до системи, і ви втратите доступ до ваших шифрованих "
+#~ "повідомлень, якщо сеанс не було відкрито у іншому клієнті або вами не "
+#~ "було створено резервної копії ваших ключів шифрування."
+
+#~ msgid "Clicking this button might disconnect more than one session!"
+#~ msgstr ""
+#~ "Натискання цієї кнопки може призвести до від'єднання декількох сеансів!"
 
 #~ msgid "People"
 #~ msgstr "Люди"
