@@ -20,12 +20,17 @@ Highlights:
 
 ## Installation instructions
 
+Flatpak is the recommended installation method. For installing any of our Flatpaks, you need to
+make sure your system is [set up with the Flathub remote](https://flathub.org/setup).
+
+All of our Flatpaks can be installed in parallel, offering you the opportunity to try out the
+development version while keeping the stable release around for daily use.
+
 ### Stable version
 
 The current stable version is 5 (released November 24th 2023).
 
-Flatpak is the recommended installation method.
-Until our next iteration is ready, you can get the official Fractal Flatpak from Flathub.
+You can get the official Fractal Flatpak from Flathub.
 
 <a href="https://flathub.org/apps/details/org.gnome.Fractal">
 <img
@@ -42,15 +47,7 @@ The current beta version is 5 (same as stable, released November 24th 2023).
 
 It is available as a Flatpak on Flathub Beta.
 
-To get it, first ensure that the Flathub remote is present to provide the necessary runtimes:
-
-```sh
-flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-```
-
-Or download and install the [Flathub repository file](https://dl.flathub.org/repo/flathub.flatpakrepo)
-
-Then, set up the Flathub Beta remote:
+To get it, first set up the Flathub Beta remote:
 
 ```sh
 flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
