@@ -9,8 +9,17 @@
   <description>
     <p>
       Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
-      collaboration in large groups, such as free software projects.
+      collaboration in large groups, such as free software projects, and will fit all screens, big or small.
     </p>
+    <p>Highlights:</p>
+    <ul>
+      <li>Find rooms to discuss your favorite topics, or talk privately to people, securely thanks to end-to-end encryption</li>
+      <li>Send rich formatted messages, files, or your current location</li>
+      <li>Reply to specific messages, react with emoji, edit or remove messages</li>
+      <li>View images, and play audio and video directly in the conversation</li>
+      <li>See who has read messages, and who is typing</li>
+      <li>Log into multiple accounts at once (with Single-Sign On support)</li>
+    </ul>
   </description>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
