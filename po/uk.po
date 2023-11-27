@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-25 13:12+0000\n"
-"PO-Revision-Date: 2023-11-26 21:54+0200\n"
+"POT-Creation-Date: 2023-11-27 18:28+0000\n"
+"PO-Revision-Date: 2023-11-27 22:41+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -83,30 +83,78 @@ msgid "Matrix group messaging app"
 msgstr "Програма для обміну груповими повідомленнями Matrix"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:10
+#| msgid ""
+#| "Fractal is a Matrix messaging app for GNOME written in Rust. Its "
+#| "interface is optimized for collaboration in large groups, such as free "
+#| "software projects."
 msgid ""
 "Fractal is a Matrix messaging app for GNOME written in Rust. Its interface "
 "is optimized for collaboration in large groups, such as free software "
-"projects."
+"projects, and will fit all screens, big or small."
 msgstr ""
 "«Фрактал» — програма для обміну повідомленнями у мережах Matrix для GNOME, "
 "написана на Rust. Інтерфейс оптимізований для спільної роботи у великих "
-"групах, таких як проекти вільного програмного забезпечення."
+"групах, таких як проєкти вільного програмного забезпечення, і пасує до усіх"
+" екранів, великих та малих."
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:17 src/application.rs:148
+#: data/org.gnome.Fractal.metainfo.xml.in.in:14
+msgid "Highlights:"
+msgstr "Акценти:"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:16
+msgid ""
+"Find rooms to discuss your favorite topics, or talk privately to people, "
+"securely thanks to end-to-end encryption"
+msgstr ""
+"Шукайте кімнати для обговорення бажаних для вас тем або спілкуйтеся із"
+" іншими конфіденційно і безпечно завдяки міжвузловому шифруванню даних"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:17
+msgid "Send rich formatted messages, files, or your current location"
+msgstr ""
+"Надсилайте форматовані повідомлення, файли або дані щодо вашого поточного"
+" місця перебування"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:18
+msgid "Reply to specific messages, react with emoji, edit or remove messages"
+msgstr ""
+"Відповідайте на певні повідомлення, реагуйте емоційками, змінюйте або"
+" вилучайте повідомлення"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:19
+#| msgid "An image has been added to the conversation."
+msgid "View images, and play audio and video directly in the conversation"
+msgstr ""
+"Переглядайте зображення і відео, прослуховуйте звукові файли безпосередньо у"
+" вікні спілкування"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:20
+msgid "See who has read messages, and who is typing"
+msgstr ""
+"Переглядайте дані щодо того, ким прочитано повідомлення, або хто вводить"
+" повідомлення"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:21
+msgid "Log into multiple accounts at once (with Single-Sign On support)"
+msgstr ""
+"Працюйте у декількох облікових записах одночасно (із підтримкою єдиного"
+" входу в усі одразу)"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:148
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:24
+#: data/org.gnome.Fractal.metainfo.xml.in.in:33
 msgid "Fractal’s main window"
 msgstr "Головне вікно Fractal"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:28
+#: data/org.gnome.Fractal.metainfo.xml.in.in:37
 msgid "View the media history of a Matrix room"
 msgstr "Перегляд журналу мультимедіа кімнати Matrix"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:32
+#: data/org.gnome.Fractal.metainfo.xml.in.in:41
 msgid "Fractal’s interface adapts to small screens"
-msgstr "Інтерфейс Fractal адаптується до малих екранів"
+msgstr "Інтерфейс «Фрактала» адаптується до малих екранів"
 
 #: src/account_switcher/mod.ui:37
 msgid "_Add Account"
@@ -1059,17 +1107,14 @@ msgid "Backup Encryption Keys"
 msgstr "Створити резервну копію ключів шифрування"
 
 #: src/session/view/account_settings/user_page/mod.rs:78
-#| msgid "Message copied to clipboard"
 msgid "Homeserver address copied to clipboard"
 msgstr "Адресу домашнього сервера скопійовано до буфера обміну"
 
 #: src/session/view/account_settings/user_page/mod.rs:84
-#| msgid "Message copied to clipboard"
 msgid "Matrix user ID copied to clipboard"
 msgstr "Ідентифікатор користувача Matrix скопійовано до буфера обміну"
 
 #: src/session/view/account_settings/user_page/mod.rs:90
-#| msgid "Message copied to clipboard"
 msgid "Session ID copied to clipboard"
 msgstr "Ідентифікатор сеансу скопійовано до буфера обміну"
 
@@ -1140,7 +1185,6 @@ msgid "Advanced Information"
 msgstr "Додаткова інформація"
 
 #: src/session/view/account_settings/user_page/mod.ui:71
-#| msgid "Copy to Clipboard"
 msgid "Copy homeserver address to clipboard"
 msgstr "Скопіювати адресу домашнього сервера до буфера"
 
@@ -1149,7 +1193,6 @@ msgid "Matrix User ID"
 msgstr "Ідентифікатор користувача Matrix"
 
 #: src/session/view/account_settings/user_page/mod.ui:90
-#| msgid "Copy to Clipboard"
 msgid "Copy Matrix user ID to clipboard"
 msgstr "Скопіювати ідентифікатор користувача Matrix до буфера"
 
@@ -1158,7 +1201,6 @@ msgid "Session ID"
 msgstr "Ідентифікатор сеансу"
 
 #: src/session/view/account_settings/user_page/mod.ui:109
-#| msgid "Copy to Clipboard"
 msgid "Copy session ID to clipboard"
 msgstr "Скопіювати ідентифікатор сеансу до буфера"
 
@@ -2321,11 +2363,11 @@ msgstr ""
 "Якщо ви хочете вибрати пароль для відновлення, поверніться і виберіть "
 "відповідний пункт."
 
-#: src/session/view/create_dm_dialog/mod.rs:162
+#: src/session/view/create_dm_dialog/mod.rs:159
 msgid "An error occurred while searching for users"
 msgstr "Під час пошуку користувачів сталася помилка"
 
-#: src/session/view/create_dm_dialog/mod.rs:204
+#: src/session/view/create_dm_dialog/mod.rs:201
 msgid "Failed to create a new Direct Chat"
 msgstr "Не вдалося розпочати безпосереднє спілкування"
 
@@ -2359,11 +2401,11 @@ msgid "Copy to Clipboard"
 msgstr "Скопіювати до буфера"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/session/view/join_room_dialog.rs:144
+#: src/session/view/join_room_dialog.rs:141
 msgid "_View"
 msgstr "П_ерегляд"
 
-#: src/session/view/join_room_dialog.rs:146
+#: src/session/view/join_room_dialog.rs:143
 #: src/session/view/join_room_dialog.ui:10
 msgid "_Join"
 msgstr "_Увійти"
@@ -2398,19 +2440,19 @@ msgstr "На весь екран"
 msgid "Exit Fullscreen"
 msgstr "Вийти з повноекранного режиму"
 
-#: src/session/view/room_creation.rs:234
+#: src/session/view/room_creation.rs:231
 msgid "The address is already taken."
 msgstr "Адресу вже використано."
 
-#: src/session/view/room_creation.rs:266
+#: src/session/view/room_creation.rs:263
 msgid "Can’t contain “:”"
 msgstr "Не може містити «:»"
 
-#: src/session/view/room_creation.rs:271
+#: src/session/view/room_creation.rs:268
 msgid "Can’t contain “#”"
 msgstr "Не може містити «#»"
 
-#: src/session/view/room_creation.rs:276
+#: src/session/view/room_creation.rs:273
 msgid "Too long. Use a shorter address."
 msgstr "Задовга. Скористайтеся коротшою адресою."
 
@@ -3380,9 +3422,6 @@ msgstr "Не вдалося відновити попередні сеанси"
 
 #~ msgid "An audio file has been added to the conversation."
 #~ msgstr "До спілкування було додано файл звукових даних."
-
-#~ msgid "An image has been added to the conversation."
-#~ msgstr "До спілкування було додано файл зображення."
 
 #~ msgid "A video has been added to the conversation."
 #~ msgstr "До спілкування було додано файл відео."
