@@ -1,14 +1,23 @@
-use gtk::{gio, glib, glib::SignalHandlerId, prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
+use tracing::{error, info, warn};
 
 mod failed_session;
 mod new_session;
 mod session_info;
 
 pub use self::{failed_session::*, new_session::*, session_info::*};
+use crate::{
+    prelude::*,
+    secret::{self, StoredSession},
+    session::model::{Session, SessionState},
+    spawn, spawn_tokio,
+    utils::LoadingState,
+};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use once_cell::sync::Lazy;
 
@@ -16,6 +25,10 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct SessionList {
+        /// The loading state of the list.
+        pub state: Cell<LoadingState>,
+        /// The error message, if state is set to `LoadingState::Error`.
+        pub error: RefCell<Option<String>>,
         /// A map of session ID to session.
         pub list: RefCell<IndexMap<String, SessionInfo>>,
     }
@@ -30,17 +43,27 @@ mod imp {
     impl ObjectImpl for SessionList {
         fn properties() -> &'static [glib::ParamSpec] {
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::builder("is-empty")
-                    .read_only()
-                    .build()]
+                vec![
+                    glib::ParamSpecEnum::builder::<LoadingState>("state")
+                        .read_only()
+                        .build(),
+                    glib::ParamSpecString::builder("error").read_only().build(),
+                    glib::ParamSpecBoolean::builder("is-empty")
+                        .read_only()
+                        .build(),
+                ]
             });
 
             PROPERTIES.as_ref()
         }
 
         fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
+            let obj = self.obj();
+
             match pspec.name() {
-                "is-empty" => self.obj().is_empty().to_value(),
+                "state" => obj.state().to_value(),
+                "error" => obj.error().to_value(),
+                "is-empty" => obj.is_empty().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -77,6 +100,32 @@ impl SessionList {
         glib::Object::new()
     }
 
+    /// The loading state of this list.
+    pub fn state(&self) -> LoadingState {
+        self.imp().state.get()
+    }
+
+    /// Set the loading state of this list.
+    fn set_state(&self, state: LoadingState) {
+        if self.state() == state {
+            return;
+        }
+
+        self.imp().state.set(state);
+        self.notify("state");
+    }
+
+    /// The error message, if `state` is set to `LoadingState::Error`.
+    pub fn error(&self) -> Option<String> {
+        self.imp().error.borrow().clone()
+    }
+
+    /// Set the error message.
+    fn set_error(&self, message: String) {
+        self.imp().error.replace(Some(message));
+        self.notify("error");
+    }
+
     /// Whether this list is empty.
     pub fn is_empty(&self) -> bool {
         self.imp().list.borrow().is_empty()
@@ -108,6 +157,26 @@ impl SessionList {
     /// Returns the index of the session.
     pub fn insert(&self, session: impl IsA<SessionInfo>) -> usize {
         let session = session.upcast();
+
+        if let Some(session) = session.downcast_ref::<Session>() {
+            // Start listening to notifications when the session is ready.
+            if session.state() == SessionState::Ready {
+                spawn!(clone!(@weak session => async move {
+                    session.init_notifications().await
+                }));
+            } else {
+                session.connect_ready(|session| {
+                    spawn!(clone!(@weak session => async move {
+                        session.init_notifications().await
+                    }));
+                });
+            }
+
+            session.connect_logged_out(clone!(@weak self as obj => move |session| {
+                obj.remove(session.session_id())
+            }));
+        }
+
         let was_empty = self.is_empty();
 
         let (index, replaced) = self
@@ -121,7 +190,7 @@ impl SessionList {
         self.items_changed(index as u32, removed, 1);
 
         if was_empty {
-            self.notify("is-empty")
+            self.notify("is-empty");
         }
 
         index
@@ -140,10 +209,70 @@ impl SessionList {
         }
     }
 
-    pub fn connect_is_empty_notify<F: Fn(&Self) + 'static>(&self, f: F) -> SignalHandlerId {
+    pub fn connect_is_empty_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_notify_local(Some("is-empty"), move |obj, _| {
             f(obj);
         })
+    }
+
+    /// Restore the logged-in sessions.
+    pub async fn restore_sessions(&self) {
+        if self.state() >= LoadingState::Loading {
+            return;
+        }
+
+        self.set_state(LoadingState::Loading);
+
+        let handle = spawn_tokio!(secret::restore_sessions());
+        match handle.await.unwrap() {
+            Ok(sessions) => {
+                for stored_session in sessions {
+                    info!(
+                        "Restoring previous session for user: {}",
+                        stored_session.user_id
+                    );
+                    if let Some(path) = stored_session.path.to_str() {
+                        info!("Database path: {path}");
+                    }
+                    self.insert(NewSession::new(stored_session.clone()));
+
+                    spawn!(
+                        glib::Priority::DEFAULT_IDLE,
+                        clone!(@weak self as obj => async move {
+                            obj.restore_stored_session(stored_session).await;
+                        })
+                    );
+                }
+
+                self.set_state(LoadingState::Ready)
+            }
+            Err(error) => {
+                error!("Failed to restore previous sessions: {error}");
+
+                let message = format!(
+                    "{}\n\n{}",
+                    gettext("Failed to restore previous sessions"),
+                    error.to_user_facing(),
+                );
+
+                self.set_error(message);
+                self.set_state(LoadingState::Error);
+            }
+        }
+    }
+
+    /// Restore a stored session.
+    async fn restore_stored_session(&self, session_info: StoredSession) {
+        match Session::restore(session_info.clone()).await {
+            Ok(session) => {
+                session.prepare().await;
+                self.insert(session);
+            }
+            Err(error) => {
+                warn!("Failed to restore previous session: {error}");
+                self.insert(FailedSession::new(session_info, error));
+            }
+        }
     }
 }
 

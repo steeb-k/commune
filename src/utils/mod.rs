@@ -394,7 +394,7 @@ impl<T> Drop for TokioDrop<T> {
 }
 
 /// The state of a resource that can be loaded.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, glib::Enum)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, glib::Enum)]
 #[enum_type(name = "LoadingState")]
 pub enum LoadingState {
     /// It hasn't been loaded yet.

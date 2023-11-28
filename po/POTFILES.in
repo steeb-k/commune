@@ -117,6 +117,7 @@ src/session/view/sidebar/category_row.rs
 src/session/view/sidebar/mod.ui
 src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
+src/session_list/mod.rs
 src/shortcuts.ui
 src/user_facing_error.rs
 src/utils/matrix.rs

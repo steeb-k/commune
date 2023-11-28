@@ -4,7 +4,7 @@ use adw::subclass::prelude::AdwApplicationWindowImpl;
 use gettextrs::gettext;
 use gtk::{self, gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use ruma::RoomId;
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 
 use crate::{
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
@@ -13,13 +13,14 @@ use crate::{
     greeter::Greeter,
     login::Login,
     prelude::*,
-    secret::{self, StoredSession},
     session::{
         model::{Session, SessionState},
         view::{AccountSettings, SessionView},
     },
-    session_list::{FailedSession, NewSession, SessionInfo, SessionList},
-    spawn, spawn_tokio, toast, Application, APP_ID, PROFILE,
+    session_list::{FailedSession, SessionInfo, SessionList},
+    spawn, toast,
+    utils::LoadingState,
+    Application, APP_ID, PROFILE,
 };
 
 mod imp {
@@ -175,29 +176,75 @@ mod imp {
 
             obj.load_window_size();
 
-            self.session_list
-                .connect_is_empty_notify(clone!(@weak obj => move |session_list| {
-                    obj.action_set_enabled("win.show-session", !session_list.is_empty());
-                }));
-            obj.action_set_enabled("win.show-session", !self.session_list.is_empty());
-
             self.main_stack.connect_visible_child_notify(
                 clone!(@weak obj => move |_| obj.set_default_by_child()),
             );
-
             obj.set_default_by_child();
 
-            self.session_selection.set_model(Some(&self.session_list));
-            self.session_selection.set_autoselect(true);
+            self.session_list.connect_notify_local(
+                Some("state"),
+                clone!(@weak obj => move |session_list, _| {
+                    match session_list.state() {
+                        LoadingState::Ready => {
+                            if session_list.is_empty() {
+                                obj.switch_to_greeter_page();
+                            } else {
+                                obj.show_selected_session();
+                            }
+                        }
+                        LoadingState::Error => {
+                            if let Some(message) = session_list.error() {
+                                obj.show_secret_error(&message);
+                            }
+                        }
+                        _ => {}
+                    }
+                }),
+            );
 
             self.session_selection
                 .connect_selected_item_notify(clone!(@weak obj => move |_| {
                     obj.show_selected_session();
                 }));
+            self.session_selection.connect_items_changed(
+                clone!(@weak obj => move |session_selection, pos, removed, added| {
+                    let n_items = session_selection.n_items();
+                    obj.action_set_enabled("win.show-session", n_items > 0);
 
-            spawn!(clone!(@weak obj => async move {
-                obj.restore_sessions().await;
-            }));
+                    if removed > 0 && n_items == 0 {
+                        obj.switch_to_greeter_page();
+                        return;
+                    }
+
+                    if added == 0 {
+                        return;
+                    }
+
+                    for i in pos..pos + added {
+                        let Some(session) = session_selection.item(i).and_downcast::<SessionInfo>() else {
+                            continue;
+                        };
+
+                        if let Some(failed) = session.downcast_ref::<FailedSession>() {
+                            toast!(obj, failed.error().to_user_facing());
+                        }
+
+                        let settings = Application::default().settings();
+                        if session.session_id() == settings.string("current-session")
+                        {
+                            session_selection.set_selected(i);
+                        }
+                    }
+                }),
+            );
+
+            self.session_selection.set_model(Some(&self.session_list));
+
+            spawn!(
+                clone!(@weak self.session_list as session_list => async move {
+                    session_list.restore_sessions().await;
+                })
+            );
 
             self.account_switcher
                 .set_session_selection(Some(self.session_selection.clone()));
@@ -214,12 +261,15 @@ mod imp {
     impl WindowImpl for Window {
         // save window state on delete event
         fn close_request(&self) -> glib::Propagation {
-            if let Err(err) = self.obj().save_window_size() {
-                warn!("Failed to save window state, {}", &err);
+            let obj = self.obj();
+
+            if let Err(error) = obj.save_window_size() {
+                warn!("Failed to save window state: {error}");
             }
-            if let Err(err) = self.obj().save_current_visible_session() {
-                warn!("Failed to save current session: {err}");
+            if let Err(error) = obj.save_current_visible_session() {
+                warn!("Failed to save current session: {error}");
             }
+
             glib::Propagation::Proceed
         }
     }
@@ -274,104 +324,10 @@ impl Window {
         &self.imp().session_selection
     }
 
+    /// Add the given session to the session list and select it.
     pub fn add_session(&self, session: Session) {
-        let imp = &self.imp();
-        let session_list = self.session_list();
-
-        let index = session_list.insert(session.clone());
-        let settings = Application::default().settings();
-        if session.session_id() == settings.string("current-session")
-            || !session_list.has_new_sessions()
-        {
-            imp.session_selection.set_selected(index as u32);
-        }
-
-        // Start listening to notifications when the session is ready.
-        if session.state() == SessionState::Ready {
-            spawn!(clone!(@weak session => async move {
-                session.init_notifications().await
-            }));
-        } else {
-            session.connect_ready(|session| {
-                spawn!(clone!(@weak session => async move {
-                    session.init_notifications().await
-                }));
-            });
-        }
-
-        session.connect_logged_out(clone!(@weak self as obj => move |session| {
-            obj.remove_session(session)
-        }));
-    }
-
-    fn remove_session(&self, session: &Session) {
-        let imp = self.imp();
-
-        imp.session_list.remove(session.session_id());
-
-        if imp.session_list.is_empty() {
-            self.switch_to_greeter_page();
-        }
-    }
-
-    pub async fn restore_sessions(&self) {
-        let imp = self.imp();
-        let handle = spawn_tokio!(secret::restore_sessions());
-        match handle.await.unwrap() {
-            Ok(sessions) => {
-                if sessions.is_empty() {
-                    self.switch_to_greeter_page();
-                } else {
-                    for stored_session in sessions {
-                        info!(
-                            "Restoring previous session for user: {}",
-                            stored_session.user_id
-                        );
-                        if let Some(path) = stored_session.path.to_str() {
-                            info!("Database path: {path}");
-                        }
-                        imp.session_list
-                            .insert(NewSession::new(stored_session.clone()));
-
-                        spawn!(
-                            glib::Priority::DEFAULT_IDLE,
-                            clone!(@weak self as obj => async move {
-                                obj.restore_stored_session(stored_session).await;
-                            })
-                        );
-                    }
-                }
-            }
-            Err(error) => {
-                error!("Failed to restore previous sessions: {error}");
-
-                let message = format!(
-                    "{}\n\n{}",
-                    gettext("Failed to restore previous sessions"),
-                    error.to_user_facing(),
-                );
-
-                imp.error_page.display_secret_error(&message);
-                imp.main_stack.set_visible_child(&*imp.error_page);
-            }
-        }
-    }
-
-    /// Restore a stored session.
-    async fn restore_stored_session(&self, session_info: StoredSession) {
-        match Session::restore(session_info.clone()).await {
-            Ok(session) => {
-                session.prepare().await;
-                self.add_session(session);
-            }
-            Err(error) => {
-                warn!("Failed to restore previous session: {error}");
-                toast!(self, error.to_user_facing());
-
-                self.session_list()
-                    .insert(FailedSession::new(session_info, error));
-            }
-        }
+        let index = self.session_list().insert(session);
+        self.session_selection().set_selected(index as u32);
     }
 
     /// The ID of the currently visible session, if any.
@@ -573,5 +529,12 @@ impl Window {
 
         let window = AccountSettings::new(Some(self), &session);
         window.present();
+    }
+
+    /// Open the error page and display the given secret error message.
+    fn show_secret_error(&self, message: &str) {
+        let imp = self.imp();
+        imp.error_page.display_secret_error(message);
+        imp.main_stack.set_visible_child(&*imp.error_page);
     }
 }
