@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
+    <file compressed="true" preprocess="xml-stripblanks">account_switcher/account_switcher_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">account_switcher/account_switcher_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">account_switcher/avatar_with_selection.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">account_switcher/session_item.ui</file>

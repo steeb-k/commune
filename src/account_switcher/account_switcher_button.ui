@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="AccountSwitcherButton" parent="GtkToggleButton">
+    <property name="tooltip-text" translatable="yes">Switch Accounts</property>
+    <accessibility>
+      <property name="label" translatable="yes">Switch Accounts</property>
+    </accessibility>
+    <style>
+      <class name="image-button"/>
+    </style>
+    <property name="child">
+      <object class="ComponentsAvatar">
+        <property name="size">24</property>
+        <binding name="data">
+          <lookup name="avatar-data" type="SessionInfo">
+            <lookup name="selected-item" type="GtkSingleSelection">
+              <lookup name="session-selection" type="Window">
+                <lookup name="root">AccountSwitcherButton</lookup>
+              </lookup>
+            </lookup>
+          </lookup>
+        </binding>
+        <property name="accessible-role">presentation</property>
+      </object>
+    </property>
+  </template>
+</interface>

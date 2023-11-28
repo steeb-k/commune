@@ -1,13 +1,18 @@
 use gtk::{glib, subclass::prelude::*};
 
 use super::{BoxedStoredSession, SessionInfo, SessionInfoImpl};
-use crate::secret::StoredSession;
+use crate::{prelude::*, secret::StoredSession, session::model::AvatarData};
 
 mod imp {
+    use std::cell::OnceCell;
+
     use super::*;
 
     #[derive(Debug, Default)]
-    pub struct NewSession {}
+    pub struct NewSession {
+        /// The data for the avatar representation for this session.
+        pub avatar_data: OnceCell<AvatarData>,
+    }
 
     #[glib::object_subclass]
     impl ObjectSubclass for NewSession {
@@ -17,7 +22,18 @@ mod imp {
     }
 
     impl ObjectImpl for NewSession {}
-    impl SessionInfoImpl for NewSession {}
+
+    impl SessionInfoImpl for NewSession {
+        fn avatar_data(&self) -> AvatarData {
+            self.avatar_data
+                .get_or_init(|| {
+                    let avatar_data = AvatarData::new();
+                    avatar_data.set_display_name(Some(self.obj().user_id().to_string()));
+                    avatar_data
+                })
+                .clone()
+        }
+    }
 }
 
 glib::wrapper! {

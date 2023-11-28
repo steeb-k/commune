@@ -3,7 +3,9 @@ use std::sync::Arc;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::{BoxedStoredSession, SessionInfo, SessionInfoImpl};
-use crate::{secret::StoredSession, utils::matrix::ClientSetupError};
+use crate::{
+    prelude::*, secret::StoredSession, session::model::AvatarData, utils::matrix::ClientSetupError,
+};
 
 #[derive(Clone, Debug, glib::Boxed)]
 #[boxed_type(name = "BoxedClientSetupError")]
@@ -18,6 +20,8 @@ mod imp {
     pub struct FailedSession {
         /// The error encountered when initializing the session.
         pub error: OnceCell<Arc<ClientSetupError>>,
+        /// The data for the avatar representation for this session.
+        pub avatar_data: OnceCell<AvatarData>,
     }
 
     #[glib::object_subclass]
@@ -52,7 +56,17 @@ mod imp {
         }
     }
 
-    impl SessionInfoImpl for FailedSession {}
+    impl SessionInfoImpl for FailedSession {
+        fn avatar_data(&self) -> AvatarData {
+            self.avatar_data
+                .get_or_init(|| {
+                    let avatar_data = AvatarData::new();
+                    avatar_data.set_display_name(Some(self.obj().user_id().to_string()));
+                    avatar_data
+                })
+                .clone()
+        }
+    }
 }
 
 glib::wrapper! {

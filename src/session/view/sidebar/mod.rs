@@ -13,13 +13,12 @@ use self::{
     verification_row::VerificationRow,
 };
 use crate::{
-    components::Avatar,
+    account_switcher::AccountSwitcherButton,
     prelude::*,
     session::model::{
         Category, CategoryType, IconItem, IdentityVerification, Room, RoomType, Selection,
         SidebarListModel, User,
     },
-    Window,
 };
 
 mod imp {
@@ -41,8 +40,6 @@ mod imp {
         pub room_search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
         pub room_search: TemplateChild<gtk::SearchBar>,
-        #[template_child]
-        pub account_switcher_button: TemplateChild<gtk::MenuButton>,
         #[template_child]
         pub room_row_menu: TemplateChild<gio::MenuModel>,
         #[template_child]
@@ -66,9 +63,8 @@ mod imp {
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            RoomRow::static_type();
-            Row::static_type();
-            Avatar::static_type();
+            AccountSwitcherButton::static_type();
+
             Self::bind_template(klass);
             klass.set_css_name("sidebar");
         }
@@ -167,21 +163,6 @@ mod imp {
                     _ => {}
                 }
             });
-
-            self.account_switcher_button.set_create_popup_func(clone!(@weak obj => move |btn| {
-                if let Some(window) = obj.parent_window() {
-                    let account_switcher = window.account_switcher();
-                    // We need to remove the popover from the previous MenuButton, if any
-                    if let Some(prev_parent) = account_switcher.parent().and_downcast::<gtk::MenuButton>() {
-                        if &prev_parent == btn {
-                            return;
-                        } else {
-                            prev_parent.set_popover(gtk::Widget::NONE);
-                        }
-                    }
-                    btn.set_popover(Some(account_switcher));
-                }
-            }));
 
             // FIXME: Remove this hack once https://gitlab.gnome.org/GNOME/gtk/-/issues/4938 is resolved
             self.scrolled_window
@@ -357,10 +338,5 @@ impl Sidebar {
                 .halign(gtk::Align::Start)
                 .build()
         })
-    }
-
-    /// Returns the parent `Window` containing the `Sidebar`
-    fn parent_window(&self) -> Option<Window> {
-        self.root().and_downcast()
     }
 }

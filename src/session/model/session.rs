@@ -29,7 +29,8 @@ use tracing::{debug, error};
 use url::Url;
 
 use super::{
-    ItemList, Notifications, RoomList, SessionSettings, SidebarListModel, User, VerificationList,
+    AvatarData, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel, User,
+    VerificationList,
 };
 use crate::{
     prelude::*,
@@ -148,7 +149,11 @@ mod imp {
         }
     }
 
-    impl SessionInfoImpl for Session {}
+    impl SessionInfoImpl for Session {
+        fn avatar_data(&self) -> AvatarData {
+            self.obj().user().unwrap().avatar_data().clone()
+        }
+    }
 }
 
 glib::wrapper! {
