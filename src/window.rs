@@ -7,7 +7,7 @@ use ruma::RoomId;
 use tracing::{error, info, warn};
 
 use crate::{
-    account_switcher::AccountSwitcherPopover,
+    account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
     components::Spinner,
     error_page::ErrorPage,
     greeter::Greeter,
@@ -67,6 +67,8 @@ mod imp {
         type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
+            AccountSwitcherButton::static_type();
+
             Self::bind_template(klass);
 
             klass.add_binding_action(

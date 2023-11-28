@@ -4,12 +4,15 @@
     <child>
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="GtkHeaderBar">
+          <object class="AdwHeaderBar">
             <property name="title-widget">
               <object class="AdwWindowTitle">
                 <property name="title" translatable="yes">Error</property>
               </object>
             </property>
+            <child type="start">
+              <object class="AccountSwitcherButton"/>
+            </child>
           </object>
         </child>
         <property name="content">

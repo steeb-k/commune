@@ -6,7 +6,12 @@ use gtk::{
 };
 
 use super::AccountSwitcherPopover;
-use crate::{components::Avatar, session_list::SessionInfo, utils::BoundObjectWeakRef, Window};
+use crate::{
+    components::Avatar,
+    session_list::SessionInfo,
+    utils::{template_callbacks::TemplateCallbacks, BoundObjectWeakRef},
+    Window,
+};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -30,6 +35,7 @@ mod imp {
             SessionInfo::static_type();
 
             Self::bind_template(klass);
+            TemplateCallbacks::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

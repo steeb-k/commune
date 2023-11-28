@@ -17,7 +17,11 @@
                 <property name="child">
                   <object class="AdwToolbarView">
                     <child type="top">
-                      <object class="GtkHeaderBar"/>
+                      <object class="AdwHeaderBar">
+                        <child type="start">
+                          <object class="AccountSwitcherButton"/>
+                        </child>
+                      </object>
                     </child>
                     <property name="content">
                       <object class="GtkBox">

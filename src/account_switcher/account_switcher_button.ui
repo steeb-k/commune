@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="AccountSwitcherButton" parent="GtkToggleButton">
+    <binding name="visible">
+      <closure type="gboolean" function="invert_boolean">
+        <lookup name="is-empty" type="SessionList">
+          <lookup name="session-list" type="Window">
+            <lookup name="root">AccountSwitcherButton</lookup>
+          </lookup>
+        </lookup>
+      </closure>
+    </binding>
     <property name="tooltip-text" translatable="yes">Switch Accounts</property>
     <accessibility>
       <property name="label" translatable="yes">Switch Accounts</property>
