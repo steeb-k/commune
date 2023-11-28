@@ -7,7 +7,7 @@ use ruma::RoomId;
 use tracing::{error, info, warn};
 
 use crate::{
-    account_switcher::AccountSwitcher,
+    account_switcher::AccountSwitcherPopover,
     components::Spinner,
     error_page::ErrorPage,
     greeter::Greeter,
@@ -57,7 +57,7 @@ mod imp {
         ///
         /// The one that is selected being the one that is visible.
         pub session_selection: gtk::SingleSelection,
-        pub account_switcher: AccountSwitcher,
+        pub account_switcher: AccountSwitcherPopover,
     }
 
     #[glib::object_subclass]
@@ -509,7 +509,7 @@ impl Window {
         self.imp().toast_overlay.add_toast(toast);
     }
 
-    pub fn account_switcher(&self) -> &AccountSwitcher {
+    pub fn account_switcher(&self) -> &AccountSwitcherPopover {
         &self.imp().account_switcher
     }
 

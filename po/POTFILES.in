@@ -4,7 +4,7 @@ data/org.gnome.Fractal.desktop.in.in
 data/org.gnome.Fractal.gschema.xml.in
 data/org.gnome.Fractal.metainfo.xml.in.in
 
-src/account_switcher/mod.ui
+src/account_switcher/account_switcher_popover.ui
 src/account_switcher/session_item.ui
 src/application.rs
 src/components/auth_dialog.ui

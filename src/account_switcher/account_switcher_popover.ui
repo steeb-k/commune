@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="AccountSwitcher" parent="GtkPopover">
+  <template class="AccountSwitcherPopover" parent="GtkPopover">
     <style>
       <class name="account-switcher"/>
     </style>
@@ -28,6 +28,7 @@
                     <property name="name">new-login-icon</property>
                     <property name="icon-name">add-symbolic</property>
                     <property name="pixel-size">16</property>
+                    <property name="accessible-role">presentation</property>
                   </object>
                 </child>
                 <child>
