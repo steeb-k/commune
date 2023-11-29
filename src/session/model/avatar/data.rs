@@ -120,7 +120,7 @@ impl AvatarData {
     ///
     /// Returns `None` if an error occurred while generating the icon.
     pub fn as_notification_icon(&self) -> Option<gdk::Texture> {
-        let window = Application::default().main_window()?.upcast();
+        let window = Application::default().active_window()?.upcast();
 
         let icon = if let Some(paintable) = self.image().and_then(|i| i.paintable()) {
             paintable_as_notification_icon(paintable.upcast_ref(), &window)

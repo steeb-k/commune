@@ -13,7 +13,7 @@ use tracing::{debug, error, warn};
 use super::{Room, Session};
 use crate::{
     application::AppShowRoomPayload, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body,
-    Application,
+    Application, Window,
 };
 
 mod imp {
@@ -113,7 +113,7 @@ impl Notifications {
         }
 
         let app = Application::default();
-        let window = app.main_window();
+        let window = app.active_window().and_downcast::<Window>();
         let session_id = session.session_id();
 
         // Don't show notifications for the current session if the window is active.

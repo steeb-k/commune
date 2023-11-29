@@ -15,14 +15,12 @@ mod imp {
 
     #[derive(Debug)]
     pub struct Application {
-        pub window: glib::WeakRef<Window>,
         pub settings: Settings,
     }
 
     impl Default for Application {
         fn default() -> Self {
             Self {
-                window: Default::default(),
                 settings: Settings::new(config::APP_ID),
             }
         }
@@ -35,26 +33,24 @@ mod imp {
         type ParentType = adw::Application;
     }
 
-    impl ObjectImpl for Application {}
+    impl ObjectImpl for Application {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let app = self.obj();
+            app.set_up_gactions();
+            app.set_up_accels();
+        }
+    }
 
     impl ApplicationImpl for Application {
         fn activate(&self) {
-            debug!("GtkApplication<Application>::activate");
-            let app = self.obj();
+            debug!("Application::activate");
 
-            if let Some(window) = self.window.upgrade() {
-                window.present();
-                return;
-            }
-
-            app.setup_gactions();
-            app.setup_accels();
-
-            app.get_or_create_main_window();
+            self.obj().present_main_window();
         }
 
         fn startup(&self) {
-            debug!("GtkApplication<Application>::startup");
             self.parent_startup();
         }
     }
@@ -77,38 +73,32 @@ impl Application {
             .build()
     }
 
-    /// Get the main window, if any.
-    pub fn main_window(&self) -> Option<Window> {
-        self.imp().window.upgrade()
-    }
-
-    /// Get the main window or create it if it doesn't exist.
+    /// Get or create the main window and make sure it is visible.
     ///
-    /// This also ensures that the window is visible by calling
-    /// `Window::present()`.
-    fn get_or_create_main_window(&self) -> Window {
-        if let Some(window) = self.main_window() {
-            window.present();
-            return window;
-        }
+    /// Returns the main window.
+    fn present_main_window(&self) -> Window {
+        let window = if let Some(window) = self.active_window().and_downcast() {
+            window
+        } else {
+            Window::new(self)
+        };
 
-        let window = Window::new(self);
-        self.imp().window.set(Some(&window));
         window.present();
-
         window
     }
 
+    /// The application settings.
     pub fn settings(&self) -> Settings {
         self.imp().settings.clone()
     }
 
-    fn setup_gactions(&self) {
+    /// Set up the application actions.
+    fn set_up_gactions(&self) {
         self.add_action_entries([
             // Quit
             gio::ActionEntry::builder("quit")
                 .activate(|app: &Application, _, _| {
-                    if let Some(window) = app.main_window() {
+                    if let Some(window) = app.active_window() {
                         // This is needed to trigger the delete event
                         // and saving the window state
                         window.close();
@@ -123,11 +113,13 @@ impl Application {
                     app.show_about_dialog();
                 })
                 .build(),
+            // Show a room for a session. This is the action triggered when clicking a
+            // notification.
             gio::ActionEntry::builder("show-room")
                 .parameter_type(Some(&AppShowRoomPayload::static_variant_type()))
                 .activate(|app: &Application, _, v| {
                     if let Some(payload) = v.and_then(|v| v.get::<AppShowRoomPayload>()) {
-                        app.get_or_create_main_window()
+                        app.present_main_window()
                             .show_room(&payload.session_id, &payload.room_id);
                     }
                 })
@@ -136,7 +128,7 @@ impl Application {
     }
 
     /// Sets up keyboard shortcuts for application and window actions.
-    fn setup_accels(&self) {
+    fn set_up_accels(&self) {
         self.set_accels_for_action("app.quit", &["<Control>q"]);
         self.set_accels_for_action("win.show-help-overlay", &["<Control>question"]);
     }
@@ -169,7 +161,7 @@ impl Application {
             .translator_credits(gettext("translator-credits"))
             .build();
 
-        dialog.set_transient_for(self.main_window().as_ref());
+        dialog.set_transient_for(self.active_window().as_ref());
 
         // This can't be added via the builder
         dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
