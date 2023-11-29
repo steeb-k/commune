@@ -1,5 +1,5 @@
 use gtk::{
-    glib::{self, clone},
+    glib::{self, clone, closure},
     prelude::*,
     subclass::prelude::*,
     CompositeTemplate,
@@ -14,6 +14,8 @@ use crate::{
 };
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -22,6 +24,7 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/account_switcher_button.ui")]
     pub struct AccountSwitcherButton {
         pub popover: BoundObjectWeakRef<AccountSwitcherPopover>,
+        pub watch: RefCell<Option<gtk::ExpressionWatch>>,
     }
 
     #[glib::object_subclass]
@@ -51,6 +54,22 @@ mod imp {
             obj.connect_toggled(|obj| {
                 obj.handle_toggled();
             });
+
+            let watch = obj
+                .property_expression("root")
+                .chain_property::<Window>("session-selection")
+                .chain_property::<gtk::SingleSelection>("n-items")
+                .chain_closure::<bool>(closure!(|_: Option<glib::Object>, n_items: u32| {
+                    n_items > 0
+                }))
+                .bind(&*obj, "visible", glib::Object::NONE);
+            self.watch.replace(Some(watch));
+        }
+
+        fn dispose(&self) {
+            if let Some(watch) = self.watch.take() {
+                watch.unwatch();
+            }
         }
     }
 
