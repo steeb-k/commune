@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
@@ -233,8 +235,24 @@ impl SessionList {
 
         let handle = spawn_tokio!(secret::restore_sessions());
         match handle.await.unwrap() {
-            Ok(sessions) => {
-                self.settings().load();
+            Ok(mut sessions) => {
+                let settings = self.settings();
+                settings.load();
+                let session_ids = settings.session_ids();
+
+                // Keep the order from the settings.
+                sessions.sort_by(|a, b| {
+                    let pos_a = session_ids.get_index_of(a.id());
+                    let pos_b = session_ids.get_index_of(b.id());
+
+                    match (pos_a, pos_b) {
+                        (Some(pos_a), Some(pos_b)) => pos_a.cmp(&pos_b),
+                        // Keep unknown sessions at the end.
+                        (Some(_), None) => Ordering::Greater,
+                        (None, Some(_)) => Ordering::Less,
+                        _ => Ordering::Equal,
+                    }
+                });
 
                 for stored_session in sessions {
                     info!(

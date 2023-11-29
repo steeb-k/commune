@@ -1,5 +1,5 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use tracing::error;
 
 use crate::{
@@ -104,6 +104,11 @@ impl SessionListSettings {
     pub fn remove(&self, session_id: &str) {
         self.imp().sessions.borrow_mut().remove(session_id);
         self.save();
+    }
+
+    /// Get the list of session IDs stored in these settings.
+    pub fn session_ids(&self) -> IndexSet<String> {
+        self.imp().sessions.borrow().keys().cloned().collect()
     }
 }
 
