@@ -6,8 +6,9 @@ use tracing::{error, info, warn};
 mod failed_session;
 mod new_session;
 mod session_info;
+mod session_list_settings;
 
-pub use self::{failed_session::*, new_session::*, session_info::*};
+pub use self::{failed_session::*, new_session::*, session_info::*, session_list_settings::*};
 use crate::{
     prelude::*,
     secret::{self, StoredSession},
@@ -31,6 +32,8 @@ mod imp {
         pub error: RefCell<Option<String>>,
         /// A map of session ID to session.
         pub list: RefCell<IndexMap<String, SessionInfo>>,
+        /// The settings of the sessions.
+        pub settings: SessionListSettings,
     }
 
     #[glib::object_subclass]
@@ -124,6 +127,11 @@ impl SessionList {
     fn set_error(&self, message: String) {
         self.imp().error.replace(Some(message));
         self.notify("error");
+    }
+
+    /// The settings of the sessions.
+    pub fn settings(&self) -> &SessionListSettings {
+        &self.imp().settings
     }
 
     /// Whether this list is empty.
@@ -226,6 +234,8 @@ impl SessionList {
         let handle = spawn_tokio!(secret::restore_sessions());
         match handle.await.unwrap() {
             Ok(sessions) => {
+                self.settings().load();
+
                 for stored_session in sessions {
                     info!(
                         "Restoring previous session for user: {}",
@@ -263,7 +273,8 @@ impl SessionList {
 
     /// Restore a stored session.
     async fn restore_stored_session(&self, session_info: StoredSession) {
-        match Session::restore(session_info.clone()).await {
+        let settings = self.settings().get_or_create(session_info.id());
+        match Session::restore(session_info.clone(), settings).await {
             Ok(session) => {
                 session.prepare().await;
                 self.insert(session);

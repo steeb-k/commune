@@ -3,7 +3,7 @@ mod notifications;
 mod room;
 mod room_list;
 mod session;
-mod settings;
+mod session_settings;
 mod sidebar;
 mod user;
 mod verification;
@@ -19,7 +19,7 @@ pub use self::{
     },
     room_list::RoomList,
     session::{Session, SessionState},
-    settings::SessionSettings,
+    session_settings::{SessionSettings, StoredSessionSettings},
     sidebar::{
         Category, CategoryType, IconItem, ItemList, ItemType, Selection, SidebarItem,
         SidebarItemImpl, SidebarListModel,

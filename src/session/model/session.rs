@@ -42,6 +42,7 @@ use crate::{
         matrix::{self, ClientSetupError},
         TokioDrop,
     },
+    Application,
 };
 
 /// The state of the session.
@@ -99,10 +100,20 @@ mod imp {
                     glib::ParamSpecEnum::builder::<SessionState>("state")
                         .read_only()
                         .build(),
+                    glib::ParamSpecObject::builder::<SessionSettings>("settings")
+                        .construct_only()
+                        .build(),
                 ]
             });
 
             PROPERTIES.as_ref()
+        }
+
+        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
+            match pspec.name() {
+                "settings" => self.settings.set(value.get().unwrap()).unwrap(),
+                _ => unimplemented!(),
+            }
         }
 
         fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
@@ -113,6 +124,7 @@ mod imp {
                 "user" => obj.user().to_value(),
                 "offline" => obj.is_offline().to_value(),
                 "state" => obj.state().to_value(),
+                "settings" => obj.settings().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -120,10 +132,6 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
-
-            self.settings
-                .set(SessionSettings::new(obj.session_id()))
-                .unwrap();
 
             self.notifications.set_session(Some(&obj));
 
@@ -166,14 +174,22 @@ impl Session {
     /// Create a new session.
     pub async fn new(homeserver: Url, data: MatrixSession) -> Result<Self, ClientSetupError> {
         let stored_session = StoredSession::with_login_data(homeserver, data);
+        let settings = Application::default()
+            .session_list()
+            .settings()
+            .get_or_create(stored_session.id());
 
-        Self::restore(stored_session).await
+        Self::restore(stored_session, settings).await
     }
 
     /// Restore a stored session.
-    pub async fn restore(stored_session: StoredSession) -> Result<Self, ClientSetupError> {
+    pub async fn restore(
+        stored_session: StoredSession,
+        settings: SessionSettings,
+    ) -> Result<Self, ClientSetupError> {
         let obj = glib::Object::builder::<Self>()
             .property("info", BoxedStoredSession(stored_session.clone()))
+            .property("settings", settings)
             .build();
 
         let client =
