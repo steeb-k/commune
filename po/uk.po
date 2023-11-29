@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-27 18:28+0000\n"
-"PO-Revision-Date: 2023-11-27 22:41+0200\n"
+"POT-Creation-Date: 2023-11-28 15:36+0000\n"
+"PO-Revision-Date: 2023-11-29 19:35+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -83,10 +83,6 @@ msgid "Matrix group messaging app"
 msgstr "Програма для обміну груповими повідомленнями Matrix"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:10
-#| msgid ""
-#| "Fractal is a Matrix messaging app for GNOME written in Rust. Its "
-#| "interface is optimized for collaboration in large groups, such as free "
-#| "software projects."
 msgid ""
 "Fractal is a Matrix messaging app for GNOME written in Rust. Its interface "
 "is optimized for collaboration in large groups, such as free software "
@@ -94,8 +90,8 @@ msgid ""
 msgstr ""
 "«Фрактал» — програма для обміну повідомленнями у мережах Matrix для GNOME, "
 "написана на Rust. Інтерфейс оптимізований для спільної роботи у великих "
-"групах, таких як проєкти вільного програмного забезпечення, і пасує до усіх"
-" екранів, великих та малих."
+"групах, таких як проєкти вільного програмного забезпечення, і пасує до усіх "
+"екранів, великих та малих."
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
@@ -106,39 +102,38 @@ msgid ""
 "Find rooms to discuss your favorite topics, or talk privately to people, "
 "securely thanks to end-to-end encryption"
 msgstr ""
-"Шукайте кімнати для обговорення бажаних для вас тем або спілкуйтеся із"
-" іншими конфіденційно і безпечно завдяки міжвузловому шифруванню даних"
+"Шукайте кімнати для обговорення бажаних для вас тем або спілкуйтеся із "
+"іншими конфіденційно і безпечно завдяки міжвузловому шифруванню даних"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:17
 msgid "Send rich formatted messages, files, or your current location"
 msgstr ""
-"Надсилайте форматовані повідомлення, файли або дані щодо вашого поточного"
-" місця перебування"
+"Надсилайте форматовані повідомлення, файли або дані щодо вашого поточного "
+"місця перебування"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:18
 msgid "Reply to specific messages, react with emoji, edit or remove messages"
 msgstr ""
-"Відповідайте на певні повідомлення, реагуйте емоційками, змінюйте або"
-" вилучайте повідомлення"
+"Відповідайте на певні повідомлення, реагуйте емоційками, змінюйте або "
+"вилучайте повідомлення"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:19
-#| msgid "An image has been added to the conversation."
 msgid "View images, and play audio and video directly in the conversation"
 msgstr ""
-"Переглядайте зображення і відео, прослуховуйте звукові файли безпосередньо у"
-" вікні спілкування"
+"Переглядайте зображення і відео, прослуховуйте звукові файли безпосередньо у "
+"вікні спілкування"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:20
 msgid "See who has read messages, and who is typing"
 msgstr ""
-"Переглядайте дані щодо того, ким прочитано повідомлення, або хто вводить"
-" повідомлення"
+"Переглядайте дані щодо того, ким прочитано повідомлення, або хто вводить "
+"повідомлення"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:21
 msgid "Log into multiple accounts at once (with Single-Sign On support)"
 msgstr ""
-"Працюйте у декількох облікових записах одночасно (із підтримкою єдиного"
-" входу в усі одразу)"
+"Працюйте у декількох облікових записах одночасно (із підтримкою єдиного "
+"входу в усі одразу)"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:148
 msgid "The Fractal Team"
@@ -156,12 +151,17 @@ msgstr "Перегляд журналу мультимедіа кімнати Ma
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Інтерфейс «Фрактала» адаптується до малих екранів"
 
-#: src/account_switcher/mod.ui:37
+#: src/account_switcher/account_switcher_button.ui:13
+#: src/account_switcher/account_switcher_button.ui:15
+msgid "Switch Accounts"
+msgstr "Перемкнути обліковий запис"
+
+#: src/account_switcher/account_switcher_popover.ui:38
 msgid "_Add Account"
 msgstr "Д_одати обліковий запис"
 
-#: src/account_switcher/session_item.ui:64
-#: src/account_switcher/session_item.ui:66
+#: src/account_switcher/session_item.ui:56
+#: src/account_switcher/session_item.ui:58
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
@@ -200,7 +200,7 @@ msgid "Authenticate via Browser"
 msgstr "Розпізнавання за допомогою браузера"
 
 #: src/components/auth_dialog.ui:114
-#: src/session/view/account_settings/user_page/mod.rs:318
+#: src/session/view/account_settings/user_page/mod.rs:322
 #: src/session/view/content/room_details/general_page/mod.rs:349
 #: src/session/view/content/room_history/item_row.rs:743
 #: src/session/view/content/room_history/message_toolbar/mod.ui:69
@@ -283,11 +283,11 @@ msgstr "Не вдалося встановити з'єднання з «Каме
 msgid "Error"
 msgstr "Помилка"
 
-#: src/error_page.ui:22
+#: src/error_page.ui:25
 msgid "Secret Service Error"
 msgstr "Помилка «Секретної служби»"
 
-#: src/error_page.ui:36
+#: src/error_page.ui:39
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -297,25 +297,25 @@ msgstr ""
 "«Секретну службу». Під час спроби зберегти або отримати дані вашого сеансу "
 "сталася помилка."
 
-#: src/error_page.ui:48
+#: src/error_page.ui:51
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr ""
 "Ось декілька порад, які можуть допомогти вам виправити проблеми із "
 "«Секретною службою»:"
 
-#: src/error_page.ui:65
+#: src/error_page.ui:68
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr ""
 "Переконайтеся, що встановлено обгортку «Секретної служби», наприклад gnome-"
 "keyring."
 
-#: src/error_page.ui:84
+#: src/error_page.ui:87
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Перевірте, чи є у вас типова в'язка ключів і чи її розблоковано."
 
-#: src/error_page.ui:96
+#: src/error_page.ui:99
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -323,11 +323,16 @@ msgstr ""
 "Ознайомтеся із журналом програми та документацією до вашого дистрибутива, "
 "щоб дізнатися більше."
 
-#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:494
+#: src/error_page.ui:115
+#| msgid "Failed to logout the session."
+msgid "Failed to Initialize the Session"
+msgstr "Не вдалося ініціалізувати сеанс"
+
+#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:532
 msgid "No network connection"
 msgstr "Немає з'єднання з мережею"
 
-#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:498
+#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:536
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
@@ -603,7 +608,7 @@ msgstr "Не вдалося отримати зашифровані дані у 
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
-#: src/session/model/session.rs:487
+#: src/session/model/session.rs:461
 msgid "Failed to logout the session."
 msgstr "Не вдалося вийти з сеансу."
 
@@ -1118,56 +1123,56 @@ msgstr "Ідентифікатор користувача Matrix скопійо�
 msgid "Session ID copied to clipboard"
 msgstr "Ідентифікатор сеансу скопійовано до буфера обміну"
 
-#: src/session/view/account_settings/user_page/mod.rs:239
+#: src/session/view/account_settings/user_page/mod.rs:243
 #: src/session/view/content/room_details/general_page/mod.rs:253
 msgid "Avatar removed successfully"
 msgstr "Аватар успішно вилучено"
 
-#: src/session/view/account_settings/user_page/mod.rs:241
+#: src/session/view/account_settings/user_page/mod.rs:245
 #: src/session/view/content/room_details/general_page/mod.rs:255
 msgid "Avatar changed successfully"
 msgstr "Аватар успішно змінено"
 
-#: src/session/view/account_settings/user_page/mod.rs:254
+#: src/session/view/account_settings/user_page/mod.rs:258
 #: src/session/view/content/room_details/general_page/mod.rs:278
 msgid "Could not load file"
 msgstr "Не вдалось завантажити файл"
 
-#: src/session/view/account_settings/user_page/mod.rs:269
+#: src/session/view/account_settings/user_page/mod.rs:273
 #: src/session/view/content/room_details/general_page/mod.rs:299
 msgid "Could not upload avatar"
 msgstr "Не вдалося вивантажити аватар"
 
-#: src/session/view/account_settings/user_page/mod.rs:298
+#: src/session/view/account_settings/user_page/mod.rs:302
 #: src/session/view/content/room_details/general_page/mod.rs:319
 msgid "Could not change avatar"
 msgstr "Не вдалося змінити аватар"
 
-#: src/session/view/account_settings/user_page/mod.rs:314
+#: src/session/view/account_settings/user_page/mod.rs:318
 #: src/session/view/content/room_details/general_page/mod.rs:343
 msgid "Remove Avatar?"
 msgstr "Вилучити аватар?"
 
-#: src/session/view/account_settings/user_page/mod.rs:315
+#: src/session/view/account_settings/user_page/mod.rs:319
 msgid "Do you really want to remove your avatar?"
 msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
-#: src/session/view/account_settings/user_page/mod.rs:319
+#: src/session/view/account_settings/user_page/mod.rs:323
 #: src/session/view/content/room_details/general_page/mod.rs:350
 #: src/session/view/content/room_history/item_row.rs:744
 msgid "Remove"
 msgstr "Вилучити"
 
-#: src/session/view/account_settings/user_page/mod.rs:353
+#: src/session/view/account_settings/user_page/mod.rs:357
 #: src/session/view/content/room_details/general_page/mod.rs:375
 msgid "Could not remove avatar"
 msgstr "Не вдалося вилучити аватар"
 
-#: src/session/view/account_settings/user_page/mod.rs:392
+#: src/session/view/account_settings/user_page/mod.rs:396
 msgid "Name changed successfully"
 msgstr "Ім'я успішно змінено"
 
-#: src/session/view/account_settings/user_page/mod.rs:433
+#: src/session/view/account_settings/user_page/mod.rs:437
 msgid "Could not change display name"
 msgstr "Не вдалося змінити показане ім'я"
 
@@ -1213,14 +1218,14 @@ msgid "Room List"
 msgstr "Список кімнат"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/session/view/content/explore/public_room_row.rs:210
-#: src/session/view/content/room_history/mod.rs:918
+#: src/session/view/content/explore/public_room_row.rs:211
+#: src/session/view/content/room_history/mod.rs:919
 #: src/session/view/content/room_history/state_row/tombstone.rs:120
 msgid "View"
 msgstr "Перегляд"
 
-#: src/session/view/content/explore/public_room_row.rs:212
-#: src/session/view/content/room_history/mod.rs:921
+#: src/session/view/content/explore/public_room_row.rs:213
+#: src/session/view/content/room_history/mod.rs:922
 #: src/session/view/content/room_history/state_row/tombstone.rs:122
 msgid "Join"
 msgstr "Увійти"
@@ -1549,13 +1554,13 @@ msgid "New Messages"
 msgstr "Нові повідомлення"
 
 #: src/session/view/content/room_history/item_row.rs:466
-#: src/session/view/content/room_history/mod.rs:563
+#: src/session/view/content/room_history/mod.rs:564
 #: src/session/view/media_viewer.rs:573
 msgid "Permalink copied to clipboard"
 msgstr "Стале посилання скопійовано до буфера обміну"
 
 #: src/session/view/content/room_history/item_row.rs:470
-#: src/session/view/content/room_history/mod.rs:567
+#: src/session/view/content/room_history/mod.rs:568
 #: src/session/view/media_viewer.rs:577
 msgid "Failed to copy the permalink"
 msgstr "Не вдалося скопіювати стале посилання"
@@ -1771,22 +1776,22 @@ msgstr "%-e %B о %-l:%M %p"
 msgid "%B %-e at %-k∶%M"
 msgstr "%-e %B о %-k:%M"
 
-#: src/session/view/content/room_history/mod.rs:366
+#: src/session/view/content/room_history/mod.rs:367
 msgid "Error getting file from drop"
 msgstr "Помилка під час отримання файла зі скидання"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:549
+#: src/session/view/content/room_history/mod.rs:550
 msgid "Failed to leave {room}"
 msgstr "Не вдалося полишити {room}."
 
-#: src/session/view/content/room_history/mod.rs:916
-#: src/session/view/content/room_history/mod.rs:920
+#: src/session/view/content/room_history/mod.rs:917
+#: src/session/view/content/room_history/mod.rs:921
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:923
+#: src/session/view/content/room_history/mod.rs:924
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
@@ -2612,35 +2617,31 @@ msgstr "Увійти до кімнати"
 msgid "_Forget Room"
 msgstr "За_бути про кімнату"
 
-#: src/session/view/sidebar/mod.ui:86 src/session/view/sidebar/mod.ui:88
-msgid "Switch Accounts"
-msgstr "Перемкнути обліковий запис"
-
-#: src/session/view/sidebar/mod.ui:111 src/session/view/sidebar/mod.ui:113
+#: src/session/view/sidebar/mod.ui:92 src/session/view/sidebar/mod.ui:94
 msgid "Main Menu"
 msgstr "Головне меню"
 
-#: src/session/view/sidebar/mod.ui:122 src/session/view/sidebar/mod.ui:124
+#: src/session/view/sidebar/mod.ui:103 src/session/view/sidebar/mod.ui:105
 msgid "Toggle Room Search"
 msgstr "Увімкнути або вимкнути пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:138
+#: src/session/view/sidebar/mod.ui:119
 msgid "Room Search"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:139
+#: src/session/view/sidebar/mod.ui:120
 msgid "Search for a room"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:148
+#: src/session/view/sidebar/mod.ui:129
 msgid "Offline"
 msgstr "Поза мережею"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:144
 msgid "Sidebar"
 msgstr "Бічна панель"
 
-#: src/session/view/sidebar/mod.ui:164
+#: src/session/view/sidebar/mod.ui:145
 msgid "Allows to navigate between rooms"
 msgstr "Дозволяє навігацію між кімнатами"
 
@@ -2848,7 +2849,7 @@ msgstr ""
 msgid "Leave"
 msgstr "Полишити"
 
-#: src/window.rs:357
+#: src/window.rs:350
 msgid "Failed to restore previous sessions"
 msgstr "Не вдалося відновити попередні сеанси"
 
