@@ -30,4 +30,10 @@ impl TemplateCallbacks {
     pub fn invert_boolean(boolean: bool) -> bool {
         !boolean
     }
+
+    /// Whether the given `guint` is equal to zero.
+    #[template_callback]
+    pub fn guint_is_zero(u: u32) -> bool {
+        u == 0
+    }
 }

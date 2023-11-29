@@ -2,11 +2,11 @@ use std::{borrow::Cow, fmt};
 
 use gettextrs::gettext;
 use gio::{ApplicationFlags, Settings};
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::{OwnedRoomId, RoomId};
 use tracing::{debug, info};
 
-use crate::{config, Window};
+use crate::{config, session_list::SessionList, spawn, Window};
 
 mod imp {
     use adw::subclass::prelude::AdwApplicationImpl;
@@ -16,12 +16,15 @@ mod imp {
     #[derive(Debug)]
     pub struct Application {
         pub settings: Settings,
+        /// The list of logged-in sessions.
+        pub session_list: SessionList,
     }
 
     impl Default for Application {
         fn default() -> Self {
             Self {
                 settings: Settings::new(config::APP_ID),
+                session_list: Default::default(),
             }
         }
     }
@@ -40,6 +43,21 @@ mod imp {
             let app = self.obj();
             app.set_up_gactions();
             app.set_up_accels();
+
+            self.session_list.connect_notify_local(
+                Some("error"),
+                clone!(@weak app => move |session_list, _| {
+                    if let Some(message) = session_list.error() {
+                        let window = app.present_main_window();
+                        window.show_secret_error(&message);
+                    }
+                }),
+            );
+            spawn!(
+                clone!(@weak self.session_list as session_list => async move {
+                    session_list.restore_sessions().await;
+                })
+            );
         }
     }
 
@@ -90,6 +108,11 @@ impl Application {
     /// The application settings.
     pub fn settings(&self) -> Settings {
         self.imp().settings.clone()
+    }
+
+    /// The list of logged-in sessions.
+    pub fn session_list(&self) -> &SessionList {
+        &self.imp().session_list
     }
 
     /// Set up the application actions.

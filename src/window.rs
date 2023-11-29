@@ -17,8 +17,8 @@ use crate::{
         model::{Session, SessionState},
         view::{AccountSettings, SessionView},
     },
-    session_list::{FailedSession, SessionInfo, SessionList},
-    spawn, toast,
+    session_list::{FailedSession, SessionInfo},
+    toast,
     utils::LoadingState,
     Application, APP_ID, PROFILE,
 };
@@ -52,8 +52,6 @@ mod imp {
         pub offline_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pub spinner: TemplateChild<Spinner>,
-        /// The list of logged-in sessions.
-        pub session_list: SessionList,
         /// The selection of the logged-in sessions.
         ///
         /// The one that is selected being the one that is visible.
@@ -129,9 +127,6 @@ mod imp {
                     glib::ParamSpecBoolean::builder("compact")
                         .explicit_notify()
                         .build(),
-                    glib::ParamSpecObject::builder::<SessionList>("session-list")
-                        .read_only()
-                        .build(),
                     glib::ParamSpecObject::builder::<gtk::SingleSelection>("session-selection")
                         .read_only()
                         .build(),
@@ -146,7 +141,6 @@ mod imp {
 
             match pspec.name() {
                 "compact" => obj.compact().to_value(),
-                "session-list" => obj.session_list().to_value(),
                 "session-selection" => obj.session_selection().to_value(),
                 _ => unimplemented!(),
             }
@@ -181,26 +175,8 @@ mod imp {
             );
             obj.set_default_by_child();
 
-            self.session_list.connect_notify_local(
-                Some("state"),
-                clone!(@weak obj => move |session_list, _| {
-                    match session_list.state() {
-                        LoadingState::Ready => {
-                            if session_list.is_empty() {
-                                obj.switch_to_greeter_page();
-                            } else {
-                                obj.show_selected_session();
-                            }
-                        }
-                        LoadingState::Error => {
-                            if let Some(message) = session_list.error() {
-                                obj.show_secret_error(&message);
-                            }
-                        }
-                        _ => {}
-                    }
-                }),
-            );
+            self.account_switcher
+                .set_session_selection(Some(self.session_selection.clone()));
 
             self.session_selection
                 .connect_selected_item_notify(clone!(@weak obj => move |_| {
@@ -238,16 +214,25 @@ mod imp {
                 }),
             );
 
-            self.session_selection.set_model(Some(&self.session_list));
+            let app = Application::default();
+            let session_list = app.session_list();
 
-            spawn!(
-                clone!(@weak self.session_list as session_list => async move {
-                    session_list.restore_sessions().await;
-                })
-            );
+            self.session_selection.set_model(Some(session_list));
 
-            self.account_switcher
-                .set_session_selection(Some(self.session_selection.clone()));
+            if session_list.state() == LoadingState::Ready {
+                if session_list.is_empty() {
+                    obj.switch_to_greeter_page();
+                }
+            } else {
+                session_list.connect_notify_local(
+                    Some("state"),
+                    clone!(@weak obj => move |session_list, _| {
+                        if session_list.state() == LoadingState::Ready && session_list.is_empty() {
+                            obj.switch_to_greeter_page();
+                        }
+                    }),
+                );
+            }
 
             let monitor = gio::NetworkMonitor::default();
             monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
@@ -310,14 +295,7 @@ impl Window {
         self.notify("compact");
     }
 
-    /// The list of logged-in sessions with a selection.
-    ///
-    /// The one that is selected being the one that is visible.
-    pub fn session_list(&self) -> &SessionList {
-        &self.imp().session_list
-    }
-
-    /// The selection of the logged-in sessions.
+    /// The selection of the logged-in sessions presented in this window.
     ///
     /// The one that is selected being the one that is visible.
     pub fn session_selection(&self) -> &gtk::SingleSelection {
@@ -326,7 +304,7 @@ impl Window {
 
     /// Add the given session to the session list and select it.
     pub fn add_session(&self, session: Session) {
-        let index = self.session_list().insert(session);
+        let index = Application::default().session_list().insert(session);
         self.session_selection().set_selected(index as u32);
     }
 
@@ -348,7 +326,7 @@ impl Window {
     pub fn set_current_session_by_id(&self, session_id: &str) -> bool {
         let imp = self.imp();
 
-        let Some(index) = imp.session_list.index(session_id) else {
+        let Some(index) = Application::default().session_list().index(session_id) else {
             return false;
         };
 
@@ -518,7 +496,7 @@ impl Window {
 
     /// Open the account settings for the session with the given ID.
     pub fn open_account_settings(&self, session_id: &str) {
-        let Some(session) = self
+        let Some(session) = Application::default()
             .session_list()
             .get(session_id)
             .and_downcast::<Session>()
@@ -532,7 +510,7 @@ impl Window {
     }
 
     /// Open the error page and display the given secret error message.
-    fn show_secret_error(&self, message: &str) {
+    pub fn show_secret_error(&self, message: &str) {
         let imp = self.imp();
         imp.error_page.display_secret_error(message);
         imp.main_stack.set_visible_child(&*imp.error_page);
