@@ -116,10 +116,15 @@ impl Notifications {
         let window = app.active_window().and_downcast::<Window>();
         let session_id = session.session_id();
 
-        // Don't show notifications for the current session if the window is active.
-        if window
-            .is_some_and(|w| w.is_active() && w.current_session_id().as_deref() == Some(session_id))
-        {
+        // Don't show notifications for the current room in the current session if the
+        // window is active.
+        if window.is_some_and(|w| {
+            w.is_active()
+                && w.current_session_id().as_deref() == Some(session_id)
+                && w.session_view()
+                    .selected_room()
+                    .is_some_and(|r| r.room_id() == matrix_notification.room_id)
+        }) {
             return;
         }
 
