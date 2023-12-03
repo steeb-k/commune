@@ -18,6 +18,8 @@ Highlights:
 * See who has read messages, and who is typing
 * Log into multiple accounts at once (with Single-Sign On support)
 
+[TOC]
+
 ## Installation instructions
 
 Flatpak is the recommended installation method. For installing any of our Flatpaks, you need to
