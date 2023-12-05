@@ -18,6 +18,7 @@ use ruma::{
     },
     OwnedEventId,
 };
+use tokio::task::AbortHandle;
 use tracing::{error, warn};
 
 pub use self::{
@@ -77,6 +78,8 @@ mod imp {
         pub state: Cell<TimelineState>,
         /// Whether this timeline has a typing row.
         pub has_typing: Cell<bool>,
+        pub diff_handle: OnceCell<AbortHandle>,
+        pub back_pagination_status_handle: OnceCell<AbortHandle>,
     }
 
     impl Default for Timeline {
@@ -100,6 +103,8 @@ mod imp {
                 event_map: Default::default(),
                 state: Default::default(),
                 has_typing: Default::default(),
+                diff_handle: Default::default(),
+                back_pagination_status_handle: Default::default(),
             }
         }
     }
@@ -146,6 +151,15 @@ mod imp {
                 "empty" => obj.is_empty().to_value(),
                 "state" => obj.state().to_value(),
                 _ => unimplemented!(),
+            }
+        }
+
+        fn dispose(&self) {
+            if let Some(handle) = self.diff_handle.get() {
+                handle.abort();
+            }
+            if let Some(handle) = self.back_pagination_status_handle.get() {
+                handle.abort();
             }
         }
     }
@@ -505,6 +519,7 @@ impl Timeline {
 
     /// Setup the underlying SDK timeline.
     async fn setup_timeline(&self) {
+        let imp = self.imp();
         let room = self.room();
         let room_id = room.room_id().to_owned();
         let matrix_room = room.matrix_room();
@@ -564,32 +579,36 @@ impl Timeline {
         .await
         .unwrap();
 
-        self.imp().timeline.set(matrix_timeline.clone()).unwrap();
+        imp.timeline.set(matrix_timeline.clone()).unwrap();
 
-        let (mut sender, mut receiver) = futures_channel::mpsc::channel(100);
         let (values, timeline_stream) = matrix_timeline.subscribe().await;
 
         if !values.is_empty() {
             self.update(VectorDiff::Append { values });
         }
 
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
         let fut = timeline_stream.for_each(move |diff| {
-            if let Err(error) = sender.try_send(diff) {
-                error!("Error sending diff from timeline for room {room_id}: {error}");
-                panic!();
+            let obj_weak = obj_weak.clone();
+            let room_id = room_id.clone();
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.update(diff);
+                        } else {
+                            error!("Could not send timeline diff for room {room_id}: could not upgrade weak reference");
+                        }
+                    });
+                });
             }
-
-            async {}
         });
-        spawn_tokio!(fut);
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.setup_back_pagination_status().await;
-        }));
+        let diff_handle = spawn_tokio!(fut);
+        imp.diff_handle.set(diff_handle.abort_handle()).unwrap();
 
-        while let Some(diff) = receiver.next().await {
-            self.update(diff);
-        }
+        self.setup_back_pagination_status().await;
     }
 
     /// Setup the back-pagination status.
@@ -597,24 +616,33 @@ impl Timeline {
         let room_id = self.room().room_id().to_owned();
         let matrix_timeline = self.matrix_timeline();
 
-        let (mut sender, mut receiver) = futures_channel::mpsc::channel(8);
         let mut subscriber = matrix_timeline.back_pagination_status();
 
         self.set_state(subscriber.next_now().into());
 
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
         let fut = subscriber.for_each(move |status| {
-            if let Err(error) = sender.try_send(status) {
-                error!("Error sending back-pagination status for room {room_id}: {error}");
-                panic!();
+            let obj_weak = obj_weak.clone();
+            let room_id = room_id.clone();
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.set_state(status.into());
+                        } else {
+                            error!("Could not send timeline back-pagination status for room {room_id}: could not upgrade weak reference");
+                        }
+                    });
+                });
             }
-
-            async {}
         });
-        spawn_tokio!(fut);
 
-        while let Some(status) = receiver.next().await {
-            self.set_state(status.into());
-        }
+        let back_pagination_status_handle = spawn_tokio!(fut);
+        self.imp()
+            .back_pagination_status_handle
+            .set(back_pagination_status_handle.abort_handle())
+            .unwrap();
     }
 
     /// The room containing this timeline.
