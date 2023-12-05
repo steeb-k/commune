@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
 use super::MembershipSubpageItem;
 use crate::session::model::Membership;
@@ -29,7 +29,7 @@ mod imp {
     impl ObjectSubclass for MembershipSubpageRow {
         const NAME: &'static str = "MembersPageMembershipSubpageRow";
         type Type = super::MembershipSubpageRow;
-        type ParentType = adw::ActionRow;
+        type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -97,14 +97,12 @@ mod imp {
     }
 
     impl WidgetImpl for MembershipSubpageRow {}
-    impl ListBoxRowImpl for MembershipSubpageRow {}
-    impl PreferencesRowImpl for MembershipSubpageRow {}
-    impl ActionRowImpl for MembershipSubpageRow {}
+    impl BinImpl for MembershipSubpageRow {}
 }
 
 glib::wrapper! {
     pub struct MembershipSubpageRow(ObjectSubclass<imp::MembershipSubpageRow>)
-        @extends gtk::Widget, adw::ActionRow, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 impl MembershipSubpageRow {

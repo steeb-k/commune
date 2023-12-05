@@ -769,6 +769,21 @@ audiohistoryviewer listview > row {
   filter: opacity(1);
 }
 
+members-list row {
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  min-height: 32px;
+  border-radius: 12px;
+}
+
+members-list row .icon:dir(ltr) {
+  margin-right: 6px;
+}
+
+members-list row .icon:dir(rtl) {
+  margin-left: 6px;
+}
+
 dragoverlay statuspage {
   background-color: alpha(@accent_bg_color, 0.5);
   color: @accent_fg_color;

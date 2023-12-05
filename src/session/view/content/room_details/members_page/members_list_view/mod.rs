@@ -48,7 +48,10 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             ItemRow::static_type();
+
             Self::bind_template(klass);
+
+            klass.set_css_name("members-list");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

@@ -1,4 +1,3 @@
-use adw::subclass::prelude::BinImpl;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use super::super::{MemberMenu, MembersPage};
@@ -29,11 +28,12 @@ mod imp {
     impl ObjectSubclass for MemberRow {
         const NAME: &'static str = "ContentMemberRow";
         type Type = super::MemberRow;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Avatar::static_type();
             Badge::static_type();
+
             Self::bind_template(klass);
         }
 
@@ -84,12 +84,12 @@ mod imp {
         }
     }
     impl WidgetImpl for MemberRow {}
-    impl BinImpl for MemberRow {}
+    impl BoxImpl for MemberRow {}
 }
 
 glib::wrapper! {
     pub struct MemberRow(ObjectSubclass<imp::MemberRow>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
 }
 
 impl MemberRow {
