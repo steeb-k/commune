@@ -74,27 +74,13 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkBox">
-                    <property name="orientation">vertical</property>
-                    <property name="spacing">12</property>
-                    <child>
-                      <object class="AdwPasswordEntryRow" id="password_entry">
-                        <style>
-                          <class name="card"/>
-                        </style>
-                        <property name="title" translatable="yes">Password</property>
-                        <signal name="changed" handler="update_next_state" swapped="yes"/>
-                        <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLinkButton" id="forgot_password">
-                        <property name="use_underline">True</property>
-                        <property name="label" translatable="yes">_Forgot Password?</property>
-                        <property name="uri">https://app.element.io/#/forgot_password</property>
-                        <property name="halign">center</property>
-                      </object>
-                    </child>
+                  <object class="AdwPasswordEntryRow" id="password_entry">
+                    <style>
+                      <class name="card"/>
+                    </style>
+                    <property name="title" translatable="yes">Password</property>
+                    <signal name="changed" handler="update_next_state" swapped="yes"/>
+                    <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
                   </object>
                 </child>
                 <child>
