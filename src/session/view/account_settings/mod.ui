@@ -5,7 +5,7 @@
     <property name="search-enabled">false</property>
     <property name="default-height">630</property>
     <child>
-      <object class="UserPage" id="user_page">
+      <object class="AccountSettingsGeneralPage" id="general_page">
         <property name="session" bind-source="AccountSettings" bind-property="session" bind-flags="sync-create"/>
       </object>
     </child>

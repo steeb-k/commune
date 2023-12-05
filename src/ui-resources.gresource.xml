@@ -32,14 +32,14 @@
     <file compressed="true" preprocess="xml-stripblanks">login/sso_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/devices_page/device_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/devices_page/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/deactivate_account_subpage.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/log_out_subpage.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/notifications_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/import_export_keys_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_page/change_password_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_page/deactivate_account_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_page/log_out_subpage.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/user_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/public_room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/server_row.ui</file>

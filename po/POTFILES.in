@@ -37,6 +37,13 @@ src/session/view/account_settings/devices_page/device_list.rs
 src/session/view/account_settings/devices_page/device_row.rs
 src/session/view/account_settings/devices_page/device_row.ui
 src/session/view/account_settings/devices_page/mod.ui
+src/session/view/account_settings/general_page/change_password_subpage.rs
+src/session/view/account_settings/general_page/change_password_subpage.ui
+src/session/view/account_settings/general_page/deactivate_account_subpage.rs
+src/session/view/account_settings/general_page/deactivate_account_subpage.ui
+src/session/view/account_settings/general_page/log_out_subpage.ui
+src/session/view/account_settings/general_page/mod.rs
+src/session/view/account_settings/general_page/mod.ui
 src/session/view/account_settings/mod.ui
 src/session/view/account_settings/notifications_page.rs
 src/session/view/account_settings/notifications_page.ui
@@ -44,13 +51,6 @@ src/session/view/account_settings/security_page/import_export_keys_subpage.rs
 src/session/view/account_settings/security_page/import_export_keys_subpage.ui
 src/session/view/account_settings/security_page/mod.rs
 src/session/view/account_settings/security_page/mod.ui
-src/session/view/account_settings/user_page/change_password_subpage.rs
-src/session/view/account_settings/user_page/change_password_subpage.ui
-src/session/view/account_settings/user_page/deactivate_account_subpage.rs
-src/session/view/account_settings/user_page/deactivate_account_subpage.ui
-src/session/view/account_settings/user_page/log_out_subpage.ui
-src/session/view/account_settings/user_page/mod.rs
-src/session/view/account_settings/user_page/mod.ui
 src/session/view/content/explore/mod.ui
 src/session/view/content/explore/public_room_row.rs
 src/session/view/content/explore/servers_popover.ui

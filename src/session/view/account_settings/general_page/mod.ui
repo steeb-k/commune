@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="UserPage" parent="AdwPreferencesPage">
+  <template class="AccountSettingsGeneralPage" parent="AdwPreferencesPage">
     <property name="icon-name">settings-symbolic</property>
     <property name="title" translatable="yes">General</property>
     <property name="name">general</property>
@@ -11,7 +11,7 @@
             <binding name="data">
               <lookup name="avatar-data">
                 <lookup name="user">
-                  <lookup name="session">UserPage</lookup>
+                  <lookup name="session">AccountSettingsGeneralPage</lookup>
                 </lookup>
               </lookup>
             </binding>
@@ -28,7 +28,7 @@
             <binding name="text">
               <lookup name="display-name">
                 <lookup name="user">
-                  <lookup name="session">UserPage</lookup>
+                  <lookup name="session">AccountSettingsGeneralPage</lookup>
                 </lookup>
               </lookup>
             </binding>
@@ -147,12 +147,12 @@
     </child>
   </template>
   <object class="ChangePasswordSubpage" id="change_password_subpage">
-    <property name="session" bind-source="UserPage" bind-property="session" bind-flags="sync-create"/>
+    <property name="session" bind-source="AccountSettingsGeneralPage" bind-property="session" bind-flags="sync-create"/>
   </object>
   <object class="DeactivateAccountSubpage" id="deactivate_account_subpage">
-    <property name="session" bind-source="UserPage" bind-property="session" bind-flags="sync-create"/>
+    <property name="session" bind-source="AccountSettingsGeneralPage" bind-property="session" bind-flags="sync-create"/>
   </object>
   <object class="LogOutSubpage" id="log_out_subpage">
-    <property name="session" bind-source="UserPage" bind-property="session" bind-flags="sync-create"/>
+    <property name="session" bind-source="AccountSettingsGeneralPage" bind-property="session" bind-flags="sync-create"/>
   </object>
 </interface>

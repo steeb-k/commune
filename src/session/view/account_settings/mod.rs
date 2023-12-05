@@ -6,13 +6,13 @@ use gtk::{
 };
 
 mod devices_page;
+mod general_page;
 mod notifications_page;
 mod security_page;
-mod user_page;
 
 use self::{
-    devices_page::DevicesPage, notifications_page::NotificationsPage, security_page::SecurityPage,
-    user_page::UserPage,
+    devices_page::DevicesPage, general_page::GeneralPage, notifications_page::NotificationsPage,
+    security_page::SecurityPage,
 };
 use crate::session::model::Session;
 
@@ -29,7 +29,7 @@ mod imp {
         pub session: WeakRef<Session>,
         pub session_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
-        pub user_page: TemplateChild<UserPage>,
+        pub general_page: TemplateChild<GeneralPage>,
         #[template_child]
         pub security_page: TemplateChild<SecurityPage>,
     }
@@ -42,7 +42,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             DevicesPage::static_type();
-            UserPage::static_type();
+            GeneralPage::static_type();
             NotificationsPage::static_type();
             SecurityPage::static_type();
             Self::bind_template(klass);
@@ -52,7 +52,7 @@ mod imp {
             });
 
             klass.install_action("account-settings.logout", None, |obj, _, _| {
-                obj.imp().user_page.show_log_out_page();
+                obj.imp().general_page.show_log_out_page();
             });
 
             klass.install_action("account-settings.export_keys", None, |obj, _, _| {

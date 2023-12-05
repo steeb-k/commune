@@ -32,8 +32,10 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_page/mod.ui")]
-    pub struct UserPage {
+    #[template(
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/mod.ui"
+    )]
+    pub struct GeneralPage {
         pub session: WeakRef<Session>,
         #[template_child]
         pub avatar: TemplateChild<EditableAvatar>,
@@ -60,9 +62,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for UserPage {
-        const NAME: &'static str = "UserPage";
-        type Type = super::UserPage;
+    impl ObjectSubclass for GeneralPage {
+        const NAME: &'static str = "AccountSettingsGeneralPage";
+        type Type = super::GeneralPage;
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
@@ -96,7 +98,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for UserPage {
+    impl ObjectImpl for GeneralPage {
         fn properties() -> &'static [glib::ParamSpec] {
             use once_cell::sync::Lazy;
             static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
@@ -132,18 +134,18 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for UserPage {}
-    impl PreferencesPageImpl for UserPage {}
+    impl WidgetImpl for GeneralPage {}
+    impl PreferencesPageImpl for GeneralPage {}
 }
 
 glib::wrapper! {
     /// Account settings page about the user and the session.
-    pub struct UserPage(ObjectSubclass<imp::UserPage>)
+    pub struct GeneralPage(ObjectSubclass<imp::GeneralPage>)
         @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl UserPage {
+impl GeneralPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }

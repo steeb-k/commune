@@ -24,7 +24,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_page/change_password_subpage.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/change_password_subpage.ui"
     )]
     pub struct ChangePasswordSubpage {
         pub session: WeakRef<Session>,
