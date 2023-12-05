@@ -108,6 +108,10 @@ impl SessionSettings {
     pub fn new(session_id: &str) -> Self {
         glib::Object::builder()
             .property("session-id", session_id)
+            .property(
+                "stored-settings",
+                &BoxedStoredSessionSettings(StoredSessionSettings::default()),
+            )
             .build()
     }
 
