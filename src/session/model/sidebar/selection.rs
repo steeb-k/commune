@@ -58,7 +58,9 @@ mod imp {
                     obj.set_model(model.as_ref());
                 }
                 "selected" => obj.set_selected(value.get().unwrap()),
-                "selected-item" => obj.set_selected_item(value.get().unwrap()),
+                "selected-item" => {
+                    obj.set_selected_item(value.get::<Option<glib::Object>>().unwrap())
+                }
                 _ => unimplemented!(),
             }
         }
@@ -228,8 +230,9 @@ impl Selection {
     }
 
     /// Set the selected item.
-    pub fn set_selected_item(&self, item: Option<glib::Object>) {
+    pub fn set_selected_item(&self, item: Option<impl IsA<glib::Object>>) {
         let imp = self.imp();
+        let item = item.and_upcast();
 
         let selected_item = self.selected_item();
         if selected_item == item {

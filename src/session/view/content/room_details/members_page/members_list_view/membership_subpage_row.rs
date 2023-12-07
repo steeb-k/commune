@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
 use super::MembershipSubpageItem;
 use crate::session::model::Membership;
@@ -70,29 +70,6 @@ mod imp {
                 "label" => obj.label().to_value(),
                 _ => unimplemented!(),
             }
-        }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            self.gesture.set_touch_only(false);
-            self.gesture.set_button(gdk::BUTTON_PRIMARY);
-
-            self.gesture
-                .connect_released(clone!(@weak obj => move |_, _, _, _| {
-                    if let Some(item) = obj.item() {
-                        obj.activate_action(
-                            "members.subpage",
-                            Some(&item.state().to_variant()),
-                        )
-                        .unwrap();
-                    }
-                }));
-
-            self.gesture
-                .set_propagation_phase(gtk::PropagationPhase::Capture);
-            obj.add_controller(self.gesture.clone());
         }
     }
 

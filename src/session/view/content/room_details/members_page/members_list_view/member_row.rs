@@ -1,6 +1,5 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use super::super::{MemberMenu, MembersPage};
 use crate::{
     components::{Avatar, Badge},
     session::model::Member,
@@ -20,8 +19,6 @@ mod imp {
     )]
     pub struct MemberRow {
         pub member: RefCell<Option<Member>>,
-        #[template_child]
-        pub menu_btn: TemplateChild<gtk::ToggleButton>,
     }
 
     #[glib::object_subclass]
@@ -68,21 +65,8 @@ mod imp {
                 _ => unimplemented!(),
             }
         }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            self.menu_btn
-                .connect_toggled(clone!(@weak obj => move |btn| {
-                    if btn.is_active() {
-                        if let Some(menu) = obj.member_menu() {
-                            menu.present_popover(btn, obj.member());
-                        }
-                    }
-                }));
-        }
     }
+
     impl WidgetImpl for MemberRow {}
     impl BoxImpl for MemberRow {}
 }
@@ -110,21 +94,7 @@ impl MemberRow {
             return;
         }
 
-        // We need to update the member of the menu if it's shown for this row
-        if imp.menu_btn.is_active() {
-            if let Some(menu) = self.member_menu() {
-                menu.set_member(member.clone());
-            }
-        }
-
         imp.member.replace(member);
         self.notify("member");
-    }
-
-    fn member_menu(&self) -> Option<MemberMenu> {
-        let member_page = self
-            .ancestor(MembersPage::static_type())
-            .and_downcast::<MembersPage>()?;
-        Some(member_page.member_menu().clone())
     }
 }

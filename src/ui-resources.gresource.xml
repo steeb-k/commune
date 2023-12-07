@@ -55,7 +55,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/media_item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/invitee_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/member_menu.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/member_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/mod.ui</file>
@@ -101,6 +100,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/verification_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/user_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
   </gresource>

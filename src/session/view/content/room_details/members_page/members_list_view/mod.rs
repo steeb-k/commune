@@ -1,6 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::closure, CompositeTemplate};
+use gtk::{
+    gio, glib,
+    glib::{clone, closure},
+    CompositeTemplate,
+};
 
 mod extra_lists;
 mod item_row;
@@ -93,6 +97,7 @@ mod imp {
 
         fn constructed(&self) {
             self.parent_constructed();
+            let obj = self.obj();
 
             // Needed because the GtkSearchEntry is not the direct child of the
             // GtkSearchBear.
@@ -130,6 +135,26 @@ mod imp {
             self.list_view.set_model(Some(&gtk::NoSelection::new(Some(
                 self.filtered_model.clone(),
             ))));
+            self.list_view
+                .connect_activate(clone!(@weak obj => move |_, pos| {
+                    let Some(item) = obj.imp().filtered_model.item(pos) else {
+                        return;
+                    };
+
+                    if let Some(member) = item.downcast_ref::<Member>() {
+                        obj.activate_action(
+                            "members.show-member",
+                            Some(&member.user_id().as_str().to_variant()),
+                        )
+                        .unwrap();
+                    } else if let Some(item) = item.downcast_ref::<MembershipSubpageItem>() {
+                        obj.activate_action(
+                            "members.show-membership-list",
+                            Some(&item.state().to_variant()),
+                        )
+                        .unwrap();
+                    }
+                }));
         }
     }
 

@@ -7,6 +7,7 @@ mod media_viewer;
 mod room_creation;
 mod session_view;
 mod sidebar;
+mod user_page;
 
 pub use self::{
     account_settings::AccountSettings, content::verification::SessionVerification,
@@ -15,5 +16,5 @@ pub use self::{
 use self::{
     content::Content, create_dm_dialog::CreateDmDialog, event_source_dialog::EventSourceDialog,
     join_room_dialog::JoinRoomDialog, media_viewer::MediaViewer, room_creation::RoomCreation,
-    sidebar::Sidebar,
+    sidebar::Sidebar, user_page::UserPage,
 };

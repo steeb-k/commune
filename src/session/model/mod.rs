@@ -24,7 +24,7 @@ pub use self::{
         Category, CategoryType, IconItem, ItemList, ItemType, Selection, SidebarItem,
         SidebarItemImpl, SidebarListModel,
     },
-    user::{User, UserActions, UserExt},
+    user::{User, UserExt},
     verification::{
         IdentityVerification, SasData, VerificationList, VerificationMode, VerificationState,
         VerificationSupportedMethods,

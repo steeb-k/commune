@@ -53,7 +53,7 @@ mod imp {
 
                 let request = obj.request().unwrap();
                 request.accept();
-                window.session_view().select_item(Some(request.upcast()));
+                window.session_view().select_item(Some(request));
             });
 
             klass.install_action("verification.decline", None, move |widget, _, _| {

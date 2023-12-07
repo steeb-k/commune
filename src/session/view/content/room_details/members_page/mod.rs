@@ -4,25 +4,22 @@ use gtk::{
     glib::{self, clone, closure},
     CompositeTemplate,
 };
-use tracing::warn;
 
-mod member_menu;
 mod members_list_view;
 
 use members_list_view::{ExtraLists, MembersListView, MembershipSubpageItem};
-use ruma::events::room::power_levels::PowerLevelAction;
+use ruma::{events::room::power_levels::PowerLevelAction, UserId};
 
-use self::member_menu::MemberMenu;
-use crate::{
-    session::model::{Member, Membership, Room, User, UserActions},
-    spawn,
+use crate::session::{
+    model::{Member, Membership, Room},
+    view::UserPage,
 };
 
 mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -34,7 +31,6 @@ mod imp {
         pub room: glib::WeakRef<Room>,
         #[template_child]
         pub navigation_view: TemplateChild<adw::NavigationView>,
-        pub member_menu: OnceCell<MemberMenu>,
         pub can_invite_watch: RefCell<Option<gtk::ExpressionWatch>>,
     }
 
@@ -47,27 +43,41 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action("member.verify", None, move |widget, _, _| {
-                if let Some(member) = widget.member_menu().member() {
-                    widget.verify_member(member);
-                } else {
-                    warn!("No member was selected to be verified");
-                }
-            });
+            klass.install_action(
+                "members.show-membership-list",
+                Some("u"),
+                move |widget, _, param| {
+                    let Some(membership) = param.and_then(|variant| variant.get::<Membership>())
+                    else {
+                        return;
+                    };
 
-            klass.install_action("members.subpage", Some("u"), move |widget, _, param| {
-                let Some(membership) = param.and_then(|variant| variant.get::<Membership>()) else {
+                    let subpage = match membership {
+                        Membership::Join => "joined",
+                        Membership::Invite => "invited",
+                        Membership::Ban => "banned",
+                        _ => return,
+                    };
+
+                    widget.imp().navigation_view.push_by_tag(subpage);
+                },
+            );
+
+            klass.install_action("members.show-member", Some("s"), move |widget, _, param| {
+                let Some(user_id) = param
+                    .and_then(|variant| variant.get::<String>())
+                    .and_then(|s| UserId::parse(s).ok())
+                else {
+                    return;
+                };
+                let Some(room) = widget.room() else {
                     return;
                 };
 
-                let subpage = match membership {
-                    Membership::Join => "joined",
-                    Membership::Invite => "invited",
-                    Membership::Ban => "banned",
-                    _ => return,
-                };
+                let member = room.get_or_create_members().get_or_create(user_id);
+                let user_page = UserPage::new(&member);
 
-                widget.imp().navigation_view.push_by_tag(subpage);
+                widget.imp().navigation_view.push(&user_page);
             });
         }
 
@@ -205,36 +215,6 @@ impl MembersPage {
             .sync_create()
             .build();
         imp.navigation_view.add(&banned_view);
-    }
-
-    /// The object holding information needed for the menu of each `MemberRow`.
-    pub fn member_menu(&self) -> &MemberMenu {
-        self.imp().member_menu.get_or_init(|| {
-            let menu = MemberMenu::new();
-
-            menu.connect_notify_local(
-                Some("allowed-actions"),
-                clone!(@weak self as obj => move |menu, _| {
-                    obj.update_actions(menu.allowed_actions());
-                }),
-            );
-            self.update_actions(menu.allowed_actions());
-            menu
-        })
-    }
-
-    fn update_actions(&self, allowed_actions: UserActions) {
-        self.action_set_enabled(
-            "member.verify",
-            allowed_actions.contains(UserActions::VERIFY),
-        );
-    }
-
-    fn verify_member(&self, member: Member) {
-        // TODO: show the verification immediately when started
-        spawn!(clone!(@weak self as obj => async move {
-            member.upcast::<User>().verify_identity().await;
-        }));
     }
 
     fn build_filtered_list(

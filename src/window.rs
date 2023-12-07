@@ -3,7 +3,7 @@ use std::cell::Cell;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use gettextrs::gettext;
 use gtk::{self, gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use ruma::RoomId;
+use ruma::{RoomId, UserId};
 use tracing::{error, warn};
 
 use crate::{
@@ -514,5 +514,17 @@ impl Window {
         let imp = self.imp();
         imp.error_page.display_secret_error(message);
         imp.main_stack.set_visible_child(&*imp.error_page);
+    }
+
+    /// Show the verification with the given flow ID for the user with the given
+    /// ID for the given session.
+    pub fn show_verification(&self, session_id: &str, user_id: &UserId, flow_id: &str) {
+        if self.set_current_session_by_id(session_id) {
+            self.imp()
+                .session
+                .select_verification_by_id(user_id, flow_id);
+
+            self.present();
+        }
     }
 }

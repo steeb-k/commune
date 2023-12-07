@@ -4,7 +4,7 @@ use gtk::{
     glib::{clone, signal::SignalHandlerId},
     CompositeTemplate,
 };
-use ruma::RoomId;
+use ruma::{RoomId, UserId};
 use tracing::{error, warn};
 
 use super::{Content, CreateDmDialog, JoinRoomDialog, MediaViewer, RoomCreation, Sidebar};
@@ -241,10 +241,10 @@ impl SessionView {
     }
 
     pub fn select_room(&self, room: Option<Room>) {
-        self.select_item(room.map(|item| item.upcast()));
+        self.select_item(room);
     }
 
-    pub fn select_item(&self, item: Option<glib::Object>) {
+    pub fn select_item(&self, item: Option<impl IsA<glib::Object>>) {
         let Some(session) = self.session() else {
             return;
         };
@@ -255,11 +255,25 @@ impl SessionView {
             .set_selected_item(item);
     }
 
+    /// Select the room with the given ID in this view.
     pub fn select_room_by_id(&self, room_id: &RoomId) {
         if let Some(room) = self.session().and_then(|s| s.room_list().get(room_id)) {
             self.select_room(Some(room));
         } else {
-            warn!("A room with id {room_id} couldn't be found");
+            warn!("A room with ID {room_id} could not be found");
+        }
+    }
+
+    /// Select the verification with the given flow ID for the user with the
+    /// given ID in this view.
+    pub fn select_verification_by_id(&self, user_id: &UserId, flow_id: &str) {
+        if let Some(verification) = self
+            .session()
+            .and_then(|s| s.verification_list().get_by_id(user_id, flow_id))
+        {
+            self.select_item(Some(verification));
+        } else {
+            warn!("A verification with flow ID {flow_id} could not be found");
         }
     }
 
