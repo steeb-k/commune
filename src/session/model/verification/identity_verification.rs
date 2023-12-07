@@ -381,6 +381,9 @@ impl IdentityVerification {
     }
 
     fn start_handler(&self) {
+        let Some(flow_id) = self.flow_id() else {
+            return;
+        };
         let imp = self.imp();
 
         let main_sender = if let Some(main_sender) = imp.main_sender.take() {
@@ -392,7 +395,7 @@ impl IdentityVerification {
 
         let client = self.session().client();
         let user_id = self.user().user_id();
-        let flow_id = self.flow_id().to_owned();
+        let flow_id = flow_id.to_owned();
 
         let (sync_sender, sync_receiver) = mpsc::channel(100);
         imp.sync_sender.replace(Some(sync_sender));
@@ -627,15 +630,17 @@ impl IdentityVerification {
     }
 
     /// The flow ID of this verification request.
-    pub fn flow_id(&self) -> &str {
-        self.imp()
-            .flow_id
-            .get()
-            .expect("Flow Id isn't always set on verifications with error state.")
+    pub fn flow_id(&self) -> Option<&str> {
+        self.imp().flow_id.get().map(AsRef::as_ref)
     }
 
     /// Set the flow ID of this verification request.
-    fn set_flow_id(&self, flow_id: String) {
+    fn set_flow_id(&self, flow_id: Option<String>) {
+        let Some(flow_id) = flow_id else {
+            // Ignore missiing flow ID.
+            return;
+        };
+
         self.imp().flow_id.set(flow_id).unwrap();
     }
 

@@ -341,6 +341,10 @@ impl VerificationList {
 
     /// Add a new `IdentityVerification` request
     pub fn add(&self, request: IdentityVerification) {
+        // Don't add requests that failed to start.
+        let Some(flow_id) = request.flow_id() else {
+            return;
+        };
         // Don't add requests that are already finished
         if request.is_finished() {
             return;
@@ -359,7 +363,7 @@ impl VerificationList {
             );
 
             list.insert(
-                FlowId::new(request.user().user_id(), request.flow_id().to_owned()),
+                FlowId::new(request.user().user_id(), flow_id.to_owned()),
                 request,
             );
             length as u32
@@ -369,13 +373,18 @@ impl VerificationList {
     }
 
     pub fn remove(&self, request: &IdentityVerification) {
+        // Requests without a flow ID are never added.
+        let Some(flow_id) = request.flow_id() else {
+            return;
+        };
+
         let position = if let Some((position, ..)) =
             self.imp()
                 .list
                 .borrow_mut()
                 .shift_remove_full(&FlowIdUnowned::new(
                     request.user().user_id().as_ref(),
-                    request.flow_id(),
+                    flow_id,
                 )) {
             position
         } else {
@@ -388,7 +397,7 @@ impl VerificationList {
     pub fn get_by_id(
         &self,
         user_id: &UserId,
-        flow_id: &impl AsRef<str>,
+        flow_id: impl AsRef<str>,
     ) -> Option<IdentityVerification> {
         let flow_id = FlowIdUnowned::new(user_id, flow_id.as_ref());
         self.imp().list.borrow().get(&flow_id).cloned()
