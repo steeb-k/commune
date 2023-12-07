@@ -67,7 +67,17 @@ gettext_package = meson.project_name()
 
 if get_option('profile') == 'development'
   profile = 'Devel'
+  application_id += '.Devel'
+elif get_option('profile') == 'hack'
+  profile = 'Devel'
+  application_id += '.Hack'
+elif get_option('profile') == 'beta'
+  profile = 'Beta'
+else
+  profile = 'Stable'
+endif
 
+if profile == 'Devel'
   vcs_tag = run_command('git', 'rev-parse', '--short', 'HEAD').stdout().strip()
   if vcs_tag == ''
     devel_version = profile.to_lower()
@@ -77,11 +87,10 @@ if get_option('profile') == 'development'
   full_version += '-' + devel_version
 
   release_date = run_command('git', 'show', '-s', '--format=%cI').stdout().strip()
-  application_id += '.' + profile
-elif get_option('profile') == 'beta'
-  profile = 'Beta'
-else
-  profile = 'Stable'
+
+  # Setup pre-commit hook for ensuring coding style is always consistent
+  message('Setting up git pre-commit hook..')
+  run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')
 endif
 
 meson.add_dist_script(
@@ -89,12 +98,6 @@ meson.add_dist_script(
   meson.project_build_root() / 'meson-dist' / meson.project_name() + '-' + version,
   meson.project_source_root()
 )
-
-if profile == 'Devel'
-  # Setup pre-commit hook for ensuring coding style is always consistent
-  message('Setting up git pre-commit hook..')
-  run_command('cp', '-f', 'hooks/pre-commit.hook', '.git/hooks/pre-commit')
-endif
 
 subdir('data')
 subdir('po')

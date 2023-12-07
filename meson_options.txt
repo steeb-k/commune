@@ -5,7 +5,8 @@ option(
     'default',
     'beta',
     'development',
+    'hack',
   ],
   value: 'default',
-  description: 'The build profile for Fractal. One of "default", "beta" or "development".'
+  description: 'The build profile for Fractal. One of "default", "beta", "development" or "hack".'
 )
