@@ -1,5 +1,4 @@
 use adw::subclass::prelude::*;
-use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 
 pub mod row;
@@ -39,9 +38,6 @@ mod imp {
                     glib::ParamSpecUInt64::builder("timestamp")
                         .construct_only()
                         .build(),
-                    glib::ParamSpecString::builder("datetime")
-                        .read_only()
-                        .build(),
                 ]
             });
 
@@ -54,7 +50,6 @@ mod imp {
             match pspec.name() {
                 "member" => obj.member().to_value(),
                 "timestamp" => obj.timestamp().to_value(),
-                "datetime" => obj.datetime().to_value(),
                 _ => unimplemented!(),
             }
         }
@@ -118,40 +113,5 @@ impl MemberTimestamp {
 
         self.imp().timestamp.set(ts);
         self.notify("timestamp");
-    }
-
-    /// The formatted date and time of this receipt.
-    pub fn datetime(&self) -> String {
-        let timestamp = self.timestamp();
-
-        if timestamp == 0 {
-            // No timestamp.
-            return String::new();
-        }
-
-        let datetime = glib::DateTime::from_unix_utc(timestamp as i64)
-            .and_then(|t| t.to_local())
-            .unwrap();
-
-        // FIXME: Use system setting.
-        let local_time = datetime.format("%X").unwrap().as_str().to_ascii_lowercase();
-        let is_12h_format = local_time.ends_with("am") || local_time.ends_with("pm");
-
-        let format = if is_12h_format {
-            // Translators: this is a date and a time in 12h format.
-            // For example, "May 5 at 1:20 PM".
-            // Do not change the time format as it will follow the system settings.
-            // Please use `-` before specifiers that add spaces on single digits.
-            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %-l∶%M %p")
-        } else {
-            // Translators: this is a date and a time in 24h format.
-            // For example, "May 5 at 13:20".
-            // Do not change the time format as it will follow the system settings.
-            // Please use `-` before specifiers that add spaces on single digits.
-            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %-k∶%M")
-        };
-        datetime.format(&format).unwrap().to_string()
     }
 }

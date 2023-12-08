@@ -19,7 +19,10 @@ use self::{
     media::MessageMedia, message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
 };
 use super::ReadReceiptsList;
-use crate::{components::Avatar, prelude::*, session::model::Event, utils::BoundObject, Window};
+use crate::{
+    components::Avatar, prelude::*, session::model::Event, system_settings::ClockFormat,
+    utils::BoundObject, Application, Window,
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -51,6 +54,7 @@ mod imp {
         #[template_child]
         pub read_receipts: TemplateChild<ReadReceiptsList>,
         pub bindings: RefCell<Vec<glib::Binding>>,
+        pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub event: BoundObject<Event>,
     }
 
@@ -108,6 +112,9 @@ mod imp {
         }
 
         fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+
             self.content.connect_notify_local(
                 Some("format"),
                 clone!(@weak self as imp => move |content, _|
@@ -117,11 +124,25 @@ mod imp {
                     ));
                 ),
             );
+
+            let system_settings = Application::default().system_settings();
+            let system_settings_handler = system_settings.connect_notify_local(
+                Some("clock-format"),
+                clone!(@weak obj => move |_,_| {
+                    obj.update_timestamp();
+                }),
+            );
+            self.system_settings_handler
+                .replace(Some(system_settings_handler));
         }
 
         fn dispose(&self) {
-            while let Some(binding) = self.bindings.borrow_mut().pop() {
+            for binding in self.bindings.take() {
                 binding.unbind();
+            }
+
+            if let Some(handler) = self.system_settings_handler.take() {
+                Application::default().system_settings().disconnect(handler);
             }
         }
     }
@@ -196,11 +217,6 @@ impl MessageRow {
             .sync_create()
             .build();
 
-        let timestamp_binding = event
-            .bind_property("time", &*imp.timestamp, "label")
-            .sync_create()
-            .build();
-
         let state_binding = event
             .bind_property("state", &*imp.message_state, "state")
             .sync_create()
@@ -209,27 +225,59 @@ impl MessageRow {
         imp.bindings.borrow_mut().append(&mut vec![
             display_name_binding,
             show_header_binding,
-            timestamp_binding,
             state_binding,
         ]);
 
-        let source_handler = event.connect_notify_local(
-            Some("source"),
-            clone!(@weak self as obj => move |event, _| {
-                obj.update_content(event);
+        let timestamp_handler = event.connect_notify_local(
+            Some("timestamp"),
+            clone!(@weak self as obj => move |_,_| {
+                obj.update_timestamp();
             }),
         );
-        self.update_content(&event);
+
+        let source_handler = event.connect_notify_local(
+            Some("source"),
+            clone!(@weak self as obj => move |_, _| {
+                obj.update_content();
+            }),
+        );
 
         imp.reactions
             .set_reaction_list(&event.room().get_or_create_members(), event.reactions());
         imp.read_receipts.set_source(event.read_receipts());
-        imp.event.set(event, vec![source_handler]);
+        imp.event
+            .set(event, vec![timestamp_handler, source_handler]);
         self.notify("event");
+
+        self.update_content();
+        self.update_timestamp();
     }
 
-    fn update_content(&self, event: &Event) {
-        self.imp().content.update_for_event(event);
+    /// Update the displayed timestamp for the current event with the current
+    /// clock format setting.
+    fn update_timestamp(&self) {
+        let Some(event) = self.event() else {
+            return;
+        };
+
+        let datetime = event.timestamp();
+
+        let clock_format = Application::default().system_settings().clock_format();
+        let label = if clock_format == ClockFormat::TwelveHours {
+            datetime.format("%-l∶%M %p").unwrap()
+        } else {
+            datetime.format("%R").unwrap()
+        };
+
+        self.imp().timestamp.set_label(&label)
+    }
+
+    fn update_content(&self) {
+        let Some(event) = self.event() else {
+            return;
+        };
+
+        self.imp().content.update_for_event(&event);
     }
 
     /// Get the texture displayed by this widget, if any.

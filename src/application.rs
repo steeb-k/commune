@@ -6,7 +6,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use ruma::{OwnedRoomId, RoomId};
 use tracing::{debug, info};
 
-use crate::{config, session_list::SessionList, spawn, Window};
+use crate::{config, session_list::SessionList, spawn, system_settings::SystemSettings, Window};
 
 mod imp {
     use adw::subclass::prelude::AdwApplicationImpl;
@@ -15,7 +15,10 @@ mod imp {
 
     #[derive(Debug)]
     pub struct Application {
+        /// The application settings.
         pub settings: Settings,
+        /// The system settings.
+        pub system_settings: SystemSettings,
         /// The list of logged-in sessions.
         pub session_list: SessionList,
     }
@@ -24,6 +27,7 @@ mod imp {
         fn default() -> Self {
             Self {
                 settings: Settings::new(config::APP_ID),
+                system_settings: Default::default(),
                 session_list: Default::default(),
             }
         }
@@ -108,6 +112,11 @@ impl Application {
     /// The application settings.
     pub fn settings(&self) -> Settings {
         self.imp().settings.clone()
+    }
+
+    /// The system settings.
+    pub fn system_settings(&self) -> SystemSettings {
+        self.imp().system_settings.clone()
     }
 
     /// The list of logged-in sessions.

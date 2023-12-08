@@ -6,7 +6,9 @@ use tracing::error;
 use super::Device;
 use crate::{
     components::{AuthError, SpinnerButton},
-    gettext_f, spawn, toast,
+    gettext_f, spawn,
+    system_settings::ClockFormat,
+    toast, Application,
 };
 
 mod imp {
@@ -36,6 +38,7 @@ mod imp {
         pub verify_button: TemplateChild<SpinnerButton>,
         pub device: RefCell<Option<Device>>,
         pub is_current_device: Cell<bool>,
+        pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -120,8 +123,25 @@ mod imp {
                 .connect_clicked(clone!(@weak obj => move |_| {
                     todo!("Not implemented");
                 }));
+
+            let system_settings = Application::default().system_settings();
+            let system_settings_handler = system_settings.connect_notify_local(
+                Some("clock-format"),
+                clone!(@weak obj => move |_,_| {
+                    obj.update_last_seen_ts();
+                }),
+            );
+            self.system_settings_handler
+                .replace(Some(system_settings_handler));
+        }
+
+        fn dispose(&self) {
+            if let Some(handler) = self.system_settings_handler.take() {
+                Application::default().system_settings().disconnect(handler);
+            }
         }
     }
+
     impl WidgetImpl for DeviceRow {}
     impl ListBoxRowImpl for DeviceRow {}
 }
@@ -168,18 +188,14 @@ impl DeviceRow {
             };
             imp.last_seen_ip.set_visible(last_seen_ip_visible);
 
-            let last_seen_ts_visible = if let Some(last_seen_ts) = device.last_seen_ts() {
-                let last_seen_ts = format_date_time_as_string(last_seen_ts);
-                imp.last_seen_ts.set_label(&last_seen_ts);
-                true
-            } else {
-                false
-            };
-            imp.last_seen_ts.set_visible(last_seen_ts_visible);
+            imp.last_seen_ts
+                .set_visible(device.last_seen_ts().is_some());
         }
 
         imp.device.replace(device);
         self.notify("device");
+
+        self.update_last_seen_ts();
     }
 
     /// Set whether this is the device of the current session.
@@ -220,100 +236,105 @@ impl DeviceRow {
             obj.imp().delete_logout_button.set_loading(false);
         }));
     }
-}
 
-// This was ported from Nautilus and simplified for our use case.
-// See: https://gitlab.gnome.org/GNOME/nautilus/-/blob/master/src/nautilus-file.c#L5488
-pub fn format_date_time_as_string(datetime: glib::DateTime) -> glib::GString {
-    let now = glib::DateTime::now_local().unwrap();
-    let format;
-    let days_ago = {
-        let today_midnight =
-            glib::DateTime::from_local(now.year(), now.month(), now.day_of_month(), 0, 0, 0f64)
-                .unwrap();
+    /// Update the last seen timestamp according to the current device and clock
+    /// format setting.
+    fn update_last_seen_ts(&self) {
+        let Some(datetime) = self.device().and_then(|d| d.last_seen_ts()) else {
+            return;
+        };
 
-        let date = glib::DateTime::from_local(
-            datetime.year(),
-            datetime.month(),
-            datetime.day_of_month(),
-            0,
-            0,
-            0f64,
-        )
-        .unwrap();
+        let clock_format = Application::default().system_settings().clock_format();
+        let use_24 = clock_format == ClockFormat::TwentyFourHours;
 
-        today_midnight.difference(&date).as_days()
-    };
+        // This was ported from Nautilus and simplified for our use case.
+        // See: https://gitlab.gnome.org/GNOME/nautilus/-/blob/1c5bd3614a35cfbb49de087bc10381cdef5a218f/src/nautilus-file.c#L5001
+        let now = glib::DateTime::now_local().unwrap();
+        let format;
+        let days_ago = {
+            let today_midnight =
+                glib::DateTime::from_local(now.year(), now.month(), now.day_of_month(), 0, 0, 0f64)
+                    .unwrap();
 
-    let use_24 = {
-        let local_time = datetime.format("%X").unwrap().as_str().to_ascii_lowercase();
-        local_time.ends_with("am") || local_time.ends_with("pm")
-    };
+            let date = glib::DateTime::from_local(
+                datetime.year(),
+                datetime.month(),
+                datetime.day_of_month(),
+                0,
+                0,
+                0f64,
+            )
+            .unwrap();
 
-    // Show only the time if date is on today
-    if days_ago == 0 {
-        if use_24 {
-            // Translators: Time in 24h format
-            format = gettext("Last seen at %H:%M");
-        } else {
-            // Translators: Time in 12h format
-            format = gettext("Last seen at %l:%M %p");
+            today_midnight.difference(&date).as_days()
+        };
+
+        // Show only the time if date is on today
+        if days_ago == 0 {
+            if use_24 {
+                // Translators: Time in 24h format
+                format = gettext("Last seen at %H:%M");
+            } else {
+                // Translators: Time in 12h format
+                format = gettext("Last seen at %l:%M %p");
+            }
         }
+        // Show the word "Yesterday" and time if date is on yesterday
+        else if days_ago == 1 {
+            if use_24 {
+                // Translators: this is the word Yesterday followed by
+                // a time in 24h format. i.e. "Last seen Yesterday at 23:04"
+                // xgettext:no-c-format
+                format = gettext("Last seen Yesterday at %H:%M");
+            } else {
+                // Translators: this is the word Yesterday followed by
+                // a time in 12h format. i.e. "Last seen Yesterday at 9:04 PM"
+                // xgettext:no-c-format
+                format = gettext("Last seen Yesterday at %l:%M %p");
+            }
+        }
+        // Show a week day and time if date is in the last week
+        else if days_ago > 1 && days_ago < 7 {
+            if use_24 {
+                // Translators: this is the name of the week day followed by
+                // a time in 24h format. i.e. "Last seen Monday at 23:04"
+                // xgettext:no-c-format
+                format = gettext("Last seen %A at %H:%M");
+            } else {
+                // Translators: this is the week day name followed by
+                // a time in 12h format. i.e. "Last seen Monday at 9:04 PM"
+                // xgettext:no-c-format
+                format = gettext("Last seen %A at %l:%M %p");
+            }
+        } else if datetime.year() == now.year() {
+            if use_24 {
+                // Translators: this is the day of the month followed
+                // by the abbreviated month name followed by a time in
+                // 24h format i.e. "Last seen February 3 at 23:04"
+                // xgettext:no-c-format
+                format = gettext("Last seen %B %-e at %H:%M");
+            } else {
+                // Translators: this is the day of the month followed
+                // by the abbreviated month name followed by a time in
+                // 12h format i.e. "Last seen February 3 at 9:04 PM"
+                // xgettext:no-c-format
+                format = gettext("Last seen %B %-e at %l:%M %p");
+            }
+        } else if use_24 {
+            // Translators: this is the day number followed
+            // by the abbreviated month name followed by the year followed
+            // by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
+            // xgettext:no-c-format
+            format = gettext("Last seen %B %-e %Y at %H:%M");
+        } else {
+            // Translators: this is the day number followed
+            // by the abbreviated month name followed by the year followed
+            // by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
+            // xgettext:no-c-format
+            format = gettext("Last seen %B %-e %Y at %l:%M %p");
+        }
+
+        let label = datetime.format(&format).unwrap();
+        self.imp().last_seen_ts.set_label(&label);
     }
-    // Show the word "Yesterday" and time if date is on yesterday
-    else if days_ago == 1 {
-        if use_24 {
-            // Translators: this is the word Yesterday followed by
-            // a time in 24h format. i.e. "Last seen Yesterday at 23:04"
-            // xgettext:no-c-format
-            format = gettext("Last seen Yesterday at %H:%M");
-        } else {
-            // Translators: this is the word Yesterday followed by
-            // a time in 12h format. i.e. "Last seen Yesterday at 9:04 PM"
-            // xgettext:no-c-format
-            format = gettext("Last seen Yesterday at %l:%M %p");
-        }
-    }
-    // Show a week day and time if date is in the last week
-    else if days_ago > 1 && days_ago < 7 {
-        if use_24 {
-            // Translators: this is the name of the week day followed by
-            // a time in 24h format. i.e. "Last seen Monday at 23:04"
-            // xgettext:no-c-format
-            format = gettext("Last seen %A at %H:%M");
-        } else {
-            // Translators: this is the week day name followed by
-            // a time in 12h format. i.e. "Last seen Monday at 9:04 PM"
-            // xgettext:no-c-format
-            format = gettext("Last seen %A at %l:%M %p");
-        }
-    } else if datetime.year() == now.year() {
-        if use_24 {
-            // Translators: this is the day of the month followed
-            // by the abbreviated month name followed by a time in
-            // 24h format i.e. "Last seen February 3 at 23:04"
-            // xgettext:no-c-format
-            format = gettext("Last seen %B %-e at %H:%M");
-        } else {
-            // Translators: this is the day of the month followed
-            // by the abbreviated month name followed by a time in
-            // 12h format i.e. "Last seen February 3 at 9:04 PM"
-            // xgettext:no-c-format
-            format = gettext("Last seen %B %-e at %l:%M %p");
-        }
-    } else if use_24 {
-        // Translators: this is the day number followed
-        // by the abbreviated month name followed by the year followed
-        // by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
-        // xgettext:no-c-format
-        format = gettext("Last seen %B %-e %Y at %H:%M");
-    } else {
-        // Translators: this is the day number followed
-        // by the abbreviated month name followed by the year followed
-        // by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
-        // xgettext:no-c-format
-        format = gettext("Last seen %B %-e %Y at %l:%M %p");
-    }
-
-    datetime.format(&format).unwrap()
 }

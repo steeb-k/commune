@@ -88,7 +88,7 @@ src/session/view/content/room_history/message_row/message_state_stack.ui
 src/session/view/content/room_history/message_toolbar/attachment_dialog.ui
 src/session/view/content/room_history/message_toolbar/mod.rs
 src/session/view/content/room_history/message_toolbar/mod.ui
-src/session/view/content/room_history/member_timestamp/mod.rs
+src/session/view/content/room_history/member_timestamp/row.rs
 src/session/view/content/room_history/mod.rs
 src/session/view/content/room_history/mod.ui
 src/session/view/content/room_history/read_receipts_list/mod.rs
