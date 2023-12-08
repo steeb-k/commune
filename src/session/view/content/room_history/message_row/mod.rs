@@ -264,7 +264,7 @@ impl MessageRow {
 
         let clock_format = Application::default().system_settings().clock_format();
         let label = if clock_format == ClockFormat::TwelveHours {
-            datetime.format("%-l∶%M %p").unwrap()
+            datetime.format("%I∶%M %p").unwrap()
         } else {
             datetime.format("%R").unwrap()
         };

@@ -141,18 +141,16 @@ impl MemberTimestampRow {
 
         let format = if clock_format == ClockFormat::TwelveHours {
             // Translators: this is a date and a time in 12h format.
-            // For example, "May 5 at 1:20 PM".
+            // For example, "May 5 at 01:20 PM".
             // Do not change the time format as it will follow the system settings.
-            // Please use `-` before specifiers that add spaces on single digits.
             // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %-l∶%M %p")
+            gettext("%B %-e at %I∶%M %p")
         } else {
             // Translators: this is a date and a time in 24h format.
             // For example, "May 5 at 13:20".
             // Do not change the time format as it will follow the system settings.
-            // Please use `-` before specifiers that add spaces on single digits.
             // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-            gettext("%B %-e at %-k∶%M")
+            gettext("%B %-e at %H∶%M")
         };
         let label = datetime.format(&format).unwrap();
 

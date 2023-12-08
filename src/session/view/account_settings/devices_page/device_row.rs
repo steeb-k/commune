@@ -272,66 +272,81 @@ impl DeviceRow {
         // Show only the time if date is on today
         if days_ago == 0 {
             if use_24 {
-                // Translators: Time in 24h format
+                // Translators: Time in 24h format, i.e. "23:04".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 format = gettext("Last seen at %H:%M");
             } else {
-                // Translators: Time in 12h format
-                format = gettext("Last seen at %l:%M %p");
+                // Translators: Time in 12h format, i.e. "11:04 PM".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                format = gettext("Last seen at %I:%M %p");
             }
         }
         // Show the word "Yesterday" and time if date is on yesterday
         else if days_ago == 1 {
             if use_24 {
-                // Translators: this is the word Yesterday followed by
-                // a time in 24h format. i.e. "Last seen Yesterday at 23:04"
+                // Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 // xgettext:no-c-format
-                format = gettext("Last seen Yesterday at %H:%M");
+                format = gettext("Last seen yesterday at %H:%M");
             } else {
-                // Translators: this is the word Yesterday followed by
-                // a time in 12h format. i.e. "Last seen Yesterday at 9:04 PM"
+                // Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+                // PM".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 // xgettext:no-c-format
-                format = gettext("Last seen Yesterday at %l:%M %p");
+                format = gettext("Last seen yesterday at %I:%M %p");
             }
         }
         // Show a week day and time if date is in the last week
         else if days_ago > 1 && days_ago < 7 {
             if use_24 {
-                // Translators: this is the name of the week day followed by
-                // a time in 24h format. i.e. "Last seen Monday at 23:04"
+                // Translators: this is the name of the week day followed by a time in 24h
+                // format, i.e. "Last seen Monday at 23:04".
+                // Do not change the time format as it will follow the system settings.
+                //  See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 // xgettext:no-c-format
                 format = gettext("Last seen %A at %H:%M");
             } else {
-                // Translators: this is the week day name followed by
-                // a time in 12h format. i.e. "Last seen Monday at 9:04 PM"
+                // Translators: this is the week day name followed by a time in 12h format, i.e.
+                // "Last seen Monday at 11:04 PM".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 // xgettext:no-c-format
-                format = gettext("Last seen %A at %l:%M %p");
+                format = gettext("Last seen %A at %I:%M %p");
             }
         } else if datetime.year() == now.year() {
             if use_24 {
-                // Translators: this is the day of the month followed
-                // by the abbreviated month name followed by a time in
-                // 24h format i.e. "Last seen February 3 at 23:04"
+                // Translators: this is the month and day and the time in 24h format, i.e. "Last
+                // seen February 3 at 23:04".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 // xgettext:no-c-format
                 format = gettext("Last seen %B %-e at %H:%M");
             } else {
-                // Translators: this is the day of the month followed
-                // by the abbreviated month name followed by a time in
-                // 12h format i.e. "Last seen February 3 at 9:04 PM"
+                // Translators: this is the month and day and the time in 12h format, i.e. "Last
+                // seen February 3 at 11:04 PM".
+                // Do not change the time format as it will follow the system settings.
+                // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                 // xgettext:no-c-format
-                format = gettext("Last seen %B %-e at %l:%M %p");
+                format = gettext("Last seen %B %-e at %I:%M %p");
             }
         } else if use_24 {
-            // Translators: this is the day number followed
-            // by the abbreviated month name followed by the year followed
-            // by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
+            // Translators: this is the full date and the time in 24h format, i.e. "Last
+            // seen February 3 2015 at 23:04".
+            // Do not change the time format as it will follow the system settings.
+            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
             // xgettext:no-c-format
             format = gettext("Last seen %B %-e %Y at %H:%M");
         } else {
-            // Translators: this is the day number followed
-            // by the abbreviated month name followed by the year followed
-            // by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
+            // Translators: this is the full date and the time in 12h format, i.e. "Last
+            // seen February 3 2015 at 11:04 PM".
+            // Do not change the time format as it will follow the system settings.
+            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
             // xgettext:no-c-format
-            format = gettext("Last seen %B %-e %Y at %l:%M %p");
+            format = gettext("Last seen %B %-e %Y at %I:%M %p");
         }
 
         let label = datetime.format(&format).unwrap();
