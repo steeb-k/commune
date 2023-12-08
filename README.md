@@ -18,6 +18,8 @@ Highlights:
 * See who has read messages, and who is typing
 * Log into multiple accounts at once (with Single-Sign On support)
 
+## Contents
+
 [TOC]
 
 ## Installation instructions
