@@ -10,7 +10,7 @@ use tracing::{error, warn};
 use super::Emoji;
 use crate::{
     components::SpinnerButton,
-    contrib::{QRCode, QRCodeExt, QrCodeScanner},
+    contrib::{QRCode, QrCodeScanner},
     gettext_f,
     login::Login,
     prelude::*,

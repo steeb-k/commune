@@ -7,14 +7,17 @@ pub(crate) mod imp {
     use std::cell::{Cell, RefCell};
 
     use gtk::{gdk, graphene};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::QRCode)]
     pub struct QRCode {
-        pub picture: gtk::Picture,
         pub data: RefCell<QRCodeData>,
+        /// The block size of this QR Code.
+        ///
+        /// Determines the size of the widget.
+        #[property(get, set = Self::set_block_size)]
         pub block_size: Cell<u32>,
     }
 
@@ -32,37 +35,14 @@ pub(crate) mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for QRCode {
         fn constructed(&self) {
             self.parent_constructed();
             self.obj().add_css_class("qrcode");
         }
-
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecUInt::builder("block-size")
-                    .minimum(1)
-                    .default_value(6)
-                    .explicit_notify()
-                    .build()]
-            });
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "block-size" => self.obj().block_size().to_value(),
-                _ => unreachable!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "block-size" => self.obj().set_block_size(value.get().unwrap()),
-                _ => unreachable!(),
-            }
-        }
     }
+
     impl WidgetImpl for QRCode {
         fn snapshot(&self, snapshot: &gtk::Snapshot) {
             let obj = self.obj();
@@ -105,6 +85,17 @@ pub(crate) mod imp {
             (minimum, natural, -1, -1)
         }
     }
+
+    impl QRCode {
+        /// Sets the block size of this QR Code.
+        fn set_block_size(&self, block_size: u32) {
+            self.block_size.set(std::cmp::max(block_size, 1));
+
+            let obj = self.obj();
+            obj.queue_draw();
+            obj.queue_resize();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -144,61 +135,25 @@ impl QRCode {
 
         qrcode
     }
-}
 
-pub trait QRCodeExt {
     /// Sets the displayed code of `self` to a QR code generated from `bytes`.
-    fn set_bytes(&self, bytes: &[u8]);
-
-    /// Gets the block size of `self`. This determines the size of the widget.
-    fn block_size(&self) -> u32;
-
-    /// Sets the block size of `self`.
-    fn set_block_size(&self, block_size: u32);
-
-    fn connect_block_size_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId;
-
-    /// Set the `QrCode` to be displayed
-    fn set_qrcode(&self, qrcode: qrcode::QrCode);
-}
-
-impl<W: IsA<QRCode>> QRCodeExt for W {
-    fn set_bytes(&self, bytes: &[u8]) {
+    pub fn set_bytes(&self, bytes: &[u8]) {
         let data = QRCodeData::try_from(bytes).unwrap_or_else(|_| {
             glib::g_warning!(None, "Failed to load QRCode from bytes");
             Default::default()
         });
-        self.as_ref().imp().data.replace(data);
+        self.imp().data.replace(data);
 
-        self.as_ref().queue_draw();
-        self.as_ref().queue_resize();
+        self.queue_draw();
+        self.queue_resize();
     }
 
-    fn set_qrcode(&self, qrcode: qrcode::QrCode) {
-        self.as_ref().imp().data.replace(QRCodeData::from(qrcode));
+    /// Set the `QrCode` to be displayed.
+    pub fn set_qrcode(&self, qrcode: qrcode::QrCode) {
+        self.imp().data.replace(QRCodeData::from(qrcode));
 
-        self.as_ref().queue_draw();
-        self.as_ref().queue_resize();
-    }
-
-    fn block_size(&self) -> u32 {
-        self.as_ref().imp().block_size.get()
-    }
-
-    fn set_block_size(&self, block_size: u32) {
-        self.as_ref()
-            .imp()
-            .block_size
-            .set(std::cmp::max(block_size, 1));
-        self.notify("block-size");
-        self.as_ref().queue_draw();
-        self.as_ref().queue_resize();
-    }
-
-    fn connect_block_size_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_notify_local(Some("block-size"), move |this, _| {
-            f(this);
-        })
+        self.queue_draw();
+        self.queue_resize();
     }
 }
 
