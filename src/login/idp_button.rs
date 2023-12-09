@@ -86,18 +86,22 @@ impl From<IdpBrand> for &str {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::{Cell, OnceCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/idp_button.ui")]
+    #[properties(wrapper_type = super::IdpButton)]
     pub struct IdpButton {
+        /// The brand of this button.
+        #[property(get, construct_only, builder(IdpBrand::default()))]
         pub brand: Cell<IdpBrand>,
-        pub id: RefCell<Option<String>>,
+        /// The ID of the identity provider of this button.
+        #[property(get, set = Self::set_id, construct_only)]
+        pub id: OnceCell<String>,
     }
 
     #[glib::object_subclass]
@@ -116,46 +120,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for IdpButton {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecEnum::builder::<IdpBrand>("brand")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("id")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "id" => obj.id().unwrap().to_value(),
-                "brand" => obj.brand().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "brand" => {
-                    obj.set_brand(value.get().unwrap());
-                }
-                "id" => {
-                    obj.set_id(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            };
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -168,6 +134,15 @@ mod imp {
 
     impl WidgetImpl for IdpButton {}
     impl ButtonImpl for IdpButton {}
+
+    impl IdpButton {
+        /// Set the id of the identity-provider represented by this button.
+        fn set_id(&self, id: String) {
+            self.obj()
+                .set_action_target_value(Some(&Some(&id).to_variant()));
+            self.id.set(id).unwrap();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -177,31 +152,6 @@ glib::wrapper! {
 }
 
 impl IdpButton {
-    pub fn update_icon(&self) {
-        self.set_icon_name(self.brand().icon());
-    }
-
-    /// Set the id of the identity-provider represented by this button.
-    pub fn set_id(&self, id: String) {
-        self.set_action_target_value(Some(&Some(&id).to_variant()));
-        self.imp().id.replace(Some(id));
-    }
-
-    /// Set the brand of this button.
-    pub fn set_brand(&self, brand: IdpBrand) {
-        self.imp().brand.replace(brand);
-    }
-
-    /// The id of the identity-provider represented by this button.
-    pub fn id(&self) -> Option<String> {
-        self.imp().id.borrow().clone()
-    }
-
-    /// The brand of this button.
-    pub fn brand(&self) -> IdpBrand {
-        self.imp().brand.get()
-    }
-
     pub fn new_from_identity_provider(idp: &IdentityProvider) -> Option<Self> {
         let gidp: IdpBrand = idp.brand.as_ref()?.try_into().ok()?;
 
@@ -211,5 +161,9 @@ impl IdpButton {
                 .property("id", &idp.id)
                 .build(),
         )
+    }
+
+    pub fn update_icon(&self) {
+        self.set_icon_name(self.brand().icon());
     }
 }

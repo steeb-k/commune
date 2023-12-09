@@ -26,7 +26,7 @@ use crate::{
     spawn, spawn_tokio, toast, Application, Window, RUNTIME,
 };
 
-#[derive(Clone, Debug, glib::Boxed)]
+#[derive(Clone, Debug, Default, glib::Boxed)]
 #[boxed_type(name = "BoxedLoginTypes")]
 pub struct BoxedLoginTypes(Vec<LoginType>);
 
@@ -52,12 +52,12 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use glib::{subclass::InitializingObject, SignalHandlerId};
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/mod.ui")]
+    #[properties(wrapper_type = super::Login)]
     pub struct Login {
         #[template_child]
         pub back_button: TemplateChild<gtk::Button>,
@@ -77,12 +77,16 @@ mod imp {
         pub logged_out_source_id: RefCell<Option<SignalHandlerId>>,
         pub ready_source_id: RefCell<Option<SignalHandlerId>>,
         /// Whether auto-discovery is enabled.
+        #[property(get, set = Self::set_autodiscovery, construct, explicit_notify, default = true)]
         pub autodiscovery: Cell<bool>,
         /// The login types supported by the homeserver.
-        pub login_types: RefCell<Vec<LoginType>>,
+        #[property(get)]
+        pub login_types: RefCell<BoxedLoginTypes>,
         /// The domain of the homeserver to log into.
+        #[property(get = Self::domain, type = Option<String>)]
         pub domain: RefCell<Option<OwnedServerName>>,
         /// The URL of the homeserver to log into.
+        #[property(get = Self::homeserver, type = Option<String>)]
         pub homeserver: RefCell<Option<Url>>,
         /// The Matrix client used to log in.
         pub client: RefCell<Option<Client>>,
@@ -121,47 +125,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Login {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("domain").read_only().build(),
-                    glib::ParamSpecString::builder("homeserver")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("autodiscovery")
-                        .default_value(true)
-                        .construct()
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoxed::builder::<BoxedLoginTypes>("login-types")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "domain" => obj.domain().to_value(),
-                "homeserver" => obj.homeserver_pretty().to_value(),
-                "autodiscovery" => obj.autodiscovery().to_value(),
-                "login-types" => BoxedLoginTypes(obj.login_types()).to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "autodiscovery" => self.obj().set_autodiscovery(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             let obj = self.obj();
             obj.action_set_enabled("login.next", false);
@@ -190,12 +155,43 @@ mod imp {
     }
 
     impl WidgetImpl for Login {}
-
     impl BinImpl for Login {}
+
+    impl Login {
+        /// Set whether auto-discovery is enabled.
+        pub fn set_autodiscovery(&self, autodiscovery: bool) {
+            if self.autodiscovery.get() == autodiscovery {
+                return;
+            }
+
+            self.autodiscovery.set(autodiscovery);
+            self.obj().notify_autodiscovery();
+        }
+
+        /// The domain of the homeserver to log into.
+        ///
+        /// If autodiscovery is enabled, this is the server name, otherwise,
+        /// this is the prettified homeserver URL.
+        fn domain(&self) -> Option<String> {
+            if self.autodiscovery.get() {
+                self.domain.borrow().clone().map(Into::into)
+            } else {
+                self.homeserver()
+            }
+        }
+
+        /// The pretty-formatted URL of the homeserver to log into.
+        fn homeserver(&self) -> Option<String> {
+            self.homeserver
+                .borrow()
+                .as_ref()
+                .map(|url| url.as_ref().trim_end_matches('/').to_owned())
+        }
+    }
 }
 
 glib::wrapper! {
-    /// A widget handling the login flows.
+    /// A widget managing the login flows.
     pub struct Login(ObjectSubclass<imp::Login>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -231,7 +227,7 @@ impl Login {
     fn set_client(&self, client: Option<Client>) {
         let homeserver = client.as_ref().map(|client| client.homeserver());
 
-        self.set_homeserver(homeserver);
+        self.set_homeserver_url(homeserver);
         self.imp().client.replace(client);
     }
 
@@ -253,18 +249,6 @@ impl Login {
         }
     }
 
-    /// The domain of the homeserver to log into.
-    ///
-    /// If autodiscovery is enabled, this is the server name, otherwise, this is
-    /// the prettified homeserver URL.
-    pub fn domain(&self) -> Option<String> {
-        if self.autodiscovery() {
-            self.imp().domain.borrow().clone().map(Into::into)
-        } else {
-            self.homeserver_pretty()
-        }
-    }
-
     fn set_domain(&self, domain: Option<OwnedServerName>) {
         let imp = self.imp();
 
@@ -277,58 +261,31 @@ impl Login {
     }
 
     /// The URL of the homeserver to log into.
-    pub fn homeserver(&self) -> Option<Url> {
+    pub fn homeserver_url(&self) -> Option<Url> {
         self.imp().homeserver.borrow().clone()
     }
 
-    /// The pretty-formatted URL of the homeserver to log into.
-    pub fn homeserver_pretty(&self) -> Option<String> {
-        let homeserver = self.homeserver();
-        homeserver
-            .as_ref()
-            .and_then(|url| url.as_ref().strip_suffix('/').map(ToOwned::to_owned))
-            .or_else(|| homeserver.as_ref().map(ToString::to_string))
-    }
-
     /// Set the homeserver to log into.
-    pub fn set_homeserver(&self, homeserver: Option<Url>) {
+    pub fn set_homeserver_url(&self, homeserver: Option<Url>) {
         let imp = self.imp();
 
-        if self.homeserver() == homeserver {
+        if self.homeserver_url() == homeserver {
             return;
         }
 
         imp.homeserver.replace(homeserver);
-        self.notify("homeserver");
+
+        self.notify_homeserver();
+
         if !self.autodiscovery() {
-            self.notify("domain");
+            self.notify_domain();
         }
-    }
-
-    /// Whether auto-discovery is enabled.
-    pub fn autodiscovery(&self) -> bool {
-        self.imp().autodiscovery.get()
-    }
-
-    /// Set whether auto-discovery is enabled
-    pub fn set_autodiscovery(&self, autodiscovery: bool) {
-        if self.autodiscovery() == autodiscovery {
-            return;
-        }
-
-        self.imp().autodiscovery.set(autodiscovery);
-        self.notify("autodiscovery");
-    }
-
-    /// The login types supported by the homeserver.
-    pub fn login_types(&self) -> Vec<LoginType> {
-        self.imp().login_types.borrow().clone()
     }
 
     /// Set the login types supported by the homeserver.
     fn set_login_types(&self, types: Vec<LoginType>) {
-        self.imp().login_types.replace(types);
-        self.notify("login-types");
+        self.imp().login_types.replace(BoxedLoginTypes(types));
+        self.notify_login_types();
     }
 
     /// Whether the password login type is supported.
@@ -336,6 +293,7 @@ impl Login {
         self.imp()
             .login_types
             .borrow()
+            .0
             .iter()
             .any(|t| matches!(t, LoginType::Password(_)))
     }
@@ -577,7 +535,7 @@ impl Login {
         self.set_autodiscovery(true);
         self.set_login_types(vec![]);
         self.set_domain(None);
-        self.set_homeserver(None);
+        self.set_homeserver_url(None);
         self.drop_client();
         self.drop_session();
 

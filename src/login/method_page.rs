@@ -12,12 +12,12 @@ use crate::{
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/method_page.ui")]
+    #[properties(wrapper_type = super::LoginMethodPage)]
     pub struct LoginMethodPage {
         #[template_child]
         pub title: TemplateChild<gtk::Label>,
@@ -32,6 +32,7 @@ mod imp {
         #[template_child]
         pub next_button: TemplateChild<SpinnerButton>,
         /// The parent `Login` object.
+        #[property(get, set = Self::set_login, nullable)]
         pub login: BoundObjectWeakRef<Login>,
     }
 
@@ -51,31 +52,37 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for LoginMethodPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> =
-                Lazy::new(|| vec![glib::ParamSpecObject::builder::<Login>("login").build()]);
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "login" => self.obj().login().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "login" => self.obj().set_login(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for LoginMethodPage {}
 
     impl WidgetImpl for LoginMethodPage {}
     impl BinImpl for LoginMethodPage {}
+
+    impl LoginMethodPage {
+        /// Set the parent `Login` object.
+        fn set_login(&self, login: Option<&Login>) {
+            let obj = self.obj();
+
+            self.login.disconnect_signals();
+
+            if let Some(login) = login {
+                let domain_handler = login.connect_domain_notify(clone!(@weak obj => move |_| {
+                    obj.update_domain_name();
+                }));
+                let login_types_handler =
+                    login.connect_login_types_notify(clone!(@weak obj => move |_| {
+                        obj.update_sso();
+                    }));
+
+                self.login
+                    .set(login, vec![domain_handler, login_types_handler]);
+            }
+
+            obj.update_domain_name();
+            obj.update_sso();
+            obj.update_next_state();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -88,39 +95,6 @@ glib::wrapper! {
 impl LoginMethodPage {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-    /// The parent `Login` object.
-    pub fn login(&self) -> Option<Login> {
-        self.imp().login.obj()
-    }
-
-    /// Set the parent `Login` object.
-    fn set_login(&self, login: Option<&Login>) {
-        let imp = self.imp();
-
-        imp.login.disconnect_signals();
-
-        if let Some(login) = login {
-            let domain_handler = login.connect_notify_local(
-                Some("domain"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_domain_name();
-                }),
-            );
-            let login_types_handler = login.connect_notify_local(
-                Some("login-types"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_sso();
-                }),
-            );
-
-            imp.login
-                .set(login, vec![domain_handler, login_types_handler]);
-        }
-
-        self.update_domain_name();
-        self.update_sso();
-        self.update_next_state();
     }
 
     /// The username entered by the user.
@@ -162,7 +136,7 @@ impl LoginMethodPage {
         };
         let imp = self.imp();
 
-        let login_types = login.login_types();
+        let login_types = login.login_types().0;
         let sso_login = match login_types.into_iter().find_map(|t| match t {
             LoginType::Sso(sso) => Some(sso),
             _ => None,

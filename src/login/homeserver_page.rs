@@ -16,12 +16,12 @@ use crate::{
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/login/homeserver_page.ui")]
+    #[properties(wrapper_type = super::LoginHomeserverPage)]
     pub struct LoginHomeserverPage {
         #[template_child]
         pub homeserver_entry: TemplateChild<adw::EntryRow>,
@@ -30,6 +30,7 @@ mod imp {
         #[template_child]
         pub next_button: TemplateChild<SpinnerButton>,
         /// The parent `Login` object.
+        #[property(get, set = Self::set_login, explicit_notify, nullable)]
         pub login: BoundObjectWeakRef<Login>,
     }
 
@@ -49,31 +50,35 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for LoginHomeserverPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> =
-                Lazy::new(|| vec![glib::ParamSpecObject::builder::<Login>("login").build()]);
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "login" => self.obj().login().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "login" => self.obj().set_login(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for LoginHomeserverPage {}
 
     impl WidgetImpl for LoginHomeserverPage {}
     impl BinImpl for LoginHomeserverPage {}
+
+    impl LoginHomeserverPage {
+        /// Set the parent `Login` object.
+        fn set_login(&self, login: Option<&Login>) {
+            let obj = self.obj();
+
+            self.login.disconnect_signals();
+
+            if let Some(login) = login {
+                let handler = login.connect_notify_local(
+                    Some("autodiscovery"),
+                    clone!(@weak obj => move |_, _| {
+                        obj.update_next_state();
+                        obj.update_text();
+                    }),
+                );
+
+                self.login.set(login, vec![handler]);
+            }
+
+            obj.update_next_state();
+            obj.update_text();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -86,33 +91,6 @@ glib::wrapper! {
 impl LoginHomeserverPage {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The parent `Login` object.
-    pub fn login(&self) -> Option<Login> {
-        self.imp().login.obj()
-    }
-
-    /// Set the parent `Login` object.
-    fn set_login(&self, login: Option<&Login>) {
-        let imp = self.imp();
-
-        imp.login.disconnect_signals();
-
-        if let Some(login) = login {
-            let handler = login.connect_notify_local(
-                Some("autodiscovery"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_next_state();
-                    obj.update_text();
-                }),
-            );
-
-            imp.login.set(login, vec![handler]);
-        }
-
-        self.update_next_state();
-        self.update_text();
     }
 
     /// Update the text of this page according to the current settings.
