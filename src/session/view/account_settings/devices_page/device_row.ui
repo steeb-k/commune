@@ -33,6 +33,9 @@
                   <!-- Translators: As in 'A verified session'. -->
                   <property name="label" translatable="yes">Verified</property>
                 </accessibility>
+                <style>
+                  <class name="success"/>
+                </style>
               </object>
             </child>
           </object>

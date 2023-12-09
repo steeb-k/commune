@@ -48,6 +48,9 @@
                     <lookup name="member">ContentMemberRow</lookup>
                   </lookup>
                 </binding>
+                <style>
+                  <class name="success"/>
+                </style>
               </object>
             </child>
             <child>
