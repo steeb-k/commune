@@ -6,12 +6,12 @@ use crate::utils::BoundObject;
 mod imp {
     use std::cell::RefCell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ExpressionListModel)]
     pub struct ExpressionListModel {
+        #[property(get)]
         pub model: BoundObject<gio::ListModel>,
         pub expressions: RefCell<Vec<gtk::Expression>>,
         pub watches: RefCell<Vec<Vec<gtk::ExpressionWatch>>>,
@@ -24,26 +24,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ExpressionListModel {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<gio::ListModel>("model")
-                    .read_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "model" => obj.model().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             for watch in self.watches.take().iter().flatten() {
                 watch.unwatch()
@@ -78,11 +60,6 @@ glib::wrapper! {
 impl ExpressionListModel {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The underlying model.
-    pub fn model(&self) -> Option<gio::ListModel> {
-        self.imp().model.obj()
     }
 
     /// Set the underlying model.
