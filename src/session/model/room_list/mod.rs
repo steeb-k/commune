@@ -8,7 +8,9 @@ use indexmap::map::IndexMap;
 use matrix_sdk::{
     ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomAliasId, RoomId, RoomOrAliasId},
     sync::Rooms as ResponseRooms,
+    RoomMemberships,
 };
+use ruma::UserId;
 use tracing::error;
 
 mod room_list_metainfo;
@@ -17,6 +19,7 @@ use self::room_list_metainfo::RoomListMetainfo;
 pub use self::room_list_metainfo::RoomMetainfo;
 use crate::{
     gettext_f,
+    prelude::*,
     session::model::{Room, Session},
     spawn_tokio,
 };
@@ -374,6 +377,64 @@ impl RoomList {
     /// successor yet.
     pub fn add_tombstoned_room(&self, room_id: OwnedRoomId) {
         self.imp().tombstoned_rooms.borrow_mut().insert(room_id);
+    }
+
+    /// Get the joined room that is a direct chat with the user with the given
+    /// ID.
+    ///
+    /// If several rooms are found, returns the room with the latest activity.
+    pub async fn direct_chat(&self, user_id: &UserId) -> Option<Room> {
+        let Some(session) = self.session() else {
+            return None;
+        };
+        let direct_rooms = self
+            .imp()
+            .list
+            .borrow()
+            .values()
+            .filter(|r| r.is_joined() && r.direct_user_id().as_deref() == Some(user_id))
+            .cloned()
+            .collect::<Vec<_>>();
+
+        if direct_rooms.is_empty() {
+            return None;
+        }
+
+        let own_user_id = session.user_id();
+
+        let mut final_rooms = vec![];
+        for room in direct_rooms {
+            let matrix_room = room.matrix_room();
+            let handle =
+                spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
+
+            let members = match handle.await.unwrap() {
+                Ok(members) => members,
+                Err(error) => {
+                    error!("Failed to load members: {error}");
+                    continue;
+                }
+            };
+
+            if members.is_empty() {
+                continue;
+            }
+
+            if members
+                .iter()
+                .any(|m| m.user_id() != own_user_id && m.user_id() != user_id)
+            {
+                // We found other members in this room, let's ignore
+                // the room.
+                continue;
+            }
+
+            final_rooms.push(room);
+        }
+
+        final_rooms
+            .into_iter()
+            .max_by(|x, y| x.latest_activity().cmp(&y.latest_activity()))
     }
 }
 

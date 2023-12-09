@@ -1,18 +1,18 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    encryption::identities::UserIdentity,
-    ruma::{OwnedMxcUri, OwnedUserId, UserId},
+use matrix_sdk::encryption::identities::UserIdentity;
+use ruma::{
+    api::client::room::create_room,
+    assign,
+    events::{room::encryption::RoomEncryptionEventContent, InitialStateEvent},
+    OwnedMxcUri, OwnedUserId, UserId,
 };
-use tracing::error;
+use tracing::{debug, error};
 
-use crate::{
-    components::Pill,
-    prelude::*,
-    session::model::{
-        AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Session, VerificationState,
-    },
-    spawn, spawn_tokio,
+use super::{
+    AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Room, Session,
+    VerificationState,
 };
+use crate::{components::Pill, prelude::*, spawn, spawn_tokio};
 
 #[glib::flags(name = "UserActions")]
 pub enum UserActions {
@@ -188,6 +188,65 @@ impl User {
             obj.notify_verified();
             obj.notify_allowed_actions();
         }));
+    }
+
+    /// The existing direct chat with this user, if any.
+    ///
+    /// A direct chat is a joined room marked as direct, with only our own user
+    /// and the other user in it.
+    pub async fn direct_chat(&self) -> Option<Room> {
+        self.session()
+            .room_list()
+            .direct_chat(&UserExt::user_id(self))
+            .await
+    }
+
+    /// Create an encrypted direct chat with this user.
+    async fn create_direct_chat(&self) -> Result<Room, matrix_sdk::Error> {
+        let request = assign!(create_room::v3::Request::new(),
+        {
+            is_direct: true,
+            invite: vec![UserExt::user_id(self)],
+            preset: Some(create_room::v3::RoomPreset::TrustedPrivateChat),
+            initial_state: vec![
+               InitialStateEvent::new(RoomEncryptionEventContent::with_recommended_defaults()).to_raw_any(),
+            ],
+        });
+
+        let client = self.session().client();
+        let handle = spawn_tokio!(async move { client.create_room(request).await });
+
+        match handle.await.unwrap() {
+            Ok(matrix_room) => {
+                let room = self
+                    .session()
+                    .room_list()
+                    .get_wait(matrix_room.room_id())
+                    .await
+                    .expect("The newly created room was not found");
+                Ok(room)
+            }
+            Err(error) => {
+                error!("Failed to create direct chat: {error}");
+                Err(error)
+            }
+        }
+    }
+
+    /// Get or create a direct chat with this user.
+    ///
+    /// If there is no existing direct chat, a new one is created. If a direct
+    /// chat exists but the other user has left the room, we re-invite them.
+    pub async fn get_or_create_direct_chat(&self) -> Result<Room, ()> {
+        let user_id = self.user_id();
+
+        if let Some(room) = self.direct_chat().await {
+            debug!("Using existing direct chat with {user_id}…");
+            return Ok(room);
+        }
+
+        debug!("Creating direct chat with {user_id}…");
+        self.create_direct_chat().await.map_err(|_| ())
     }
 }
 

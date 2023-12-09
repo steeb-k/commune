@@ -34,7 +34,7 @@ use ruma::{
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
         AnySyncTimelineEvent, SyncEphemeralRoomEvent, SyncStateEvent,
     },
-    OwnedEventId, OwnedRoomId, OwnedUserId, RoomId,
+    OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
 use tracing::{debug, error, warn};
 
@@ -51,7 +51,7 @@ pub use self::{
 };
 use super::{
     room_list::RoomMetainfo, AvatarData, AvatarImage, AvatarUriSource, IdentityVerification,
-    Session, SidebarItem, SidebarItemImpl, User,
+    Session, SidebarItem, SidebarItemImpl,
 };
 use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
@@ -345,7 +345,7 @@ impl Room {
         self.matrix_room().state()
     }
 
-    /// Set whether this room is direct.
+    /// Set whether this room is a direct chat.
     fn set_is_direct(&self, is_direct: bool) {
         if self.is_direct() == is_direct {
             return;
@@ -365,6 +365,51 @@ impl Room {
                 error!(room_id = %self.room_id(), "Failed to load whether room is direct: {error}");
             }
         }
+    }
+
+    /// The ID of the other user, if this is a direct chat and there is only one
+    /// other user.
+    pub fn direct_user_id(&self) -> Option<OwnedUserId> {
+        let matrix_room = self.matrix_room();
+
+        if matrix_room.state() == RoomState::Left {
+            // We most likely cannot re-join a direct room that was left.
+            return None;
+        }
+
+        if matrix_room.active_members_count() > 2 {
+            // We only want a 1-to-1 room. The count might be 1 if the other user left, but
+            // we can reinvite them.
+            return None;
+        }
+
+        let direct_targets = matrix_room.direct_targets();
+        if direct_targets.len() != 1 {
+            // It was a direct chat with several users.
+            return None;
+        }
+
+        direct_targets.into_iter().next()
+    }
+
+    /// Ensure the direct user of this room is an active member.
+    ///
+    /// If there is supposed to be a direct user in this room but they have left
+    /// it, re-invite them.
+    ///
+    /// This is a noop if there is no supposed direct user or if the user is
+    /// already an active member.
+    pub async fn ensure_direct_user(&self) -> Result<(), ()> {
+        let Some(user_id) = self.direct_user_id() else {
+            warn!("Cannot ensure direct user in a room without direct target");
+            return Ok(());
+        };
+
+        if self.matrix_room().active_members_count() == 2 {
+            return Ok(());
+        }
+
+        self.invite(&[user_id]).await.map_err(|_| ())
     }
 
     /// Forget a room that is left.
@@ -1347,16 +1392,16 @@ impl Room {
     ///
     /// Returns `Ok(())` if all the invites are sent successfully, otherwise
     /// returns the list of users who could not be invited.
-    pub async fn invite<'a>(&self, users: &'a [User]) -> Result<(), Vec<&'a User>> {
+    pub async fn invite<'a>(&self, user_ids: &'a [OwnedUserId]) -> Result<(), Vec<&'a UserId>> {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             error!("Can’t invite users, because this room isn’t a joined room");
             return Ok(());
         }
-        let user_ids: Vec<OwnedUserId> = users.iter().map(UserExt::user_id).collect();
 
+        let user_ids_clone = user_ids.to_owned();
         let handle = spawn_tokio!(async move {
-            let invitations = user_ids
+            let invitations = user_ids_clone
                 .iter()
                 .map(|user_id| matrix_room.invite_user_by_id(user_id));
             futures_util::future::join_all(invitations).await
@@ -1367,11 +1412,8 @@ impl Room {
             match result {
                 Ok(_) => {}
                 Err(error) => {
-                    error!(
-                        "Failed to invite user with id {}: {error}",
-                        users[index].user_id(),
-                    );
-                    failed_invites.push(&users[index]);
+                    error!("Failed to invite user with ID {}: {error}", user_ids[index],);
+                    failed_invites.push(&*user_ids[index]);
                 }
             }
         }

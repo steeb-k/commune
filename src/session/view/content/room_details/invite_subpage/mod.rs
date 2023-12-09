@@ -1,6 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::ngettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use ruma::OwnedUserId;
 
 mod invitee;
 use self::invitee::Invitee;
@@ -13,7 +14,7 @@ use self::{
 use crate::{
     components::{Pill, Spinner, SpinnerButton},
     prelude::*,
-    session::model::{Room, User},
+    session::model::Room,
     spawn, toast,
 };
 
@@ -311,10 +312,10 @@ impl InviteSubpage {
             return;
         };
 
-        let invitees: Vec<User> = user_list
+        let invitees: Vec<OwnedUserId> = user_list
             .invitees()
             .into_iter()
-            .map(glib::object::Cast::upcast)
+            .map(|i| i.user_id())
             .collect();
 
         match room.invite(&invitees).await {
@@ -323,13 +324,21 @@ impl InviteSubpage {
             }
             Err(failed_users) => {
                 for invitee in &invitees {
-                    if !failed_users.contains(&invitee) {
-                        user_list.remove_invitee(&UserExt::user_id(invitee))
+                    if !failed_users.contains(&invitee.as_ref()) {
+                        user_list.remove_invitee(invitee)
                     }
                 }
 
                 let n = failed_users.len();
-                let first_failed = failed_users.first().unwrap();
+                let first_failed = failed_users
+                    .first()
+                    .and_then(|user_id| {
+                        user_list
+                            .invitees()
+                            .into_iter()
+                            .find(|i| i.user_id() == *user_id)
+                    })
+                    .unwrap();
 
                 toast!(
                     self,

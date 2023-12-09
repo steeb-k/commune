@@ -1,16 +1,9 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    ruma::{api::client::user_directory::search_users, OwnedUserId, UserId},
-    RoomMemberships,
-};
+use matrix_sdk::ruma::{api::client::user_directory::search_users, UserId};
 use tracing::error;
 
 use super::DmUser;
-use crate::{
-    prelude::*,
-    session::model::{Room, Session},
-    spawn, spawn_tokio,
-};
+use crate::{prelude::*, session::model::Session, spawn, spawn_tokio};
 
 #[derive(Debug, Default, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -25,10 +18,7 @@ pub enum DmUserListState {
 }
 
 mod imp {
-    use std::{
-        cell::{Cell, RefCell},
-        collections::HashMap,
-    };
+    use std::cell::{Cell, RefCell};
 
     use futures_util::future::AbortHandle;
     use once_cell::sync::Lazy;
@@ -42,7 +32,6 @@ mod imp {
         pub state: Cell<DmUserListState>,
         pub search_term: RefCell<Option<String>>,
         pub abort_handle: RefCell<Option<AbortHandle>>,
-        pub dm_rooms: RefCell<HashMap<OwnedUserId, Vec<glib::WeakRef<Room>>>>,
     }
 
     #[glib::object_subclass]
@@ -209,7 +198,7 @@ impl DmUserList {
         match response {
             Ok(mut response) => {
                 let mut add_custom = false;
-                // If the search term looks like an UserId and is not already in the response,
+                // If the search term looks like a UserId and is not already in the response,
                 // insert it.
                 if let Ok(user_id) = UserId::parse(&search_term) {
                     if !response.results.iter().any(|item| item.user_id == user_id) {
@@ -219,77 +208,21 @@ impl DmUserList {
                     }
                 }
 
-                self.load_dm_rooms().await;
-                let own_user_id = session.user_id();
-                let dm_rooms = self.imp().dm_rooms.borrow().clone();
-
                 let mut users: Vec<DmUser> = vec![];
                 for item in response.results.into_iter() {
-                    let other_user_id = &item.user_id;
-                    let room = if let Some(rooms) = dm_rooms.get(other_user_id) {
-                        let mut final_rooms: Vec<Room> = vec![];
-                        for room in rooms {
-                            let Some(room) = room.upgrade() else {
-                                continue;
-                            };
-                            let matrix_room = room.matrix_room();
-
-                            if !room.is_joined() || matrix_room.active_members_count() > 2 {
-                                continue;
-                            }
-
-                            let handle = spawn_tokio!(async move {
-                                matrix_room.members(RoomMemberships::ACTIVE).await
-                            });
-
-                            let members = match handle.await.unwrap() {
-                                Ok(members) => members,
-                                Err(error) => {
-                                    error!("Failed to load members: {error}");
-                                    vec![]
-                                }
-                            };
-
-                            if !members.is_empty() {
-                                let mut found_others = false;
-                                for member in &members {
-                                    if member.user_id() != own_user_id
-                                        && member.user_id() != other_user_id
-                                    {
-                                        // We found other members in this room, let's ignore
-                                        // the room.
-                                        found_others = true;
-                                        break;
-                                    }
-                                }
-
-                                if found_others {
-                                    continue;
-                                }
-                            }
-
-                            final_rooms.push(room);
-                        }
-
-                        final_rooms
-                            .into_iter()
-                            .max_by(|x, y| x.latest_activity().cmp(&y.latest_activity()))
-                    } else {
-                        None
-                    };
-
                     let user = DmUser::new(
                         &session,
                         &item.user_id,
                         item.display_name.as_deref(),
                         item.avatar_url.as_deref(),
-                        room.as_ref(),
                     );
+
                     // If it is the "custom user" from the search term, fetch the avatar
                     // and display name
                     if add_custom && user.user_id() == search_term {
                         user.load_profile();
                     }
+
                     users.push(user);
                 }
 
@@ -305,43 +238,5 @@ impl DmUserList {
                 self.clear_list();
             }
         }
-    }
-
-    async fn load_dm_rooms(&self) {
-        let client = self.session().client();
-        let handle = spawn_tokio!(async move {
-            client
-                .account()
-                .account_data::<ruma::events::direct::DirectEventContent>()
-                .await?
-                .map(|c| c.deserialize())
-                .transpose()
-                .map_err(matrix_sdk::Error::from)
-        });
-
-        match handle.await.unwrap() {
-            Ok(Some(list)) => {
-                let session = self.session();
-                let room_list = session.room_list();
-                let list = list
-                    .into_iter()
-                    .map(|(user_id, room_ids)| {
-                        let rooms = room_ids
-                            .iter()
-                            .filter_map(|room_id| Some(room_list.get(room_id)?.downgrade()))
-                            .collect();
-                        (user_id, rooms)
-                    })
-                    .collect();
-                self.imp().dm_rooms.replace(list);
-            }
-            Ok(None) => {
-                self.imp().dm_rooms.take();
-            }
-            Err(error) => {
-                error!("Can’t read account data: {error}");
-                self.imp().dm_rooms.take();
-            }
-        };
     }
 }
