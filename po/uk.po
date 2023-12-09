@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-28 15:36+0000\n"
-"PO-Revision-Date: 2023-11-29 19:35+0200\n"
+"POT-Creation-Date: 2023-12-08 20:57+0000\n"
+"PO-Revision-Date: 2023-12-09 22:50+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -135,7 +135,7 @@ msgstr ""
 "Працюйте у декількох облікових записах одночасно (із підтримкою єдиного "
 "входу в усі одразу)"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:148
+#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:172
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
@@ -151,8 +151,8 @@ msgstr "Перегляд журналу мультимедіа кімнати Ma
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Інтерфейс «Фрактала» адаптується до малих екранів"
 
-#: src/account_switcher/account_switcher_button.ui:13
-#: src/account_switcher/account_switcher_button.ui:15
+#: src/account_switcher/account_switcher_button.ui:4
+#: src/account_switcher/account_switcher_button.ui:6
 msgid "Switch Accounts"
 msgstr "Перемкнути обліковий запис"
 
@@ -166,16 +166,16 @@ msgstr "Д_одати обліковий запис"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
-#: src/application.rs:155
+#: src/application.rs:179
 msgid "© 2017-2023 The Fractal Team"
 msgstr "© Команда «Фрактал», 2017-2023"
 
-#: src/application.rs:169
+#: src/application.rs:193
 msgid "translator-credits"
 msgstr "Artem Polishchuk <ego.cordatus@gmail.com>, 2019."
 
 #. This can't be added via the builder
-#: src/application.rs:175
+#: src/application.rs:199
 msgid "Name by"
 msgstr "Авторка назви"
 
@@ -200,7 +200,7 @@ msgid "Authenticate via Browser"
 msgstr "Розпізнавання за допомогою браузера"
 
 #: src/components/auth_dialog.ui:114
-#: src/session/view/account_settings/user_page/mod.rs:322
+#: src/session/view/account_settings/general_page/mod.rs:324
 #: src/session/view/content/room_details/general_page/mod.rs:349
 #: src/session/view/content/room_history/item_row.rs:743
 #: src/session/view/content/room_history/message_toolbar/mod.ui:69
@@ -324,15 +324,14 @@ msgstr ""
 "щоб дізнатися більше."
 
 #: src/error_page.ui:115
-#| msgid "Failed to logout the session."
 msgid "Failed to Initialize the Session"
 msgstr "Не вдалося ініціалізувати сеанс"
 
-#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:532
+#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:466
 msgid "No network connection"
 msgstr "Немає з'єднання з мережею"
 
-#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:536
+#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:470
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
@@ -397,11 +396,11 @@ msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Адреса вашого домашнього сервера Matrix, наприклад {address}"
 
 #: src/login/homeserver_page.ui:22
-#: src/session/view/account_settings/user_page/mod.ui:63
+#: src/session/view/account_settings/general_page/mod.ui:63
 msgid "Homeserver"
 msgstr "Домашній сервер"
 
-#: src/login/homeserver_page.ui:66 src/login/method_page.ui:124
+#: src/login/homeserver_page.ui:66 src/login/method_page.ui:110
 #: src/session/view/content/verification/session_verification.ui:281
 #: src/session/view/content/verification/session_verification.ui:347
 msgid "Next"
@@ -426,15 +425,11 @@ msgstr "Увійти"
 msgid "Matrix Username"
 msgstr "Ім'я користувача Matrix"
 
-#: src/login/method_page.ui:85
+#: src/login/method_page.ui:81
 msgid "Password"
 msgstr "Пароль"
 
-#: src/login/method_page.ui:93
-msgid "_Forgot Password?"
-msgstr "За_були пароль?"
-
-#: src/login/method_page.ui:117
+#: src/login/method_page.ui:103
 msgid "More SSO Providers"
 msgstr "Додаткові надавачі SSO"
 
@@ -608,7 +603,7 @@ msgstr "Не вдалося отримати зашифровані дані у 
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
-#: src/session/model/session.rs:461
+#: src/session/model/session.rs:477
 msgid "Failed to logout the session."
 msgstr "Не вдалося вийти з сеансу."
 
@@ -654,7 +649,7 @@ msgstr "Перевірки"
 #. Translators: As in 'Invited Room Members'.
 #: src/session/model/sidebar/category/category_type.rs:29
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:131
 msgid "Invited"
 msgstr "Запрошено"
 
@@ -690,96 +685,114 @@ msgstr "Не вдалося завантажити дані з'єднаного 
 msgid "Failed to load the list of connected devices."
 msgstr "Не вдалося завантажити список з'єднаних пристроїв."
 
-#: src/session/view/account_settings/devices_page/device_row.rs:103
+#: src/session/view/account_settings/devices_page/device_row.rs:106
 msgid "Disconnect Session"
 msgstr "Від'єднати сеанс"
 
-#: src/session/view/account_settings/devices_page/device_row.rs:105
-#: src/session/view/account_settings/user_page/mod.ui:127
+#: src/session/view/account_settings/devices_page/device_row.rs:108
+#: src/session/view/account_settings/general_page/mod.ui:127
 msgid "Log Out"
 msgstr "Вийти"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/account_settings/devices_page/device_row.rs:216
+#: src/session/view/account_settings/devices_page/device_row.rs:232
 msgid "Failed to disconnect device “{device_name}”"
 msgstr "Не вдалося від'єднати пристрій «{device_name}»."
 
-#. Translators: Time in 24h format
-#: src/session/view/account_settings/devices_page/device_row.rs:257
+#. Translators: Time in 24h format, i.e. "23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:278
 msgid "Last seen at %H:%M"
 msgstr "Востаннє бачили %H:%M"
 
-#. Translators: Time in 12h format
-#: src/session/view/account_settings/devices_page/device_row.rs:260
-msgid "Last seen at %l:%M %p"
-msgstr "Востаннє бачили %l:%M %p"
+#. Translators: Time in 12h format, i.e. "11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:283
+#| msgid "Last seen at %l:%M %p"
+msgid "Last seen at %I:%M %p"
+msgstr "Востаннє бачили %I:%M %p"
 
-#. Translators: this is the word Yesterday followed by
-#. a time in 24h format. i.e. "Last seen Yesterday at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:269
+#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:293
 #, no-c-format
-msgid "Last seen Yesterday at %H:%M"
+#| msgid "Last seen Yesterday at %H:%M"
+msgid "Last seen yesterday at %H:%M"
 msgstr "Востаннє бачили вчора о %H:%M"
 
-#. Translators: this is the word Yesterday followed by
-#. a time in 12h format. i.e. "Last seen Yesterday at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:274
+#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+#. PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:300
 #, no-c-format
-msgid "Last seen Yesterday at %l:%M %p"
-msgstr "Востаннє бачили вчора о %l:%M %p"
+#| msgid "Last seen Yesterday at %l:%M %p"
+msgid "Last seen yesterday at %I:%M %p"
+msgstr "Востаннє бачили вчора о %I:%M %p"
 
-#. Translators: this is the name of the week day followed by
-#. a time in 24h format. i.e. "Last seen Monday at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:283
+#. Translators: this is the name of the week day followed by a time in 24h
+#. format, i.e. "Last seen Monday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:311
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "Востаннє бачили %A о %H:%M"
 
-#. Translators: this is the week day name followed by
-#. a time in 12h format. i.e. "Last seen Monday at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:288
+#. Translators: this is the week day name followed by a time in 12h format, i.e.
+#. "Last seen Monday at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:318
 #, no-c-format
-msgid "Last seen %A at %l:%M %p"
-msgstr "Востаннє бачили %A о %l:%M %p"
+#| msgid "Last seen %A at %l:%M %p"
+msgid "Last seen %A at %I:%M %p"
+msgstr "Востаннє бачили %A о %I:%M %p"
 
-#. Translators: this is the day of the month followed
-#. by the abbreviated month name followed by a time in
-#. 24h format i.e. "Last seen February 3 at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:296
+#. Translators: this is the month and day and the time in 24h format, i.e. "Last
+#. seen February 3 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:327
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "Востаннє бачили %-e %B о %H:%M"
 
-#. Translators: this is the day of the month followed
-#. by the abbreviated month name followed by a time in
-#. 12h format i.e. "Last seen February 3 at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:302
+#. Translators: this is the month and day and the time in 12h format, i.e. "Last
+#. seen February 3 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:334
 #, no-c-format
-msgid "Last seen %B %-e at %l:%M %p"
-msgstr "Востаннє бачили %-e %B о %l:%M %p"
+#| msgid "Last seen %B %-e at %l:%M %p"
+msgid "Last seen %B %-e at %I:%M %p"
+msgstr "Востаннє бачили %-e %B о %I:%M %p"
 
-#. Translators: this is the day number followed
-#. by the abbreviated month name followed by the year followed
-#. by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:309
+#. Translators: this is the full date and the time in 24h format, i.e. "Last
+#. seen February 3 2015 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:342
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "Востаннє бачили %-e %B %Y о %H:%M"
 
-#. Translators: this is the day number followed
-#. by the abbreviated month name followed by the year followed
-#. by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:315
+#. Translators: this is the full date and the time in 12h format, i.e. "Last
+#. seen February 3 2015 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:349
 #, no-c-format
-msgid "Last seen %B %-e %Y at %l:%M %p"
-msgstr "Востаннє бачили %-e %B %Y о %l:%M %p"
+#| msgid "Last seen %B %-e %Y at %l:%M %p"
+msgid "Last seen %B %-e %Y at %I:%M %p"
+msgstr "Востаннє бачили %-e %B %Y о %I:%M %p"
 
 #. Translators: As in 'A verified session'.
-#. Translators: As in "Verified room member".
 #: src/session/view/account_settings/devices_page/device_row.ui:31
 #: src/session/view/account_settings/devices_page/device_row.ui:34
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "Перевірено"
 
@@ -806,6 +819,226 @@ msgstr "Поточний сеанс"
 #: src/session/view/account_settings/devices_page/mod.ui:28
 msgid "Other Active Sessions"
 msgstr "Інші активні сеанси"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:174
+msgid "Password must be at least 8 characters long"
+msgstr "Пароль має складатися із принаймні 8 символів"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:177
+msgid "Password must have at least one lower-case letter"
+msgstr "Пароль має містити принаймні одну літеру нижнього регістру"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:181
+msgid "Password must have at least one upper-case letter"
+msgstr "Пароль має містити принаймні одну літеру верхнього регістру"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:184
+msgid "Password must have at least one digit"
+msgstr "У паролі має містити принаймні одна цифра"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:186
+msgid "Password must have at least one symbol"
+msgstr "У паролі має містити принаймні один символ пунктуації"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:216
+msgid "Passwords do not match"
+msgstr "Паролі не збігаються"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:269
+msgid "Password changed successfully"
+msgstr "Пароль успішно змінено"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:280
+msgid "Password rejected for being too weak"
+msgstr "Пароль є надто простим"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:284
+msgid "Could not change password"
+msgstr "Не вдалося змінити пароль"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:51
+msgid "Change Password"
+msgstr "Зміна пароля"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:41
+msgid "Changing your password will log you out of your other sessions."
+msgstr "Зміна пароля призведе до виходу з інших ваших сеансів."
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:49
+msgid ""
+"Fractal’s support for encryption is unstable so you might lose access to "
+"your encrypted message history. It is recommended to backup your encryption "
+"keys before proceeding."
+msgstr ""
+"Підтримка шифрування у «Фракталі» не є стабільною, тому ви можете втратити "
+"доступ до вашого зашифрованого журналу повідомлень. Перш ніж продовжувати, "
+"рекомендуємо створити резервну копію ваших ключів шифрування."
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:72
+msgid "New Password"
+msgstr "Новий пароль"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:112
+msgid "Confirm New Password"
+msgstr "Підтвердження нового пароля"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:142
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:73
+#: src/session/view/content/room_history/verification_info_bar.rs:180
+msgid "Continue"
+msgstr "Продовжити"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:175
+msgid "Account successfully deactivated"
+msgstr "Обліковий запис успішно вимкнено"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:184
+msgid "Could not deactivate account"
+msgstr "Не вдалося вимкнути обліковий запис"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:141
+msgid "Deactivate Account"
+msgstr "Деактивувати обліковий запис"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:41
+msgid ""
+"Deactivating your account means you will lose access to all your messages, "
+"contacts, files, and more, forever."
+msgstr ""
+"Деактивація вашого облікового запису означає, що ви назавжди втратите доступ "
+"до всіх своїх повідомлень, контактів, файли та інших даних."
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:49
+msgid ""
+"To confirm that you really want to deactivate this account, type in your "
+"Matrix user ID:"
+msgstr ""
+"Щоб підтвердити, що ви дійсно хочете деактивувати цей обліковий запис "
+"введіть свій ідентифікатор Matrix:"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:7
+msgid "Log Out of this Session"
+msgstr "Вийти з цього сеансу"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:41
+msgid ""
+"Fractal doesn’t support online backup of room encryption keys so you might "
+"lose access to your encrypted message history."
+msgstr ""
+"У «Фракталі» не передбачено підтримки інтерактивного резервного копіювання "
+"ключів шифрування кімнати, тому ви можете втратити доступ до журналу ваших "
+"шифрованих повідомлень."
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:49
+msgid "It is recommended to backup your encryption keys before proceeding."
+msgstr ""
+"Перш ніж продовжувати, рекомендуємо створити резервну копію ваших ключів "
+"шифрування."
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:64
+msgid "Backup Encryption Keys"
+msgstr "Створити резервну копію ключів шифрування"
+
+#: src/session/view/account_settings/general_page/mod.rs:80
+msgid "Homeserver address copied to clipboard"
+msgstr "Адресу домашнього сервера скопійовано до буфера обміну"
+
+#: src/session/view/account_settings/general_page/mod.rs:86
+msgid "Matrix user ID copied to clipboard"
+msgstr "Ідентифікатор користувача Matrix скопійовано до буфера обміну"
+
+#: src/session/view/account_settings/general_page/mod.rs:92
+msgid "Session ID copied to clipboard"
+msgstr "Ідентифікатор сеансу скопійовано до буфера обміну"
+
+#: src/session/view/account_settings/general_page/mod.rs:245
+#: src/session/view/content/room_details/general_page/mod.rs:253
+msgid "Avatar removed successfully"
+msgstr "Аватар успішно вилучено"
+
+#: src/session/view/account_settings/general_page/mod.rs:247
+#: src/session/view/content/room_details/general_page/mod.rs:255
+msgid "Avatar changed successfully"
+msgstr "Аватар успішно змінено"
+
+#: src/session/view/account_settings/general_page/mod.rs:260
+#: src/session/view/content/room_details/general_page/mod.rs:278
+msgid "Could not load file"
+msgstr "Не вдалось завантажити файл"
+
+#: src/session/view/account_settings/general_page/mod.rs:275
+#: src/session/view/content/room_details/general_page/mod.rs:299
+msgid "Could not upload avatar"
+msgstr "Не вдалося вивантажити аватар"
+
+#: src/session/view/account_settings/general_page/mod.rs:304
+#: src/session/view/content/room_details/general_page/mod.rs:319
+msgid "Could not change avatar"
+msgstr "Не вдалося змінити аватар"
+
+#: src/session/view/account_settings/general_page/mod.rs:320
+#: src/session/view/content/room_details/general_page/mod.rs:343
+msgid "Remove Avatar?"
+msgstr "Вилучити аватар?"
+
+#: src/session/view/account_settings/general_page/mod.rs:321
+msgid "Do you really want to remove your avatar?"
+msgstr "Ви дійсно хочете вилучити ваш аватар?"
+
+#: src/session/view/account_settings/general_page/mod.rs:325
+#: src/session/view/content/room_details/general_page/mod.rs:350
+#: src/session/view/content/room_history/item_row.rs:744
+msgid "Remove"
+msgstr "Вилучити"
+
+#: src/session/view/account_settings/general_page/mod.rs:359
+#: src/session/view/content/room_details/general_page/mod.rs:375
+msgid "Could not remove avatar"
+msgstr "Не вдалося вилучити аватар"
+
+#: src/session/view/account_settings/general_page/mod.rs:398
+msgid "Name changed successfully"
+msgstr "Ім'я успішно змінено"
+
+#: src/session/view/account_settings/general_page/mod.rs:439
+msgid "Could not change display name"
+msgstr "Не вдалося змінити показане ім'я"
+
+#: src/session/view/account_settings/general_page/mod.ui:5
+msgid "General"
+msgstr "Загальні"
+
+#: src/session/view/account_settings/general_page/mod.ui:27
+#: src/session/view/room_creation.ui:54
+msgid "Name"
+msgstr "Ім'я"
+
+#: src/session/view/account_settings/general_page/mod.ui:60
+msgid "Advanced Information"
+msgstr "Додаткова інформація"
+
+#: src/session/view/account_settings/general_page/mod.ui:71
+msgid "Copy homeserver address to clipboard"
+msgstr "Скопіювати адресу домашнього сервера до буфера"
+
+#: src/session/view/account_settings/general_page/mod.ui:82
+msgid "Matrix User ID"
+msgstr "Ідентифікатор користувача Matrix"
+
+#: src/session/view/account_settings/general_page/mod.ui:90
+msgid "Copy Matrix user ID to clipboard"
+msgstr "Скопіювати ідентифікатор користувача Matrix до буфера"
+
+#: src/session/view/account_settings/general_page/mod.ui:101
+msgid "Session ID"
+msgstr "Ідентифікатор сеансу"
+
+#: src/session/view/account_settings/general_page/mod.ui:109
+msgid "Copy session ID to clipboard"
+msgstr "Скопіювати ідентифікатор сеансу до буфера"
 
 #: src/session/view/account_settings/notifications_page.rs:177
 #: src/session/view/account_settings/notifications_page.rs:190
@@ -965,6 +1198,7 @@ msgid "Not available"
 msgstr "Недоступний"
 
 #: src/session/view/account_settings/security_page/mod.ui:5
+#: src/session/view/user_page.ui:69
 msgid "Security"
 msgstr "Безпека"
 
@@ -988,226 +1222,6 @@ msgstr "Ключ самопідписування"
 #: src/session/view/account_settings/security_page/mod.ui:54
 msgid "User-signing key"
 msgstr "Ключ підписування користувача"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:174
-msgid "Password must be at least 8 characters long"
-msgstr "Пароль має складатися із принаймні 8 символів"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:177
-msgid "Password must have at least one lower-case letter"
-msgstr "Пароль має містити принаймні одну літеру нижнього регістру"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:181
-msgid "Password must have at least one upper-case letter"
-msgstr "Пароль має містити принаймні одну літеру верхнього регістру"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:184
-msgid "Password must have at least one digit"
-msgstr "У паролі має містити принаймні одна цифра"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:186
-msgid "Password must have at least one symbol"
-msgstr "У паролі має містити принаймні один символ пунктуації"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:216
-msgid "Passwords do not match"
-msgstr "Паролі не збігаються"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:269
-msgid "Password changed successfully"
-msgstr "Пароль успішно змінено"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:280
-msgid "Password rejected for being too weak"
-msgstr "Пароль є надто простим"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:284
-msgid "Could not change password"
-msgstr "Не вдалося змінити пароль"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:51
-msgid "Change Password"
-msgstr "Зміна пароля"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:41
-msgid "Changing your password will log you out of your other sessions."
-msgstr "Зміна пароля призведе до виходу з інших ваших сеансів."
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:49
-msgid ""
-"Fractal’s support for encryption is unstable so you might lose access to "
-"your encrypted message history. It is recommended to backup your encryption "
-"keys before proceeding."
-msgstr ""
-"Підтримка шифрування у «Фракталі» не є стабільною, тому ви можете втратити "
-"доступ до вашого зашифрованого журналу повідомлень. Перш ніж продовжувати, "
-"рекомендуємо створити резервну копію ваших ключів шифрування."
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:72
-msgid "New Password"
-msgstr "Новий пароль"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:112
-msgid "Confirm New Password"
-msgstr "Підтвердження нового пароля"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:142
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:70
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:73
-#: src/session/view/content/room_history/verification_info_bar.rs:180
-msgid "Continue"
-msgstr "Продовжити"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:175
-msgid "Account successfully deactivated"
-msgstr "Обліковий запис успішно вимкнено"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:184
-msgid "Could not deactivate account"
-msgstr "Не вдалося вимкнути обліковий запис"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:141
-msgid "Deactivate Account"
-msgstr "Деактивувати обліковий запис"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:41
-msgid ""
-"Deactivating your account means you will lose access to all your messages, "
-"contacts, files, and more, forever."
-msgstr ""
-"Деактивація вашого облікового запису означає, що ви назавжди втратите доступ "
-"до всіх своїх повідомлень, контактів, файли та інших даних."
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:49
-msgid ""
-"To confirm that you really want to deactivate this account, type in your "
-"Matrix user ID:"
-msgstr ""
-"Щоб підтвердити, що ви дійсно хочете деактивувати цей обліковий запис "
-"введіть свій ідентифікатор Matrix:"
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:7
-msgid "Log Out of this Session"
-msgstr "Вийти з цього сеансу"
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:41
-msgid ""
-"Fractal doesn’t support online backup of room encryption keys so you might "
-"lose access to your encrypted message history."
-msgstr ""
-"У «Фракталі» не передбачено підтримки інтерактивного резервного копіювання "
-"ключів шифрування кімнати, тому ви можете втратити доступ до журналу ваших "
-"шифрованих повідомлень."
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:49
-msgid "It is recommended to backup your encryption keys before proceeding."
-msgstr ""
-"Перш ніж продовжувати, рекомендуємо створити резервну копію ваших ключів "
-"шифрування."
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:64
-msgid "Backup Encryption Keys"
-msgstr "Створити резервну копію ключів шифрування"
-
-#: src/session/view/account_settings/user_page/mod.rs:78
-msgid "Homeserver address copied to clipboard"
-msgstr "Адресу домашнього сервера скопійовано до буфера обміну"
-
-#: src/session/view/account_settings/user_page/mod.rs:84
-msgid "Matrix user ID copied to clipboard"
-msgstr "Ідентифікатор користувача Matrix скопійовано до буфера обміну"
-
-#: src/session/view/account_settings/user_page/mod.rs:90
-msgid "Session ID copied to clipboard"
-msgstr "Ідентифікатор сеансу скопійовано до буфера обміну"
-
-#: src/session/view/account_settings/user_page/mod.rs:243
-#: src/session/view/content/room_details/general_page/mod.rs:253
-msgid "Avatar removed successfully"
-msgstr "Аватар успішно вилучено"
-
-#: src/session/view/account_settings/user_page/mod.rs:245
-#: src/session/view/content/room_details/general_page/mod.rs:255
-msgid "Avatar changed successfully"
-msgstr "Аватар успішно змінено"
-
-#: src/session/view/account_settings/user_page/mod.rs:258
-#: src/session/view/content/room_details/general_page/mod.rs:278
-msgid "Could not load file"
-msgstr "Не вдалось завантажити файл"
-
-#: src/session/view/account_settings/user_page/mod.rs:273
-#: src/session/view/content/room_details/general_page/mod.rs:299
-msgid "Could not upload avatar"
-msgstr "Не вдалося вивантажити аватар"
-
-#: src/session/view/account_settings/user_page/mod.rs:302
-#: src/session/view/content/room_details/general_page/mod.rs:319
-msgid "Could not change avatar"
-msgstr "Не вдалося змінити аватар"
-
-#: src/session/view/account_settings/user_page/mod.rs:318
-#: src/session/view/content/room_details/general_page/mod.rs:343
-msgid "Remove Avatar?"
-msgstr "Вилучити аватар?"
-
-#: src/session/view/account_settings/user_page/mod.rs:319
-msgid "Do you really want to remove your avatar?"
-msgstr "Ви дійсно хочете вилучити ваш аватар?"
-
-#: src/session/view/account_settings/user_page/mod.rs:323
-#: src/session/view/content/room_details/general_page/mod.rs:350
-#: src/session/view/content/room_history/item_row.rs:744
-msgid "Remove"
-msgstr "Вилучити"
-
-#: src/session/view/account_settings/user_page/mod.rs:357
-#: src/session/view/content/room_details/general_page/mod.rs:375
-msgid "Could not remove avatar"
-msgstr "Не вдалося вилучити аватар"
-
-#: src/session/view/account_settings/user_page/mod.rs:396
-msgid "Name changed successfully"
-msgstr "Ім'я успішно змінено"
-
-#: src/session/view/account_settings/user_page/mod.rs:437
-msgid "Could not change display name"
-msgstr "Не вдалося змінити показане ім'я"
-
-#: src/session/view/account_settings/user_page/mod.ui:5
-msgid "General"
-msgstr "Загальні"
-
-#: src/session/view/account_settings/user_page/mod.ui:27
-#: src/session/view/room_creation.ui:54
-msgid "Name"
-msgstr "Ім'я"
-
-#: src/session/view/account_settings/user_page/mod.ui:60
-msgid "Advanced Information"
-msgstr "Додаткова інформація"
-
-#: src/session/view/account_settings/user_page/mod.ui:71
-msgid "Copy homeserver address to clipboard"
-msgstr "Скопіювати адресу домашнього сервера до буфера"
-
-#: src/session/view/account_settings/user_page/mod.ui:82
-msgid "Matrix User ID"
-msgstr "Ідентифікатор користувача Matrix"
-
-#: src/session/view/account_settings/user_page/mod.ui:90
-msgid "Copy Matrix user ID to clipboard"
-msgstr "Скопіювати ідентифікатор користувача Matrix до буфера"
-
-#: src/session/view/account_settings/user_page/mod.ui:101
-msgid "Session ID"
-msgstr "Ідентифікатор сеансу"
-
-#: src/session/view/account_settings/user_page/mod.ui:109
-msgid "Copy session ID to clipboard"
-msgstr "Скопіювати ідентифікатор сеансу до буфера"
 
 #: src/session/view/content/explore/mod.ui:58
 msgid "No rooms matching the search were found"
@@ -1262,7 +1276,7 @@ msgstr "Не вдалося відхилити запрошення до {room}.
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:100
 msgid "Invite"
 msgstr "Запросити"
 
@@ -1368,7 +1382,7 @@ msgstr "Учасник"
 
 #. Translators: As in 'Banned Room Members'.
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:133
 msgid "Banned"
 msgstr "Заблоковано"
 
@@ -1426,20 +1440,21 @@ msgstr "Під час пошуку відповідників сталася п�
 msgid "Could not load the full list of room members"
 msgstr "Не вдалося завантажити повний список учасників кімнати."
 
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
-msgid "Member Menu"
-msgstr "Меню учасника"
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
+#: src/session/view/user_page.rs:148
+#| msgid "Identity verification was started"
+msgid "Identity verified"
+msgstr "Профіль перевірено"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:173
 msgid "Invited Room Members"
 msgstr "Запрошені учасники кімнати"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:174
 msgid "Banned Room Members"
 msgstr "Заблоковані учасники кімнати"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:175
 msgid "Room Members"
 msgstr "Учасники кімнати"
 
@@ -1452,22 +1467,6 @@ msgstr "Увімкнути або вимкнути пошук учасників
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
 msgid "Search for room members"
 msgstr "Пошук учасників в кімнаті"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "Пере_вірити"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "Зробити _модератором"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "Зробити _адміністратором"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "Ви_кинути"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1759,22 +1758,22 @@ msgid "Send Message"
 msgstr "Надіслати повідомлення"
 
 #. Translators: this is a date and a time in 12h format.
-#. For example, "May 5 at 1:20 PM".
+#. For example, "May 5 at 01:20 PM".
 #. Do not change the time format as it will follow the system settings.
-#. Please use `-` before specifiers that add spaces on single digits.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/mod.rs:146
-msgid "%B %-e at %-l∶%M %p"
-msgstr "%-e %B о %-l:%M %p"
+#: src/session/view/content/room_history/member_timestamp/row.rs:147
+#| msgid "%B %-e at %-l∶%M %p"
+msgid "%B %-e at %I∶%M %p"
+msgstr "%-e %B о %I∶%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
-#. Please use `-` before specifiers that add spaces on single digits.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/mod.rs:153
-msgid "%B %-e at %-k∶%M"
-msgstr "%-e %B о %-k:%M"
+#: src/session/view/content/room_history/member_timestamp/row.rs:153
+#| msgid "%B %-e at %-k∶%M"
+msgid "%B %-e at %H∶%M"
+msgstr "%-e %B о %H∶%M"
 
 #: src/session/view/content/room_history/mod.rs:367
 msgid "Error getting file from drop"
@@ -2030,6 +2029,7 @@ msgstr "{user_name} хоче пройти перевірку"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:175
 #: src/session/view/content/verification/identity_verification_widget.ui:57
+#: src/session/view/user_page.ui:96
 msgid "Verify"
 msgstr "Перевірити"
 
@@ -2655,6 +2655,20 @@ msgstr "Не вдалося пересунути {room} з {previous_category} �
 msgid "Failed to forget {room}."
 msgstr "Не вдалося забути про {room}."
 
+#: src/session/view/user_page.rs:155
+#| msgid "Identity verification was started"
+msgid "Identity not verified"
+msgstr "Профіль не пройшов перевірки"
+
+#: src/session/view/user_page.rs:171
+#| msgid "Restart verification"
+msgid "Failed to start user verification"
+msgstr "Не вдалося розпочати перевірку користувача"
+
+#: src/session_list/mod.rs:282
+msgid "Failed to restore previous sessions"
+msgstr "Не вдалося відновити попередні сеанси"
+
 #: src/shortcuts.ui:11
 msgctxt "shortcut window"
 msgid "General"
@@ -2849,9 +2863,23 @@ msgstr ""
 msgid "Leave"
 msgstr "Полишити"
 
-#: src/window.rs:350
-msgid "Failed to restore previous sessions"
-msgstr "Не вдалося відновити попередні сеанси"
+#~ msgid "_Forgot Password?"
+#~ msgstr "За_були пароль?"
+
+#~ msgid "Member Menu"
+#~ msgstr "Меню учасника"
+
+#~ msgid "_Verify"
+#~ msgstr "Пере_вірити"
+
+#~ msgid "Make _Mod"
+#~ msgstr "Зробити _модератором"
+
+#~ msgid "Make _Admin"
+#~ msgstr "Зробити _адміністратором"
+
+#~ msgid "_Kick"
+#~ msgstr "Ви_кинути"
 
 #~ msgid "Session removed successfully."
 #~ msgstr "Сеанс успішно вилучено."
