@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::{DeviceId, UserId};
 use url::Url;
@@ -8,10 +10,16 @@ use crate::{secret::StoredSession, session::model::AvatarData};
 #[boxed_type(name = "BoxedStoredSession")]
 pub struct BoxedStoredSession(pub StoredSession);
 
-mod imp {
-    use std::cell::OnceCell;
+impl Deref for BoxedStoredSession {
+    type Target = StoredSession;
 
-    use once_cell::sync::Lazy;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+mod imp {
+    use std::{cell::OnceCell, marker::PhantomData};
 
     use super::*;
 
@@ -30,10 +38,27 @@ mod imp {
         (klass.as_ref().avatar_data)(this)
     }
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::SessionInfo)]
     pub struct SessionInfo {
         /// The Matrix session's info.
-        pub info: OnceCell<StoredSession>,
+        #[property(get, construct_only)]
+        pub info: OnceCell<BoxedStoredSession>,
+        /// The Matrix session's user ID.
+        #[property(get = Self::user_id)]
+        pub user_id: PhantomData<String>,
+        /// The Matrix session's homeserver.
+        #[property(get = Self::homeserver)]
+        pub homeserver: PhantomData<String>,
+        /// The Matrix session's device ID.
+        #[property(get = Self::device_id)]
+        pub device_id: PhantomData<String>,
+        /// The local session's ID.
+        #[property(get = Self::session_id)]
+        pub session_id: PhantomData<String>,
+        /// The avatar data to represent this session.
+        #[property(get = Self::avatar_data)]
+        pub avatar_data: PhantomData<AvatarData>,
     }
 
     #[glib::object_subclass]
@@ -44,56 +69,38 @@ mod imp {
         type Class = SessionInfoClass;
     }
 
-    impl ObjectImpl for SessionInfo {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoxed::builder::<BoxedStoredSession>("info")
-                        .write_only()
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("user-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("homeserver")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("device-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("session-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<AvatarData>("avatar-data")
-                        .read_only()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for SessionInfo {}
 
-            PROPERTIES.as_ref()
+    impl SessionInfo {
+        /// The Matrix session's info.
+        pub fn info(&self) -> &StoredSession {
+            &self.info.get().unwrap().0
         }
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "info" => self
-                    .info
-                    .set(value.get::<BoxedStoredSession>().unwrap().0)
-                    .unwrap(),
-                _ => unimplemented!(),
-            }
+        /// The Matrix session's user ID.
+        fn user_id(&self) -> String {
+            self.info().user_id.to_string()
         }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
+        /// The Matrix session's homeserver.
+        fn homeserver(&self) -> String {
+            self.info().homeserver.to_string()
+        }
 
-            match pspec.name() {
-                "user-id" => obj.user_id().as_str().to_value(),
-                "homeserver" => obj.homeserver().as_str().to_value(),
-                "device-id" => obj.device_id().as_str().to_value(),
-                "session-id" => obj.session_id().to_value(),
-                "avatar-data" => obj.avatar_data().to_value(),
-                _ => unimplemented!(),
-            }
+        /// The Matrix session's device ID.
+        fn device_id(&self) -> String {
+            self.info().device_id.to_string()
+        }
+
+        /// The local session's ID.
+        fn session_id(&self) -> String {
+            self.info().id().to_owned()
+        }
+
+        /// The avatar data to represent this session.
+        fn avatar_data(&self) -> AvatarData {
+            session_info_avatar_data(&self.obj())
         }
     }
 }
@@ -140,7 +147,7 @@ pub trait SessionInfoExt: 'static {
 
 impl<O: IsA<SessionInfo>> SessionInfoExt for O {
     fn info(&self) -> &StoredSession {
-        self.upcast_ref().imp().info.get().unwrap()
+        self.upcast_ref().imp().info()
     }
 
     fn avatar_data(&self) -> AvatarData {

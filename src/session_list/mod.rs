@@ -20,22 +20,29 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use once_cell::sync::Lazy;
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::SessionList)]
     pub struct SessionList {
         /// The loading state of the list.
+        #[property(get, builder(LoadingState::default()))]
         pub state: Cell<LoadingState>,
         /// The error message, if state is set to `LoadingState::Error`.
+        #[property(get, nullable)]
         pub error: RefCell<Option<String>>,
         /// A map of session ID to session.
         pub list: RefCell<IndexMap<String, SessionInfo>>,
         /// The settings of the sessions.
         pub settings: SessionListSettings,
+        /// Whether this list is empty.
+        #[property(get = Self::is_empty)]
+        pub is_empty: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -45,34 +52,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for SessionList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecEnum::builder::<LoadingState>("state")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("error").read_only().build(),
-                    glib::ParamSpecBoolean::builder("is-empty")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "state" => obj.state().to_value(),
-                "error" => obj.error().to_value(),
-                "is-empty" => obj.is_empty().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for SessionList {}
 
     impl ListModelImpl for SessionList {
         fn item_type(&self) -> glib::Type {
@@ -91,6 +72,13 @@ mod imp {
                 .cloned()
         }
     }
+
+    impl SessionList {
+        /// Whether this list is empty.
+        fn is_empty(&self) -> bool {
+            self.list.borrow().is_empty()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -105,11 +93,6 @@ impl SessionList {
         glib::Object::new()
     }
 
-    /// The loading state of this list.
-    pub fn state(&self) -> LoadingState {
-        self.imp().state.get()
-    }
-
     /// Set the loading state of this list.
     fn set_state(&self, state: LoadingState) {
         if self.state() == state {
@@ -118,11 +101,6 @@ impl SessionList {
 
         self.imp().state.set(state);
         self.notify("state");
-    }
-
-    /// The error message, if `state` is set to `LoadingState::Error`.
-    pub fn error(&self) -> Option<String> {
-        self.imp().error.borrow().clone()
     }
 
     /// Set the error message.
@@ -134,11 +112,6 @@ impl SessionList {
     /// The settings of the sessions.
     pub fn settings(&self) -> &SessionListSettings {
         &self.imp().settings
-    }
-
-    /// Whether this list is empty.
-    pub fn is_empty(&self) -> bool {
-        self.imp().list.borrow().is_empty()
     }
 
     /// Whether any of the sessions are new.
@@ -217,12 +190,6 @@ impl SessionList {
                 self.notify("is-empty");
             }
         }
-    }
-
-    pub fn connect_is_empty_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_notify_local(Some("is-empty"), move |obj, _| {
-            f(obj);
-        })
     }
 
     /// Restore the logged-in sessions.

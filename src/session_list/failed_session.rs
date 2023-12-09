@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
@@ -9,17 +9,27 @@ use crate::{
 
 #[derive(Clone, Debug, glib::Boxed)]
 #[boxed_type(name = "BoxedClientSetupError")]
-struct BoxedClientSetupError(Arc<ClientSetupError>);
+pub struct BoxedClientSetupError(pub Arc<ClientSetupError>);
+
+impl Deref for BoxedClientSetupError {
+    type Target = Arc<ClientSetupError>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 mod imp {
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::cell::OnceCell;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::FailedSession)]
     pub struct FailedSession {
         /// The error encountered when initializing the session.
-        pub error: OnceCell<Arc<ClientSetupError>>,
+        #[property(get, construct_only)]
+        pub error: OnceCell<BoxedClientSetupError>,
         /// The data for the avatar representation for this session.
         pub avatar_data: OnceCell<AvatarData>,
     }
@@ -31,30 +41,8 @@ mod imp {
         type ParentType = SessionInfo;
     }
 
-    impl ObjectImpl for FailedSession {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoxed::builder::<BoxedClientSetupError>("error")
-                        .write_only()
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "error" => self
-                    .error
-                    .set(value.get::<BoxedClientSetupError>().unwrap().0)
-                    .unwrap(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for FailedSession {}
 
     impl SessionInfoImpl for FailedSession {
         fn avatar_data(&self) -> AvatarData {
@@ -82,10 +70,5 @@ impl FailedSession {
             .property("info", BoxedStoredSession(stored_session))
             .property("error", BoxedClientSetupError(Arc::new(error)))
             .build()
-    }
-
-    /// The error of the session.
-    pub fn error(&self) -> Arc<ClientSetupError> {
-        self.imp().error.get().unwrap().clone()
     }
 }

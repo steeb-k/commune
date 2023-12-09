@@ -119,13 +119,13 @@ mod imp {
 
                     self.state_stack.set_visible_child_name("settings");
                 } else {
-                    let user_id = session.user_id().as_str();
+                    let user_id = session.user_id().to_string();
 
                     let avatar_data = AvatarData::new();
-                    avatar_data.set_display_name(Some(user_id.to_owned()));
+                    avatar_data.set_display_name(Some(user_id.clone()));
                     self.avatar.set_data(Some(avatar_data));
 
-                    self.display_name.set_label(user_id);
+                    self.display_name.set_label(&user_id);
                     self.user_id.set_visible(false);
 
                     if let Some(failed) = session.downcast_ref::<FailedSession>() {
