@@ -10,16 +10,17 @@ use crate::utils::BoundObjectWeakRef;
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/account_switcher_popover.ui")]
+    #[properties(wrapper_type = super::AccountSwitcherPopover)]
     pub struct AccountSwitcherPopover {
         #[template_child]
         pub sessions: TemplateChild<gtk::ListBox>,
         /// The model containing the logged-in sessions selection.
+        #[property(get, set = Self::set_session_selection, explicit_notify, nullable)]
         pub session_selection: BoundObjectWeakRef<gtk::SingleSelection>,
         /// The selected row.
         pub selected_row: glib::WeakRef<SessionItemRow>,
@@ -45,36 +46,41 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AccountSwitcherPopover {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gtk::SingleSelection>("session-selection")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session-selection" => self.obj().set_session_selection(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session-selection" => self.obj().session_selection().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for AccountSwitcherPopover {}
 
     impl WidgetImpl for AccountSwitcherPopover {}
     impl PopoverImpl for AccountSwitcherPopover {}
+
+    impl AccountSwitcherPopover {
+        /// Set the model containing the logged-in sessions selection.
+        fn set_session_selection(&self, selection: Option<gtk::SingleSelection>) {
+            if selection == self.session_selection.obj() {
+                return;
+            }
+            let obj = self.obj();
+
+            self.session_selection.disconnect_signals();
+
+            self.sessions.bind_model(selection.as_ref(), |session| {
+                let row = SessionItemRow::new(session.downcast_ref().unwrap());
+                row.upcast()
+            });
+
+            if let Some(selection) = &selection {
+                let selected_handler =
+                    selection.connect_selected_item_notify(clone!(@weak obj => move |selection| {
+                        obj.update_selected_item(selection.selected());
+                    }));
+                obj.update_selected_item(selection.selected());
+
+                self.session_selection
+                    .set(selection, vec![selected_handler]);
+            }
+
+            obj.notify_session_selection();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -86,41 +92,6 @@ glib::wrapper! {
 impl AccountSwitcherPopover {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The model containing the logged-in sessions selection.
-    pub fn session_selection(&self) -> Option<gtk::SingleSelection> {
-        self.imp().session_selection.obj()
-    }
-
-    /// Set the model containing the logged-in sessions selection.
-    pub fn set_session_selection(&self, selection: Option<gtk::SingleSelection>) {
-        let imp = self.imp();
-        let prev_selection = self.session_selection();
-
-        if selection == prev_selection {
-            return;
-        }
-
-        imp.session_selection.disconnect_signals();
-
-        imp.sessions.bind_model(selection.as_ref(), |session| {
-            let row = SessionItemRow::new(session.downcast_ref().unwrap());
-            row.upcast()
-        });
-
-        if let Some(selection) = &selection {
-            let selected_handler = selection.connect_selected_item_notify(
-                clone!(@weak self as obj => move |selection| {
-                    obj.update_selected_item(selection.selected());
-                }),
-            );
-            self.update_selected_item(selection.selected());
-
-            imp.session_selection.set(selection, vec![selected_handler]);
-        }
-
-        self.notify("session-selection");
     }
 
     fn selected_row(&self) -> Option<SessionItemRow> {

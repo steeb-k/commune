@@ -279,6 +279,18 @@ impl<T: glib::ObjectType> Drop for BoundObjectWeakRef<T> {
     }
 }
 
+impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::Property for BoundObjectWeakRef<T> {
+    type Value = Option<T>;
+}
+
+impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObjectWeakRef<T> {
+    type Value = Option<T>;
+
+    fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
+        f(&self.obj())
+    }
+}
+
 /// Helper type to keep track of ongoing async actions that can succeed in
 /// different functions.
 ///

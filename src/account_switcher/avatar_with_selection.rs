@@ -4,18 +4,29 @@ use gtk::{glib, prelude::*, CompositeTemplate};
 use crate::{components::Avatar, session::model::AvatarData};
 
 mod imp {
+    use std::marker::PhantomData;
+
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/avatar_with_selection.ui")]
+    #[properties(wrapper_type = super::AvatarWithSelection)]
     pub struct AvatarWithSelection {
         #[template_child]
         pub child_avatar: TemplateChild<Avatar>,
         #[template_child]
         pub checkmark: TemplateChild<gtk::Image>,
+        /// The [`AvatarData`] displayed by this widget.
+        #[property(get = Self::data, set = Self::set_data, explicit_notify, nullable)]
+        pub data: PhantomData<Option<AvatarData>>,
+        /// The size of the Avatar.
+        #[property(get = Self::size, set = Self::set_size, minimum = -1, default = -1)]
+        pub size: PhantomData<i32>,
+        /// Whether this avatar is selected.
+        #[property(get = Self::is_selected, set = Self::set_selected, explicit_notify)]
+        pub selected: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -33,55 +44,59 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AvatarWithSelection {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<AvatarData>("data")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecInt::builder("size")
-                        .minimum(-1)
-                        .default_value(-1)
-                        .build(),
-                    glib::ParamSpecBoolean::builder("selected")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.set_data(value.get().unwrap()),
-                "size" => obj.set_size(value.get().unwrap()),
-                "selected" => obj.set_selected(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.data().to_value(),
-                "size" => obj.size().to_value(),
-                "selected" => obj.is_selected().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for AvatarWithSelection {}
 
     impl WidgetImpl for AvatarWithSelection {}
     impl BinImpl for AvatarWithSelection {}
+
+    impl AvatarWithSelection {
+        /// Whether this avatar is selected.
+        fn is_selected(&self) -> bool {
+            self.checkmark.get_visible()
+        }
+
+        /// Set whether this avatar is selected.
+        fn set_selected(&self, selected: bool) {
+            if self.is_selected() == selected {
+                return;
+            }
+
+            self.checkmark.set_visible(selected);
+
+            if selected {
+                self.child_avatar.add_css_class("selected-avatar");
+            } else {
+                self.child_avatar.remove_css_class("selected-avatar");
+            }
+
+            self.obj().notify_selected();
+        }
+
+        /// The [`AvatarData`] displayed by this widget.
+        fn data(&self) -> Option<AvatarData> {
+            self.child_avatar.data()
+        }
+
+        /// Set the [`AvatarData`] displayed by this widget.
+        fn set_data(&self, data: Option<AvatarData>) {
+            self.child_avatar.set_data(data);
+        }
+
+        /// The size of the Avatar.
+        fn size(&self) -> i32 {
+            self.child_avatar.size()
+        }
+
+        /// Set the size of the Avatar.
+        fn set_size(&self, size: i32) {
+            self.child_avatar.set_size(size);
+        }
+    }
 }
 
 glib::wrapper! {
-    /// A widget displaying an `Avatar` for a `Room` or `User`.
+    /// A widget displaying an `Avatar` for a `Room` or `User` and an optional selected effect.
     pub struct AvatarWithSelection(ObjectSubclass<imp::AvatarWithSelection>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -91,51 +106,7 @@ impl AvatarWithSelection {
         glib::Object::new()
     }
 
-    /// Set whether this avatar is selected.
-    pub fn set_selected(&self, selected: bool) {
-        let imp = self.imp();
-
-        if self.is_selected() == selected {
-            return;
-        }
-
-        imp.checkmark.set_visible(selected);
-
-        if selected {
-            imp.child_avatar.add_css_class("selected-avatar");
-        } else {
-            imp.child_avatar.remove_css_class("selected-avatar");
-        }
-
-        self.notify("selected");
-    }
-
-    /// Whether this avatar is selected.
-    pub fn is_selected(&self) -> bool {
-        self.imp().checkmark.get_visible()
-    }
-
     pub fn avatar(&self) -> &Avatar {
         &self.imp().child_avatar
-    }
-
-    /// The [`AvatarData`] displayed by this widget.
-    pub fn data(&self) -> Option<AvatarData> {
-        self.avatar().data()
-    }
-
-    /// Set the [`AvatarData`] displayed by this widget.
-    pub fn set_data(&self, data: Option<AvatarData>) {
-        self.avatar().set_data(data);
-    }
-
-    /// The size of the Avatar.
-    pub fn size(&self) -> i32 {
-        self.avatar().size()
-    }
-
-    /// Set the size of the Avatar.
-    pub fn set_size(&self, size: i32) {
-        self.avatar().set_size(size);
     }
 }

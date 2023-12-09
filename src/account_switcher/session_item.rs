@@ -8,15 +8,15 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/account_switcher/session_item.ui")]
+    #[properties(wrapper_type = super::SessionItemRow)]
     pub struct SessionItemRow {
         #[template_child]
         pub avatar: TemplateChild<AvatarWithSelection>,
@@ -29,8 +29,12 @@ mod imp {
         #[template_child]
         pub error_image: TemplateChild<gtk::Image>,
         /// The session this item represents.
+        #[property(get, set = Self::set_session, explicit_notify)]
         pub session: glib::WeakRef<SessionInfo>,
         pub user_bindings: RefCell<Vec<glib::Binding>>,
+        /// Whether this session is selected.
+        #[property(get = Self::is_selected, set = Self::set_selected, explicit_notify)]
+        pub selected: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -49,42 +53,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for SessionItemRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<SessionInfo>("session")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("selected")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
-                "selected" => obj.set_selected(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "selected" => obj.is_selected().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             for binding in self.user_bindings.take() {
                 binding.unbind();
@@ -94,6 +64,84 @@ mod imp {
 
     impl WidgetImpl for SessionItemRow {}
     impl ListBoxRowImpl for SessionItemRow {}
+
+    impl SessionItemRow {
+        /// Whether this session is selected.
+        fn is_selected(&self) -> bool {
+            self.avatar.selected()
+        }
+
+        /// Set whether this session is selected.
+        fn set_selected(&self, selected: bool) {
+            if self.is_selected() == selected {
+                return;
+            }
+
+            self.avatar.set_selected(selected);
+
+            if selected {
+                self.display_name.add_css_class("bold");
+            } else {
+                self.display_name.remove_css_class("bold");
+            }
+
+            self.obj().notify_selected();
+        }
+
+        /// Set the session this item represents.
+        fn set_session(&self, session: Option<&SessionInfo>) {
+            if self.session.upgrade().as_ref() == session {
+                return;
+            }
+
+            for binding in self.user_bindings.take() {
+                binding.unbind();
+            }
+
+            if let Some(session) = session {
+                if let Some(session) = session.downcast_ref::<Session>() {
+                    let user = session.user().unwrap();
+
+                    let avatar_data_handler = user
+                        .bind_property("avatar-data", &*self.avatar, "data")
+                        .sync_create()
+                        .build();
+                    let display_name_handler = user
+                        .bind_property("display-name", &*self.display_name, "label")
+                        .sync_create()
+                        .build();
+                    self.user_bindings
+                        .borrow_mut()
+                        .extend([avatar_data_handler, display_name_handler]);
+
+                    self.user_id.set_label(session.user_id().as_str());
+                    self.user_id.set_visible(true);
+
+                    self.state_stack.set_visible_child_name("settings");
+                } else {
+                    let user_id = session.user_id().as_str();
+
+                    let avatar_data = AvatarData::new();
+                    avatar_data.set_display_name(Some(user_id.to_owned()));
+                    self.avatar.set_data(Some(avatar_data));
+
+                    self.display_name.set_label(user_id);
+                    self.user_id.set_visible(false);
+
+                    if let Some(failed) = session.downcast_ref::<FailedSession>() {
+                        self.error_image
+                            .set_tooltip_text(Some(&failed.error().to_user_facing()));
+                        self.state_stack.set_visible_child_name("error");
+                    } else {
+                        self.state_stack.set_visible_child_name("loading");
+                    }
+                }
+            }
+
+            self.session.set(session);
+            self.obj().notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -106,30 +154,6 @@ glib::wrapper! {
 impl SessionItemRow {
     pub fn new(session: &SessionInfo) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// Set whether this session is selected.
-    pub fn set_selected(&self, selected: bool) {
-        let imp = self.imp();
-
-        if imp.avatar.is_selected() == selected {
-            return;
-        }
-
-        imp.avatar.set_selected(selected);
-
-        if selected {
-            imp.display_name.add_css_class("bold");
-        } else {
-            imp.display_name.remove_css_class("bold");
-        }
-
-        self.notify("selected");
-    }
-
-    /// Whether this session is selected.
-    pub fn is_selected(&self) -> bool {
-        self.imp().avatar.is_selected()
     }
 
     #[template_callback]
@@ -145,65 +169,5 @@ impl SessionItemRow {
             Some(&session.session_id().to_variant()),
         )
         .unwrap();
-    }
-
-    /// The session this item represents.
-    pub fn session(&self) -> Option<SessionInfo> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the session this item represents.
-    pub fn set_session(&self, session: Option<&SessionInfo>) {
-        if self.session().as_ref() == session {
-            return;
-        }
-
-        let imp = self.imp();
-        for binding in imp.user_bindings.take() {
-            binding.unbind();
-        }
-
-        if let Some(session) = session {
-            if let Some(session) = session.downcast_ref::<Session>() {
-                let user = session.user().unwrap();
-
-                let avatar_data_handler = user
-                    .bind_property("avatar-data", &*imp.avatar, "data")
-                    .sync_create()
-                    .build();
-                let display_name_handler = user
-                    .bind_property("display-name", &*imp.display_name, "label")
-                    .sync_create()
-                    .build();
-                imp.user_bindings
-                    .borrow_mut()
-                    .extend([avatar_data_handler, display_name_handler]);
-
-                imp.user_id.set_label(session.user_id().as_str());
-                imp.user_id.set_visible(true);
-
-                imp.state_stack.set_visible_child_name("settings");
-            } else {
-                let user_id = session.user_id().as_str();
-
-                let avatar_data = AvatarData::new();
-                avatar_data.set_display_name(Some(user_id.to_owned()));
-                imp.avatar.set_data(Some(avatar_data));
-
-                imp.display_name.set_label(user_id);
-                imp.user_id.set_visible(false);
-
-                if let Some(failed) = session.downcast_ref::<FailedSession>() {
-                    imp.error_image
-                        .set_tooltip_text(Some(&failed.error().to_user_facing()));
-                    imp.state_stack.set_visible_child_name("error");
-                } else {
-                    imp.state_stack.set_visible_child_name("loading");
-                }
-            }
-        }
-
-        imp.session.set(session);
-        self.notify("session");
     }
 }
