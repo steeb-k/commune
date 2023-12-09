@@ -12,13 +12,13 @@ const GNOME_DESKTOP_NAMESPACE: &str = "org.gnome.desktop.interface";
 mod imp {
     use std::cell::Cell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, glib::Properties)]
+    #[properties(wrapper_type = super::SystemSettings)]
     pub struct SystemSettings {
         /// The clock format setting.
+        #[property(get, builder(ClockFormat::default()))]
         pub clock_format: Cell<ClockFormat>,
     }
 
@@ -49,26 +49,8 @@ mod imp {
         type Type = super::SystemSettings;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for SystemSettings {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecEnum::builder::<ClockFormat>("clock-format")
-                    .read_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "clock-format" => obj.clock_format().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -154,11 +136,6 @@ impl SystemSettings {
                 }
             }
         }).await;
-    }
-
-    /// The clock format setting.
-    pub fn clock_format(&self) -> ClockFormat {
-        self.imp().clock_format.get()
     }
 
     /// Set the clock format setting.
