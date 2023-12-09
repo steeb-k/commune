@@ -271,7 +271,7 @@ impl SessionVerification {
                 label.set_label(&gettext("You need to set up an encryption identity, since this is the first time you logged into your account."));
                 setup_btn.add_css_class("suggested-action");
                 setup_btn.remove_css_class("destructive-action");
-                setup_btn.set_label(&gettext("Set Up"));
+                setup_btn.set_label(gettext("Set Up"));
                 restart_btn.set_visible(false);
                 bootstrap_can_restart.set(false);
             }
@@ -279,7 +279,7 @@ impl SessionVerification {
                 label.set_label(&gettext("No other devices are available to verify this session. You can either restore cross-signing from another device and restart this process or reset the encryption identity."));
                 setup_btn.remove_css_class("suggested-action");
                 setup_btn.add_css_class("destructive-action");
-                setup_btn.set_label(&gettext("Reset"));
+                setup_btn.set_label(gettext("Reset"));
                 restart_btn.set_visible(true);
                 bootstrap_can_restart.set(false);
             }
@@ -287,7 +287,7 @@ impl SessionVerification {
                 label.set_label(&gettext("If you lost access to all other sessions, you can create a new encryption identity. Be careful because this will cancel the verifications of all users and sessions."));
                 setup_btn.remove_css_class("suggested-action");
                 setup_btn.add_css_class("destructive-action");
-                setup_btn.set_label(&gettext("Reset"));
+                setup_btn.set_label(gettext("Reset"));
                 restart_btn.set_visible(false);
                 bootstrap_can_restart.set(true);
             }

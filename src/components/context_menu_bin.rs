@@ -1,6 +1,5 @@
 use adw::subclass::prelude::*;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
-use tracing::debug;
 
 mod imp {
     use std::cell::RefCell;
@@ -24,13 +23,16 @@ mod imp {
         (klass.as_ref().menu_opened)(this)
     }
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/context_menu_bin.ui")]
+    #[properties(wrapper_type = super::ContextMenuBin)]
     pub struct ContextMenuBin {
         #[template_child]
         pub click_gesture: TemplateChild<gtk::GestureClick>,
         #[template_child]
         pub long_press_gesture: TemplateChild<gtk::GestureLongPress>,
+        /// The popover displaying the context menu.
+        #[property(get, set = Self::set_popover, explicit_notify, nullable)]
         pub popover: RefCell<Option<gtk::PopoverMenu>>,
         pub signal_handler: RefCell<Option<SignalHandlerId>>,
     }
@@ -74,34 +76,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ContextMenuBin {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gtk::PopoverMenu>("popover")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "popover" => self.obj().set_popover(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "popover" => self.obj().popover().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             let obj = self.obj();
 
@@ -127,14 +103,50 @@ mod imp {
 
         fn dispose(&self) {
             if let Some(popover) = self.popover.take() {
-                popover.unparent()
+                if let Some(handler) = self.signal_handler.take() {
+                    popover.disconnect(handler);
+                }
+
+                popover.unparent();
             }
         }
     }
 
     impl WidgetImpl for ContextMenuBin {}
-
     impl BinImpl for ContextMenuBin {}
+
+    impl ContextMenuBin {
+        /// Set the popover displaying the context menu.
+        fn set_popover(&self, popover: Option<gtk::PopoverMenu>) {
+            if self.popover.borrow().as_ref() == popover.as_ref() {
+                return;
+            }
+
+            let obj = self.obj();
+
+            if let Some(popover) = &popover {
+                popover.unparent();
+                popover.set_parent(&*obj);
+
+                self.signal_handler
+                    .replace(Some(popover.connect_parent_notify(
+                        clone!(@weak obj => move |popover| {
+                            if popover.parent().as_ref() != Some(obj.upcast_ref()) {
+                                let imp = obj.imp();
+                                if let Some(popover) = imp.popover.take() {
+                                    if let Some(signal_handler) = imp.signal_handler.take() {
+                                        popover.disconnect(signal_handler)
+                                    }
+                                }
+                            }
+                        }),
+                    )));
+            }
+
+            self.popover.replace(popover);
+            obj.notify_popover();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -145,11 +157,9 @@ glib::wrapper! {
 
 impl ContextMenuBin {
     fn open_menu_at(&self, x: i32, y: i32) {
-        debug!("Open menu at ({x}, {y})");
         self.menu_opened();
 
         if let Some(popover) = self.popover() {
-            debug!("Context menu was activated");
             popover.set_pointing_to(Some(&gdk::Rectangle::new(x, y, 0, 0)));
             popover.popup();
         }
@@ -169,38 +179,11 @@ pub trait ContextMenuBinExt: 'static {
 
 impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
     fn popover(&self) -> Option<gtk::PopoverMenu> {
-        self.upcast_ref().imp().popover.borrow().clone()
+        self.upcast_ref().popover()
     }
 
     fn set_popover(&self, popover: Option<gtk::PopoverMenu>) {
-        let obj = self.upcast_ref();
-
-        if obj.popover() == popover {
-            return;
-        }
-
-        let imp = obj.imp();
-
-        if let Some(popover) = &popover {
-            popover.unparent();
-            popover.set_parent(obj);
-            imp.signal_handler
-                .replace(Some(popover.connect_parent_notify(
-                    clone!(@weak obj => move |popover| {
-                        if popover.parent().as_ref() != Some(obj.upcast_ref()) {
-                            let imp = obj.imp();
-                            if let Some(popover) = imp.popover.take() {
-                                if let Some(signal_handler) = imp.signal_handler.take() {
-                                    popover.disconnect(signal_handler)
-                                }
-                            }
-                        }
-                    }),
-                )));
-        }
-
-        obj.imp().popover.replace(popover);
-        obj.notify("popover");
+        self.upcast_ref().set_popover(popover);
     }
 
     fn menu_opened(&self) {

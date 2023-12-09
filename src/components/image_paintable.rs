@@ -38,26 +38,34 @@ impl From<image::Frame> for Frame {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use once_cell::sync::Lazy;
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Default)]
+    #[derive(Default, glib::Properties)]
+    #[properties(wrapper_type = super::ImagePaintable)]
     pub struct ImagePaintable {
         /// The frames of the animation, if any.
         pub frames: RefCell<Option<Vec<Frame>>>,
-
         /// The image if this is not an animation, otherwise this is the next
         /// frame to display.
         pub frame: RefCell<Option<gdk::Texture>>,
-
         /// The current index in the animation.
         pub current_idx: Cell<usize>,
-
         /// The source ID of the timeout to load the next frame, if any.
         pub timeout_source_id: RefCell<Option<glib::SourceId>>,
+        /// Whether this image is an animation.
+        #[property(get = Self::is_animation)]
+        pub is_animation: PhantomData<bool>,
+        /// The width of this image.
+        #[property(get = Self::intrinsic_width, default = -1)]
+        pub width: PhantomData<i32>,
+        /// The height of this image.
+        #[property(get = Self::intrinsic_height, default = -1)]
+        pub height: PhantomData<i32>,
     }
 
     #[glib::object_subclass]
@@ -67,38 +75,8 @@ mod imp {
         type Interfaces = (gdk::Paintable,);
     }
 
-    impl ObjectImpl for ImagePaintable {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("is-animation")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecInt::builder("width")
-                        .default_value(-1)
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecInt::builder("height")
-                        .default_value(-1)
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "is-animation" => obj.is_animation().to_value(),
-                "width" => obj.intrinsic_width().to_value(),
-                "height" => obj.intrinsic_height().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for ImagePaintable {}
 
     impl PaintableImpl for ImagePaintable {
         fn intrinsic_height(&self) -> i32 {
@@ -149,6 +127,13 @@ mod imp {
                     snapshot.to_paintable(None)
                 })
                 .expect("there should be a fallback paintable")
+        }
+    }
+
+    impl ImagePaintable {
+        /// Whether this image is an animation.
+        fn is_animation(&self) -> bool {
+            self.frames.borrow().is_some()
         }
     }
 }
@@ -353,11 +338,6 @@ impl ImagePaintable {
             new_idx = 0;
         }
         imp.current_idx.set(new_idx);
-    }
-
-    /// Whether this `ImagePaintable` displays an animation.
-    pub fn is_animation(&self) -> bool {
-        self.imp().frames.borrow().is_some()
     }
 
     /// Get the current frame of this `ImagePaintable`, if any.

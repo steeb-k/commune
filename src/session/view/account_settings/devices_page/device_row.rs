@@ -103,9 +103,9 @@ mod imp {
             match &obj.is_current_device() {
                 false => self
                     .delete_logout_button
-                    .set_label(&gettext("Disconnect Session")),
+                    .set_label(gettext("Disconnect Session")),
                 true => {
-                    self.delete_logout_button.set_label(&gettext("Log Out"));
+                    self.delete_logout_button.set_label(gettext("Log Out"));
                     self.delete_logout_button
                         .add_css_class("destructive-action");
                 }

@@ -1,6 +1,10 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::{components::Avatar, prelude::*, session::model::Member};
+use crate::{
+    components::Avatar,
+    prelude::*,
+    session::model::{AvatarData, Member},
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -99,7 +103,7 @@ impl CompletionRow {
             imp.display_name.set_label(&member.display_name());
             imp.id.set_label(member.user_id().as_str());
         } else {
-            imp.avatar.set_data(None);
+            imp.avatar.set_data(Option::<AvatarData>::None);
             imp.display_name.set_label("");
             imp.id.set_label("");
         }

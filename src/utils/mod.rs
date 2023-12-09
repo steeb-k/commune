@@ -206,6 +206,18 @@ impl<T: glib::ObjectType> Drop for BoundObject<T> {
     }
 }
 
+impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::Property for BoundObject<T> {
+    type Value = Option<T>;
+}
+
+impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObject<T> {
+    type Value = Option<T>;
+
+    fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
+        f(&self.obj())
+    }
+}
+
 /// Wrapper to manage a bound object.
 ///
 /// This keeps a weak reference to the object.

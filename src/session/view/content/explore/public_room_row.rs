@@ -140,8 +140,7 @@ impl PublicRoomRow {
                 self.set_child(Some(&child));
             }
             if let Some(matrix_public_room) = public_room.matrix_public_room() {
-                imp.avatar
-                    .set_data(Some(public_room.avatar_data().clone().upcast()));
+                imp.avatar.set_data(Some(public_room.avatar_data().clone()));
 
                 let display_name = matrix_public_room
                     .name
@@ -208,9 +207,9 @@ impl PublicRoomRow {
         let button = &self.imp().button;
         if public_room.room().is_some() {
             // Translators: This is a verb, as in 'View Room'.
-            button.set_label(&gettext("View"));
+            button.set_label(gettext("View"));
         } else {
-            button.set_label(&gettext("Join"));
+            button.set_label(gettext("Join"));
         }
 
         button.set_loading(public_room.is_pending());

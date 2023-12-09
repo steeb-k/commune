@@ -4,18 +4,22 @@ use gtk::{glib, prelude::*, CompositeTemplate};
 use crate::session::model::{AvatarData, AvatarImage};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/avatar.ui")]
+    #[properties(wrapper_type = super::Avatar)]
     pub struct Avatar {
-        /// A `Room` or `User`
+        /// The [`AvatarData`] displayed by this widget.
+        #[property(get, set = Self::set_data, explicit_notify, nullable)]
         pub data: RefCell<Option<AvatarData>>,
+        /// The size of the Avatar.
+        #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
+        pub size: PhantomData<i32>,
         #[template_child]
         pub avatar: TemplateChild<adw::Avatar>,
     }
@@ -38,44 +42,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Avatar {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<AvatarData>("data")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecInt::builder("size")
-                        .minimum(-1)
-                        .default_value(-1)
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.set_data(value.get().unwrap()),
-                "size" => obj.set_size(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.data().to_value(),
-                "size" => obj.size().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -94,6 +62,45 @@ mod imp {
             None
         }
     }
+
+    impl Avatar {
+        /// The size of the Avatar.
+        fn size(&self) -> i32 {
+            self.avatar.size()
+        }
+
+        /// Set the size of the Avatar.
+        fn set_size(&self, size: i32) {
+            if self.size() == size {
+                return;
+            }
+
+            self.avatar.set_size(size);
+
+            let obj = self.obj();
+            if obj.is_mapped() {
+                obj.request_custom_avatar();
+            }
+
+            obj.notify_size();
+        }
+
+        /// Set the [`AvatarData`] displayed by this widget.
+        fn set_data(&self, data: Option<AvatarData>) {
+            if self.data.borrow().as_ref() == data.as_ref() {
+                return;
+            }
+
+            self.data.replace(data);
+
+            let obj = self.obj();
+            if obj.is_mapped() {
+                obj.request_custom_avatar();
+            }
+
+            obj.notify_data();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -105,48 +112,6 @@ glib::wrapper! {
 impl Avatar {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Set the size of the Avatar.
-    pub fn set_size(&self, size: i32) {
-        if self.size() == size {
-            return;
-        }
-
-        self.imp().avatar.set_size(size);
-
-        if self.is_mapped() {
-            self.request_custom_avatar();
-        }
-
-        self.notify("size");
-    }
-
-    /// Set the [`AvatarData`] displayed by this widget.
-    pub fn set_data(&self, data: Option<AvatarData>) {
-        let imp = self.imp();
-
-        if *imp.data.borrow() == data {
-            return;
-        }
-
-        imp.data.replace(data);
-
-        if self.is_mapped() {
-            self.request_custom_avatar();
-        }
-
-        self.notify("data");
-    }
-
-    /// The size of the Avatar.
-    pub fn size(&self) -> i32 {
-        self.imp().avatar.size()
-    }
-
-    /// The [`AvatarData`] displayed by this widget.
-    pub fn data(&self) -> Option<AvatarData> {
-        self.imp().data.borrow().clone()
     }
 
     fn request_custom_avatar(&self) {

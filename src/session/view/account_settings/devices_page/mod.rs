@@ -108,7 +108,7 @@ impl DevicesPage {
                         device_item::ItemType::Device(device) => DeviceRow::new(device, false).upcast(),
                         device_item::ItemType::Error(error) => {
                             let row = LoadingRow::new();
-                            row.set_error(Some(error));
+                            row.set_error(Some(error.clone()));
                             row.connect_retry(clone!(@weak device_list => move|_| {
                                 device_list.load_devices()
                             }));
@@ -162,7 +162,7 @@ impl DevicesPage {
             device_item::ItemType::Device(device) => DeviceRow::new(device, true).upcast(),
             device_item::ItemType::Error(error) => {
                 let row = LoadingRow::new();
-                row.set_error(Some(error));
+                row.set_error(Some(error.clone()));
                 row.connect_retry(clone!(@weak device_list => move|_| {
                     device_list.load_devices()
                 }));

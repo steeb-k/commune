@@ -39,18 +39,23 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/action_button.ui")]
+    #[properties(wrapper_type = super::ActionButton)]
     pub struct ActionButton {
         /// The icon used in the default state.
+        #[property(get, set = Self::set_icon_name, explicit_notify)]
         pub icon_name: RefCell<String>,
         /// The extra classes applied to the button in the default state.
         pub extra_classes: RefCell<Vec<String>>,
         /// The action emitted by the button.
+        #[property(get = Self::action_name, set = Self::set_action_name, override_interface = gtk::Actionable)]
         pub action_name: RefCell<Option<glib::GString>>,
         /// The target value of the action of the button.
-        pub action_target_value: RefCell<Option<glib::Variant>>,
+        #[property(get = Self::action_target_value, set = Self::set_action_target, override_interface = gtk::Actionable)]
+        pub action_target: RefCell<Option<glib::Variant>>,
         /// The state of the button.
+        #[property(get, set = Self::set_state, explicit_notify, builder(ActionState::default()))]
         pub state: Cell<ActionState>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -70,6 +75,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
+
             klass.set_css_name("action-button");
         }
 
@@ -78,52 +84,12 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ActionButton {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("clicked").build()]);
             SIGNALS.as_ref()
-        }
-
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("icon-name")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<ActionState>("state")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecOverride::for_interface::<gtk::Actionable>("action-name"),
-                    glib::ParamSpecOverride::for_interface::<gtk::Actionable>("action-target"),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "icon-name" => obj.set_icon_name(value.get().unwrap()),
-                "state" => obj.set_state(value.get().unwrap()),
-                "action-name" => obj.set_action_name(value.get().unwrap()),
-                "action-target" => obj.set_action_target_value(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "icon-name" => obj.icon_name().to_value(),
-                "state" => obj.state().to_value(),
-                "action-name" => obj.action_name().to_value(),
-                "action-target" => obj.action_target_value().to_value(),
-                _ => unimplemented!(),
-            }
         }
     }
 
@@ -136,7 +102,7 @@ mod imp {
         }
 
         fn action_target_value(&self) -> Option<glib::Variant> {
-            self.action_target_value.borrow().clone()
+            self.action_target.borrow().clone()
         }
 
         fn set_action_name(&self, name: Option<&str>) {
@@ -144,8 +110,35 @@ mod imp {
         }
 
         fn set_action_target_value(&self, value: Option<&glib::Variant>) {
-            self.action_target_value
-                .replace(value.map(ToOwned::to_owned));
+            self.set_action_target(value.map(ToOwned::to_owned));
+        }
+    }
+
+    impl ActionButton {
+        /// Set the icon used in the default state.
+        fn set_icon_name(&self, icon_name: &str) {
+            if self.icon_name.borrow().as_str() == icon_name {
+                return;
+            }
+
+            self.icon_name.replace(icon_name.to_owned());
+            self.obj().notify_icon_name();
+        }
+
+        /// Set the state of the button.
+        fn set_state(&self, state: ActionState) {
+            if self.state.get() == state {
+                return;
+            }
+
+            self.stack.set_visible_child_name(state.as_ref());
+            self.state.replace(state);
+            self.obj().notify_state();
+        }
+
+        /// Set the target value of the action of the button.
+        fn set_action_target(&self, value: Option<glib::Variant>) {
+            self.action_target.replace(value);
         }
     }
 }
@@ -160,21 +153,6 @@ glib::wrapper! {
 impl ActionButton {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The icon used in the default state.
-    pub fn icon_name(&self) -> String {
-        self.imp().icon_name.borrow().clone()
-    }
-
-    /// Set the icon used in the default state.
-    pub fn set_icon_name(&self, icon_name: &str) {
-        if self.icon_name() == icon_name {
-            return;
-        }
-
-        self.imp().icon_name.replace(icon_name.to_owned());
-        self.notify("icon-name");
     }
 
     pub fn extra_classes(&self) -> Vec<String> {
@@ -194,23 +172,6 @@ impl ActionButton {
         self.imp()
             .extra_classes
             .replace(classes.iter().map(ToString::to_string).collect());
-    }
-
-    /// The state of the button.
-    pub fn state(&self) -> ActionState {
-        self.imp().state.get()
-    }
-
-    /// Set the state of the button.
-    pub fn set_state(&self, state: ActionState) {
-        if self.state() == state {
-            return;
-        }
-
-        let imp = self.imp();
-        imp.stack.set_visible_child_name(state.as_ref());
-        imp.state.replace(state);
-        self.notify("state");
     }
 
     pub fn connect_clicked<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {

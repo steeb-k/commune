@@ -4,17 +4,30 @@ pub const DEFAULT_PLACEHOLDER: &str = "<widget>";
 const OBJECT_REPLACEMENT_CHARACTER: &str = "\u{FFFC}";
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::LabelWithWidgets)]
     pub struct LabelWithWidgets {
         pub widgets: RefCell<Vec<gtk::Widget>>,
         pub widgets_sizes: RefCell<Vec<(i32, i32)>>,
-        pub label: gtk::Label,
+        pub child: gtk::Label,
+        /// The placeholder that is replaced by the widgets.
+        #[property(get, set = Self::set_placeholder, explicit_notify, nullable)]
         pub placeholder: RefCell<Option<String>>,
-        pub text: RefCell<Option<String>>,
+        /// The text of the label.
+        #[property(get, set = Self::set_label, explicit_notify, nullable)]
+        pub label: RefCell<Option<String>>,
+        /// Whether the label includes Pango markup.
+        #[property(get = Self::uses_markup, set = Self::set_use_markup)]
+        pub use_markup: PhantomData<bool>,
+        /// Whether the label should be ellipsized.
+        #[property(get, set = Self::set_ellipsize, explicit_notify)]
         pub ellipsize: Cell<bool>,
     }
 
@@ -26,67 +39,23 @@ mod imp {
         type Interfaces = (gtk::Buildable,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for LabelWithWidgets {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("label")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecString::builder("placeholder")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("use-markup")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("ellipsize")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "label" => obj.set_label(value.get().unwrap()),
-                "placeholder" => obj.set_placeholder(value.get().unwrap()),
-                "use-markup" => obj.set_use_markup(value.get().unwrap()),
-                "ellipsize" => obj.set_ellipsize(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "label" => obj.label().to_value(),
-                "placeholder" => obj.placeholder().to_value(),
-                "use-markup" => obj.uses_markup().to_value(),
-                "ellipsize" => obj.ellipsize().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
 
-            let label = &self.label;
-            label.set_parent(&*obj);
-            label.set_wrap(true);
-            label.set_wrap_mode(pango::WrapMode::WordChar);
-            label.set_xalign(0.0);
-            label.set_valign(gtk::Align::Start);
+            let child = &self.child;
+            child.set_parent(&*obj);
+            child.set_wrap(true);
+            child.set_wrap_mode(pango::WrapMode::WordChar);
+            child.set_xalign(0.0);
+            child.set_valign(gtk::Align::Start);
         }
 
         fn dispose(&self) {
-            self.label.unparent();
+            self.child.unparent();
+
             for widget in self.widgets.borrow().iter() {
                 widget.unparent();
             }
@@ -96,16 +65,16 @@ mod imp {
     impl WidgetImpl for LabelWithWidgets {
         fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             self.obj().allocate_shapes();
-            self.label.measure(orientation, for_size)
+            self.child.measure(orientation, for_size)
         }
 
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
-            self.label.allocate(width, height, baseline, None);
+            self.child.allocate(width, height, baseline, None);
             self.obj().allocate_children();
         }
 
         fn request_mode(&self) -> gtk::SizeRequestMode {
-            self.label.request_mode()
+            self.child.request_mode()
         }
     }
 
@@ -116,6 +85,57 @@ mod imp {
             } else {
                 self.parent_add_child(builder, child, type_)
             }
+        }
+    }
+
+    impl LabelWithWidgets {
+        /// Set the text of the label.
+        fn set_label(&self, label: Option<String>) {
+            if self.label.borrow().as_ref() == label.as_ref() {
+                return;
+            }
+
+            self.label.replace(label);
+
+            let obj = self.obj();
+            obj.update_label();
+            obj.notify_label();
+        }
+
+        /// Set the placeholder that is replaced with widgets.
+        fn set_placeholder(&self, placeholder: Option<String>) {
+            if self.placeholder.borrow().as_ref() == placeholder.as_ref() {
+                return;
+            }
+
+            self.placeholder.replace(placeholder);
+
+            let obj = self.obj();
+            obj.update_label();
+            obj.notify_placeholder();
+        }
+
+        /// Whether the label includes Pango markup.
+        fn uses_markup(&self) -> bool {
+            self.child.uses_markup()
+        }
+
+        /// Set whether the label includes Pango markup.
+        fn set_use_markup(&self, use_markup: bool) {
+            self.child.set_use_markup(use_markup);
+        }
+
+        /// Sets whether the text of the label should be ellipsized.
+        fn set_ellipsize(&self, ellipsize: bool) {
+            if self.ellipsize.get() == ellipsize {
+                return;
+            }
+
+            self.ellipsize.set(true);
+
+            let obj = self.obj();
+            obj.update_label();
+            obj.notify_ellipsize();
         }
     }
 }
@@ -170,44 +190,6 @@ impl LabelWithWidgets {
         self.imp().widgets.borrow().to_owned()
     }
 
-    /// Set the text of the label.
-    pub fn set_label(&self, label: Option<String>) {
-        let imp = self.imp();
-
-        if imp.text.borrow().as_ref() == label.as_ref() {
-            return;
-        }
-
-        imp.text.replace(label);
-        self.update_label();
-        self.notify("label");
-    }
-
-    /// The text of the label.
-    pub fn label(&self) -> Option<String> {
-        self.imp().text.borrow().to_owned()
-    }
-
-    /// Set the placeholder that is replaced with widgets.
-    pub fn set_placeholder(&self, placeholder: Option<String>) {
-        let imp = self.imp();
-
-        if imp.placeholder.borrow().as_ref() == placeholder.as_ref() {
-            return;
-        }
-
-        imp.placeholder.replace(placeholder);
-        self.update_label();
-        self.notify("placeholder");
-    }
-
-    /// The placeholder that is replaced with widgets.
-    ///
-    /// Defaults to `<widget>`.
-    pub fn placeholder(&self) -> Option<String> {
-        self.imp().placeholder.borrow().to_owned()
-    }
-
     fn invalidate_child_widgets(&self) {
         self.imp().widgets_sizes.borrow_mut().clear();
         self.allocate_shapes();
@@ -217,14 +199,14 @@ impl LabelWithWidgets {
     fn allocate_shapes(&self) {
         let imp = self.imp();
 
-        if imp.text.borrow().as_ref().map_or(true, |s| s.is_empty()) {
+        if imp.label.borrow().as_ref().map_or(true, |s| s.is_empty()) {
             // No need to compute shapes if the label is empty.
             return;
         }
 
         if imp.widgets.borrow().is_empty() {
             // There should be no attributes if there are no widgets.
-            imp.label.set_attributes(None);
+            imp.child.set_attributes(None);
             return;
         }
 
@@ -252,7 +234,7 @@ impl LabelWithWidgets {
 
         let attrs = pango::AttrList::new();
         for (i, (start_index, _)) in imp
-            .label
+            .child
             .text()
             .as_str()
             .match_indices(OBJECT_REPLACEMENT_CHARACTER)
@@ -274,7 +256,7 @@ impl LabelWithWidgets {
                 break;
             }
         }
-        imp.label.set_attributes(Some(&attrs));
+        imp.child.set_attributes(Some(&attrs));
     }
 
     fn allocate_children(&self) {
@@ -282,7 +264,7 @@ impl LabelWithWidgets {
         let widgets = imp.widgets.borrow();
         let widgets_sizes = imp.widgets_sizes.borrow();
 
-        let mut run_iter = imp.label.layout().iter();
+        let mut run_iter = imp.child.layout().iter();
         let mut i = 0;
         loop {
             if let Some(run) = run_iter.run_readonly() {
@@ -298,7 +280,7 @@ impl LabelWithWidgets {
                         let (_, mut extents) = run_iter.run_extents();
                         pango::extents_to_pixels(Some(&mut extents), None);
 
-                        let (offset_x, offset_y) = imp.label.layout_offsets();
+                        let (offset_x, offset_y) = imp.child.layout_offsets();
                         let allocation = gtk::Allocation::new(
                             extents.x() + offset_x,
                             extents.y() + offset_y,
@@ -318,39 +300,13 @@ impl LabelWithWidgets {
         }
     }
 
-    /// Whether the label's text is interpreted as Pango markup.
-    pub fn uses_markup(&self) -> bool {
-        self.imp().label.uses_markup()
-    }
-
-    /// Sets whether the text of the label contains markup.
-    pub fn set_use_markup(&self, use_markup: bool) {
-        self.imp().label.set_use_markup(use_markup);
-    }
-
-    /// Whether the text of the label is ellipsized.
-    pub fn ellipsize(&self) -> bool {
-        self.imp().ellipsize.get()
-    }
-
-    /// Sets whether the text of the label should be ellipsized.
-    pub fn set_ellipsize(&self, ellipsize: bool) {
-        if self.ellipsize() == ellipsize {
-            return;
-        }
-
-        self.imp().ellipsize.set(true);
-        self.update_label();
-        self.notify("ellipsize");
-    }
-
     fn update_label(&self) {
         let imp = self.imp();
-        let old_label = imp.label.text();
-        let old_ellipsize = imp.label.ellipsize() == pango::EllipsizeMode::End;
+        let old_label = imp.child.text();
+        let old_ellipsize = imp.child.ellipsize() == pango::EllipsizeMode::End;
         let new_ellipsize = self.ellipsize();
 
-        let new_label = if let Some(label) = imp.text.borrow().as_ref() {
+        let new_label = if let Some(label) = imp.label.borrow().as_ref() {
             let placeholder = imp.placeholder.borrow();
             let placeholder = placeholder.as_deref().unwrap_or(DEFAULT_PLACEHOLDER);
             let label = label.replace(placeholder, OBJECT_REPLACEMENT_CHARACTER);
@@ -372,14 +328,14 @@ impl LabelWithWidgets {
             if new_ellipsize {
                 // Workaround: if both wrap and ellipsize are set, and there are
                 // widgets inserted, GtkLabel reports an erroneous minimum width.
-                imp.label.set_wrap(false);
-                imp.label.set_ellipsize(pango::EllipsizeMode::End);
+                imp.child.set_wrap(false);
+                imp.child.set_ellipsize(pango::EllipsizeMode::End);
             } else {
-                imp.label.set_wrap(true);
-                imp.label.set_ellipsize(pango::EllipsizeMode::None);
+                imp.child.set_wrap(true);
+                imp.child.set_ellipsize(pango::EllipsizeMode::None);
             }
 
-            imp.label.set_label(&new_label);
+            imp.child.set_label(&new_label);
             self.invalidate_child_widgets();
         }
     }

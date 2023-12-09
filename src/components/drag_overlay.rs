@@ -1,19 +1,27 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
-mod imp {
-    use std::cell::RefCell;
+use crate::utils::BoundObject;
 
-    use once_cell::sync::Lazy;
+mod imp {
+    use std::marker::PhantomData;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::DragOverlay)]
     pub struct DragOverlay {
         pub overlay: gtk::Overlay,
         pub revealer: gtk::Revealer,
         pub status: adw::StatusPage,
-        pub drop_target: RefCell<Option<gtk::DropTarget>>,
-        pub handler_id: RefCell<Option<glib::SignalHandlerId>>,
+        /// The title of this `DragOverlay`.
+        #[property(get = Self::title, set = Self::set_title)]
+        pub title: PhantomData<glib::GString>,
+        /// The child of this `DragOverlay`.
+        #[property(get = Self::child, set = Self::set_child, nullable)]
+        pub child: PhantomData<Option<gtk::Widget>>,
+        /// The [`gtk::DropTarget`] of this `DragOverlay`.
+        #[property(get, set = Self::set_drop_target)]
+        pub drop_target: BoundObject<gtk::DropTarget>,
     }
 
     #[glib::object_subclass]
@@ -28,42 +36,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for DragOverlay {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("title").build(),
-                    glib::ParamSpecObject::builder::<gtk::Widget>("child").build(),
-                    glib::ParamSpecObject::builder::<gtk::DropTarget>("drop-target")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "title" => obj.title().to_value(),
-                "child" => obj.child().to_value(),
-                "drop-target" => obj.drop_target().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "title" => obj.set_title(value.get().unwrap()),
-                "child" => obj.set_child(value.get().ok().as_ref()),
-                "drop-target" => obj.set_drop_target(value.get().unwrap()),
-                _ => unimplemented!(),
-            };
-        }
-
         fn constructed(&self) {
             let obj = self.obj();
 
@@ -95,9 +69,58 @@ mod imp {
     }
 
     impl WidgetImpl for DragOverlay {}
+
+    impl DragOverlay {
+        /// The title of this `DragOverlay`.
+        pub fn title(&self) -> glib::GString {
+            self.status.title()
+        }
+
+        /// Set the title of this `DragOverlay`.
+        pub fn set_title(&self, title: &str) {
+            self.status.set_title(title)
+        }
+
+        /// The child of this `DragOverlay`.
+        pub fn child(&self) -> Option<gtk::Widget> {
+            self.overlay.child()
+        }
+
+        /// Set the child of this `DragOverlay`.
+        pub fn set_child(&self, child: Option<&gtk::Widget>) {
+            self.overlay.set_child(child)
+        }
+
+        /// Set the [`gtk::DropTarget`] of this `DragOverlay`.
+        fn set_drop_target(&self, drop_target: gtk::DropTarget) {
+            let obj = self.obj();
+
+            if let Some(target) = self.drop_target.obj() {
+                obj.remove_controller(&target);
+            }
+            self.drop_target.disconnect_signals();
+
+            let handler_id = drop_target.connect_current_drop_notify(
+                clone!(@weak self.revealer as revealer => move |target| {
+                    let reveal = target.current_drop().is_some();
+
+                    if reveal {
+                        revealer.set_visible(true);
+                    }
+
+                    revealer.set_reveal_child(reveal);
+                }),
+            );
+
+            obj.add_controller(drop_target.clone());
+            self.drop_target.set(drop_target, vec![handler_id]);
+            obj.notify_drop_target();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A widget displaying an overlay when something is dragged onto it.
     pub struct DragOverlay(ObjectSubclass<imp::DragOverlay>)
         @extends gtk::Widget;
 }
@@ -106,59 +129,10 @@ impl DragOverlay {
     pub fn new() -> Self {
         glib::Object::new()
     }
+}
 
-    /// The title of this `DragOverlay`.
-    pub fn title(&self) -> String {
-        self.imp().status.title().into()
-    }
-
-    /// Set the title of this `DragOverlay`.
-    pub fn set_title(&self, title: &str) {
-        self.imp().status.set_title(title)
-    }
-
-    /// The child of this `DragOverlay`.
-    pub fn child(&self) -> Option<gtk::Widget> {
-        self.imp().overlay.child()
-    }
-
-    /// Set the child of this `DragOverlay`.
-    pub fn set_child(&self, child: Option<&gtk::Widget>) {
-        self.imp().overlay.set_child(child)
-    }
-
-    /// The [`gtk::DropTarget`] of this `DragOverlay`.
-    pub fn drop_target(&self) -> Option<gtk::DropTarget> {
-        self.imp().drop_target.borrow().clone()
-    }
-
-    /// Set the [`gtk::DropTarget`] of this `DragOverlay`.
-    pub fn set_drop_target(&self, drop_target: gtk::DropTarget) {
-        let imp = self.imp();
-
-        if let Some(target) = imp.drop_target.borrow_mut().take() {
-            self.remove_controller(&target);
-
-            if let Some(handler_id) = imp.handler_id.borrow_mut().take() {
-                target.disconnect(handler_id);
-            }
-        }
-
-        let handler_id = drop_target.connect_current_drop_notify(
-            clone!(@weak imp.revealer as revealer => move |target| {
-                let reveal = target.current_drop().is_some();
-
-                if reveal {
-                    revealer.set_visible(true);
-                }
-
-                revealer.set_reveal_child(reveal);
-            }),
-        );
-        imp.handler_id.replace(Some(handler_id));
-
-        self.add_controller(drop_target.clone());
-        imp.drop_target.replace(Some(drop_target));
-        self.notify("drop-target");
+impl Default for DragOverlay {
+    fn default() -> Self {
+        Self::new()
     }
 }

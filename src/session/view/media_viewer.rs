@@ -214,7 +214,7 @@ mod imp {
 
             self.revealer
                 .connect_transition_done(clone!(@weak obj => move |revealer| {
-                    if !revealer.reveals_child() {
+                    if !revealer.reveal_child() {
                         obj.set_visible(false);
                     }
                 }));
@@ -298,7 +298,8 @@ impl MediaViewer {
         imp.menu.grab_focus();
 
         imp.swipe_progress.set(0.0);
-        imp.revealer.set_source_widget(Some(source_widget));
+        imp.revealer
+            .set_source_widget(Some(source_widget.upcast_ref()));
         imp.revealer.set_reveal_child(true);
 
         let animation = imp.animation.get().unwrap();

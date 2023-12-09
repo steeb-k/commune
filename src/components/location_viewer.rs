@@ -9,18 +9,20 @@ mod imp {
     use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/location_viewer.ui")]
+    #[properties(wrapper_type = super::LocationViewer)]
     pub struct LocationViewer {
         #[template_child]
         pub map: TemplateChild<shumate::SimpleMap>,
         #[template_child]
         pub marker_img: TemplateChild<gtk::Image>,
         pub marker: shumate::Marker,
+        /// Whether to display this location in a compact format.
+        #[property(get, set = Self::set_compact, explicit_notify)]
         pub compact: Cell<bool>,
     }
 
@@ -32,6 +34,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_css_name("location-viewer");
         }
 
@@ -40,31 +43,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for LocationViewer {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::builder("compact")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "compact" => self.obj().set_compact(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "compact" => self.obj().compact().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.marker.set_child(Some(&*self.marker_img));
 
@@ -78,7 +58,7 @@ mod imp {
             marker_layer.add_marker(&self.marker);
             self.map.add_overlay_layer(&marker_layer);
 
-            // Hide the scale
+            // Hide the scale.
             self.map.scale().unwrap().set_visible(false);
             self.parent_constructed();
         }
@@ -86,10 +66,27 @@ mod imp {
 
     impl WidgetImpl for LocationViewer {}
     impl BinImpl for LocationViewer {}
+
+    impl LocationViewer {
+        /// Set the compact format of this location.
+        fn set_compact(&self, compact: bool) {
+            if self.compact.get() == compact {
+                return;
+            }
+
+            self.map.set_show_zoom_buttons(!compact);
+            if let Some(license) = self.map.license() {
+                license.set_visible(!compact);
+            }
+
+            self.compact.set(compact);
+            self.obj().notify_compact();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// A widget displaying a location message in the timeline.
+    /// A widget displaying a location.
     pub struct LocationViewer(ObjectSubclass<imp::LocationViewer>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -98,27 +95,6 @@ impl LocationViewer {
     /// Create a new location message.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Whether to display this location in a compact format.
-    pub fn compact(&self) -> bool {
-        self.imp().compact.get()
-    }
-
-    /// Set the compact format of this location.
-    pub fn set_compact(&self, compact: bool) {
-        if self.compact() == compact {
-            return;
-        }
-
-        let map = &self.imp().map;
-        map.set_show_zoom_buttons(!compact);
-        if let Some(license) = map.license() {
-            license.set_visible(!compact);
-        }
-
-        self.imp().compact.set(compact);
-        self.notify("compact");
     }
 
     // Move the map viewport to the provided coordinates and draw a marker.

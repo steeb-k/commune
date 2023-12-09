@@ -1,22 +1,25 @@
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, prelude::*, CompositeTemplate};
 
+use crate::utils::BoundObject;
+
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/audio_player.ui")]
+    #[properties(wrapper_type = super::AudioPlayer)]
     pub struct AudioPlayer {
         /// The media file to play.
-        pub media_file: RefCell<Option<gtk::MediaFile>>,
+        #[property(get, set = Self::set_media_file, explicit_notify, nullable)]
+        pub media_file: BoundObject<gtk::MediaFile>,
         /// Whether to play the media automatically.
+        #[property(get, set = Self::set_autoplay, explicit_notify)]
         pub autoplay: Cell<bool>,
-        pub autoplay_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -34,48 +37,49 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AudioPlayer {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gtk::MediaFile>("media-file")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("autoplay")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "media-file" => {
-                    obj.set_media_file(value.get().unwrap());
-                }
-                "autoplay" => obj.set_autoplay(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "media-file" => obj.media_file().to_value(),
-                "autoplay" => obj.autoplay().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for AudioPlayer {}
 
     impl WidgetImpl for AudioPlayer {}
-
     impl BinImpl for AudioPlayer {}
+
+    impl AudioPlayer {
+        /// Set the media_file to play.
+        fn set_media_file(&self, media_file: Option<gtk::MediaFile>) {
+            if self.media_file.obj() == media_file {
+                return;
+            }
+
+            self.media_file.disconnect_signals();
+
+            if let Some(media_file) = media_file {
+                let mut handlers = Vec::new();
+
+                if self.autoplay.get() {
+                    let prepared_handler = media_file.connect_prepared_notify(|media_file| {
+                        if media_file.is_prepared() {
+                            media_file.play()
+                        }
+                    });
+                    handlers.push(prepared_handler);
+                }
+
+                self.media_file.set(media_file, handlers);
+            }
+
+            self.obj().notify_media_file();
+        }
+
+        /// Set whether to play the media automatically.
+        fn set_autoplay(&self, autoplay: bool) {
+            if self.autoplay.get() == autoplay {
+                return;
+            }
+
+            self.autoplay.set(autoplay);
+            self.obj().notify_autoplay();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -90,60 +94,11 @@ impl AudioPlayer {
         glib::Object::new()
     }
 
-    /// The media file that is playing.
-    pub fn media_file(&self) -> Option<gtk::MediaFile> {
-        self.imp().media_file.borrow().clone()
-    }
-
-    /// Set the media_file to play.
-    pub fn set_media_file(&self, media_file: Option<gtk::MediaFile>) {
-        if self.media_file() == media_file {
-            return;
-        }
-
-        let imp = self.imp();
-
-        if let Some(media_file) = imp.media_file.take() {
-            if let Some(handler_id) = imp.autoplay_handler.take() {
-                media_file.disconnect(handler_id);
-            }
-        }
-
-        if self.autoplay() {
-            if let Some(media_file) = &media_file {
-                imp.autoplay_handler
-                    .replace(Some(media_file.connect_prepared_notify(|media_file| {
-                        if media_file.is_prepared() {
-                            media_file.play()
-                        }
-                    })));
-            }
-        }
-
-        imp.media_file.replace(media_file);
-        self.notify("media-file");
-    }
-
     /// Set the file to play.
     ///
     /// This is a convenience method that calls
     /// [`AudioPlayer::set_media_file()`].
     pub fn set_file(&self, file: Option<&gio::File>) {
         self.set_media_file(file.map(gtk::MediaFile::for_file));
-    }
-
-    /// Whether to play the media automatically.
-    pub fn autoplay(&self) -> bool {
-        self.imp().autoplay.get()
-    }
-
-    /// Set whether to play the media automatically.
-    pub fn set_autoplay(&self, autoplay: bool) {
-        if self.autoplay() == autoplay {
-            return;
-        }
-
-        self.imp().autoplay.set(autoplay);
-        self.notify("autoplay");
     }
 }

@@ -4,14 +4,18 @@ use gst_play::{subclass::prelude::*, Play, PlayVideoRenderer};
 use gtk::{gdk, glib, prelude::*};
 
 mod imp {
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::{cell::OnceCell, marker::PhantomData};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::VideoPlayerRenderer)]
     pub struct VideoPlayerRenderer {
         /// The sink to use to display the video.
         pub sink: OnceCell<PaintableSink>,
+        /// The [`gdk::Paintable`] to render the video into.
+        #[property(get = Self::paintable)]
+        pub paintable: PhantomData<gdk::Paintable>,
     }
 
     #[glib::object_subclass]
@@ -21,26 +25,8 @@ mod imp {
         type Interfaces = (PlayVideoRenderer,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for VideoPlayerRenderer {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gdk::Paintable>("paintable")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "paintable" => self.obj().paintable().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.sink.set(PaintableSink::new(None)).unwrap();
         }
@@ -49,6 +35,13 @@ mod imp {
     impl PlayVideoRendererImpl for VideoPlayerRenderer {
         fn create_video_sink(&self, _player: &Play) -> gst::Element {
             self.sink.get().unwrap().to_owned().upcast()
+        }
+    }
+
+    impl VideoPlayerRenderer {
+        /// The [`gdk::Paintable`] to render the video into.
+        fn paintable(&self) -> gdk::Paintable {
+            self.sink.get().unwrap().property("paintable")
         }
     }
 }
@@ -63,9 +56,10 @@ impl VideoPlayerRenderer {
     pub fn new() -> Self {
         glib::Object::new()
     }
+}
 
-    /// The GdkPaintable to render the video into.
-    pub fn paintable(&self) -> gdk::Paintable {
-        self.imp().sink.get().unwrap().property("paintable")
+impl Default for VideoPlayerRenderer {
+    fn default() -> Self {
+        Self::new()
     }
 }

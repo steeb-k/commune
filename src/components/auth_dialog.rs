@@ -28,7 +28,7 @@ pub enum AuthError {
     #[error(transparent)]
     ServerResponse(#[from] Error),
 
-    /// The ID of the session is missing for a stage that requires it.
+    /// The ID of the UIAA session is missing for a stage that requires it.
     #[error("The ID of the session is missing")]
     MissingSessionId,
 
@@ -40,6 +40,10 @@ pub enum AuthError {
     /// The user cancelled the authentication.
     #[error("The user cancelled the authentication")]
     UserCancelled,
+
+    /// The parent `Session` could not be upgraded.
+    #[error("The session could not be upgraded")]
+    NoSession,
 }
 
 mod imp {
@@ -54,9 +58,12 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/auth_dialog.ui")]
+    #[properties(wrapper_type = super::AuthDialog)]
     pub struct AuthDialog {
+        #[property(get, set, construct_only)]
+        /// The parent session.
         pub session: WeakRef<Session>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -97,31 +104,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for AuthDialog {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.session.set(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -154,6 +138,7 @@ mod imp {
             SIGNALS.as_ref()
         }
     }
+
     impl WidgetImpl for AuthDialog {}
     impl WindowImpl for AuthDialog {}
     impl AdwWindowImpl for AuthDialog {}
@@ -175,11 +160,6 @@ impl AuthDialog {
             .build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
     /// Authenticates the user to the server via an authentication flow.
     ///
     /// The type of flow and the required stages are negotiated at time of
@@ -192,7 +172,10 @@ impl AuthDialog {
         &self,
         callback: FN,
     ) -> Result<Response, AuthError> {
-        let client = self.session().client();
+        let Some(client) = self.session().map(|s| s.client()) else {
+            return Err(AuthError::NoSession);
+        };
+
         let mut auth_data = None;
 
         loop {
@@ -222,8 +205,11 @@ impl AuthDialog {
                 .flat_map(|flow| flow.stages.get(stage_nr))
                 .collect();
 
-            let session = uiaa_info.session;
-            auth_data = Some(self.perform_next_stage(&session, &possible_stages).await?);
+            let uiaa_session = uiaa_info.session;
+            auth_data = Some(
+                self.perform_next_stage(&uiaa_session, &possible_stages)
+                    .await?,
+            );
         }
     }
 
@@ -232,17 +218,17 @@ impl AuthDialog {
     /// Stages that Fractal actually implements are preferred.
     async fn perform_next_stage(
         &self,
-        session: &Option<String>,
+        uiaa_session: &Option<String>,
         stages: &[&AuthType],
     ) -> Result<AuthData, AuthError> {
         // Default to first stage if non is supported.
         let a_stage = stages.first().ok_or(AuthError::NoStageToChoose)?;
         for stage in stages {
-            if let Some(auth_result) = self.try_perform_stage(session, stage).await {
+            if let Some(auth_result) = self.try_perform_stage(uiaa_session, stage).await {
                 return auth_result;
             }
         }
-        self.perform_fallback(session.clone(), a_stage).await
+        self.perform_fallback(uiaa_session.clone(), a_stage).await
     }
 
     /// Tries to perform the given stage.
@@ -250,13 +236,13 @@ impl AuthDialog {
     /// Returns None if the stage is not implemented by Fractal.
     async fn try_perform_stage(
         &self,
-        session: &Option<String>,
+        uiaa_session: &Option<String>,
         stage: &AuthType,
     ) -> Option<Result<AuthData, AuthError>> {
         match stage {
-            AuthType::Password => Some(self.perform_password_stage(session.clone()).await),
-            AuthType::Sso => Some(self.perform_fallback(session.clone(), stage).await),
-            AuthType::Dummy => Some(self.perform_dummy_stage(session.clone())),
+            AuthType::Password => Some(self.perform_password_stage(uiaa_session.clone()).await),
+            AuthType::Sso => Some(self.perform_fallback(uiaa_session.clone(), stage).await),
+            AuthType::Dummy => Some(self.perform_dummy_stage(uiaa_session.clone())),
             // TODO implement other authentication types
             // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/835
             _ => None,
@@ -264,43 +250,54 @@ impl AuthDialog {
     }
 
     /// Performs the password stage.
-    async fn perform_password_stage(&self, session: Option<String>) -> Result<AuthData, AuthError> {
+    async fn perform_password_stage(
+        &self,
+        uiaa_session: Option<String>,
+    ) -> Result<AuthData, AuthError> {
+        let Some(session) = self.session() else {
+            return Err(AuthError::NoSession);
+        };
+
         let stack = &self.imp().stack;
         stack.set_visible_child_name(AuthType::Password.as_ref());
         self.show_and_wait_for_response().await?;
 
-        let user_id = self.session().user().unwrap().user_id().to_string();
+        let user_id = session.user().unwrap().user_id().to_string();
         let password = self.imp().password.text().to_string();
 
         let data = assign!(
             Password::new(UserIdentifier::UserIdOrLocalpart(user_id), password),
-            { session }
+            { session: uiaa_session }
         );
 
         Ok(AuthData::Password(data))
     }
 
     /// Performs the dummy stage.
-    fn perform_dummy_stage(&self, session: Option<String>) -> Result<AuthData, AuthError> {
-        Ok(AuthData::Dummy(assign!(Dummy::new(), { session })))
+    fn perform_dummy_stage(&self, uiaa_session: Option<String>) -> Result<AuthData, AuthError> {
+        Ok(AuthData::Dummy(
+            assign!(Dummy::new(), { session: uiaa_session }),
+        ))
     }
 
     /// Performs a web-based fallback for the given stage.
     async fn perform_fallback(
         &self,
-        session: Option<String>,
+        uiaa_session: Option<String>,
         stage: &AuthType,
     ) -> Result<AuthData, AuthError> {
-        let session = session.ok_or(AuthError::MissingSessionId)?;
+        let Some(client) = self.session().map(|s| s.client()) else {
+            return Err(AuthError::NoSession);
+        };
+        let uiaa_session = uiaa_session.ok_or(AuthError::MissingSessionId)?;
 
-        let client = self.session().client();
         let homeserver = client.homeserver();
         self.imp().stack.set_visible_child_name("fallback");
-        self.setup_fallback_page(homeserver.as_str(), stage.as_ref(), &session);
+        self.setup_fallback_page(homeserver.as_str(), stage.as_ref(), &uiaa_session);
         self.show_and_wait_for_response().await?;
 
         Ok(AuthData::FallbackAcknowledgement(
-            FallbackAcknowledgement::new(session),
+            FallbackAcknowledgement::new(uiaa_session),
         ))
     }
 
@@ -336,7 +333,7 @@ impl AuthDialog {
         imp.error.set_visible(visible);
     }
 
-    fn setup_fallback_page(&self, homeserver: &str, auth_type: &str, session: &str) {
+    fn setup_fallback_page(&self, homeserver: &str, auth_type: &str, uiaa_session: &str) {
         let imp = self.imp();
 
         if let Some(handler) = imp.open_browser_btn_handler.take() {
@@ -344,7 +341,7 @@ impl AuthDialog {
         }
 
         let uri = format!(
-            "{homeserver}_matrix/client/r0/auth/{auth_type}/fallback/web?session={session}"
+            "{homeserver}_matrix/client/r0/auth/{auth_type}/fallback/web?session={uiaa_session}"
         );
 
         let handler = imp

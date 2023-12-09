@@ -14,10 +14,12 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/button_row.ui")]
+    #[properties(wrapper_type = super::ButtonRow)]
     pub struct ButtonRow {
         /// Whether activating this button opens a subpage.
+        #[property(get, set = Self::set_to_subpage, explicit_notify)]
         pub to_subpage: Cell<bool>,
     }
 
@@ -36,35 +38,12 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ButtonRow {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("activated").build()]);
             SIGNALS.as_ref()
-        }
-
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::builder("to-subpage")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "to-subpage" => self.obj().set_to_subpage(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "to-subpage" => self.obj().to_subpage().to_value(),
-                _ => unimplemented!(),
-            }
         }
 
         fn constructed(&self) {
@@ -81,9 +60,22 @@ mod imp {
             });
         }
     }
+
     impl WidgetImpl for ButtonRow {}
     impl ListBoxRowImpl for ButtonRow {}
     impl PreferencesRowImpl for ButtonRow {}
+
+    impl ButtonRow {
+        /// Set whether activating this button opens a subpage.
+        fn set_to_subpage(&self, to_subpage: bool) {
+            if self.to_subpage.get() == to_subpage {
+                return;
+            }
+
+            self.to_subpage.replace(to_subpage);
+            self.obj().notify_to_subpage();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -95,21 +87,6 @@ glib::wrapper! {
 impl ButtonRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Whether activating this button opens a subpage.
-    pub fn to_subpage(&self) -> bool {
-        self.imp().to_subpage.get()
-    }
-
-    /// Set whether activating this button opens a subpage.
-    pub fn set_to_subpage(&self, to_subpage: bool) {
-        if self.to_subpage() == to_subpage {
-            return;
-        }
-
-        self.imp().to_subpage.replace(to_subpage);
-        self.notify("to-subpage");
     }
 
     pub fn connect_activated<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {

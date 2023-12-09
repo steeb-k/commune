@@ -8,8 +8,11 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Badge)]
     pub struct Badge {
+        /// The power level displayed by this badge.
+        #[property(get, set = Self::set_power_level, explicit_notify, builder().minimum(POWER_LEVEL_MIN).maximum(POWER_LEVEL_MAX))]
         pub power_level: Cell<PowerLevel>,
     }
 
@@ -20,34 +23,8 @@ mod imp {
         type ParentType = adw::Bin;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Badge {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecInt64::builder("power-level")
-                    .minimum(POWER_LEVEL_MIN)
-                    .maximum(POWER_LEVEL_MAX)
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "power-level" => self.obj().set_power_level(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "power-level" => self.obj().power_level().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -60,6 +37,17 @@ mod imp {
 
     impl WidgetImpl for Badge {}
     impl BinImpl for Badge {}
+
+    impl Badge {
+        /// Set the power level this badge displays.
+        fn set_power_level(&self, power_level: PowerLevel) {
+            let obj = self.obj();
+            obj.update_badge(power_level);
+
+            self.power_level.set(power_level);
+            obj.notify_power_level();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -74,18 +62,6 @@ glib::wrapper! {
 impl Badge {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The power level this badge displays.
-    pub fn power_level(&self) -> PowerLevel {
-        self.imp().power_level.get()
-    }
-
-    /// Set the power level this badge displays.
-    pub fn set_power_level(&self, power_level: PowerLevel) {
-        self.update_badge(power_level);
-        self.imp().power_level.set(power_level);
-        self.notify("power-level");
     }
 
     fn update_badge(&self, power_level: PowerLevel) {

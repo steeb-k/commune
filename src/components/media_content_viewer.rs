@@ -42,14 +42,15 @@ mod imp {
     use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/media_content_viewer.ui")]
+    #[properties(wrapper_type = super::MediaContentViewer)]
     pub struct MediaContentViewer {
         /// Whether to play the media content automatically.
+        #[property(get, construct_only)]
         pub autoplay: Cell<bool>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -77,31 +78,8 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MediaContentViewer {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::builder("autoplay")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "autoplay" => self.obj().set_autoplay(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "autoplay" => self.obj().autoplay().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MediaContentViewer {}
 
     impl WidgetImpl for MediaContentViewer {}
     impl BinImpl for MediaContentViewer {}
@@ -133,21 +111,6 @@ impl MediaContentViewer {
                 stream.seek(0);
             }
         }
-    }
-
-    /// Whether to play the media content automatically.
-    pub fn autoplay(&self) -> bool {
-        self.imp().autoplay.get()
-    }
-
-    /// Set whether to play the media content automatically.
-    fn set_autoplay(&self, autoplay: bool) {
-        if self.autoplay() == autoplay {
-            return;
-        }
-
-        self.imp().autoplay.set(autoplay);
-        self.notify("autoplay");
     }
 
     /// Show the loading screen.

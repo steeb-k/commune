@@ -9,12 +9,15 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/room_title.ui")]
+    #[properties(wrapper_type = super::RoomTitle)]
     pub struct RoomTitle {
-        // The markup for the title
+        // The title of the room.
+        #[property(get, set = Self::set_title, explicit_notify)]
         pub title: RefCell<Option<String>>,
-        // The markup for the subtitle
+        // The subtitle of the room.
+        #[property(get, set = Self::set_subtitle, explicit_notify)]
         pub subtitle: RefCell<Option<String>>,
         #[template_child]
         pub title_label: TemplateChild<gtk::Label>,
@@ -30,6 +33,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_css_name("roomtitle");
         }
 
@@ -38,53 +42,48 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for RoomTitle {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("title")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecString::builder("subtitle")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "title" => obj.title().to_value(),
-                "subtitle" => obj.subtitle().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "title" => obj.set_title(value.get().unwrap()),
-                "subtitle" => obj.set_subtitle(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for RoomTitle {}
 
     impl WidgetImpl for RoomTitle {}
     impl BinImpl for RoomTitle {}
+
+    impl RoomTitle {
+        /// Set the title of the room.
+        fn set_title(&self, title: Option<String>) {
+            // Parse and escape markup in title.
+            let title = title.map(|s| markup(&s));
+
+            if *self.title.borrow() == title {
+                return;
+            }
+
+            self.title.replace(title);
+            self.title_label.set_visible(self.title.borrow().is_some());
+
+            self.obj().notify_title();
+        }
+
+        /// Set the subtitle of the room.
+        pub fn set_subtitle(&self, subtitle: Option<String>) {
+            // Parse and escape markup in subtitle.
+            let subtitle = subtitle.map(|s| markup(&s));
+
+            if *self.subtitle.borrow() == subtitle {
+                return;
+            }
+
+            self.subtitle.replace(subtitle);
+            self.subtitle_label
+                .set_visible(self.subtitle.borrow().is_some());
+
+            self.obj().notify_subtitle();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A widget to show a room's title and topic in a header bar.
     pub struct RoomTitle(ObjectSubclass<imp::RoomTitle>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -93,45 +92,10 @@ impl RoomTitle {
     pub fn new() -> Self {
         glib::Object::new()
     }
+}
 
-    /// Set the title of the room.
-    pub fn set_title(&self, title: Option<String>) {
-        let imp = self.imp();
-        // Parse and escape markup in title
-        let title = title.map(|s| markup(&s));
-        // If there's an existing title, check that current title and new title aren't
-        // equal
-        if imp.title.borrow().as_deref() != title.as_deref() {
-            imp.title.replace(title);
-            imp.title_label.set_visible(imp.title.borrow().is_some());
-        }
-
-        self.notify("title");
-    }
-
-    /// The title of the room.
-    pub fn title(&self) -> Option<String> {
-        self.imp().title.borrow().clone()
-    }
-
-    /// Set the subtitle of the room.
-    pub fn set_subtitle(&self, subtitle: Option<String>) {
-        let imp = self.imp();
-        // Parse and escape markup in subtitle
-        let subtitle = subtitle.map(|s| markup(&s));
-        // If there's an existing subtitle, check that current subtitle and new subtitle
-        // aren't equal
-        if imp.subtitle.borrow().as_deref() != subtitle.as_deref() {
-            imp.subtitle.replace(subtitle);
-            imp.subtitle_label
-                .set_visible(imp.subtitle.borrow().is_some());
-        }
-
-        self.notify("subtitle");
-    }
-
-    /// The subtitle of the room.
-    pub fn subtitle(&self) -> Option<String> {
-        self.imp().subtitle.borrow().clone()
+impl Default for RoomTitle {
+    fn default() -> Self {
+        Self::new()
     }
 }

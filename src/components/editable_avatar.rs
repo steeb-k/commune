@@ -41,14 +41,18 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/editable_avatar.ui")]
+    #[properties(wrapper_type = super::EditableAvatar)]
     pub struct EditableAvatar {
         /// The [`AvatarData`] to display.
+        #[property(get, set = Self::set_data, explicit_notify)]
         pub data: RefCell<Option<AvatarData>>,
         /// Whether this avatar is changeable.
+        #[property(get, set = Self::set_editable, explicit_notify)]
         pub editable: Cell<bool>,
         /// The current state of the edit.
+        #[property(get, set = Self::set_state, explicit_notify, builder(EditableAvatarState::default()))]
         pub state: Cell<EditableAvatarState>,
         /// The state of the avatar edit.
         pub edit_state: Cell<ActionState>,
@@ -61,6 +65,7 @@ mod imp {
         /// Whether the remove button is sensitive.
         pub remove_sensitive: Cell<bool>,
         /// A temporary image to show instead of the avatar.
+        #[property(get)]
         pub temp_image: RefCell<Option<gdk::Paintable>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -95,6 +100,7 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for EditableAvatar {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
@@ -106,50 +112,6 @@ mod imp {
                 ]
             });
             SIGNALS.as_ref()
-        }
-
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<AvatarData>("data")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("editable")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<ActionState>("state")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gdk::Paintable>("temp-image")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.set_data(value.get().unwrap()),
-                "editable" => obj.set_editable(value.get().unwrap()),
-                "state" => obj.set_state(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.data().to_value(),
-                "editable" => obj.editable().to_value(),
-                "state" => obj.state().to_value(),
-                "temp-image" => obj.temp_image().to_value(),
-                _ => unimplemented!(),
-            }
         }
 
         fn constructed(&self) {
@@ -172,8 +134,83 @@ mod imp {
     }
 
     impl WidgetImpl for EditableAvatar {}
-
     impl BinImpl for EditableAvatar {}
+
+    impl EditableAvatar {
+        /// Set the [`AvatarData`] to display.
+        fn set_data(&self, data: Option<AvatarData>) {
+            if self.data.borrow().as_ref() == data.as_ref() {
+                return;
+            }
+
+            self.data.replace(data);
+            self.obj().notify_data();
+        }
+
+        /// Set whether this avatar is editable.
+        fn set_editable(&self, editable: bool) {
+            if self.editable.get() == editable {
+                return;
+            }
+
+            self.editable.set(editable);
+            self.obj().notify_editable();
+        }
+
+        /// Set the state of the edit.
+        fn set_state(&self, state: EditableAvatarState) {
+            if self.state.get() == state {
+                return;
+            }
+            let obj = self.obj();
+
+            match state {
+                EditableAvatarState::Default => {
+                    obj.show_temp_image(false);
+                    obj.set_edit_state(ActionState::Default);
+                    obj.set_edit_sensitive(true);
+                    obj.set_remove_state(ActionState::Default);
+                    obj.set_remove_sensitive(true);
+
+                    obj.set_temp_image_from_file(None);
+                }
+                EditableAvatarState::EditInProgress => {
+                    obj.show_temp_image(true);
+                    obj.set_edit_state(ActionState::Loading);
+                    obj.set_edit_sensitive(true);
+                    obj.set_remove_state(ActionState::Default);
+                    obj.set_remove_sensitive(false);
+                }
+                EditableAvatarState::EditSuccessful => {
+                    obj.show_temp_image(false);
+                    obj.set_edit_sensitive(true);
+                    obj.set_remove_state(ActionState::Default);
+                    obj.set_remove_sensitive(true);
+
+                    obj.set_temp_image_from_file(None);
+
+                    // Animation for success.
+                    obj.set_edit_state(ActionState::Success);
+                    glib::timeout_add_local_once(
+                        Duration::from_secs(2),
+                        clone!(@weak obj => move || {
+                            obj.set_state(EditableAvatarState::Default);
+                        }),
+                    );
+                }
+                EditableAvatarState::RemovalInProgress => {
+                    obj.show_temp_image(true);
+                    obj.set_edit_state(ActionState::Default);
+                    obj.set_edit_sensitive(false);
+                    obj.set_remove_state(ActionState::Loading);
+                    obj.set_remove_sensitive(true);
+                }
+            }
+
+            self.state.set(state);
+            obj.notify_state();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -185,97 +222,6 @@ glib::wrapper! {
 impl EditableAvatar {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The [`AvatarData`] to display.
-    pub fn data(&self) -> Option<AvatarData> {
-        self.imp().data.borrow().to_owned()
-    }
-
-    /// Set the [`AvatarData`] to display.
-    pub fn set_data(&self, data: Option<AvatarData>) {
-        if self.data() == data {
-            return;
-        }
-
-        self.imp().data.replace(data);
-        self.notify("data");
-    }
-
-    /// Whether this avatar is editable.
-    pub fn editable(&self) -> bool {
-        self.imp().editable.get()
-    }
-
-    /// Set whether this avatar is editable.
-    pub fn set_editable(&self, editable: bool) {
-        if self.editable() == editable {
-            return;
-        }
-
-        self.imp().editable.set(editable);
-        self.notify("editable");
-    }
-
-    /// The state of the edit.
-    pub fn state(&self) -> EditableAvatarState {
-        self.imp().state.get()
-    }
-
-    /// Set the state of the edit.
-    ///
-    /// This is public for debugging purposes, the other methods to change state
-    /// should be preferred.
-    pub fn set_state(&self, state: EditableAvatarState) {
-        if self.state() == state {
-            return;
-        }
-
-        match state {
-            EditableAvatarState::Default => {
-                self.show_temp_image(false);
-                self.set_edit_state(ActionState::Default);
-                self.set_edit_sensitive(true);
-                self.set_remove_state(ActionState::Default);
-                self.set_remove_sensitive(true);
-
-                self.set_temp_image_from_file(None);
-            }
-            EditableAvatarState::EditInProgress => {
-                self.show_temp_image(true);
-                self.set_edit_state(ActionState::Loading);
-                self.set_edit_sensitive(true);
-                self.set_remove_state(ActionState::Default);
-                self.set_remove_sensitive(false);
-            }
-            EditableAvatarState::EditSuccessful => {
-                self.show_temp_image(false);
-                self.set_edit_sensitive(true);
-                self.set_remove_state(ActionState::Default);
-                self.set_remove_sensitive(true);
-
-                self.set_temp_image_from_file(None);
-
-                // Animation for success.
-                self.set_edit_state(ActionState::Success);
-                glib::timeout_add_local_once(
-                    Duration::from_secs(2),
-                    clone!(@weak self as obj => move || {
-                        obj.set_state(EditableAvatarState::Default);
-                    }),
-                );
-            }
-            EditableAvatarState::RemovalInProgress => {
-                self.show_temp_image(true);
-                self.set_edit_state(ActionState::Default);
-                self.set_edit_sensitive(false);
-                self.set_remove_state(ActionState::Loading);
-                self.set_remove_sensitive(true);
-            }
-        }
-
-        self.imp().state.set(state);
-        self.notify("state");
     }
 
     /// Reset the state of the avatar.
@@ -360,11 +306,6 @@ impl EditableAvatar {
         }
 
         self.imp().remove_sensitive.set(sensitive);
-    }
-
-    /// The temporary image to show instead of the avatar.
-    pub fn temp_image(&self) -> Option<gdk::Paintable> {
-        self.imp().temp_image.borrow().clone()
     }
 
     fn set_temp_image_from_file(&self, file: Option<&gio::File>) {

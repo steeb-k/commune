@@ -17,22 +17,21 @@ mod imp {
 
     use super::*;
 
-    #[derive(Default)]
+    #[derive(Default, glib::Properties)]
+    #[properties(wrapper_type = super::OverlappingAvatars)]
     pub struct OverlappingAvatars {
         /// The child avatars.
         pub avatars: RefCell<Vec<adw::Bin>>,
-
         /// The size of the avatars.
+        #[property(get, set = Self::set_avatar_size, explicit_notify)]
         pub avatar_size: Cell<i32>,
-
         /// The maximum number of avatars to display.
         ///
         /// `0` means that all avatars are displayed.
+        #[property(get, set = Self::set_max_avatars, explicit_notify)]
         pub max_avatars: Cell<u32>,
-
         /// The list model that is bound, if any.
         pub bound_model: BoundObject<gio::ListModel>,
-
         /// The method used to extract `AvatarData` from the items of the list
         /// model, if any.
         pub extract_avatar_data_fn: RefCell<Option<Box<ExtractAvatarDataFn>>>,
@@ -49,43 +48,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for OverlappingAvatars {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecInt::builder("avatar-size")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecUInt::builder("max-avatars")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "avatar-size" => obj.set_avatar_size(value.get().unwrap()),
-                "max-avatars" => obj.set_max_avatars(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "avatar-size" => obj.avatar_size().to_value(),
-                "max-avatars" => obj.max_avatars().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             for avatar in self.avatars.take() {
                 avatar.unparent();
@@ -152,6 +116,61 @@ mod imp {
             None
         }
     }
+
+    impl OverlappingAvatars {
+        /// Set the size of the avatars.
+        fn set_avatar_size(&self, size: i32) {
+            if self.avatar_size.get() == size {
+                return;
+            }
+            let obj = self.obj();
+
+            self.avatar_size.set(size);
+            obj.notify_avatar_size();
+
+            // Update the sizes of the avatars.
+            for avatar in self
+                .avatars
+                .borrow()
+                .iter()
+                .filter_map(|bin| bin.child().and_downcast::<Avatar>())
+            {
+                avatar.set_size(size);
+            }
+            obj.queue_resize();
+        }
+
+        /// Set the maximum number of avatars to display.
+        fn set_max_avatars(&self, max_avatars: u32) {
+            let old_max_avatars = self.max_avatars.get();
+
+            if old_max_avatars == max_avatars {
+                return;
+            }
+            let obj = self.obj();
+
+            self.max_avatars.set(max_avatars);
+            if max_avatars != 0 && self.avatars.borrow().len() > max_avatars as usize {
+                // We have more children than we should, remove them.
+                let children = self.avatars.borrow_mut().split_off(max_avatars as usize);
+                for widget in children {
+                    widget.unparent()
+                }
+            } else if max_avatars == 0 || (old_max_avatars != 0 && max_avatars > old_max_avatars) {
+                let Some(model) = self.bound_model.obj() else {
+                    return;
+                };
+
+                let diff = model.n_items() - old_max_avatars;
+                if diff > 0 {
+                    // We could have more children, create them.
+                    obj.handle_items_changed(&model, old_max_avatars, 0, diff);
+                }
+            }
+
+            obj.notify_max_avatars();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -164,73 +183,6 @@ impl OverlappingAvatars {
     /// Create an empty `OverlappingAvatars`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The size of the avatars.
-    pub fn avatar_size(&self) -> i32 {
-        self.imp().avatar_size.get()
-    }
-
-    /// Set the size of the avatars.
-    pub fn set_avatar_size(&self, size: i32) {
-        if self.avatar_size() == size {
-            return;
-        }
-        let imp = self.imp();
-
-        imp.avatar_size.set(size);
-        self.notify("avatar-size");
-
-        // Update the sizes of the avatars.
-        for avatar in imp
-            .avatars
-            .borrow()
-            .iter()
-            .filter_map(|bin| bin.child().and_downcast::<Avatar>())
-        {
-            avatar.set_size(size);
-        }
-        self.queue_resize();
-    }
-
-    /// The maximum number of avatars to display.
-    ///
-    /// `0` means that all avatars are displayed.
-    pub fn max_avatars(&self) -> u32 {
-        self.imp().max_avatars.get()
-    }
-
-    /// Set the maximum number of avatars to display.
-    pub fn set_max_avatars(&self, max_avatars: u32) {
-        let old_max_avatars = self.max_avatars();
-
-        if old_max_avatars == max_avatars {
-            return;
-        }
-
-        let imp = self.imp();
-        imp.max_avatars.set(max_avatars);
-        self.notify("max-avatars");
-
-        if max_avatars != 0 && imp.avatars.borrow().len() > max_avatars as usize {
-            // We have more children than we should, remove them.
-            let children = imp.avatars.borrow_mut().split_off(max_avatars as usize);
-            for widget in children {
-                widget.unparent()
-            }
-        } else if max_avatars == 0 || (old_max_avatars != 0 && max_avatars > old_max_avatars) {
-            let Some(model) = imp.bound_model.obj() else {
-                return;
-            };
-
-            let diff = model.n_items() - old_max_avatars;
-            if diff > 0 {
-                // We could have more children, create them.
-                self.handle_items_changed(&model, old_max_avatars, 0, diff);
-            }
-        }
-
-        self.notify("max-avatars")
     }
 
     /// Bind a `ListModel` to this list.

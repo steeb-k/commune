@@ -2,16 +2,20 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, CompositeTemplate};
 
 mod imp {
+    use std::marker::PhantomData;
+
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/toastable_window.ui")]
+    #[properties(wrapper_type = super::ToastableWindow)]
     pub struct ToastableWindow {
         #[template_child]
         pub toast_overlay: TemplateChild<adw::ToastOverlay>,
+        #[property(get = Self::child_content, set = Self::set_child_content, nullable)]
+        pub child_content: PhantomData<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -30,37 +34,22 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for ToastableWindow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<gtk::Widget>("child-content").build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "child-content" => obj.set_child_content(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "child-content" => obj.child_content().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for ToastableWindow {}
 
     impl WidgetImpl for ToastableWindow {}
     impl WindowImpl for ToastableWindow {}
     impl AdwWindowImpl for ToastableWindow {}
+
+    impl ToastableWindow {
+        fn child_content(&self) -> Option<gtk::Widget> {
+            self.toast_overlay.child()
+        }
+
+        fn set_child_content(&self, content: Option<&gtk::Widget>) {
+            self.toast_overlay.set_child(content);
+        }
+    }
 }
 
 glib::wrapper! {
@@ -85,11 +74,11 @@ pub trait ToastableWindowExt: 'static {
 
 impl<O: IsA<ToastableWindow>> ToastableWindowExt for O {
     fn child_content(&self) -> Option<gtk::Widget> {
-        self.upcast_ref().imp().toast_overlay.child()
+        self.upcast_ref().child_content()
     }
 
     fn set_child_content(&self, content: Option<&gtk::Widget>) {
-        self.upcast_ref().imp().toast_overlay.set_child(content);
+        self.upcast_ref().set_child_content(content);
     }
 
     fn add_toast(&self, toast: adw::Toast) {

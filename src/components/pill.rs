@@ -14,12 +14,15 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/pill.ui")]
+    #[properties(wrapper_type = super::Pill)]
     pub struct Pill {
-        /// The user displayed by this widget
+        /// The user displayed by this widget.
+        #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: RefCell<Option<User>>,
-        /// The room displayed by this widget
+        /// The room displayed by this widget.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: RefCell<Option<Room>>,
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
@@ -43,47 +46,71 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for Pill {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<User>("user")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.set_user(value.get().unwrap()),
-                "room" => obj.set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.user().to_value(),
-                "room" => obj.room().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for Pill {}
 
     impl WidgetImpl for Pill {}
-
     impl BinImpl for Pill {}
+
+    impl Pill {
+        /// Set the user displayed by this widget.
+        ///
+        /// This removes the room, if one was set.
+        fn set_user(&self, user: Option<User>) {
+            if *self.user.borrow() == user {
+                return;
+            }
+
+            while let Some(binding) = self.bindings.borrow_mut().pop() {
+                binding.unbind();
+            }
+            self.set_room(None);
+
+            if let Some(user) = &user {
+                let display_name_binding = user
+                    .bind_property("display-name", &*self.display_name, "label")
+                    .sync_create()
+                    .build();
+
+                self.bindings.borrow_mut().push(display_name_binding);
+            }
+
+            self.avatar
+                .set_data(user.as_ref().map(|user| user.avatar_data().clone()));
+            self.user.replace(user);
+
+            self.obj().notify_user();
+        }
+
+        /// Set the room displayed by this widget.
+        ///
+        /// This removes the user, if one was set.
+        pub fn set_room(&self, room: Option<Room>) {
+            if *self.room.borrow() == room {
+                return;
+            }
+
+            while let Some(binding) = self.bindings.borrow_mut().pop() {
+                binding.unbind();
+            }
+            self.set_user(None);
+
+            if let Some(room) = &room {
+                let display_name_binding = room
+                    .bind_property("display-name", &*self.display_name, "label")
+                    .sync_create()
+                    .build();
+
+                self.bindings.borrow_mut().push(display_name_binding);
+            }
+
+            self.avatar
+                .set_data(room.as_ref().map(|room| room.avatar_data().clone()));
+            self.room.replace(room);
+
+            self.obj().notify_room();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -99,77 +126,5 @@ impl Pill {
 
     pub fn for_room(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
-    }
-
-    /// Set the user displayed by this widget.
-    ///
-    /// This removes the room, if one was set.
-    pub fn set_user(&self, user: Option<User>) {
-        let imp = self.imp();
-
-        if *imp.user.borrow() == user {
-            return;
-        }
-
-        while let Some(binding) = imp.bindings.borrow_mut().pop() {
-            binding.unbind();
-        }
-        self.set_room(None);
-
-        if let Some(ref user) = user {
-            let display_name_binding = user
-                .bind_property("display-name", &*imp.display_name, "label")
-                .sync_create()
-                .build();
-
-            imp.bindings.borrow_mut().push(display_name_binding);
-        }
-
-        imp.avatar
-            .set_data(user.as_ref().map(|user| user.avatar_data().clone()));
-        imp.user.replace(user);
-
-        self.notify("user");
-    }
-
-    /// The user displayed by this widget.
-    pub fn user(&self) -> Option<User> {
-        self.imp().user.borrow().clone()
-    }
-
-    /// Set the room displayed by this widget.
-    ///
-    /// This removes the user, if one was set.
-    pub fn set_room(&self, room: Option<Room>) {
-        let imp = self.imp();
-
-        if *imp.room.borrow() == room {
-            return;
-        }
-
-        while let Some(binding) = imp.bindings.borrow_mut().pop() {
-            binding.unbind();
-        }
-        self.set_user(None);
-
-        if let Some(ref room) = room {
-            let display_name_binding = room
-                .bind_property("display-name", &*imp.display_name, "label")
-                .sync_create()
-                .build();
-
-            imp.bindings.borrow_mut().push(display_name_binding);
-        }
-
-        imp.avatar
-            .set_data(room.as_ref().map(|room| room.avatar_data().clone()));
-        imp.room.replace(room);
-
-        self.notify("room");
-    }
-
-    /// The room displayed by this widget.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.borrow().clone()
     }
 }

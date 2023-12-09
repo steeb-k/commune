@@ -4,27 +4,29 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate
 use super::Spinner;
 
 mod imp {
-    use std::cell::Cell;
+    use std::marker::PhantomData;
 
     use glib::subclass::InitializingObject;
     use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/loading_row.ui")]
+    #[properties(wrapper_type = super::LoadingRow)]
     pub struct LoadingRow {
         #[template_child]
-        pub spinner: TemplateChild<Spinner>,
-        #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub error: TemplateChild<gtk::Box>,
         #[template_child]
         pub error_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub retry_button: TemplateChild<gtk::Button>,
-        pub is_error: Cell<bool>,
+        /// Whether this row is showing the spinner.
+        #[property(get = Self::is_loading)]
+        pub loading: PhantomData<bool>,
+        /// The error message to display.
+        #[property(get = Self::error, set = Self::set_error, explicit_notify, nullable)]
+        pub error: PhantomData<Option<glib::GString>>,
     }
 
     #[glib::object_subclass]
@@ -34,6 +36,8 @@ mod imp {
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
+            Spinner::static_type();
+
             Self::bind_template(klass);
         }
 
@@ -42,43 +46,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for LoadingRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("loading")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("error")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "error" => {
-                    obj.set_error(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "loading" => obj.is_loading().to_value(),
-                "error" => obj.error().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("retry").build()]);
@@ -98,12 +67,50 @@ mod imp {
 
     impl WidgetImpl for LoadingRow {}
     impl ListBoxRowImpl for LoadingRow {}
+
+    impl LoadingRow {
+        /// Whether this row is showing the spinner.
+        fn is_loading(&self) -> bool {
+            self.stack.visible_child_name().as_deref() == Some("loading")
+        }
+
+        /// The error message to display.
+        fn error(&self) -> Option<glib::GString> {
+            if self.is_loading() {
+                return None;
+            }
+
+            let message = self.error_label.text();
+            if message.is_empty() {
+                None
+            } else {
+                Some(message)
+            }
+        }
+
+        /// Set the error message to display.
+        ///
+        /// If this is `Some`, the error will be shown, otherwise the spinner
+        /// will be shown.
+        fn set_error(&self, message: Option<&str>) {
+            if let Some(message) = message {
+                self.error_label.set_text(message);
+                self.stack.set_visible_child_name("error");
+            } else {
+                self.stack.set_visible_child_name("loading");
+            }
+
+            let obj = self.obj();
+            obj.notify_loading();
+            obj.notify_error();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// This is a `ListBoxRow` containing a loading spinner.
+    /// A `ListBoxRow` containing a loading spinner.
     ///
-    /// It's also possible to set an error once the loading fails including a retry button.
+    /// It's also possible to set an error once the loading fails, including a retry button.
     pub struct LoadingRow(ObjectSubclass<imp::LoadingRow>)
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
@@ -111,39 +118,6 @@ glib::wrapper! {
 impl LoadingRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Whether to show the loading spinner.
-    pub fn is_loading(&self) -> bool {
-        !self.imp().is_error.get()
-    }
-
-    /// The error message to display.
-    pub fn error(&self) -> Option<glib::GString> {
-        let message = self.imp().error_label.text();
-        if message.is_empty() {
-            None
-        } else {
-            Some(message)
-        }
-    }
-
-    /// Set the error message to display.
-    ///
-    /// If this is `Some`, the error will be shown, otherwise the spinner will
-    /// be shown.
-    pub fn set_error(&self, message: Option<&str>) {
-        let imp = self.imp();
-
-        if let Some(message) = message {
-            imp.is_error.set(true);
-            imp.error_label.set_text(message);
-            imp.stack.set_visible_child(&*imp.error);
-        } else {
-            imp.is_error.set(false);
-            imp.stack.set_visible_child(&*imp.spinner);
-        }
-        self.notify("error");
     }
 
     pub fn connect_retry<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {

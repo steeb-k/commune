@@ -10,21 +10,24 @@ mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/components/video_player.ui")]
+    #[properties(wrapper_type = super::VideoPlayer)]
     pub struct VideoPlayer {
         /// Whether this player should be displayed in a compact format.
+        #[property(get, set = Self::set_compact, explicit_notify)]
         pub compact: Cell<bool>,
         pub duration_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub video: TemplateChild<gtk::Picture>,
         #[template_child]
         pub timestamp: TemplateChild<gtk::Label>,
+        /// The [`GstPlay`] for the video.
         #[template_child]
+        #[property(get = Self::player, type = GstPlay)]
         pub player: TemplateChild<GstPlay>,
         pub bus_guard: OnceCell<BusWatchGuard>,
         /// The file that is currently played.
@@ -47,39 +50,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for VideoPlayer {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("compact")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<GstPlay>("player")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "compact" => self.obj().set_compact(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "compact" => obj.compact().to_value(),
-                "player" => obj.player().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -124,6 +96,21 @@ mod imp {
     }
 
     impl BinImpl for VideoPlayer {}
+
+    impl VideoPlayer {
+        fn player(&self) -> GstPlay {
+            self.player.clone()
+        }
+        /// Set whether this player should be displayed in a compact format.
+        fn set_compact(&self, compact: bool) {
+            if self.compact.get() == compact {
+                return;
+            }
+
+            self.compact.set(compact);
+            self.obj().notify_compact();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -136,26 +123,6 @@ impl VideoPlayer {
     /// Create a new video player.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The `GstPlay` for the video.
-    pub fn player(&self) -> &GstPlay {
-        &self.imp().player
-    }
-
-    /// Whether this player should be displayed in a compact format.
-    pub fn compact(&self) -> bool {
-        self.imp().compact.get()
-    }
-
-    /// Set Wwether this player should be displayed in a compact format.
-    pub fn set_compact(&self, compact: bool) {
-        if self.compact() == compact {
-            return;
-        }
-
-        self.imp().compact.set(compact);
-        self.notify("compact");
     }
 
     /// Set the file to display.
