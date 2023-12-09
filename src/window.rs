@@ -25,15 +25,13 @@ use crate::{
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate, Default)]
+    #[derive(Debug, CompositeTemplate, Default, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/window.ui")]
+    #[properties(wrapper_type = super::Window)]
     pub struct Window {
-        /// Whether the window should be in compact view.
-        pub compact: Cell<bool>,
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -52,9 +50,16 @@ mod imp {
         pub offline_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pub spinner: TemplateChild<Spinner>,
+        /// Whether the window should be in compact view.
+        ///
+        /// It means that the horizontal size is not large enough to hold all
+        /// the content.
+        #[property(get, set = Self::set_compact, explicit_notify)]
+        pub compact: Cell<bool>,
         /// The selection of the logged-in sessions.
         ///
         /// The one that is selected being the one that is visible.
+        #[property(get)]
         pub session_selection: gtk::SingleSelection,
         pub account_switcher: AccountSwitcherPopover,
     }
@@ -120,41 +125,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Window {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("compact")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gtk::SingleSelection>("session-selection")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "compact" => obj.compact().to_value(),
-                "session-selection" => obj.session_selection().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "compact" => obj.set_compact(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -262,9 +234,22 @@ mod imp {
     impl WidgetImpl for Window {}
     impl ApplicationWindowImpl for Window {}
     impl AdwApplicationWindowImpl for Window {}
+
+    impl Window {
+        /// Set whether the window should be in compact view.
+        fn set_compact(&self, compact: bool) {
+            if compact == self.compact.get() {
+                return;
+            }
+
+            self.compact.set(compact);
+            self.obj().notify_compact();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// The main window.
     pub struct Window(ObjectSubclass<imp::Window>)
         @extends gtk::Widget, gtk::Window, gtk::Root, gtk::ApplicationWindow, adw::ApplicationWindow, @implements gtk::Accessible, gio::ActionMap, gio::ActionGroup;
 }
@@ -275,31 +260,6 @@ impl Window {
             .property("application", Some(app))
             .property("icon-name", Some(APP_ID))
             .build()
-    }
-
-    /// Whether the window should be in compact view.
-    ///
-    /// It means the horizontal size is not large enough to hold all the
-    /// content.
-    pub fn compact(&self) -> bool {
-        self.imp().compact.get()
-    }
-
-    /// Set whether the window should be in compact view.
-    pub fn set_compact(&self, compact: bool) {
-        if compact == self.compact() {
-            return;
-        }
-
-        self.imp().compact.set(compact);
-        self.notify("compact");
-    }
-
-    /// The selection of the logged-in sessions presented in this window.
-    ///
-    /// The one that is selected being the one that is visible.
-    pub fn session_selection(&self) -> &gtk::SingleSelection {
-        &self.imp().session_selection
     }
 
     /// Add the given session to the session list and select it.
