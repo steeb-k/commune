@@ -90,6 +90,7 @@ mod imp {
         #[property(get, construct_only)]
         pub settings: OnceCell<SessionSettings>,
         /// The notifications API for this session.
+        #[property(get)]
         pub notifications: Notifications,
     }
 
@@ -106,7 +107,7 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.notifications.set_session(Some(&obj));
+            self.notifications.set_session(Some(obj.clone()));
 
             let monitor = gio::NetworkMonitor::default();
             let handler_id = monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
@@ -529,10 +530,5 @@ impl Session {
                 }
             },
         );
-    }
-
-    /// The notifications API of this session.
-    pub fn notifications(&self) -> &Notifications {
-        &self.imp().notifications
     }
 }

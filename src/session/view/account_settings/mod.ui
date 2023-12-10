@@ -11,7 +11,13 @@
     </child>
     <child>
       <object class="NotificationsPage">
-        <property name="session" bind-source="AccountSettings" bind-property="session" bind-flags="sync-create"/>
+        <binding name="notifications-settings">
+          <lookup name="settings">
+            <lookup name="notifications">
+              <lookup name="session">AccountSettings</lookup>
+            </lookup>
+          </lookup>
+        </binding>
       </object>
     </child>
     <child>

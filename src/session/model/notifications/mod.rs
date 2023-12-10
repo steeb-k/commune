@@ -10,6 +10,9 @@ use ruma::{
 };
 use tracing::{debug, error, warn};
 
+mod notifications_settings;
+
+pub use self::notifications_settings::NotificationsSettings;
 use super::{Room, Session};
 use crate::{
     application::AppShowRoomPayload, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body,
@@ -19,17 +22,20 @@ use crate::{
 mod imp {
     use std::{cell::RefCell, collections::HashMap};
 
-    use glib::WeakRef;
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Notifications)]
     pub struct Notifications {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify, nullable)]
+        pub session: glib::WeakRef<Session>,
         /// A map of room ID to list of event IDs for which a notification was
         /// sent to the system.
         pub list: RefCell<HashMap<OwnedRoomId, Vec<OwnedEventId>>>,
+        /// The notifications settings for this session.
+        #[property(get)]
+        pub settings: NotificationsSettings,
     }
 
     #[glib::object_subclass]
@@ -38,29 +44,20 @@ mod imp {
         type Type = super::Notifications;
     }
 
-    impl ObjectImpl for Notifications {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for Notifications {}
 
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
+    impl Notifications {
+        /// Set the current session.
+        fn set_session(&self, session: Option<&Session>) {
+            if self.session.upgrade().as_ref() == session {
+                return;
             }
-        }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
+            self.session.set(session);
+            self.obj().notify_session();
+
+            self.settings.set_session(session);
         }
     }
 }
@@ -73,23 +70,6 @@ glib::wrapper! {
 impl Notifications {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<&Session>) {
-        let imp = self.imp();
-
-        if self.session().as_ref() == session {
-            return;
-        }
-
-        imp.session.set(session);
-        self.notify("session");
     }
 
     /// Ask the system to show the given notification, if applicable.
