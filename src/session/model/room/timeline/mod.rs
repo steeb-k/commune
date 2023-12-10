@@ -8,13 +8,13 @@ use futures_util::StreamExt;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::Error as MatrixError;
 use matrix_sdk_ui::timeline::{
-    BackPaginationStatus, PaginationOptions, RoomExt, Timeline as SdkTimeline,
-    TimelineItem as SdkTimelineItem,
+    default_event_filter, BackPaginationStatus, PaginationOptions, RoomExt,
+    Timeline as SdkTimeline, TimelineItem as SdkTimelineItem,
 };
 use ruma::{
     events::{
-        room::message::{MessageType, Relation},
-        AnySyncMessageLikeEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
+        room::message::MessageType, AnySyncMessageLikeEvent, AnySyncStateEvent,
+        AnySyncTimelineEvent, SyncMessageLikeEvent,
     },
     OwnedEventId,
 };
@@ -528,48 +528,49 @@ impl Timeline {
             Arc::new(
                 matrix_room
                     .timeline_builder()
-                    .event_filter(|any| match any {
-                        AnySyncTimelineEvent::MessageLike(msg) => match msg {
-                            AnySyncMessageLikeEvent::RoomMessage(
-                                SyncMessageLikeEvent::Original(ev),
-                            ) => {
-                                if ev
-                                    .content
-                                    .relates_to
-                                    .as_ref()
-                                    .is_some_and(|rel| matches!(rel, Relation::Replacement(_)))
-                                {
-                                    return false;
-                                }
+                    .event_filter(|any, room_version| {
+                        // Make sure we don't try to show events that can't be shown.
+                        if !default_event_filter(any, room_version) {
+                            return false;
+                        }
 
-                                matches!(
-                                    ev.content.msgtype,
-                                    MessageType::Audio(_)
-                                        | MessageType::Emote(_)
-                                        | MessageType::File(_)
-                                        | MessageType::Image(_)
-                                        | MessageType::Location(_)
-                                        | MessageType::Notice(_)
-                                        | MessageType::ServerNotice(_)
-                                        | MessageType::Text(_)
-                                        | MessageType::Video(_)
-                                        | MessageType::VerificationRequest(_)
+                        // Only show events we want.
+                        match any {
+                            AnySyncTimelineEvent::MessageLike(msg) => match msg {
+                                AnySyncMessageLikeEvent::RoomMessage(
+                                    SyncMessageLikeEvent::Original(ev),
+                                ) => {
+                                    matches!(
+                                        ev.content.msgtype,
+                                        MessageType::Audio(_)
+                                            | MessageType::Emote(_)
+                                            | MessageType::File(_)
+                                            | MessageType::Image(_)
+                                            | MessageType::Location(_)
+                                            | MessageType::Notice(_)
+                                            | MessageType::ServerNotice(_)
+                                            | MessageType::Text(_)
+                                            | MessageType::Video(_)
+                                            | MessageType::VerificationRequest(_)
+                                    )
+                                }
+                                AnySyncMessageLikeEvent::Sticker(
+                                    SyncMessageLikeEvent::Original(_),
                                 )
-                            }
-                            AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))
-                            | AnySyncMessageLikeEvent::RoomEncrypted(
-                                SyncMessageLikeEvent::Original(_),
-                            ) => true,
-                            _ => false,
-                        },
-                        AnySyncTimelineEvent::State(state) => matches!(
-                            state,
-                            AnySyncStateEvent::RoomMember(_)
-                                | AnySyncStateEvent::RoomCreate(_)
-                                | AnySyncStateEvent::RoomEncryption(_)
-                                | AnySyncStateEvent::RoomThirdPartyInvite(_)
-                                | AnySyncStateEvent::RoomTombstone(_)
-                        ),
+                                | AnySyncMessageLikeEvent::RoomEncrypted(
+                                    SyncMessageLikeEvent::Original(_),
+                                ) => true,
+                                _ => false,
+                            },
+                            AnySyncTimelineEvent::State(state) => matches!(
+                                state,
+                                AnySyncStateEvent::RoomMember(_)
+                                    | AnySyncStateEvent::RoomCreate(_)
+                                    | AnySyncStateEvent::RoomEncryption(_)
+                                    | AnySyncStateEvent::RoomThirdPartyInvite(_)
+                                    | AnySyncStateEvent::RoomTombstone(_)
+                            ),
+                        }
                     })
                     .add_failed_to_parse(false)
                     .build()

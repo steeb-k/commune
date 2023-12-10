@@ -254,6 +254,7 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
+            #[allow(deprecated)]
             let (main_sender, main_receiver) =
                 glib::MainContext::sync_channel::<MainMessage>(Default::default(), 100);
 

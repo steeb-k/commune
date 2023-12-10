@@ -260,6 +260,7 @@ impl CameraPaintable {
     }
 
     fn create_sender(&self) -> glib::Sender<Action> {
+        #[allow(deprecated)]
         let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
 
         receiver.attach(
