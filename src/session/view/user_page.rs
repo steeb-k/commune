@@ -222,7 +222,7 @@ impl UserPage {
             main_window.show_verification(
                 user.session().session_id(),
                 &UserExt::user_id(&user),
-                flow_id,
+                &flow_id,
             );
         }
 

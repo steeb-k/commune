@@ -49,16 +49,20 @@ impl indexmap::Equivalent<FlowId> for FlowIdUnowned<'_> {
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{object::WeakRef, subclass::Signal};
+    use glib::subclass::Signal;
     use indexmap::IndexMap;
     use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::VerificationList)]
     pub struct VerificationList {
+        /// The ongoing verification requests.
         pub list: RefCell<IndexMap<FlowId, IdentityVerification>>,
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
     }
 
     #[glib::object_subclass]
@@ -68,35 +72,12 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for VerificationList {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("secret-received").build()]);
             SIGNALS.as_ref()
-        }
-
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.session.set(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
         }
     }
 
@@ -104,9 +85,11 @@ mod imp {
         fn item_type(&self) -> glib::Type {
             IdentityVerification::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.list.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
@@ -117,6 +100,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// The list of ongoing verification requests.
     pub struct VerificationList(ObjectSubclass<imp::VerificationList>)
         @implements gio::ListModel;
 }
@@ -124,11 +108,6 @@ glib::wrapper! {
 impl VerificationList {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
     }
 
     pub fn handle_response_to_device(&self, to_device_events: Vec<Raw<AnyToDeviceEvent>>) {
@@ -139,7 +118,9 @@ impl VerificationList {
                     if let Some(request) = self.get_by_id(&e.sender, &e.content.transaction_id) {
                         Some(request)
                     } else {
-                        let session = self.session();
+                        let Some(session) = self.session() else {
+                            return;
+                        };
                         let user = session.user();
                         // ToDevice verifications can only be send by us
                         if *e.sender != *user.user_id() {
@@ -157,7 +138,6 @@ impl VerificationList {
 
                         let request = IdentityVerification::for_flow_id(
                             e.content.transaction_id.as_str(),
-                            &session,
                             &user,
                             &start_time,
                         );
@@ -193,7 +173,7 @@ impl VerificationList {
                 _ => continue,
             };
             if let Some(request) = request {
-                request.notify_state();
+                request.notify_state_changed();
             } else {
                 warn!("Received verification event, but we don't have the initial event.");
             }
@@ -227,7 +207,9 @@ impl VerificationList {
                             continue;
                         };
 
-                        let session = self.session();
+                        let Some(session) = self.session() else {
+                            return;
+                        };
                         let own_user_id = session.user_id();
 
                         let user_id_to_verify = if request.to == own_user_id {
@@ -266,7 +248,7 @@ impl VerificationList {
                         // Ignore the request when we have a newer one
                         let previous_verification = room.verification();
                         if !(previous_verification.is_none()
-                            || &start_time > previous_verification.unwrap().start_time())
+                            || start_time > previous_verification.unwrap().start_time())
                         {
                             continue;
                         }
@@ -278,7 +260,6 @@ impl VerificationList {
                         } else {
                             let request = IdentityVerification::for_flow_id(
                                 message.event_id.as_str(),
-                                &session,
                                 &user_to_verify.upcast(),
                                 &start_time,
                             );
@@ -334,7 +315,7 @@ impl VerificationList {
             };
 
             if let Some(request) = request {
-                request.notify_state();
+                request.notify_state_changed();
             }
         }
     }
@@ -363,7 +344,7 @@ impl VerificationList {
             );
 
             list.insert(
-                FlowId::new(UserExt::user_id(request.user()), flow_id.to_owned()),
+                FlowId::new(UserExt::user_id(&request.user()), flow_id.to_owned()),
                 request,
             );
             length as u32
@@ -383,8 +364,8 @@ impl VerificationList {
                 .list
                 .borrow_mut()
                 .shift_remove_full(&FlowIdUnowned::new(
-                    &UserExt::user_id(request.user()),
-                    flow_id,
+                    &UserExt::user_id(&request.user()),
+                    &flow_id,
                 )) {
             position
         } else {
@@ -405,8 +386,10 @@ impl VerificationList {
 
     // Returns the first valid session verification if any
     pub fn get_session(&self) -> Option<IdentityVerification> {
+        let Some(session) = self.session() else {
+            return None;
+        };
         let list = self.imp().list.borrow();
-        let session = self.session();
         let user_id = session.user_id();
 
         for (_, item) in list.iter() {

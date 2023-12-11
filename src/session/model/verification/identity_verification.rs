@@ -144,30 +144,50 @@ pub enum SasData {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use glib::object::WeakRef;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Default)]
+    #[derive(Default, glib::Properties)]
+    #[properties(wrapper_type = super::IdentityVerification)]
     pub struct IdentityVerification {
+        /// The user to verify.
+        #[property(get, construct_only)]
         pub user: OnceCell<User>,
-        pub session: WeakRef<Session>,
+        /// The state of this verification request.
+        #[property(get, set = Self::set_state, construct_only, builder(State::default()))]
         pub state: Cell<State>,
-        pub mode: OnceCell<Mode>,
+        /// The mode of this verification request.
+        #[property(get = Self::mode, builder(Mode::default()))]
+        pub mode: PhantomData<Mode>,
+        /// The supported methods of this verification request.
+        #[property(get, set = Self::set_supported_methods, construct_only)]
         pub supported_methods: Cell<SupportedMethods>,
         pub sync_sender: RefCell<Option<mpsc::Sender<Message>>>,
         pub main_sender: RefCell<Option<glib::SyncSender<MainMessage>>>,
         pub sas_data: OnceCell<SasData>,
         pub qr_code: OnceCell<QrCode>,
         pub cancel_info: OnceCell<CancelInfo>,
+        /// The flow ID of this verification request.
+        #[property(get = Self::flow_id, set = Self::set_flow_id, construct_only, nullable, type = Option<String>)]
         pub flow_id: OnceCell<String>,
+        /// The time and date when this verification request was started.
+        #[property(get, construct_only)]
         pub start_time: OnceCell<glib::DateTime>,
+        /// The time and date when this verification request was received.
+        #[property(get)]
         pub receive_time: OnceCell<glib::DateTime>,
         pub hide_error: Cell<bool>,
+        /// Whether this should be automatically accepted and treated as a
+        /// [`Mode::CurrentSession`].
+        #[property(get, set = Self::set_force_current_session, explicit_notify)]
         pub force_current_session: Cell<bool>,
+        /// The display name of this verification request.
+        #[property(get = Self::display_name)]
+        pub display_name: PhantomData<String>,
     }
 
     #[glib::object_subclass]
@@ -177,79 +197,8 @@ mod imp {
         type ParentType = SidebarItem;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for IdentityVerification {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<User>("user")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<State>("state")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<Mode>("mode")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecFlags::builder::<SupportedMethods>("supported-methods")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("display-name")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("flow-id")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoxed::builder::<glib::DateTime>("start-time")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoxed::builder::<glib::DateTime>("receive-time")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("force-current-session")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.set_user(value.get().unwrap()),
-                "session" => obj.set_session(value.get().unwrap()),
-                "state" => obj.set_state(value.get().unwrap()),
-                "flow-id" => obj.set_flow_id(value.get().unwrap()),
-                "start-time" => obj.set_start_time(value.get().unwrap()),
-                "supported-methods" => obj.set_supported_methods(value.get().unwrap()),
-                "force-current-session" => obj.set_force_current_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.user().to_value(),
-                "session" => obj.session().to_value(),
-                "state" => obj.state().to_value(),
-                "mode" => obj.mode().to_value(),
-                "display-name" => obj.display_name().to_value(),
-                "flow-id" => obj.flow_id().to_value(),
-                "supported-methods" => obj.supported_methods().to_value(),
-                "start-time" => obj.start_time().to_value(),
-                "receive-time" => obj.receive_time().to_value(),
-                "force-current-session" => obj.force_current_session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -260,14 +209,13 @@ mod imp {
 
             main_receiver.attach(
                 None,
-                clone!(@weak obj => @default-return glib::ControlFlow::Break, move |message| {
-                    let imp = obj.imp();
+                clone!(@weak self as imp => @default-return glib::ControlFlow::Break, move |message| {
                     match message {
                         MainMessage::QrCode(data) => { let _ = imp.qr_code.set(data); },
                         MainMessage::CancelInfo(data) => imp.cancel_info.set(data).unwrap(),
                         MainMessage::SasData(data) => imp.sas_data.set(data).unwrap(),
-                        MainMessage::SupportedMethods(flags) => obj.set_supported_methods(flags),
-                        MainMessage::State(state) => obj.set_state(state),
+                        MainMessage::SupportedMethods(flags) => imp.set_supported_methods(flags),
+                        MainMessage::State(state) => imp.set_state(state),
                     }
 
                     glib::ControlFlow::Continue
@@ -278,11 +226,11 @@ mod imp {
 
             // We don't need to track ourselves because we show "Login Request" as name in
             // that case.
-            if obj.user() != &obj.session().user() {
+            if obj.user() != obj.session().user() {
                 obj.user().connect_notify_local(
                     Some("display-name"),
                     clone!(@weak obj => move |_, _| {
-                        obj.notify("display-name");
+                        obj.notify_display_name();
                     }),
                 );
             }
@@ -300,33 +248,107 @@ mod imp {
     }
 
     impl SidebarItemImpl for IdentityVerification {}
+
+    impl IdentityVerification {
+        /// Set the state of this verification.
+        pub fn set_state(&self, state: State) {
+            if self.state.get() == state {
+                return;
+            }
+
+            self.state.set(state);
+            self.obj().notify_state();
+        }
+
+        /// The mode of this verification.
+        fn mode(&self) -> Mode {
+            let user = self.user.get().unwrap();
+            let session = user.session();
+            let own_user_id = session.user_id();
+            if *own_user_id == user.user_id() {
+                if self.force_current_session.get() {
+                    Mode::CurrentSession
+                } else {
+                    Mode::OtherSession
+                }
+            } else {
+                Mode::User
+            }
+        }
+
+        /// Set the supported methods of this verification.
+        fn set_supported_methods(&self, supported_methods: SupportedMethods) {
+            if self.supported_methods.get() == supported_methods {
+                return;
+            }
+
+            self.supported_methods.set(supported_methods);
+            self.obj().notify_supported_methods();
+        }
+
+        /// The display name of this verification request.
+        fn display_name(&self) -> String {
+            let user = self.user.get().unwrap();
+
+            if user.user_id() != *user.session().user_id() {
+                user.display_name()
+            } else {
+                // TODO: give this request a name based on the device
+                "Login Request".to_string()
+            }
+        }
+
+        /// The flow ID of this verification request.
+        fn flow_id(&self) -> Option<String> {
+            self.flow_id.get().cloned()
+        }
+
+        /// Set the flow ID of this verification request.
+        fn set_flow_id(&self, flow_id: Option<String>) {
+            let Some(flow_id) = flow_id else {
+                // Ignore missing flow ID.
+                return;
+            };
+
+            self.flow_id.set(flow_id).unwrap();
+        }
+
+        /// Force this `IdentityVerification` to be considered as a
+        /// [`Mode::CurrentSession`].
+        ///
+        /// This is used during setup to accept incoming requests automatically.
+        fn set_force_current_session(&self, force: bool) {
+            if self.force_current_session.get() == force {
+                return;
+            }
+            let obj = self.obj();
+
+            self.force_current_session.set(force);
+            obj.accept();
+            obj.notify_force_current_session();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// An identity verification request.
     pub struct IdentityVerification(ObjectSubclass<imp::IdentityVerification>)
         @extends SidebarItem;
 }
 
 impl IdentityVerification {
-    fn for_error(session: &Session, user: &User, start_time: &glib::DateTime) -> Self {
+    fn for_error(user: &User, start_time: &glib::DateTime) -> Self {
         glib::Object::builder()
             .property("state", State::Error)
-            .property("session", session)
             .property("user", user)
             .property("start-time", start_time)
             .build()
     }
 
     /// Create a new object tracking an already existing verification request
-    pub fn for_flow_id(
-        flow_id: &str,
-        session: &Session,
-        user: &User,
-        start_time: &glib::DateTime,
-    ) -> Self {
+    pub fn for_flow_id(flow_id: &str, user: &User, start_time: &glib::DateTime) -> Self {
         glib::Object::builder()
             .property("flow-id", flow_id)
-            .property("session", session)
             .property("user", user)
             .property("supported-methods", SupportedMethods::with_camera(true))
             .property("start-time", start_time)
@@ -378,7 +400,7 @@ impl IdentityVerification {
             error!("Starting a verification failed: Crypto identity wasn't found");
         }
 
-        Self::for_error(session, &user, &glib::DateTime::now_local().unwrap())
+        Self::for_error(&user, &glib::DateTime::now_local().unwrap())
     }
 
     fn start_handler(&self) {
@@ -395,7 +417,7 @@ impl IdentityVerification {
         };
 
         let client = self.session().client();
-        let user_id = UserExt::user_id(self.user());
+        let user_id = UserExt::user_id(&self.user());
         let flow_id = flow_id.to_owned();
 
         let (sync_sender, sync_receiver) = mpsc::channel(100);
@@ -421,67 +443,32 @@ impl IdentityVerification {
             }
         });
 
-        let weak_obj = self.downgrade();
+        let weak_imp = imp.downgrade();
         spawn!(async move {
             let result = handle.await.unwrap();
-            if let Some(obj) = weak_obj.upgrade() {
+            if let Some(imp) = weak_imp.upgrade() {
                 match result {
-                    Ok(result) => obj.set_state(result),
+                    Ok(result) => imp.set_state(result),
                     Err(error) => {
                         // FIXME: report error to the user
                         error!("Verification failed: {error}");
-                        obj.set_state(State::Error);
+                        imp.set_state(State::Error);
                     }
                 }
-                obj.imp().sync_sender.take();
+                imp.sync_sender.take();
             }
         });
     }
 
-    /// The user to verify.
-    pub fn user(&self) -> &User {
-        self.imp().user.get().unwrap()
-    }
-
-    /// Set the user to verify.
-    fn set_user(&self, user: User) {
-        self.imp().user.set(user).unwrap()
-    }
-
-    /// Whether this should be automatically accepted and treated as a
-    /// `Mode::CurrentSession`.
-    pub fn force_current_session(&self) -> bool {
-        self.imp().force_current_session.get()
-    }
-
-    /// Force this `IdentityVerification` to be considered as a
-    /// `Mode::CurrentSession`.
-    ///
-    /// This is used during setup to accept incoming requests automatically.
-    pub fn set_force_current_session(&self, force: bool) {
-        if self.force_current_session() == force {
-            return;
-        }
-
-        self.imp().force_current_session.set(force);
-        self.accept();
-        self.notify("force-current-session");
-    }
-
     /// The current session.
     pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
-    /// Set the current session.
-    fn set_session(&self, session: Option<Session>) {
-        self.imp().session.set(session.as_ref())
+        self.imp().user.get().unwrap().session()
     }
 
     fn setup_timeout(&self) {
         let difference = glib::DateTime::now_local()
             .unwrap()
-            .difference(self.start_time())
+            .difference(&self.start_time())
             .as_seconds();
 
         if difference < 0 {
@@ -509,36 +496,6 @@ impl IdentityVerification {
                 glib::ControlFlow::Break
             }),
         );
-    }
-
-    /// The time and date when this verification request was started.
-    pub fn start_time(&self) -> &glib::DateTime {
-        self.imp().start_time.get().unwrap()
-    }
-
-    /// Set the time and date when this verification request was started.
-    fn set_start_time(&self, time: glib::DateTime) {
-        self.imp().start_time.set(time).unwrap();
-    }
-
-    /// The time and date when this verification request was received.
-    pub fn receive_time(&self) -> &glib::DateTime {
-        self.imp().receive_time.get().unwrap()
-    }
-
-    /// Set the supported methods of this verification.
-    fn set_supported_methods(&self, supported_methods: SupportedMethods) {
-        if self.supported_methods() == supported_methods {
-            return;
-        }
-
-        self.imp().supported_methods.set(supported_methods);
-        self.notify("supported-methods");
-    }
-
-    /// The supported methods of this verification.
-    pub fn supported_methods(&self) -> SupportedMethods {
-        self.imp().supported_methods.get()
     }
 
     pub fn emoji_match(&self) {
@@ -577,36 +534,6 @@ impl IdentityVerification {
         }
     }
 
-    /// The state of this verification.
-    pub fn state(&self) -> State {
-        self.imp().state.get()
-    }
-
-    /// Set the state of this verification.
-    fn set_state(&self, state: State) {
-        if self.state() == state {
-            return;
-        }
-
-        self.imp().state.set(state);
-        self.notify("state");
-    }
-
-    /// The mode of this verification.
-    pub fn mode(&self) -> Mode {
-        let session = self.session();
-        let our_user = session.user();
-        if our_user.user_id() == self.user().user_id() {
-            if self.force_current_session() {
-                Mode::CurrentSession
-            } else {
-                Mode::OtherSession
-            }
-        } else {
-            Mode::User
-        }
-    }
-
     /// Whether this request is finished
     pub fn is_finished(&self) -> bool {
         matches!(
@@ -618,31 +545,6 @@ impl IdentityVerification {
     /// Whether to hide errors.
     pub fn hide_error(&self) -> bool {
         self.imp().hide_error.get()
-    }
-
-    /// The display name of this verification request.
-    pub fn display_name(&self) -> String {
-        if self.user() != &self.session().user() {
-            self.user().display_name()
-        } else {
-            // TODO: give this request a name based on the device
-            "Login Request".to_string()
-        }
-    }
-
-    /// The flow ID of this verification request.
-    pub fn flow_id(&self) -> Option<&str> {
-        self.imp().flow_id.get().map(AsRef::as_ref)
-    }
-
-    /// Set the flow ID of this verification request.
-    fn set_flow_id(&self, flow_id: Option<String>) {
-        let Some(flow_id) = flow_id else {
-            // Ignore missiing flow ID.
-            return;
-        };
-
-        self.imp().flow_id.set(flow_id).unwrap();
     }
 
     /// Get the QrCode for this verification request
@@ -710,7 +612,7 @@ impl IdentityVerification {
     }
 
     pub fn dismiss(&self) {
-        self.set_state(State::Dismissed);
+        self.imp().set_state(State::Dismissed);
     }
 
     /// Get information about why the request was cancelled
@@ -718,7 +620,7 @@ impl IdentityVerification {
         self.imp().cancel_info.get()
     }
 
-    pub fn notify_state(&self) {
+    pub fn notify_state_changed(&self) {
         if let Some(sync_sender) = &*self.imp().sync_sender.borrow() {
             let result = sync_sender.try_send(Message::NotifyState);
             if let Err(error) = result {
