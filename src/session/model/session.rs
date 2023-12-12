@@ -331,11 +331,11 @@ impl Session {
         self.imp().settings.get().unwrap()
     }
 
-    pub fn room_list(&self) -> &RoomList {
+    pub fn room_list(&self) -> RoomList {
         self.sidebar_list_model().item_list().room_list()
     }
 
-    pub fn verification_list(&self) -> &VerificationList {
+    pub fn verification_list(&self) -> VerificationList {
         self.sidebar_list_model().item_list().verification_list()
     }
 

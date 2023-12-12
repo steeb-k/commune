@@ -192,7 +192,7 @@ impl PublicRoomList {
                 .chunk
                 .into_iter()
                 .map(|matrix_room| {
-                    let room = PublicRoom::new(room_list, &server);
+                    let room = PublicRoom::new(&room_list, &server);
                     room.set_matrix_public_room(matrix_room);
                     room
                 })
@@ -200,7 +200,7 @@ impl PublicRoomList {
 
             let empty_row = list
                 .pop()
-                .unwrap_or_else(|| PublicRoom::new(room_list, &server));
+                .unwrap_or_else(|| PublicRoom::new(&room_list, &server));
             list.append(&mut new_rooms);
 
             if !self.complete() {

@@ -146,7 +146,7 @@ impl CategoryRow {
 
     /// The label to show for this row.
     pub fn label(&self) -> Option<String> {
-        let to_type = self.category()?.type_();
+        let to_type = self.category()?.r#type();
         let from_type = self.show_label_for_category();
 
         let label = match from_type {

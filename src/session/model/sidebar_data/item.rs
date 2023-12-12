@@ -5,8 +5,6 @@ use super::CategoryType;
 mod imp {
     use std::cell::Cell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
     #[repr(C)]
@@ -27,9 +25,11 @@ mod imp {
         (klass.as_ref().update_visibility)(this, for_category)
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, glib::Properties)]
+    #[properties(wrapper_type = super::SidebarItem)]
     pub struct SidebarItem {
         /// Whether this item is visible.
+        #[property(get, set = Self::set_visible, explicit_notify, default = true)]
         pub visible: Cell<bool>,
     }
 
@@ -49,30 +49,18 @@ mod imp {
         type Class = SidebarItemClass;
     }
 
-    impl ObjectImpl for SidebarItem {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::builder("visible")
-                    .default_value(true)
-                    .explicit_notify()
-                    .build()]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for SidebarItem {}
 
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "visible" => self.obj().set_visible(value.get().unwrap()),
-                _ => unimplemented!(),
+    impl SidebarItem {
+        /// Set whether this item is visible.
+        fn set_visible(&self, visible: bool) {
+            if self.visible.get() == visible {
+                return;
             }
-        }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "visible" => self.obj().visible().to_value(),
-                _ => unimplemented!(),
-            }
+            self.visible.set(visible);
+            self.obj().notify_visible();
         }
     }
 }
@@ -102,16 +90,11 @@ pub trait SidebarItemExt: 'static {
 
 impl<O: IsA<SidebarItem>> SidebarItemExt for O {
     fn visible(&self) -> bool {
-        self.upcast_ref().imp().visible.get()
+        self.upcast_ref().visible()
     }
 
     fn set_visible(&self, visible: bool) {
-        if self.visible() == visible {
-            return;
-        }
-
-        self.upcast_ref().imp().visible.set(visible);
-        self.notify("visible");
+        self.upcast_ref().set_visible(visible);
     }
 
     fn update_visibility(&self, for_category: CategoryType) {

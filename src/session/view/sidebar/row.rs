@@ -248,7 +248,7 @@ impl Row {
             Some(room.category())
         } else {
             item.downcast_ref::<Category>()
-                .and_then(|category| RoomType::try_from(category.type_()).ok())
+                .and_then(|category| RoomType::try_from(category.r#type()).ok())
         }
     }
 
@@ -258,7 +258,7 @@ impl Row {
     pub fn item_type(&self) -> Option<ItemType> {
         self.item()
             .and_downcast_ref::<IconItem>()
-            .map(|i| i.type_())
+            .map(|i| i.r#type())
     }
 
     /// Handle the drag-n-drop hovering this row.
@@ -367,7 +367,7 @@ impl Row {
                 if self
                     .item()
                     .and_downcast::<Category>()
-                    .map_or(false, |category| category.is_empty())
+                    .map_or(false, |category| category.empty())
                 {
                     self.add_css_class("drop-empty");
                 } else {

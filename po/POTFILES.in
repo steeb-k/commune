@@ -31,8 +31,8 @@ src/session/model/session.rs
 src/session/model/room/member_role.rs
 src/session/model/room/mod.rs
 src/session/model/room_list/mod.rs
-src/session/model/sidebar/category/category_type.rs
-src/session/model/sidebar/icon_item.rs
+src/session/model/sidebar_data/category/category_type.rs
+src/session/model/sidebar_data/icon_item.rs
 src/session/view/account_settings/devices_page/device_list.rs
 src/session/view/account_settings/devices_page/device_row.rs
 src/session/view/account_settings/devices_page/device_row.ui

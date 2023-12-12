@@ -4,20 +4,25 @@ use super::{Category, CategoryType, IconItem, ItemType, SidebarItem, SidebarItem
 use crate::session::model::{RoomList, VerificationList};
 
 mod imp {
-    use std::cell::Cell;
-
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ItemList)]
     pub struct ItemList {
         pub list: OnceCell<[SidebarItem; 8]>,
+        /// The list of rooms.
+        #[property(get, construct_only)]
         pub room_list: OnceCell<RoomList>,
+        /// The list of verification requests.
+        #[property(get, construct_only)]
         pub verification_list: OnceCell<VerificationList>,
         /// The `CategoryType` to show all compatible categories for.
         ///
-        /// Uses `RoomType::can_change_to` to find compatible categories.
+        /// The UI is updated to show possible actions for the list items
+        /// according to the `CategoryType`.
+        #[property(get, set = Self::set_show_all_for_category, explicit_notify, builder(CategoryType::default()))]
         pub show_all_for_category: Cell<CategoryType>,
     }
 
@@ -28,47 +33,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ItemList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<RoomList>("room-list")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<VerificationList>("verification-list")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<CategoryType>("show-all-for-category")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room-list" => obj.set_room_list(value.get().unwrap()),
-                "verification-list" => obj.set_verification_list(value.get().unwrap()),
-                "show-all-for-category" => obj.set_show_all_for_category(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room-list" => obj.room_list().to_value(),
-                "verification-list" => obj.verification_list().to_value(),
-                "show-all-for-category" => obj.show_all_for_category().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -78,12 +44,12 @@ mod imp {
 
             let list: [SidebarItem; 8] = [
                 IconItem::new(ItemType::Explore).upcast(),
-                Category::new(CategoryType::VerificationRequest, verification_list).upcast(),
-                Category::new(CategoryType::Invited, room_list).upcast(),
-                Category::new(CategoryType::Favorite, room_list).upcast(),
-                Category::new(CategoryType::Normal, room_list).upcast(),
-                Category::new(CategoryType::LowPriority, room_list).upcast(),
-                Category::new(CategoryType::Left, room_list).upcast(),
+                Category::new(CategoryType::VerificationRequest, &verification_list).upcast(),
+                Category::new(CategoryType::Invited, &room_list).upcast(),
+                Category::new(CategoryType::Favorite, &room_list).upcast(),
+                Category::new(CategoryType::Normal, &room_list).upcast(),
+                Category::new(CategoryType::LowPriority, &room_list).upcast(),
+                Category::new(CategoryType::Left, &room_list).upcast(),
                 IconItem::new(ItemType::Forget).upcast(),
             ];
 
@@ -128,6 +94,23 @@ mod imp {
                 .map(|item| item.upcast())
         }
     }
+
+    impl ItemList {
+        /// Set the `CategoryType` to show all compatible categories for.
+        fn set_show_all_for_category(&self, category: CategoryType) {
+            if category == self.show_all_for_category.get() {
+                return;
+            }
+            let obj = self.obj();
+
+            self.show_all_for_category.set(category);
+            for item in self.list.get().unwrap().iter() {
+                obj.update_item(item)
+            }
+
+            obj.notify_show_all_for_category();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -145,50 +128,6 @@ impl ItemList {
             .property("room-list", room_list)
             .property("verification-list", verification_list)
             .build()
-    }
-
-    /// The `CategoryType` to show all compatible categories for.
-    ///
-    /// The UI is updated to show possible actions for the list items according
-    /// to the `CategoryType`.
-    pub fn show_all_for_category(&self) -> CategoryType {
-        self.imp().show_all_for_category.get()
-    }
-
-    /// Set the `CategoryType` to show all compatible categories for.
-    pub fn set_show_all_for_category(&self, category: CategoryType) {
-        let imp = self.imp();
-
-        if category == self.show_all_for_category() {
-            return;
-        }
-
-        imp.show_all_for_category.set(category);
-        for item in imp.list.get().unwrap().iter() {
-            self.update_item(item)
-        }
-
-        self.notify("show-all-for-category");
-    }
-
-    /// Set the list of rooms.
-    fn set_room_list(&self, room_list: RoomList) {
-        self.imp().room_list.set(room_list).unwrap();
-    }
-
-    /// Set the list of verification requests.
-    fn set_verification_list(&self, verification_list: VerificationList) {
-        self.imp().verification_list.set(verification_list).unwrap();
-    }
-
-    /// The list of rooms.
-    pub fn room_list(&self) -> &RoomList {
-        self.imp().room_list.get().unwrap()
-    }
-
-    /// The list of verification requests.
-    pub fn verification_list(&self) -> &VerificationList {
-        self.imp().verification_list.get().unwrap()
     }
 
     fn update_item(&self, item: &impl IsA<SidebarItem>) {

@@ -4,7 +4,7 @@ mod room;
 mod room_list;
 mod session;
 mod session_settings;
-mod sidebar;
+mod sidebar_data;
 mod user;
 mod verification;
 
@@ -20,7 +20,7 @@ pub use self::{
     room_list::RoomList,
     session::{Session, SessionState},
     session_settings::{SessionSettings, StoredSessionSettings},
-    sidebar::{
+    sidebar_data::{
         Category, CategoryType, IconItem, ItemList, ItemType, Selection, SidebarItem,
         SidebarItemImpl, SidebarListModel,
     },

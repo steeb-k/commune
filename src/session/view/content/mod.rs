@@ -253,7 +253,7 @@ impl Content {
             }
             Some(o)
                 if o.downcast_ref::<IconItem>()
-                    .is_some_and(|i| i.type_() == ItemType::Explore) =>
+                    .is_some_and(|i| i.r#type() == ItemType::Explore) =>
             {
                 imp.explore.init();
                 imp.stack.set_visible_child(&*imp.explore);

@@ -86,7 +86,7 @@ impl IconItemRow {
 
         if icon_item
             .as_ref()
-            .is_some_and(|i| i.type_() == ItemType::Forget)
+            .is_some_and(|i| i.r#type() == ItemType::Forget)
         {
             self.add_css_class("forget");
         } else {

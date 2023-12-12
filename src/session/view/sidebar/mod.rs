@@ -233,7 +233,7 @@ impl Sidebar {
             let bindings = vec![
                 self.bind_property(
                     "drop-source-type",
-                    list_model.item_list(),
+                    &list_model.item_list(),
                     "show-all-for-category",
                 )
                 .sync_create()
@@ -250,7 +250,7 @@ impl Sidebar {
         }
 
         imp.listview
-            .set_model(list_model.as_ref().map(|m| m.selection_model()));
+            .set_model(list_model.as_ref().map(|m| m.selection_model()).as_ref());
         imp.list_model.set(list_model.as_ref());
         self.notify("list-model");
     }
