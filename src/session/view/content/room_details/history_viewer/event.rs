@@ -72,7 +72,17 @@ impl HistoryViewerEvent {
 
     pub async fn get_file_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
         if let AnyMessageLikeEventContent::RoomMessage(content) = self.original_content().unwrap() {
-            let media = self.room().unwrap().session().client().media();
+            let Some(room) = self.room() else {
+                return Err(matrix_sdk::Error::UnknownError(
+                    "Failed to upgrade Room".into(),
+                ));
+            };
+            let Some(session) = room.session() else {
+                return Err(matrix_sdk::Error::UnknownError(
+                    "Failed to upgrade Session".into(),
+                ));
+            };
+            let media = session.client().media();
 
             if let MessageType::File(content) = content.msgtype {
                 let filename = content

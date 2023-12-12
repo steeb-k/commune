@@ -5,26 +5,16 @@ use super::Member;
 mod imp {
     use std::cell::{Cell, RefCell};
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::TypingList)]
     pub struct TypingList {
         /// The list of members currently typing.
         pub members: RefCell<Vec<Member>>,
-
         /// Whether this list is empty.
+        #[property(get, set = Self::set_is_empty, explicit_notify)]
         pub is_empty: Cell<bool>,
-    }
-
-    impl Default for TypingList {
-        fn default() -> Self {
-            Self {
-                members: Default::default(),
-                is_empty: Cell::new(true),
-            }
-        }
     }
 
     #[glib::object_subclass]
@@ -34,25 +24,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for TypingList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoolean::builder("is-empty")
-                    .default_value(true)
-                    .read_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "is-empty" => self.obj().is_empty().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for TypingList {}
 
     impl ListModelImpl for TypingList {
         fn item_type(&self) -> glib::Type {
@@ -68,6 +41,18 @@ mod imp {
                 .borrow()
                 .get(position as usize)
                 .map(|member| member.clone().upcast())
+        }
+    }
+
+    impl TypingList {
+        /// Set whether the list is empty.
+        fn set_is_empty(&self, is_empty: bool) {
+            if self.is_empty.get() == is_empty {
+                return;
+            }
+
+            self.is_empty.set(is_empty);
+            self.obj().notify_is_empty();
         }
     }
 }
@@ -87,24 +72,9 @@ impl TypingList {
         self.imp().members.borrow().clone()
     }
 
-    /// Set whether the list is empty.
-    fn set_is_empty(&self, empty: bool) {
-        self.imp().is_empty.set(empty);
-        self.notify("is-empty");
-    }
-
-    /// Whether the list is empty.
-    pub fn is_empty(&self) -> bool {
-        self.imp().is_empty.get()
-    }
-
     pub fn update(&self, new_members: Vec<Member>) {
-        let prev_is_empty = self.is_empty();
-
         if new_members.is_empty() {
-            if !prev_is_empty {
-                self.set_is_empty(true);
-            }
+            self.set_is_empty(true);
 
             return;
         }
@@ -118,10 +88,7 @@ impl TypingList {
         };
 
         self.items_changed(0, removed, added);
-
-        if prev_is_empty {
-            self.set_is_empty(false);
-        }
+        self.set_is_empty(false);
     }
 }
 

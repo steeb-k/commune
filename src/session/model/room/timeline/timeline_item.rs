@@ -6,9 +6,7 @@ use super::VirtualItem;
 use crate::session::model::{Event, Room};
 
 mod imp {
-    use std::cell::Cell;
-
-    use once_cell::sync::Lazy;
+    use std::{cell::Cell, marker::PhantomData};
 
     use super::*;
 
@@ -45,9 +43,34 @@ mod imp {
         (klass.as_ref().event_sender_id)(this)
     }
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::TimelineItem)]
     pub struct TimelineItem {
+        /// A unique ID for this `TimelineItem`.
+        ///
+        /// For debugging purposes.
+        #[property(get = Self::id)]
+        pub id: PhantomData<String>,
+        /// Whether this `TimelineItem` is selectable.
+        ///
+        /// Defaults to `false`.
+        #[property(get = Self::selectable)]
+        pub selectable: PhantomData<bool>,
+        /// Whether this `TimelineItem` should show its header.
+        ///
+        /// Defaults to `false`.
+        #[property(get, set = Self::set_show_header, explicit_notify)]
         pub show_header: Cell<bool>,
+        /// Whether this `TimelineItem` is allowed to hide its header.
+        ///
+        /// Defaults to `false`.
+        #[property(get = Self::can_hide_header)]
+        pub can_hide_header: PhantomData<bool>,
+        /// If this is a Matrix event, the sender of the event.
+        ///
+        /// Defaults to `None`.
+        #[property(get = Self::event_sender_id)]
+        pub event_sender_id: PhantomData<Option<String>>,
     }
 
     #[glib::object_subclass]
@@ -58,51 +81,46 @@ mod imp {
         type Class = TimelineItemClass;
     }
 
-    impl ObjectImpl for TimelineItem {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("id").read_only().build(),
-                    glib::ParamSpecBoolean::builder("selectable")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("show-header")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("can-hide-header")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("event-sender-id")
-                        .read_only()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for TimelineItem {}
 
-            PROPERTIES.as_ref()
+    impl TimelineItem {
+        /// A unique ID for this `TimelineItem`.
+        ///
+        /// For debugging purposes.
+        pub fn id(&self) -> String {
+            imp::timeline_item_id(&self.obj())
         }
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "show-header" => self.obj().set_show_header(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
+        /// Whether this `TimelineItem` is selectable.
+        ///
+        /// Defaults to `false`.
+        pub fn selectable(&self) -> bool {
+            imp::timeline_item_selectable(&self.obj())
         }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "id" => obj.id().to_value(),
-                "selectable" => obj.selectable().to_value(),
-                "show-header" => obj.show_header().to_value(),
-                "can-hide-header" => obj.can_hide_header().to_value(),
-                "event-sender-id" => obj
-                    .event_sender_id()
-                    .as_ref()
-                    .map(|u| u.as_str())
-                    .to_value(),
-                _ => unimplemented!(),
+        /// Set whether this `TimelineItem` should show its header.
+        pub fn set_show_header(&self, show: bool) {
+            if self.show_header.get() == show {
+                return;
             }
+
+            self.show_header.set(show);
+            self.obj().notify_show_header();
+        }
+
+        /// Whether this `TimelineItem` is allowed to hide its header.
+        ///
+        /// Defaults to `false`.
+        pub fn can_hide_header(&self) -> bool {
+            imp::timeline_item_can_hide_header(&self.obj())
+        }
+
+        /// If this is a Matrix event, the sender of the event.
+        ///
+        /// Defaults to `None`.
+        pub fn event_sender_id(&self) -> Option<String> {
+            imp::timeline_item_event_sender_id(&self.obj()).map(Into::into)
         }
     }
 }
@@ -180,30 +198,23 @@ pub trait TimelineItemExt: 'static {
 
 impl<O: IsA<TimelineItem>> TimelineItemExt for O {
     fn id(&self) -> String {
-        imp::timeline_item_id(self.upcast_ref())
+        self.upcast_ref().id()
     }
 
     fn selectable(&self) -> bool {
-        imp::timeline_item_selectable(self.upcast_ref())
+        self.upcast_ref().selectable()
     }
 
     fn show_header(&self) -> bool {
-        self.upcast_ref().imp().show_header.get()
+        self.upcast_ref().show_header()
     }
 
     fn set_show_header(&self, show: bool) {
-        let item = self.upcast_ref();
-
-        if item.show_header() == show {
-            return;
-        }
-
-        item.imp().show_header.set(show);
-        item.notify("show-header");
+        self.upcast_ref().set_show_header(show);
     }
 
     fn can_hide_header(&self) -> bool {
-        imp::timeline_item_can_hide_header(self.upcast_ref())
+        self.upcast_ref().can_hide_header()
     }
 
     fn event_sender_id(&self) -> Option<OwnedUserId> {

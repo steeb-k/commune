@@ -162,7 +162,7 @@ impl GeneralPage {
         let expr_watch = AvatarData::this_expression("image")
             .chain_property::<AvatarImage>("uri")
             .watch(
-                Some(avatar_data),
+                Some(&avatar_data),
                 clone!(@weak self as obj, @weak avatar_data => move || {
                     obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
                 }),
@@ -170,24 +170,15 @@ impl GeneralPage {
         imp.expr_watches.borrow_mut().push(expr_watch);
 
         let room_handler_ids = vec![
-            room.connect_notify_local(
-                Some("name"),
-                clone!(@weak self as obj => move |room, _| {
-                    obj.name_changed(room.name());
-                }),
-            ),
-            room.connect_notify_local(
-                Some("topic"),
-                clone!(@weak self as obj => move |room, _| {
-                    obj.topic_changed(room.topic());
-                }),
-            ),
-            room.connect_notify_local(
-                Some("joined-members-count"),
-                clone!(@weak self as obj => move |room, _| {
-                    obj.member_count_changed(room.joined_members_count());
-                }),
-            ),
+            room.connect_name_notify(clone!(@weak self as obj => move |room| {
+                obj.name_changed(room.name());
+            })),
+            room.connect_topic_notify(clone!(@weak self as obj => move |room| {
+                obj.topic_changed(room.topic());
+            })),
+            room.connect_joined_members_count_notify(clone!(@weak self as obj => move |room| {
+                obj.member_count_changed(room.joined_members_count());
+            })),
         ];
 
         self.member_count_changed(room.joined_members_count());
@@ -288,7 +279,10 @@ impl GeneralPage {
             mimetype: Some(info.mime.to_string()),
         });
 
-        let client = room.session().client();
+        let Some(session) = room.session() else {
+            return;
+        };
+        let client = session.client();
         let handle = spawn_tokio!(async move { client.media().upload(&info.mime, data).await });
 
         let uri = match handle.await.unwrap() {

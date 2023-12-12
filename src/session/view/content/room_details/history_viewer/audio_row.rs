@@ -121,10 +121,11 @@ impl AudioRow {
                         imp.duration_label.set_label(&gettext("Unknown duration"));
                     }
 
-                    let session = event.room().unwrap().session();
-                    spawn!(clone!(@weak self as obj => async move {
-                        obj.download_audio(audio, &session).await;
-                    }));
+                    if let Some(session) = event.room().and_then(|r| r.session()) {
+                        spawn!(clone!(@weak self as obj, @weak session => async move {
+                            obj.download_audio(audio, &session).await;
+                        }));
+                    }
                 }
             }
         }

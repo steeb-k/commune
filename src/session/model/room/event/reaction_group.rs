@@ -5,22 +5,30 @@ use super::EventKey;
 use crate::{prelude::*, session::model::User};
 
 mod imp {
-    use std::cell::RefCell;
-
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::{
+        cell::{OnceCell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ReactionGroup)]
     pub struct ReactionGroup {
         /// The user of the parent session.
+        #[property(get, construct_only)]
         pub user: OnceCell<User>,
-
         /// The key of the group.
+        #[property(get, construct_only)]
         pub key: OnceCell<String>,
-
         /// The reactions in the group.
         pub reactions: RefCell<Option<SdkReactionGroup>>,
+        /// The number of reactions in this group.
+        #[property(get = Self::count)]
+        pub count: PhantomData<u32>,
+        /// Whether this group has a reaction from our own user.
+        #[property(get = Self::has_user)]
+        pub has_user: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -30,50 +38,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for ReactionGroup {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<User>("user")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("key")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecUInt::builder("count").read_only().build(),
-                    glib::ParamSpecBoolean::builder("has-user")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "user" => {
-                    self.user.set(value.get().unwrap()).unwrap();
-                }
-                "key" => {
-                    self.key.set(value.get().unwrap()).unwrap();
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.user().to_value(),
-                "key" => obj.key().to_value(),
-                "count" => obj.count().to_value(),
-                "has-user" => obj.has_user().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for ReactionGroup {}
 
     impl ListModelImpl for ReactionGroup {
         fn item_type(&self) -> glib::Type {
@@ -97,6 +63,23 @@ mod imp {
             })
         }
     }
+
+    impl ReactionGroup {
+        /// The number of reactions in this group.
+        fn count(&self) -> u32 {
+            self.n_items()
+        }
+
+        /// Whether this group has a reaction from our own user.
+        fn has_user(&self) -> bool {
+            let user_id = UserExt::user_id(self.user.get().unwrap());
+            self.reactions
+                .borrow()
+                .as_ref()
+                .filter(|reactions| reactions.by_sender(&user_id).next().is_some())
+                .is_some()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -113,25 +96,10 @@ impl ReactionGroup {
             .build()
     }
 
-    /// The user of the parent session.
-    pub fn user(&self) -> &User {
-        self.imp().user.get().unwrap()
-    }
-
-    /// The key of the group.
-    pub fn key(&self) -> &str {
-        self.imp().key.get().unwrap()
-    }
-
-    /// The number of reactions in this group
-    pub fn count(&self) -> u32 {
-        self.imp().n_items()
-    }
-
     /// The event ID of the reaction in this group sent by the logged-in user,
     /// if any.
     pub fn user_reaction_event_key(&self) -> Option<EventKey> {
-        let user_id = UserExt::user_id(self.user());
+        let user_id = UserExt::user_id(&self.user());
         self.imp()
             .reactions
             .borrow()
@@ -146,17 +114,6 @@ impl ReactionGroup {
                         _ => None,
                     })
             })
-    }
-
-    /// Whether this group has a reaction from the logged-in user.
-    pub fn has_user(&self) -> bool {
-        let user_id = UserExt::user_id(self.user());
-        self.imp()
-            .reactions
-            .borrow()
-            .as_ref()
-            .filter(|reactions| reactions.by_sender(&user_id).next().is_some())
-            .is_some()
     }
 
     /// Update this group with the given reactions.
@@ -188,11 +145,11 @@ impl ReactionGroup {
         self.items_changed(0, prev_count, new_count);
 
         if self.count() != prev_count {
-            self.notify("count");
+            self.notify_count();
         }
 
         if self.has_user() != prev_has_user {
-            self.notify("has-user");
+            self.notify_has_user();
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt};
+use std::{borrow::Cow, fmt, ops::Deref};
 
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
@@ -82,7 +82,15 @@ pub enum MessageState {
 
 #[derive(Clone, Debug, glib::Boxed)]
 #[boxed_type(name = "BoxedEventTimelineItem")]
-pub struct BoxedEventTimelineItem(EventTimelineItem);
+pub struct BoxedEventTimelineItem(pub EventTimelineItem);
+
+impl Deref for BoxedEventTimelineItem {
+    type Target = EventTimelineItem;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// A user's read receipt.
 #[derive(Clone, Debug)]
@@ -92,29 +100,47 @@ pub struct UserReadReceipt {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use glib::object::WeakRef;
-    use once_cell::sync::Lazy;
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, glib::Properties)]
+    #[properties(wrapper_type = super::Event)]
     pub struct Event {
         /// The underlying SDK timeline item.
-        pub item: RefCell<Option<EventTimelineItem>>,
-
+        #[property(get = Self::item, set = Self::set_item, type = BoxedEventTimelineItem)]
+        pub item: RefCell<Option<BoxedEventTimelineItem>>,
         /// The room containing this `Event`.
-        pub room: WeakRef<Room>,
-
+        #[property(get, set = Self::set_room, construct_only)]
+        pub room: glib::WeakRef<Room>,
         /// The reactions on this event.
+        #[property(get)]
         pub reactions: ReactionList,
-
         /// The read receipts on this event.
+        #[property(get)]
         pub read_receipts: gio::ListStore,
-
         /// The state of this event.
+        #[property(get, builder(MessageState::default()))]
         pub state: Cell<MessageState>,
+        /// The pretty-formatted JSON source for this `Event`, if it has
+        /// been echoed back by the server.
+        #[property(get = Self::source)]
+        pub source: PhantomData<Option<String>>,
+        /// The timestamp of this `Event`.
+        #[property(get = Self::timestamp)]
+        pub timestamp: PhantomData<glib::DateTime>,
+        /// Whether this `Event` was edited.
+        #[property(get = Self::is_edited)]
+        pub is_edited: PhantomData<bool>,
+        /// Whether this `Event` should be highlighted.
+        #[property(get = Self::is_highlighted)]
+        pub is_highlighted: PhantomData<bool>,
+        /// Whether this event has any read receipt.
+        #[property(get = Self::has_read_receipts)]
+        pub has_read_receipts: PhantomData<bool>,
     }
 
     impl Default for Event {
@@ -125,6 +151,11 @@ mod imp {
                 reactions: Default::default(),
                 read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
                 state: Default::default(),
+                source: Default::default(),
+                timestamp: Default::default(),
+                is_edited: Default::default(),
+                is_highlighted: Default::default(),
+                has_read_receipts: Default::default(),
             }
         }
     }
@@ -136,76 +167,8 @@ mod imp {
         type ParentType = TimelineItem;
     }
 
-    impl ObjectImpl for Event {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoxed::builder::<BoxedEventTimelineItem>("item")
-                        .write_only()
-                        .build(),
-                    glib::ParamSpecString::builder("source").read_only().build(),
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoxed::builder::<glib::DateTime>("timestamp")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<ReactionList>("reactions")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-edited")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-highlighted")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gio::ListStore>("read-receipts")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("has-read-receipts")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<MessageState>("state")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "item" => {
-                    let item = value.get::<BoxedEventTimelineItem>().unwrap();
-                    obj.set_item(item.0);
-                }
-                "room" => {
-                    obj.set_room(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "source" => obj.source().to_value(),
-                "room" => obj.room().to_value(),
-                "timestamp" => obj.timestamp().to_value(),
-                "reactions" => obj.reactions().to_value(),
-                "is-edited" => obj.is_edited().to_value(),
-                "is-highlighted" => obj.is_highlighted().to_value(),
-                "read-receipts" => obj.read_receipts().to_value(),
-                "has-read-receipts" => obj.has_read_receipts().to_value(),
-                "state" => obj.state().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for Event {}
 
     impl TimelineItemImpl for Event {
         fn id(&self) -> String {
@@ -239,6 +202,96 @@ mod imp {
             true
         }
     }
+
+    impl Event {
+        /// The underlying SDK timeline item of this `Event`.
+        fn item(&self) -> BoxedEventTimelineItem {
+            self.item.borrow().clone().unwrap()
+        }
+
+        /// Set the underlying SDK timeline item of this `Event`.
+        fn set_item(&self, item: BoxedEventTimelineItem) {
+            let obj = self.obj();
+
+            let was_edited = self.is_edited();
+            let was_highlighted = self.is_highlighted();
+
+            self.reactions.update(item.reactions().clone());
+            obj.update_read_receipts(item.read_receipts());
+            self.item.replace(Some(item));
+
+            obj.notify_source();
+            if self.is_edited() != was_edited {
+                obj.notify_is_edited();
+            }
+            if self.is_highlighted() != was_highlighted {
+                obj.notify_is_highlighted();
+            }
+            obj.update_state();
+        }
+
+        /// The pretty-formatted JSON source for this `Event`, if it has
+        /// been echoed back by the server.
+        fn source(&self) -> Option<String> {
+            self.item
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .original_json()
+                .map(|raw| {
+                    // We have to convert it to a Value, because a RawValue cannot be
+                    // pretty-printed.
+                    let json = serde_json::to_value(raw).unwrap();
+
+                    serde_json::to_string_pretty(&json).unwrap()
+                })
+        }
+
+        /// Set the room that contains this `Event`.
+        fn set_room(&self, room: Room) {
+            self.room.set(Some(&room));
+            if let Some(session) = room.session() {
+                self.reactions.set_user(session.user().clone());
+            }
+        }
+
+        /// The timestamp of this `Event`.
+        fn timestamp(&self) -> glib::DateTime {
+            let ts = self.obj().origin_server_ts();
+
+            glib::DateTime::from_unix_utc(ts.as_secs().into())
+                .and_then(|t| t.to_local())
+                .unwrap()
+        }
+
+        /// Whether this `Event` was edited.
+        fn is_edited(&self) -> bool {
+            let item_ref = self.item.borrow();
+            let Some(item) = item_ref.as_ref() else {
+                return false;
+            };
+
+            match item.content() {
+                TimelineItemContent::Message(msg) => msg.is_edited(),
+                _ => false,
+            }
+        }
+
+        /// Whether this `Event` should be highlighted.
+        fn is_highlighted(&self) -> bool {
+            let item_ref = self.item.borrow();
+            let Some(item) = item_ref.as_ref() else {
+                return false;
+            };
+
+            item.is_highlighted()
+        }
+
+        /// Whether this event has any read receipt.
+        fn has_read_receipts(&self) -> bool {
+            self.read_receipts.n_items() > 0
+        }
+    }
 }
 
 glib::wrapper! {
@@ -264,56 +317,19 @@ impl Event {
             EventKey::TransactionId(txn_id)
                 if item.is_local_echo() && item.transaction_id() == Some(txn_id) =>
             {
-                self.set_item(item.clone());
+                self.set_item(BoxedEventTimelineItem(item.clone()));
                 return true;
             }
             EventKey::EventId(event_id)
                 if !item.is_local_echo() && item.event_id() == Some(event_id) =>
             {
-                self.set_item(item.clone());
+                self.set_item(BoxedEventTimelineItem(item.clone()));
                 return true;
             }
             _ => {}
         }
 
         false
-    }
-
-    /// The room that contains this `Event`.
-    pub fn room(&self) -> Room {
-        self.imp().room.upgrade().unwrap()
-    }
-
-    /// Set the room that contains this `Event`.
-    fn set_room(&self, room: Room) {
-        let imp = self.imp();
-        imp.room.set(Some(&room));
-        imp.reactions.set_user(room.session().user());
-    }
-
-    /// The underlying SDK timeline item of this `Event`.
-    pub fn item(&self) -> EventTimelineItem {
-        self.imp().item.borrow().clone().unwrap()
-    }
-
-    /// Set the underlying SDK timeline item of this `Event`.
-    pub fn set_item(&self, item: EventTimelineItem) {
-        let was_edited = self.is_edited();
-        let was_highlighted = self.is_highlighted();
-        let imp = self.imp();
-
-        imp.reactions.update(item.reactions().clone());
-        self.update_read_receipts(item.read_receipts());
-        imp.item.replace(Some(item));
-
-        self.notify("source");
-        if self.is_edited() != was_edited {
-            self.notify("is-edited");
-        }
-        if self.is_highlighted() != was_highlighted {
-            self.notify("is-highlighted");
-        }
-        self.update_state();
     }
 
     /// The raw JSON source for this `Event`, if it has been echoed back
@@ -326,24 +342,6 @@ impl Event {
             .unwrap()
             .original_json()
             .cloned()
-    }
-
-    /// The pretty-formatted JSON source for this `Event`, if it has
-    /// been echoed back by the server.
-    pub fn source(&self) -> Option<String> {
-        self.imp()
-            .item
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .original_json()
-            .map(|raw| {
-                // We have to convert it to a Value, because a RawValue cannot be
-                // pretty-printed.
-                let json = serde_json::to_value(raw).unwrap();
-
-                serde_json::to_string_pretty(&json).unwrap()
-            })
     }
 
     /// The unique of this `Event` in the timeline.
@@ -390,6 +388,7 @@ impl Event {
     /// available, otherwise it will be created on every call.
     pub fn sender(&self) -> Member {
         self.room()
+            .unwrap()
             .get_or_create_members()
             .get_or_create(self.sender_id())
     }
@@ -408,15 +407,6 @@ impl Event {
     /// Otherwise it's the local time when this event was created.
     pub fn origin_server_ts_u64(&self) -> u64 {
         self.origin_server_ts().get().into()
-    }
-
-    /// The timestamp of this `Event`.
-    pub fn timestamp(&self) -> glib::DateTime {
-        let ts = self.origin_server_ts();
-
-        glib::DateTime::from_unix_utc(ts.as_secs().into())
-            .and_then(|t| t.to_local())
-            .unwrap()
     }
 
     /// Whether this `Event` is redacted.
@@ -438,24 +428,6 @@ impl Event {
             TimelineItemContent::Message(msg) => Some(msg.msgtype().clone()),
             _ => None,
         }
-    }
-
-    /// Whether this `Event` was edited.
-    pub fn is_edited(&self) -> bool {
-        let item_ref = self.imp().item.borrow();
-        let Some(item) = item_ref.as_ref() else {
-            return false;
-        };
-
-        match item.content() {
-            TimelineItemContent::Message(msg) => msg.is_edited(),
-            _ => false,
-        }
-    }
-
-    /// The state of this `Event`.
-    pub fn state(&self) -> MessageState {
-        self.imp().state.get()
     }
 
     /// Compute the current state of this `Event`.
@@ -495,32 +467,7 @@ impl Event {
         }
 
         self.imp().state.set(state);
-        self.notify("state");
-    }
-
-    /// Whether this `Event` should be highlighted.
-    pub fn is_highlighted(&self) -> bool {
-        let item_ref = self.imp().item.borrow();
-        let Some(item) = item_ref.as_ref() else {
-            return false;
-        };
-
-        item.is_highlighted()
-    }
-
-    /// The reactions to this event.
-    pub fn reactions(&self) -> &ReactionList {
-        &self.imp().reactions
-    }
-
-    /// The read receipts on this event.
-    pub fn read_receipts(&self) -> &gio::ListStore {
-        &self.imp().read_receipts
-    }
-
-    /// Whether this event has any read receipt.
-    pub fn has_read_receipts(&self) -> bool {
-        self.imp().read_receipts.n_items() > 0
+        self.notify_state();
     }
 
     /// Update the read receipts list with the given receipts.
@@ -566,7 +513,7 @@ impl Event {
         let has_read_receipts = new_count > 0;
 
         if had_read_receipts != has_read_receipts {
-            self.notify("has-read-receipts");
+            self.notify_has_read_receipts();
         }
     }
 
@@ -599,11 +546,14 @@ impl Event {
     ///
     /// This is a no-op if called for a local event.
     pub async fn fetch_missing_details(&self) -> Result<(), TimelineError> {
+        let Some(room) = self.room() else {
+            return Ok(());
+        };
         let Some(event_id) = self.event_id() else {
             return Ok(());
         };
 
-        let timeline = self.room().timeline().matrix_timeline();
+        let timeline = room.timeline().matrix_timeline();
         spawn_tokio!(async move { timeline.fetch_details_for_event(&event_id).await })
             .await
             .unwrap()
@@ -623,11 +573,21 @@ impl Event {
     /// Returns `Err` if an error occurred while fetching the content. Panics on
     /// an incompatible event.
     pub async fn get_media_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
+        let Some(room) = self.room() else {
+            return Err(matrix_sdk::Error::UnknownError(
+                "Failed to upgrade Room".into(),
+            ));
+        };
+        let Some(session) = room.session() else {
+            return Err(matrix_sdk::Error::UnknownError(
+                "Failed to upgrade Session".into(),
+            ));
+        };
         let TimelineItemContent::Message(message) = self.content() else {
             panic!("Trying to get the media content of an event of incompatible type");
         };
 
-        let client = self.room().session().client();
+        let client = session.client();
         get_media_content(client, message.msgtype().clone()).await
     }
 
@@ -647,13 +607,6 @@ impl Event {
     /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
     pub fn counts_as_unread(&self) -> bool {
         count_as_unread(self.imp().item.borrow().as_ref().unwrap().content())
-    }
-
-    /// Listen to changes of the source of this `TimelineEvent`.
-    pub fn connect_source_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_notify_local(Some("source"), move |this, _| {
-            f(this);
-        })
     }
 }
 

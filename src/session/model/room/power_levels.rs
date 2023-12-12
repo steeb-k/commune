@@ -22,13 +22,14 @@ pub const POWER_LEVEL_MIN: i64 = -POWER_LEVEL_MAX;
 mod imp {
     use std::cell::RefCell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::PowerLevels)]
     pub struct PowerLevels {
-        pub content: RefCell<BoxedPowerLevelsEventContent>,
+        /// The source of the power levels information.
+        #[property(get)]
+        pub power_levels: RefCell<BoxedPowerLevelsEventContent>,
     }
 
     #[glib::object_subclass]
@@ -37,29 +38,12 @@ mod imp {
         type Type = super::PowerLevels;
     }
 
-    impl ObjectImpl for PowerLevels {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoxed::builder::<BoxedPowerLevelsEventContent>("power-levels")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "power-levels" => self.obj().power_levels().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for PowerLevels {}
 }
 
 glib::wrapper! {
+    /// The power levels of a room.
     pub struct PowerLevels(ObjectSubclass<imp::PowerLevels>);
 }
 
@@ -68,15 +52,10 @@ impl PowerLevels {
         glib::Object::new()
     }
 
-    /// The source of the power levels information.
-    pub fn power_levels(&self) -> BoxedPowerLevelsEventContent {
-        self.imp().content.borrow().clone()
-    }
-
     /// Returns whether the member with the given user ID is allowed to do the
     /// given action.
     pub fn member_is_allowed_to(&self, user_id: &UserId, room_action: PowerLevelAction) -> bool {
-        let content = self.imp().content.borrow().0.clone();
+        let content = self.imp().power_levels.borrow().0.clone();
         RoomPowerLevels::from(content).user_can_do(user_id, room_action)
     }
 
@@ -100,8 +79,8 @@ impl PowerLevels {
     /// Updates the power levels from the given event.
     pub fn update_from_event(&self, event: OriginalSyncStateEvent<RoomPowerLevelsEventContent>) {
         let content = BoxedPowerLevelsEventContent(event.content);
-        self.imp().content.replace(content);
-        self.notify("power-levels");
+        self.imp().power_levels.replace(content);
+        self.notify_power_levels();
     }
 }
 

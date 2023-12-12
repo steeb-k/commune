@@ -125,6 +125,10 @@ impl MessageContent {
     }
 
     pub fn update_for_event(&self, event: &Event) {
+        let Some(room) = event.room() else {
+            return;
+        };
+
         let format = self.format();
         if format == ContentFormat::Natural {
             if let Some(related_content) = event.reply_to_event_content() {
@@ -146,7 +150,6 @@ impl MessageContent {
                         );
                     }
                     TimelineDetails::Ready(related_content) => {
-                        let room = event.room();
                         // We should have a strong reference to the list in the RoomHistory so we
                         // can use `get_or_create_members()`.
                         let sender = room
@@ -177,7 +180,7 @@ impl MessageContent {
             }
         }
 
-        build_content(self, event.content(), format, event.sender(), &event.room());
+        build_content(self, event.content(), format, event.sender(), &room);
     }
 
     /// Get the texture displayed by this widget, if any.
@@ -196,6 +199,10 @@ fn build_content(
     sender: Member,
     room: &Room,
 ) {
+    let Some(session) = room.session() else {
+        return;
+    };
+
     let parent = parent.upcast_ref();
     match content {
         TimelineItemContent::Message(message) => {
@@ -208,7 +215,7 @@ fn build_content(
                         parent.set_child(Some(&child));
                         child
                     };
-                    child.audio(message.clone(), &room.session(), format);
+                    child.audio(message.clone(), &session, format);
                 }
                 MessageType::Emote(message) => {
                     let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
@@ -256,7 +263,7 @@ fn build_content(
                         parent.set_child(Some(&child));
                         child
                     };
-                    child.image(message.clone(), &room.session(), format);
+                    child.image(message.clone(), &session, format);
                 }
                 MessageType::Location(message) => {
                     let child =
@@ -317,7 +324,7 @@ fn build_content(
                         parent.set_child(Some(&child));
                         child
                     };
-                    child.video(message.clone(), &room.session(), format);
+                    child.video(message.clone(), &session, format);
                 }
                 MessageType::VerificationRequest(_) => {
                     // TODO: show more information about the verification
@@ -351,7 +358,7 @@ fn build_content(
                 parent.set_child(Some(&child));
                 child
             };
-            child.sticker(sticker.content().clone(), &room.session(), format);
+            child.sticker(sticker.content().clone(), &session, format);
         }
         TimelineItemContent::UnableToDecrypt(_) => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {

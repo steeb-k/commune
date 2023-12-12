@@ -161,7 +161,9 @@ impl Invite {
                     if category == RoomType::Left {
                         // We declined the invite or the invite was retracted, we should close the room
                         // if it is opened.
-                        let session = room.session();
+                        let Some(session) = room.session() else {
+                            return;
+                        };
                         let selection = session.sidebar_list_model().selection_model();
                         if let Some(selected_room) = selection.selected_item().and_downcast::<Room>() {
                             if selected_room == *room {

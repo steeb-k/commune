@@ -116,13 +116,19 @@ impl MediaItem {
         }
 
         if let Some(ref event) = event {
+            let Some(room) = event.room() else {
+                return;
+            };
+            let Some(session) = room.session() else {
+                return;
+            };
             match event.original_content() {
                 Some(AnyMessageLikeEventContent::RoomMessage(message)) => match message.msgtype {
                     MessageType::Image(content) => {
-                        self.show_image(content, &event.room().unwrap().session());
+                        self.show_image(content, &session);
                     }
                     MessageType::Video(content) => {
-                        self.show_video(content, &event.room().unwrap().session());
+                        self.show_video(content, &session);
                     }
                     _ => {
                         panic!("Unexpected message type");

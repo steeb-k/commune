@@ -129,7 +129,9 @@ impl StateTombstone {
         let Some(room) = self.room() else {
             return;
         };
-        let session = room.session();
+        let Some(session) = room.session() else {
+            return;
+        };
         let room_list = session.room_list();
 
         // Join or view the room with the given identifier.

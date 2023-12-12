@@ -20,18 +20,18 @@ use crate::{spawn, spawn_tokio, utils::LoadingState};
 mod imp {
     use std::cell::{Cell, RefCell};
 
-    use glib::object::WeakRef;
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::MemberList)]
     pub struct MemberList {
         /// The list of known members.
         pub members: RefCell<IndexMap<OwnedUserId, Member>>,
         /// The room these members belong to.
-        pub room: WeakRef<Room>,
+        #[property(get, set = Self::set_room, construct_only)]
+        pub room: glib::WeakRef<Room>,
         /// The loading state of the list.
+        #[property(get, builder(LoadingState::default()))]
         pub state: Cell<LoadingState>,
     }
 
@@ -42,39 +42,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for MemberList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<LoadingState>("state")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room" => self.obj().set_room(&value.get().ok().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "state" => obj.state().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MemberList {}
 
     impl ListModelImpl for MemberList {
         fn item_type(&self) -> glib::Type {
@@ -93,6 +62,22 @@ mod imp {
                 .map(|(_user_id, member)| member.clone().upcast())
         }
     }
+
+    impl MemberList {
+        /// Set the room these members belong to.
+        fn set_room(&self, room: Room) {
+            let obj = self.obj();
+            self.room.set(Some(&room));
+            obj.notify_room();
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(@weak obj => async move {
+                    obj.load().await;
+                })
+            );
+        }
+    }
 }
 
 glib::wrapper! {
@@ -108,28 +93,6 @@ impl MemberList {
         glib::Object::builder().property("room", room).build()
     }
 
-    /// The room containing these members.
-    pub fn room(&self) -> Room {
-        self.imp().room.upgrade().unwrap()
-    }
-
-    fn set_room(&self, room: &Room) {
-        self.imp().room.set(Some(room));
-        self.notify("room");
-
-        spawn!(
-            glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                obj.load().await;
-            })
-        );
-    }
-
-    /// The state of this list.
-    pub fn state(&self) -> LoadingState {
-        self.imp().state.get()
-    }
-
     /// Set whether this list is being loaded.
     fn set_state(&self, state: LoadingState) {
         if self.state() == state {
@@ -137,7 +100,7 @@ impl MemberList {
         }
 
         self.imp().state.set(state);
-        self.notify("state");
+        self.notify_state();
     }
 
     pub fn reload(&self) {
@@ -150,13 +113,15 @@ impl MemberList {
 
     /// Load this list.
     async fn load(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
         if matches!(self.state(), LoadingState::Loading | LoadingState::Ready) {
             return;
         }
 
         self.set_state(LoadingState::Loading);
 
-        let room = self.room();
         let matrix_room = room.matrix_room();
 
         // First load what we have locally.
@@ -210,12 +175,15 @@ impl MemberList {
     /// If some of the values do not correspond to existing members, new members
     /// are created.
     fn update_from_room_members(&self, new_members: &[matrix_sdk::room::RoomMember]) {
+        let Some(room) = self.room() else {
+            return;
+        };
         let imp = self.imp();
         let mut members = imp.members.borrow_mut();
         let prev_len = members.len();
         for member in new_members {
             if let Entry::Vacant(entry) = members.entry(member.user_id().into()) {
-                entry.insert(Member::new(&self.room(), member.user_id()));
+                entry.insert(Member::new(&room, member.user_id()));
             }
         }
         let num_members_added = members.len().saturating_sub(prev_len);
@@ -234,7 +202,7 @@ impl MemberList {
             }
 
             // Restore the members activity according to the known timeline events.
-            for item in self.room().timeline().items().iter::<glib::Object>().rev() {
+            for item in room.timeline().items().iter::<glib::Object>().rev() {
                 let Ok(item) = item else {
                     // The iterator is broken, stop.
                     break;
@@ -270,7 +238,7 @@ impl MemberList {
             .entry(user_id)
             .or_insert_with_key(|user_id| {
                 was_member_added = true;
-                Member::new(&self.room(), user_id)
+                Member::new(&self.room().unwrap(), user_id)
             })
             .clone();
 

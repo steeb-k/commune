@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk_ui::timeline::VirtualTimelineItem;
 use ruma::MilliSecondsSinceUnixEpoch;
@@ -15,27 +17,35 @@ pub enum VirtualItemKind {
 }
 
 impl VirtualItemKind {
-    /// Convert this into a [`VirtualItemKindBoxed`].
-    fn boxed(self) -> VirtualItemKindBoxed {
-        VirtualItemKindBoxed(self)
+    /// Convert this into a [`BoxedVirtualItemKind`].
+    fn boxed(self) -> BoxedVirtualItemKind {
+        BoxedVirtualItemKind(self)
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, glib::Boxed)]
-#[boxed_type(name = "VirtualItemKindBoxed")]
-struct VirtualItemKindBoxed(VirtualItemKind);
+#[derive(Clone, Debug, Default, PartialEq, Eq, glib::Boxed)]
+#[boxed_type(name = "BoxedVirtualItemKind")]
+pub struct BoxedVirtualItemKind(VirtualItemKind);
+
+impl Deref for BoxedVirtualItemKind {
+    type Target = VirtualItemKind;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 mod imp {
     use std::cell::RefCell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::VirtualItem)]
     pub struct VirtualItem {
         /// The kind of virtual item.
-        pub kind: RefCell<VirtualItemKind>,
+        #[property(get, set, construct)]
+        pub kind: RefCell<BoxedVirtualItemKind>,
     }
 
     #[glib::object_subclass]
@@ -45,34 +55,12 @@ mod imp {
         type ParentType = TimelineItem;
     }
 
-    impl ObjectImpl for VirtualItem {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoxed::builder::<VirtualItemKindBoxed>("kind")
-                        .construct()
-                        .write_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "kind" => {
-                    let boxed = value.get::<VirtualItemKindBoxed>().unwrap();
-                    self.kind.replace(boxed.0);
-                }
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for VirtualItem {}
 
     impl TimelineItemImpl for VirtualItem {
         fn id(&self) -> String {
-            match self.obj().kind() {
+            match &**self.kind.borrow() {
                 VirtualItemKind::Spinner => "VirtualItem::Spinner".to_owned(),
                 VirtualItemKind::Typing => "VirtualItem::Typing".to_owned(),
                 VirtualItemKind::TimelineStart => "VirtualItem::TimelineStart".to_owned(),
@@ -144,10 +132,5 @@ impl VirtualItem {
         glib::Object::builder()
             .property("kind", VirtualItemKind::DayDivider(date).boxed())
             .build()
-    }
-
-    /// The kind of virtual item.
-    pub fn kind(&self) -> VirtualItemKind {
-        self.imp().kind.borrow().clone()
     }
 }

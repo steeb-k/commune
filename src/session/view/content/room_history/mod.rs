@@ -495,7 +495,7 @@ impl RoomHistory {
             .replace(room.as_ref().map(|r| r.get_or_create_members()));
 
         let model = room.as_ref().map(|room| room.timeline().items());
-        self.selection_model().set_model(model);
+        self.selection_model().set_model(model.as_ref());
 
         imp.is_loading.set(false);
         imp.room.replace(room);
@@ -630,7 +630,7 @@ impl RoomHistory {
         let imp = self.imp();
 
         if let Some(room) = &*imp.room.borrow() {
-            if room.timeline().is_empty() {
+            if room.timeline().empty() {
                 if room.timeline().state() == TimelineState::Error {
                     imp.stack.set_visible_child(&*imp.error);
                 } else {
@@ -654,7 +654,7 @@ impl RoomHistory {
             return false;
         }
 
-        if timeline.is_empty() {
+        if timeline.empty() {
             // We definitely want messages if the timeline is ready but empty.
             return true;
         };
@@ -784,7 +784,7 @@ impl RoomHistory {
         };
 
         let timeline = room.timeline();
-        if !timeline.is_empty() {
+        if !timeline.empty() {
             let imp = self.imp();
 
             if let Some(source_id) = imp.scroll_timeout.take() {
@@ -934,6 +934,9 @@ impl RoomHistory {
         let Some(room) = self.room() else {
             return;
         };
+        let Some(session) = room.session() else {
+            return;
+        };
 
         if !room.is_joined() || !room.is_tombstoned() {
             return;
@@ -944,11 +947,10 @@ impl RoomHistory {
                 return;
             };
 
-            let session = room.session();
             window.show_room(session.session_id(), successor.room_id());
         } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
-            spawn!(clone!(@weak self as obj, @weak room => async move {
-                if let Err(error) = room.session()
+            spawn!(clone!(@weak self as obj, @weak session => async move {
+                if let Err(error) = session
                     .room_list()
                     .join_by_id_or_alias(successor_id.into(), vec![]).await
                 {

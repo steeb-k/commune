@@ -431,6 +431,9 @@ impl MessageToolbar {
 
     /// Set the event to edit.
     pub fn set_edit(&self, event: Event) {
+        let Some(room) = event.room() else {
+            return;
+        };
         // We don't support editing non-text messages.
         let Some((text, formatted)) = event.message().and_then(|msg| match msg {
             MessageType::Emote(emote) => Some((format!("/me {}", emote.body), emote.formatted)),
@@ -443,7 +446,7 @@ impl MessageToolbar {
         let mentions = if let Some(html) =
             formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
         {
-            let (_, mentions) = extract_mentions(&html, &event.room());
+            let (_, mentions) = extract_mentions(&html, &room);
             let mut pos = 0;
             // This is looking for the mention link's inner text in the Markdown
             // so it is not super reliable: if there is other text that matches
@@ -880,7 +883,10 @@ impl MessageToolbar {
     fn update_completion(&self, room: Option<&Room>) {
         let completion = &self.imp().completion;
 
-        completion.set_user_id(room.map(|r| r.session().user_id().to_string()));
+        completion.set_user_id(
+            room.and_then(|r| r.session())
+                .map(|s| s.user_id().to_string()),
+        );
         // `RoomHistory` should have a strong reference to the list so we can use
         // `get_or_create_members()`.
         completion.set_members(room.map(|r| r.get_or_create_members()));
@@ -926,8 +932,9 @@ impl MessageToolbar {
     }
 
     fn set_up_can_send_messages(&self, room: Option<&Room>) {
-        if let Some(room) = room {
-            let own_user_id = room.session().user_id().to_owned();
+        if let Some((room, own_user_id)) =
+            room.and_then(|r| r.session().map(|s| (r, s.user_id().to_owned())))
+        {
             let imp = self.imp();
 
             let own_member = room
@@ -936,12 +943,9 @@ impl MessageToolbar {
 
             // We don't need to keep the handler around, the member should be dropped when
             // switching rooms.
-            own_member.connect_notify_local(
-                Some("membership"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_can_send_messages();
-                }),
-            );
+            own_member.connect_membership_notify(clone!(@weak self as obj => move |_| {
+                obj.update_can_send_messages();
+            }));
             imp.own_member.set(Some(&own_member));
 
             let power_levels_handler = room.power_levels().connect_notify_local(

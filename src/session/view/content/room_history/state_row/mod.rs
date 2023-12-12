@@ -121,12 +121,16 @@ impl StateRow {
         }
 
         let imp = self.imp();
-        imp.read_receipts.set_source(event.read_receipts());
+        imp.read_receipts.set_source(&event.read_receipts());
         imp.event.replace(Some(event));
         self.notify("event");
     }
 
     fn update_with_other_state(&self, event: &Event, other_state: &OtherState) {
+        let Some(room) = event.room() else {
+            return;
+        };
+
         let widget = match other_state.content() {
             AnyOtherFullStateEventContent::RoomCreate(content) => {
                 WidgetType::Creation(StateCreation::new(content))
@@ -152,7 +156,7 @@ impl StateRow {
                 ))
             }
             AnyOtherFullStateEventContent::RoomTombstone(_) => {
-                WidgetType::Tombstone(StateTombstone::new(&event.room()))
+                WidgetType::Tombstone(StateTombstone::new(&room))
             }
             _ => {
                 warn!(

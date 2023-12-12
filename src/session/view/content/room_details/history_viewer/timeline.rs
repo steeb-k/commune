@@ -136,7 +136,7 @@ impl Timeline {
         let room = self.room();
         let matrix_room = room.matrix_room();
         let last_token = imp.last_token.clone();
-        let is_encrypted = room.is_encrypted();
+        let is_encrypted = room.encrypted();
         let handle: tokio::task::JoinHandle<matrix_sdk::Result<_>> = spawn_tokio!(async move {
             let last_token = last_token.lock().await;
 

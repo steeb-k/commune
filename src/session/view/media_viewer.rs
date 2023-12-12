@@ -414,8 +414,11 @@ impl MediaViewer {
         let Some(message) = self.message() else {
             return;
         };
+        let Some(session) = room.session() else {
+            return;
+        };
 
-        let client = room.session().client();
+        let client = session.client();
 
         match &message {
             MessageType::Image(image) => {
@@ -540,7 +543,10 @@ impl MediaViewer {
         let Some(message) = self.message() else {
             return;
         };
-        let client = room.session().client();
+        let Some(session) = room.session() else {
+            return;
+        };
+        let client = session.client();
 
         let (filename, data) = match get_media_content(client, message).await {
             Ok(res) => res,

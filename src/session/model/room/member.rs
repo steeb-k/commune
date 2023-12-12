@@ -53,15 +53,19 @@ impl From<MembershipState> for Membership {
 mod imp {
     use std::cell::Cell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Member)]
     pub struct Member {
+        /// The power level of the member.
+        #[property(get, minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
         pub power_level: Cell<PowerLevel>,
+        /// This member's membership state.
+        #[property(get, builder(Membership::default()))]
         pub membership: Cell<Membership>,
         /// The timestamp of the latest activity of this member.
+        #[property(get, set = Self::set_latest_activity, explicit_notify)]
         pub latest_activity: Cell<u64>,
     }
 
@@ -72,43 +76,18 @@ mod imp {
         type ParentType = User;
     }
 
-    impl ObjectImpl for Member {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecInt64::builder("power-level")
-                        .minimum(POWER_LEVEL_MIN)
-                        .maximum(POWER_LEVEL_MAX)
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<Membership>("membership")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecUInt64::builder("latest-activity")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for Member {}
 
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "latest-activity" => self.obj().set_latest_activity(value.get().unwrap()),
-                _ => unimplemented!(),
+    impl Member {
+        /// Set the timestamp of the latest activity of this member.
+        fn set_latest_activity(&self, activity: u64) {
+            if self.latest_activity.get() >= activity {
+                return;
             }
-        }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "power-level" => obj.power_level().to_value(),
-                "membership" => obj.membership().to_value(),
-                "latest-activity" => obj.latest_activity().to_value(),
-                _ => unimplemented!(),
-            }
+            self.latest_activity.set(activity);
+            self.obj().notify_latest_activity();
         }
     }
 }
@@ -127,18 +106,13 @@ impl Member {
             .build()
     }
 
-    /// The power level of the member.
-    pub fn power_level(&self) -> PowerLevel {
-        self.imp().power_level.get()
-    }
-
     /// Set the power level of the member.
     fn set_power_level(&self, power_level: PowerLevel) {
         if self.power_level() == power_level {
             return;
         }
         self.imp().power_level.replace(power_level);
-        self.notify("power-level");
+        self.notify_power_level();
     }
 
     pub fn role(&self) -> MemberRole {
@@ -157,12 +131,6 @@ impl Member {
         self.role().is_peasant()
     }
 
-    /// This member's membership state.
-    pub fn membership(&self) -> Membership {
-        let imp = self.imp();
-        imp.membership.get()
-    }
-
     /// Set this member's membership state.
     fn set_membership(&self, membership: Membership) {
         if self.membership() == membership {
@@ -170,22 +138,7 @@ impl Member {
         }
         let imp = self.imp();
         imp.membership.replace(membership);
-        self.notify("membership");
-    }
-
-    /// The timestamp of the latest activity of this member.
-    pub fn latest_activity(&self) -> u64 {
-        self.imp().latest_activity.get()
-    }
-
-    /// Set the timestamp of the latest activity of this member.
-    pub fn set_latest_activity(&self, activity: u64) {
-        if self.latest_activity() >= activity {
-            return;
-        }
-
-        self.imp().latest_activity.set(activity);
-        self.notify("latest-activity");
+        self.notify_membership();
     }
 
     /// Update the user based on the room member.

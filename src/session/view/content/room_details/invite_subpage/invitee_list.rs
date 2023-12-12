@@ -204,7 +204,9 @@ impl InviteeList {
         search_term: String,
         response: Result<search_users::v3::Response, HttpError>,
     ) {
-        let session = self.room().session();
+        let Some(session) = self.room().session() else {
+            return;
+        };
         // We should have a strong reference to the list in the main page so we can use
         // `get_or_create_members()`.
         let member_list = self.room().get_or_create_members();
@@ -312,7 +314,10 @@ impl InviteeList {
     }
 
     fn search_users(&self) {
-        let client = self.room().session().client();
+        let Some(session) = self.room().session() else {
+            return;
+        };
+        let client = session.client();
         let search_term = if let Some(search_term) = self.search_term() {
             search_term
         } else {

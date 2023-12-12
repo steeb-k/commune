@@ -289,7 +289,7 @@ pub async fn get_media_content(
 /// Returns a new string with placeholders and the corresponding widgets and the
 /// string they are replacing.
 pub fn extract_mentions(s: &str, room: &Room) -> (String, Vec<(Pill, String)>) {
-    let session = room.session();
+    let session = room.session().unwrap();
     let mut mentions = Vec::new();
     let mut mention = None;
     let mut new_string = String::new();

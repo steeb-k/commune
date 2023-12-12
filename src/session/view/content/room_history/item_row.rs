@@ -275,7 +275,7 @@ impl ItemRow {
                 self.set_action_group(None);
                 self.set_event_actions(None);
 
-                match item.kind() {
+                match &*item.kind() {
                     VirtualItemKind::Spinner => {
                         if !self.child().map_or(false, |widget| widget.is::<Spinner>()) {
                             let spinner = Spinner::default();
@@ -297,7 +297,8 @@ impl ItemRow {
                             self.room_history()
                                 .room()
                                 .as_ref()
-                                .map(|room| room.typing_list()),
+                                .map(|room| room.typing_list())
+                                .as_ref(),
                         );
                     }
                     VirtualItemKind::TimelineStart => {
@@ -427,12 +428,11 @@ impl ItemRow {
     /// Unsets the actions if `event` is `None`.
     fn set_event_actions(&self, event: Option<&Event>) -> Option<gio::SimpleActionGroup> {
         self.clear_expression_watches();
-        let event = match event {
-            Some(event) => event,
-            None => {
-                self.insert_action_group("event", gio::ActionGroup::NONE);
-                return None;
-            }
+        let Some((event, room, session)) =
+            event.and_then(|e| e.room().and_then(|r| r.session().map(|s| (e, r, s))))
+        else {
+            self.insert_action_group("event", gio::ActionGroup::NONE);
+            return None;
         };
         let action_group = gio::SimpleActionGroup::new();
 
@@ -454,7 +454,10 @@ impl ItemRow {
                 // Create a permalink
                 gio::ActionEntry::builder("permalink")
                     .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                        let matrix_room = event.room().matrix_room();
+                        let Some(room) = event.room() else {
+                            return;
+                        };
+                        let matrix_room = room.matrix_room();
                         let event_id = event.event_id().unwrap();
                         spawn!(clone!(@weak widget => async move {
                             let handle = spawn_tokio!(async move {
@@ -477,7 +480,6 @@ impl ItemRow {
             ]);
 
             if let TimelineItemContent::Message(message) = event.content() {
-                let session = event.room().session();
                 let own_user_id = session.user_id();
                 let is_from_own_user = event.sender_id() == own_user_id;
 
@@ -503,8 +505,7 @@ impl ItemRow {
                 if is_from_own_user {
                     update_remove_action(self, &action_group, true);
                 } else {
-                    let remove_watch = event
-                        .room()
+                    let remove_watch = room
                         .own_user_is_allowed_to_expr(PowerLevelAction::Redact)
                         .watch(
                             glib::Object::NONE,
@@ -726,6 +727,9 @@ impl ItemRow {
         let Some(event_id) = event.event_id() else {
             return;
         };
+        let Some(room) = event.room() else {
+            return;
+        };
 
         let confirm_dialog = adw::MessageDialog::builder()
             .transient_for(&window)
@@ -745,7 +749,7 @@ impl ItemRow {
             return;
         }
 
-        if let Err(error) = event.room().redact(event_id, None).await {
+        if let Err(error) = room.redact(event_id, None).await {
             error!("Failed to redact event: {error}");
             toast!(self, gettext("Failed to remove message"));
         }
@@ -759,7 +763,9 @@ impl ItemRow {
         let Some(event_id) = event.event_id() else {
             return;
         };
-        let room = event.room();
+        let Some(room) = event.room() else {
+            return;
+        };
         let reaction_group = event.reactions().reaction_group_by_key(&key);
 
         if let Some(reaction_key) = reaction_group.and_then(|group| group.user_reaction_event_key())

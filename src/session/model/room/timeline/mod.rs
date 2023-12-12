@@ -53,16 +53,19 @@ impl From<BackPaginationStatus> for TimelineState {
 const MAX_BATCH_SIZE: u16 = 20;
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use glib::object::WeakRef;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Debug, glib::Properties)]
+    #[properties(wrapper_type = super::Timeline)]
     pub struct Timeline {
-        pub room: WeakRef<Room>,
+        /// The room containing this timeline.
+        #[property(get, set = Self::set_room, construct_only)]
+        pub room: glib::WeakRef<Room>,
         /// The underlying SDK timeline.
         pub timeline: OnceCell<Arc<SdkTimeline>>,
         /// Items added at the start of the timeline.
@@ -72,14 +75,20 @@ mod imp {
         /// Items added at the end of the timeline.
         pub end_items: gio::ListStore,
         /// The `GListModel` containing all the timeline items.
+        #[property(get)]
         pub items: gtk::FlattenListModel,
         /// A Hashmap linking `EventKey` to corresponding `Event`
         pub event_map: RefCell<HashMap<EventKey, Event>>,
+        /// The state of the timeline.
+        #[property(get, builder(TimelineState::default()))]
         pub state: Cell<TimelineState>,
         /// Whether this timeline has a typing row.
         pub has_typing: Cell<bool>,
         pub diff_handle: OnceCell<AbortHandle>,
         pub back_pagination_status_handle: OnceCell<AbortHandle>,
+        /// Whether the timeline is empty.
+        #[property(get = Self::is_empty)]
+        pub empty: PhantomData<bool>,
     }
 
     impl Default for Timeline {
@@ -105,6 +114,7 @@ mod imp {
                 has_typing: Default::default(),
                 diff_handle: Default::default(),
                 back_pagination_status_handle: Default::default(),
+                empty: Default::default(),
             }
         }
     }
@@ -115,45 +125,8 @@ mod imp {
         type Type = super::Timeline;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Timeline {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gio::ListModel>("items")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("empty").read_only().build(),
-                    glib::ParamSpecEnum::builder::<TimelineState>("state")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room" => self.obj().set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "items" => obj.items().to_value(),
-                "empty" => obj.is_empty().to_value(),
-                "state" => obj.state().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             if let Some(handle) = self.diff_handle.get() {
                 handle.abort();
@@ -161,6 +134,33 @@ mod imp {
             if let Some(handle) = self.back_pagination_status_handle.get() {
                 handle.abort();
             }
+        }
+    }
+
+    impl Timeline {
+        /// Set the room containing this timeline.
+        fn set_room(&self, room: Option<Room>) {
+            let obj = self.obj();
+            self.room.set(room.as_ref());
+
+            if let Some(room) = room {
+                room.typing_list().connect_items_changed(
+                    clone!(@weak obj => move |list, _, _, _| {
+                        if !list.is_empty() {
+                            obj.add_typing_row();
+                        }
+                    }),
+                );
+            }
+
+            spawn!(clone!(@weak obj => async move {
+                obj.setup_timeline().await;
+            }));
+        }
+
+        /// Whether the timeline is empty.
+        fn is_empty(&self) -> bool {
+            self.sdk_items.n_items() == 0
         }
     }
 }
@@ -179,11 +179,6 @@ impl Timeline {
         glib::Object::builder().property("room", room).build()
     }
 
-    /// The `GListModel` containing the timeline items.
-    pub fn items(&self) -> &gio::ListModel {
-        self.imp().items.upcast_ref()
-    }
-
     /// The `GListModel` containing only the items provided by the SDK.
     pub fn sdk_items(&self) -> &gio::ListModel {
         self.imp().sdk_items.upcast_ref()
@@ -191,10 +186,12 @@ impl Timeline {
 
     /// Update this `Timeline` with the given diff.
     fn update(&self, diff: VectorDiff<Arc<SdkTimelineItem>>) {
+        let Some(room) = self.room() else {
+            return;
+        };
         let imp = self.imp();
         let sdk_items = &imp.sdk_items;
-        let room = self.room();
-        let was_empty = self.is_empty();
+        let was_empty = self.empty();
 
         match diff {
             VectorDiff::Append { values } => {
@@ -326,8 +323,8 @@ impl Timeline {
             }
         }
 
-        if self.is_empty() != was_empty {
-            self.notify("empty");
+        if self.empty() != was_empty {
+            self.notify_empty();
         }
     }
 
@@ -368,7 +365,8 @@ impl Timeline {
     /// Create a `TimelineItem` in this `Timeline` from the given SDK timeline
     /// item.
     fn create_item(&self, item: &SdkTimelineItem) -> TimelineItem {
-        let item = TimelineItem::new(item, &self.room());
+        let room = self.room().unwrap();
+        let item = TimelineItem::new(item, &room);
 
         if let Some(event) = item.downcast_ref::<Event>() {
             self.imp()
@@ -378,7 +376,7 @@ impl Timeline {
 
             // Keep track of the activity of the sender.
             if event.counts_as_unread() {
-                if let Some(members) = self.room().members() {
+                if let Some(members) = room.members() {
                     let member = members.get_or_create(event.sender_id());
                     member.set_latest_activity(event.origin_server_ts_u64());
                 }
@@ -482,7 +480,9 @@ impl Timeline {
         if let Some(event) = self.event_by_key(&EventKey::EventId(event_id.clone())) {
             event.raw().unwrap().deserialize().map_err(Into::into)
         } else {
-            let room = self.room();
+            let Some(room) = self.room() else {
+                return Err(MatrixError::UnknownError("Failed to upgrade Room".into()));
+            };
             let matrix_room = room.matrix_room();
             let event_id_clone = event_id.clone();
             let handle =
@@ -498,29 +498,12 @@ impl Timeline {
         }
     }
 
-    /// Set the room containing this timeline.
-    fn set_room(&self, room: Option<Room>) {
-        self.imp().room.set(room.as_ref());
-
-        if let Some(room) = room {
-            room.typing_list().connect_items_changed(
-                clone!(@weak self as obj => move |list, _, _, _| {
-                    if !list.is_empty() {
-                        obj.add_typing_row();
-                    }
-                }),
-            );
-        }
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.setup_timeline().await;
-        }));
-    }
-
     /// Setup the underlying SDK timeline.
     async fn setup_timeline(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
         let imp = self.imp();
-        let room = self.room();
         let room_id = room.room_id().to_owned();
         let matrix_room = room.matrix_room();
 
@@ -614,7 +597,10 @@ impl Timeline {
 
     /// Setup the back-pagination status.
     async fn setup_back_pagination_status(&self) {
-        let room_id = self.room().room_id().to_owned();
+        let Some(room) = self.room() else {
+            return;
+        };
+        let room_id = room.room_id().to_owned();
         let matrix_timeline = self.matrix_timeline();
 
         let mut subscriber = matrix_timeline.back_pagination_status();
@@ -646,11 +632,6 @@ impl Timeline {
             .unwrap();
     }
 
-    /// The room containing this timeline.
-    pub fn room(&self) -> Room {
-        self.imp().room.upgrade().unwrap()
-    }
-
     /// The underlying SDK timeline.
     pub fn matrix_timeline(&self) -> Arc<SdkTimeline> {
         self.imp().timeline.get().unwrap().clone()
@@ -677,17 +658,7 @@ impl Timeline {
             _ => start_items.remove_all(),
         }
 
-        self.notify("state");
-    }
-
-    /// The state of the timeline.
-    pub fn state(&self) -> TimelineState {
-        self.imp().state.get()
-    }
-
-    /// Whether the timeline is empty.
-    pub fn is_empty(&self) -> bool {
-        self.imp().sdk_items.n_items() == 0
+        self.notify_state();
     }
 
     fn has_typing_row(&self) -> bool {
@@ -703,7 +674,7 @@ impl Timeline {
     }
 
     pub fn remove_empty_typing_row(&self) {
-        if !self.has_typing_row() || !self.room().typing_list().is_empty() {
+        if !self.has_typing_row() || !self.room().is_some_and(|r| r.typing_list().is_empty()) {
             return;
         }
 
@@ -715,7 +686,13 @@ impl Timeline {
     /// Returns `None` if it is not possible to know, for example if there are
     /// no events in the Timeline.
     pub async fn has_unread_messages(&self) -> Option<bool> {
-        let own_user_id = self.room().session().user_id().to_owned();
+        let Some(room) = self.room() else {
+            return None;
+        };
+        let Some(session) = room.session() else {
+            return None;
+        };
+        let own_user_id = session.user_id().to_owned();
         let matrix_timeline = self.matrix_timeline();
 
         let user_receipt_item = spawn_tokio!(async move {

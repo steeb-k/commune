@@ -56,28 +56,55 @@ use super::{
 use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
 mod imp {
-    use std::cell::Cell;
+    use std::{
+        cell::{Cell, OnceCell},
+        marker::PhantomData,
+    };
 
-    use glib::{object::WeakRef, subclass::Signal};
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use glib::subclass::Signal;
+    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Default)]
+    #[derive(Default, glib::Properties)]
+    #[properties(wrapper_type = super::Room)]
     pub struct Room {
+        /// The ID of this room.
+        #[property(set = Self::set_room_id, construct_only, type = String)]
         pub room_id: OnceCell<OwnedRoomId>,
         pub matrix_room: RefCell<Option<MatrixRoom>>,
-        pub session: WeakRef<Session>,
-        pub name: RefCell<Option<String>>,
+        /// The current session.
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
+        /// The name that is set for this room.
+        ///
+        /// This can be empty, the display name should be used instead in the
+        /// interface.
+        #[property(get = Self::name)]
+        pub name: PhantomData<Option<String>>,
+        /// The display name of this room.
+        #[property(get = Self::display_name, type = String)]
+        pub display_name: RefCell<Option<String>>,
+        /// The Avatar data of this room.
+        #[property(get)]
         pub avatar_data: OnceCell<AvatarData>,
+        /// The category of this room.
+        #[property(get, builder(RoomType::default()))]
         pub category: Cell<RoomType>,
+        /// The timeline of this room.
+        #[property(get)]
         pub timeline: OnceCell<Timeline>,
-        pub members: WeakRef<MemberList>,
+        /// The members of this room.
+        #[property(get)]
+        pub members: glib::WeakRef<MemberList>,
         /// The number of joined members in the room, according to the
         /// homeserver.
+        #[property(get)]
         pub joined_members_count: Cell<u64>,
-        /// The user who sent the invite to this room. This is only set when
-        /// this room is an invitation.
+        /// The user who sent the invite to this room.
+        ///
+        /// This is only set when this room is an invitation.
+        #[property(get)]
         pub inviter: RefCell<Option<Member>>,
         pub power_levels: RefCell<PowerLevels>,
         /// The timestamp of the room's latest activity.
@@ -86,27 +113,46 @@ mod imp {
         /// unread.
         ///
         /// If it is not known, it will return `0`.
+        #[property(get)]
         pub latest_activity: Cell<u64>,
         /// Whether all messages of this room are read.
+        #[property(get)]
         pub is_read: Cell<bool>,
-        /// The highlight state of the room,
+        /// The highlight state of the room.
+        #[property(get)]
         pub highlight: Cell<HighlightFlags>,
         /// The ID of the room that was upgraded and that this one replaces.
         pub predecessor_id: OnceCell<OwnedRoomId>,
         /// The ID of the successor of this Room, if this room was upgraded.
         pub successor_id: OnceCell<OwnedRoomId>,
-        /// The successor of this Room, if this room was upgraded.
-        pub successor: WeakRef<super::Room>,
+        /// The successor of this Room, if this room was upgraded and the
+        /// successor was joined.
+        #[property(get)]
+        pub successor: glib::WeakRef<super::Room>,
         /// The most recent verification request event.
+        #[property(get, set)]
         pub verification: RefCell<Option<IdentityVerification>>,
-        /// Whether this room is encrypted
-        pub is_encrypted: Cell<bool>,
+        /// Whether this room is encrypted.
+        #[property(get)]
+        pub encrypted: Cell<bool>,
         /// The list of members currently typing in this room.
+        #[property(get)]
         pub typing_list: TypingList,
         /// Whether anyone can join this room.
+        #[property(get)]
         pub is_join_rule_public: Cell<bool>,
-        /// Whether this room is a DM.
+        /// Whether this room is a direct chat.
+        #[property(get)]
         pub is_direct: Cell<bool>,
+        /// The number of unread notifications of this room.
+        #[property(get = Self::notification_count)]
+        pub notification_count: PhantomData<u64>,
+        /// The topic of this room.
+        #[property(get = Self::topic)]
+        pub topic: PhantomData<Option<String>>,
+        /// Whether this room has been upgraded.
+        #[property(get = Self::is_tombstoned)]
+        pub is_tombstoned: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -116,131 +162,8 @@ mod imp {
         type ParentType = SidebarItem;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Room {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("room-id")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("name").read_only().build(),
-                    glib::ParamSpecString::builder("display-name")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Member>("inviter")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<AvatarData>("avatar-data")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Timeline>("timeline")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecFlags::builder::<HighlightFlags>("highlight")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecUInt64::builder("notification-count")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<RoomType>("category")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("topic").read_only().build(),
-                    glib::ParamSpecUInt64::builder("latest-activity")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-read")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<MemberList>("members")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecUInt64::builder("joined-members-count")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("predecessor-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-tombstoned")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("successor-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<super::Room>("successor")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<IdentityVerification>("verification")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("encrypted")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<TypingList>("typing-list")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-join-rule-public")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-direct")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => self.session.set(value.get().ok().as_ref()),
-                "room-id" => self
-                    .room_id
-                    .set(RoomId::parse(value.get::<&str>().unwrap()).unwrap())
-                    .unwrap(),
-                "verification" => obj.set_verification(value.get().unwrap()),
-                "encrypted" => obj.set_is_encrypted(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room-id" => obj.room_id().as_str().to_value(),
-                "session" => obj.session().to_value(),
-                "inviter" => obj.inviter().to_value(),
-                "name" => obj.name().to_value(),
-                "display-name" => obj.display_name().to_value(),
-                "avatar-data" => obj.avatar_data().to_value(),
-                "timeline" => self.timeline.get().unwrap().to_value(),
-                "category" => obj.category().to_value(),
-                "highlight" => obj.highlight().to_value(),
-                "topic" => obj.topic().to_value(),
-                "members" => obj.members().to_value(),
-                "joined-members-count" => obj.joined_members_count().to_value(),
-                "notification-count" => obj.notification_count().to_value(),
-                "latest-activity" => obj.latest_activity().to_value(),
-                "is-read" => obj.is_read().to_value(),
-                "predecessor-id" => obj.predecessor_id().map(|id| id.as_str()).to_value(),
-                "is-tombstoned" => obj.is_tombstoned().to_value(),
-                "successor-id" => obj.successor_id().map(|id| id.as_str()).to_value(),
-                "successor" => obj.successor().to_value(),
-                "verification" => obj.verification().to_value(),
-                "encrypted" => obj.is_encrypted().to_value(),
-                "typing-list" => obj.typing_list().to_value(),
-                "is-join-rule-public" => obj.is_join_rule_public().to_value(),
-                "is-direct" => obj.is_direct().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("room-forgotten").build()]);
@@ -250,8 +173,11 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
+            let Some(session) = obj.session() else {
+                return;
+            };
 
-            obj.set_matrix_room(obj.session().client().get_room(obj.room_id()).unwrap());
+            obj.set_matrix_room(session.client().get_room(obj.room_id()).unwrap());
             self.timeline.set(Timeline::new(&obj)).unwrap();
 
             self.timeline
@@ -265,7 +191,7 @@ mod imp {
             // Initialize the avatar first since loading is async.
             self.avatar_data
                 .set(AvatarData::with_image(AvatarImage::new(
-                    &obj.session(),
+                    &session,
                     obj.matrix_room().avatar_url().as_deref(),
                     AvatarUriSource::Room,
                 )))
@@ -280,7 +206,7 @@ mod imp {
                 obj.setup_is_encrypted().await;
             }));
 
-            obj.bind_property("display-name", obj.avatar_data(), "display-name")
+            obj.bind_property("display-name", &obj.avatar_data(), "display-name")
                 .sync_create()
                 .build();
 
@@ -297,6 +223,55 @@ mod imp {
     }
 
     impl SidebarItemImpl for Room {}
+
+    impl Room {
+        /// Set the ID of this room.
+        fn set_room_id(&self, room_id: String) {
+            self.room_id.set(RoomId::parse(room_id).unwrap()).unwrap();
+        }
+
+        /// The name of this room.
+        ///
+        /// This can be empty, the display name should be used instead in the
+        /// interface.
+        fn name(&self) -> Option<String> {
+            self.matrix_room.borrow().as_ref().unwrap().name()
+        }
+
+        /// The display name of this room.
+        pub fn display_name(&self) -> String {
+            let display_name = self.display_name.borrow().clone();
+            // Translators: This is displayed when the room name is unknown yet.
+            display_name.unwrap_or_else(|| gettext("Unknown"))
+        }
+
+        /// The number of unread notifications of this room.
+        fn notification_count(&self) -> u64 {
+            self.matrix_room
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .unread_notification_counts()
+                .notification_count
+        }
+
+        /// The topic of this room.
+        fn topic(&self) -> Option<String> {
+            self.matrix_room
+                .borrow()
+                .as_ref()
+                .unwrap()
+                .topic()
+                .filter(|topic| {
+                    !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some()
+                })
+        }
+
+        /// Whether this room was tombstoned.
+        pub fn is_tombstoned(&self) -> bool {
+            self.matrix_room.borrow().as_ref().unwrap().is_tombstoned()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -325,11 +300,6 @@ impl Room {
         }
 
         this
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
     }
 
     /// The ID of this room.
@@ -375,11 +345,6 @@ impl Room {
         self.matrix_room().state()
     }
 
-    /// Whether this room is direct or not.
-    pub fn is_direct(&self) -> bool {
-        self.imp().is_direct.get()
-    }
-
     /// Set whether this room is direct.
     fn set_is_direct(&self, is_direct: bool) {
         if self.is_direct() == is_direct {
@@ -387,7 +352,7 @@ impl Room {
         }
 
         self.imp().is_direct.set(is_direct);
-        self.notify("is-direct");
+        self.notify_is_direct();
     }
 
     pub async fn load_is_direct(&self) {
@@ -440,10 +405,6 @@ impl Room {
         )
     }
 
-    pub fn category(&self) -> RoomType {
-        self.imp().category.get()
-    }
-
     fn set_category_internal(&self, category: RoomType) {
         let old_category = self.category();
 
@@ -452,7 +413,7 @@ impl Room {
         }
 
         self.imp().category.set(category);
-        self.notify("category");
+        self.notify_category();
     }
 
     /// Set the category of this room.
@@ -699,10 +660,6 @@ impl Room {
         self.set_joined_members_count(room_info.joined_members_count());
     }
 
-    pub fn typing_list(&self) -> &TypingList {
-        &self.imp().typing_list
-    }
-
     fn setup_typing(&self) {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
@@ -746,7 +703,9 @@ impl Room {
     }
 
     fn handle_receipt_event(&self, content: ReceiptEventContent) {
-        let session = self.session();
+        let Some(session) = self.session() else {
+            return;
+        };
         let own_user_id = session.user_id();
 
         for (_event_id, receipts) in content.iter() {
@@ -759,6 +718,9 @@ impl Room {
     }
 
     fn handle_typing_event(&self, content: TypingEventContent) {
+        let Some(session) = self.session() else {
+            return;
+        };
         let typing_list = &self.imp().typing_list;
 
         let Some(members) = self.members() else {
@@ -768,7 +730,6 @@ impl Room {
             return;
         };
 
-        let session = self.session();
         let own_user_id = session.user_id();
 
         let members = content
@@ -778,11 +739,6 @@ impl Room {
             .collect();
 
         typing_list.update(members);
-    }
-
-    /// The timeline of this room.
-    pub fn timeline(&self) -> &Timeline {
-        self.imp().timeline.get().unwrap()
     }
 
     /// The members of this room.
@@ -795,19 +751,9 @@ impl Room {
         } else {
             let list = MemberList::new(self);
             members.set(Some(&list));
-            self.notify("members");
+            self.notify_members();
             list
         }
-    }
-
-    /// The members of this room, if a strong reference to the list exists.
-    pub fn members(&self) -> Option<MemberList> {
-        self.imp().members.upgrade()
-    }
-
-    /// The number of joined members in the room, according to the homeserver.
-    pub fn joined_members_count(&self) -> u64 {
-        self.imp().joined_members_count.get()
     }
 
     /// Set the number of joined members in the room, according to the
@@ -818,11 +764,7 @@ impl Room {
         }
 
         self.imp().joined_members_count.set(count);
-        self.notify("joined-members-count");
-    }
-
-    fn notify_notification_count(&self) {
-        self.notify("notification-count");
+        self.notify_joined_members_count();
     }
 
     fn update_highlight(&self) {
@@ -851,11 +793,6 @@ impl Room {
         self.set_highlight(highlight);
     }
 
-    /// How this room is highlighted.
-    pub fn highlight(&self) -> HighlightFlags {
-        self.imp().highlight.get()
-    }
-
     /// Set how this room is highlighted.
     fn set_highlight(&self, highlight: HighlightFlags) {
         if self.highlight() == highlight {
@@ -863,7 +800,7 @@ impl Room {
         }
 
         self.imp().highlight.set(highlight);
-        self.notify("highlight");
+        self.notify_highlight();
     }
 
     fn update_is_read(&self) {
@@ -876,11 +813,6 @@ impl Room {
         }));
     }
 
-    /// Whether all messages of this room are read.
-    pub fn is_read(&self) -> bool {
-        self.imp().is_read.get()
-    }
-
     /// Set whether all messages of this room are read.
     pub fn set_is_read(&self, is_read: bool) {
         if is_read == self.is_read() {
@@ -888,22 +820,7 @@ impl Room {
         }
 
         self.imp().is_read.set(is_read);
-        self.notify("is-read");
-    }
-
-    /// The name of this room.
-    ///
-    /// This can be empty, the display name should be used instead in the
-    /// interface.
-    pub fn name(&self) -> Option<String> {
-        self.matrix_room().name()
-    }
-
-    /// The display name of this room.
-    pub fn display_name(&self) -> String {
-        let display_name = self.imp().name.borrow().clone();
-        // Translators: This is displayed when the room name is unknown yet.
-        display_name.unwrap_or_else(|| gettext("Unknown"))
+        self.notify_is_read();
     }
 
     /// Set the display name of this room.
@@ -912,8 +829,8 @@ impl Room {
             return;
         }
 
-        self.imp().name.replace(display_name);
-        self.notify("display-name");
+        self.imp().display_name.replace(display_name);
+        self.notify_display_name();
     }
 
     fn load_display_name(&self) {
@@ -943,48 +860,23 @@ impl Room {
         );
     }
 
-    /// The number of unread notifications of this room.
-    pub fn notification_count(&self) -> u64 {
-        let matrix_room = self.imp().matrix_room.borrow();
-        matrix_room
-            .as_ref()
-            .unwrap()
-            .unread_notification_counts()
-            .notification_count
-    }
-
-    /// The Avatar of this room.
-    pub fn avatar_data(&self) -> &AvatarData {
-        self.imp().avatar_data.get().unwrap()
-    }
-
-    /// The topic of this room.
-    pub fn topic(&self) -> Option<String> {
-        self.matrix_room()
-            .topic()
-            .filter(|topic| !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some())
-    }
-
     pub fn power_levels(&self) -> PowerLevels {
         self.imp().power_levels.borrow().clone()
     }
 
-    /// The user who sent the invite to this room.
-    ///
-    /// This is only set when this room represents an invite.
-    pub fn inviter(&self) -> Option<Member> {
-        self.imp().inviter.borrow().clone()
-    }
-
     /// Load the member that invited us to this room, when applicable.
     async fn load_inviter(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
         let matrix_room = self.matrix_room();
 
         if matrix_room.state() != RoomState::Invited {
             return;
         }
 
-        let own_user_id = self.session().user_id().to_owned();
+        let own_user_id = session.user_id().to_owned();
         let matrix_room_clone = matrix_room.clone();
         let handle =
             spawn_tokio!(async move { matrix_room_clone.get_member_no_sync(&own_user_id).await });
@@ -1020,7 +912,7 @@ impl Room {
         inviter.update_from_room_member(&inviter_member);
 
         self.imp().inviter.replace(Some(inviter));
-        self.notify("inviter");
+        self.notify_inviter();
     }
 
     /// Update the room state based on the new sync response
@@ -1074,19 +966,12 @@ impl Room {
                 }
             }
         }
-        self.session()
-            .verification_list()
-            .handle_response_room(self.clone(), events);
-    }
 
-    /// The timestamp of the room's latest activity.
-    ///
-    /// This is the timestamp of the latest event that counts as possibly
-    /// unread.
-    ///
-    /// If it is not known, it will return `0`.
-    pub fn latest_activity(&self) -> u64 {
-        self.imp().latest_activity.get()
+        if let Some(session) = self.session() {
+            session
+                .verification_list()
+                .handle_response_room(self.clone(), events);
+        }
     }
 
     /// Set the timestamp of the room's latest possibly unread event.
@@ -1096,7 +981,7 @@ impl Room {
         }
 
         self.imp().latest_activity.set(latest_activity);
-        self.notify("latest-activity");
+        self.notify_latest_activity();
     }
 
     fn load_power_levels(&self) {
@@ -1209,7 +1094,7 @@ impl Room {
         &self,
         room_action: PowerLevelAction,
     ) -> gtk::ClosureExpression {
-        let session = self.session();
+        let session = self.session().unwrap();
         let user_id = session.user_id().to_owned();
         self.power_levels()
             .member_is_allowed_to_expr(user_id, room_action)
@@ -1324,12 +1209,6 @@ impl Room {
         };
 
         self.imp().predecessor_id.set(predecessor.room_id).unwrap();
-        self.notify("predecessor-id");
-    }
-
-    /// Whether this room was tombstoned.
-    pub fn is_tombstoned(&self) -> bool {
-        self.matrix_room().is_tombstoned()
     }
 
     /// The ID of the successor of this Room, if this room was upgraded.
@@ -1337,16 +1216,10 @@ impl Room {
         self.imp().successor_id.get().map(std::ops::Deref::deref)
     }
 
-    /// The successor of this Room, if this room was upgraded and the successor
-    /// was joined.
-    pub fn successor(&self) -> Option<Room> {
-        self.imp().successor.upgrade()
-    }
-
     /// Set the successor of this Room.
     fn set_successor(&self, successor: &Room) {
         self.imp().successor.set(Some(successor));
-        self.notify("successor")
+        self.notify_successor();
     }
 
     /// Load the tombstone for this room.
@@ -1361,16 +1234,17 @@ impl Room {
             imp.successor_id
                 .set(room_tombstone.replacement_room)
                 .unwrap();
-            self.notify("successor-id");
         };
 
         if !self.update_outdated() {
-            self.session()
-                .room_list()
-                .add_tombstoned_room(self.room_id().to_owned());
+            if let Some(session) = self.session() {
+                session
+                    .room_list()
+                    .add_tombstoned_room(self.room_id().to_owned());
+            }
         }
 
-        self.notify("is-tombstoned");
+        self.notify_is_tombstoned();
     }
 
     /// Update whether this `Room` is outdated.
@@ -1383,7 +1257,9 @@ impl Room {
             return true;
         }
 
-        let session = self.session();
+        let Some(session) = self.session() else {
+            return false;
+        };
         let room_list = session.room_list();
 
         if let Some(successor_id) = self.successor_id() {
@@ -1507,17 +1383,6 @@ impl Room {
         }
     }
 
-    /// Set the most recent active verification for a user in this room.
-    pub fn set_verification(&self, verification: IdentityVerification) {
-        self.imp().verification.replace(Some(verification));
-        self.notify("verification");
-    }
-
-    /// The most recent active verification for a user in this room.
-    pub fn verification(&self) -> Option<IdentityVerification> {
-        self.imp().verification.borrow().clone()
-    }
-
     /// Update the latest activity of the room with the given events.
     ///
     /// The events must be in reverse chronological order.
@@ -1534,14 +1399,9 @@ impl Room {
         self.set_latest_activity(latest_activity);
     }
 
-    /// Whether this room is encrypted.
-    pub fn is_encrypted(&self) -> bool {
-        self.imp().is_encrypted.get()
-    }
-
     /// Set whether this room is encrypted.
     pub fn set_is_encrypted(&self, is_encrypted: bool) {
-        let was_encrypted = self.is_encrypted();
+        let was_encrypted = self.encrypted();
         if was_encrypted == is_encrypted {
             return;
         }
@@ -1574,8 +1434,8 @@ impl Room {
             return;
         }
 
-        self.imp().is_encrypted.set(true);
-        self.notify("encrypted");
+        self.imp().encrypted.set(true);
+        self.notify_encrypted();
     }
 
     /// Get a `Pill` representing this `Room`.
@@ -1614,39 +1474,40 @@ impl Room {
 
         // Check if this is a 1-to-1 room to see if we can use a fallback.
         // We don't have the active member count for invited rooms so process them too.
-        if avatar_url.is_none() && members_count > 0 && members_count <= 2 {
-            let handle =
-                spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
-            let members = match handle.await.unwrap() {
-                Ok(m) => m,
-                Err(e) => {
-                    error!("Failed to load room members: {e}");
-                    vec![]
+        if let Some(session) = self.session() {
+            if avatar_url.is_none() && members_count > 0 && members_count <= 2 {
+                let handle =
+                    spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
+                let members = match handle.await.unwrap() {
+                    Ok(m) => m,
+                    Err(e) => {
+                        error!("Failed to load room members: {e}");
+                        vec![]
+                    }
+                };
+
+                let own_user_id = session.user_id();
+                let mut has_own_member = false;
+                let mut other_member = None;
+
+                // Get the other member from the list.
+                for member in members {
+                    if member.user_id() == own_user_id {
+                        has_own_member = true;
+                    } else {
+                        other_member = Some(member);
+                    }
+
+                    if has_own_member && other_member.is_some() {
+                        break;
+                    }
                 }
-            };
 
-            let session = self.session();
-            let own_user_id = session.user_id();
-            let mut has_own_member = false;
-            let mut other_member = None;
-
-            // Get the other member from the list.
-            for member in members {
-                if member.user_id() == own_user_id {
-                    has_own_member = true;
-                } else {
-                    other_member = Some(member);
-                }
-
-                if has_own_member && other_member.is_some() {
-                    break;
-                }
-            }
-
-            // Fallback to other user's avatar if this is a 1-to-1 room.
-            if members_count == 1 || (members_count == 2 && has_own_member) {
-                if let Some(other_member) = other_member {
-                    avatar_url = other_member.avatar_url().map(ToOwned::to_owned)
+                // Fallback to other user's avatar if this is a 1-to-1 room.
+                if members_count == 1 || (members_count == 2 && has_own_member) {
+                    if let Some(other_member) = other_member {
+                        avatar_url = other_member.avatar_url().map(ToOwned::to_owned)
+                    }
                 }
             }
         }
@@ -1657,11 +1518,6 @@ impl Room {
             .set_uri(avatar_url.map(String::from));
     }
 
-    /// Whether anyone can join this room.
-    pub fn is_join_rule_public(&self) -> bool {
-        self.imp().is_join_rule_public.get()
-    }
-
     /// Set whether anyone can join this room.
     fn set_is_join_rule_public(&self, is_public: bool) {
         if self.is_join_rule_public() == is_public {
@@ -1669,6 +1525,6 @@ impl Room {
         }
 
         self.imp().is_join_rule_public.set(is_public);
-        self.notify("is-join-rule-public");
+        self.notify_is_join_rule_public();
     }
 }

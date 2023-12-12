@@ -195,6 +195,9 @@ impl MessageRow {
     }
 
     pub fn set_event(&self, event: Event) {
+        let Some(room) = event.room() else {
+            return;
+        };
         let imp = self.imp();
 
         // Remove signals and bindings from the previous event.
@@ -243,8 +246,8 @@ impl MessageRow {
         );
 
         imp.reactions
-            .set_reaction_list(&event.room().get_or_create_members(), event.reactions());
-        imp.read_receipts.set_source(event.read_receipts());
+            .set_reaction_list(&room.get_or_create_members(), &event.reactions());
+        imp.read_receipts.set_source(&event.read_receipts());
         imp.event
             .set(event, vec![timestamp_handler, source_handler]);
         self.notify("event");
