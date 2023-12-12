@@ -133,15 +133,29 @@ impl Timeline {
 
         self.set_state(TimelineState::Loading);
 
-        let matrix_room = self.room().matrix_room();
+        let room = self.room();
+        let matrix_room = room.matrix_room();
         let last_token = imp.last_token.clone();
+        let is_encrypted = room.is_encrypted();
         let handle: tokio::task::JoinHandle<matrix_sdk::Result<_>> = spawn_tokio!(async move {
             let last_token = last_token.lock().await;
-            let filter_types = vec![MessageLikeEventType::RoomMessage.to_string()];
-            let filter = assign!(RoomEventFilter::default(), {
-                types: Some(filter_types),
-                url_filter: Some(UrlFilter::EventsWithUrl),
-            });
+
+            // If the room is encrypted, the messages content cannot be filtered with URLs
+            let filter = if is_encrypted {
+                let filter_types = vec![
+                    MessageLikeEventType::RoomEncrypted.to_string(),
+                    MessageLikeEventType::RoomMessage.to_string(),
+                ];
+                assign!(RoomEventFilter::default(), {
+                    types: Some(filter_types),
+                })
+            } else {
+                let filter_types = vec![MessageLikeEventType::RoomMessage.to_string()];
+                assign!(RoomEventFilter::default(), {
+                    types: Some(filter_types),
+                    url_filter: Some(UrlFilter::EventsWithUrl),
+                })
+            };
             let options = assign!(MessagesOptions::backward().from(&**last_token), {
                 limit: uint!(20),
                 filter,
