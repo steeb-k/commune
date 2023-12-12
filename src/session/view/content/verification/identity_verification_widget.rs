@@ -13,7 +13,6 @@ use crate::{
     contrib::{QRCode, QrCodeScanner},
     gettext_f,
     login::Login,
-    prelude::*,
     session::model::{
         IdentityVerification, SasData, VerificationMode, VerificationState,
         VerificationSupportedMethods,

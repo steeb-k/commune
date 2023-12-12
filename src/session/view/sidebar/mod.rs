@@ -14,7 +14,6 @@ use self::{
 };
 use crate::{
     account_switcher::AccountSwitcherButton,
-    prelude::*,
     session::model::{
         Category, CategoryType, IconItem, IdentityVerification, Room, RoomType, Selection,
         SidebarListModel, User,

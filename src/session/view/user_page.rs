@@ -144,7 +144,7 @@ impl UserPage {
         };
         let imp = self.imp();
 
-        if user.is_verified() {
+        if user.verified() {
             imp.verified_row.set_title(&gettext("Identity verified"));
             imp.verified_stack.set_visible_child_name("icon");
             self.action_set_enabled("user-page.verify-user", false);
@@ -180,7 +180,11 @@ impl UserPage {
         };
 
         if let Some(main_window) = parent_window.transient_for().and_downcast::<Window>() {
-            main_window.show_verification(user.session().session_id(), &user.user_id(), flow_id);
+            main_window.show_verification(
+                user.session().session_id(),
+                &UserExt::user_id(&user),
+                flow_id,
+            );
         }
 
         parent_window.close();

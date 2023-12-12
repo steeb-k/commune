@@ -3,7 +3,6 @@ use gtk::{glib, prelude::*, CompositeTemplate};
 
 use crate::{
     components::Avatar,
-    prelude::*,
     session::model::{Room, User},
 };
 

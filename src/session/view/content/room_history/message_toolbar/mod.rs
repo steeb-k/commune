@@ -1006,7 +1006,7 @@ impl Iterator for SplitMentions {
             let (name, uri) = if let Some(user) = pill.user() {
                 (
                     user.display_name(),
-                    user.user_id().matrix_to_uri().to_string(),
+                    UserExt::user_id(&user).matrix_to_uri().to_string(),
                 )
             } else if let Some(room) = pill.room() {
                 (

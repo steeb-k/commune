@@ -131,7 +131,7 @@ impl ReactionGroup {
     /// The event ID of the reaction in this group sent by the logged-in user,
     /// if any.
     pub fn user_reaction_event_key(&self) -> Option<EventKey> {
-        let user_id = self.user().user_id();
+        let user_id = UserExt::user_id(self.user());
         self.imp()
             .reactions
             .borrow()
@@ -150,7 +150,7 @@ impl ReactionGroup {
 
     /// Whether this group has a reaction from the logged-in user.
     pub fn has_user(&self) -> bool {
-        let user_id = self.user().user_id();
+        let user_id = UserExt::user_id(self.user());
         self.imp()
             .reactions
             .borrow()

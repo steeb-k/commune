@@ -9,7 +9,7 @@ mod device_item;
 use self::device_item::Item as DeviceItem;
 mod device_list;
 use self::device_list::DeviceList;
-use crate::{components::LoadingRow, prelude::*, session::model::User};
+use crate::{components::LoadingRow, session::model::User};
 
 mod imp {
     use std::cell::RefCell;
@@ -100,7 +100,7 @@ impl DevicesPage {
         }
 
         if let Some(ref user) = user {
-            let device_list = DeviceList::new(user.session());
+            let device_list = DeviceList::new(&user.session());
             imp.other_sessions.bind_model(
                 Some(&device_list),
                 clone!(@weak device_list => @default-panic, move |item| {

@@ -4,7 +4,6 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
     gettext_f,
-    prelude::*,
     session::model::{IdentityVerification, VerificationState},
     Window,
 };

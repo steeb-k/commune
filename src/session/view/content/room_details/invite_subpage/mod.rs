@@ -324,7 +324,7 @@ impl InviteSubpage {
             Err(failed_users) => {
                 for invitee in &invitees {
                     if !failed_users.contains(&invitee) {
-                        user_list.remove_invitee(&invitee.user_id())
+                        user_list.remove_invitee(&UserExt::user_id(invitee))
                     }
                 }
 

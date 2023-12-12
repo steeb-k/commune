@@ -363,7 +363,7 @@ impl VerificationList {
             );
 
             list.insert(
-                FlowId::new(request.user().user_id(), flow_id.to_owned()),
+                FlowId::new(UserExt::user_id(request.user()), flow_id.to_owned()),
                 request,
             );
             length as u32
@@ -383,7 +383,7 @@ impl VerificationList {
                 .list
                 .borrow_mut()
                 .shift_remove_full(&FlowIdUnowned::new(
-                    request.user().user_id().as_ref(),
+                    &UserExt::user_id(request.user()),
                     flow_id,
                 )) {
             position
@@ -410,7 +410,7 @@ impl VerificationList {
         let user_id = session.user_id();
 
         for (_, item) in list.iter() {
-            if !item.is_finished() && item.user().user_id() == user_id {
+            if !item.is_finished() && item.user().user_id() == *user_id {
                 return Some(item.to_owned());
             }
         }

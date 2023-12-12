@@ -1477,7 +1477,7 @@ impl Room {
             error!("Can’t invite users, because this room isn’t a joined room");
             return Ok(());
         }
-        let user_ids: Vec<OwnedUserId> = users.iter().map(|user| user.user_id()).collect();
+        let user_ids: Vec<OwnedUserId> = users.iter().map(UserExt::user_id).collect();
 
         let handle = spawn_tokio!(async move {
             let invitations = user_ids
