@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::Application;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, glib::Boxed)]
+#[boxed_type(name = "StoredSessionSettings")]
 pub struct StoredSessionSettings {
     /// Custom servers to explore.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -26,23 +27,26 @@ impl Default for StoredSessionSettings {
     }
 }
 
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedStoredSessionSettings")]
-pub struct BoxedStoredSessionSettings(StoredSessionSettings);
-
 mod imp {
-    use std::cell::RefCell;
-
-    use once_cell::sync::{Lazy, OnceCell};
+    use std::{
+        cell::{OnceCell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::SessionSettings)]
     pub struct SessionSettings {
         /// The ID of the session these settings are for.
+        #[property(get, construct_only)]
         pub session_id: OnceCell<String>,
         /// The stored settings.
+        #[property(get, construct_only)]
         pub stored_settings: RefCell<StoredSessionSettings>,
+        /// Whether notifications are enabled for this session.
+        #[property(get = Self::notifications_enabled, set = Self::set_notifications_enabled, explicit_notify, default = true)]
+        pub notifications_enabled: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -51,49 +55,25 @@ mod imp {
         type Type = super::SessionSettings;
     }
 
-    impl ObjectImpl for SessionSettings {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("session-id")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoxed::builder::<BoxedStoredSessionSettings>("stored-settings")
-                        .write_only()
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("notifications-enabled")
-                        .default_value(true)
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for SessionSettings {}
 
-            PROPERTIES.as_ref()
+    impl SessionSettings {
+        /// Whether notifications are enabled for this session.
+        fn notifications_enabled(&self) -> bool {
+            self.stored_settings.borrow().notifications_enabled
         }
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
+        /// Set whether notifications are enabled for this session.
+        fn set_notifications_enabled(&self, enabled: bool) {
+            if self.notifications_enabled() == enabled {
+                return;
+            }
             let obj = self.obj();
 
-            match pspec.name() {
-                "session-id" => self.session_id.set(value.get().unwrap()).unwrap(),
-                "stored-settings" => {
-                    self.stored_settings
-                        .replace(value.get::<BoxedStoredSessionSettings>().unwrap().0);
-                }
-                "notifications-enabled" => obj.set_notifications_enabled(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session-id" => obj.session_id().to_value(),
-                "notifications-enabled" => obj.notifications_enabled().to_value(),
-                _ => unimplemented!(),
-            }
+            self.stored_settings.borrow_mut().notifications_enabled = enabled;
+            obj.save();
+            obj.notify_notifications_enabled();
         }
     }
 }
@@ -108,10 +88,7 @@ impl SessionSettings {
     pub fn new(session_id: &str) -> Self {
         glib::Object::builder()
             .property("session-id", session_id)
-            .property(
-                "stored-settings",
-                &BoxedStoredSessionSettings(StoredSessionSettings::default()),
-            )
+            .property("stored-settings", &StoredSessionSettings::default())
             .build()
     }
 
@@ -120,16 +97,8 @@ impl SessionSettings {
     pub fn restore(session_id: &str, stored_settings: StoredSessionSettings) -> Self {
         glib::Object::builder()
             .property("session-id", session_id)
-            .property(
-                "stored-settings",
-                &BoxedStoredSessionSettings(stored_settings),
-            )
+            .property("stored-settings", &stored_settings)
             .build()
-    }
-
-    /// The stored settings.
-    pub fn stored_settings(&self) -> StoredSessionSettings {
-        self.imp().stored_settings.borrow().clone()
     }
 
     /// Save the settings in the GSettings.
@@ -142,14 +111,10 @@ impl SessionSettings {
         Application::default()
             .session_list()
             .settings()
-            .remove(self.session_id());
+            .remove(&self.session_id());
     }
 
-    /// The ID of the session these settings are for.
-    pub fn session_id(&self) -> &str {
-        self.imp().session_id.get().unwrap()
-    }
-
+    /// Custom servers to explore.
     pub fn explore_custom_servers(&self) -> Vec<String> {
         self.imp()
             .stored_settings
@@ -158,6 +123,7 @@ impl SessionSettings {
             .clone()
     }
 
+    /// Set the custom servers to explore.
     pub fn set_explore_custom_servers(&self, servers: Vec<String>) {
         if self.explore_custom_servers() == servers {
             return;
@@ -168,24 +134,5 @@ impl SessionSettings {
             .borrow_mut()
             .explore_custom_servers = servers;
         self.save();
-    }
-
-    /// Whether notifications are enabled for this session.
-    pub fn notifications_enabled(&self) -> bool {
-        self.imp().stored_settings.borrow().notifications_enabled
-    }
-
-    /// Set whether notifications are enabled for this session.
-    pub fn set_notifications_enabled(&self, enabled: bool) {
-        if self.notifications_enabled() == enabled {
-            return;
-        }
-
-        self.imp()
-            .stored_settings
-            .borrow_mut()
-            .notifications_enabled = enabled;
-        self.save();
-        self.notify("notifications-enabled");
     }
 }
