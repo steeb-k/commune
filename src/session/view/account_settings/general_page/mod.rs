@@ -5,7 +5,7 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::ruma::{api::client::discovery::get_capabilities, OwnedMxcUri};
+use matrix_sdk::ruma::api::client::discovery::get_capabilities;
 use tracing::error;
 
 mod change_password_subpage;
@@ -57,7 +57,7 @@ mod imp {
         pub deactivate_account_subpage: TemplateChild<DeactivateAccountSubpage>,
         #[template_child]
         pub log_out_subpage: TemplateChild<LogOutSubpage>,
-        pub changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
+        pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
     }
 
@@ -167,12 +167,9 @@ impl GeneralPage {
             .avatar_data()
             .image()
             .unwrap()
-            .connect_notify_local(
-                Some("uri"),
-                clone!(@weak self as obj => move |avatar_image, _| {
-                    obj.avatar_changed(avatar_image.uri());
-                }),
-            );
+            .connect_uri_notify(clone!(@weak self as obj => move |avatar_image| {
+                obj.avatar_changed(avatar_image.uri());
+            }));
         self.user().connect_notify_local(
             Some("display-name"),
             clone!(@weak self as obj => move |user, _| {
@@ -224,7 +221,7 @@ impl GeneralPage {
         }));
     }
 
-    fn avatar_changed(&self, uri: Option<OwnedMxcUri>) {
+    fn avatar_changed(&self, uri: Option<String>) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_avatar.borrow().as_ref() {
@@ -278,7 +275,7 @@ impl GeneralPage {
             }
         };
 
-        let (action, weak_action) = OngoingAsyncAction::set(uri.clone());
+        let (action, weak_action) = OngoingAsyncAction::set(uri.to_string());
         imp.changing_avatar.replace(Some(action));
 
         let uri_clone = uri.clone();

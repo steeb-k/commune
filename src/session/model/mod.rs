@@ -1,4 +1,4 @@
-mod avatar;
+mod avatar_data;
 mod notifications;
 mod room;
 mod room_list;
@@ -9,7 +9,7 @@ mod user;
 mod verification;
 
 pub use self::{
-    avatar::{AvatarData, AvatarImage, AvatarUriSource},
+    avatar_data::{AvatarData, AvatarImage, AvatarUriSource},
     notifications::Notifications,
     room::{
         Event, EventKey, HighlightFlags, Member, MemberList, MemberRole, Membership, MessageState,

@@ -164,12 +164,12 @@ impl PublicRoom {
     pub fn set_matrix_public_room(&self, room: PublicRoomsChunk) {
         let imp = self.imp();
 
-        let display_name = room.name.clone().map(Into::into);
+        let display_name = room.name.clone();
         self.avatar_data().set_display_name(display_name);
         self.avatar_data()
             .image()
             .unwrap()
-            .set_uri(room.avatar_url.clone());
+            .set_uri(room.avatar_url.clone().map(String::from));
 
         if let Some(room) = self.room_list().get(&room.room_id) {
             self.set_room(room);

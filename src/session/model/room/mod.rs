@@ -1651,7 +1651,10 @@ impl Room {
             }
         }
 
-        self.avatar_data().image().unwrap().set_uri(avatar_url);
+        self.avatar_data()
+            .image()
+            .unwrap()
+            .set_uri(avatar_url.map(String::from));
     }
 
     /// Whether anyone can join this room.

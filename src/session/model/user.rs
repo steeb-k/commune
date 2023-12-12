@@ -229,7 +229,10 @@ pub trait UserExt: IsA<User> {
 
     /// Set the avatar URL of this user.
     fn set_avatar_url(&self, uri: Option<OwnedMxcUri>) {
-        self.avatar_data().image().unwrap().set_uri(uri);
+        self.avatar_data()
+            .image()
+            .unwrap()
+            .set_uri(uri.map(String::from));
     }
 
     /// The actions the currently logged-in user is allowed to perform on this

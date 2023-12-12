@@ -14,7 +14,6 @@ use ruma::{
         room::{avatar::ImageInfo, power_levels::PowerLevelAction},
         StateEventType,
     },
-    OwnedMxcUri,
 };
 use tracing::error;
 
@@ -63,7 +62,7 @@ mod imp {
         pub members_count: TemplateChild<gtk::Label>,
         /// Whether edit mode is enabled.
         pub edit_mode_enabled: Cell<bool>,
-        pub changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
+        pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
         pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
@@ -232,7 +231,7 @@ impl GeneralPage {
         self.imp().expr_watches.borrow_mut().push(expr_watch);
     }
 
-    fn avatar_changed(&self, uri: Option<OwnedMxcUri>) {
+    fn avatar_changed(&self, uri: Option<String>) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_avatar.borrow().as_ref() {
@@ -302,7 +301,7 @@ impl GeneralPage {
             }
         };
 
-        let (action, weak_action) = OngoingAsyncAction::set(uri.clone());
+        let (action, weak_action) = OngoingAsyncAction::set(uri.to_string());
         imp.changing_avatar.replace(Some(action));
 
         let handle =
