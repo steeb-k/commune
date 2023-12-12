@@ -29,7 +29,9 @@ impl RoomListMetainfo {
 
     /// Load the rooms and their metainfo from the store.
     pub async fn load_rooms(&self) -> IndexMap<OwnedRoomId, Room> {
-        let session = self.room_list().session();
+        let Some(session) = self.room_list().session() else {
+            return IndexMap::new();
+        };
         let client = session.client();
         let room_ids = client
             .rooms()
@@ -139,6 +141,9 @@ impl RoomListMetainfoInner {
 
     /// Persist the metainfo in the store.
     async fn persist(&self, rooms_metainfo: &RoomsMetainfoMap) {
+        let Some(session) = self.room_list().session() else {
+            return;
+        };
         let value = match serde_json::to_vec(rooms_metainfo) {
             Ok(value) => value,
             Err(error) => {
@@ -147,7 +152,7 @@ impl RoomListMetainfoInner {
             }
         };
 
-        let client = self.room_list().session().client();
+        let client = session.client();
         let handle = spawn_tokio!(async move {
             client
                 .store()

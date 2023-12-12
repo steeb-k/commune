@@ -79,21 +79,22 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.avatar_data
-                .set(AvatarData::with_image(AvatarImage::new(
-                    &obj.room_list().session(),
-                    None,
-                    AvatarUriSource::Room,
-                )))
-                .unwrap();
+            let avatar_data = if let Some(session) = obj.room_list().session() {
+                AvatarData::with_image(AvatarImage::new(&session, None, AvatarUriSource::Room))
+            } else {
+                AvatarData::new()
+            };
+
+            self.avatar_data.set(avatar_data).unwrap();
 
             obj.room_list()
                 .connect_pending_rooms_changed(clone!(@weak obj => move |_| {
-                    if let Some(matrix_public_room) = obj.matrix_public_room() {
-                        obj.set_pending(obj.room_list().session()
-                            .room_list()
+                    let Some(matrix_public_room) = obj.matrix_public_room() else {
+                        return;
+                    };
+
+                        obj.set_pending(obj.room_list()
                             .is_pending_room((*matrix_public_room.room_id).into()));
-                    }
                 }));
         }
 

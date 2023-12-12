@@ -221,10 +221,12 @@ impl PublicRoomRow {
             return;
         };
         let room_list = public_room.room_list();
+        let Some(session) = room_list.session() else {
+            return;
+        };
 
         if let Some(room) = public_room.room() {
             if let Some(window) = self.root().and_downcast::<Window>() {
-                let session = room_list.session();
                 window.show_room(session.session_id(), room.room_id());
             }
         } else if let Some(matrix_public_room) = public_room.matrix_public_room() {

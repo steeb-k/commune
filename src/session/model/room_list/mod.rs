@@ -24,12 +24,13 @@ use crate::{
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{object::WeakRef, subclass::Signal};
+    use glib::subclass::Signal;
     use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::RoomList)]
     pub struct RoomList {
         /// The list of rooms.
         pub list: RefCell<IndexMap<OwnedRoomId, Room>>,
@@ -38,7 +39,9 @@ mod imp {
         /// The list of rooms that were upgraded and for which we haven't joined
         /// the successor yet.
         pub tombstoned_rooms: RefCell<HashSet<OwnedRoomId>>,
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
         /// The rooms metainfo that allow to restore the RoomList in its
         /// previous state.
         ///
@@ -54,31 +57,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for RoomList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("pending-rooms-changed").build()]);
@@ -126,21 +106,6 @@ glib::wrapper! {
 impl RoomList {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// The ancestor session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
-    /// Set the ancestor session.
-    fn set_session(&self, session: Option<&Session>) {
-        let Some(session) = session else {
-            return;
-        };
-
-        let imp = self.imp();
-        imp.session.set(Some(session));
     }
 
     /// Get a snapshot of the rooms list.
@@ -288,8 +253,10 @@ impl RoomList {
     }
 
     pub fn handle_response_rooms(&self, rooms: ResponseRooms) {
+        let Some(session) = self.session() else {
+            return;
+        };
         let imp = self.imp();
-        let session = self.session();
 
         let mut new_rooms = HashMap::new();
 
@@ -349,7 +316,10 @@ impl RoomList {
         identifier: OwnedRoomOrAliasId,
         via: Vec<OwnedServerName>,
     ) -> Result<(), String> {
-        let client = self.session().client();
+        let Some(session) = self.session() else {
+            return Err("Failed to upgrade Session".to_owned());
+        };
+        let client = session.client();
         let identifier_clone = identifier.clone();
 
         self.pending_rooms_insert(identifier.clone());
