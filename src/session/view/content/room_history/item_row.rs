@@ -477,12 +477,8 @@ impl ItemRow {
             ]);
 
             if let TimelineItemContent::Message(message) = event.content() {
-                let own_user_id = event
-                    .room()
-                    .session()
-                    .user()
-                    .map(|user| user.user_id())
-                    .unwrap();
+                let session = event.room().session();
+                let own_user_id = session.user_id();
                 let is_from_own_user = event.sender_id() == own_user_id;
 
                 // Remove message

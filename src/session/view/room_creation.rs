@@ -139,9 +139,9 @@ impl RoomCreation {
             return;
         }
 
-        if let Some(user) = session.as_ref().and_then(|session| session.user()) {
+        if let Some(session) = session {
             imp.server_name
-                .set_label(&format!(":{}", user.user_id().server_name()));
+                .set_label(&format!(":{}", session.user_id().server_name()));
         }
 
         imp.session.set(session);

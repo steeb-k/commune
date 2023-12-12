@@ -180,8 +180,8 @@ impl NotificationsPage {
             },
             Ok(None) => {
                 warn!("Could not find push rules, using the default ruleset instead.");
-                let user_id = session.user().unwrap().user_id();
-                self.update_page(Ruleset::server_default(&user_id));
+                let user_id = session.user_id();
+                self.update_page(Ruleset::server_default(user_id));
             }
             Err(error) => {
                 error!("Could not get push rules: {error}");

@@ -162,7 +162,8 @@ impl UserFacingError for oo7::dbus::Error {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, glib::Boxed)]
+#[boxed_type(name = "StoredSession")]
 pub struct StoredSession {
     pub homeserver: Url,
     pub user_id: OwnedUserId,

@@ -198,9 +198,8 @@ impl GeneralPage {
     fn user(&self) -> User {
         self.session()
             .as_ref()
-            .and_then(|session| session.user())
+            .map(|session| session.user())
             .unwrap()
-            .to_owned()
     }
 
     fn init_avatar(&self) {

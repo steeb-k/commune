@@ -880,8 +880,7 @@ impl MessageToolbar {
     fn update_completion(&self, room: Option<&Room>) {
         let completion = &self.imp().completion;
 
-        completion
-            .set_user_id(room.and_then(|r| r.session().user().map(|u| u.user_id().to_string())));
+        completion.set_user_id(room.map(|r| r.session().user_id().to_string()));
         // `RoomHistory` should have a strong reference to the list so we can use
         // `get_or_create_members()`.
         completion.set_members(room.map(|r| r.get_or_create_members()));
@@ -928,31 +927,30 @@ impl MessageToolbar {
 
     fn set_up_can_send_messages(&self, room: Option<&Room>) {
         if let Some(room) = room {
-            if let Some(own_user_id) = room.session().user().map(|u| u.user_id().to_owned()) {
-                let imp = self.imp();
+            let own_user_id = room.session().user_id().to_owned();
+            let imp = self.imp();
 
-                let own_member = room
-                    .get_or_create_members()
-                    .get_or_create(own_user_id.clone());
+            let own_member = room
+                .get_or_create_members()
+                .get_or_create(own_user_id.clone());
 
-                // We don't need to keep the handler around, the member should be dropped when
-                // switching rooms.
-                own_member.connect_notify_local(
-                    Some("membership"),
-                    clone!(@weak self as obj => move |_, _| {
-                        obj.update_can_send_messages();
-                    }),
-                );
-                imp.own_member.set(Some(&own_member));
+            // We don't need to keep the handler around, the member should be dropped when
+            // switching rooms.
+            own_member.connect_notify_local(
+                Some("membership"),
+                clone!(@weak self as obj => move |_, _| {
+                    obj.update_can_send_messages();
+                }),
+            );
+            imp.own_member.set(Some(&own_member));
 
-                let power_levels_handler = room.power_levels().connect_notify_local(
-                    Some("power-levels"),
-                    clone!(@weak self as obj => move |_, _| {
-                        obj.update_can_send_messages();
-                    }),
-                );
-                imp.power_levels_handler.replace(Some(power_levels_handler));
-            }
+            let power_levels_handler = room.power_levels().connect_notify_local(
+                Some("power-levels"),
+                clone!(@weak self as obj => move |_, _| {
+                    obj.update_can_send_messages();
+                }),
+            );
+            imp.power_levels_handler.replace(Some(power_levels_handler));
         }
 
         self.update_can_send_messages();

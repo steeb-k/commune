@@ -35,7 +35,7 @@ use super::{
 use crate::{
     prelude::*,
     secret::StoredSession,
-    session_list::{BoxedStoredSession, SessionInfo, SessionInfoImpl},
+    session_list::{SessionInfo, SessionInfoImpl},
     spawn, spawn_tokio,
     utils::{
         check_if_reachable,
@@ -57,23 +57,39 @@ pub enum SessionState {
     Ready = 2,
 }
 
-mod imp {
-    use std::cell::{Cell, RefCell};
+#[derive(Clone, Debug, glib::Boxed)]
+#[boxed_type(name = "BoxedClient")]
+pub struct BoxedClient(Client);
 
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+mod imp {
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Session)]
     pub struct Session {
-        pub client: TokioDrop<Client>,
+        /// The Matrix client.
+        #[property(construct_only)]
+        pub client: TokioDrop<BoxedClient>,
+        /// The list model of the sidebar.
+        #[property(get = Self::sidebar_list_model)]
         pub sidebar_list_model: OnceCell<SidebarListModel>,
+        /// The user of this session.
+        #[property(get = Self::user)]
         pub user: OnceCell<User>,
+        /// The current state of the session.
+        #[property(get, builder(SessionState::default()))]
         pub state: Cell<SessionState>,
         pub sync_tokio_handle: RefCell<Option<JoinHandle<()>>>,
         pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
+        /// Whether this session has a connection to the homeserver.
+        #[property(get)]
         pub offline: Cell<bool>,
+        /// The current settings for this session.
+        #[property(get, construct_only)]
         pub settings: OnceCell<SessionSettings>,
+        /// The notifications API for this session.
         pub notifications: Notifications,
     }
 
@@ -84,51 +100,8 @@ mod imp {
         type ParentType = SessionInfo;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Session {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<SidebarListModel>("sidebar-list-model")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<User>("user")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("offline")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<SessionState>("state")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<SessionSettings>("settings")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "settings" => self.settings.set(value.get().unwrap()).unwrap(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "sidebar-list-model" => obj.sidebar_list_model().to_value(),
-                "user" => obj.user().to_value(),
-                "offline" => obj.is_offline().to_value(),
-                "state" => obj.state().to_value(),
-                "settings" => obj.settings().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -159,7 +132,29 @@ mod imp {
 
     impl SessionInfoImpl for Session {
         fn avatar_data(&self) -> AvatarData {
-            self.obj().user().unwrap().avatar_data().clone()
+            self.obj().user().avatar_data().clone()
+        }
+    }
+
+    impl Session {
+        /// The list model of the sidebar.
+        fn sidebar_list_model(&self) -> SidebarListModel {
+            let obj = self.obj();
+            self.sidebar_list_model
+                .get_or_init(|| {
+                    let item_list =
+                        ItemList::new(&RoomList::new(&obj), &VerificationList::new(&obj));
+                    SidebarListModel::new(&item_list)
+                })
+                .clone()
+        }
+
+        /// The user of the session.
+        fn user(&self) -> User {
+            let obj = self.obj();
+            self.user
+                .get_or_init(|| User::new(&obj, &obj.info().user_id))
+                .clone()
         }
     }
 }
@@ -187,29 +182,19 @@ impl Session {
         stored_session: StoredSession,
         settings: SessionSettings,
     ) -> Result<Self, ClientSetupError> {
-        let obj = glib::Object::builder::<Self>()
-            .property("info", BoxedStoredSession(stored_session.clone()))
-            .property("settings", settings)
-            .build();
-
+        let stored_session_clone = stored_session.clone();
         let client =
-            spawn_tokio!(async move { matrix::client_with_stored_session(stored_session).await })
-                .await
-                .unwrap()?;
+            spawn_tokio!(
+                async move { matrix::client_with_stored_session(stored_session_clone).await }
+            )
+            .await
+            .unwrap()?;
 
-        let imp = obj.imp();
-        imp.client.set(client).unwrap();
-
-        let user = User::new(&obj, &obj.info().user_id);
-        imp.user.set(user).unwrap();
-        obj.notify("user");
-
-        Ok(obj)
-    }
-
-    /// The current state of the session.
-    pub fn state(&self) -> SessionState {
-        self.imp().state.get()
+        Ok(glib::Object::builder()
+            .property("info", &stored_session)
+            .property("settings", settings)
+            .property("client", &BoxedClient(client))
+            .build())
     }
 
     /// Set the current state of the session.
@@ -223,9 +208,10 @@ impl Session {
         }
 
         self.imp().state.set(state);
-        self.notify("state");
+        self.notify_state();
     }
 
+    /// Finish initialization of this session.
     pub async fn prepare(&self) {
         self.update_user_profile();
         self.update_offline().await;
@@ -240,8 +226,9 @@ impl Session {
         debug!("A new session was prepared");
     }
 
+    /// Start syncing the Matrix client.
     fn sync(&self) {
-        if self.state() < SessionState::InitialSync || self.is_offline() {
+        if self.state() < SessionState::InitialSync || self.offline() {
             return;
         }
 
@@ -326,30 +313,14 @@ impl Session {
         .unwrap();
     }
 
-    /// The current settings for this session.
-    pub fn settings(&self) -> &SessionSettings {
-        self.imp().settings.get().unwrap()
-    }
-
+    /// The room list of this session.
     pub fn room_list(&self) -> RoomList {
         self.sidebar_list_model().item_list().room_list()
     }
 
+    /// The verification list of this session.
     pub fn verification_list(&self) -> VerificationList {
         self.sidebar_list_model().item_list().verification_list()
-    }
-
-    /// The list model of the sidebar.
-    pub fn sidebar_list_model(&self) -> &SidebarListModel {
-        self.imp().sidebar_list_model.get_or_init(|| {
-            let item_list = ItemList::new(&RoomList::new(self), &VerificationList::new(self));
-            SidebarListModel::new(&item_list)
-        })
-    }
-
-    /// The user of this session.
-    pub fn user(&self) -> Option<&User> {
-        self.imp().user.get()
     }
 
     /// Update the profile of this session’s user.
@@ -357,7 +328,7 @@ impl Session {
     /// Fetches the updated profile and updates the local data.
     pub fn update_user_profile(&self) {
         let client = self.client();
-        let user = self.user().unwrap().to_owned();
+        let user = self.user();
 
         let handle = spawn_tokio!(async move { client.account().get_profile().await });
 
@@ -372,40 +343,38 @@ impl Session {
         });
     }
 
+    /// The Matrix client.
     pub fn client(&self) -> Client {
         self.imp()
             .client
             .get()
             .expect("The session wasn't prepared")
+            .0
             .clone()
     }
 
-    /// Whether this session has a connection to the homeserver.
-    pub fn is_offline(&self) -> bool {
-        self.imp().offline.get()
-    }
-
+    /// Update whether this session is offline.
     async fn update_offline(&self) {
         let imp = self.imp();
         let monitor = gio::NetworkMonitor::default();
 
-        let is_offline = if monitor.is_network_available() {
+        let offline = if monitor.is_network_available() {
             !check_if_reachable(&self.homeserver()).await
         } else {
             true
         };
 
-        if self.is_offline() == is_offline {
+        if self.offline() == offline {
             return;
         }
 
-        if is_offline {
+        if offline {
             debug!("This session is now offline");
         } else {
             debug!("This session is now online");
         }
 
-        imp.offline.set(is_offline);
+        imp.offline.set(offline);
 
         if let Some(handle) = imp.sync_tokio_handle.take() {
             handle.abort();
@@ -414,25 +383,28 @@ impl Session {
         // Restart the sync loop when online
         self.sync();
 
-        self.notify("offline");
+        self.notify_offline();
     }
 
+    /// Connect to the signal emitted when this session is logged out.
     pub fn connect_logged_out<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_notify_local(Some("state"), move |obj, _| {
+        self.connect_state_notify(move |obj| {
             if obj.state() == SessionState::LoggedOut {
                 f(obj);
             }
         })
     }
 
+    /// Connect to the signal emitted when this session is ready.
     pub fn connect_ready<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_notify_local(Some("state"), move |obj, _| {
+        self.connect_state_notify(move |obj| {
             if obj.state() == SessionState::Ready {
                 f(obj);
             }
         })
     }
 
+    /// Handle the response received via sync.
     fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
         debug!("Received sync response");
         match response {
@@ -456,6 +428,7 @@ impl Session {
         }
     }
 
+    /// Log out of this session.
     pub async fn logout(&self) -> Result<(), String> {
         debug!("The session is about to be logged out");
 
@@ -494,6 +467,7 @@ impl Session {
         );
     }
 
+    /// Clean up this session after it was logged out.
     async fn cleanup_session(&self) {
         let imp = self.imp();
 
@@ -514,6 +488,7 @@ impl Session {
         debug!("The logged out session was cleaned up");
     }
 
+    /// Listen to changes to the list of direct rooms.
     fn setup_direct_room_handler(&self) {
         let session_weak = glib::SendWeakRef::from(self.downgrade());
         self.client().add_event_handler(
@@ -556,6 +531,7 @@ impl Session {
         );
     }
 
+    /// The notifications API of this session.
     pub fn notifications(&self) -> &Notifications {
         &self.imp().notifications
     }

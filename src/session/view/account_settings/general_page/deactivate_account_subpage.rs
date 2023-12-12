@@ -128,10 +128,8 @@ impl DeactivateAccountSubpage {
     fn user_id(&self) -> String {
         self.session()
             .as_ref()
-            .and_then(|session| session.user())
+            .map(|session| session.user_id().to_string())
             .unwrap()
-            .user_id()
-            .to_string()
     }
 
     fn update_button(&self) {

@@ -2,7 +2,7 @@ use std::{ops::Deref, sync::Arc};
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use super::{BoxedStoredSession, SessionInfo, SessionInfoImpl};
+use super::{SessionInfo, SessionInfoImpl};
 use crate::{
     prelude::*, secret::StoredSession, session::model::AvatarData, utils::matrix::ClientSetupError,
 };
@@ -67,7 +67,7 @@ impl FailedSession {
     /// Constructs a new `FailedSession` with the given info and error.
     pub fn new(stored_session: StoredSession, error: ClientSetupError) -> Self {
         glib::Object::builder()
-            .property("info", BoxedStoredSession(stored_session))
+            .property("info", &stored_session)
             .property("error", BoxedClientSetupError(Arc::new(error)))
             .build()
     }

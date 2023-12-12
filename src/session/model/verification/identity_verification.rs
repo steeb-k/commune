@@ -278,7 +278,7 @@ mod imp {
 
             // We don't need to track ourselves because we show "Login Request" as name in
             // that case.
-            if obj.user() != obj.session().user().unwrap() {
+            if obj.user() != &obj.session().user() {
                 obj.user().connect_notify_local(
                     Some("display-name"),
                     clone!(@weak obj => move |_, _| {
@@ -337,11 +337,11 @@ impl IdentityVerification {
     ///
     /// If `User` is `None` a new session verification is started for our own
     /// user and send to other devices.
-    pub async fn create(session: &Session, user: Option<&User>) -> Self {
+    pub async fn create(session: &Session, user: Option<User>) -> Self {
         let user = if let Some(user) = user {
             user
         } else {
-            session.user().unwrap()
+            session.user()
         };
 
         let has_camera =
@@ -364,7 +364,7 @@ impl IdentityVerification {
                         .property("supported-methods", supported_methods)
                         .property("flow-id", request.flow_id())
                         .property("session", session)
-                        .property("user", user)
+                        .property("user", &user)
                         .property("start-time", &glib::DateTime::now_local().unwrap())
                         .build();
 
@@ -378,7 +378,7 @@ impl IdentityVerification {
             error!("Starting a verification failed: Crypto identity wasn't found");
         }
 
-        Self::for_error(session, user, &glib::DateTime::now_local().unwrap())
+        Self::for_error(session, &user, &glib::DateTime::now_local().unwrap())
     }
 
     fn start_handler(&self) {
@@ -595,7 +595,7 @@ impl IdentityVerification {
     /// The mode of this verification.
     pub fn mode(&self) -> Mode {
         let session = self.session();
-        let our_user = session.user().unwrap();
+        let our_user = session.user();
         if our_user.user_id() == self.user().user_id() {
             if self.force_current_session() {
                 Mode::CurrentSession
@@ -622,7 +622,7 @@ impl IdentityVerification {
 
     /// The display name of this verification request.
     pub fn display_name(&self) -> String {
-        if self.user() != self.session().user().unwrap() {
+        if self.user() != &self.session().user() {
             self.user().display_name()
         } else {
             // TODO: give this request a name based on the device

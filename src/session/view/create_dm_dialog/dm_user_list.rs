@@ -220,7 +220,7 @@ impl DmUserList {
                 }
 
                 self.load_dm_rooms().await;
-                let own_user_id = session.user().unwrap().user_id();
+                let own_user_id = session.user_id();
                 let dm_rooms = self.imp().dm_rooms.borrow().clone();
 
                 let mut users: Vec<DmUser> = vec![];

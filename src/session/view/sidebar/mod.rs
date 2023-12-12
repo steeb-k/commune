@@ -278,10 +278,10 @@ impl Sidebar {
             let handler_id = session.connect_notify_local(
                 Some("offline"),
                 clone!(@weak self as obj => move |session, _| {
-                    obj.imp().offline_banner.set_revealed(session.is_offline());
+                    obj.imp().offline_banner.set_revealed(session.offline());
                 }),
             );
-            self.imp().offline_banner.set_revealed(session.is_offline());
+            self.imp().offline_banner.set_revealed(session.offline());
 
             self.imp().offline_handler_id.replace(Some(handler_id));
         }

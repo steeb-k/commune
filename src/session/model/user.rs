@@ -7,6 +7,7 @@ use tracing::error;
 
 use crate::{
     components::Pill,
+    prelude::*,
     session::model::{
         AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Session, VerificationState,
     },
@@ -157,7 +158,7 @@ impl User {
     }
 
     pub async fn verify_identity(&self) -> IdentityVerification {
-        let request = IdentityVerification::create(self.session(), Some(self)).await;
+        let request = IdentityVerification::create(self.session(), Some(self.clone())).await;
         self.session().verification_list().add(request.clone());
         // FIXME: actually listen to room events to get updates for verification state
         request.connect_notify_local(
@@ -240,9 +241,7 @@ pub trait UserExt: IsA<User> {
     fn allowed_actions(&self) -> UserActions {
         let user = self.upcast_ref();
 
-        let is_other = self.session().user().map_or(false, |session_user| {
-            session_user.user_id() != self.user_id()
-        });
+        let is_other = self.session().user_id() != self.user_id();
 
         if !user.is_verified() && is_other {
             UserActions::VERIFY

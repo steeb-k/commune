@@ -417,6 +417,28 @@ impl<T> Drop for TokioDrop<T> {
     }
 }
 
+impl<T: glib::Property> glib::Property for TokioDrop<T> {
+    type Value = T::Value;
+}
+
+impl<T> glib::PropertyGet for TokioDrop<T> {
+    type Value = T;
+
+    fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
+        f(self.get().unwrap())
+    }
+}
+
+impl<T> glib::PropertySet for TokioDrop<T> {
+    type SetValue = T;
+
+    fn set(&self, v: Self::SetValue) {
+        if self.set(v).is_err() {
+            panic!("TokioDrop value was already set");
+        }
+    }
+}
+
 /// The state of a resource that can be loaded.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, glib::Enum)]
 #[enum_type(name = "LoadingState")]

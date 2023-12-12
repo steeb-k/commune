@@ -1,22 +1,8 @@
-use std::ops::Deref;
-
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::{DeviceId, UserId};
 use url::Url;
 
 use crate::{secret::StoredSession, session::model::AvatarData};
-
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedStoredSession")]
-pub struct BoxedStoredSession(pub StoredSession);
-
-impl Deref for BoxedStoredSession {
-    type Target = StoredSession;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 mod imp {
     use std::{cell::OnceCell, marker::PhantomData};
@@ -43,7 +29,7 @@ mod imp {
     pub struct SessionInfo {
         /// The Matrix session's info.
         #[property(get, construct_only)]
-        pub info: OnceCell<BoxedStoredSession>,
+        pub info: OnceCell<StoredSession>,
         /// The Matrix session's user ID.
         #[property(get = Self::user_id)]
         pub user_id: PhantomData<String>,
@@ -75,7 +61,7 @@ mod imp {
     impl SessionInfo {
         /// The Matrix session's info.
         pub fn info(&self) -> &StoredSession {
-            &self.info.get().unwrap().0
+            self.info.get().unwrap()
         }
 
         /// The Matrix session's user ID.

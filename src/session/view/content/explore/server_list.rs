@@ -88,7 +88,7 @@ impl ServerList {
 
         imp.session.set(Some(&session));
 
-        let user_id = session.user().unwrap().user_id();
+        let user_id = session.user_id();
         imp.list.replace(vec![Server::with_default_server(
             user_id.server_name().as_str(),
         )]);

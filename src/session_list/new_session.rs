@@ -1,6 +1,6 @@
 use gtk::{glib, subclass::prelude::*};
 
-use super::{BoxedStoredSession, SessionInfo, SessionInfoImpl};
+use super::{SessionInfo, SessionInfoImpl};
 use crate::{prelude::*, secret::StoredSession, session::model::AvatarData};
 
 mod imp {
@@ -48,7 +48,7 @@ impl NewSession {
     /// Constructs a new `NewSession` with the given info.
     pub fn new(stored_session: StoredSession) -> Self {
         glib::Object::builder()
-            .property("info", BoxedStoredSession(stored_session))
+            .property("info", &stored_session)
             .build()
     }
 }

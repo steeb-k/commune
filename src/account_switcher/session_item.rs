@@ -100,7 +100,7 @@ mod imp {
 
             if let Some(session) = session {
                 if let Some(session) = session.downcast_ref::<Session>() {
-                    let user = session.user().unwrap();
+                    let user = session.user();
 
                     let avatar_data_handler = user
                         .bind_property("avatar-data", &*self.avatar, "data")

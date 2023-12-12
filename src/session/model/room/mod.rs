@@ -746,11 +746,12 @@ impl Room {
     }
 
     fn handle_receipt_event(&self, content: ReceiptEventContent) {
-        let own_user_id = self.session().user().unwrap().user_id();
+        let session = self.session();
+        let own_user_id = session.user_id();
 
         for (_event_id, receipts) in content.iter() {
             if let Some(users) = receipts.get(&ReceiptType::Read) {
-                if users.contains_key(&own_user_id) {
+                if users.contains_key(own_user_id) {
                     self.update_is_read();
                 }
             }
@@ -767,7 +768,8 @@ impl Room {
             return;
         };
 
-        let own_user_id = self.session().user().unwrap().user_id();
+        let session = self.session();
+        let own_user_id = session.user_id();
 
         let members = content
             .user_ids
@@ -982,10 +984,7 @@ impl Room {
             return;
         }
 
-        let Some(own_user_id) = self.session().user().map(|user| user.user_id()) else {
-            return;
-        };
-
+        let own_user_id = self.session().user_id().to_owned();
         let matrix_room_clone = matrix_room.clone();
         let handle =
             spawn_tokio!(async move { matrix_room_clone.get_member_no_sync(&own_user_id).await });
@@ -1211,7 +1210,7 @@ impl Room {
         room_action: PowerLevelAction,
     ) -> gtk::ClosureExpression {
         let session = self.session();
-        let user_id = session.user().unwrap().user_id();
+        let user_id = session.user_id().to_owned();
         self.power_levels()
             .member_is_allowed_to_expr(user_id, room_action)
     }
@@ -1626,7 +1625,8 @@ impl Room {
                 }
             };
 
-            let own_user_id = self.session().user().unwrap().user_id();
+            let session = self.session();
+            let own_user_id = session.user_id();
             let mut has_own_member = false;
             let mut other_member = None;
 

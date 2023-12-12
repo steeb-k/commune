@@ -262,7 +262,7 @@ impl AuthDialog {
         stack.set_visible_child_name(AuthType::Password.as_ref());
         self.show_and_wait_for_response().await?;
 
-        let user_id = session.user().unwrap().user_id().to_string();
+        let user_id = session.user_id().to_string();
         let password = self.imp().password.text().to_string();
 
         let data = assign!(

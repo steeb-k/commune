@@ -715,7 +715,7 @@ impl Timeline {
     /// Returns `None` if it is not possible to know, for example if there are
     /// no events in the Timeline.
     pub async fn has_unread_messages(&self) -> Option<bool> {
-        let own_user_id = self.room().session().user().unwrap().user_id();
+        let own_user_id = self.room().session().user_id().to_owned();
         let matrix_timeline = self.matrix_timeline();
 
         let user_receipt_item = spawn_tokio!(async move {

@@ -140,7 +140,7 @@ impl VerificationList {
                         Some(request)
                     } else {
                         let session = self.session();
-                        let user = session.user().unwrap();
+                        let user = session.user();
                         // ToDevice verifications can only be send by us
                         if *e.sender != *user.user_id() {
                             warn!("Received a device verification event from a different user, which isn't allowed");
@@ -158,7 +158,7 @@ impl VerificationList {
                         let request = IdentityVerification::for_flow_id(
                             e.content.transaction_id.as_str(),
                             &session,
-                            user,
+                            &user,
                             &start_time,
                         );
                         self.add(request.clone());
@@ -228,7 +228,7 @@ impl VerificationList {
                         };
 
                         let session = self.session();
-                        let own_user_id = session.user().unwrap().user_id();
+                        let own_user_id = session.user_id();
 
                         let user_id_to_verify = if request.to == own_user_id {
                             // The request was sent by another user to verify us
@@ -407,7 +407,7 @@ impl VerificationList {
     pub fn get_session(&self) -> Option<IdentityVerification> {
         let list = self.imp().list.borrow();
         let session = self.session();
-        let user_id = session.user().unwrap().user_id();
+        let user_id = session.user_id();
 
         for (_, item) in list.iter() {
             if !item.is_finished() && item.user().user_id() == user_id {

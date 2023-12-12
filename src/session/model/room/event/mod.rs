@@ -288,8 +288,7 @@ impl Event {
     fn set_room(&self, room: Room) {
         let imp = self.imp();
         imp.room.set(Some(&room));
-        imp.reactions
-            .set_user(room.session().user().unwrap().clone());
+        imp.reactions.set_user(room.session().user());
     }
 
     /// The underlying SDK timeline item of this `Event`.

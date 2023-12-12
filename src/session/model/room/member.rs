@@ -219,10 +219,8 @@ impl Member {
         self.set_membership((&event.content().membership).into());
 
         let session = self.session();
-        if let Some(user) = session.user() {
-            if user.user_id() == self.user_id() {
-                session.update_user_profile();
-            }
+        if session.user_id() == self.user_id() {
+            session.update_user_profile();
         }
     }
 }
