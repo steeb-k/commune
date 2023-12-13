@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-28 15:36+0000\n"
-"PO-Revision-Date: 2023-11-30 20:41+0800\n"
+"POT-Creation-Date: 2023-12-08 20:57+0000\n"
+"PO-Revision-Date: 2023-12-09 09:01+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese - China <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -117,7 +117,7 @@ msgstr "看看谁阅读了消息以及谁正在输入"
 msgid "Log into multiple accounts at once (with Single-Sign On support)"
 msgstr "同时登录多个账户（支持单点登录）"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:148
+#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:172
 msgid "The Fractal Team"
 msgstr "Fractal 团队"
 
@@ -133,8 +133,8 @@ msgstr "查看 Matrix 聊天室的媒体文件历史"
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Fractal 的界面可适应小屏幕"
 
-#: src/account_switcher/account_switcher_button.ui:13
-#: src/account_switcher/account_switcher_button.ui:15
+#: src/account_switcher/account_switcher_button.ui:4
+#: src/account_switcher/account_switcher_button.ui:6
 msgid "Switch Accounts"
 msgstr "切换账户"
 
@@ -148,16 +148,16 @@ msgstr "添加账号(_A)"
 msgid "Account Settings"
 msgstr "账号设置"
 
-#: src/application.rs:155
+#: src/application.rs:179
 msgid "© 2017-2023 The Fractal Team"
 msgstr "© 2017-2023 Fractal 团队"
 
-#: src/application.rs:169
+#: src/application.rs:193
 msgid "translator-credits"
 msgstr "lumingzh <lumingzh@qq.com>, 2018-2023"
 
 #. This can't be added via the builder
-#: src/application.rs:175
+#: src/application.rs:199
 msgid "Name by"
 msgstr "名字"
 
@@ -180,7 +180,7 @@ msgid "Authenticate via Browser"
 msgstr "通过浏览器认证"
 
 #: src/components/auth_dialog.ui:114
-#: src/session/view/account_settings/user_page/mod.rs:322
+#: src/session/view/account_settings/general_page/mod.rs:324
 #: src/session/view/content/room_details/general_page/mod.rs:349
 #: src/session/view/content/room_history/item_row.rs:743
 #: src/session/view/content/room_history/message_toolbar/mod.ui:69
@@ -300,11 +300,11 @@ msgstr "请查阅应用程序日志和您的发行版文档获取更多详情。
 msgid "Failed to Initialize the Session"
 msgstr "初始化该会话失败"
 
-#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:532
+#: src/greeter.rs:75 src/login/mod.rs:620 src/window.rs:466
 msgid "No network connection"
 msgstr "无网络连接"
 
-#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:536
+#: src/greeter.rs:79 src/login/mod.rs:625 src/window.rs:470
 msgid "No Internet connection"
 msgstr "没有互联网连接"
 
@@ -367,11 +367,11 @@ msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "您的 Matrix 主服务器网址，比如 {address}"
 
 #: src/login/homeserver_page.ui:22
-#: src/session/view/account_settings/user_page/mod.ui:63
+#: src/session/view/account_settings/general_page/mod.ui:63
 msgid "Homeserver"
 msgstr "主服务器"
 
-#: src/login/homeserver_page.ui:66 src/login/method_page.ui:124
+#: src/login/homeserver_page.ui:66 src/login/method_page.ui:110
 #: src/session/view/content/verification/session_verification.ui:281
 #: src/session/view/content/verification/session_verification.ui:347
 msgid "Next"
@@ -396,15 +396,11 @@ msgstr "登录"
 msgid "Matrix Username"
 msgstr "Matrix 用户名"
 
-#: src/login/method_page.ui:85
+#: src/login/method_page.ui:81
 msgid "Password"
 msgstr "密码"
 
-#: src/login/method_page.ui:93
-msgid "_Forgot Password?"
-msgstr "忘记了密码？(_F)"
-
-#: src/login/method_page.ui:117
+#: src/login/method_page.ui:103
 msgid "More SSO Providers"
 msgstr "更多 SSO 提供者"
 
@@ -558,7 +554,7 @@ msgstr "无法从已存储会话获取保密"
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal：用于 {user_id} 的 Matrix 证书"
 
-#: src/session/model/session.rs:461
+#: src/session/model/session.rs:477
 msgid "Failed to logout the session."
 msgstr "登出该会话失败。"
 
@@ -603,7 +599,7 @@ msgstr "验证"
 #. Translators: As in 'Invited Room Members'.
 #: src/session/model/sidebar/category/category_type.rs:29
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:131
 msgid "Invited"
 msgstr "已邀请"
 
@@ -639,96 +635,108 @@ msgstr "加载已连接设备失败。"
 msgid "Failed to load the list of connected devices."
 msgstr "加载已连接设备列表失败。"
 
-#: src/session/view/account_settings/devices_page/device_row.rs:103
+#: src/session/view/account_settings/devices_page/device_row.rs:106
 msgid "Disconnect Session"
 msgstr "断开会话连接"
 
-#: src/session/view/account_settings/devices_page/device_row.rs:105
-#: src/session/view/account_settings/user_page/mod.ui:127
+#: src/session/view/account_settings/devices_page/device_row.rs:108
+#: src/session/view/account_settings/general_page/mod.ui:127
 msgid "Log Out"
 msgstr "登出"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/account_settings/devices_page/device_row.rs:216
+#: src/session/view/account_settings/devices_page/device_row.rs:232
 msgid "Failed to disconnect device “{device_name}”"
 msgstr "断开设备“{device_name}”的连接失败"
 
-#. Translators: Time in 24h format
-#: src/session/view/account_settings/devices_page/device_row.rs:257
+#. Translators: Time in 24h format, i.e. "23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:278
 msgid "Last seen at %H:%M"
 msgstr "上次见于 %H:%M"
 
-#. Translators: Time in 12h format
-#: src/session/view/account_settings/devices_page/device_row.rs:260
-msgid "Last seen at %l:%M %p"
-msgstr "上次见于 %l:%M %p"
+#. Translators: Time in 12h format, i.e. "11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:283
+msgid "Last seen at %I:%M %p"
+msgstr "上次见于 %I:%M %p"
 
-#. Translators: this is the word Yesterday followed by
-#. a time in 24h format. i.e. "Last seen Yesterday at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:269
+#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:293
 #, no-c-format
-msgid "Last seen Yesterday at %H:%M"
+msgid "Last seen yesterday at %H:%M"
 msgstr "上次见于昨天 %H:%M"
 
-#. Translators: this is the word Yesterday followed by
-#. a time in 12h format. i.e. "Last seen Yesterday at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:274
+#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+#. PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:300
 #, no-c-format
-msgid "Last seen Yesterday at %l:%M %p"
-msgstr "上次见于昨天 %l:%M %p"
+msgid "Last seen yesterday at %I:%M %p"
+msgstr "上次见于昨天 %I:%M %p"
 
-#. Translators: this is the name of the week day followed by
-#. a time in 24h format. i.e. "Last seen Monday at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:283
+#. Translators: this is the name of the week day followed by a time in 24h
+#. format, i.e. "Last seen Monday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:311
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "上次见于%A %H:%M"
 
-#. Translators: this is the week day name followed by
-#. a time in 12h format. i.e. "Last seen Monday at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:288
+#. Translators: this is the week day name followed by a time in 12h format, i.e.
+#. "Last seen Monday at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:318
 #, no-c-format
-msgid "Last seen %A at %l:%M %p"
-msgstr "上次见于%A %l:%M %p"
+msgid "Last seen %A at %I:%M %p"
+msgstr "上次见于%A %I:%M %p"
 
-#. Translators: this is the day of the month followed
-#. by the abbreviated month name followed by a time in
-#. 24h format i.e. "Last seen February 3 at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:296
+#. Translators: this is the month and day and the time in 24h format, i.e. "Last
+#. seen February 3 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:327
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "上次见于 %m 月 %d 日 %H:%M"
 
-#. Translators: this is the day of the month followed
-#. by the abbreviated month name followed by a time in
-#. 12h format i.e. "Last seen February 3 at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:302
+#. Translators: this is the month and day and the time in 12h format, i.e. "Last
+#. seen February 3 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:334
 #, no-c-format
-msgid "Last seen %B %-e at %l:%M %p"
-msgstr "上次见于 %m 月 %d 日 %l:%M %p"
+msgid "Last seen %B %-e at %I:%M %p"
+msgstr "上次见于 %m 月 %d 日 %I:%M %p"
 
-#. Translators: this is the day number followed
-#. by the abbreviated month name followed by the year followed
-#. by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:309
+#. Translators: this is the full date and the time in 24h format, i.e. "Last
+#. seen February 3 2015 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:342
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "上次见于 %Y 年 %m 月 %d 日 %H:%M"
 
-#. Translators: this is the day number followed
-#. by the abbreviated month name followed by the year followed
-#. by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:315
+#. Translators: this is the full date and the time in 12h format, i.e. "Last
+#. seen February 3 2015 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/devices_page/device_row.rs:349
 #, no-c-format
-msgid "Last seen %B %-e %Y at %l:%M %p"
-msgstr "上次见于 %Y 年 %m 月 %d 日 %l:%M %p"
+msgid "Last seen %B %-e %Y at %I:%M %p"
+msgstr "上次见于 %Y 年 %m 月 %d 日 %I:%M %p"
 
 #. Translators: As in 'A verified session'.
-#. Translators: As in "Verified room member".
 #: src/session/view/account_settings/devices_page/device_row.ui:31
 #: src/session/view/account_settings/devices_page/device_row.ui:34
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
 msgid "Verified"
 msgstr "已验证"
 
@@ -755,6 +763,218 @@ msgstr "当前会话"
 #: src/session/view/account_settings/devices_page/mod.ui:28
 msgid "Other Active Sessions"
 msgstr "其它活动会话"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:174
+msgid "Password must be at least 8 characters long"
+msgstr "密码长度必须至少 8 个字符"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:177
+msgid "Password must have at least one lower-case letter"
+msgstr "密码必须包含至少一个小写字母"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:181
+msgid "Password must have at least one upper-case letter"
+msgstr "密码必须包含至少一个大写字母"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:184
+msgid "Password must have at least one digit"
+msgstr "密码必须包含至少一个数字"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:186
+msgid "Password must have at least one symbol"
+msgstr "密码必须包含至少一个符号"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:216
+msgid "Passwords do not match"
+msgstr "密码不匹配"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:269
+msgid "Password changed successfully"
+msgstr "密码已成功修改"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:280
+msgid "Password rejected for being too weak"
+msgstr "密码因太弱已被拒绝"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:284
+msgid "Could not change password"
+msgstr "无法修改密码"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:51
+msgid "Change Password"
+msgstr "更改密码"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:41
+msgid "Changing your password will log you out of your other sessions."
+msgstr "更改您的密码将登出您的其它会话。"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:49
+msgid ""
+"Fractal’s support for encryption is unstable so you might lose access to "
+"your encrypted message history. It is recommended to backup your encryption "
+"keys before proceeding."
+msgstr ""
+"Fractal 对加密的支持不稳定因此您可能会失去对加密历史消息的访问权限。建议您在"
+"操作前备份加密密钥。"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:72
+msgid "New Password"
+msgstr "新密码"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:112
+msgid "Confirm New Password"
+msgstr "确认新密码"
+
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:142
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:73
+#: src/session/view/content/room_history/verification_info_bar.rs:180
+msgid "Continue"
+msgstr "继续"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:175
+msgid "Account successfully deactivated"
+msgstr "账户已成功停用"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:184
+msgid "Could not deactivate account"
+msgstr "无法停用账户"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:141
+msgid "Deactivate Account"
+msgstr "停用账号"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:41
+msgid ""
+"Deactivating your account means you will lose access to all your messages, "
+"contacts, files, and more, forever."
+msgstr "注销您的账号意味着您将永远失去所有的消息、联系人、文件和更多数据。"
+
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:49
+msgid ""
+"To confirm that you really want to deactivate this account, type in your "
+"Matrix user ID:"
+msgstr "为确认您真要注销该账号请输入您的 Matrix 用户标识："
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:7
+msgid "Log Out of this Session"
+msgstr "登出该会话"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:41
+msgid ""
+"Fractal doesn’t support online backup of room encryption keys so you might "
+"lose access to your encrypted message history."
+msgstr ""
+"Fractal 不支持在线备份聊天室加密密钥因此您可能会失去对加密历史消息的访问权"
+"限。"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:49
+msgid "It is recommended to backup your encryption keys before proceeding."
+msgstr "推荐在执行前备份您的加密密钥。"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:64
+msgid "Backup Encryption Keys"
+msgstr "备份加密密钥"
+
+#: src/session/view/account_settings/general_page/mod.rs:80
+msgid "Homeserver address copied to clipboard"
+msgstr "主服务器地址已复制到剪贴板"
+
+#: src/session/view/account_settings/general_page/mod.rs:86
+msgid "Matrix user ID copied to clipboard"
+msgstr "Matrix 用户标识已复制到剪贴板"
+
+#: src/session/view/account_settings/general_page/mod.rs:92
+msgid "Session ID copied to clipboard"
+msgstr "会话标识已复制到剪贴板"
+
+#: src/session/view/account_settings/general_page/mod.rs:245
+#: src/session/view/content/room_details/general_page/mod.rs:253
+msgid "Avatar removed successfully"
+msgstr "头像已成功移除"
+
+#: src/session/view/account_settings/general_page/mod.rs:247
+#: src/session/view/content/room_details/general_page/mod.rs:255
+msgid "Avatar changed successfully"
+msgstr "头像已成功更改"
+
+#: src/session/view/account_settings/general_page/mod.rs:260
+#: src/session/view/content/room_details/general_page/mod.rs:278
+msgid "Could not load file"
+msgstr "无法加载文件"
+
+#: src/session/view/account_settings/general_page/mod.rs:275
+#: src/session/view/content/room_details/general_page/mod.rs:299
+msgid "Could not upload avatar"
+msgstr "无法上传头像"
+
+#: src/session/view/account_settings/general_page/mod.rs:304
+#: src/session/view/content/room_details/general_page/mod.rs:319
+msgid "Could not change avatar"
+msgstr "无法更改头像"
+
+#: src/session/view/account_settings/general_page/mod.rs:320
+#: src/session/view/content/room_details/general_page/mod.rs:343
+msgid "Remove Avatar?"
+msgstr "移除头像吗？"
+
+#: src/session/view/account_settings/general_page/mod.rs:321
+msgid "Do you really want to remove your avatar?"
+msgstr "您确定想要移除您的头像吗？"
+
+#: src/session/view/account_settings/general_page/mod.rs:325
+#: src/session/view/content/room_details/general_page/mod.rs:350
+#: src/session/view/content/room_history/item_row.rs:744
+msgid "Remove"
+msgstr "移除"
+
+#: src/session/view/account_settings/general_page/mod.rs:359
+#: src/session/view/content/room_details/general_page/mod.rs:375
+msgid "Could not remove avatar"
+msgstr "无法移除头像"
+
+#: src/session/view/account_settings/general_page/mod.rs:398
+msgid "Name changed successfully"
+msgstr "名字已成功更改"
+
+#: src/session/view/account_settings/general_page/mod.rs:439
+msgid "Could not change display name"
+msgstr "无法更改展示名字"
+
+#: src/session/view/account_settings/general_page/mod.ui:5
+msgid "General"
+msgstr "常规"
+
+#: src/session/view/account_settings/general_page/mod.ui:27
+#: src/session/view/room_creation.ui:54
+msgid "Name"
+msgstr "名字"
+
+#: src/session/view/account_settings/general_page/mod.ui:60
+msgid "Advanced Information"
+msgstr "高级信息"
+
+#: src/session/view/account_settings/general_page/mod.ui:71
+msgid "Copy homeserver address to clipboard"
+msgstr "将主服务器地址复制到剪贴板"
+
+#: src/session/view/account_settings/general_page/mod.ui:82
+msgid "Matrix User ID"
+msgstr "Matrix 用户标识"
+
+#: src/session/view/account_settings/general_page/mod.ui:90
+msgid "Copy Matrix user ID to clipboard"
+msgstr "将 Matrix 用户标识复制到剪贴板"
+
+#: src/session/view/account_settings/general_page/mod.ui:101
+msgid "Session ID"
+msgstr "会话标识"
+
+#: src/session/view/account_settings/general_page/mod.ui:109
+msgid "Copy session ID to clipboard"
+msgstr "将会话标识复制到剪贴板"
 
 #: src/session/view/account_settings/notifications_page.rs:177
 #: src/session/view/account_settings/notifications_page.rs:190
@@ -904,6 +1124,7 @@ msgid "Not available"
 msgstr "不可用"
 
 #: src/session/view/account_settings/security_page/mod.ui:5
+#: src/session/view/user_page.ui:69
 msgid "Security"
 msgstr "安全"
 
@@ -927,218 +1148,6 @@ msgstr "自签名密钥"
 #: src/session/view/account_settings/security_page/mod.ui:54
 msgid "User-signing key"
 msgstr "用户签名密钥"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:174
-msgid "Password must be at least 8 characters long"
-msgstr "密码长度必须至少 8 个字符"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:177
-msgid "Password must have at least one lower-case letter"
-msgstr "密码必须包含至少一个小写字母"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:181
-msgid "Password must have at least one upper-case letter"
-msgstr "密码必须包含至少一个大写字母"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:184
-msgid "Password must have at least one digit"
-msgstr "密码必须包含至少一个数字"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:186
-msgid "Password must have at least one symbol"
-msgstr "密码必须包含至少一个符号"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:216
-msgid "Passwords do not match"
-msgstr "密码不匹配"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:269
-msgid "Password changed successfully"
-msgstr "密码已成功修改"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:280
-msgid "Password rejected for being too weak"
-msgstr "密码因太弱已被拒绝"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:284
-msgid "Could not change password"
-msgstr "无法修改密码"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:51
-msgid "Change Password"
-msgstr "更改密码"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:41
-msgid "Changing your password will log you out of your other sessions."
-msgstr "更改您的密码将登出您的其它会话。"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:49
-msgid ""
-"Fractal’s support for encryption is unstable so you might lose access to "
-"your encrypted message history. It is recommended to backup your encryption "
-"keys before proceeding."
-msgstr ""
-"Fractal 对加密的支持不稳定因此您可能会失去对加密历史消息的访问权限。建议您在"
-"操作前备份加密密钥。"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:72
-msgid "New Password"
-msgstr "新密码"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:112
-msgid "Confirm New Password"
-msgstr "确认新密码"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:142
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:70
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:73
-#: src/session/view/content/room_history/verification_info_bar.rs:180
-msgid "Continue"
-msgstr "继续"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:175
-msgid "Account successfully deactivated"
-msgstr "账户已成功停用"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:184
-msgid "Could not deactivate account"
-msgstr "无法停用账户"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:141
-msgid "Deactivate Account"
-msgstr "停用账号"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:41
-msgid ""
-"Deactivating your account means you will lose access to all your messages, "
-"contacts, files, and more, forever."
-msgstr "注销您的账号意味着您将永远失去所有的消息、联系人、文件和更多数据。"
-
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:49
-msgid ""
-"To confirm that you really want to deactivate this account, type in your "
-"Matrix user ID:"
-msgstr "为确认您真要注销该账号请输入您的 Matrix 用户标识："
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:7
-msgid "Log Out of this Session"
-msgstr "登出该会话"
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:41
-msgid ""
-"Fractal doesn’t support online backup of room encryption keys so you might "
-"lose access to your encrypted message history."
-msgstr ""
-"Fractal 不支持在线备份聊天室加密密钥因此您可能会失去对加密历史消息的访问权"
-"限。"
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:49
-msgid "It is recommended to backup your encryption keys before proceeding."
-msgstr "推荐在执行前备份您的加密密钥。"
-
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:64
-msgid "Backup Encryption Keys"
-msgstr "备份加密密钥"
-
-#: src/session/view/account_settings/user_page/mod.rs:78
-msgid "Homeserver address copied to clipboard"
-msgstr "主服务器地址已复制到剪贴板"
-
-#: src/session/view/account_settings/user_page/mod.rs:84
-msgid "Matrix user ID copied to clipboard"
-msgstr "Matrix 用户标识已复制到剪贴板"
-
-#: src/session/view/account_settings/user_page/mod.rs:90
-msgid "Session ID copied to clipboard"
-msgstr "会话标识已复制到剪贴板"
-
-#: src/session/view/account_settings/user_page/mod.rs:243
-#: src/session/view/content/room_details/general_page/mod.rs:253
-msgid "Avatar removed successfully"
-msgstr "头像已成功移除"
-
-#: src/session/view/account_settings/user_page/mod.rs:245
-#: src/session/view/content/room_details/general_page/mod.rs:255
-msgid "Avatar changed successfully"
-msgstr "头像已成功更改"
-
-#: src/session/view/account_settings/user_page/mod.rs:258
-#: src/session/view/content/room_details/general_page/mod.rs:278
-msgid "Could not load file"
-msgstr "无法加载文件"
-
-#: src/session/view/account_settings/user_page/mod.rs:273
-#: src/session/view/content/room_details/general_page/mod.rs:299
-msgid "Could not upload avatar"
-msgstr "无法上传头像"
-
-#: src/session/view/account_settings/user_page/mod.rs:302
-#: src/session/view/content/room_details/general_page/mod.rs:319
-msgid "Could not change avatar"
-msgstr "无法更改头像"
-
-#: src/session/view/account_settings/user_page/mod.rs:318
-#: src/session/view/content/room_details/general_page/mod.rs:343
-msgid "Remove Avatar?"
-msgstr "移除头像吗？"
-
-#: src/session/view/account_settings/user_page/mod.rs:319
-msgid "Do you really want to remove your avatar?"
-msgstr "您确定想要移除您的头像吗？"
-
-#: src/session/view/account_settings/user_page/mod.rs:323
-#: src/session/view/content/room_details/general_page/mod.rs:350
-#: src/session/view/content/room_history/item_row.rs:744
-msgid "Remove"
-msgstr "移除"
-
-#: src/session/view/account_settings/user_page/mod.rs:357
-#: src/session/view/content/room_details/general_page/mod.rs:375
-msgid "Could not remove avatar"
-msgstr "无法移除头像"
-
-#: src/session/view/account_settings/user_page/mod.rs:396
-msgid "Name changed successfully"
-msgstr "名字已成功更改"
-
-#: src/session/view/account_settings/user_page/mod.rs:437
-msgid "Could not change display name"
-msgstr "无法更改展示名字"
-
-#: src/session/view/account_settings/user_page/mod.ui:5
-msgid "General"
-msgstr "常规"
-
-#: src/session/view/account_settings/user_page/mod.ui:27
-#: src/session/view/room_creation.ui:54
-msgid "Name"
-msgstr "名字"
-
-#: src/session/view/account_settings/user_page/mod.ui:60
-msgid "Advanced Information"
-msgstr "高级信息"
-
-#: src/session/view/account_settings/user_page/mod.ui:71
-msgid "Copy homeserver address to clipboard"
-msgstr "将主服务器地址复制到剪贴板"
-
-#: src/session/view/account_settings/user_page/mod.ui:82
-msgid "Matrix User ID"
-msgstr "Matrix 用户标识"
-
-#: src/session/view/account_settings/user_page/mod.ui:90
-msgid "Copy Matrix user ID to clipboard"
-msgstr "将 Matrix 用户标识复制到剪贴板"
-
-#: src/session/view/account_settings/user_page/mod.ui:101
-msgid "Session ID"
-msgstr "会话标识"
-
-#: src/session/view/account_settings/user_page/mod.ui:109
-msgid "Copy session ID to clipboard"
-msgstr "将会话标识复制到剪贴板"
 
 #: src/session/view/content/explore/mod.ui:58
 msgid "No rooms matching the search were found"
@@ -1193,7 +1202,7 @@ msgstr "拒绝 {room} 的邀请失败。请稍后重试。"
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:100
 msgid "Invite"
 msgstr "邀请"
 
@@ -1299,7 +1308,7 @@ msgstr "成员"
 
 #. Translators: As in 'Banned Room Members'.
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:133
 msgid "Banned"
 msgstr "已封禁"
 
@@ -1351,20 +1360,20 @@ msgstr "搜索匹配项时发生错误。"
 msgid "Could not load the full list of room members"
 msgstr "无法加载完整的聊天室成员列表"
 
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
-msgid "Member Menu"
-msgstr "成员菜单"
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
+#: src/session/view/user_page.rs:148
+msgid "Identity verified"
+msgstr "身份已验证"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:173
 msgid "Invited Room Members"
 msgstr "邀请的聊天室成员"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:174
 msgid "Banned Room Members"
 msgstr "封禁的聊天室成员"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:175
 msgid "Room Members"
 msgstr "聊天室成员"
 
@@ -1377,22 +1386,6 @@ msgstr "切换聊天室成员搜索"
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
 msgid "Search for room members"
 msgstr "搜索聊天室成员"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "验证(_V)"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "设为仲裁员(_M)"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "设为管理员(_A)"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "踢出(_K)"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
@@ -1680,22 +1673,20 @@ msgid "Send Message"
 msgstr "发送消息"
 
 #. Translators: this is a date and a time in 12h format.
-#. For example, "May 5 at 1:20 PM".
+#. For example, "May 5 at 01:20 PM".
 #. Do not change the time format as it will follow the system settings.
-#. Please use `-` before specifiers that add spaces on single digits.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/mod.rs:146
-msgid "%B %-e at %-l∶%M %p"
-msgstr "%m 月 %d 日 %l:%M %p"
+#: src/session/view/content/room_history/member_timestamp/row.rs:147
+msgid "%B %-e at %I∶%M %p"
+msgstr "%m 月 %d 日 %I:%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
-#. Please use `-` before specifiers that add spaces on single digits.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/mod.rs:153
-msgid "%B %-e at %-k∶%M"
-msgstr "%m 月 %d 日 %l:%M"
+#: src/session/view/content/room_history/member_timestamp/row.rs:153
+msgid "%B %-e at %H∶%M"
+msgstr "%m 月 %d 日 %H:%M"
 
 #: src/session/view/content/room_history/mod.rs:367
 msgid "Error getting file from drop"
@@ -1945,6 +1936,7 @@ msgstr "{user_name} 想要被验证"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:175
 #: src/session/view/content/verification/identity_verification_widget.ui:57
+#: src/session/view/user_page.ui:96
 msgid "Verify"
 msgstr "验证"
 
@@ -2534,6 +2526,18 @@ msgstr "将 {room} 从 {previous_category} 移至 {new_category} 失败。"
 msgid "Failed to forget {room}."
 msgstr "忘记 {room} 失败。"
 
+#: src/session/view/user_page.rs:155
+msgid "Identity not verified"
+msgstr "身份未验证"
+
+#: src/session/view/user_page.rs:171
+msgid "Failed to start user verification"
+msgstr "开始用户验证失败"
+
+#: src/session_list/mod.rs:282
+msgid "Failed to restore previous sessions"
+msgstr "恢复上次会话失败"
+
 #: src/shortcuts.ui:11
 msgctxt "shortcut window"
 msgid "General"
@@ -2704,9 +2708,23 @@ msgstr "您确定想要离开该聊天室吗？您无法在未受邀请的情况
 msgid "Leave"
 msgstr "离开"
 
-#: src/window.rs:350
-msgid "Failed to restore previous sessions"
-msgstr "恢复上次会话失败"
+#~ msgid "_Forgot Password?"
+#~ msgstr "忘记了密码？(_F)"
+
+#~ msgid "Member Menu"
+#~ msgstr "成员菜单"
+
+#~ msgid "_Verify"
+#~ msgstr "验证(_V)"
+
+#~ msgid "Make _Mod"
+#~ msgstr "设为仲裁员(_M)"
+
+#~ msgid "Make _Admin"
+#~ msgstr "设为管理员(_A)"
+
+#~ msgid "_Kick"
+#~ msgstr "踢出(_K)"
 
 #~ msgid "Session removed successfully."
 #~ msgstr "会话已成功移除。"
