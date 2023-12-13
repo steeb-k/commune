@@ -27,12 +27,14 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Category)]
     pub struct Category {
-        /// The filter list model on this category.
+        /// The filter list model of this category.
         #[property(get, set = Self::set_model, construct_only)]
         pub model: OnceCell<gio::ListModel>,
+        /// The filter of this category.
+        pub filter: CategoryFilter,
         /// The type of this category.
-        #[property(get, construct_only, builder(CategoryType::default()))]
-        pub r#type: Cell<CategoryType>,
+        #[property(get = Self::r#type, set = Self::set_type, construct_only, builder(CategoryType::default()))]
+        pub r#type: PhantomData<CategoryType>,
         /// Whether this category is empty.
         #[property(get)]
         pub empty: Cell<bool>,
@@ -95,7 +97,6 @@ mod imp {
         /// Set the filter list model of this category.
         fn set_model(&self, model: gio::ListModel) {
             let obj = self.obj();
-            let type_ = self.r#type.get();
 
             // Special case room lists so that they are sorted and in the right category
             let model = if model.is::<RoomList>() {
@@ -105,14 +106,17 @@ mod imp {
                             CategoryType::from(room_type)
                         }
                     ));
-                let filter = CategoryFilter::new(&room_category_type, type_);
+                self.filter
+                    .set_expression(Some(room_category_type.clone().upcast()));
 
                 let category_type_expr_model = ExpressionListModel::new();
                 category_type_expr_model.set_expressions(vec![room_category_type.upcast()]);
                 category_type_expr_model.set_model(Some(model));
 
-                let filter_model =
-                    gtk::FilterListModel::new(Some(category_type_expr_model), Some(filter));
+                let filter_model = gtk::FilterListModel::new(
+                    Some(category_type_expr_model),
+                    Some(self.filter.clone()),
+                );
 
                 let room_latest_activity = Room::this_expression("latest-activity");
                 let sorter = gtk::NumericSorter::builder()
@@ -140,6 +144,16 @@ mod imp {
             self.model.set(model).unwrap();
         }
 
+        /// The type of this category.
+        fn r#type(&self) -> CategoryType {
+            self.filter.category_type()
+        }
+
+        /// Set the type of this category.
+        fn set_type(&self, type_: CategoryType) {
+            self.filter.set_category_type(type_);
+        }
+
         /// Set whether this category is empty.
         fn set_empty(&self, empty: bool) {
             if empty == self.empty.get() {
@@ -152,7 +166,7 @@ mod imp {
 
         /// The display name of this category.
         fn display_name(&self) -> String {
-            self.r#type.get().to_string()
+            self.r#type().to_string()
         }
     }
 }

@@ -11,7 +11,7 @@ mod imp {
     #[properties(wrapper_type = super::CategoryFilter)]
     pub struct CategoryFilter {
         /// The expression to watch.
-        #[property(get, set = Self::set_expression, explicit_notify)]
+        #[property(get, set = Self::set_expression, explicit_notify, nullable)]
         pub expression: RefCell<Option<gtk::Expression>>,
         /// The category type to filter.
         #[property(get, set = Self::set_category_type, explicit_notify, builder(CategoryType::default()))]
@@ -125,10 +125,13 @@ glib::wrapper! {
 }
 
 impl CategoryFilter {
-    pub fn new(expression: impl AsRef<gtk::Expression>, category_type: CategoryType) -> Self {
-        glib::Object::builder()
-            .property("expression", expression.as_ref())
-            .property("category-type", category_type)
-            .build()
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+}
+
+impl Default for CategoryFilter {
+    fn default() -> Self {
+        Self::new()
     }
 }
