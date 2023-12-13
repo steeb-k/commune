@@ -85,7 +85,7 @@ replacing `beta` with `stable`._
 ### Development version
 
 If you want to try the upcoming version of Fractal without building it yourself, it is available as a nightly Flatpak
-in the gnome-nightly repo.
+in [the gnome-nightly repo](https://nightly.gnome.org/).
 
 First, set up the GNOME nightlies.
 
