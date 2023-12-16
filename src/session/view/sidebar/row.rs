@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone};
+use gtk::{accessible::Relation, gdk, glib, glib::clone};
 
 use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
 use crate::{
@@ -34,6 +34,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("sidebar-row");
+            klass.set_accessible_role(gtk::AccessibleRole::ListItem);
         }
     }
 
@@ -186,6 +187,9 @@ impl Row {
                 } else {
                     let child = CategoryRow::new();
                     self.set_child(Some(&child));
+                    self.update_relation(&[Relation::LabelledBy(&[&child
+                        .display_name()
+                        .upcast()])]);
                     child
                 };
                 child.set_category(Some(category.clone()));

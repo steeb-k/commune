@@ -21,6 +21,9 @@ mod imp {
         /// The `CategoryType` to show a label for during a drag-and-drop
         /// operation.
         pub show_label_for_category: Cell<CategoryType>,
+        /// The label showing the category name.
+        #[template_child]
+        pub display_name: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -213,5 +216,10 @@ impl CategoryRow {
 
         self.notify("show-label-for-category");
         self.notify("label");
+    }
+
+    /// Returns the display name widget.
+    pub fn display_name(&self) -> gtk::Label {
+        self.imp().display_name.clone()
     }
 }

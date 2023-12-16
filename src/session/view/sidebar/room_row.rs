@@ -1,10 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{accessible::Property, gdk, glib, glib::clone, CompositeTemplate};
 
 use super::Row;
 use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    i18n::gettext_f,
     session::model::{HighlightFlags, Room, RoomType},
     spawn, toast,
     utils::{message_dialog, BoundObject},
@@ -219,12 +220,18 @@ impl RoomRow {
                         obj.update_direct_icon();
                 }),
             );
-
+            let name_handler =
+                room.connect_display_name_notify(clone!(@weak self as obj => move |_| {
+                    obj.update_accessibility_label();
+                }));
             if room.category() == RoomType::Left {
                 imp.display_name.add_css_class("dim-label");
             }
 
-            imp.room.set(room, vec![highlight_handler, direct_handler]);
+            imp.room
+                .set(room, vec![highlight_handler, direct_handler, name_handler]);
+
+            self.update_accessibility_label();
         }
 
         self.update_highlight();
@@ -411,6 +418,29 @@ impl RoomRow {
             }
         } else if let Some(icon) = imp.direct_icon.take() {
             imp.display_name_box.remove(&icon);
+        }
+    }
+
+    fn update_accessibility_label(&self) {
+        self.parent()
+            .unwrap()
+            .update_property(&[Property::Label(&self.accessible_label())]);
+    }
+
+    fn accessible_label(&self) -> String {
+        let Some(room) = self.room() else {
+            return String::new();
+        };
+        if room.is_direct() {
+            gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name. Presented to screen readers when a
+                // room is a direct chat with another user.
+                "Direct chat with {name}",
+                &[("name", &room.display_name())],
+            )
+        } else {
+            room.display_name()
         }
     }
 }
