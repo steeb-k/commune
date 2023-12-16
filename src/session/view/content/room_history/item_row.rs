@@ -119,7 +119,11 @@ mod imp {
         fn menu_opened(&self) {
             let obj = self.obj();
 
-            let Some(event) = obj.item().and_downcast::<Event>() else {
+            let Some(event) = obj
+                .item()
+                .and_downcast::<Event>()
+                .filter(|e| !e.is_redacted())
+            else {
                 obj.set_popover(None);
                 return;
             };
