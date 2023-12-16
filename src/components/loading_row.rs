@@ -1,7 +1,7 @@
 use glib::subclass::Signal;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use super::Spinner;
+use super::LoadingBin;
 
 mod imp {
     use std::marker::PhantomData;
@@ -16,14 +16,11 @@ mod imp {
     #[properties(wrapper_type = super::LoadingRow)]
     pub struct LoadingRow {
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        pub loading_bin: TemplateChild<LoadingBin>,
         #[template_child]
         pub error_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub retry_button: TemplateChild<gtk::Button>,
-        /// Whether this row is showing the spinner.
-        #[property(get = Self::is_loading)]
-        pub loading: PhantomData<bool>,
         /// The error message to display.
         #[property(get = Self::error, set = Self::set_error, explicit_notify, nullable)]
         pub error: PhantomData<Option<glib::GString>>,
@@ -36,8 +33,6 @@ mod imp {
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::static_type();
-
             Self::bind_template(klass);
         }
 
@@ -69,17 +64,8 @@ mod imp {
     impl ListBoxRowImpl for LoadingRow {}
 
     impl LoadingRow {
-        /// Whether this row is showing the spinner.
-        fn is_loading(&self) -> bool {
-            self.stack.visible_child_name().as_deref() == Some("loading")
-        }
-
         /// The error message to display.
         fn error(&self) -> Option<glib::GString> {
-            if self.is_loading() {
-                return None;
-            }
-
             let message = self.error_label.text();
             if message.is_empty() {
                 None
@@ -95,14 +81,12 @@ mod imp {
         fn set_error(&self, message: Option<&str>) {
             if let Some(message) = message {
                 self.error_label.set_text(message);
-                self.stack.set_visible_child_name("error");
+                self.loading_bin.set_is_loading(false);
             } else {
-                self.stack.set_visible_child_name("loading");
+                self.loading_bin.set_is_loading(true);
             }
 
-            let obj = self.obj();
-            obj.notify_loading();
-            obj.notify_error();
+            self.obj().notify_error();
         }
     }
 }

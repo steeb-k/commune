@@ -2,34 +2,17 @@
 <interface>
   <template class="SpinnerButton" parent="GtkButton">
     <property name="child">
-      <object class="GtkStack" id="stack">
-        <property name="transition-type">crossfade</property>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">label</property>
-            <property name="child">
-              <object class="GtkLabel" id="child_label">
-                <property name="ellipsize">end</property>
-                <property name="use_underline">True</property>
-                <property name="mnemonic_widget">SpinnerButton</property>
-                <style>
-                  <class name="text-button"/>
-                </style>
-              </object>
-            </property>
+      <object class="LoadingBin" id="loading_bin">
+        <property name="child">
+          <object class="GtkLabel" id="child_label">
+            <property name="ellipsize">end</property>
+            <property name="use_underline">True</property>
+            <property name="mnemonic_widget">SpinnerButton</property>
+            <style>
+              <class name="text-button"/>
+            </style>
           </object>
-        </child>
-        <child>
-          <object class="GtkStackPage">
-            <property name="name">loading</property>
-            <property name="child">
-              <object class="Spinner" id="spinner">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-              </object>
-            </property>
-          </object>
-        </child>
+        </property>
       </object>
     </property>
   </template>

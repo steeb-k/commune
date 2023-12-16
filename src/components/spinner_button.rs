@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, CompositeTemplate};
 
-use super::Spinner;
+use super::LoadingBin;
 
 mod imp {
     use std::marker::PhantomData;
@@ -15,7 +15,7 @@ mod imp {
     #[properties(wrapper_type = super::SpinnerButton)]
     pub struct SpinnerButton {
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
+        pub loading_bin: TemplateChild<LoadingBin>,
         #[template_child]
         pub child_label: TemplateChild<gtk::Label>,
         /// The label of the button.
@@ -35,8 +35,6 @@ mod imp {
         type ParentType = gtk::Button;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::static_type();
-
             Self::bind_template(klass);
         }
 
@@ -71,7 +69,7 @@ mod imp {
         ///
         /// If this is `false`, the text will be displayed.
         fn is_loading(&self) -> bool {
-            self.stack.visible_child_name().as_deref() == Some("loading")
+            self.loading_bin.is_loading()
         }
 
         /// Set whether to display the loading spinner.
@@ -87,11 +85,7 @@ mod imp {
                 obj.set_sensitive(!is_loading);
             }
 
-            if is_loading {
-                self.stack.set_visible_child_name("loading");
-            } else {
-                self.stack.set_visible_child_name("label");
-            }
+            self.loading_bin.set_is_loading(is_loading);
 
             obj.notify_loading();
         }
