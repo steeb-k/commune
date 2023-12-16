@@ -1,7 +1,9 @@
 use futures_util::StreamExt;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
-    notification_settings::NotificationSettings as MatrixNotificationSettings,
+    notification_settings::{
+        IsEncrypted, NotificationSettings as MatrixNotificationSettings, RoomNotificationMode,
+    },
     NotificationSettingsError,
 };
 use ruma::push::{PredefinedOverrideRuleId, RuleKind};
@@ -12,6 +14,23 @@ use crate::{
     session::model::{Session, SessionState},
     spawn, spawn_tokio,
 };
+
+/// The possible values for the global notifications setting.
+#[derive(
+    Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::Display, strum::EnumString,
+)]
+#[repr(u32)]
+#[enum_type(name = "NotificationsGlobalSetting")]
+#[strum(serialize_all = "kebab-case")]
+pub enum NotificationsGlobalSetting {
+    /// Every message in every room.
+    #[default]
+    All = 0,
+    /// Every message in 1-to-1 rooms, and mentions and keywords in every room.
+    DirectAndMentions = 1,
+    /// Only mentions and keywords in every room.
+    MentionsOnly = 2,
+}
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -32,6 +51,9 @@ mod imp {
         /// Whether notifications are enabled for this session.
         #[property(get, set = Self::set_session_enabled, explicit_notify)]
         pub session_enabled: Cell<bool>,
+        /// The global setting about which messages trigger notifications.
+        #[property(get, builder(NotificationsGlobalSetting::default()))]
+        pub global_setting: Cell<NotificationsGlobalSetting>,
     }
 
     #[glib::object_subclass]
@@ -181,6 +203,14 @@ impl NotificationsSettings {
             }
         };
         self.set_account_enabled_inner(account_enabled);
+
+        if default_rooms_notifications_is_all(api.clone(), false).await {
+            self.set_global_setting_inner(NotificationsGlobalSetting::All);
+        } else if default_rooms_notifications_is_all(api.clone(), true).await {
+            self.set_global_setting_inner(NotificationsGlobalSetting::DirectAndMentions);
+        } else {
+            self.set_global_setting_inner(NotificationsGlobalSetting::MentionsOnly);
+        }
     }
 
     /// Set whether notifications are enabled for this session.
@@ -223,10 +253,83 @@ impl NotificationsSettings {
         self.imp().account_enabled.set(enabled);
         self.notify_account_enabled();
     }
+
+    /// Set the global setting about which messages trigger notifications.
+    pub async fn set_global_setting(
+        &self,
+        setting: NotificationsGlobalSetting,
+    ) -> Result<(), NotificationSettingsError> {
+        let Some(api) = self.api() else {
+            error!("Cannot update notifications settings when API is not initialized");
+            return Err(NotificationSettingsError::UnableToUpdatePushRule);
+        };
+
+        let (group_all, one_to_one_all) = match setting {
+            NotificationsGlobalSetting::All => (true, true),
+            NotificationsGlobalSetting::DirectAndMentions => (false, true),
+            NotificationsGlobalSetting::MentionsOnly => (false, false),
+        };
+
+        if let Err(error) = set_default_rooms_notifications_all(api.clone(), false, group_all).await
+        {
+            error!("Failed to change global group chats notifications setting: {error}");
+            return Err(error);
+        }
+        if let Err(error) = set_default_rooms_notifications_all(api, true, one_to_one_all).await {
+            error!("Failed to change global 1-to-1 chats notifications setting: {error}");
+            return Err(error);
+        }
+
+        self.set_global_setting_inner(setting);
+
+        Ok(())
+    }
+
+    fn set_global_setting_inner(&self, setting: NotificationsGlobalSetting) {
+        if self.global_setting() == setting {
+            return;
+        }
+
+        self.imp().global_setting.set(setting);
+        self.notify_global_setting();
+    }
 }
 
 impl Default for NotificationsSettings {
     fn default() -> Self {
         Self::new()
     }
+}
+
+async fn default_rooms_notifications_is_all(
+    api: MatrixNotificationSettings,
+    is_one_to_one: bool,
+) -> bool {
+    let mode = spawn_tokio!(async move {
+        api.get_default_room_notification_mode(IsEncrypted::No, is_one_to_one.into())
+            .await
+    })
+    .await
+    .unwrap();
+
+    mode == RoomNotificationMode::AllMessages
+}
+
+async fn set_default_rooms_notifications_all(
+    api: MatrixNotificationSettings,
+    is_one_to_one: bool,
+    all: bool,
+) -> Result<(), NotificationSettingsError> {
+    let mode = if all {
+        RoomNotificationMode::AllMessages
+    } else {
+        RoomNotificationMode::MentionsAndKeywordsOnly
+    };
+
+    spawn_tokio!(async move {
+        api.set_default_room_notification_mode(IsEncrypted::No, is_one_to_one.into(), mode)
+            .await
+    })
+    .await
+    .unwrap()
 }

@@ -36,5 +36,62 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwPreferencesGroup" id="global">
+        <property name="title" translatable="yes">Global</property>
+        <property name="description" translatable="yes">Which messages trigger notifications in rooms that do not have more specific rules.</property>
+        <child>
+          <object class="AdwActionRow">
+            <property name="activatable-widget">global_all_radio</property>
+            <property name="title" translatable="yes">All messages in all rooms</property>
+            <child type="prefix">
+              <object class="LoadingBin" id="global_all_bin">
+                <property name="child">
+                  <object class="GtkCheckButton" id="global_all_radio">
+                    <property name="valign">center</property>
+                    <property name="action-name">notifications.set-global-default</property>
+                    <property name="action-target">'all'</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="activatable-widget">global_direct_radio</property>
+            <property name="title" translatable="yes">All messages in direct chats, and mentions and keywords in all rooms</property>
+            <child type="prefix">
+              <object class="LoadingBin" id="global_direct_bin">
+                <property name="child">
+                  <object class="GtkCheckButton" id="global_direct_radio">
+                    <property name="valign">center</property>
+                    <property name="action-name">notifications.set-global-default</property>
+                    <property name="action-target">'direct-and-mentions'</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwActionRow">
+            <property name="activatable-widget">global_mentions_radio</property>
+            <property name="title" translatable="yes">Only mentions and keywords in all rooms</property>
+            <child type="prefix">
+              <object class="LoadingBin" id="global_mentions_bin">
+                <property name="child">
+                  <object class="GtkCheckButton" id="global_mentions_radio">
+                    <property name="valign">center</property>
+                    <property name="action-name">notifications.set-global-default</property>
+                    <property name="action-target">'mentions-only'</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
 </interface>

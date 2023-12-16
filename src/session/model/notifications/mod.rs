@@ -12,7 +12,7 @@ use tracing::{debug, error, warn};
 
 mod notifications_settings;
 
-pub use self::notifications_settings::NotificationsSettings;
+pub use self::notifications_settings::{NotificationsGlobalSetting, NotificationsSettings};
 use super::{Room, Session};
 use crate::{
     application::AppShowRoomPayload, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body,
