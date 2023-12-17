@@ -6,7 +6,7 @@ use crate::{
     components::{Avatar, SpinnerButton},
     prelude::*,
     session::model::User,
-    toast,
+    spawn, toast,
     utils::BoundObject,
     Window,
 };
@@ -23,6 +23,8 @@ mod imp {
     pub struct UserPage {
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
+        #[template_child]
+        pub direct_chat_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub verified_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -42,6 +44,14 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.install_action_async(
+                "user-page.open-direct-chat",
+                None,
+                |widget, _, _| async move {
+                    widget.open_direct_chat().await;
+                },
+            );
 
             klass.install_action_async("user-page.verify-user", None, |widget, _, _| async move {
                 widget.verify_user().await;
@@ -96,7 +106,6 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl UserPage {
     /// Construct a new `UserPage` for the given user.
     pub fn new(user: &impl IsA<User>) -> Self {
@@ -133,8 +142,70 @@ impl UserPage {
             }),
         );
 
-        self.imp().user.set(user, vec![is_verified_handler]);
+        // We don't need to listen to changes of the property, it never changes after
+        // construction.
+        imp.direct_chat_button.set_visible(!user.is_own_user());
+
+        imp.user.set(user, vec![is_verified_handler]);
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.load_direct_chat().await;
+        }));
         self.update_verified();
+    }
+
+    /// Load whether the current user has a direct chat or not.
+    async fn load_direct_chat(&self) {
+        self.set_direct_chat_loading(true);
+
+        let Some(user) = self.user() else {
+            return;
+        };
+
+        let direct_chat = user.direct_chat().await;
+
+        let label = if direct_chat.is_some() {
+            gettext("Open Direct Chat")
+        } else {
+            gettext("Create Direct Chat")
+        };
+        self.imp().direct_chat_button.set_label(label);
+
+        self.set_direct_chat_loading(false);
+    }
+
+    /// Set whether the direct chat button is loading.
+    fn set_direct_chat_loading(&self, loading: bool) {
+        self.action_set_enabled("user-page.open-direct-chat", !loading);
+        self.imp().direct_chat_button.set_loading(loading);
+    }
+
+    /// Open a direct chat with the current user.
+    ///
+    /// If one doesn't exist already, it is created.
+    async fn open_direct_chat(&self) {
+        let Some(user) = self.user() else {
+            return;
+        };
+
+        self.set_direct_chat_loading(true);
+
+        let Ok(room) = user.get_or_create_direct_chat().await else {
+            toast!(self, &gettext("Failed to create a new Direct Chat"));
+            self.set_direct_chat_loading(false);
+
+            return;
+        };
+
+        let Some(parent_window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        if let Some(main_window) = parent_window.transient_for().and_downcast::<Window>() {
+            main_window.show_room(user.session().session_id(), room.room_id());
+        }
+
+        parent_window.close();
     }
 
     /// Update the verified row.

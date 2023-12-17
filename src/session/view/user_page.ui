@@ -61,6 +61,16 @@
                       </object>
                     </child>
                     <child>
+                      <object class="SpinnerButton" id="direct_chat_button">
+                        <style>
+                          <class name="row"/>
+                        </style>
+                        <property name="visible">false</property>
+                        <property name="loading">true</property>
+                        <property name="action-name">user-page.open-direct-chat</property>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkBox">
                         <property name="orientation">vertical</property>
                         <property name="spacing">12</property>

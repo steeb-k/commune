@@ -261,6 +261,11 @@ pub trait UserExt: IsA<User> {
         self.upcast_ref().imp().user_id.get().unwrap().clone()
     }
 
+    /// Whether this user is the same as the session's user.
+    fn is_own_user(&self) -> bool {
+        self.session().user_id() == self.upcast_ref().imp().user_id.get().unwrap()
+    }
+
     /// The display name of this user.
     fn display_name(&self) -> String {
         self.upcast_ref().display_name()
