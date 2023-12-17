@@ -17,12 +17,12 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/session_view.ui")]
+    #[properties(wrapper_type = super::SessionView)]
     pub struct SessionView {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -36,6 +36,8 @@ mod imp {
         pub content: TemplateChild<Content>,
         #[template_child]
         pub media_viewer: TemplateChild<MediaViewer>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify, nullable)]
         pub session: glib::WeakRef<Session>,
         pub window_active_handler_id: RefCell<Option<SignalHandlerId>>,
     }
@@ -115,35 +117,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for SessionView {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -206,6 +181,18 @@ mod imp {
 
     impl WidgetImpl for SessionView {}
     impl BinImpl for SessionView {}
+
+    impl SessionView {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if self.session.upgrade() == session {
+                return;
+            }
+
+            self.session.set(session.as_ref());
+            self.obj().notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -215,24 +202,9 @@ glib::wrapper! {
 }
 
 impl SessionView {
-    /// Create a new session.
+    /// Create a new session view.
     pub async fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The Matrix user session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the Matrix user session.
-    pub fn set_session(&self, session: Option<&Session>) {
-        if self.session().as_ref() == session {
-            return;
-        }
-
-        self.imp().session.set(session);
-        self.notify("session");
     }
 
     /// The currently selected room, if any.

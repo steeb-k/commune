@@ -343,7 +343,7 @@ impl Window {
             self.switch_to_loading_page();
         }
 
-        imp.session.set_session(None);
+        imp.session.set_session(None::<Session>);
     }
 
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
