@@ -5,15 +5,19 @@ use sourceview::prelude::*;
 use crate::session::model::Event;
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
-    use once_cell::unsync::OnceCell;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/event_source_dialog.ui")]
+    #[properties(wrapper_type = super::EventSourceDialog)]
     pub struct EventSourceDialog {
-        pub event: OnceCell<Event>,
+        /// The event that is displayed in the dialog.
+        #[property(get, construct_only)]
+        pub event: RefCell<Option<Event>>,
         #[template_child]
         pub source_view: TemplateChild<sourceview::View>,
     }
@@ -43,34 +47,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for EventSourceDialog {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Event>("event")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "event" => {
-                    let _ = self.event.set(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "event" => self.obj().event().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             let buffer = self
                 .source_view
@@ -102,11 +80,6 @@ impl EventSourceDialog {
             .property("transient-for", window)
             .property("event", event)
             .build()
-    }
-
-    /// The event that is displayed in the dialog.
-    pub fn event(&self) -> Option<&Event> {
-        self.imp().event.get()
     }
 
     pub fn copy_to_clipboard(&self) {
