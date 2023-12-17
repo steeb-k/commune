@@ -18,8 +18,9 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/user_page.ui")]
+    #[properties(wrapper_type = super::UserPage)]
     pub struct UserPage {
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
@@ -32,6 +33,7 @@ mod imp {
         #[template_child]
         pub verify_button: TemplateChild<SpinnerButton>,
         /// The current user.
+        #[property(get, set = Self::set_user, construct_only)]
         pub user: BoundObject<User>,
         pub bindings: RefCell<Vec<glib::Binding>>,
     }
@@ -63,32 +65,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for UserPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<User>("user")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "user" => self.obj().set_user(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "user" => self.obj().user().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             for binding in self.bindings.take() {
                 binding.unbind();
@@ -98,6 +76,38 @@ mod imp {
 
     impl WidgetImpl for UserPage {}
     impl NavigationPageImpl for UserPage {}
+
+    impl UserPage {
+        /// Set the current user.
+        fn set_user(&self, user: User) {
+            let obj = self.obj();
+
+            let title_binding = user
+                .bind_property("display-name", &*obj, "title")
+                .sync_create()
+                .build();
+            let avatar_binding = user
+                .bind_property("avatar-data", &*self.avatar, "data")
+                .sync_create()
+                .build();
+            self.bindings.replace(vec![title_binding, avatar_binding]);
+
+            let is_verified_handler = user.connect_verified_notify(clone!(@weak obj => move |_| {
+                obj.update_verified();
+            }));
+
+            // We don't need to listen to changes of the property, it never changes after
+            // construction.
+            self.direct_chat_button.set_visible(!user.is_own_user());
+
+            self.user.set(user, vec![is_verified_handler]);
+
+            spawn!(clone!(@weak obj => async move {
+                obj.load_direct_chat().await;
+            }));
+            obj.update_verified();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -110,48 +120,6 @@ impl UserPage {
     /// Construct a new `UserPage` for the given user.
     pub fn new(user: &impl IsA<User>) -> Self {
         glib::Object::builder().property("user", user).build()
-    }
-
-    /// The current user.
-    pub fn user(&self) -> Option<User> {
-        self.imp().user.obj()
-    }
-
-    /// Set the current user.
-    fn set_user(&self, user: Option<User>) {
-        let Some(user) = user else {
-            // Ignore missing user.
-            return;
-        };
-        let imp = self.imp();
-
-        let title_binding = user
-            .bind_property("display-name", self, "title")
-            .sync_create()
-            .build();
-        let avatar_binding = user
-            .bind_property("avatar-data", &*imp.avatar, "data")
-            .sync_create()
-            .build();
-        imp.bindings.replace(vec![title_binding, avatar_binding]);
-
-        let is_verified_handler = user.connect_notify_local(
-            Some("is-verified"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_verified();
-            }),
-        );
-
-        // We don't need to listen to changes of the property, it never changes after
-        // construction.
-        imp.direct_chat_button.set_visible(!user.is_own_user());
-
-        imp.user.set(user, vec![is_verified_handler]);
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_direct_chat().await;
-        }));
-        self.update_verified();
     }
 
     /// Load whether the current user has a direct chat or not.
