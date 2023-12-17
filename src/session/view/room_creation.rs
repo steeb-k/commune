@@ -25,14 +25,17 @@ use crate::{
 const MAX_BYTES: usize = 255;
 
 mod imp {
-    use glib::{object::WeakRef, subclass::InitializingObject};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/room_creation.ui")]
+    #[properties(wrapper_type = super::RoomCreation)]
     pub struct RoomCreation {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub create_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -78,41 +81,34 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for RoomCreation {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for RoomCreation {}
 
     impl WidgetImpl for RoomCreation {}
     impl WindowImpl for RoomCreation {}
     impl AdwWindowImpl for RoomCreation {}
     impl ToastableWindowImpl for RoomCreation {}
+
+    impl RoomCreation {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if self.session.upgrade() == session {
+                return;
+            }
+
+            if let Some(session) = &session {
+                self.server_name
+                    .set_label(&format!(":{}", session.user_id().server_name()));
+            }
+
+            self.session.set(session.as_ref());
+            self.obj().notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// Preference Window to display and update room details.
+    /// Dialog to create a new room.
     pub struct RoomCreation(ObjectSubclass<imp::RoomCreation>)
         @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
 }
@@ -124,28 +120,6 @@ impl RoomCreation {
             .property("transient-for", parent_window)
             .property("session", session)
             .build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<&Session>) {
-        let imp = self.imp();
-
-        if self.session().as_ref() == session {
-            return;
-        }
-
-        if let Some(session) = session {
-            imp.server_name
-                .set_label(&format!(":{}", session.user_id().server_name()));
-        }
-
-        imp.session.set(session);
-        self.notify("session");
     }
 
     /// Create the room, if it is allowed.
