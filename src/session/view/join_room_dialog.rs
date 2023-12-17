@@ -9,14 +9,17 @@ use ruma::{
 use crate::{session::model::Session, spawn, toast, Window};
 
 mod imp {
-    use glib::{object::WeakRef, subclass::InitializingObject};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/join_room_dialog.ui")]
+    #[properties(wrapper_type = super::JoinRoomDialog)]
     pub struct JoinRoomDialog {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub entry: TemplateChild<gtk::Entry>,
     }
@@ -44,32 +47,8 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for JoinRoomDialog {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for JoinRoomDialog {}
 
     impl WidgetImpl for JoinRoomDialog {}
     impl WindowImpl for JoinRoomDialog {}
@@ -81,6 +60,18 @@ mod imp {
             }
 
             self.parent_response(response)
+        }
+    }
+
+    impl JoinRoomDialog {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if self.session.upgrade() == session {
+                return;
+            }
+
+            self.session.set(session.as_ref());
+            self.obj().notify_session();
         }
     }
 }
@@ -98,23 +89,6 @@ impl JoinRoomDialog {
             .property("transient-for", parent_window)
             .property("session", session)
             .build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<&Session>) {
-        let imp = self.imp();
-
-        if self.session().as_ref() == session {
-            return;
-        }
-
-        imp.session.set(session);
-        self.notify("session");
     }
 
     /// Handle when the entry text changed.
