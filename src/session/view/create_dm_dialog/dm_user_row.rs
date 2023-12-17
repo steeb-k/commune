@@ -6,13 +6,15 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/create_dm_dialog/dm_user_row.ui")]
+    #[properties(wrapper_type = super::DmUserRow)]
     pub struct DmUserRow {
+        /// The user displayed by this row.
+        #[property(get, set = Self::set_user, explicit_notify)]
         pub user: RefCell<Option<DmUser>>,
     }
 
@@ -31,36 +33,27 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for DmUserRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<DmUser>("user")
-                    .explicit_notify()
-                    .build()]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for DmUserRow {}
 
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "user" => self.obj().set_user(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "user" => self.obj().user().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
     impl WidgetImpl for DmUserRow {}
     impl ListBoxRowImpl for DmUserRow {}
+
+    impl DmUserRow {
+        /// Set the user displayed by this row.
+        fn set_user(&self, user: Option<DmUser>) {
+            if self.user.borrow().clone() == user {
+                return;
+            }
+
+            self.user.replace(user);
+            self.obj().notify_user();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row of the DM user list.
     pub struct DmUserRow(ObjectSubclass<imp::DmUserRow>)
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
@@ -68,23 +61,5 @@ glib::wrapper! {
 impl DmUserRow {
     pub fn new(user: &DmUser) -> Self {
         glib::Object::builder().property("user", user).build()
-    }
-
-    /// The user displayed by this row.
-    pub fn user(&self) -> Option<DmUser> {
-        self.imp().user.borrow().clone()
-    }
-
-    /// Set the user displayed by this row.
-    pub fn set_user(&self, user: Option<DmUser>) {
-        let imp = self.imp();
-        let prev_user = self.user();
-
-        if prev_user == user {
-            return;
-        }
-
-        imp.user.replace(user);
-        self.notify("user");
     }
 }

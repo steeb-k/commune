@@ -17,14 +17,17 @@ use crate::{
 };
 
 mod imp {
-    use glib::{object::WeakRef, subclass::InitializingObject};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/create_dm_dialog/mod.ui")]
+    #[properties(wrapper_type = super::CreateDmDialog)]
     pub struct CreateDmDialog {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub list_box: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -59,40 +62,56 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for CreateDmDialog {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for CreateDmDialog {}
 
     impl WidgetImpl for CreateDmDialog {}
     impl WindowImpl for CreateDmDialog {}
     impl AdwWindowImpl for CreateDmDialog {}
+
+    impl CreateDmDialog {
+        /// Set the current session.
+        pub fn set_session(&self, session: Option<Session>) {
+            if self.session.upgrade() == session {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(session) = &session {
+                let user_list = DmUserList::new(session);
+
+                // We don't need to disconnect this signal since the `DmUserList` will be
+                // disposed once unbound from the `gtk::ListBox`
+                user_list.connect_state_notify(clone!(@weak obj => move |model| {
+                    obj.update_view(model);
+                }));
+
+                self.search_entry
+                    .bind_property("text", &user_list, "search-term")
+                    .sync_create()
+                    .build();
+
+                self.list_box.bind_model(Some(&user_list), |user| {
+                    DmUserRow::new(
+                        user.downcast_ref::<DmUser>()
+                            .expect("DmUserList must contain only `DmUser`"),
+                    )
+                    .upcast()
+                });
+
+                obj.update_view(&user_list);
+            } else {
+                self.list_box.unbind_model();
+            }
+
+            self.session.set(session.as_ref());
+            obj.notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// Preference Window to display and update room details.
+    /// Dialog to create a new direct chat.
     pub struct CreateDmDialog(ObjectSubclass<imp::CreateDmDialog>)
         @extends gtk::Widget, gtk::Window, adw::Window, adw::Bin, @implements gtk::Accessible;
 }
@@ -104,53 +123,6 @@ impl CreateDmDialog {
             .property("transient-for", parent_window)
             .property("session", session)
             .build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        let imp = self.imp();
-
-        if self.session() == session {
-            return;
-        }
-
-        if let Some(ref session) = session {
-            let user_list = DmUserList::new(session);
-
-            // We don't need to disconnect this signal since the `DmUserList` will be
-            // disposed once unbound from the `gtk::ListBox`
-            user_list.connect_notify_local(
-                Some("state"),
-                clone!(@weak self as obj => move |model, _| {
-                    obj.update_view(model);
-                }),
-            );
-
-            imp.search_entry
-                .bind_property("text", &user_list, "search-term")
-                .sync_create()
-                .build();
-
-            imp.list_box.bind_model(Some(&user_list), |user| {
-                DmUserRow::new(
-                    user.downcast_ref::<DmUser>()
-                        .expect("DmUserList must contain only `DmUser`"),
-                )
-                .upcast()
-            });
-
-            self.update_view(&user_list);
-        } else {
-            imp.list_box.unbind_model();
-        }
-
-        imp.session.set(session.as_ref());
-        self.notify("session");
     }
 
     fn update_view(&self, model: &DmUserList) {

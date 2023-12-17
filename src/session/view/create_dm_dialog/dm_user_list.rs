@@ -21,15 +21,21 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use futures_util::future::AbortHandle;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::DmUserList)]
     pub struct DmUserList {
         pub list: RefCell<Vec<DmUser>>,
+        /// The current session.
+        #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
+        /// The state of the list.
+        #[property(get, builder(DmUserListState::default()))]
         pub state: Cell<DmUserListState>,
+        /// The search term.
+        #[property(get, set = Self::set_search_term, explicit_notify, nullable)]
         pub search_term: RefCell<Option<String>>,
         pub abort_handle: RefCell<Option<AbortHandle>>,
     }
@@ -41,58 +47,44 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for DmUserList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("search-term")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<DmUserListState>("state")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.session.set(value.get().unwrap()),
-                "search-term" => self.obj().set_search_term(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "search-term" => obj.search_term().to_value(),
-                "state" => obj.state().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for DmUserList {}
 
     impl ListModelImpl for DmUserList {
         fn item_type(&self) -> glib::Type {
             DmUser::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.list.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
                 .get(position as usize)
                 .cloned()
                 .and_upcast()
+        }
+    }
+
+    impl DmUserList {
+        /// Set the search term.
+        fn set_search_term(&self, search_term: Option<String>) {
+            let search_term = search_term.filter(|s| !s.is_empty());
+
+            if search_term.as_ref() == self.search_term.borrow().as_ref() {
+                return;
+            }
+            let obj = self.obj();
+
+            self.search_term.replace(search_term);
+
+            spawn!(clone!(@weak obj => async move {
+                obj.search_users().await;
+            }));
+
+            obj.notify_search_term();
         }
     }
 }
@@ -108,34 +100,6 @@ impl DmUserList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The session this list refers to.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
-    /// Set the search term.
-    pub fn set_search_term(&self, search_term: Option<String>) {
-        let imp = self.imp();
-        let search_term = search_term.filter(|s| !s.is_empty());
-
-        if search_term.as_ref() == imp.search_term.borrow().as_ref() {
-            return;
-        }
-
-        imp.search_term.replace(search_term);
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.search_users().await;
-        }));
-
-        self.notify("search_term");
-    }
-
-    /// The search term.
-    fn search_term(&self) -> Option<String> {
-        self.imp().search_term.borrow().clone()
-    }
-
     /// Set the state of the list.
     fn set_state(&self, state: DmUserListState) {
         let imp = self.imp();
@@ -146,11 +110,6 @@ impl DmUserList {
 
         imp.state.set(state);
         self.notify("state");
-    }
-
-    /// The state of the list.
-    pub fn state(&self) -> DmUserListState {
-        self.imp().state.get()
     }
 
     fn set_list(&self, users: Vec<DmUser>) {
@@ -166,7 +125,9 @@ impl DmUserList {
     }
 
     async fn search_users(&self) {
-        let session = self.session();
+        let Some(session) = self.session() else {
+            return;
+        };
         let client = session.client();
         let Some(search_term) = self.search_term() else {
             self.set_state(DmUserListState::Initial);

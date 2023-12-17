@@ -8,12 +8,13 @@ use crate::{
 };
 
 mod imp {
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::DmUser)]
     pub struct DmUser {
+        /// The direct chat with this user, if any.
+        #[property(get, set = Self::set_direct_chat, explicit_notify, nullable)]
         pub direct_chat: glib::WeakRef<Room>,
     }
 
@@ -24,34 +25,28 @@ mod imp {
         type ParentType = User;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for DmUser {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Room>("direct-chat")
-                    .read_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "direct-chat" => obj.direct_chat().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
 
             spawn!(clone!(@weak obj => async move {
                 let direct_chat = obj.upcast_ref::<User>().direct_chat().await;
-                obj.set_direct_chat(direct_chat.as_ref());
+                obj.set_direct_chat(direct_chat);
             }));
+        }
+    }
+
+    impl DmUser {
+        /// Set the direct chat with this user.
+        fn set_direct_chat(&self, direct_chat: Option<Room>) {
+            if self.direct_chat.upgrade() == direct_chat {
+                return;
+            }
+
+            self.direct_chat.set(direct_chat.as_ref());
+            self.obj().notify_direct_chat();
         }
     }
 }
@@ -76,20 +71,5 @@ impl DmUser {
         // FIXME: we should make the avatar_url settable as property
         obj.set_avatar_url(avatar_url.map(std::borrow::ToOwned::to_owned));
         obj
-    }
-
-    /// Get the direct chat with this user, if any.
-    pub fn direct_chat(&self) -> Option<Room> {
-        self.imp().direct_chat.upgrade()
-    }
-
-    /// Set the direct chat with this user.
-    fn set_direct_chat(&self, direct_chat: Option<&Room>) {
-        if self.direct_chat().as_ref() == direct_chat {
-            return;
-        }
-
-        self.imp().direct_chat.set(direct_chat);
-        self.notify("direct-chat");
     }
 }
