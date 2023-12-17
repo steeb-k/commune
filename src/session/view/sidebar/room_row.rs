@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{accessible::Property, gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
 use super::Row;
 use crate::{
@@ -15,13 +15,15 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/room_row.ui")]
+    #[properties(wrapper_type = super::RoomRow)]
     pub struct RoomRow {
+        /// The room represented by this row.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: BoundObject<Room>,
         pub binding: RefCell<Option<glib::Binding>>,
         #[template_child]
@@ -94,31 +96,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for RoomRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Room>("room")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room" => self.obj().set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "room" => self.obj().room().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -158,16 +137,70 @@ mod imp {
             if let Some(sidebar) = obj
                 .parent()
                 .and_downcast_ref::<Row>()
-                .map(|row| row.sidebar())
+                .and_then(|row| row.sidebar())
             {
                 let popover = sidebar.room_row_popover();
                 obj.set_popover(Some(popover.to_owned()));
             }
         }
     }
+
+    impl RoomRow {
+        /// Set the room represented by this row.
+        pub fn set_room(&self, room: Option<Room>) {
+            if self.room.obj() == room {
+                return;
+            }
+            let obj = self.obj();
+
+            self.room.disconnect_signals();
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
+            self.display_name.remove_css_class("dim-label");
+
+            if let Some(room) = room {
+                self.binding.replace(Some(
+                    room.bind_property(
+                        "notification-count",
+                        &self.notification_count.get(),
+                        "visible",
+                    )
+                    .sync_create()
+                    .transform_from(|_, count: u64| Some(count > 0))
+                    .build(),
+                ));
+
+                let highlight_handler =
+                    room.connect_highlight_notify(clone!(@weak obj => move |_| {
+                            obj.update_highlight();
+                    }));
+                let direct_handler = room.connect_is_direct_notify(clone!(@weak obj => move |_| {
+                        obj.update_direct_icon();
+                }));
+                let name_handler = room.connect_display_name_notify(clone!(@weak obj => move |_| {
+                    obj.update_accessibility_label();
+                }));
+                if room.category() == RoomType::Left {
+                    self.display_name.add_css_class("dim-label");
+                }
+
+                self.room
+                    .set(room, vec![highlight_handler, direct_handler, name_handler]);
+
+                obj.update_accessibility_label();
+            }
+
+            obj.update_highlight();
+            obj.update_direct_icon();
+            obj.update_actions();
+            obj.notify_room();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A sidebar row representing a room.
     pub struct RoomRow(ObjectSubclass<imp::RoomRow>)
         @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
 }
@@ -175,69 +208,6 @@ glib::wrapper! {
 impl RoomRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The room represented by this row.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.obj()
-    }
-
-    /// Set the room represented by this row.
-    pub fn set_room(&self, room: Option<Room>) {
-        let imp = self.imp();
-
-        if self.room() == room {
-            return;
-        }
-
-        imp.room.disconnect_signals();
-        if let Some(binding) = imp.binding.take() {
-            binding.unbind();
-        }
-        imp.display_name.remove_css_class("dim-label");
-
-        if let Some(room) = room {
-            imp.binding.replace(Some(
-                room.bind_property(
-                    "notification-count",
-                    &imp.notification_count.get(),
-                    "visible",
-                )
-                .sync_create()
-                .transform_from(|_, count: u64| Some(count > 0))
-                .build(),
-            ));
-
-            let highlight_handler = room.connect_notify_local(
-                Some("highlight"),
-                clone!(@weak self as obj => move |_, _| {
-                        obj.update_highlight();
-                }),
-            );
-            let direct_handler = room.connect_notify_local(
-                Some("is-direct"),
-                clone!(@weak self as obj => move |_, _| {
-                        obj.update_direct_icon();
-                }),
-            );
-            let name_handler =
-                room.connect_display_name_notify(clone!(@weak self as obj => move |_| {
-                    obj.update_accessibility_label();
-                }));
-            if room.category() == RoomType::Left {
-                imp.display_name.add_css_class("dim-label");
-            }
-
-            imp.room
-                .set(room, vec![highlight_handler, direct_handler, name_handler]);
-
-            self.update_accessibility_label();
-        }
-
-        self.update_highlight();
-        self.update_direct_icon();
-        self.update_actions();
-        self.notify("room");
     }
 
     fn update_highlight(&self) {
@@ -336,24 +306,41 @@ impl RoomRow {
     }
 
     fn drag_prepare(&self, drag: &gtk::DragSource, x: f64, y: f64) -> Option<gdk::ContentProvider> {
-        let paintable = gtk::WidgetPaintable::new(Some(&self.parent().unwrap()));
-        // FIXME: The hotspot coordinates don't work.
-        // See https://gitlab.gnome.org/GNOME/gtk/-/issues/2341
-        drag.set_icon(Some(&paintable), x as i32, y as i32);
-        self.room()
-            .map(|room| gdk::ContentProvider::for_value(&room.to_value()))
+        let room = self.room()?;
+
+        if let Some(parent) = self.parent() {
+            let paintable = gtk::WidgetPaintable::new(Some(&parent));
+            // FIXME: The hotspot coordinates don't work.
+            // See https://gitlab.gnome.org/GNOME/gtk/-/issues/2341
+            drag.set_icon(Some(&paintable), x as i32, y as i32);
+        }
+
+        Some(gdk::ContentProvider::for_value(&room.to_value()))
     }
 
     fn drag_begin(&self) {
-        let row = self.parent().and_downcast::<Row>().unwrap();
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(row) = self.parent().and_downcast::<Row>() else {
+            return;
+        };
+        let Some(sidebar) = row.sidebar() else {
+            return;
+        };
         row.add_css_class("drag");
-        row.sidebar()
-            .set_drop_source_type(Some(self.room().unwrap().category()));
+
+        sidebar.set_drop_source_type(Some(room.category()));
     }
 
     fn drag_end(&self) {
-        let row = self.parent().and_downcast::<Row>().unwrap();
-        row.sidebar().set_drop_source_type(None);
+        let Some(row) = self.parent().and_downcast::<Row>() else {
+            return;
+        };
+        let Some(sidebar) = row.sidebar() else {
+            return;
+        };
+        sidebar.set_drop_source_type(None);
         row.remove_css_class("drag");
     }
 
@@ -422,15 +409,17 @@ impl RoomRow {
     }
 
     fn update_accessibility_label(&self) {
-        self.parent()
-            .unwrap()
-            .update_property(&[Property::Label(&self.accessible_label())]);
+        let Some(parent) = self.parent() else {
+            return;
+        };
+        parent.update_property(&[gtk::accessible::Property::Label(&self.accessible_label())]);
     }
 
     fn accessible_label(&self) -> String {
         let Some(room) = self.room() else {
             return String::new();
         };
+
         if room.is_direct() {
             gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a

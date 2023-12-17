@@ -21,15 +21,18 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, OnceCell, RefCell},
+        marker::PhantomData,
+    };
 
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/mod.ui")]
+    #[properties(wrapper_type = super::Sidebar)]
     pub struct Sidebar {
         #[template_child]
         pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
@@ -44,15 +47,24 @@ mod imp {
         #[template_child]
         pub offline_banner: TemplateChild<adw::Banner>,
         pub room_row_popover: OnceCell<gtk::PopoverMenu>,
+        /// The logged-in user.
+        #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: RefCell<Option<User>>,
         /// The type of the source that activated drop mode.
         pub drop_source_type: Cell<Option<RoomType>>,
+        /// The `CategoryType` of the source that activated drop mode.
+        #[property(get = Self::drop_source_category_type, builder(CategoryType::default()))]
+        pub drop_source_category_type: PhantomData<CategoryType>,
         /// The type of the drop target that is currently hovered.
         pub drop_active_target_type: Cell<Option<RoomType>>,
+        /// The `CategoryType` of the drop target that is currently hovered.
+        #[property(get = Self::drop_active_target_category_type, builder(CategoryType::default()))]
+        pub drop_active_target_category_type: PhantomData<CategoryType>,
         /// The list model of this sidebar.
+        #[property(get, set = Self::set_list_model, explicit_notify, nullable)]
         pub list_model: glib::WeakRef<SidebarListModel>,
         pub bindings: RefCell<Vec<glib::Binding>>,
-        pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
+        pub offline_handler_id: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -73,58 +85,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Sidebar {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<User>("user")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<SidebarListModel>("list-model")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<CategoryType>("drop-source-type")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<CategoryType>("drop-active-target-type")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.set_user(value.get().unwrap()),
-                "list-model" => obj.set_list_model(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user" => obj.user().to_value(),
-                "list-model" => obj.list_model().to_value(),
-                "drop-source-type" => obj
-                    .drop_source_type()
-                    .map(CategoryType::from)
-                    .unwrap_or_default()
-                    .to_value(),
-                "drop-active-target-type" => obj
-                    .drop_active_target_type()
-                    .map(CategoryType::from)
-                    .unwrap_or_default()
-                    .to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -195,6 +157,89 @@ mod imp {
     }
 
     impl NavigationPageImpl for Sidebar {}
+
+    impl Sidebar {
+        /// Set the logged-in user.
+        fn set_user(&self, user: Option<User>) {
+            let prev_user = self.user.borrow().clone();
+            if prev_user == user {
+                return;
+            }
+
+            if let Some(prev_user) = prev_user {
+                if let Some(handler_id) = self.offline_handler_id.take() {
+                    prev_user.session().disconnect(handler_id);
+                }
+            }
+
+            if let Some(user) = &user {
+                let session = user.session();
+                let handler_id =
+                    session.connect_offline_notify(clone!(@weak self as imp => move |session| {
+                        imp.offline_banner.set_revealed(session.offline());
+                    }));
+                self.offline_banner.set_revealed(session.offline());
+
+                self.offline_handler_id.replace(Some(handler_id));
+            }
+
+            self.user.replace(user);
+            self.obj().notify_user();
+        }
+
+        /// Set the list model of the sidebar.
+        fn set_list_model(&self, list_model: Option<SidebarListModel>) {
+            if self.list_model.upgrade() == list_model {
+                return;
+            }
+            let obj = self.obj();
+
+            for binding in self.bindings.take() {
+                binding.unbind();
+            }
+
+            if let Some(list_model) = &list_model {
+                let bindings = vec![
+                    obj.bind_property(
+                        "drop-source-category-type",
+                        &list_model.item_list(),
+                        "show-all-for-category",
+                    )
+                    .sync_create()
+                    .build(),
+                    list_model
+                        .string_filter()
+                        .bind_property("search", &*self.room_search_entry, "text")
+                        .sync_create()
+                        .bidirectional()
+                        .build(),
+                ];
+
+                self.bindings.replace(bindings);
+            }
+
+            self.listview
+                .set_model(list_model.as_ref().map(|m| m.selection_model()).as_ref());
+            self.list_model.set(list_model.as_ref());
+            obj.notify_list_model();
+        }
+
+        /// The `CategoryType` of the source that activated drop mode.
+        fn drop_source_category_type(&self) -> CategoryType {
+            self.drop_source_type
+                .get()
+                .map(Into::into)
+                .unwrap_or_default()
+        }
+
+        /// The `CategoryType` of the drop target that is currently hovered.
+        fn drop_active_target_category_type(&self) -> CategoryType {
+            self.drop_active_target_type
+                .get()
+                .map(Into::into)
+                .unwrap_or_default()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -209,84 +254,6 @@ impl Sidebar {
 
     pub fn room_search_bar(&self) -> gtk::SearchBar {
         self.imp().room_search.clone()
-    }
-
-    /// The list model of this sidebar.
-    pub fn list_model(&self) -> Option<SidebarListModel> {
-        self.imp().list_model.upgrade()
-    }
-
-    /// Set the list model of the sidebar.
-    pub fn set_list_model(&self, list_model: Option<SidebarListModel>) {
-        if self.list_model() == list_model {
-            return;
-        }
-
-        let imp = self.imp();
-
-        for binding in imp.bindings.take() {
-            binding.unbind();
-        }
-
-        if let Some(list_model) = &list_model {
-            let bindings = vec![
-                self.bind_property(
-                    "drop-source-type",
-                    &list_model.item_list(),
-                    "show-all-for-category",
-                )
-                .sync_create()
-                .build(),
-                list_model
-                    .string_filter()
-                    .bind_property("search", &*imp.room_search_entry, "text")
-                    .sync_create()
-                    .bidirectional()
-                    .build(),
-            ];
-
-            imp.bindings.replace(bindings);
-        }
-
-        imp.listview
-            .set_model(list_model.as_ref().map(|m| m.selection_model()).as_ref());
-        imp.list_model.set(list_model.as_ref());
-        self.notify("list-model");
-    }
-
-    /// The logged-in user.
-    pub fn user(&self) -> Option<User> {
-        self.imp().user.borrow().clone()
-    }
-
-    /// Set the logged-in user.
-    fn set_user(&self, user: Option<User>) {
-        let prev_user = self.user();
-        if prev_user == user {
-            return;
-        }
-
-        if let Some(prev_user) = prev_user {
-            if let Some(handler_id) = self.imp().offline_handler_id.take() {
-                prev_user.session().disconnect(handler_id);
-            }
-        }
-
-        if let Some(user) = user.as_ref() {
-            let session = user.session();
-            let handler_id = session.connect_notify_local(
-                Some("offline"),
-                clone!(@weak self as obj => move |session, _| {
-                    obj.imp().offline_banner.set_revealed(session.offline());
-                }),
-            );
-            self.imp().offline_banner.set_revealed(session.offline());
-
-            self.imp().offline_handler_id.replace(Some(handler_id));
-        }
-
-        self.imp().user.replace(user);
-        self.notify("user");
     }
 
     /// The type of the source that activated drop mode.
@@ -310,7 +277,7 @@ impl Sidebar {
             imp.listview.remove_css_class("drop-mode");
         }
 
-        self.notify("drop-source-type");
+        self.notify_drop_source_category_type();
     }
 
     /// The type of the drop target that is currently hovered.
@@ -325,7 +292,7 @@ impl Sidebar {
         }
 
         self.imp().drop_active_target_type.set(target_type);
-        self.notify("drop-active-target-type");
+        self.notify_drop_active_target_category_type();
     }
 
     pub fn room_row_popover(&self) -> &gtk::PopoverMenu {

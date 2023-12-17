@@ -10,9 +10,12 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/icon_item_row.ui")]
+    #[properties(wrapper_type = super::IconItemRow)]
     pub struct IconItemRow {
+        /// The [`IconItem`] of this row.
+        #[property(get, set = Self::set_icon_item, explicit_notify, nullable)]
         pub icon_item: RefCell<Option<IconItem>>,
     }
 
@@ -32,35 +35,33 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for IconItemRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<IconItem>("icon-item")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "icon-item" => self.obj().set_icon_item(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "icon-item" => self.obj().icon_item().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for IconItemRow {}
 
     impl WidgetImpl for IconItemRow {}
     impl BinImpl for IconItemRow {}
+
+    impl IconItemRow {
+        /// Set the [`IconItem`] of this row.
+        fn set_icon_item(&self, icon_item: Option<IconItem>) {
+            if self.icon_item.borrow().clone() == icon_item {
+                return;
+            }
+            let obj = self.obj();
+
+            if icon_item
+                .as_ref()
+                .is_some_and(|i| i.r#type() == ItemType::Forget)
+            {
+                obj.add_css_class("forget");
+            } else {
+                obj.remove_css_class("forget");
+            }
+
+            self.icon_item.replace(icon_item);
+            obj.notify_icon_item();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -71,29 +72,5 @@ glib::wrapper! {
 impl IconItemRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The [`IconItem`] of this row.
-    pub fn icon_item(&self) -> Option<IconItem> {
-        self.imp().icon_item.borrow().clone()
-    }
-
-    /// Set the [`IconItem`] of this row.
-    pub fn set_icon_item(&self, icon_item: Option<IconItem>) {
-        if self.icon_item() == icon_item {
-            return;
-        }
-
-        if icon_item
-            .as_ref()
-            .is_some_and(|i| i.r#type() == ItemType::Forget)
-        {
-            self.add_css_class("forget");
-        } else {
-            self.remove_css_class("forget");
-        }
-
-        self.imp().icon_item.replace(icon_item);
-        self.notify("icon-item");
     }
 }

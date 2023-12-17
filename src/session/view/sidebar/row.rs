@@ -13,16 +13,22 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::RefCell;
-
-    use once_cell::sync::Lazy;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Row)]
     pub struct Row {
+        /// The ancestor sidebar of this row.
+        #[property(get, set = Self::set_sidebar, construct_only)]
         pub sidebar: BoundObjectWeakRef<Sidebar>,
+        /// The list row to track for expander state.
+        #[property(get, set = Self::set_list_row, explicit_notify, nullable)]
         pub list_row: RefCell<Option<gtk::TreeListRow>>,
+        /// The sidebar item of this row.
+        #[property(get = Self::item)]
+        pub item: PhantomData<Option<SidebarItem>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
     }
 
@@ -38,46 +44,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Row {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<glib::Object>("item")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gtk::TreeListRow>("list-row")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Sidebar>("sidebar")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "list-row" => obj.set_list_row(value.get().unwrap()),
-                "sidebar" => obj.set_sidebar(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "item" => obj.item().to_value(),
-                "list-row" => obj.list_row().to_value(),
-                "sidebar" => obj.sidebar().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -104,9 +72,115 @@ mod imp {
 
     impl WidgetImpl for Row {}
     impl BinImpl for Row {}
+
+    impl Row {
+        /// Set the ancestor sidebar of this row.
+        fn set_sidebar(&self, sidebar: Sidebar) {
+            let obj = self.obj();
+
+            let drop_source_type_handler =
+                sidebar.connect_drop_source_category_type_notify(clone!(@weak obj => move |_| {
+                    obj.update_for_drop_source_type();
+                }));
+
+            let drop_active_target_type_handler = sidebar
+                .connect_drop_active_target_category_type_notify(clone!(@weak obj => move |_| {
+                    obj.update_for_drop_active_target_type();
+                }));
+
+            self.sidebar.set(
+                &sidebar,
+                vec![drop_source_type_handler, drop_active_target_type_handler],
+            );
+        }
+
+        /// Set the list row to track for expander state.
+        fn set_list_row(&self, list_row: Option<gtk::TreeListRow>) {
+            if self.list_row.borrow().clone() == list_row {
+                return;
+            }
+            let obj = self.obj();
+
+            for binding in self.bindings.take() {
+                binding.unbind();
+            }
+
+            self.list_row.replace(list_row.clone());
+
+            let mut bindings = vec![];
+            if let Some((row, item)) = list_row.zip(self.item()) {
+                if let Some(category) = item.downcast_ref::<Category>() {
+                    let child = if let Some(child) = obj.child().and_downcast::<CategoryRow>() {
+                        child
+                    } else {
+                        let child = CategoryRow::new();
+                        obj.set_child(Some(&child));
+                        obj.update_relation(&[Relation::LabelledBy(&[child.labelled_by()])]);
+                        child
+                    };
+                    child.set_category(Some(category.clone()));
+
+                    bindings.push(
+                        row.bind_property("expanded", &child, "expanded")
+                            .sync_create()
+                            .build(),
+                    );
+                } else if let Some(room) = item.downcast_ref::<Room>() {
+                    let child = if let Some(child) = obj.child().and_downcast::<RoomRow>() {
+                        child
+                    } else {
+                        let child = RoomRow::new();
+                        obj.set_child(Some(&child));
+                        child
+                    };
+
+                    child.set_room(Some(room.clone()));
+                } else if let Some(icon_item) = item.downcast_ref::<IconItem>() {
+                    let child = if let Some(child) = obj.child().and_downcast::<IconItemRow>() {
+                        child
+                    } else {
+                        let child = IconItemRow::new();
+                        obj.set_child(Some(&child));
+                        child
+                    };
+
+                    child.set_icon_item(Some(icon_item.clone()));
+                } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+                    let child = if let Some(child) = obj.child().and_downcast::<VerificationRow>() {
+                        child
+                    } else {
+                        let child = VerificationRow::new();
+                        obj.set_child(Some(&child));
+                        child
+                    };
+
+                    child.set_identity_verification(Some(verification.clone()));
+                } else {
+                    panic!("Wrong row item: {item:?}");
+                }
+
+                obj.update_for_drop_source_type();
+            }
+
+            self.bindings.replace(bindings);
+
+            obj.notify_item();
+            obj.notify_list_row();
+        }
+
+        /// The sidebar item of this row.
+        fn item(&self) -> Option<SidebarItem> {
+            self.list_row
+                .borrow()
+                .as_ref()
+                .and_then(|r| r.item())
+                .and_downcast()
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row of the sidebar.
     pub struct Row(ObjectSubclass<imp::Row>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -117,129 +191,6 @@ impl Row {
             .property("sidebar", sidebar)
             .property("focusable", true)
             .build()
-    }
-
-    /// The ancestor sidebar of this row.
-    pub fn sidebar(&self) -> Sidebar {
-        self.imp().sidebar.obj().unwrap()
-    }
-
-    /// Set the ancestor sidebar of this row.
-    fn set_sidebar(&self, sidebar: Option<&Sidebar>) {
-        let Some(sidebar) = sidebar else {
-            return;
-        };
-
-        let drop_source_type_handler = sidebar.connect_notify_local(
-            Some("drop-source-type"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_for_drop_source_type();
-            }),
-        );
-
-        let drop_active_target_type_handler = sidebar.connect_notify_local(
-            Some("drop-active-target-type"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_for_drop_active_target_type();
-            }),
-        );
-
-        self.imp().sidebar.set(
-            sidebar,
-            vec![drop_source_type_handler, drop_active_target_type_handler],
-        );
-    }
-
-    /// The sidebar item of this row.
-    pub fn item(&self) -> Option<SidebarItem> {
-        self.list_row().and_then(|r| r.item()).and_downcast()
-    }
-
-    /// The list row to track for expander state.
-    pub fn list_row(&self) -> Option<gtk::TreeListRow> {
-        self.imp().list_row.borrow().clone()
-    }
-
-    /// Set the list row to track for expander state.
-    pub fn set_list_row(&self, list_row: Option<gtk::TreeListRow>) {
-        let imp = self.imp();
-
-        if self.list_row() == list_row {
-            return;
-        }
-
-        for binding in imp.bindings.take() {
-            binding.unbind();
-        }
-
-        let row = if let Some(row) = list_row.clone() {
-            imp.list_row.replace(list_row);
-            row
-        } else {
-            return;
-        };
-
-        let mut bindings = vec![];
-        if let Some(item) = self.item() {
-            if let Some(category) = item.downcast_ref::<Category>() {
-                let child = if let Some(child) = self.child().and_downcast::<CategoryRow>() {
-                    child
-                } else {
-                    let child = CategoryRow::new();
-                    self.set_child(Some(&child));
-                    self.update_relation(&[Relation::LabelledBy(&[&child
-                        .display_name()
-                        .upcast()])]);
-                    child
-                };
-                child.set_category(Some(category.clone()));
-
-                bindings.push(
-                    row.bind_property("expanded", &child, "expanded")
-                        .sync_create()
-                        .build(),
-                );
-            } else if let Some(room) = item.downcast_ref::<Room>() {
-                let child = if let Some(child) = self.child().and_downcast::<RoomRow>() {
-                    child
-                } else {
-                    let child = RoomRow::new();
-                    self.set_child(Some(&child));
-                    child
-                };
-
-                child.set_room(Some(room.clone()));
-            } else if let Some(icon_item) = item.downcast_ref::<IconItem>() {
-                let child = if let Some(child) = self.child().and_downcast::<IconItemRow>() {
-                    child
-                } else {
-                    let child = IconItemRow::new();
-                    self.set_child(Some(&child));
-                    child
-                };
-
-                child.set_icon_item(Some(icon_item.clone()));
-            } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                let child = if let Some(child) = self.child().and_downcast::<VerificationRow>() {
-                    child
-                } else {
-                    let child = VerificationRow::new();
-                    self.set_child(Some(&child));
-                    child
-                };
-
-                child.set_identity_verification(Some(verification.clone()));
-            } else {
-                panic!("Wrong row item: {item:?}");
-            }
-
-            self.update_for_drop_source_type();
-        }
-
-        imp.bindings.replace(bindings);
-
-        self.notify("item");
-        self.notify("list-row");
     }
 
     /// Get the `RoomType` of this item.
@@ -267,6 +218,10 @@ impl Row {
 
     /// Handle the drag-n-drop hovering this row.
     fn drop_accept(&self, drop: &gdk::Drop) -> bool {
+        let Some(sidebar) = self.sidebar() else {
+            return false;
+        };
+
         let room = drop
             .drag()
             .map(|drag| drag.content())
@@ -275,14 +230,13 @@ impl Row {
         if let Some(room) = room {
             if let Some(target_type) = self.room_type() {
                 if room.category().can_change_to(target_type) {
-                    self.sidebar()
-                        .set_drop_active_target_type(Some(target_type));
+                    sidebar.set_drop_active_target_type(Some(target_type));
                     return true;
                 }
             } else if let Some(item_type) = self.item_type() {
                 if room.category() == RoomType::Left && item_type == ItemType::Forget {
                     self.add_css_class("drop-active");
-                    self.sidebar().set_drop_active_target_type(None);
+                    sidebar.set_drop_active_target_type(None);
                     return true;
                 }
             }
@@ -293,7 +247,9 @@ impl Row {
     /// Handle the drag-n-drop leaving this row.
     fn drop_leave(&self) {
         self.remove_css_class("drop-active");
-        self.sidebar().set_drop_active_target_type(None);
+        if let Some(sidebar) = self.sidebar() {
+            sidebar.set_drop_active_target_type(None);
+        }
     }
 
     /// Handle the drop on this row.
@@ -316,7 +272,9 @@ impl Row {
                 }
             }
         }
-        self.sidebar().set_drop_source_type(None);
+        if let Some(sidebar) = self.sidebar() {
+            sidebar.set_drop_source_type(None);
+        }
         ret
     }
 
@@ -359,7 +317,7 @@ impl Row {
 
     /// Update the disabled or empty state of this drop target.
     fn update_for_drop_source_type(&self) {
-        let source_type = self.sidebar().drop_source_type();
+        let source_type = self.sidebar().and_then(|s| s.drop_source_type());
 
         if let Some(source_type) = source_type {
             if self
@@ -407,9 +365,9 @@ impl Row {
         let Some(room_type) = self.room_type() else {
             return;
         };
-        let target_type = self.sidebar().drop_active_target_type();
+        let target_type = self.sidebar().and_then(|s| s.drop_active_target_type());
 
-        if target_type.map_or(false, |target_type| target_type == room_type) {
+        if target_type.is_some_and(|target_type| target_type == room_type) {
             self.add_css_class("drop-active");
         } else {
             self.remove_css_class("drop-active");
