@@ -54,6 +54,9 @@ mod imp {
         /// The global setting about which messages trigger notifications.
         #[property(get, builder(NotificationsGlobalSetting::default()))]
         pub global_setting: Cell<NotificationsGlobalSetting>,
+        /// The list of keywords that trigger notifications.
+        #[property(get)]
+        pub keywords_list: gtk::StringList,
     }
 
     #[glib::object_subclass]
@@ -211,6 +214,11 @@ impl NotificationsSettings {
         } else {
             self.set_global_setting_inner(NotificationsGlobalSetting::MentionsOnly);
         }
+
+        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
+            .await
+            .unwrap();
+        self.update_keywords_list(&keywords);
     }
 
     /// Set whether notifications are enabled for this session.
@@ -292,6 +300,91 @@ impl NotificationsSettings {
 
         self.imp().global_setting.set(setting);
         self.notify_global_setting();
+    }
+
+    /// Update the local list of keywords with the remote one.
+    fn update_keywords_list<'a>(&self, keywords: impl IntoIterator<Item = &'a String>) {
+        let list = &self.imp().keywords_list;
+        let mut diverges_at = None;
+
+        let keywords = keywords.into_iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        let new_len = keywords.len() as u32;
+        let old_len = list.n_items();
+
+        // Check if there is any keyword that changed, was moved or was added.
+        for (pos, keyword) in keywords.iter().enumerate() {
+            if Some(*keyword)
+                != list
+                    .item(pos as u32)
+                    .and_downcast::<gtk::StringObject>()
+                    .map(|o| o.string())
+                    .as_deref()
+            {
+                diverges_at = Some(pos as u32);
+                break;
+            }
+        }
+
+        // Check if keywords were removed.
+        if diverges_at.is_none() && old_len > new_len {
+            diverges_at = Some(new_len);
+        }
+
+        let Some(pos) = diverges_at else {
+            // Nothing to do.
+            return;
+        };
+
+        let additions = &keywords[pos as usize..];
+        list.splice(pos, old_len.saturating_sub(pos), additions)
+    }
+
+    /// Remove a keyword from the list.
+    pub async fn remove_keyword(&self, keyword: String) -> Result<(), NotificationSettingsError> {
+        let Some(api) = self.api() else {
+            error!("Cannot update notifications settings when API is not initialized");
+            return Err(NotificationSettingsError::UnableToUpdatePushRule);
+        };
+
+        let api_clone = api.clone();
+        let keyword_clone = keyword.clone();
+        let handle = spawn_tokio!(async move { api_clone.remove_keyword(&keyword_clone).await });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Failed to remove notification keyword `{keyword}`: {error}");
+            return Err(error);
+        }
+
+        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
+            .await
+            .unwrap();
+        self.update_keywords_list(&keywords);
+
+        Ok(())
+    }
+
+    /// Add a keyword to the list.
+    pub async fn add_keyword(&self, keyword: String) -> Result<(), NotificationSettingsError> {
+        let Some(api) = self.api() else {
+            error!("Cannot update notifications settings when API is not initialized");
+            return Err(NotificationSettingsError::UnableToUpdatePushRule);
+        };
+
+        let api_clone = api.clone();
+        let keyword_clone = keyword.clone();
+        let handle = spawn_tokio!(async move { api_clone.add_keyword(keyword_clone).await });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Failed to add notification keyword `{keyword}`: {error}");
+            return Err(error);
+        }
+
+        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
+            .await
+            .unwrap();
+        self.update_keywords_list(&keywords);
+
+        Ok(())
     }
 }
 

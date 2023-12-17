@@ -93,5 +93,38 @@
         </child>
       </object>
     </child>
+    <child>
+      <object class="AdwPreferencesGroup">
+        <property name="title" translatable="yes">Keywords</property>
+        <property name="description" translatable="yes">Messages that contain one of these keywords trigger notifications. Matching on these keywords is case-insensitive.</property>
+        <child>
+          <object class="GtkListBox" id="keywords">
+            <style>
+              <class name="boxed-list"/>
+            </style>
+          </object>
+        </child>
+      </object>
+    </child>
   </template>
+  <object class="AdwEntryRow" id="keywords_add_entry">
+    <property name="title" translatable="yes">Add Keyword…</property>
+    <signal name="entry-activated" handler="add_keyword" swapped="yes"/>
+    <child>
+      <object class="LoadingBin" id="keywords_add_bin">
+        <property name="child">
+          <object class="GtkButton">
+            <property name="icon-name">add-symbolic</property>
+            <property name="valign">center</property>
+            <property name="halign">center</property>
+            <property name="tooltip-text" translatable="yes">Add Keyword</property>
+            <signal name="clicked" handler="add_keyword" swapped="true"/>
+            <style>
+              <class name="flat"/>
+            </style>
+          </object>
+        </property>
+      </object>
+    </child>
+  </object>
 </interface>

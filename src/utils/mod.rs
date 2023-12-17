@@ -1,5 +1,6 @@
 //! Collection of common methods and types.
 
+mod dummy_object;
 mod expression_list_model;
 pub mod macros;
 pub mod matrix;
@@ -27,7 +28,7 @@ use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
 use tracing::error;
 
-pub use self::expression_list_model::ExpressionListModel;
+pub use self::{dummy_object::DummyObject, expression_list_model::ExpressionListModel};
 use crate::RUNTIME;
 
 /// Returns an expression that is the and’ed result of the given boolean
