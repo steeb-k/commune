@@ -19,25 +19,31 @@ const CANCEL_SWIPE_ANIMATION_DURATION: u32 = 400;
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         collections::HashMap,
     };
 
-    use glib::{object::WeakRef, subclass::InitializingObject};
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/media_viewer.ui")]
+    #[properties(wrapper_type = super::MediaViewer)]
     pub struct MediaViewer {
+        /// Whether the viewer is fullscreened.
+        #[property(get, set = Self::set_fullscreened, explicit_notify)]
         pub fullscreened: Cell<bool>,
         /// The room containing the media message.
-        pub room: WeakRef<Room>,
+        #[property(get)]
+        pub room: glib::WeakRef<Room>,
         /// The ID of the event containing the media message.
+        #[property(get = Self::event_id, type = Option<String>)]
         pub event_id: RefCell<Option<OwnedEventId>>,
         /// The media message to display.
         pub message: RefCell<Option<MessageType>>,
+        /// The body of the media event.
+        #[property(get)]
         pub body: RefCell<Option<String>>,
         pub animation: OnceCell<adw::TimedAnimation>,
         pub swipe_tracker: OnceCell<adw::SwipeTracker>,
@@ -113,47 +119,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MediaViewer {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("fullscreened")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("event-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("body").read_only().build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "fullscreened" => obj.set_fullscreened(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "fullscreened" => obj.fullscreened().to_value(),
-                "room" => obj.room().to_value(),
-                "event-id" => obj.event_id().as_ref().map(|e| e.as_str()).to_value(),
-                "body" => obj.body().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -277,9 +244,38 @@ mod imp {
             gdk::Rectangle::new(0, 0, self.obj().width(), self.obj().height())
         }
     }
+
+    impl MediaViewer {
+        /// Set whether the viewer is fullscreened.
+        fn set_fullscreened(&self, fullscreened: bool) {
+            if fullscreened == self.fullscreened.get() {
+                return;
+            }
+
+            self.fullscreened.set(fullscreened);
+
+            if fullscreened {
+                // Upscale the media on fullscreen
+                self.media.set_halign(gtk::Align::Fill);
+                self.toolbar_view
+                    .set_top_bar_style(adw::ToolbarStyle::Raised);
+            } else {
+                self.media.set_halign(gtk::Align::Center);
+                self.toolbar_view.set_top_bar_style(adw::ToolbarStyle::Flat);
+            }
+
+            self.obj().notify_fullscreened();
+        }
+
+        /// The ID of the event containing the media message.
+        fn event_id(&self) -> Option<String> {
+            self.event_id.borrow().as_ref().map(ToString::to_string)
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A widget allowing to view a media file.
     pub struct MediaViewer(ObjectSubclass<imp::MediaViewer>)
         @extends gtk::Widget, @implements gtk::Accessible, adw::Swipeable;
 }
@@ -308,16 +304,6 @@ impl MediaViewer {
         animation.play();
     }
 
-    /// The room containing the media message.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.upgrade()
-    }
-
-    /// The ID of the event containing the media message.
-    pub fn event_id(&self) -> Option<OwnedEventId> {
-        self.imp().event_id.borrow().clone()
-    }
-
     /// The media message to display.
     pub fn message(&self) -> Option<MessageType> {
         self.imp().message.borrow().clone()
@@ -333,13 +319,8 @@ impl MediaViewer {
 
         self.update_menu_actions();
         self.build();
-        self.notify("room");
-        self.notify("event-id");
-    }
-
-    /// The body of the media event.
-    pub fn body(&self) -> Option<String> {
-        self.imp().body.borrow().clone()
+        self.notify_room();
+        self.notify_event_id();
     }
 
     /// Set the body of the media event.
@@ -349,35 +330,7 @@ impl MediaViewer {
         }
 
         self.imp().body.replace(body);
-        self.notify("body");
-    }
-
-    /// Whether the viewer is fullscreened.
-    pub fn fullscreened(&self) -> bool {
-        self.imp().fullscreened.get()
-    }
-
-    /// Set whether the viewer is fullscreened.
-    pub fn set_fullscreened(&self, fullscreened: bool) {
-        let imp = self.imp();
-
-        if fullscreened == self.fullscreened() {
-            return;
-        }
-
-        imp.fullscreened.set(fullscreened);
-
-        if fullscreened {
-            // Upscale the media on fullscreen
-            imp.media.set_halign(gtk::Align::Fill);
-            imp.toolbar_view
-                .set_top_bar_style(adw::ToolbarStyle::Raised);
-        } else {
-            imp.media.set_halign(gtk::Align::Center);
-            imp.toolbar_view.set_top_bar_style(adw::ToolbarStyle::Flat);
-        }
-
-        self.notify("fullscreened");
+        self.notify_body();
     }
 
     /// Update the actions of the menu according to the current message.
@@ -566,7 +519,7 @@ impl MediaViewer {
         let Some(room) = self.room() else {
             return;
         };
-        let Some(event_id) = self.event_id() else {
+        let Some(event_id) = self.imp().event_id.borrow().clone() else {
             return;
         };
         let matrix_room = room.matrix_room();
