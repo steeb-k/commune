@@ -9,10 +9,7 @@ mod session_view;
 mod sidebar;
 mod user_page;
 
-pub use self::{
-    account_settings::AccountSettings, content::verification::SessionVerification,
-    session_view::SessionView,
-};
+pub use self::{account_settings::AccountSettings, session_view::SessionView};
 use self::{
     content::Content, create_dm_dialog::CreateDmDialog, event_details_dialog::EventDetailsDialog,
     join_room_dialog::JoinRoomDialog, media_viewer::MediaViewer, room_creation::RoomCreation,

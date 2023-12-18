@@ -86,9 +86,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/tombstone.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/verification/emoji.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/verification/identity_verification_widget.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/verification/session_verification.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/dm_user_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>
@@ -103,6 +100,9 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/verification_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/user_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">shortcuts.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/emoji.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/session_verification_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
   </gresource>
 </gresources>

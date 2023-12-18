@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="SessionVerification" parent="AdwBin">
+  <template class="SessionVerificationView" parent="AdwBin">
     <style>
       <class name="session-verification"/>
     </style>
@@ -87,8 +87,8 @@
           <object class="GtkStackPage">
             <property name="name">verification</property>
             <property name="child">
-              <object class="IdentityVerificationWidget" id="verification_widget">
-                <property name="login" bind-source="SessionVerification" bind-property="login" bind-flags="sync-create"/>
+              <object class="IdentityVerificationView" id="verification_widget">
+                <property name="login" bind-source="SessionVerificationView" bind-property="login" bind-flags="sync-create"/>
               </object>
             </property>
           </object>

@@ -3,12 +3,14 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use tracing::{debug, error};
 
-use super::IdentityVerificationWidget;
+use super::IdentityVerificationView;
 use crate::{
     components::{AuthDialog, AuthError, SpinnerButton},
     login::Login,
     session::model::{IdentityVerification, Session, VerificationState},
-    spawn, spawn_tokio, toast, Window,
+    spawn, spawn_tokio, toast,
+    utils::BoundObject,
+    Window,
 };
 
 /// The mode of the bootstrap page.
@@ -24,22 +26,23 @@ enum BootstrapMode {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::Cell;
 
-    use glib::{subclass::InitializingObject, SignalHandlerId, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/verification/session_verification.ui"
-    )]
-    pub struct SessionVerification {
-        pub request: RefCell<Option<IdentityVerification>>,
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/verification_view/session_verification_view.ui")]
+    #[properties(wrapper_type = super::SessionVerificationView)]
+    pub struct SessionVerificationView {
+        pub request: BoundObject<IdentityVerification>,
         /// The ancestor login view.
-        pub login: WeakRef<Login>,
+        #[property(get, construct_only)]
+        pub login: glib::WeakRef<Login>,
         /// The current session.
-        pub session: WeakRef<Session>,
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -49,15 +52,14 @@ mod imp {
         #[template_child]
         pub bootstrap_restart_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub verification_widget: TemplateChild<IdentityVerificationWidget>,
-        pub state_handler: RefCell<Option<SignalHandlerId>>,
+        pub verification_widget: TemplateChild<IdentityVerificationView>,
         pub bootstrap_can_restart: Cell<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for SessionVerification {
-        const NAME: &'static str = "SessionVerification";
-        type Type = super::SessionVerification;
+    impl ObjectSubclass for SessionVerificationView {
+        const NAME: &'static str = "SessionVerificationView";
+        type Type = super::SessionVerificationView;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -85,43 +87,8 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for SessionVerification {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Login>("login")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "login" => obj.set_login(value.get().unwrap()),
-                "session" => obj.set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "login" => obj.login().to_value(),
-                "session" => obj.session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
+    #[glib::derived_properties]
+    impl ObjectImpl for SessionVerificationView {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -141,22 +108,23 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(request) = self.obj().request() {
+            if let Some(request) = self.request.obj() {
                 request.cancel(true);
             }
         }
     }
 
-    impl WidgetImpl for SessionVerification {}
-    impl BinImpl for SessionVerification {}
+    impl WidgetImpl for SessionVerificationView {}
+    impl BinImpl for SessionVerificationView {}
 }
 
 glib::wrapper! {
-    pub struct SessionVerification(ObjectSubclass<imp::SessionVerification>)
+    /// A view with the different flows to verify a session.
+    pub struct SessionVerificationView(ObjectSubclass<imp::SessionVerificationView>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl SessionVerification {
+impl SessionVerificationView {
     pub fn new(login: &Login, session: &Session) -> Self {
         glib::Object::builder()
             .property("login", login)
@@ -164,30 +132,12 @@ impl SessionVerification {
             .build()
     }
 
-    /// The ancestor login view.
-    pub fn login(&self) -> Option<Login> {
-        self.imp().login.upgrade()
-    }
-
-    /// Set the ancestor login view.
-    fn set_login(&self, login: Option<Login>) {
-        self.imp().login.set(login.as_ref())
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
-    /// Set the current session.
-    fn set_session(&self, session: Option<Session>) {
-        self.imp().session.set(session.as_ref())
-    }
-
+    /// The current identity verification.
     fn request(&self) -> Option<IdentityVerification> {
-        self.imp().request.borrow().clone()
+        self.imp().request.obj()
     }
 
+    /// Set the current identity verification.
     fn set_request(&self, request: Option<IdentityVerification>) {
         let imp = self.imp();
         let previous_request = self.request();
@@ -199,27 +149,20 @@ impl SessionVerification {
         self.reset();
 
         if let Some(previous_request) = previous_request {
-            if let Some(handler) = imp.state_handler.take() {
-                previous_request.disconnect(handler);
-            }
-
             previous_request.cancel(true);
         }
+        imp.request.disconnect_signals();
 
-        if let Some(ref request) = request {
-            let handler = request.connect_notify_local(
-                Some("state"),
-                clone!(@weak self as obj => move |request, _| {
-                    obj.update_view(request);
-                }),
-            );
+        if let Some(request) = request.clone() {
+            let handler = request.connect_state_notify(clone!(@weak self as obj => move |_| {
+                obj.update_view();
+            }));
 
-            imp.state_handler.replace(Some(handler));
-            self.update_view(request);
+            imp.request.set(request, vec![handler]);
+            self.update_view();
         }
 
-        imp.verification_widget.set_request(request.clone());
-        imp.request.replace(request);
+        imp.verification_widget.set_request(request);
     }
 
     /// Returns the parent GtkWindow containing this widget.
@@ -231,7 +174,10 @@ impl SessionVerification {
         self.imp().bootstrap_setup_button.set_loading(false);
     }
 
-    fn update_view(&self, request: &IdentityVerification) {
+    fn update_view(&self) {
+        let Some(request) = self.request() else {
+            return;
+        };
         let imp = self.imp();
 
         if request.is_finished() && request.state() != VerificationState::Completed {
@@ -309,7 +255,9 @@ impl SessionVerification {
     }
 
     async fn start_inner(&self) {
-        let session = self.session();
+        let Some(session) = self.session() else {
+            return;
+        };
         let client = session.client();
 
         let client_clone = client.clone();
@@ -419,7 +367,10 @@ impl SessionVerification {
 
     /// Create a new encryption user identity.
     async fn bootstrap_cross_signing(&self) {
-        let dialog = AuthDialog::new(self.parent_window().as_ref(), &self.session());
+        let Some(session) = self.session() else {
+            return;
+        };
+        let dialog = AuthDialog::new(self.parent_window().as_ref(), &session);
 
         let result = dialog
             .authenticate(move |client, auth| async move {

@@ -21,6 +21,7 @@ mod session_list;
 mod system_settings;
 mod user_facing_error;
 mod utils;
+mod verification_view;
 mod window;
 
 use gettextrs::*;

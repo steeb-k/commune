@@ -18,21 +18,24 @@ use crate::{
         VerificationSupportedMethods,
     },
     spawn, toast,
+    utils::BoundObject,
 };
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{subclass::InitializingObject, SignalHandlerId};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/verification/identity_verification_widget.ui"
-    )]
-    pub struct IdentityVerificationWidget {
-        pub request: RefCell<Option<IdentityVerification>>,
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view.ui")]
+    #[properties(wrapper_type = super::IdentityVerificationView)]
+    pub struct IdentityVerificationView {
+        /// The current identity verification.
+        #[property(get, set = Self::set_request, explicit_notify, nullable)]
+        pub request: BoundObject<IdentityVerification>,
+        pub display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub qrcode: TemplateChild<QRCode>,
         #[template_child]
@@ -57,9 +60,6 @@ mod imp {
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub qr_code_scanner: TemplateChild<QrCodeScanner>,
-        pub state_handler: RefCell<Option<SignalHandlerId>>,
-        pub name_handler: RefCell<Option<SignalHandlerId>>,
-        pub supported_methods_handler: RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub confirm_scanning_btn: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -93,13 +93,14 @@ mod imp {
         #[template_child]
         pub confirm_scanned_qr_code_question: TemplateChild<gtk::Label>,
         /// The ancestor login view, if this verification happens during login.
+        #[property(get, set = Self::set_login, explicit_notify, nullable)]
         pub login: glib::WeakRef<Login>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for IdentityVerificationWidget {
-        const NAME: &'static str = "IdentityVerificationWidget";
-        type Type = super::IdentityVerificationWidget;
+    impl ObjectSubclass for IdentityVerificationView {
+        const NAME: &'static str = "IdentityVerificationView";
+        type Type = super::IdentityVerificationView;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -115,39 +116,8 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for IdentityVerificationWidget {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<IdentityVerification>("request")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Login>("login")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "request" => self.obj().set_request(value.get().unwrap()),
-                "login" => self.obj().set_login(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "request" => self.obj().request().to_value(),
-                "login" => self.obj().login().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
+    #[glib::derived_properties]
+    impl ObjectImpl for IdentityVerificationView {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -226,120 +196,91 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(request) = self.obj().request() {
-                if let Some(handler) = self.state_handler.take() {
-                    request.disconnect(handler);
-                }
-
-                if let Some(handler) = self.name_handler.take() {
+            if let Some(request) = self.request.obj() {
+                if let Some(handler) = self.display_name_handler.take() {
                     request.user().disconnect(handler);
-                }
-
-                if let Some(handler) = self.supported_methods_handler.take() {
-                    request.disconnect(handler);
                 }
             }
         }
     }
 
-    impl WidgetImpl for IdentityVerificationWidget {
+    impl WidgetImpl for IdentityVerificationView {
         fn map(&self) {
             self.parent_map();
             self.obj().update_view();
         }
     }
-    impl BinImpl for IdentityVerificationWidget {}
+
+    impl BinImpl for IdentityVerificationView {}
+
+    impl IdentityVerificationView {
+        /// Set the current identity verification.
+        fn set_request(&self, request: Option<IdentityVerification>) {
+            let prev_request = self.request.obj();
+
+            if prev_request == request {
+                return;
+            }
+            let obj = self.obj();
+
+            obj.reset();
+
+            if let Some(request) = prev_request {
+                if let Some(handler) = self.display_name_handler.take() {
+                    request.user().disconnect(handler);
+                }
+            }
+            self.request.disconnect_signals();
+
+            if let Some(request) = request {
+                let display_name_handler =
+                    request
+                        .user()
+                        .connect_display_name_notify(clone!(@weak obj => move |_| {
+                            obj.init_mode();
+                        }));
+                self.display_name_handler
+                    .replace(Some(display_name_handler));
+
+                let state_handler = request.connect_state_notify(clone!(@weak obj => move |_| {
+                    obj.update_view();
+                }));
+                let supported_methods_handler =
+                    request.connect_supported_methods_notify(clone!(@weak obj => move |_| {
+                        obj.update_supported_methods();
+                    }));
+
+                self.request
+                    .set(request, vec![state_handler, supported_methods_handler]);
+            }
+
+            obj.init_mode();
+            obj.update_view();
+            obj.update_supported_methods();
+            obj.notify_request();
+        }
+
+        /// Set the ancestor login view.
+        fn set_login(&self, login: Option<Login>) {
+            if self.login.upgrade() == login {
+                return;
+            }
+
+            self.login.set(login.as_ref());
+            self.obj().notify_login();
+        }
+    }
 }
 
 glib::wrapper! {
-    pub struct IdentityVerificationWidget(ObjectSubclass<imp::IdentityVerificationWidget>)
+    /// A view to show the different stages of an identity verification.
+    pub struct IdentityVerificationView(ObjectSubclass<imp::IdentityVerificationView>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl IdentityVerificationWidget {
+impl IdentityVerificationView {
     pub fn new(request: &IdentityVerification) -> Self {
         glib::Object::builder().property("request", request).build()
-    }
-
-    /// The ancestor login view, if this verification happens during login.
-    pub fn login(&self) -> Option<Login> {
-        self.imp().login.upgrade()
-    }
-
-    /// Set the ancestor login view.
-    pub fn set_login(&self, login: Option<Login>) {
-        if self.login() == login {
-            return;
-        }
-
-        self.imp().login.set(login.as_ref());
-        self.notify("login");
-    }
-
-    /// The object holding the data for the verification.
-    pub fn request(&self) -> Option<IdentityVerification> {
-        self.imp().request.borrow().clone()
-    }
-
-    /// Set the object holding the data for the verification.
-    pub fn set_request(&self, request: Option<IdentityVerification>) {
-        let imp = self.imp();
-        let previous_request = self.request();
-
-        if previous_request == request {
-            return;
-        }
-
-        self.reset();
-
-        if let Some(previous_request) = previous_request {
-            if let Some(handler) = imp.state_handler.take() {
-                previous_request.disconnect(handler);
-            }
-
-            if let Some(handler) = imp.name_handler.take() {
-                previous_request.user().disconnect(handler);
-            }
-
-            if let Some(handler) = imp.supported_methods_handler.take() {
-                previous_request.disconnect(handler);
-            }
-        }
-
-        if let Some(ref request) = request {
-            let handler = request.connect_notify_local(
-                Some("state"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_view();
-                }),
-            );
-
-            imp.state_handler.replace(Some(handler));
-
-            let handler = request.user().connect_notify_local(
-                Some("display-name"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.init_mode();
-                }),
-            );
-
-            imp.name_handler.replace(Some(handler));
-
-            let handler = request.connect_notify_local(
-                Some("supported-methods"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_supported_methods();
-                }),
-            );
-
-            imp.supported_methods_handler.replace(Some(handler));
-        }
-
-        imp.request.replace(request);
-        self.init_mode();
-        self.update_view();
-        self.update_supported_methods();
-        self.notify("request");
     }
 
     fn reset(&self) {

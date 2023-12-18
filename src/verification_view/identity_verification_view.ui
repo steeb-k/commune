@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="IdentityVerificationWidget" parent="AdwBin">
+  <template class="IdentityVerificationView" parent="AdwBin">
     <child>
       <object class="GtkStack" id="main_stack">
         <property name="transition-type">crossfade</property>

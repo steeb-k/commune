@@ -2,17 +2,18 @@ mod explore;
 mod invite;
 mod room_details;
 mod room_history;
-pub mod verification;
 
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use self::{
     explore::Explore, invite::Invite, room_details::RoomDetails, room_history::RoomHistory,
-    verification::IdentityVerificationWidget,
 };
-use crate::session::model::{
-    IconItem, IdentityVerification, ItemType, Room, RoomType, Session, VerificationMode,
+use crate::{
+    session::model::{
+        IconItem, IdentityVerification, ItemType, Room, RoomType, Session, VerificationMode,
+    },
+    verification_view::IdentityVerificationView,
 };
 
 mod imp {
@@ -50,7 +51,7 @@ mod imp {
         #[template_child]
         pub verification_page: TemplateChild<adw::ToolbarView>,
         #[template_child]
-        pub identity_verification_widget: TemplateChild<IdentityVerificationWidget>,
+        pub identity_verification_widget: TemplateChild<IdentityVerificationView>,
     }
 
     #[glib::object_subclass]
@@ -77,7 +78,7 @@ mod imp {
             self.stack
                 .connect_visible_child_notify(clone!(@weak self as imp => move |stack| {
                     if stack.visible_child().as_ref() != Some(imp.verification_page.upcast_ref::<gtk::Widget>()) {
-                        imp.identity_verification_widget.set_request(None);
+                        imp.identity_verification_widget.set_request(None::<IdentityVerification>);
                     }
                 }));
 

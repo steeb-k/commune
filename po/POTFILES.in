@@ -100,10 +100,6 @@ src/session/view/content/room_history/state_row/tombstone.rs
 src/session/view/content/room_history/state_row/tombstone.ui
 src/session/view/content/room_history/typing_row.rs
 src/session/view/content/room_history/verification_info_bar.rs
-src/session/view/content/verification/identity_verification_widget.rs
-src/session/view/content/verification/identity_verification_widget.ui
-src/session/view/content/verification/session_verification.rs
-src/session/view/content/verification/session_verification.ui
 src/session/view/create_dm_dialog/mod.rs
 src/session/view/create_dm_dialog/mod.ui
 src/session/view/event_details_dialog.rs
@@ -126,5 +122,9 @@ src/user_facing_error.rs
 src/utils/matrix.rs
 src/utils/media.rs
 src/utils/message_dialog.rs
+src/verification_view/identity_verification_view.rs
+src/verification_view/identity_verification_view.ui
+src/verification_view/session_verification_view.rs
+src/verification_view/session_verification_view.ui
 src/window.rs
 src/window.ui

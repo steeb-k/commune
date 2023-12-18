@@ -21,9 +21,8 @@ use self::{
     method_page::LoginMethodPage, sso_page::LoginSsoPage,
 };
 use crate::{
-    prelude::*,
-    session::{model::Session, view::SessionVerification},
-    spawn, spawn_tokio, toast, Application, Window, RUNTIME,
+    prelude::*, session::model::Session, spawn, spawn_tokio, toast,
+    verification_view::SessionVerificationView, Application, Window, RUNTIME,
 };
 
 #[derive(Clone, Debug, Default, glib::Boxed)]
@@ -488,13 +487,13 @@ impl Login {
         }
 
         let stack = &imp.main_stack;
-        let widget = SessionVerification::new(self, &session);
+        let widget = SessionVerificationView::new(self, &session);
         stack.add_named(&widget, Some(LoginPage::SessionVerification.as_ref()));
         stack.set_visible_child(&widget);
     }
 
     /// Get the session verification, if any.
-    fn session_verification(&self) -> Option<SessionVerification> {
+    fn session_verification(&self) -> Option<SessionVerificationView> {
         self.imp()
             .main_stack
             .child_by_name(LoginPage::SessionVerification.as_ref())
