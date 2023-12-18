@@ -8,14 +8,14 @@ use crate::{prelude::*, session::model::Session, spawn, spawn_tokio};
 mod imp {
     use std::cell::RefCell;
 
-    use glib::object::WeakRef;
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ServerList)]
     pub struct ServerList {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, construct_only)]
+        pub session: glib::WeakRef<Session>,
         pub list: RefCell<Vec<Server>>,
     }
 
@@ -26,31 +26,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for ServerList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for ServerList {}
 
     impl ListModelImpl for ServerList {
         fn item_type(&self) -> glib::Type {
@@ -69,6 +46,25 @@ mod imp {
                 .cloned()
         }
     }
+
+    impl ServerList {
+        /// Set the current session.
+        fn set_session(&self, session: Session) {
+            let obj = self.obj();
+
+            self.session.set(Some(&session));
+
+            let user_id = session.user_id();
+            self.list.replace(vec![Server::with_default_server(
+                user_id.server_name().as_str(),
+            )]);
+            obj.items_changed(0, 0, 1);
+
+            spawn!(clone!(@weak obj => async move {
+                obj.load_servers().await;
+            }));
+        }
+    }
 }
 
 glib::wrapper! {
@@ -82,28 +78,7 @@ impl ServerList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Set the current session.
-    fn set_session(&self, session: Session) {
-        let imp = self.imp();
-
-        imp.session.set(Some(&session));
-
-        let user_id = session.user_id();
-        imp.list.replace(vec![Server::with_default_server(
-            user_id.server_name().as_str(),
-        )]);
-        self.items_changed(0, 0, 1);
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_servers().await;
-        }));
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
+    /// Load all the servers.
     async fn load_servers(&self) {
         self.load_protocols().await;
 
@@ -118,6 +93,7 @@ impl ServerList {
         self.items_changed(1, 0, (added - 1) as u32);
     }
 
+    /// Load the protocols of the session's homeserver.
     async fn load_protocols(&self) {
         let client = self.session().unwrap().client();
 
@@ -132,6 +108,7 @@ impl ServerList {
         }
     }
 
+    /// Add the given protocol to this list.
     fn add_protocols(&self, protocols: get_protocols::v3::Response) {
         let protocols_servers =
             protocols
@@ -146,13 +123,15 @@ impl ServerList {
         self.imp().list.borrow_mut().extend(protocols_servers)
     }
 
+    /// Whether this list contains the given Matrix server.
     pub fn contains_matrix_server(&self, server: &str) -> bool {
         let list = &self.imp().list.borrow();
         // The user's matrix server is a special case that doesn't have a "server", so
         // use its name.
-        list[0].name() == server || list.iter().any(|s| s.server() == Some(server))
+        list[0].name() == server || list.iter().any(|s| s.server().as_deref() == Some(server))
     }
 
+    /// Add a custom Matrix server.
     pub fn add_custom_matrix_server(&self, server_name: String) {
         let server = Server::with_custom_matrix_server(&server_name);
         let pos = {
@@ -172,12 +151,13 @@ impl ServerList {
         self.items_changed(pos as u32, 0, 1);
     }
 
+    /// Remove a custom Matrix server.
     pub fn remove_custom_matrix_server(&self, server_name: &str) {
         let pos = {
             let mut list = self.imp().list.borrow_mut();
             let pos = list
                 .iter()
-                .position(|s| s.deletable() && s.server() == Some(server_name));
+                .position(|s| s.deletable() && s.server().as_deref() == Some(server_name));
 
             if let Some(pos) = pos {
                 list.remove(pos);

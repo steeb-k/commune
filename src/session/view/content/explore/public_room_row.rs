@@ -7,21 +7,25 @@ use super::PublicRoom;
 use crate::{
     components::{Avatar, Spinner, SpinnerButton},
     prelude::*,
-    spawn, toast, Window,
+    spawn, toast,
+    utils::BoundObject,
+    Window,
 };
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
-    use once_cell::sync::Lazy;
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/public_room_row.ui")]
+    #[properties(wrapper_type = super::PublicRoomRow)]
     pub struct PublicRoomRow {
-        pub public_room: RefCell<Option<PublicRoom>>,
+        /// The public room displayed by this row.
+        #[property(get, set= Self::set_public_room, explicit_notify)]
+        pub public_room: BoundObject<PublicRoom>,
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
         #[template_child]
@@ -35,8 +39,6 @@ mod imp {
         #[template_child]
         pub button: TemplateChild<SpinnerButton>,
         pub original_child: RefCell<Option<gtk::Widget>>,
-        pub pending_handler: RefCell<Option<SignalHandlerId>>,
-        pub room_handler: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -54,30 +56,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for PublicRoomRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<PublicRoom>("public-room")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "public-room" => self.obj().set_public_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "public-room" => self.obj().public_room().to_value(),
-                _ => unimplemented!(),
-            }
-        }
         fn constructed(&self) {
             self.parent_constructed();
             self.button
@@ -85,24 +65,81 @@ mod imp {
                     imp.obj().join_or_view();
                 }));
         }
-
-        fn dispose(&self) {
-            if let Some(ref old_public_room) = self.obj().public_room() {
-                if let Some(handler) = self.pending_handler.take() {
-                    old_public_room.disconnect(handler);
-                }
-                if let Some(handler_id) = self.room_handler.take() {
-                    old_public_room.disconnect(handler_id);
-                }
-            }
-        }
     }
 
     impl WidgetImpl for PublicRoomRow {}
     impl BinImpl for PublicRoomRow {}
+
+    impl PublicRoomRow {
+        /// Set the public room displayed by this row.
+        fn set_public_room(&self, public_room: Option<PublicRoom>) {
+            if self.public_room.obj() == public_room {
+                return;
+            }
+            let obj = self.obj();
+
+            self.public_room.disconnect_signals();
+
+            if let Some(public_room) = public_room {
+                if let Some(child) = self.original_child.take() {
+                    obj.set_child(Some(&child));
+                }
+                if let Some(matrix_public_room) = public_room.matrix_public_room() {
+                    self.avatar
+                        .set_data(Some(public_room.avatar_data().clone()));
+
+                    let display_name = matrix_public_room
+                        .name
+                        .as_deref()
+                        // FIXME: display some other identification for this room
+                        .unwrap_or("Room without name");
+                    self.display_name.set_text(display_name);
+
+                    if let Some(topic) = &matrix_public_room.topic {
+                        self.description.set_text(topic);
+                    }
+                    self.description
+                        .set_visible(matrix_public_room.topic.is_some());
+
+                    if let Some(alias) = &matrix_public_room.canonical_alias {
+                        self.alias.set_text(alias.as_str());
+                    }
+                    self.alias
+                        .set_visible(matrix_public_room.canonical_alias.is_some());
+
+                    self.members_count
+                        .set_text(&matrix_public_room.num_joined_members.to_string());
+
+                    let pending_handler = public_room.connect_pending_notify(
+                        clone!(@weak obj => move |public_room| {
+                                obj.update_button(public_room);
+                        }),
+                    );
+
+                    let room_handler =
+                        public_room.connect_room_notify(clone!(@weak obj => move |public_room| {
+                            obj.update_button(public_room);
+                        }));
+
+                    obj.update_button(&public_room);
+                    self.public_room
+                        .set(public_room, vec![pending_handler, room_handler]);
+                } else if self.original_child.borrow().is_none() {
+                    let spinner = Spinner::default();
+                    spinner.set_margin_top(12);
+                    spinner.set_margin_bottom(12);
+                    self.original_child.replace(obj.child());
+                    obj.set_child(Some(&spinner));
+                }
+            }
+
+            obj.notify_public_room();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row representing a room for a homeserver's public directory.
     pub struct PublicRoomRow(ObjectSubclass<imp::PublicRoomRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -110,97 +147,6 @@ glib::wrapper! {
 impl PublicRoomRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The public room displayed by this row.
-    pub fn public_room(&self) -> Option<PublicRoom> {
-        self.imp().public_room.borrow().clone()
-    }
-
-    /// Set the public room displayed by this row.
-    pub fn set_public_room(&self, public_room: Option<PublicRoom>) {
-        let imp = self.imp();
-        let old_public_room = self.public_room();
-
-        if old_public_room == public_room {
-            return;
-        }
-
-        if let Some(ref old_public_room) = old_public_room {
-            if let Some(handler) = imp.room_handler.take() {
-                old_public_room.disconnect(handler);
-            }
-            if let Some(handler) = imp.pending_handler.take() {
-                old_public_room.disconnect(handler);
-            }
-        }
-
-        if let Some(ref public_room) = public_room {
-            if let Some(child) = imp.original_child.take() {
-                self.set_child(Some(&child));
-            }
-            if let Some(matrix_public_room) = public_room.matrix_public_room() {
-                imp.avatar.set_data(Some(public_room.avatar_data().clone()));
-
-                let display_name = matrix_public_room
-                    .name
-                    .as_deref()
-                    .map(AsRef::as_ref)
-                    // FIXME: display some other identification for this room
-                    .unwrap_or("Room without name");
-                imp.display_name.set_text(display_name);
-
-                let has_topic = if let Some(ref topic) = matrix_public_room.topic {
-                    imp.description.set_text(topic);
-                    true
-                } else {
-                    false
-                };
-
-                imp.description.set_visible(has_topic);
-
-                let has_alias = if let Some(ref alias) = matrix_public_room.canonical_alias {
-                    imp.alias.set_text(alias.as_str());
-                    true
-                } else {
-                    false
-                };
-
-                imp.alias.set_visible(has_alias);
-                imp.members_count
-                    .set_text(&matrix_public_room.num_joined_members.to_string());
-
-                let pending_handler = public_room.connect_notify_local(
-                    Some("pending"),
-                    clone!(@weak self as obj => move |public_room, _| {
-                            obj.update_button(public_room);
-                    }),
-                );
-
-                imp.pending_handler.replace(Some(pending_handler));
-
-                let room_handler = public_room.connect_notify_local(
-                    Some("room"),
-                    clone!(@weak self as obj => move |public_room, _| {
-                        obj.update_button(public_room);
-                    }),
-                );
-
-                imp.room_handler.replace(Some(room_handler));
-
-                self.update_button(public_room);
-            } else if imp.original_child.borrow().is_none() {
-                let spinner = Spinner::default();
-                spinner.set_margin_top(12);
-                spinner.set_margin_bottom(12);
-                imp.original_child.replace(self.child());
-                self.set_child(Some(&spinner));
-            }
-        }
-        imp.avatar
-            .set_data(public_room.clone().map(|room| room.avatar_data().clone()));
-        imp.public_room.replace(public_room);
-        self.notify("public-room");
     }
 
     fn update_button(&self, public_room: &PublicRoom) {
@@ -212,7 +158,7 @@ impl PublicRoomRow {
             button.set_label(gettext("Join"));
         }
 
-        button.set_loading(public_room.is_pending());
+        button.set_loading(public_room.pending());
     }
 
     /// Join or view the public room.

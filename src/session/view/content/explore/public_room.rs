@@ -4,22 +4,34 @@ use matrix_sdk::ruma::directory::PublicRoomsChunk;
 use crate::session::model::{AvatarData, AvatarImage, AvatarUriSource, Room, RoomList};
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use glib::signal::SignalHandlerId;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::PublicRoom)]
     pub struct PublicRoom {
+        /// The list of rooms in this session.
+        #[property(get, construct_only)]
         pub room_list: OnceCell<RoomList>,
         /// The server that returned the room.
+        #[property(get, construct_only)]
         pub server: OnceCell<String>,
         pub matrix_public_room: OnceCell<PublicRoomsChunk>,
+        /// The [`AvatarData`] of this room.
+        #[property(get)]
         pub avatar_data: OnceCell<AvatarData>,
-        pub room: OnceCell<Room>,
-        pub is_pending: Cell<bool>,
+        /// The `Room` object for this room, if the user is already a member of
+        /// this room.
+        #[property(get)]
+        pub room: RefCell<Option<Room>>,
+        /// Whether the room is pending.
+        ///
+        /// A room is pending when the user clicked to join it.
+        #[property(get)]
+        pub pending: Cell<bool>,
         pub room_handler: RefCell<Option<SignalHandlerId>>,
     }
 
@@ -29,52 +41,8 @@ mod imp {
         type Type = super::PublicRoom;
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for PublicRoom {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<RoomList>("room-list")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("server")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("pending")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<AvatarData>("avatar-data")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room-list" => self.room_list.set(value.get().unwrap()).unwrap(),
-                "server" => self.server.set(value.get().unwrap()).unwrap(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room-list" => obj.room_list().to_value(),
-                "server" => obj.server().to_value(),
-                "avatar-data" => obj.avatar_data().to_value(),
-                "room" => obj.room().to_value(),
-                "pending" => obj.is_pending().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -107,6 +75,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A room in a homeserver's public directory.
     pub struct PublicRoom(ObjectSubclass<imp::PublicRoom>);
 }
 
@@ -118,48 +87,20 @@ impl PublicRoom {
             .build()
     }
 
-    /// The list of rooms in this session.
-    pub fn room_list(&self) -> &RoomList {
-        self.imp().room_list.get().unwrap()
-    }
-
-    /// The server that returned the room.
-    pub fn server(&self) -> &str {
-        self.imp().server.get().unwrap()
-    }
-
-    /// The [`AvatarData`] of this room.
-    pub fn avatar_data(&self) -> &AvatarData {
-        self.imp().avatar_data.get().unwrap()
-    }
-
-    /// The `Room` object for this room, if the user is already a member of this
-    /// room.
-    pub fn room(&self) -> Option<&Room> {
-        self.imp().room.get()
-    }
-
     /// Set the `Room` object for this room.
     fn set_room(&self, room: Room) {
-        self.imp().room.set(room).unwrap();
-        self.notify("room");
+        self.imp().room.replace(Some(room));
+        self.notify_room();
     }
 
     /// Set whether this room is pending.
-    fn set_pending(&self, is_pending: bool) {
-        if self.is_pending() == is_pending {
+    fn set_pending(&self, pending: bool) {
+        if self.pending() == pending {
             return;
         }
 
-        self.imp().is_pending.set(is_pending);
-        self.notify("pending");
-    }
-
-    /// Whether the room is pending.
-    ///
-    /// A room is pending when the user clicked to join it.
-    pub fn is_pending(&self) -> bool {
-        self.imp().is_pending.get()
+        self.imp().pending.set(pending);
+        self.notify_pending();
     }
 
     pub fn set_matrix_public_room(&self, room: PublicRoomsChunk) {

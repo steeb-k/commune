@@ -13,15 +13,19 @@ use crate::session::model::Session;
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{object::WeakRef, subclass::InitializingObject};
-    use once_cell::sync::Lazy;
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/servers_popover.ui")]
+    #[properties(wrapper_type = super::ExploreServersPopover)]
     pub struct ExploreServersPopover {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify)]
+        pub session: glib::WeakRef<Session>,
+        /// The server list.
+        #[property(get)]
         pub server_list: RefCell<Option<ServerList>>,
         #[template_child]
         pub listbox: TemplateChild<gtk::ListBox>,
@@ -61,39 +65,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ExploreServersPopover {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<ServerList>("server-list")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "server-list" => obj.server_list().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -113,9 +86,22 @@ mod imp {
 
     impl WidgetImpl for ExploreServersPopover {}
     impl PopoverImpl for ExploreServersPopover {}
+
+    impl ExploreServersPopover {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if session == self.session.upgrade() {
+                return;
+            }
+
+            self.session.set(session.as_ref());
+            self.obj().notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A popover that lists the servers that can be explored.
     pub struct ExploreServersPopover(ObjectSubclass<imp::ExploreServersPopover>)
         @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
 }
@@ -125,21 +111,7 @@ impl ExploreServersPopover {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if session == self.session() {
-            return;
-        }
-
-        self.imp().session.set(session.as_ref());
-        self.notify("session");
-    }
-
+    /// Initialize the list of servers.
     pub fn init(&self) {
         let Some(session) = &self.session() else {
             return;
@@ -156,20 +128,16 @@ impl ExploreServersPopover {
         imp.listbox.select_row(imp.listbox.row_at_index(0).as_ref());
 
         imp.server_list.replace(Some(server_list));
-        self.notify("server-list");
+        self.notify_server_list();
     }
 
-    /// The server list.
-    pub fn server_list(&self) -> Option<ServerList> {
-        self.imp().server_list.borrow().clone()
-    }
-
+    /// The server that is currently selected, if any.
     pub fn selected_server(&self) -> Option<Server> {
         self.imp()
             .listbox
             .selected_row()
             .and_downcast::<ExploreServerRow>()
-            .and_then(|row| row.server().cloned())
+            .and_then(|row| row.server())
     }
 
     pub fn connect_selected_server_changed<F: Fn(&Self, Option<Server>) + 'static>(
@@ -179,10 +147,11 @@ impl ExploreServersPopover {
         self.imp()
             .listbox
             .connect_row_selected(clone!(@weak self as obj => move |_, row| {
-                f(&obj, row.and_then(|row| row.downcast_ref::<ExploreServerRow>()).and_then(|row| row.server().cloned()));
+                f(&obj, row.and_then(|row| row.downcast_ref::<ExploreServerRow>()).and_then(|row| row.server()));
             }))
     }
 
+    /// Whether the server currently in the text entry can be added.
     fn can_add_server(&self) -> bool {
         let server = self.imp().server_entry.text();
         ServerName::parse(server.as_str()).is_ok()
@@ -193,10 +162,13 @@ impl ExploreServersPopover {
                 .is_some()
     }
 
+    /// Update the state of the action to add a server according to the current
+    /// state.
     fn update_add_server_state(&self) {
         self.action_set_enabled("explore-servers-popover.add-server", self.can_add_server())
     }
 
+    /// Add the server currently in the text entry.
     fn add_server(&self) {
         if !self.can_add_server() {
             return;
@@ -218,6 +190,7 @@ impl ExploreServersPopover {
         );
     }
 
+    /// Remove the given server.
     fn remove_server(&self, server: &str) {
         let Some(server_list) = self.server_list() else {
             return;
@@ -226,7 +199,7 @@ impl ExploreServersPopover {
         let imp = self.imp();
 
         // If the selected server is gonna be removed, select the first one.
-        if self.selected_server().unwrap().server() == Some(server) {
+        if self.selected_server().and_then(|s| s.server()).as_deref() == Some(server) {
             imp.listbox.select_row(imp.listbox.row_at_index(0).as_ref());
         }
 

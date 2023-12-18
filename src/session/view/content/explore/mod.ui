@@ -41,43 +41,56 @@
               <class name="explore"/>
             </style>
             <child>
-              <object class="Spinner" id="spinner">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="vexpand">True</property>
-                <style>
-                  <class name="session-loading-spinner"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkLabel" id="empty_label">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="vexpand">True</property>
-                <property name="label" translatable="yes">No rooms matching the search were found</property>
-                <style>
-                  <class name="bold"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="GtkScrolledWindow" id="scrolled_window">
-                <property name="vexpand">True</property>
-                <property name="hscrollbar-policy">never</property>
+              <object class="GtkStackPage">
+                <property name="name">loading</property>
                 <property name="child">
-                  <object class="AdwClampScrollable">
+                  <object class="Spinner" id="spinner">
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
                     <property name="vexpand">True</property>
-                    <property name="hexpand">True</property>
-                    <property name="maximum-size">750</property>
-                    <property name="tightening-threshold">550</property>
+                    <style>
+                      <class name="session-loading-spinner"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">empty</property>
+                <property name="child">
+                  <object class="GtkLabel" id="empty_label">
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                    <property name="vexpand">True</property>
+                    <property name="label" translatable="yes">No rooms matching the search were found</property>
+                    <style>
+                      <class name="bold"/>
+                    </style>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">results</property>
+                <property name="child">
+                  <object class="GtkScrolledWindow" id="scrolled_window">
+                    <property name="vexpand">True</property>
+                    <property name="hscrollbar-policy">never</property>
                     <property name="child">
-                      <object class="GtkListView" id="listview">
-                        <property name="margin-end">24</property>
-                        <property name="margin-start">24</property>
-                        <property name="factory">
-                          <object class="GtkBuilderListItemFactory">
-                            <property name="bytes"><![CDATA[
+                      <object class="AdwClampScrollable">
+                        <property name="vexpand">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="maximum-size">750</property>
+                        <property name="tightening-threshold">550</property>
+                        <property name="child">
+                          <object class="GtkListView" id="listview">
+                            <property name="margin-end">24</property>
+                            <property name="margin-start">24</property>
+                            <property name="factory">
+                              <object class="GtkBuilderListItemFactory">
+                                <property name="bytes"><![CDATA[
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="GtkListItem">
@@ -92,12 +105,14 @@
     </property>
   </template>
 </interface>
-                            ]]></property>
+                                ]]></property>
+                              </object>
+                            </property>
+                            <accessibility>
+                              <property name="label" translatable="yes">Room List</property>
+                            </accessibility>
                           </object>
                         </property>
-                        <accessibility>
-                          <property name="label" translatable="yes">Room List</property>
-                        </accessibility>
                       </object>
                     </property>
                   </object>

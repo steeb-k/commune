@@ -14,14 +14,15 @@ use super::{PublicRoom, Server};
 use crate::{session::model::Session, spawn, spawn_tokio};
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use glib::object::WeakRef;
-    use once_cell::sync::Lazy;
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::PublicRoomList)]
     pub struct PublicRoomList {
         pub list: RefCell<Vec<PublicRoom>>,
         pub search_term: RefCell<Option<String>>,
@@ -30,7 +31,18 @@ mod imp {
         pub next_batch: RefCell<Option<String>>,
         pub request_sent: Cell<bool>,
         pub total_room_count_estimate: Cell<Option<u64>>,
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
+        /// Whether the list is loading.
+        #[property(get = Self::loading)]
+        pub loading: PhantomData<bool>,
+        /// Whether the list is empty.
+        #[property(get = Self::empty)]
+        pub empty: PhantomData<bool>,
+        /// Whether all results for the current search were loaded.
+        #[property(get = Self::complete)]
+        pub complete: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -40,53 +52,18 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for PublicRoomList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("loading")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("empty").read_only().build(),
-                    glib::ParamSpecBoolean::builder("complete")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "loading" => obj.loading().to_value(),
-                "empty" => obj.empty().to_value(),
-                "complete" => obj.complete().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for PublicRoomList {}
 
     impl ListModelImpl for PublicRoomList {
         fn item_type(&self) -> glib::Type {
             PublicRoom::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.list.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
@@ -95,9 +72,27 @@ mod imp {
                 .cloned()
         }
     }
+
+    impl PublicRoomList {
+        /// Whether the list is loading.
+        fn loading(&self) -> bool {
+            self.request_sent.get() && self.list.borrow().is_empty()
+        }
+
+        /// Whether the list is empty.
+        fn empty(&self) -> bool {
+            !self.request_sent.get() && self.list.borrow().is_empty()
+        }
+
+        /// Whether all results for the current search were loaded.
+        fn complete(&self) -> bool {
+            self.next_batch.borrow().is_none()
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A list of rooms in a homeserver's public directory.
     pub struct PublicRoomList(ObjectSubclass<imp::PublicRoomList>)
         @implements gio::ListModel;
 }
@@ -107,46 +102,18 @@ impl PublicRoomList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    fn set_session(&self, session: Option<Session>) {
-        if session == self.session() {
-            return;
-        }
-
-        self.imp().session.set(session.as_ref());
-        self.notify("session");
-    }
-
-    /// Whether the list is loading.
-    pub fn loading(&self) -> bool {
-        self.request_sent() && self.imp().list.borrow().is_empty()
-    }
-
-    /// Whether the list is empty.
-    pub fn empty(&self) -> bool {
-        !self.request_sent() && self.imp().list.borrow().is_empty()
-    }
-
-    /// Whether all results for the current search were loaded.
-    pub fn complete(&self) -> bool {
-        self.imp().next_batch.borrow().is_none()
-    }
-
+    /// Whether a request is in progress.
     fn request_sent(&self) -> bool {
         self.imp().request_sent.get()
     }
 
+    /// Set whether a request is in progress.
     fn set_request_sent(&self, request_sent: bool) {
         self.imp().request_sent.set(request_sent);
 
-        self.notify("loading");
-        self.notify("empty");
-        self.notify("complete");
+        self.notify_loading();
+        self.notify_empty();
+        self.notify_complete();
     }
 
     pub fn init(&self) {
@@ -156,21 +123,22 @@ impl PublicRoomList {
         }
     }
 
+    /// Search the given term on the given server.
     pub fn search(&self, search_term: Option<String>, server: Server) {
         let imp = self.imp();
         let network = Some(server.network());
         let server = server.server();
 
-        if imp.search_term.borrow().as_ref() == search_term.as_ref()
-            && imp.server.borrow().as_deref() == server
-            && imp.network.borrow().as_deref() == network
+        if *imp.search_term.borrow() == search_term
+            && *imp.server.borrow() == server
+            && *imp.network.borrow() == network
         {
             return;
         }
 
         imp.search_term.replace(search_term);
-        imp.server.replace(server.map(ToOwned::to_owned));
-        imp.network.replace(network.map(ToOwned::to_owned));
+        imp.server.replace(server);
+        imp.network.replace(network);
         self.load_public_rooms(true);
     }
 
@@ -223,6 +191,7 @@ impl PublicRoomList {
         self.set_request_sent(false);
     }
 
+    /// Whether this is the response for the latest request that was sent.
     fn is_valid_response(
         &self,
         search_term: Option<String>,

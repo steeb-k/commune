@@ -19,21 +19,19 @@ use crate::{components::Spinner, session::model::Session};
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{object::WeakRef, subclass::InitializingObject};
-    use once_cell::sync::Lazy;
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/mod.ui")]
+    #[properties(wrapper_type = super::Explore)]
     pub struct Explore {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub spinner: TemplateChild<Spinner>,
-        #[template_child]
-        pub empty_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
@@ -57,7 +55,10 @@ mod imp {
             PublicRoom::static_type();
             PublicRoomList::static_type();
             PublicRoomRow::static_type();
+            Spinner::static_type();
+
             Self::bind_template(klass);
+
             klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
@@ -66,35 +67,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Explore {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -116,7 +90,7 @@ mod imp {
             self.servers_popover.connect_selected_server_changed(
                 clone!(@weak obj => move |_, server| {
                     if let Some(server) = server {
-                        obj.imp().servers_button.set_label(server.name());
+                        obj.imp().servers_button.set_label(&server.name());
                         obj.trigger_search();
                     }
                 }),
@@ -126,9 +100,46 @@ mod imp {
 
     impl WidgetImpl for Explore {}
     impl BinImpl for Explore {}
+
+    impl Explore {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if session == self.session.upgrade() {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(session) = &session {
+                let public_room_list = PublicRoomList::new(session);
+                self.listview
+                    .set_model(Some(&gtk::NoSelection::new(Some(public_room_list.clone()))));
+
+                public_room_list.connect_notify_local(
+                    Some("loading"),
+                    clone!(@weak obj => move |_, _| {
+                        obj.update_visible_child();
+                    }),
+                );
+
+                public_room_list.connect_notify_local(
+                    Some("empty"),
+                    clone!(@weak obj => move |_, _| {
+                        obj.update_visible_child();
+                    }),
+                );
+
+                self.public_room_list.replace(Some(public_room_list));
+                obj.update_visible_child();
+            }
+
+            self.session.set(session.as_ref());
+            obj.notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A view to explore rooms in the public directory of homeservers.
     pub struct Explore(ObjectSubclass<imp::Explore>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -138,18 +149,13 @@ impl Explore {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
     pub fn init(&self) {
         let imp = self.imp();
 
         imp.servers_popover.init();
 
         if let Some(server) = imp.servers_popover.selected_server() {
-            imp.servers_button.set_label(server.name());
+            imp.servers_button.set_label(&server.name());
         }
 
         if let Some(public_room_list) = &*imp.public_room_list.borrow() {
@@ -159,49 +165,16 @@ impl Explore {
         self.imp().search_entry.grab_focus();
     }
 
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        let imp = self.imp();
-
-        if session == self.session() {
-            return;
-        }
-
-        if let Some(ref session) = session {
-            let public_room_list = PublicRoomList::new(session);
-            imp.listview
-                .set_model(Some(&gtk::NoSelection::new(Some(public_room_list.clone()))));
-
-            public_room_list.connect_notify_local(
-                Some("loading"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.set_visible_child();
-                }),
-            );
-
-            public_room_list.connect_notify_local(
-                Some("empty"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.set_visible_child();
-                }),
-            );
-
-            imp.public_room_list.replace(Some(public_room_list));
-        }
-
-        imp.session.set(session.as_ref());
-        self.notify("session");
-    }
-
-    fn set_visible_child(&self) {
+    /// Update the visible child according to the current state.
+    fn update_visible_child(&self) {
         let imp = self.imp();
         if let Some(public_room_list) = &*imp.public_room_list.borrow() {
             if public_room_list.loading() {
-                imp.stack.set_visible_child(&*imp.spinner);
+                imp.stack.set_visible_child_name("loading");
             } else if public_room_list.empty() {
-                imp.stack.set_visible_child(&*imp.empty_label);
+                imp.stack.set_visible_child_name("empty");
             } else {
-                imp.stack.set_visible_child(&*imp.scrolled_window);
+                imp.stack.set_visible_child_name("results");
             }
         }
     }

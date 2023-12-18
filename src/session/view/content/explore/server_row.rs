@@ -3,16 +3,19 @@ use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use super::server::Server;
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/explore/server_row.ui")]
+    #[properties(wrapper_type = super::ExploreServerRow)]
     pub struct ExploreServerRow {
         /// The server displayed by this row.
-        pub server: OnceCell<Server>,
+        #[property(get, construct_only)]
+        pub server: RefCell<Option<Server>>,
         #[template_child]
         pub remove_button: TemplateChild<gtk::Button>,
     }
@@ -32,31 +35,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ExploreServerRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Server>("server")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "server" => self.server.set(value.get().unwrap()).unwrap(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "server" => self.obj().server().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -73,6 +53,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A row representing a server to explore.
     pub struct ExploreServerRow(ObjectSubclass<imp::ExploreServerRow>)
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
@@ -80,10 +61,5 @@ glib::wrapper! {
 impl ExploreServerRow {
     pub fn new(server: &Server) -> Self {
         glib::Object::builder().property("server", server).build()
-    }
-
-    /// The server displayed by this row.
-    pub fn server(&self) -> Option<&Server> {
-        self.imp().server.get()
     }
 }
