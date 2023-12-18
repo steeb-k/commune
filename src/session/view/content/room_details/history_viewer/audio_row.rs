@@ -15,15 +15,17 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/audio_row.ui"
     )]
+    #[properties(wrapper_type = super::AudioRow)]
     pub struct AudioRow {
+        /// The audio event.
+        #[property(get, set = Self::set_event, explicit_notify)]
         pub event: RefCell<Option<HistoryViewerEvent>>,
         pub media_file: RefCell<Option<gtk::MediaFile>>,
         #[template_child]
@@ -53,91 +55,66 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AudioRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<HistoryViewerEvent>("event")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "event" => self.obj().set_event(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "event" => self.obj().event().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for AudioRow {}
 
     impl WidgetImpl for AudioRow {}
     impl BinImpl for AudioRow {}
+
+    impl AudioRow {
+        /// Set the audio event.
+        fn set_event(&self, event: Option<HistoryViewerEvent>) {
+            if self.event.borrow().clone() == event {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(event) = &event {
+                if let Some(AnyMessageLikeEventContent::RoomMessage(content)) =
+                    event.original_content()
+                {
+                    if let MessageType::Audio(audio) = content.msgtype {
+                        self.title_label.set_label(&audio.body);
+
+                        if let Some(duration) = audio.info.as_ref().and_then(|i| i.duration) {
+                            let duration_secs = duration.as_secs();
+                            let secs = duration_secs % 60;
+                            let mins = (duration_secs % (60 * 60)) / 60;
+                            let hours = duration_secs / (60 * 60);
+
+                            let duration = if hours > 0 {
+                                format!("{hours:02}:{mins:02}:{secs:02}")
+                            } else {
+                                format!("{mins:02}:{secs:02}")
+                            };
+
+                            self.duration_label.set_label(&duration);
+                        } else {
+                            self.duration_label.set_label(&gettext("Unknown duration"));
+                        }
+
+                        if let Some(session) = event.room().and_then(|r| r.session()) {
+                            spawn!(clone!(@weak obj, @weak session => async move {
+                                obj.download_audio(audio, &session).await;
+                            }));
+                        }
+                    }
+                }
+            }
+
+            self.event.replace(event);
+            obj.notify_event();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting an audio event.
     pub struct AudioRow(ObjectSubclass<imp::AudioRow>)
         @extends gtk::Widget, adw::Bin;
 }
 
 impl AudioRow {
-    pub fn set_event(&self, event: Option<HistoryViewerEvent>) {
-        let imp = self.imp();
-
-        if self.event() == event {
-            return;
-        }
-
-        if let Some(ref event) = event {
-            if let Some(AnyMessageLikeEventContent::RoomMessage(content)) = event.original_content()
-            {
-                if let MessageType::Audio(audio) = content.msgtype {
-                    imp.title_label.set_label(&audio.body);
-
-                    if let Some(duration) = audio.info.as_ref().and_then(|i| i.duration) {
-                        let duration_secs = duration.as_secs();
-                        let secs = duration_secs % 60;
-                        let mins = (duration_secs % (60 * 60)) / 60;
-                        let hours = duration_secs / (60 * 60);
-
-                        let duration = if hours > 0 {
-                            format!("{hours:02}:{mins:02}:{secs:02}")
-                        } else {
-                            format!("{mins:02}:{secs:02}")
-                        };
-
-                        imp.duration_label.set_label(&duration);
-                    } else {
-                        imp.duration_label.set_label(&gettext("Unknown duration"));
-                    }
-
-                    if let Some(session) = event.room().and_then(|r| r.session()) {
-                        spawn!(clone!(@weak self as obj, @weak session => async move {
-                            obj.download_audio(audio, &session).await;
-                        }));
-                    }
-                }
-            }
-        }
-
-        imp.event.replace(event);
-        self.notify("event");
-    }
-
-    pub fn event(&self) -> Option<HistoryViewerEvent> {
-        self.imp().event.borrow().clone()
-    }
-
     async fn download_audio(&self, audio: AudioMessageEventContent, session: &Session) {
         let client = session.client();
         let handle = spawn_tokio!(async move { client.media().get_file(audio, true).await });

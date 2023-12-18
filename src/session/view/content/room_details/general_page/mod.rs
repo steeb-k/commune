@@ -37,11 +37,14 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/general_page/mod.ui"
     )]
+    #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {
+        /// The presented room.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: BoundObjectWeakRef<Room>,
         pub room_members: RefCell<Option<MemberList>>,
         #[template_child]
@@ -61,6 +64,7 @@ mod imp {
         #[template_child]
         pub members_count: TemplateChild<gtk::Label>,
         /// Whether edit mode is enabled.
+        #[property(get, set = Self::set_edit_mode_enabled, explicit_notify)]
         pub edit_mode_enabled: Cell<bool>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
@@ -85,43 +89,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for GeneralPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("edit-mode-enabled")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get().unwrap()),
-                "edit-mode-enabled" => obj.set_edit_mode_enabled(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "edit-mode-enabled" => obj.edit_mode_enabled().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             self.obj().disconnect_all();
         }
@@ -129,6 +98,65 @@ mod imp {
 
     impl WidgetImpl for GeneralPage {}
     impl PreferencesPageImpl for GeneralPage {}
+
+    impl GeneralPage {
+        /// Set the presented room.
+        fn set_room(&self, room: Option<Room>) {
+            let Some(room) = room else {
+                // Just ignore when room is missing.
+                return;
+            };
+            let obj = self.obj();
+
+            obj.disconnect_all();
+
+            let avatar_data = room.avatar_data();
+            let expr_watch = AvatarData::this_expression("image")
+                .chain_property::<AvatarImage>("uri")
+                .watch(
+                    Some(&avatar_data),
+                    clone!(@weak obj, @weak avatar_data => move || {
+                        obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
+                    }),
+                );
+            self.expr_watches.borrow_mut().push(expr_watch);
+
+            let room_handler_ids = vec![
+                room.connect_name_notify(clone!(@weak obj => move |room| {
+                    obj.name_changed(room.name());
+                })),
+                room.connect_topic_notify(clone!(@weak obj => move |room| {
+                    obj.topic_changed(room.topic());
+                })),
+                room.connect_joined_members_count_notify(clone!(@weak obj => move |room| {
+                    obj.member_count_changed(room.joined_members_count());
+                })),
+            ];
+
+            obj.member_count_changed(room.joined_members_count());
+            obj.init_avatar(&room);
+            obj.init_edit_mode(&room);
+
+            // Keep strong reference to members list.
+            self.room_members
+                .replace(Some(room.get_or_create_members()));
+
+            self.room.set(&room, room_handler_ids);
+            obj.notify_room();
+        }
+
+        /// Set whether edit mode is enabled.
+        fn set_edit_mode_enabled(&self, enabled: bool) {
+            if self.edit_mode_enabled.get() == enabled {
+                return;
+            }
+            let obj = self.obj();
+
+            obj.enable_details(enabled);
+            self.edit_mode_enabled.set(enabled);
+            obj.notify_edit_mode_enabled();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -141,55 +169,6 @@ glib::wrapper! {
 impl GeneralPage {
     pub fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
-    }
-
-    /// The room backing all the details of the preference window.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.obj()
-    }
-
-    /// Set the room backing all the details of the preference window.
-    fn set_room(&self, room: Option<&Room>) {
-        let Some(room) = room else {
-            // Just ignore when room is missing.
-            return;
-        };
-        let imp = self.imp();
-
-        self.disconnect_all();
-
-        let avatar_data = room.avatar_data();
-        let expr_watch = AvatarData::this_expression("image")
-            .chain_property::<AvatarImage>("uri")
-            .watch(
-                Some(&avatar_data),
-                clone!(@weak self as obj, @weak avatar_data => move || {
-                    obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
-                }),
-            );
-        imp.expr_watches.borrow_mut().push(expr_watch);
-
-        let room_handler_ids = vec![
-            room.connect_name_notify(clone!(@weak self as obj => move |room| {
-                obj.name_changed(room.name());
-            })),
-            room.connect_topic_notify(clone!(@weak self as obj => move |room| {
-                obj.topic_changed(room.topic());
-            })),
-            room.connect_joined_members_count_notify(clone!(@weak self as obj => move |room| {
-                obj.member_count_changed(room.joined_members_count());
-            })),
-        ];
-
-        self.member_count_changed(room.joined_members_count());
-        self.init_avatar(room);
-        self.init_edit_mode(room);
-
-        // Keep strong reference to members list.
-        imp.room_members.replace(Some(room.get_or_create_members()));
-
-        imp.room.set(room, room_handler_ids);
-        self.notify("room");
     }
 
     /// The members of the room.
@@ -369,21 +348,6 @@ impl GeneralPage {
                 avatar.reset();
             }
         }
-    }
-
-    /// Whether edit mode is enabled.
-    pub fn edit_mode_enabled(&self) -> bool {
-        self.imp().edit_mode_enabled.get()
-    }
-
-    pub fn set_edit_mode_enabled(&self, enabled: bool) {
-        if self.edit_mode_enabled() == enabled {
-            return;
-        }
-
-        self.enable_details(enabled);
-        self.imp().edit_mode_enabled.set(enabled);
-        self.notify("edit-mode-enabled");
     }
 
     fn enable_details(&self, enabled: bool) {

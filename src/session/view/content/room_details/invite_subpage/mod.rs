@@ -23,11 +23,14 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/invite_subpage/mod.ui"
     )]
+    #[properties(wrapper_type = super::InviteSubpage)]
     pub struct InviteSubpage {
+        /// The room users will be invited to.
+        #[property(get, set = Self::set_room, construct_only)]
         pub room: glib::WeakRef<Room>,
         #[template_child]
         pub list_view: TemplateChild<gtk::ListView>,
@@ -79,32 +82,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for InviteSubpage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Room>("room")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room" => self.obj().set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "room" => self.obj().room().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -172,17 +151,53 @@ mod imp {
                     .and_downcast::<Invitee>()
                     .unwrap();
 
-                invitee.set_invited(!invitee.is_invited());
+                invitee.set_invited(!invitee.invited());
             });
         }
     }
 
     impl WidgetImpl for InviteSubpage {}
     impl NavigationPageImpl for InviteSubpage {}
+
+    impl InviteSubpage {
+        /// Set the room users will be invited to.
+        fn set_room(&self, room: Room) {
+            let obj = self.obj();
+
+            let user_list = InviteeList::new(&room);
+            user_list.connect_invitee_added(clone!(@weak obj => move |_, invitee| {
+                obj.add_user_pill(invitee);
+            }));
+
+            user_list.connect_invitee_removed(clone!(@weak obj => move |_, invitee| {
+                obj.remove_user_pill(invitee);
+            }));
+
+            user_list.connect_state_notify(clone!(@weak obj => move |_| {
+                obj.update_view();
+            }));
+
+            self.text_buffer
+                .bind_property("text", &user_list, "search-term")
+                .sync_create()
+                .build();
+
+            user_list
+                .bind_property("has-selected", &*self.invite_button, "sensitive")
+                .sync_create()
+                .build();
+
+            self.list_view
+                .set_model(Some(&gtk::NoSelection::new(Some(user_list))));
+
+            self.room.set(Some(&room));
+            obj.notify_room();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// Preference Window to display and update room details.
+    /// Subpage to invite new members to a room.
     pub struct InviteSubpage(ObjectSubclass<imp::InviteSubpage>)
         @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
 }
@@ -190,48 +205,6 @@ glib::wrapper! {
 impl InviteSubpage {
     pub fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
-    }
-
-    /// The room users will be invited to.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.upgrade()
-    }
-
-    /// Set the room users will be invited to.
-    fn set_room(&self, room: &Room) {
-        let imp = self.imp();
-
-        let user_list = InviteeList::new(room);
-        user_list.connect_invitee_added(clone!(@weak self as obj => move |_, invitee| {
-            obj.add_user_pill(invitee);
-        }));
-
-        user_list.connect_invitee_removed(clone!(@weak self as obj => move |_, invitee| {
-            obj.remove_user_pill(invitee);
-        }));
-
-        user_list.connect_notify_local(
-            Some("state"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_view();
-            }),
-        );
-
-        imp.text_buffer
-            .bind_property("text", &user_list, "search-term")
-            .sync_create()
-            .build();
-
-        user_list
-            .bind_property("has-selected", &*imp.invite_button, "sensitive")
-            .sync_create()
-            .build();
-
-        imp.list_view
-            .set_model(Some(&gtk::NoSelection::new(Some(user_list))));
-
-        imp.room.set(Some(room));
-        self.notify("room");
     }
 
     fn close(&self) {

@@ -30,24 +30,35 @@ pub enum InviteeListState {
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         collections::HashMap,
+        marker::PhantomData,
     };
 
     use futures_util::future::AbortHandle;
     use glib::subclass::Signal;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::InviteeList)]
     pub struct InviteeList {
         pub list: RefCell<Vec<Invitee>>,
+        /// The room this invitee list refers to.
+        #[property(get, construct_only)]
         pub room: OnceCell<Room>,
+        /// The state of the list.
+        #[property(get, builder(InviteeListState::default()))]
         pub state: Cell<InviteeListState>,
+        /// The search term.
+        #[property(get, set = Self::set_search_term, explicit_notify)]
         pub search_term: RefCell<Option<String>>,
         pub invitee_list: RefCell<HashMap<OwnedUserId, Invitee>>,
         pub abort_handle: RefCell<Option<AbortHandle>>,
+        /// Whether some users are selected.
+        #[property(get = Self::has_selected)]
+        pub has_selected: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -57,28 +68,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for InviteeList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("search-term")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("has-selected")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<InviteeListState>("state")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
                 vec![
@@ -92,41 +83,45 @@ mod imp {
             });
             SIGNALS.as_ref()
         }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room" => self.room.set(value.get().unwrap()).unwrap(),
-                "search-term" => self.obj().set_search_term(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "search-term" => obj.search_term().to_value(),
-                "has-selected" => obj.has_selected().to_value(),
-                "state" => obj.state().to_value(),
-                _ => unimplemented!(),
-            }
-        }
     }
 
     impl ListModelImpl for InviteeList {
         fn item_type(&self) -> glib::Type {
             Invitee::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.list.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
                 .get(position as usize)
                 .map(glib::object::Cast::upcast_ref::<glib::Object>)
                 .cloned()
+        }
+    }
+
+    impl InviteeList {
+        /// Set the search term.
+        fn set_search_term(&self, search_term: Option<String>) {
+            let search_term = search_term.filter(|s| !s.is_empty());
+
+            if search_term == *self.search_term.borrow() {
+                return;
+            }
+            let obj = self.obj();
+
+            self.search_term.replace(search_term);
+
+            obj.search_users();
+            obj.notify_search_term();
+        }
+
+        /// Whether some users are selected.
+        fn has_selected(&self) -> bool {
+            !self.invitee_list.borrow().is_empty()
         }
     }
 }
@@ -142,34 +137,6 @@ impl InviteeList {
         glib::Object::builder().property("room", room).build()
     }
 
-    /// The room this invitee list refers to.
-    pub fn room(&self) -> &Room {
-        self.imp().room.get().unwrap()
-    }
-
-    /// Set the search term.
-    pub fn set_search_term(&self, search_term: Option<String>) {
-        let imp = self.imp();
-
-        if search_term.as_ref() == imp.search_term.borrow().as_ref() {
-            return;
-        }
-
-        if search_term.as_ref().map_or(false, |s| s.is_empty()) {
-            imp.search_term.replace(None);
-        } else {
-            imp.search_term.replace(search_term);
-        }
-
-        self.search_users();
-        self.notify("search_term");
-    }
-
-    /// The search term.
-    fn search_term(&self) -> Option<String> {
-        self.imp().search_term.borrow().clone()
-    }
-
     /// Set the state of the list.
     fn set_state(&self, state: InviteeListState) {
         let imp = self.imp();
@@ -179,12 +146,7 @@ impl InviteeList {
         }
 
         imp.state.set(state);
-        self.notify("state");
-    }
-
-    /// The state of the list.
-    pub fn state(&self) -> InviteeListState {
-        self.imp().state.get()
+        self.notify_state();
     }
 
     fn set_list(&self, users: Vec<Invitee>) {
@@ -248,7 +210,7 @@ impl InviteeList {
                                 user.connect_notify_local(
                                     Some("invited"),
                                     clone!(@weak self as obj => move |user, _| {
-                                        if user.is_invited() && user.invite_exception().is_none() {
+                                        if user.invited() && user.invite_exception().is_none() {
                                             obj.add_invitee(user.clone());
                                         } else {
                                             obj.remove_invitee(&user.user_id())
@@ -361,7 +323,7 @@ impl InviteeList {
             .borrow_mut()
             .insert(user.user_id(), user.clone());
         self.emit_by_name::<()>("invitee-added", &[&user]);
-        self.notify("has-selected");
+        self.notify_has_selected();
     }
 
     pub fn invitees(&self) -> Vec<Invitee> {
@@ -378,13 +340,8 @@ impl InviteeList {
         if let Some(user) = removed {
             user.set_invited(false);
             self.emit_by_name::<()>("invitee-removed", &[&user]);
-            self.notify("has-selected");
+            self.notify_has_selected();
         }
-    }
-
-    /// Whether some users are selected.
-    pub fn has_selected(&self) -> bool {
-        !self.imp().invitee_list.borrow().is_empty()
     }
 
     pub fn connect_invitee_added<F: Fn(&Self, &Invitee) + 'static>(

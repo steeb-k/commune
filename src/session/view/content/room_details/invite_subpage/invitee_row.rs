@@ -7,16 +7,18 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
     use crate::utils::template_callbacks::TemplateCallbacks;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/invite_subpage/invitee_row.ui"
     )]
+    #[properties(wrapper_type = super::InviteeRow)]
     pub struct InviteeRow {
+        /// The user displayed by this row.
+        #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: RefCell<Option<Invitee>>,
         pub binding: RefCell<Option<glib::Binding>>,
         #[template_child]
@@ -39,38 +41,42 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for InviteeRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Invitee>("user")
-                    .explicit_notify()
-                    .build()]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for InviteeRow {}
 
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "user" => {
-                    self.obj().set_user(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "user" => self.obj().user().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
     impl WidgetImpl for InviteeRow {}
     impl BinImpl for InviteeRow {}
+
+    impl InviteeRow {
+        /// Set the user displayed by this row.
+        fn set_user(&self, user: Option<Invitee>) {
+            if *self.user.borrow() == user {
+                return;
+            }
+
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
+
+            if let Some(user) = &user {
+                // We can't use `gtk::Expression` because we need a bidirectional binding
+                let binding = user
+                    .bind_property("invited", &*self.check_button, "active")
+                    .sync_create()
+                    .bidirectional()
+                    .build();
+
+                self.binding.replace(Some(binding));
+            }
+
+            self.user.replace(user);
+            self.obj().notify_user();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting a possible invitee.
     pub struct InviteeRow(ObjectSubclass<imp::InviteeRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -78,37 +84,5 @@ glib::wrapper! {
 impl InviteeRow {
     pub fn new(user: &Invitee) -> Self {
         glib::Object::builder().property("user", user).build()
-    }
-
-    /// The user displayed by this row.
-    pub fn user(&self) -> Option<Invitee> {
-        self.imp().user.borrow().clone()
-    }
-
-    /// Set the user displayed by this row.
-    pub fn set_user(&self, user: Option<Invitee>) {
-        let imp = self.imp();
-
-        if self.user() == user {
-            return;
-        }
-
-        if let Some(binding) = imp.binding.take() {
-            binding.unbind();
-        }
-
-        if let Some(ref user) = user {
-            // We can't use `gtk::Expression` because we need a bidirectional binding
-            let binding = user
-                .bind_property("invited", &*imp.check_button, "active")
-                .sync_create()
-                .bidirectional()
-                .build();
-
-            imp.binding.replace(Some(binding));
-        }
-
-        imp.user.replace(user);
-        self.notify("user");
     }
 }

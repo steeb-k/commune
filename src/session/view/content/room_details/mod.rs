@@ -48,15 +48,16 @@ mod imp {
     use std::{cell::RefCell, collections::HashMap};
 
     use glib::subclass::InitializingObject;
-    use once_cell::unsync::OnceCell;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_details/mod.ui")]
+    #[properties(wrapper_type = super::RoomDetails)]
     pub struct RoomDetails {
         /// The room to show the details for.
-        pub room: OnceCell<Room>,
+        #[property(get, construct_only)]
+        pub room: RefCell<Option<Room>>,
         /// The subpages that are loaded.
         ///
         /// We keep them around to avoid reloading them if the user reopens the
@@ -92,34 +93,8 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for RoomDetails {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Room>("room")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "room" => self.room.get().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for RoomDetails {}
 
     impl WidgetImpl for RoomDetails {}
     impl WindowImpl for RoomDetails {}
@@ -141,30 +116,20 @@ impl RoomDetails {
             .build()
     }
 
-    /// The room backing all the details of the preference window.
-    pub fn room(&self) -> &Room {
-        // Use unwrap because room property is CONSTRUCT_ONLY.
-        self.imp().room.get().unwrap()
-    }
-
-    /// Set the room backing all the details of the preference window.
-    fn set_room(&self, room: Room) {
-        self.imp().room.set(room).expect("Room already initialized");
-        self.notify("room");
-    }
-
     /// Show the subpage with the given name.
     fn show_subpage(&self, name: SubpageName, is_initial: bool) {
+        let Some(room) = self.room() else {
+            return;
+        };
         let imp = self.imp();
-        let room = self.room();
 
         let mut subpages = imp.subpages.borrow_mut();
         let subpage = subpages.entry(name).or_insert_with(|| match name {
-            SubpageName::Members => MembersPage::new(room).upcast(),
-            SubpageName::Invite => InviteSubpage::new(room).upcast(),
-            SubpageName::MediaHistory => MediaHistoryViewer::new(room).upcast(),
-            SubpageName::FileHistory => FileHistoryViewer::new(room).upcast(),
-            SubpageName::AudioHistory => AudioHistoryViewer::new(room).upcast(),
+            SubpageName::Members => MembersPage::new(&room).upcast(),
+            SubpageName::Invite => InviteSubpage::new(&room).upcast(),
+            SubpageName::MediaHistory => MediaHistoryViewer::new(&room).upcast(),
+            SubpageName::FileHistory => FileHistoryViewer::new(&room).upcast(),
+            SubpageName::AudioHistory => AudioHistoryViewer::new(&room).upcast(),
         });
 
         if is_initial {

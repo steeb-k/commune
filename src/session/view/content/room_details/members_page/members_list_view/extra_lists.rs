@@ -9,17 +9,22 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ExtraLists)]
     pub struct ExtraLists {
+        /// The list of all members.
+        #[property(get, set = Self::set_members, construct_only)]
         pub members: BoundObjectWeakRef<MemberList>,
         pub state: RefCell<Option<LoadingRow>>,
+        /// The item for the list of invited members.
+        #[property(get, construct_only)]
         pub invited: OnceCell<MembershipSubpageItem>,
+        /// The item for the list of banned members.
+        #[property(get, construct_only)]
         pub banned: OnceCell<MembershipSubpageItem>,
         pub invited_is_empty: Cell<bool>,
         pub banned_is_empty: Cell<bool>,
@@ -32,47 +37,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ExtraLists {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<MemberList>("members")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<MembershipSubpageItem>("invited")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<MembershipSubpageItem>("banned")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "members" => obj.set_members(value.get::<Option<MemberList>>().unwrap().as_ref()),
-                "invited" => obj.set_invited(value.get().unwrap()),
-                "banned" => obj.set_banned(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "members" => obj.members().to_value(),
-                "invited" => obj.invited().to_value(),
-                "banned" => obj.banned().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -130,9 +96,30 @@ mod imp {
             None
         }
     }
+
+    impl ExtraLists {
+        /// Set the list of all members.
+        fn set_members(&self, members: MemberList) {
+            let obj = self.obj();
+
+            self.members.disconnect_signals();
+
+            let signal_handler_ids =
+                vec![
+                    members.connect_state_notify(clone!(@weak obj => move |members| {
+                        obj.update_loading_state(members.state());
+                    })),
+                ];
+            obj.update_loading_state(members.state());
+
+            self.members.set(&members, signal_handler_ids);
+            obj.notify_members();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// The list of extra items in the list of room members.
     pub struct ExtraLists(ObjectSubclass<imp::ExtraLists>)
         @implements gio::ListModel;
 }
@@ -148,31 +135,6 @@ impl ExtraLists {
             .property("invited", invited)
             .property("banned", banned)
             .build()
-    }
-
-    pub fn members(&self) -> Option<MemberList> {
-        self.imp().members.obj()
-    }
-
-    fn set_members(&self, members: Option<&MemberList>) {
-        let Some(members) = members else {
-            // Ignore if there is no list.
-            return;
-        };
-
-        let imp = self.imp();
-        imp.members.disconnect_signals();
-
-        let signal_handler_ids = vec![members.connect_notify_local(
-            Some("state"),
-            clone!(@weak self as obj => move |members, _| {
-                obj.update_loading_state(members.state());
-            }),
-        )];
-        self.update_loading_state(members.state());
-
-        imp.members.set(members, signal_handler_ids);
-        self.notify("members");
     }
 
     /// Update this list for the given loading state.
@@ -204,26 +166,6 @@ impl ExtraLists {
         if added {
             self.items_changed(0, 0, 1);
         }
-    }
-
-    /// The subpage item for invited members.
-    pub fn invited(&self) -> &MembershipSubpageItem {
-        self.imp().invited.get().unwrap()
-    }
-
-    /// Set the subpage item for invited members.
-    fn set_invited(&self, item: MembershipSubpageItem) {
-        self.imp().invited.set(item).unwrap();
-    }
-
-    /// The subpage for banned members.
-    pub fn banned(&self) -> &MembershipSubpageItem {
-        self.imp().banned.get().unwrap()
-    }
-
-    /// Set the subpage for banned members.
-    fn set_banned(&self, item: MembershipSubpageItem) {
-        self.imp().banned.set(item).unwrap();
     }
 
     fn update_invited(&self) {

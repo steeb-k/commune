@@ -27,19 +27,25 @@ pub enum TimelineFilter {
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         sync::Arc,
     };
 
     use futures_util::lock::Mutex;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Timeline)]
     pub struct Timeline {
+        /// The room that this timeline belongs to.
+        #[property(get, construct_only)]
         pub room: OnceCell<Room>,
+        /// The state of this timeline.
+        #[property(get, builder(TimelineState::default()))]
         pub state: Cell<TimelineState>,
+        /// The filter applied to this timeline.
+        #[property(get, construct_only, builder(TimelineFilter::default()))]
         pub filter: Cell<TimelineFilter>,
         pub list: RefCell<Vec<HistoryViewerEvent>>,
         pub last_token: Arc<Mutex<String>>,
@@ -52,44 +58,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
-    impl ObjectImpl for Timeline {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<TimelineState>("state")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<TimelineFilter>("filter")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "room" => self.obj().set_room(value.get().unwrap()),
-                "filter" => self.filter.set(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "state" => obj.state().to_value(),
-                "filter" => obj.filter().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for Timeline {}
 
     impl ListModelImpl for Timeline {
         fn item_type(&self) -> glib::Type {
@@ -109,6 +79,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A room timeline that filters its events by media type.
     pub struct Timeline(ObjectSubclass<imp::Timeline>)
         @implements gio::ListModel;
 }
@@ -173,7 +144,7 @@ impl Timeline {
                         .chunk
                         .into_iter()
                         .filter_map(|event| {
-                            let event = HistoryViewerEvent::try_new(event, self.room())?;
+                            let event = HistoryViewerEvent::try_new(event, &room)?;
 
                             match event.original_content() {
                                 Some(AnyMessageLikeEventContent::RoomMessage(content)) => {
@@ -249,28 +220,12 @@ impl Timeline {
         self.items_changed(index as u32, 0, added as u32);
     }
 
-    fn set_room(&self, room: Room) {
-        self.imp().room.set(room).unwrap();
-    }
-
-    pub fn room(&self) -> &Room {
-        self.imp().room.get().unwrap()
-    }
-
     fn set_state(&self, state: TimelineState) {
         if state == self.state() {
             return;
         }
 
         self.imp().state.set(state);
-        self.notify("state");
-    }
-
-    pub fn state(&self) -> TimelineState {
-        self.imp().state.get()
-    }
-
-    pub fn filter(&self) -> TimelineFilter {
-        self.imp().filter.get()
+        self.notify_state();
     }
 }

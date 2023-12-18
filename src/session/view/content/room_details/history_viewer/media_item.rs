@@ -19,15 +19,17 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/media_item.ui"
     )]
+    #[properties(wrapper_type = super::MediaItem)]
     pub struct MediaItem {
+        /// The file event.
+        #[property(get, set = Self::set_event, explicit_notify, nullable)]
         pub event: RefCell<Option<HistoryViewerEvent>>,
         pub overlay_icon: RefCell<Option<gtk::Image>>,
         #[template_child]
@@ -54,33 +56,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MediaItem {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<HistoryViewerEvent>("event")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "event" => self.obj().set_event(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "event" => self.obj().event().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             self.overlay.unparent();
         }
@@ -101,53 +78,55 @@ mod imp {
             self.overlay.allocate(width, height, baseline, None);
         }
     }
+
+    impl MediaItem {
+        /// Set the media event.
+        fn set_event(&self, event: Option<HistoryViewerEvent>) {
+            if self.event.borrow().clone() == event {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(event) = &event {
+                let Some(room) = event.room() else {
+                    return;
+                };
+                let Some(session) = room.session() else {
+                    return;
+                };
+                match event.original_content() {
+                    Some(AnyMessageLikeEventContent::RoomMessage(message)) => match message.msgtype
+                    {
+                        MessageType::Image(content) => {
+                            obj.show_image(content, &session);
+                        }
+                        MessageType::Video(content) => {
+                            obj.show_video(content, &session);
+                        }
+                        _ => {
+                            panic!("Unexpected message type");
+                        }
+                    },
+                    _ => {
+                        panic!("Unexpected message type");
+                    }
+                }
+            }
+
+            self.event.replace(event);
+            obj.notify_event();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting a media (image or video) event.
     pub struct MediaItem(ObjectSubclass<imp::MediaItem>)
         @extends gtk::Widget;
 }
 
 #[gtk::template_callbacks]
 impl MediaItem {
-    pub fn set_event(&self, event: Option<HistoryViewerEvent>) {
-        if self.event() == event {
-            return;
-        }
-
-        if let Some(ref event) = event {
-            let Some(room) = event.room() else {
-                return;
-            };
-            let Some(session) = room.session() else {
-                return;
-            };
-            match event.original_content() {
-                Some(AnyMessageLikeEventContent::RoomMessage(message)) => match message.msgtype {
-                    MessageType::Image(content) => {
-                        self.show_image(content, &session);
-                    }
-                    MessageType::Video(content) => {
-                        self.show_video(content, &session);
-                    }
-                    _ => {
-                        panic!("Unexpected message type");
-                    }
-                },
-                _ => {
-                    panic!("Unexpected message type");
-                }
-            }
-        }
-
-        self.imp().event.replace(event);
-        self.notify("event");
-    }
-
-    pub fn event(&self) -> Option<HistoryViewerEvent> {
-        self.imp().event.borrow().clone()
-    }
-
     fn show_image(&self, image: ImageMessageEventContent, session: &Session) {
         let imp = self.imp();
 

@@ -16,22 +16,27 @@ use crate::session::{
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/mod.ui"
     )]
+    #[properties(wrapper_type = super::MembersPage)]
     pub struct MembersPage {
+        /// The room containing the members.
+        #[property(get, set = Self::set_room, construct_only)]
         pub room: glib::WeakRef<Room>,
         #[template_child]
         pub navigation_view: TemplateChild<adw::NavigationView>,
         pub can_invite_watch: RefCell<Option<gtk::ExpressionWatch>>,
+        /// Whether our own user can send an invite in the current room.
+        #[property(get = Self::can_invite)]
+        pub can_invite: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -86,41 +91,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MembersPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("can-invite")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "can-invite" => obj.can_invite().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             if let Some(watch) = self.can_invite_watch.take() {
                 watch.unwatch();
@@ -130,9 +102,35 @@ mod imp {
 
     impl WidgetImpl for MembersPage {}
     impl NavigationPageImpl for MembersPage {}
+
+    impl MembersPage {
+        /// Set the room containing the members.
+        fn set_room(&self, room: Room) {
+            let obj = self.obj();
+
+            if let Some(watch) = self.can_invite_watch.take() {
+                watch.unwatch();
+            }
+
+            obj.init_members_list(&room);
+            obj.init_can_invite(&room);
+
+            self.room.set(Some(&room));
+            obj.notify_room();
+        }
+
+        /// Whether our own user can send an invite in the current room.
+        fn can_invite(&self) -> bool {
+            self.can_invite_watch.borrow().as_ref().is_some_and(|w| {
+                w.evaluate_as::<bool>()
+                    .expect("Created expression is valid and a boolean")
+            })
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A page showing the members of a room.
     pub struct MembersPage(ObjectSubclass<imp::MembersPage>)
         @extends gtk::Widget, adw::NavigationPage;
 }
@@ -140,26 +138,6 @@ glib::wrapper! {
 impl MembersPage {
     pub fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
-    }
-
-    /// The room backing all the details of the member page.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.upgrade()
-    }
-
-    /// Set the room backing all the details of the member page.
-    fn set_room(&self, room: &Room) {
-        let imp = self.imp();
-
-        if let Some(watch) = imp.can_invite_watch.take() {
-            watch.unwatch();
-        }
-
-        self.init_members_list(room);
-        self.init_can_invite(room);
-
-        imp.room.set(Some(room));
-        self.notify("room");
     }
 
     fn init_members_list(&self, room: &Room) {
@@ -244,17 +222,5 @@ impl MembersPage {
 
         self.imp().can_invite_watch.replace(Some(watch));
         self.notify("can-invite");
-    }
-
-    /// Whether our own user can send an invite in the current room.
-    pub fn can_invite(&self) -> bool {
-        self.imp()
-            .can_invite_watch
-            .borrow()
-            .as_ref()
-            .is_some_and(|w| {
-                w.evaluate_as::<bool>()
-                    .expect("Created expression is valid and a boolean")
-            })
     }
 }

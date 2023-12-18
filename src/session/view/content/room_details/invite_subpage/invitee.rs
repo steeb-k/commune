@@ -9,14 +9,19 @@ use crate::{
 mod imp {
     use std::cell::{Cell, RefCell};
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Invitee)]
     pub struct Invitee {
+        /// Whether this user is invited.
+        #[property(get, set = Self::set_invited, explicit_notify)]
         pub invited: Cell<bool>,
+        /// The anchor for this user in the text buffer.
+        #[property(get, set = Self::set_anchor, explicit_notify, nullable)]
         pub anchor: RefCell<Option<gtk::TextChildAnchor>>,
+        /// The reason the user can't be invited.
+        #[property(get, set = Self::set_invite_exception, explicit_notify, nullable)]
         pub invite_exception: RefCell<Option<String>>,
     }
 
@@ -27,51 +32,44 @@ mod imp {
         type ParentType = User;
     }
 
-    impl ObjectImpl for Invitee {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("invited")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gtk::TextChildAnchor>("anchor")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecString::builder("invite-exception")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for Invitee {}
 
-            PROPERTIES.as_ref()
+    impl Invitee {
+        /// Set whether this user is invited.
+        fn set_invited(&self, invited: bool) {
+            if self.invited.get() == invited {
+                return;
+            }
+
+            self.invited.set(invited);
+            self.obj().notify_invited();
         }
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "invited" => obj.set_invited(value.get().unwrap()),
-                "anchor" => obj.set_anchor(value.get().unwrap()),
-                "invite-exception" => obj.set_invite_exception(value.get().unwrap()),
-                _ => unimplemented!(),
+        /// Set the anchor for this user in the text buffer.
+        fn set_anchor(&self, anchor: Option<gtk::TextChildAnchor>) {
+            if *self.anchor.borrow() == anchor {
+                return;
             }
+
+            self.anchor.replace(anchor);
+            self.obj().notify_anchor();
         }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "invited" => obj.is_invited().to_value(),
-                "anchor" => obj.anchor().to_value(),
-                "invite-exception" => obj.invite_exception().to_value(),
-                _ => unimplemented!(),
+        /// Set the reason the user can't be invited.
+        fn set_invite_exception(&self, exception: Option<String>) {
+            if exception == *self.invite_exception.borrow() {
+                return;
             }
+
+            self.invite_exception.replace(exception);
+            self.obj().notify_invite_exception();
         }
     }
 }
 
 glib::wrapper! {
-    /// A User in the context of a given room.
+    /// A possible invitee.
     pub struct Invitee(ObjectSubclass<imp::Invitee>) @extends User;
 }
 
@@ -92,57 +90,12 @@ impl Invitee {
         obj
     }
 
-    /// Whether this user is invited.
-    pub fn is_invited(&self) -> bool {
-        self.imp().invited.get()
-    }
-
-    /// Set whether this user is invited.
-    pub fn set_invited(&self, invited: bool) {
-        if self.is_invited() == invited {
-            return;
-        }
-
-        self.imp().invited.set(invited);
-        self.notify("invited");
-    }
-
-    /// The anchor for this user in the text buffer.
-    pub fn anchor(&self) -> Option<gtk::TextChildAnchor> {
-        self.imp().anchor.borrow().clone()
-    }
-
     /// Take the anchor for this user in the text buffer.
     ///
     /// The anchor will be `None` after calling this method.
     pub fn take_anchor(&self) -> Option<gtk::TextChildAnchor> {
         let anchor = self.imp().anchor.take();
-        self.notify("anchor");
+        self.notify_anchor();
         anchor
-    }
-
-    /// Set the anchor for this user in the text buffer.
-    pub fn set_anchor(&self, anchor: Option<gtk::TextChildAnchor>) {
-        if self.anchor() == anchor {
-            return;
-        }
-
-        self.imp().anchor.replace(anchor);
-        self.notify("anchor");
-    }
-
-    /// The reason the user can't be invited.
-    pub fn invite_exception(&self) -> Option<String> {
-        self.imp().invite_exception.borrow().clone()
-    }
-
-    /// Set the reason the user can't be invited.
-    pub fn set_invite_exception(&self, exception: Option<String>) {
-        if exception == self.invite_exception() {
-            return;
-        }
-
-        self.imp().invite_exception.replace(exception);
-        self.notify("invite-exception");
     }
 }

@@ -11,15 +11,17 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/file_row.ui"
     )]
+    #[properties(wrapper_type = super::FileRow)]
     pub struct FileRow {
+        /// The file event.
+        #[property(get, set = Self::set_event, explicit_notify, nullable)]
         pub event: RefCell<Option<HistoryViewerEvent>>,
         pub file: RefCell<Option<gio::File>>,
         #[template_child]
@@ -56,39 +58,44 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for FileRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<HistoryViewerEvent>("event")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "event" => self.obj().set_event(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "event" => self.obj().event().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for FileRow {}
 
     impl WidgetImpl for FileRow {}
     impl BinImpl for FileRow {}
+
+    impl FileRow {
+        /// Set the file event.
+        fn set_event(&self, event: Option<HistoryViewerEvent>) {
+            if self.event.borrow().clone() == event {
+                return;
+            }
+
+            if let Some(event) = &event {
+                if let Some(AnyMessageLikeEventContent::RoomMessage(content)) =
+                    event.original_content()
+                {
+                    if let MessageType::File(file) = content.msgtype {
+                        self.title_label.set_label(&file.body);
+
+                        if let Some(size) = file.info.and_then(|i| i.size) {
+                            let size = glib::format_size(size.into());
+                            self.size_label.set_label(&size);
+                        } else {
+                            self.size_label.set_label(&gettext("Unknown size"));
+                        }
+                    }
+                }
+            }
+
+            self.event.replace(event);
+            self.obj().notify_event();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting a file event.
     pub struct FileRow(ObjectSubclass<imp::FileRow>)
         @extends gtk::Widget, adw::Bin;
 }
@@ -138,36 +145,5 @@ impl FileRow {
                 error!("Error: {e}");
             }
         }
-    }
-
-    pub fn set_event(&self, event: Option<HistoryViewerEvent>) {
-        let imp = self.imp();
-
-        if self.event() == event {
-            return;
-        }
-
-        if let Some(ref event) = event {
-            if let Some(AnyMessageLikeEventContent::RoomMessage(content)) = event.original_content()
-            {
-                if let MessageType::File(file) = content.msgtype {
-                    imp.title_label.set_label(&file.body);
-
-                    if let Some(size) = file.info.and_then(|i| i.size) {
-                        let size = glib::format_size(size.into());
-                        imp.size_label.set_label(&size);
-                    } else {
-                        imp.size_label.set_label(&gettext("Unknown size"));
-                    }
-                }
-            }
-        }
-
-        imp.event.replace(event);
-        self.notify("event");
-    }
-
-    pub fn event(&self) -> Option<HistoryViewerEvent> {
-        self.imp().event.borrow().clone()
     }
 }

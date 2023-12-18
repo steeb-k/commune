@@ -9,18 +9,19 @@ use crate::{session::model::Room, spawn_tokio, utils::media::filename_for_mime};
 pub struct BoxedAnySyncTimelineEvent(pub AnySyncTimelineEvent);
 
 mod imp {
-    use glib::{Properties, WeakRef};
-    use once_cell::unsync::OnceCell;
+    use std::cell::OnceCell;
 
     use super::*;
 
-    #[derive(Debug, Properties, Default)]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::HistoryViewerEvent)]
     pub struct HistoryViewerEvent {
+        /// The Matrix event.
         #[property(get)]
-        pub(super) matrix_event: OnceCell<BoxedAnySyncTimelineEvent>,
+        pub matrix_event: OnceCell<BoxedAnySyncTimelineEvent>,
+        /// The room containing this event.
         #[property(get)]
-        pub(super) room: WeakRef<Room>,
+        pub room: glib::WeakRef<Room>,
     }
 
     #[glib::object_subclass]
@@ -29,19 +30,8 @@ mod imp {
         type Type = super::HistoryViewerEvent;
     }
 
-    impl ObjectImpl for HistoryViewerEvent {
-        fn properties() -> &'static [glib::ParamSpec] {
-            Self::derived_properties()
-        }
-
-        fn set_property(&self, id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            self.derived_set_property(id, value, pspec)
-        }
-
-        fn property(&self, id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            self.derived_property(id, pspec)
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for HistoryViewerEvent {}
 }
 
 glib::wrapper! {

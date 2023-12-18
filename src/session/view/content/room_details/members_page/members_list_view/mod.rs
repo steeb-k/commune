@@ -22,17 +22,17 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::Cell;
+    use std::{cell::Cell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/members_list_view/mod.ui"
     )]
+    #[properties(wrapper_type = super::MembersListView)]
     pub struct MembersListView {
         #[template_child]
         pub search_bar: TemplateChild<gtk::SearchBar>,
@@ -41,6 +41,11 @@ mod imp {
         #[template_child]
         pub list_view: TemplateChild<gtk::ListView>,
         pub filtered_model: gtk::FilterListModel,
+        /// The model used for this view.
+        #[property(get = Self::model, set = Self::set_model, explicit_notify, nullable)]
+        pub model: PhantomData<Option<gio::ListModel>>,
+        /// Whether our own user can send an invite in the current room.
+        #[property(get, set = Self::set_can_invite, explicit_notify)]
         pub can_invite: Cell<bool>,
     }
 
@@ -63,38 +68,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MembersListView {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gio::ListModel>("model")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("can-invite")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "model" => self.obj().set_model(value.get::<&gio::ListModel>().ok()),
-                "can-invite" => self.obj().set_can_invite(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "model" => self.obj().model().to_value(),
-                "can-invite" => self.obj().can_invite().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -160,6 +135,33 @@ mod imp {
 
     impl WidgetImpl for MembersListView {}
     impl NavigationPageImpl for MembersListView {}
+
+    impl MembersListView {
+        /// The model used for this view.
+        fn model(&self) -> Option<gio::ListModel> {
+            self.filtered_model.model()
+        }
+
+        /// Set the model used for this view.
+        fn set_model(&self, model: Option<gio::ListModel>) {
+            if self.model() == model {
+                return;
+            }
+
+            self.filtered_model.set_model(model.as_ref());
+            self.obj().notify_model();
+        }
+
+        /// Set whether our own user can send an invite in the current room.
+        fn set_can_invite(&self, can_invite: bool) {
+            if self.can_invite.get() == can_invite {
+                return;
+            }
+
+            self.can_invite.set(can_invite);
+            self.obj().notify_can_invite();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -180,36 +182,5 @@ impl MembersListView {
             .property("tag", tag)
             .property("title", title)
             .build()
-    }
-
-    /// The model used for this view.
-    pub fn model(&self) -> Option<gio::ListModel> {
-        self.imp().filtered_model.model()
-    }
-
-    /// Set the model used for this view.
-    pub fn set_model(&self, model: Option<&impl IsA<gio::ListModel>>) {
-        let model: Option<&gio::ListModel> = model.map(|model| model.upcast_ref());
-        if self.model().as_ref() == model {
-            return;
-        }
-
-        self.imp().filtered_model.set_model(model);
-        self.notify("model");
-    }
-
-    /// Whether our own user can send an invite in the current room.
-    pub fn can_invite(&self) -> bool {
-        self.imp().can_invite.get()
-    }
-
-    /// Set whether our own user can send an invite in the current room.
-    pub fn set_can_invite(&self, can_invite: bool) {
-        if self.can_invite() == can_invite {
-            return;
-        }
-
-        self.imp().can_invite.set(can_invite);
-        self.notify("can-invite");
     }
 }

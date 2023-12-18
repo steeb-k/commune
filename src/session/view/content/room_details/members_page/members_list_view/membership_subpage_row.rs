@@ -3,26 +3,30 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
 use super::MembershipSubpageItem;
-use crate::session::model::Membership;
+use crate::{session::model::Membership, utils::BoundObject};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::marker::PhantomData;
 
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.ui"
     )]
+    #[properties(wrapper_type = super::MembershipSubpageRow)]
     pub struct MembershipSubpageRow {
-        /// The item of this row.
-        pub item: RefCell<Option<MembershipSubpageItem>>,
+        /// The item presented by this row.
+        #[property(get, set = Self::set_item, explicit_notify, nullable)]
+        pub item: BoundObject<MembershipSubpageItem>,
+        /// The label of this row.
+        #[property(get = Self::label)]
+        pub label: PhantomData<Option<String>>,
         pub gesture: gtk::GestureClick,
         #[template_child]
         pub members_count: TemplateChild<gtk::Label>,
-        pub members_count_handler_id: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -40,44 +44,58 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MembershipSubpageRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<MembershipSubpageItem>("item")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecString::builder("label").read_only().build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "item" => self.obj().set_item(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "item" => obj.item().to_value(),
-                "label" => obj.label().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MembershipSubpageRow {}
 
     impl WidgetImpl for MembershipSubpageRow {}
     impl BinImpl for MembershipSubpageRow {}
+
+    impl MembershipSubpageRow {
+        /// Set the item presented by this row.
+        fn set_item(&self, item: Option<MembershipSubpageItem>) {
+            if self.item.obj() == item {
+                return;
+            }
+            let obj = self.obj();
+
+            self.item.disconnect_signals();
+
+            if let Some(item) = item {
+                let model = item.model();
+
+                let handler = model.connect_items_changed(
+                    clone!(@weak self as imp => move |model, _, _, _| {
+                        imp.member_count_changed(model.n_items());
+                    }),
+                );
+                self.member_count_changed(model.n_items());
+
+                self.item.set(item, vec![handler])
+            }
+
+            obj.notify_item();
+            obj.notify_label();
+        }
+
+        /// The label of this row.
+        fn label(&self) -> Option<String> {
+            match self.item.obj()?.state() {
+                // Translators: As in 'Invited Room Members'.
+                Membership::Invite => Some(gettext("Invited")),
+                // Translators: As in 'Banned Room Members'.
+                Membership::Ban => Some(gettext("Banned")),
+                _ => None,
+            }
+        }
+
+        fn member_count_changed(&self, n: u32) {
+            self.members_count.set_text(&format!("{n}"));
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting a `MembershipSubpageItem`.
     pub struct MembershipSubpageRow(ObjectSubclass<imp::MembershipSubpageRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -85,57 +103,5 @@ glib::wrapper! {
 impl MembershipSubpageRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The item of this row.
-    pub fn item(&self) -> Option<MembershipSubpageItem> {
-        self.imp().item.borrow().clone()
-    }
-
-    /// Set the item of this row.
-    pub fn set_item(&self, item: Option<MembershipSubpageItem>) {
-        let imp = self.imp();
-        let prev_item = self.item();
-
-        if prev_item == item {
-            return;
-        }
-
-        if let Some(signal_id) = imp.members_count_handler_id.take() {
-            if let Some(prev_item) = prev_item {
-                prev_item.disconnect(signal_id);
-            }
-        }
-
-        if let Some(item) = item.as_ref() {
-            let model = item.model();
-            let signal_id =
-                model.connect_items_changed(clone!(@weak self as obj => move |model, _, _, _| {
-                    obj.member_count_changed(model.n_items());
-                }));
-
-            self.member_count_changed(model.n_items());
-
-            self.imp().members_count_handler_id.replace(Some(signal_id));
-        }
-
-        self.imp().item.replace(item);
-        self.notify("item");
-        self.notify("label");
-    }
-
-    /// The label of this row.
-    pub fn label(&self) -> Option<String> {
-        match self.item()?.state() {
-            // Translators: As in 'Invited Room Members'.
-            Membership::Invite => Some(gettext("Invited")),
-            // Translators: As in 'Banned Room Members'.
-            Membership::Ban => Some(gettext("Banned")),
-            _ => None,
-        }
-    }
-
-    fn member_count_changed(&self, n: u32) {
-        self.imp().members_count.set_text(&format!("{n}"));
     }
 }
