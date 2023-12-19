@@ -18,16 +18,19 @@ use crate::{
 };
 
 mod imp {
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/change_password_subpage.ui"
     )]
+    #[properties(wrapper_type = super::ChangePasswordSubpage)]
     pub struct ChangePasswordSubpage {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub password: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
@@ -62,29 +65,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ChangePasswordSubpage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> =
-                Lazy::new(|| vec![glib::ParamSpecObject::builder::<Session>("session").build()]);
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -125,16 +107,6 @@ glib::wrapper! {
 impl ChangePasswordSubpage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        self.imp().session.set(session.as_ref());
     }
 
     fn validate_password(&self) {
@@ -239,6 +211,10 @@ impl ChangePasswordSubpage {
     }
 
     async fn change_password(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
         if !self.can_change_password() {
             return;
         }
@@ -250,7 +226,6 @@ impl ChangePasswordSubpage {
         imp.password.set_sensitive(false);
         imp.confirm_password.set_sensitive(false);
 
-        let session = self.session().unwrap();
         let dialog = AuthDialog::new(self.root().and_downcast_ref::<gtk::Window>(), &session);
 
         let result = dialog

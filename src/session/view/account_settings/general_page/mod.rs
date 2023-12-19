@@ -19,7 +19,7 @@ use log_out_subpage::LogOutSubpage;
 use crate::{
     components::{ActionButton, ActionState, ButtonRow, EditableAvatar},
     prelude::*,
-    session::model::{Session, User},
+    session::model::Session,
     spawn, spawn_tokio, toast,
     utils::{media::load_file, template_callbacks::TemplateCallbacks, OngoingAsyncAction},
 };
@@ -27,16 +27,19 @@ use crate::{
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/mod.ui"
     )]
+    #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub avatar: TemplateChild<EditableAvatar>,
         #[template_child]
@@ -59,6 +62,8 @@ mod imp {
         pub log_out_subpage: TemplateChild<LogOutSubpage>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
+        pub avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -98,32 +103,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for GeneralPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -136,6 +117,54 @@ mod imp {
 
     impl WidgetImpl for GeneralPage {}
     impl PreferencesPageImpl for GeneralPage {}
+
+    impl GeneralPage {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            let prev_session = self.session.upgrade();
+            if prev_session == session {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(session) = prev_session {
+                let user = session.user();
+
+                if let Some(handler) = self.avatar_uri_handler.take() {
+                    user.avatar_data().image().unwrap().disconnect(handler)
+                }
+                if let Some(handler) = self.display_name_handler.take() {
+                    user.disconnect(handler);
+                }
+            }
+
+            self.session.set(session.as_ref());
+            obj.notify_session();
+
+            let Some(session) = session else {
+                return;
+            };
+
+            self.user_id.set_subtitle(session.user_id().as_str());
+            self.homeserver.set_subtitle(session.homeserver().as_str());
+            self.session_id.set_subtitle(session.device_id().as_str());
+
+            let user = session.user();
+            let avatar_uri_handler = user.avatar_data().image().unwrap().connect_uri_notify(
+                clone!(@weak obj => move |avatar_image| {
+                    obj.avatar_changed(avatar_image.uri());
+                }),
+            );
+            self.avatar_uri_handler.replace(Some(avatar_uri_handler));
+
+            let display_name_handler =
+                user.connect_display_name_notify(clone!(@weak obj => move |user| {
+                    obj.display_name_changed(user.display_name());
+                }));
+            self.display_name_handler
+                .replace(Some(display_name_handler));
+        }
+    }
 }
 
 glib::wrapper! {
@@ -148,58 +177,6 @@ glib::wrapper! {
 impl GeneralPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if self.session() == session {
-            return;
-        }
-        self.imp().session.set(session.as_ref());
-        self.notify("session");
-
-        self.user()
-            .avatar_data()
-            .image()
-            .unwrap()
-            .connect_uri_notify(clone!(@weak self as obj => move |avatar_image| {
-                obj.avatar_changed(avatar_image.uri());
-            }));
-        self.user().connect_notify_local(
-            Some("display-name"),
-            clone!(@weak self as obj => move |user, _| {
-                obj.display_name_changed(user.display_name());
-            }),
-        );
-
-        spawn!(
-            glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                let imp = obj.imp();
-                let client = obj.session().unwrap().client();
-
-                let homeserver = client.homeserver();
-                imp.homeserver.set_subtitle(homeserver.as_ref());
-
-                let user_id = client.user_id().unwrap();
-                imp.user_id.set_subtitle(user_id.as_ref());
-
-                let session_id = client.device_id().unwrap();
-                imp.session_id.set_subtitle(session_id.as_ref());
-            })
-        );
-    }
-
-    fn user(&self) -> User {
-        self.session()
-            .as_ref()
-            .map(|session| session.user())
-            .unwrap()
     }
 
     fn init_avatar(&self) {
@@ -245,6 +222,10 @@ impl GeneralPage {
     }
 
     async fn change_avatar(&self, file: gio::File) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
         let imp = self.imp();
         let avatar = &imp.avatar;
         avatar.edit_in_progress();
@@ -259,7 +240,7 @@ impl GeneralPage {
             }
         };
 
-        let client = self.session().unwrap().client();
+        let client = session.client();
         let client_clone = client.clone();
         let handle =
             spawn_tokio!(async move { client_clone.media().upload(&info.mime, data).await });
@@ -288,7 +269,7 @@ impl GeneralPage {
                 // Because this action can finish in avatar_changed, we must only act if this is
                 // still the current action.
                 if weak_action.is_ongoing() {
-                    self.user().set_avatar_url(Some(uri))
+                    session.user().set_avatar_url(Some(uri))
                 }
             }
             Err(error) => {
@@ -305,6 +286,9 @@ impl GeneralPage {
     }
 
     async fn remove_avatar(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
         let Some(window) = self.root().and_downcast::<gtk::Window>() else {
             return;
         };
@@ -333,7 +317,7 @@ impl GeneralPage {
         let (action, weak_action) = OngoingAsyncAction::remove();
         imp.changing_avatar.replace(Some(action));
 
-        let client = self.session().unwrap().client();
+        let client = session.client();
         let handle = spawn_tokio!(async move { client.account().set_avatar_url(None).await });
 
         match handle.await.unwrap() {
@@ -343,7 +327,7 @@ impl GeneralPage {
                 // Because this action can finish in avatar_changed, we must only act if this is
                 // still the current action.
                 if weak_action.is_ongoing() {
-                    self.user().set_avatar_url(None)
+                    session.user().set_avatar_url(None)
                 }
             }
             Err(error) => {
@@ -362,8 +346,12 @@ impl GeneralPage {
     fn init_display_name(&self) {
         let imp = self.imp();
         let entry = &imp.display_name;
-        entry.connect_changed(clone!(@weak self as obj => move|entry| {
-            obj.imp().display_name_button.set_visible(entry.text() != obj.user().display_name());
+        entry.connect_changed(clone!(@weak self as obj => move |entry| {
+            let Some(session) = obj.session() else {
+                return;
+            };
+
+            obj.imp().display_name_button.set_visible(entry.text() != session.user().display_name());
         }));
     }
 
@@ -395,6 +383,10 @@ impl GeneralPage {
     }
 
     async fn change_display_name(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
         let imp = self.imp();
         let entry = &imp.display_name;
         let button = &imp.display_name_button;
@@ -407,7 +399,7 @@ impl GeneralPage {
         let (action, weak_action) = OngoingAsyncAction::set(display_name.clone());
         imp.changing_display_name.replace(Some(action));
 
-        let client = self.session().unwrap().client();
+        let client = session.client();
         let display_name_clone = display_name.clone();
         let handle = spawn_tokio!(async move {
             client
@@ -423,7 +415,7 @@ impl GeneralPage {
                 // Because this action can finish in display_name_changed, we must only act if
                 // this is still the current action.
                 if weak_action.is_ongoing() {
-                    self.user().set_display_name(Some(display_name));
+                    session.user().set_display_name(Some(display_name));
                 }
             }
             Err(error) => {
@@ -442,11 +434,14 @@ impl GeneralPage {
     }
 
     fn init_change_password(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+        let client = session.client();
+
         spawn!(
             glib::Priority::LOW,
             clone!(@weak self as obj => async move {
-                let client = obj.session().unwrap().client();
-
                 // Check whether the user can change their password.
                 let handle = spawn_tokio!(async move {
                     client.send(get_capabilities::v3::Request::new(), None).await

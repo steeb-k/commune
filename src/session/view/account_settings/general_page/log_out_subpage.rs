@@ -7,16 +7,19 @@ use gtk::{
 use crate::{components::SpinnerButton, session::model::Session, spawn, toast};
 
 mod imp {
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/log_out_subpage.ui"
     )]
+    #[properties(wrapper_type = super::LogOutSubpage)]
     pub struct LogOutSubpage {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub logout_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -39,29 +42,8 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for LogOutSubpage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> =
-                Lazy::new(|| vec![glib::ParamSpecObject::builder::<Session>("session").build()]);
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for LogOutSubpage {}
 
     impl WidgetImpl for LogOutSubpage {}
     impl NavigationPageImpl for LogOutSubpage {}
@@ -79,37 +61,24 @@ impl LogOutSubpage {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if let Some(session) = session {
-            self.imp().session.set(Some(&session));
-        }
-    }
-
     #[template_callback]
     fn logout_button_clicked_cb(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
         let imp = self.imp();
-        let logout_button = imp.logout_button.get();
-        let make_backup_button = imp.make_backup_button.get();
-        let session = self.session().unwrap();
+        imp.logout_button.set_loading(true);
+        imp.make_backup_button.set_sensitive(false);
 
-        logout_button.set_loading(true);
-        make_backup_button.set_sensitive(false);
+        spawn!(clone!(@weak self as obj, @weak session => async move {
+            if let Err(error) = session.logout().await {
+                toast!(obj, error);
+            }
 
-        spawn!(
-            clone!(@weak self as obj, @weak logout_button, @weak make_backup_button, @weak session => async move {
-                if let Err(error) = session.logout().await {
-                    toast!(obj, error);
-                }
-
-                logout_button.set_loading(false);
-                make_backup_button.set_sensitive(true);
-            })
-        );
+            let imp = obj.imp();
+            imp.logout_button.set_loading(false);
+            imp.make_backup_button.set_sensitive(true);
+        }));
     }
 }

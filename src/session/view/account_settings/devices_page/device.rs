@@ -3,7 +3,7 @@ use matrix_sdk::{
     encryption::identities::Device as CryptoDevice,
     ruma::{
         api::client::device::{delete_device, Device as MatrixDevice},
-        assign, DeviceId,
+        assign,
     },
 };
 
@@ -13,16 +13,35 @@ use crate::{
 };
 
 mod imp {
-    use glib::object::WeakRef;
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::{cell::OnceCell, marker::PhantomData};
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::Device)]
     pub struct Device {
+        /// The device data.
         pub device: OnceCell<MatrixDevice>,
+        /// The encryption API of the device.
         pub crypto_device: OnceCell<CryptoDevice>,
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
+        /// The ID of the device.
+        #[property(get = Self::device_id)]
+        device_id: PhantomData<String>,
+        /// The display name of the device.
+        #[property(get = Self::display_name)]
+        display_name: PhantomData<String>,
+        /// The last IP address the device used.
+        #[property(get = Self::last_seen_ip)]
+        last_seen_ip: PhantomData<Option<String>>,
+        /// The last time the device was used.
+        #[property(get = Self::last_seen_ts)]
+        last_seen_ts: PhantomData<Option<glib::DateTime>>,
+        /// Whether this device is verified.
+        #[property(get = Self::verified)]
+        verified: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -31,53 +50,50 @@ mod imp {
         type Type = super::Device;
     }
 
-    impl ObjectImpl for Device {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecString::builder("device-id")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("display-name")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("last-seen-ip")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoxed::builder::<glib::DateTime>("last-seen-ts")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("verified")
-                        .read_only()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for Device {}
 
-            PROPERTIES.as_ref()
+    impl Device {
+        /// The device data.
+        fn device(&self) -> &MatrixDevice {
+            self.device.get().unwrap()
         }
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.session.set(value.get().ok().as_ref()),
-                _ => unimplemented!(),
+        /// The ID of this device.
+        fn device_id(&self) -> String {
+            self.device().device_id.to_string()
+        }
+
+        /// The display name of the device.
+        fn display_name(&self) -> String {
+            if let Some(display_name) = self.device().display_name.clone() {
+                display_name
+            } else {
+                self.device_id()
             }
         }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
+        /// The last IP address the device used.
+        fn last_seen_ip(&self) -> Option<String> {
+            // TODO: Would be nice to also show the location
+            // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/700
+            self.device().last_seen_ip.clone()
+        }
 
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "display-name" => obj.display_name().to_value(),
-                "device-id" => obj.device_id().as_str().to_value(),
-                "last-seen-ip" => obj.last_seen_ip().to_value(),
-                "last-seen-ts" => obj.last_seen_ts().to_value(),
-                "verified" => obj.is_verified().to_value(),
-                _ => unimplemented!(),
-            }
+        /// The last time the device was used.
+        fn last_seen_ts(&self) -> Option<glib::DateTime> {
+            self.device().last_seen_ts.map(|last_seen_ts| {
+                glib::DateTime::from_unix_utc(last_seen_ts.as_secs().into())
+                    .and_then(|t| t.to_local())
+                    .unwrap()
+            })
+        }
+
+        /// Whether this device is verified.
+        fn verified(&self) -> bool {
+            self.crypto_device
+                .get()
+                .is_some_and(|device| device.is_verified())
         }
     }
 }
@@ -100,11 +116,6 @@ impl Device {
         obj
     }
 
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
     /// Set the Matrix device of this `Device`.
     fn set_matrix_device(&self, device: MatrixDevice, crypto_device: Option<CryptoDevice>) {
         let imp = self.imp();
@@ -114,48 +125,15 @@ impl Device {
         }
     }
 
-    /// The ID of this device.
-    pub fn device_id(&self) -> &DeviceId {
-        &self.imp().device.get().unwrap().device_id
-    }
-
-    /// The display name of the device.
-    pub fn display_name(&self) -> &str {
-        if let Some(ref display_name) = self.imp().device.get().unwrap().display_name {
-            display_name
-        } else {
-            self.device_id().as_str()
-        }
-    }
-
-    /// The last IP address the device used.
-    pub fn last_seen_ip(&self) -> Option<&str> {
-        // TODO: Would be nice to also show the location
-        // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/700
-        self.imp().device.get().unwrap().last_seen_ip.as_deref()
-    }
-
-    /// The last time the device was used.
-    pub fn last_seen_ts(&self) -> Option<glib::DateTime> {
-        self.imp()
-            .device
-            .get()
-            .unwrap()
-            .last_seen_ts
-            .map(|last_seen_ts| {
-                glib::DateTime::from_unix_utc(last_seen_ts.as_secs().into())
-                    .and_then(|t| t.to_local())
-                    .unwrap()
-            })
-    }
-
     /// Deletes the `Device`.
     pub async fn delete(
         &self,
         transient_for: Option<&impl IsA<gtk::Window>>,
     ) -> Result<(), AuthError> {
-        let session = self.session();
-        let device_id = self.device_id().to_owned();
+        let Some(session) = self.session() else {
+            return Err(AuthError::NoSession);
+        };
+        let device_id = self.imp().device.get().unwrap().device_id.clone();
 
         let dialog = AuthDialog::new(transient_for, &session);
 
@@ -169,13 +147,5 @@ impl Device {
             })
             .await?;
         Ok(())
-    }
-
-    /// Whether this device is verified.
-    pub fn is_verified(&self) -> bool {
-        self.imp()
-            .crypto_device
-            .get()
-            .map_or(false, |device| device.is_verified())
     }
 }

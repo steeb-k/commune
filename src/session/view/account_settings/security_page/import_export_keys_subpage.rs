@@ -22,18 +22,24 @@ pub enum KeysSubpageMode {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/security_page/import_export_keys_subpage.ui"
     )]
+    #[properties(wrapper_type = super::ImportExportKeysSubpage)]
     pub struct ImportExportKeysSubpage {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub description: TemplateChild<gtk::Label>,
         #[template_child]
@@ -54,7 +60,14 @@ mod imp {
         pub file_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub proceed_button: TemplateChild<SpinnerButton>,
+        /// The path to export the keys to.
+        #[property(get)]
         pub file_path: RefCell<Option<gio::File>>,
+        /// The path to export the keys to, as a string.
+        #[property(get = Self::file_path_string)]
+        pub file_path_string: PhantomData<Option<String>>,
+        /// The export/import mode of the subpage.
+        #[property(get, set = Self::set_mode, explicit_notify, builder(KeysSubpageMode::default()))]
         pub mode: Cell<KeysSubpageMode>,
     }
 
@@ -74,49 +87,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ImportExportKeysSubpage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Session>("session").build(),
-                    glib::ParamSpecString::builder("file-path")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<KeysSubpageMode>("mode")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
-                "mode" => obj.set_mode(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "file-path" => obj
-                    .file_path()
-                    .and_then(|file| file.path())
-                    .map(|path| path.to_string_lossy().to_string())
-                    .to_value(),
-                "mode" => obj.mode().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -137,6 +109,30 @@ mod imp {
 
     impl WidgetImpl for ImportExportKeysSubpage {}
     impl NavigationPageImpl for ImportExportKeysSubpage {}
+
+    impl ImportExportKeysSubpage {
+        /// Set the export/import mode of the subpage.
+        fn set_mode(&self, mode: KeysSubpageMode) {
+            if self.mode.get() == mode {
+                return;
+            }
+            let obj = self.obj();
+
+            self.mode.set(mode);
+            obj.update_for_mode();
+            obj.clear();
+            obj.notify_mode();
+        }
+
+        /// The path to export the keys to, as a string.
+        fn file_path_string(&self) -> Option<String> {
+            self.file_path
+                .borrow()
+                .as_ref()
+                .and_then(|file| file.path())
+                .map(|path| path.to_string_lossy().to_string())
+        }
+    }
 }
 
 glib::wrapper! {
@@ -151,21 +147,6 @@ impl ImportExportKeysSubpage {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        self.imp().session.set(session.as_ref());
-    }
-
-    /// The path to export the keys to.
-    pub fn file_path(&self) -> Option<gio::File> {
-        self.imp().file_path.borrow().clone()
-    }
-
     /// Set the path to export the keys to.
     fn set_file_path(&self, path: Option<gio::File>) {
         let imp = self.imp();
@@ -175,24 +156,8 @@ impl ImportExportKeysSubpage {
 
         imp.file_path.replace(path);
         self.update_button();
-        self.notify("file-path");
-    }
-
-    /// The export/import mode of the subpage.
-    pub fn mode(&self) -> KeysSubpageMode {
-        self.imp().mode.get()
-    }
-
-    /// Set the export/import mode of the subpage.
-    pub fn set_mode(&self, mode: KeysSubpageMode) {
-        if self.mode() == mode {
-            return;
-        }
-
-        self.imp().mode.set(mode);
-        self.update_for_mode();
-        self.clear();
-        self.notify("mode");
+        self.notify_file_path();
+        self.notify_file_path_string();
     }
 
     fn clear(&self) {

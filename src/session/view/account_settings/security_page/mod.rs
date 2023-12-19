@@ -8,16 +8,19 @@ mod import_export_keys_subpage;
 use import_export_keys_subpage::{ImportExportKeysSubpage, KeysSubpageMode};
 
 mod imp {
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/security_page/mod.ui"
     )]
+    #[properties(wrapper_type = super::SecurityPage)]
     pub struct SecurityPage {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub import_export_keys_subpage: TemplateChild<ImportExportKeysSubpage>,
         #[template_child]
@@ -45,35 +48,28 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for SecurityPage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for SecurityPage {}
 
     impl WidgetImpl for SecurityPage {}
     impl PreferencesPageImpl for SecurityPage {}
+
+    impl SecurityPage {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if self.session.upgrade() == session {
+                return;
+            }
+            let obj = self.obj();
+
+            self.session.set(session.as_ref());
+            obj.notify_session();
+
+            spawn!(clone!(@weak obj => async move {
+                obj.load_cross_signing_status().await;
+            }));
+        }
+    }
 }
 
 glib::wrapper! {
@@ -86,25 +82,6 @@ glib::wrapper! {
 impl SecurityPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if self.session() == session {
-            return;
-        }
-
-        self.imp().session.set(session.as_ref());
-        self.notify("session");
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_cross_signing_status().await;
-        }));
     }
 
     #[template_callback]

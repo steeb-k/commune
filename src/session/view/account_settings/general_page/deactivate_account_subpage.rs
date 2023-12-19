@@ -15,16 +15,19 @@ use crate::{
 };
 
 mod imp {
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/general_page/deactivate_account_subpage.ui"
     )]
+    #[properties(wrapper_type = super::DeactivateAccountSubpage)]
     pub struct DeactivateAccountSubpage {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, nullable)]
+        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub confirmation: TemplateChild<adw::EntryRow>,
         #[template_child]
@@ -46,29 +49,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for DeactivateAccountSubpage {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> =
-                Lazy::new(|| vec![glib::ParamSpecObject::builder::<Session>("session").build()]);
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -98,6 +80,16 @@ mod imp {
 
     impl WidgetImpl for DeactivateAccountSubpage {}
     impl NavigationPageImpl for DeactivateAccountSubpage {}
+
+    impl DeactivateAccountSubpage {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if let Some(session) = session {
+                self.session.set(Some(&session));
+                self.confirmation.set_title(session.user_id().as_str());
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -111,27 +103,6 @@ impl DeactivateAccountSubpage {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if let Some(session) = session {
-            let imp = self.imp();
-            imp.session.set(Some(&session));
-            imp.confirmation.set_title(&self.user_id());
-        }
-    }
-
-    fn user_id(&self) -> String {
-        self.session()
-            .as_ref()
-            .map(|session| session.user_id().to_string())
-            .unwrap()
-    }
-
     fn update_button(&self) {
         self.imp()
             .button
@@ -139,11 +110,15 @@ impl DeactivateAccountSubpage {
     }
 
     fn can_deactivate_account(&self) -> bool {
-        let confirmation = self.imp().confirmation.text();
-        confirmation == self.user_id()
+        let confirmation = &self.imp().confirmation;
+        confirmation.text() == confirmation.title()
     }
 
     async fn deactivate_account(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
         if !self.can_deactivate_account() {
             return;
         }
@@ -152,7 +127,6 @@ impl DeactivateAccountSubpage {
         imp.button.set_loading(true);
         imp.confirmation.set_sensitive(false);
 
-        let session = self.session().unwrap();
         let dialog = AuthDialog::new(self.root().and_downcast_ref::<gtk::Window>(), &session);
 
         let result = dialog

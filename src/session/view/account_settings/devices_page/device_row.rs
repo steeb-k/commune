@@ -15,14 +15,14 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/account_settings/devices_page/device_row.ui"
     )]
+    #[properties(wrapper_type = super::DeviceRow)]
     pub struct DeviceRow {
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
@@ -36,7 +36,11 @@ mod imp {
         pub delete_logout_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub verify_button: TemplateChild<SpinnerButton>,
+        /// The device displayed by this row.
+        #[property(get, set = Self::set_device, construct_only)]
         pub device: RefCell<Option<Device>>,
+        /// Whether this is the device of the current session.
+        #[property(get, construct_only)]
         pub is_current_device: Cell<bool>,
         pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
@@ -56,46 +60,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for DeviceRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Device>("device")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-current-device")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "device" => {
-                    obj.set_device(value.get().unwrap());
-                }
-                "is-current-device" => {
-                    obj.set_current_device(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "device" => obj.device().to_value(),
-                "is-current-device" => obj.is_current_device().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -144,9 +110,38 @@ mod imp {
 
     impl WidgetImpl for DeviceRow {}
     impl ListBoxRowImpl for DeviceRow {}
+
+    impl DeviceRow {
+        /// Set the device displayed by this row.
+        fn set_device(&self, device: Device) {
+            let obj = self.obj();
+
+            self.display_name.set_label(&device.display_name());
+            obj.set_tooltip_text(Some(device.device_id().as_str()));
+
+            self.verified_icon.set_visible(device.verified());
+            // TODO: Implement verification
+            // imp.verify_button.set_visible(!device.is_verified());
+
+            let last_seen_ip = device.last_seen_ip();
+            if let Some(last_seen_ip) = &last_seen_ip {
+                self.last_seen_ip.set_label(last_seen_ip);
+            }
+            self.last_seen_ip.set_visible(last_seen_ip.is_some());
+
+            self.last_seen_ts
+                .set_visible(device.last_seen_ts().is_some());
+
+            self.device.replace(Some(device));
+            obj.notify_device();
+
+            obj.update_last_seen_ts();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting a device.
     pub struct DeviceRow(ObjectSubclass<imp::DeviceRow>)
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
@@ -157,60 +152,6 @@ impl DeviceRow {
             .property("device", device)
             .property("is-current-device", is_current_device)
             .build()
-    }
-
-    /// The device displayed by this row.
-    pub fn device(&self) -> Option<Device> {
-        self.imp().device.borrow().clone()
-    }
-
-    /// Set the device displayed by this row.
-    pub fn set_device(&self, device: Option<Device>) {
-        let imp = self.imp();
-
-        if self.device() == device {
-            return;
-        }
-
-        if let Some(ref device) = device {
-            imp.display_name.set_label(device.display_name());
-            self.set_tooltip_text(Some(device.device_id().as_str()));
-
-            imp.verified_icon.set_visible(device.is_verified());
-            // TODO: Implement verification
-            // imp.verify_button.set_visible(!device.is_verified());
-
-            let last_seen_ip_visible = if let Some(last_seen_ip) = device.last_seen_ip() {
-                imp.last_seen_ip.set_label(last_seen_ip);
-                true
-            } else {
-                false
-            };
-            imp.last_seen_ip.set_visible(last_seen_ip_visible);
-
-            imp.last_seen_ts
-                .set_visible(device.last_seen_ts().is_some());
-        }
-
-        imp.device.replace(device);
-        self.notify("device");
-
-        self.update_last_seen_ts();
-    }
-
-    /// Set whether this is the device of the current session.
-    fn set_current_device(&self, input_bool: bool) {
-        let imp = self.imp();
-        if imp.is_current_device.get() == input_bool {
-            return;
-        }
-        imp.is_current_device.replace(input_bool);
-        self.notify("is-current-device");
-    }
-
-    /// Whether this is the device of the current session.
-    pub fn is_current_device(&self) -> bool {
-        self.imp().is_current_device.get()
     }
 
     fn delete(&self) {
@@ -229,7 +170,7 @@ impl DeviceRow {
                     error!("Failed to disconnect device {}: {error:?}", device.device_id());
                     let device_name = device.display_name();
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    let error_message = gettext_f("Failed to disconnect device “{device_name}”", &[("device_name", device_name)]);
+                    let error_message = gettext_f("Failed to disconnect device “{device_name}”", &[("device_name", &device_name)]);
                     toast!(obj, error_message);
                 },
             }

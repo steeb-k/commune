@@ -3,86 +3,61 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use super::Device;
 
 /// This enum contains all possible types the device list can hold.
-#[derive(Debug, Clone)]
-pub enum ItemType {
+#[derive(Debug, Clone, glib::Boxed)]
+#[boxed_type(name = "DeviceListItemType")]
+pub enum DeviceListItemType {
     Device(Device),
     Error(String),
     LoadingSpinner,
 }
 
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedDeviceItemType")]
-pub struct BoxedItemType(ItemType);
-
-impl From<ItemType> for BoxedItemType {
-    fn from(type_: ItemType) -> Self {
-        BoxedItemType(type_)
-    }
-}
-
 mod imp {
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use std::cell::OnceCell;
 
     use super::*;
 
-    #[derive(Debug, Default)]
-    pub struct Item {
-        pub type_: OnceCell<ItemType>,
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::DeviceListItem)]
+    pub struct DeviceListItem {
+        /// The type of this item.
+        #[property(get, construct_only)]
+        pub item_type: OnceCell<DeviceListItemType>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Item {
-        const NAME: &'static str = "DeviceItem";
-        type Type = super::Item;
+    impl ObjectSubclass for DeviceListItem {
+        const NAME: &'static str = "DeviceListItem";
+        type Type = super::DeviceListItem;
     }
 
-    impl ObjectImpl for Item {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecBoxed::builder::<BoxedItemType>("type")
-                    .write_only()
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "type" => {
-                    let type_ = value.get::<BoxedItemType>().unwrap();
-                    self.type_.set(type_.0).unwrap();
-                }
-
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for DeviceListItem {}
 }
 
 glib::wrapper! {
-    pub struct Item(ObjectSubclass<imp::Item>);
+    /// An item in the device list.
+    pub struct DeviceListItem(ObjectSubclass<imp::DeviceListItem>);
 }
 
-impl Item {
+impl DeviceListItem {
     pub fn for_device(device: Device) -> Self {
-        let type_ = BoxedItemType(ItemType::Device(device));
-        glib::Object::builder().property("type", &type_).build()
+        let item_type = DeviceListItemType::Device(device);
+        glib::Object::builder()
+            .property("item-type", &item_type)
+            .build()
     }
 
     pub fn for_error(error: String) -> Self {
-        let type_ = BoxedItemType(ItemType::Error(error));
-        glib::Object::builder().property("type", &type_).build()
+        let item_type = DeviceListItemType::Error(error);
+        glib::Object::builder()
+            .property("item-type", &item_type)
+            .build()
     }
 
     pub fn for_loading_spinner() -> Self {
-        let type_ = BoxedItemType(ItemType::LoadingSpinner);
-        glib::Object::builder().property("type", &type_).build()
-    }
-
-    /// The type of this item.
-    pub fn type_(&self) -> &ItemType {
-        self.imp().type_.get().unwrap()
+        let item_type = DeviceListItemType::LoadingSpinner;
+        glib::Object::builder()
+            .property("item-type", &item_type)
+            .build()
     }
 }

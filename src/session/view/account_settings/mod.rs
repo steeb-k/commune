@@ -14,19 +14,22 @@ use self::{
     devices_page::DevicesPage, general_page::GeneralPage, notifications_page::NotificationsPage,
     security_page::SecurityPage,
 };
-use crate::session::model::Session;
+use crate::{session::model::Session, utils::BoundObjectWeakRef};
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{subclass::InitializingObject, WeakRef};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/account_settings/mod.ui")]
+    #[properties(wrapper_type = super::AccountSettings)]
     pub struct AccountSettings {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, nullable)]
+        pub session: BoundObjectWeakRef<Session>,
         pub session_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub general_page: TemplateChild<GeneralPage>,
@@ -45,6 +48,7 @@ mod imp {
             GeneralPage::static_type();
             NotificationsPage::static_type();
             SecurityPage::static_type();
+
             Self::bind_template(klass);
 
             klass.install_action("account-settings.close", None, |obj, _, _| {
@@ -76,45 +80,34 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AccountSettings {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Session>("session")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.obj().set_session(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "session" => self.obj().session().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn dispose(&self) {
-            if let Some(session) = self.session.upgrade() {
-                if let Some(handler) = self.session_handler.take() {
-                    session.disconnect(handler);
-                }
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for AccountSettings {}
 
     impl WidgetImpl for AccountSettings {}
     impl WindowImpl for AccountSettings {}
     impl AdwWindowImpl for AccountSettings {}
     impl PreferencesWindowImpl for AccountSettings {}
+
+    impl AccountSettings {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if self.session.obj() == session {
+                return;
+            }
+            let obj = self.obj();
+
+            self.session.disconnect_signals();
+
+            if let Some(session) = session {
+                let logged_out_handler = session.connect_logged_out(clone!(@weak obj => move |_| {
+                    obj.close();
+                }));
+                self.session.set(&session, vec![logged_out_handler]);
+            }
+
+            obj.notify_session();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -129,36 +122,5 @@ impl AccountSettings {
             .property("transient-for", parent_window)
             .property("session", session)
             .build()
-    }
-
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        let prev_session = self.session();
-        if prev_session == session {
-            return;
-        }
-
-        let imp = self.imp();
-        if let Some(session) = prev_session {
-            if let Some(handler) = imp.session_handler.take() {
-                session.disconnect(handler);
-            }
-        }
-
-        if let Some(session) = &session {
-            imp.session_handler.replace(Some(session.connect_logged_out(
-                clone!(@weak self as obj => move |_| {
-                    obj.close();
-                }),
-            )));
-        }
-
-        self.imp().session.set(session.as_ref());
-        self.notify("session");
     }
 }

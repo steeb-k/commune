@@ -104,7 +104,7 @@
                         <child>
                           <object class="AdwActionRow" id="file_row">
                             <property name="title" translatable="yes">File</property>
-                            <property name="subtitle" bind-source="ImportExportKeysSubpage" bind-property="file-path" bind-flags="sync-create"/>
+                            <property name="subtitle" bind-source="ImportExportKeysSubpage" bind-property="file-path-string" bind-flags="sync-create"/>
                             <child>
                               <object class="GtkButton" id="file_button">
                                 <property name="label" translatable="yes">Choose…</property>

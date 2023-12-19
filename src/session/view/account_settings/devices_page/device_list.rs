@@ -6,22 +6,31 @@ use matrix_sdk::{
 };
 use tracing::error;
 
-use super::{Device, DeviceItem};
+use super::{Device, DeviceListItem};
 use crate::{session::model::Session, spawn, spawn_tokio};
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use glib::object::WeakRef;
-    use once_cell::sync::Lazy;
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::DeviceList)]
     pub struct DeviceList {
-        pub list: RefCell<Vec<DeviceItem>>,
-        pub session: WeakRef<Session>,
-        pub current_device: RefCell<Option<DeviceItem>>,
+        /// The list of device list items.
+        pub list: RefCell<Vec<DeviceListItem>>,
+        /// The current session.
+        #[property(get, construct_only)]
+        pub session: glib::WeakRef<Session>,
+        /// The device of this session.
+        pub current_device_inner: RefCell<Option<DeviceListItem>>,
+        /// The device of this session, or a replacement list item if it is not
+        /// found.
+        #[property(get = Self::current_device)]
+        current_device: PhantomData<DeviceListItem>,
         pub loading: Cell<bool>,
     }
 
@@ -32,39 +41,8 @@ mod imp {
         type Interfaces = (gio::ListModel,);
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for DeviceList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Session>("session")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<DeviceItem>("current-device")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "session" => self.session.set(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "current-device" => obj.current_device().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             self.obj().load_devices();
@@ -73,17 +51,35 @@ mod imp {
 
     impl ListModelImpl for DeviceList {
         fn item_type(&self) -> glib::Type {
-            DeviceItem::static_type()
+            DeviceListItem::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.list.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.list
                 .borrow()
                 .get(position as usize)
                 .map(glib::object::Cast::upcast_ref::<glib::Object>)
                 .cloned()
+        }
+    }
+
+    impl DeviceList {
+        /// The device of this session.
+        fn current_device(&self) -> DeviceListItem {
+            self.current_device_inner
+                .borrow()
+                .clone()
+                .unwrap_or_else(|| {
+                    if self.loading.get() {
+                        DeviceListItem::for_loading_spinner()
+                    } else {
+                        DeviceListItem::for_error(gettext("Failed to load connected device."))
+                    }
+                })
         }
     }
 }
@@ -99,11 +95,6 @@ impl DeviceList {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// The current session.
-    pub fn session(&self) -> Session {
-        self.imp().session.upgrade().unwrap()
-    }
-
     fn set_loading(&self, loading: bool) {
         let imp = self.imp();
 
@@ -111,39 +102,20 @@ impl DeviceList {
             return;
         }
         if loading {
-            self.update_list(vec![DeviceItem::for_loading_spinner()]);
+            self.update_list(vec![DeviceListItem::for_loading_spinner()]);
         }
         imp.loading.set(loading);
-        self.notify("current-device");
-    }
-
-    fn loading(&self) -> bool {
-        self.imp().loading.get()
-    }
-
-    /// The device of this session.
-    pub fn current_device(&self) -> DeviceItem {
-        self.imp()
-            .current_device
-            .borrow()
-            .clone()
-            .unwrap_or_else(|| {
-                if self.loading() {
-                    DeviceItem::for_loading_spinner()
-                } else {
-                    DeviceItem::for_error(gettext("Failed to load connected device."))
-                }
-            })
+        self.notify_current_device();
     }
 
     /// Set the device of this session.
-    fn set_current_device(&self, device: Option<DeviceItem>) {
-        self.imp().current_device.replace(device);
+    fn set_current_device(&self, device: Option<DeviceListItem>) {
+        self.imp().current_device_inner.replace(device);
 
-        self.notify("current-device");
+        self.notify_current_device();
     }
 
-    fn update_list(&self, devices: Vec<DeviceItem>) {
+    fn update_list(&self, devices: Vec<DeviceListItem>) {
         let added = devices.len();
 
         let prev_devices = self.imp().list.replace(devices);
@@ -155,7 +127,9 @@ impl DeviceList {
         &self,
         response: Result<(Option<MatrixDevice>, Vec<MatrixDevice>, CryptoDevices), Error>,
     ) {
-        let session = self.session();
+        let Some(session) = self.session() else {
+            return;
+        };
 
         match response {
             Ok((current_device, devices, crypto_devices)) => {
@@ -163,7 +137,7 @@ impl DeviceList {
                     .into_iter()
                     .map(|device| {
                         let crypto_device = crypto_devices.get(&device.device_id);
-                        DeviceItem::for_device(Device::new(&session, device, crypto_device))
+                        DeviceListItem::for_device(Device::new(&session, device, crypto_device))
                     })
                     .collect();
 
@@ -171,12 +145,12 @@ impl DeviceList {
 
                 self.set_current_device(current_device.map(|device| {
                     let crypto_device = crypto_devices.get(&device.device_id);
-                    DeviceItem::for_device(Device::new(&session, device, crypto_device))
+                    DeviceListItem::for_device(Device::new(&session, device, crypto_device))
                 }));
             }
             Err(error) => {
                 error!("Couldn’t load device list: {error}");
-                self.update_list(vec![DeviceItem::for_error(gettext(
+                self.update_list(vec![DeviceListItem::for_error(gettext(
                     "Failed to load the list of connected devices.",
                 ))]);
             }
@@ -185,7 +159,10 @@ impl DeviceList {
     }
 
     pub fn load_devices(&self) {
-        let client = self.session().client();
+        let Some(session) = self.session() else {
+            return;
+        };
+        let client = session.client();
 
         self.set_loading(true);
 
