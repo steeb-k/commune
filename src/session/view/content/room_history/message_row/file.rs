@@ -7,18 +7,20 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/file.ui"
     )]
+    #[properties(wrapper_type = super::MessageFile)]
     pub struct MessageFile {
-        /// The filename of the file
+        /// The filename of the file.
+        #[property(get, set = Self::set_filename, explicit_notify, nullable)]
         pub filename: RefCell<Option<String>>,
         /// Whether this file should be displayed in a compact format.
+        #[property(get, set = Self::set_compact, explicit_notify)]
         pub compact: Cell<bool>,
     }
 
@@ -37,50 +39,39 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MessageFile {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("filename")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("compact")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "filename" => obj.set_filename(value.get().unwrap()),
-                "compact" => obj.set_compact(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "filename" => obj.filename().to_value(),
-                "compact" => obj.compact().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MessageFile {}
 
     impl WidgetImpl for MessageFile {}
-
     impl BinImpl for MessageFile {}
+
+    impl MessageFile {
+        /// Set the filename of the file.
+        fn set_filename(&self, filename: Option<String>) {
+            let filename = filename.filter(|s| !s.is_empty());
+
+            if filename == *self.filename.borrow() {
+                return;
+            }
+
+            self.filename.replace(filename);
+            self.obj().notify_filename();
+        }
+
+        /// Set whether this file should be displayed in a compact format.
+        fn set_compact(&self, compact: bool) {
+            if self.compact.get() == compact {
+                return;
+            }
+
+            self.compact.set(compact);
+            self.obj().notify_compact();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// A widget displaying an interface to download or open the content of a file message.
+    /// A widget displaying an interface to download the content of a file message.
     pub struct MessageFile(ObjectSubclass<imp::MessageFile>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -88,40 +79,6 @@ glib::wrapper! {
 impl MessageFile {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Set the filename of the file.
-    pub fn set_filename(&self, filename: Option<String>) {
-        let imp = self.imp();
-
-        let name = filename.filter(|name| !name.is_empty());
-
-        if name.as_ref() == imp.filename.borrow().as_ref() {
-            return;
-        }
-
-        imp.filename.replace(name);
-        self.notify("filename");
-    }
-
-    /// The filename of the file.
-    pub fn filename(&self) -> Option<String> {
-        self.imp().filename.borrow().to_owned()
-    }
-
-    /// Set whether this file should be displayed in a compact format.
-    pub fn set_compact(&self, compact: bool) {
-        if self.compact() == compact {
-            return;
-        }
-
-        self.imp().compact.set(compact);
-        self.notify("compact");
-    }
-
-    /// Whether this file should be displayed in a compact format.
-    pub fn compact(&self) -> bool {
-        self.imp().compact.get()
     }
 
     pub fn set_format(&self, format: ContentFormat) {

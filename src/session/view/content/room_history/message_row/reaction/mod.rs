@@ -17,20 +17,23 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate)]
+    #[derive(Debug, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/reaction/mod.ui"
     )]
+    #[properties(wrapper_type = super::MessageReaction)]
     pub struct MessageReaction {
         /// The reaction senders (group) to display.
+        #[property(get, set = Self::set_group, construct_only)]
         pub group: BoundObjectWeakRef<ReactionGroup>,
         /// The list of reaction senders as room members.
+        #[property(get)]
         pub list: gio::ListStore,
         /// The member list of the room of the reaction.
+        #[property(get, set = Self::set_members, explicit_notify, nullable)]
         pub members: RefCell<Option<MemberList>>,
         #[template_child]
         pub button: TemplateChild<gtk::ToggleButton>,
@@ -69,50 +72,63 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MessageReaction {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<ReactionGroup>("group")
-                        .construct_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gio::ListStore>("list")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<MemberList>("members").build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for MessageReaction {}
 
-            PROPERTIES.as_ref()
-        }
+    impl WidgetImpl for MessageReaction {}
+    impl FlowBoxChildImpl for MessageReaction {}
 
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "group" => {
-                    self.obj().set_group(value.get().unwrap());
-                }
-                "members" => self.obj().set_members(value.get().unwrap()),
-                _ => unimplemented!(),
+    impl MessageReaction {
+        /// Set the reaction group to display.
+        fn set_group(&self, group: ReactionGroup) {
+            let obj = self.obj();
+            let key = group.key();
+            self.reaction_key.set_label(&key);
+
+            if EMOJI_REGEX.is_match(&key) {
+                self.reaction_key.add_css_class("emoji");
+            } else {
+                self.reaction_key.remove_css_class("emoji");
             }
+
+            self.button.set_action_target_value(Some(&key.to_variant()));
+            group
+                .bind_property("has-user", &*self.button, "active")
+                .sync_create()
+                .build();
+            group
+                .bind_property("count", &*self.reaction_count, "label")
+                .sync_create()
+                .build();
+
+            let items_changed_handler_id =
+                group.connect_items_changed(clone!(@weak obj => move |group, pos, removed, added|
+                       obj.items_changed(group, pos, removed, added)
+                ));
+            obj.items_changed(&group, 0, self.list.n_items(), group.n_items());
+
+            self.group.set(&group, vec![items_changed_handler_id]);
         }
 
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "group" => self.obj().group().to_value(),
-                "list" => self.obj().list().to_value(),
-                "members" => self.obj().members().to_value(),
-                _ => unimplemented!(),
+        /// Set the members list of the room of the reaction.
+        fn set_members(&self, members: Option<MemberList>) {
+            if *self.members.borrow() == members {
+                return;
+            }
+            let obj = self.obj();
+
+            self.members.replace(members);
+            obj.notify_members();
+
+            if let Some(group) = self.group.obj() {
+                obj.items_changed(&group, 0, self.list.n_items(), group.n_items());
             }
         }
     }
-
-    impl WidgetImpl for MessageReaction {}
-
-    impl FlowBoxChildImpl for MessageReaction {}
 }
 
 glib::wrapper! {
-    /// A widget displaying the reactions of a message.
+    /// A widget displaying a reaction of a message.
     pub struct MessageReaction(ObjectSubclass<imp::MessageReaction>)
         @extends gtk::Widget, gtk::FlowBoxChild, @implements gtk::Accessible;
 }
@@ -124,69 +140,6 @@ impl MessageReaction {
             .property("group", reaction_group)
             .property("members", members)
             .build()
-    }
-
-    // The reaction group to display.
-    pub fn group(&self) -> Option<ReactionGroup> {
-        self.imp().group.obj()
-    }
-
-    /// Set the reaction group to display.
-    fn set_group(&self, group: ReactionGroup) {
-        let imp = self.imp();
-        let key = group.key();
-        imp.reaction_key.set_label(&key);
-
-        if EMOJI_REGEX.is_match(&key) {
-            imp.reaction_key.add_css_class("emoji");
-        } else {
-            imp.reaction_key.remove_css_class("emoji");
-        }
-
-        imp.button.set_action_target_value(Some(&key.to_variant()));
-        group
-            .bind_property("has-user", &*imp.button, "active")
-            .sync_create()
-            .build();
-        group
-            .bind_property("count", &*imp.reaction_count, "label")
-            .sync_create()
-            .build();
-
-        let items_changed_handler_id = group.connect_items_changed(
-            clone!(@weak self as obj => move |group, pos, removed, added|
-                   obj.items_changed(group, pos, removed, added)
-            ),
-        );
-        self.items_changed(&group, 0, self.list().n_items(), group.n_items());
-
-        imp.group.set(&group, vec![items_changed_handler_id]);
-    }
-
-    /// The list of reaction senders as room members.
-    pub fn list(&self) -> &gio::ListStore {
-        &self.imp().list
-    }
-
-    /// The member list of the room of the reaction.
-    pub fn members(&self) -> Option<MemberList> {
-        self.imp().members.borrow().clone()
-    }
-
-    /// Set the members list of the room of the reaction.
-    pub fn set_members(&self, members: Option<MemberList>) {
-        let imp = self.imp();
-
-        if imp.members.borrow().as_ref() == members.as_ref() {
-            return;
-        }
-
-        imp.members.replace(members);
-        self.notify("members");
-
-        if let Some(group) = imp.group.obj() {
-            self.items_changed(&group, 0, self.list().n_items(), group.n_items());
-        }
     }
 
     fn items_changed(&self, group: &ReactionGroup, pos: u32, removed: u32, added: u32) {
@@ -216,13 +169,14 @@ impl MessageReaction {
     /// Shows a popover with the senders of that reaction, if there are any.
     #[template_callback]
     fn show_popover(&self) {
-        if self.list().n_items() == 0 {
+        let list = self.list();
+        if list.n_items() == 0 {
             // No popover.
             return;
         };
 
         let button = &*self.imp().button;
-        let popover = ReactionPopover::new(self.list());
+        let popover = ReactionPopover::new(&list);
         popover.set_parent(button);
         popover.connect_closed(clone!(@weak button => move |popover| {
             popover.unparent();

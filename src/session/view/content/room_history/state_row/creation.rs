@@ -41,6 +41,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A widget presenting a room create state event.
     pub struct StateCreation(ObjectSubclass<imp::StateCreation>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }

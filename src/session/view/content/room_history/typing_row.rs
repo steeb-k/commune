@@ -10,20 +10,26 @@ use crate::{
 };
 
 mod imp {
+    use std::marker::PhantomData;
+
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/typing_row.ui")]
+    #[properties(wrapper_type = super::TypingRow)]
     pub struct TypingRow {
         #[template_child]
         pub avatar_list: TemplateChild<OverlappingAvatars>,
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         /// The list of members that are currently typing.
-        pub bound_list: BoundObjectWeakRef<TypingList>,
+        #[property(get, set = Self::set_list, explicit_notify, nullable)]
+        pub list: BoundObjectWeakRef<TypingList>,
+        /// Whether the list is empty.
+        #[property(get = Self::is_empty, default = true)]
+        is_empty: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -42,43 +48,62 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for TypingRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<TypingList>("list")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-empty")
-                        .default_value(true)
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "list" => self.obj().set_list(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "list" => obj.list().to_value(),
-                "is-empty" => obj.is_empty().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for TypingRow {}
 
     impl WidgetImpl for TypingRow {}
     impl BinImpl for TypingRow {}
+
+    impl TypingRow {
+        /// Set the list of members that are currently typing.
+        fn set_list(&self, list: Option<TypingList>) {
+            if self.list.obj() == list {
+                return;
+            }
+            let obj = self.obj();
+
+            let prev_is_empty = self.is_empty();
+
+            self.list.disconnect_signals();
+
+            if let Some(list) = list {
+                let items_changed_handler_id = list.connect_items_changed(
+                    clone!(@weak obj => move |list, _pos, removed, added| {
+                        if removed != 0 || added != 0 {
+                            obj.update_label(list);
+                        }
+                    }),
+                );
+                let is_empty_notify_handler_id = list
+                    .connect_is_empty_notify(clone!(@weak obj => move |_| obj.notify_is_empty()));
+
+                self.avatar_list.bind_model(Some(list.clone()), |item| {
+                    item.downcast_ref::<Member>().unwrap().avatar_data().clone()
+                });
+
+                self.list.set(
+                    &list,
+                    vec![items_changed_handler_id, is_empty_notify_handler_id],
+                );
+                obj.update_label(&list);
+            }
+
+            if prev_is_empty != self.is_empty() {
+                obj.notify_is_empty();
+            }
+
+            obj.notify_list();
+        }
+
+        /// Whether the list is empty.
+        fn is_empty(&self) -> bool {
+            let Some(list) = self.list.obj() else {
+                return true;
+            };
+
+            list.is_empty()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -90,62 +115,6 @@ glib::wrapper! {
 impl TypingRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The list of members that are currently typing.
-    pub fn list(&self) -> Option<TypingList> {
-        self.imp().bound_list.obj()
-    }
-
-    /// Set the list of members that are currently typing.
-    pub fn set_list(&self, list: Option<&TypingList>) {
-        if self.list().as_ref() == list {
-            return;
-        }
-
-        let imp = self.imp();
-        let prev_is_empty = self.is_empty();
-
-        imp.bound_list.disconnect_signals();
-
-        if let Some(list) = list {
-            let items_changed_handler_id = list.connect_items_changed(
-                clone!(@weak self as obj => move |list, _pos, removed, added| {
-                    if removed != 0 || added != 0 {
-                        obj.update_label(list);
-                    }
-                }),
-            );
-            let is_empty_notify_handler_id = list.connect_notify_local(
-                Some("is-empty"),
-                clone!(@weak self as obj => move |_, _| obj.notify("is-empty")),
-            );
-
-            imp.avatar_list.bind_model(Some(list.clone()), |item| {
-                item.downcast_ref::<Member>().unwrap().avatar_data().clone()
-            });
-
-            imp.bound_list.set(
-                list,
-                vec![items_changed_handler_id, is_empty_notify_handler_id],
-            );
-            self.update_label(list);
-        }
-
-        if prev_is_empty != self.is_empty() {
-            self.notify("is-empty");
-        }
-
-        self.notify("list");
-    }
-
-    /// Whether the list is empty.
-    pub fn is_empty(&self) -> bool {
-        let Some(list) = self.list() else {
-            return true;
-        };
-
-        list.is_empty()
     }
 
     fn update_label(&self, list: &TypingList) {

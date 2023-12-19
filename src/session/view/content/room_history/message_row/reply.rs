@@ -37,13 +37,12 @@ mod imp {
     }
 
     impl ObjectImpl for MessageReply {}
-
     impl WidgetImpl for MessageReply {}
-
     impl GridImpl for MessageReply {}
 }
 
 glib::wrapper! {
+    /// A widget displaying a reply to a message.
     pub struct MessageReply(ObjectSubclass<imp::MessageReply>)
         @extends gtk::Widget, gtk::Grid, @implements gtk::Accessible;
 }

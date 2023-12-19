@@ -17,7 +17,7 @@
           </object>
         </child>
         <child>
-            <object class="GtkLabel" id="label">
+            <object class="GtkLabel" id="inner_label">
               <style>
                 <class name="dim-label"/>
               </style>

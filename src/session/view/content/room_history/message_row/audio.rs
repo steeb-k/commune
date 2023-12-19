@@ -19,20 +19,23 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/audio.ui"
     )]
+    #[properties(wrapper_type = super::MessageAudio)]
     pub struct MessageAudio {
         /// The body of the audio message.
+        #[property(get)]
         pub body: RefCell<Option<String>>,
         /// The state of the audio file.
+        #[property(get, builder(MediaState::default()))]
         pub state: Cell<MediaState>,
         /// Whether to display this audio message in a compact format.
+        #[property(get)]
         pub compact: Cell<bool>,
         #[template_child]
         pub player: TemplateChild<AudioPlayer>,
@@ -57,44 +60,10 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for MessageAudio {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("body").read_only().build(),
-                    glib::ParamSpecEnum::builder::<MediaState>("state")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("compact")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "state" => self.obj().set_state(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "body" => obj.body().to_value(),
-                "state" => obj.state().to_value(),
-                "compact" => obj.compact().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MessageAudio {}
 
     impl WidgetImpl for MessageAudio {}
-
     impl BinImpl for MessageAudio {}
 }
 
@@ -110,11 +79,6 @@ impl MessageAudio {
         glib::Object::new()
     }
 
-    /// The body of the audio message.
-    pub fn body(&self) -> Option<String> {
-        self.imp().body.borrow().to_owned()
-    }
-
     /// Set the body of the audio message.
     fn set_body(&self, body: Option<String>) {
         if self.body() == body {
@@ -122,12 +86,7 @@ impl MessageAudio {
         }
 
         self.imp().body.replace(body);
-        self.notify("body");
-    }
-
-    /// Whether to display this audio message in a compact format.
-    pub fn compact(&self) -> bool {
-        self.imp().compact.get()
+        self.notify_body();
     }
 
     /// Set the compact format of this audio message.
@@ -142,12 +101,7 @@ impl MessageAudio {
             self.add_css_class("toolbar");
         }
 
-        self.notify("compact");
-    }
-
-    /// The state of the audio file.
-    pub fn state(&self) -> MediaState {
-        self.imp().state.get()
+        self.notify_compact();
     }
 
     /// Set the state of the audio file.
@@ -174,7 +128,7 @@ impl MessageAudio {
         }
 
         imp.state.set(state);
-        self.notify("state");
+        self.notify_state();
     }
 
     /// Convenience method to set the state to `Error` with the given error

@@ -68,17 +68,23 @@ mod imp {
     use super::*;
     use crate::Application;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/mod.ui"
     )]
+    #[properties(wrapper_type = super::MessageToolbar)]
     pub struct MessageToolbar {
+        /// The room to send messages in.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: glib::WeakRef<Room>,
         /// Whether our own user can send messages in the current room.
+        #[property(get)]
         pub can_send_messages: Cell<bool>,
         pub own_member: glib::WeakRef<Member>,
         pub power_levels_handler: RefCell<Option<glib::SignalHandlerId>>,
-        pub md_enabled: Cell<bool>,
+        /// Whether outgoing messages should be interpreted as markdown.
+        #[property(get, set)]
+        pub markdown_enabled: Cell<bool>,
         pub completion: CompletionPopover,
         #[template_child]
         pub message_entry: TemplateChild<sourceview::View>,
@@ -86,7 +92,11 @@ mod imp {
         pub related_event_header: TemplateChild<LabelWithWidgets>,
         #[template_child]
         pub related_event_content: TemplateChild<MessageContent>,
+        /// The type of related event of the composer.
+        #[property(get, builder(RelatedEventType::default()))]
         pub related_event_type: Cell<RelatedEventType>,
+        /// The related event of the composer.
+        #[property(get)]
         pub related_event: RefCell<Option<Event>>,
     }
 
@@ -156,55 +166,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MessageToolbar {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("can-send-messages")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("markdown-enabled")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<RelatedEventType>("related-event-type")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Event>("related-event")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get::<Option<Room>>().unwrap().as_ref()),
-                "markdown-enabled" => obj.set_markdown_enabled(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "can-send-messages" => obj.can_send_messages().to_value(),
-                "markdown-enabled" => obj.markdown_enabled().to_value(),
-                "related-event-type" => obj.related_event_type().to_value(),
-                "related-event" => obj.related_event().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -299,6 +262,33 @@ mod imp {
 
     impl WidgetImpl for MessageToolbar {}
     impl BoxImpl for MessageToolbar {}
+
+    impl MessageToolbar {
+        /// Set the room currently displayed.
+        fn set_room(&self, room: Option<Room>) {
+            let old_room = self.room.upgrade();
+            if old_room == room {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(room) = old_room {
+                if let Some(handler) = self.power_levels_handler.take() {
+                    room.power_levels().disconnect(handler);
+                }
+            }
+
+            obj.clear_related_event();
+
+            self.room.set(room.as_ref());
+
+            obj.update_completion(room.as_ref());
+            obj.set_up_can_send_messages(room.as_ref());
+            self.message_entry.grab_focus();
+
+            obj.notify_room();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -313,59 +303,9 @@ impl MessageToolbar {
         glib::Object::new()
     }
 
-    /// The room to send messages in.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.upgrade()
-    }
-
-    /// Set the room currently displayed.
-    pub fn set_room(&self, room: Option<&Room>) {
-        let old_room = self.room();
-        if old_room.as_ref() == room {
-            return;
-        }
-
-        let imp = self.imp();
-
-        if let Some(room) = old_room {
-            if let Some(handler) = imp.power_levels_handler.take() {
-                room.power_levels().disconnect(handler);
-            }
-        }
-
-        self.clear_related_event();
-
-        imp.room.set(room);
-
-        self.update_completion(room);
-        self.set_up_can_send_messages(room);
-        imp.message_entry.grab_focus();
-
-        self.notify("room");
-    }
-
     /// The `Member` for our own user in the current room.
     pub fn own_member(&self) -> Option<Member> {
         self.imp().own_member.upgrade()
-    }
-
-    /// Whether outgoing messages should be interpreted as markdown.
-    pub fn markdown_enabled(&self) -> bool {
-        self.imp().md_enabled.get()
-    }
-
-    /// Set whether outgoing messages should be interpreted as markdown.
-    pub fn set_markdown_enabled(&self, enabled: bool) {
-        let imp = self.imp();
-
-        imp.md_enabled.set(enabled);
-
-        self.notify("markdown-enabled");
-    }
-
-    /// The type of related event of the composer.
-    pub fn related_event_type(&self) -> RelatedEventType {
-        self.imp().related_event_type.get()
     }
 
     /// Set the type of related event of the composer.
@@ -375,12 +315,7 @@ impl MessageToolbar {
         }
 
         self.imp().related_event_type.set(related_type);
-        self.notify("related-event-type");
-    }
-
-    /// The related event of the composer.
-    pub fn related_event(&self) -> Option<Event> {
-        self.imp().related_event.borrow().clone()
+        self.notify_related_event_type();
     }
 
     /// Set the related event of the composer.
@@ -399,7 +334,7 @@ impl MessageToolbar {
         }
 
         self.imp().related_event.replace(event);
-        self.notify("related-event");
+        self.notify_related_event();
     }
 
     pub fn clear_related_event(&self) {
@@ -531,7 +466,7 @@ impl MessageToolbar {
         let (start_iter, end_iter) = buffer.bounds();
         let body_len = buffer.text(&start_iter, &end_iter, true).len();
 
-        let is_markdown = imp.md_enabled.get();
+        let is_markdown = self.markdown_enabled();
         let mut has_mentions = false;
         let mut plain_body = String::with_capacity(body_len);
         // formatted_body is Markdown if is_markdown is true, and HTML if false.
@@ -913,11 +848,6 @@ impl MessageToolbar {
         }
     }
 
-    /// Whether our own user can send messages in the current room.
-    pub fn can_send_messages(&self) -> bool {
-        self.imp().can_send_messages.get()
-    }
-
     /// Update whether our own user can send messages in the current room.
     fn update_can_send_messages(&self) {
         let can_send = self.compute_can_send_messages();
@@ -928,7 +858,7 @@ impl MessageToolbar {
 
         self.imp().can_send_messages.set(can_send);
         self.set_sensitive(can_send);
-        self.notify("can-send-messages");
+        self.notify_can_send_messages();
     }
 
     fn set_up_can_send_messages(&self, room: Option<&Room>) {
@@ -948,9 +878,8 @@ impl MessageToolbar {
             }));
             imp.own_member.set(Some(&own_member));
 
-            let power_levels_handler = room.power_levels().connect_notify_local(
-                Some("power-levels"),
-                clone!(@weak self as obj => move |_, _| {
+            let power_levels_handler = room.power_levels().connect_power_levels_notify(
+                clone!(@weak self as obj => move |_| {
                     obj.update_can_send_messages();
                 }),
             );

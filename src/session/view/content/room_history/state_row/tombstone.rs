@@ -6,18 +6,19 @@ use crate::{session::model::Room, spawn, toast, utils::BoundObjectWeakRef, Windo
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/state_row/tombstone.ui"
     )]
+    #[properties(wrapper_type = super::StateTombstone)]
     pub struct StateTombstone {
         #[template_child]
         pub new_room_btn: TemplateChild<gtk::Button>,
         /// The [`Room`] this event belongs to.
+        #[property(get, set = Self::set_room, construct_only)]
         pub room: BoundObjectWeakRef<Room>,
     }
 
@@ -37,41 +38,37 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for StateTombstone {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Room>("room")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for StateTombstone {}
 
     impl WidgetImpl for StateTombstone {}
     impl BinImpl for StateTombstone {}
+
+    impl StateTombstone {
+        /// Set the room this event belongs to.
+        fn set_room(&self, room: Room) {
+            let obj = self.obj();
+
+            let successor_handler =
+                room.connect_successor_id_string_notify(clone!(@weak self as imp => move |room| {
+                    imp.new_room_btn.set_visible(room.successor_id().is_some());
+                }));
+            self.new_room_btn.set_visible(room.successor_id().is_some());
+
+            let successor_room_handler =
+                room.connect_successor_notify(clone!(@weak obj => move |room| {
+                    obj.update_button_label(room);
+                }));
+            obj.update_button_label(&room);
+
+            self.room
+                .set(&room, vec![successor_handler, successor_room_handler]);
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A widget presenting a room tombstone state event.
     pub struct StateTombstone(ObjectSubclass<imp::StateTombstone>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -81,35 +78,6 @@ impl StateTombstone {
     /// Construct a new `StateTombstone` with the given room.
     pub fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
-    }
-
-    /// Set the room this event belongs to.
-    fn set_room(&self, room: Room) {
-        let imp = self.imp();
-
-        let successor_handler = room.connect_notify_local(
-            Some("successor"),
-            clone!(@weak self as obj => move |room, _| {
-                obj.imp().new_room_btn.set_visible(room.successor().is_some());
-            }),
-        );
-        imp.new_room_btn.set_visible(room.successor().is_some());
-
-        let successor_room_handler = room.connect_notify_local(
-            Some("successor-room"),
-            clone!(@weak self as obj => move |room, _| {
-                obj.update_button_label(room);
-            }),
-        );
-        self.update_button_label(&room);
-
-        imp.room
-            .set(&room, vec![successor_handler, successor_room_handler]);
-    }
-
-    /// The room this event belongs to.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.obj()
     }
 
     /// Update the button of the label.

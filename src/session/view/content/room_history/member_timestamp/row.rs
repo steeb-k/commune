@@ -9,18 +9,19 @@ mod imp {
     use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/member_timestamp/row.ui"
     )]
+    #[properties(wrapper_type = super::MemberTimestampRow)]
     pub struct MemberTimestampRow {
         #[template_child]
         pub timestamp: TemplateChild<gtk::Label>,
         /// The `MemberTimestamp` presented by this row.
+        #[property(get, set = Self::set_data, explicit_notify, nullable)]
         pub data: glib::WeakRef<MemberTimestamp>,
         pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
@@ -40,35 +41,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MemberTimestampRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<MemberTimestamp>("data")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.set_data(value.get::<Option<MemberTimestamp>>().unwrap().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "data" => obj.data().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -93,6 +67,21 @@ mod imp {
 
     impl WidgetImpl for MemberTimestampRow {}
     impl BinImpl for MemberTimestampRow {}
+
+    impl MemberTimestampRow {
+        /// Set the `MemberTimestamp` presented by this row.
+        fn set_data(&self, data: Option<MemberTimestamp>) {
+            if self.data.upgrade() == data {
+                return;
+            }
+            let obj = self.obj();
+
+            self.data.set(data.as_ref());
+            obj.notify_data();
+
+            obj.update_timestamp();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -104,23 +93,6 @@ glib::wrapper! {
 impl MemberTimestampRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The `MemberTimestamp` presented by this row.
-    pub fn data(&self) -> Option<MemberTimestamp> {
-        self.imp().data.upgrade()
-    }
-
-    /// Set the `MemberTimestamp` presented by this row.
-    pub fn set_data(&self, data: Option<&MemberTimestamp>) {
-        if self.data().as_ref() == data {
-            return;
-        }
-
-        self.imp().data.set(data);
-        self.notify("data");
-
-        self.update_timestamp();
     }
 
     /// The formatted date and time of this receipt.

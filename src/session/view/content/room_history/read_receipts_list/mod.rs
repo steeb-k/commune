@@ -21,14 +21,14 @@ mod imp {
     use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, CompositeTemplate)]
+    #[derive(Debug, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/read_receipts_list/mod.ui"
     )]
+    #[properties(wrapper_type = super::ReadReceiptsList)]
     pub struct ReadReceiptsList {
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
@@ -37,10 +37,13 @@ mod imp {
         /// Whether this list is active.
         ///
         /// This list is active when the popover is displayed.
+        #[property(get)]
         pub active: Cell<bool>,
         /// The list of room members.
+        #[property(get, set = Self::set_members, explicit_notify, nullable)]
         pub members: RefCell<Option<MemberList>>,
         /// The list of read receipts.
+        #[property(get)]
         pub list: gio::ListStore,
         /// The read receipts used as a source.
         pub source: BoundObjectWeakRef<gio::ListStore>,
@@ -81,43 +84,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ReadReceiptsList {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("active")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecObject::builder::<MemberList>("members").build(),
-                    glib::ParamSpecObject::builder::<gio::ListStore>("list")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "active" => obj.active().to_value(),
-                "members" => obj.members().to_value(),
-                "list" => obj.list().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "members" => obj.set_members(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -149,6 +117,23 @@ mod imp {
             None
         }
     }
+
+    impl ReadReceiptsList {
+        /// Set the list of room members.
+        fn set_members(&self, members: Option<MemberList>) {
+            if *self.members.borrow() == members {
+                return;
+            }
+            let obj = self.obj();
+
+            self.members.replace(members);
+            obj.notify_members();
+
+            if let Some(source) = self.source.obj() {
+                obj.items_changed(&source, 0, self.list.n_items(), source.n_items());
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -163,13 +148,6 @@ impl ReadReceiptsList {
         glib::Object::builder().property("members", members).build()
     }
 
-    /// Whether this list is active.
-    ///
-    /// This list is active when the popover is displayed.
-    pub fn active(&self) -> bool {
-        self.imp().active.get()
-    }
-
     /// Set whether this list is active.
     fn set_active(&self, active: bool) {
         if self.active() == active {
@@ -177,7 +155,7 @@ impl ReadReceiptsList {
         }
 
         self.imp().active.set(active);
-        self.notify("active");
+        self.notify_active();
         self.set_pressed_state(active);
     }
 
@@ -195,32 +173,6 @@ impl ReadReceiptsList {
             gtk::AccessibleTristate::False
         };
         self.update_state(&[gtk::accessible::State::Pressed(tristate)]);
-    }
-
-    /// The list of room members.
-    pub fn members(&self) -> Option<MemberList> {
-        self.imp().members.borrow().clone()
-    }
-
-    /// Set the list of room members.
-    pub fn set_members(&self, members: Option<MemberList>) {
-        let imp = self.imp();
-
-        if imp.members.borrow().as_ref() == members.as_ref() {
-            return;
-        }
-
-        imp.members.replace(members);
-        self.notify("members");
-
-        if let Some(source) = imp.source.obj() {
-            self.items_changed(&source, 0, self.list().n_items(), source.n_items());
-        }
-    }
-
-    /// The list of read receipts to present.
-    pub fn list(&self) -> &gio::ListStore {
-        &self.imp().list
     }
 
     /// Set the read receipts that are used as a source of data.
@@ -327,13 +279,14 @@ impl ReadReceiptsList {
     /// Shows a popover with the list of receipts if there are any.
     #[template_callback]
     fn show_popover(&self, _n_press: i32, x: f64, y: f64) {
-        if self.list().n_items() == 0 {
+        let list = self.list();
+        if list.n_items() == 0 {
             // No popover.
             return;
         }
         self.set_active(true);
 
-        let popover = ReadReceiptsPopover::new(self.list());
+        let popover = ReadReceiptsPopover::new(&list);
         popover.set_parent(self);
         popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 0, 0)));
         popover.connect_closed(clone!(@weak self as obj => move |popover| {

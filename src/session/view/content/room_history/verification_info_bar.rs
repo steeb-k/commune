@@ -15,10 +15,11 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/verification_info_bar.ui"
     )]
+    #[properties(wrapper_type = super::VerificationInfoBar)]
     pub struct VerificationInfoBar {
         #[template_child]
         pub revealer: TemplateChild<gtk::Revealer>,
@@ -28,7 +29,9 @@ mod imp {
         pub accept_btn: TemplateChild<gtk::Button>,
         #[template_child]
         pub cancel_btn: TemplateChild<gtk::Button>,
-        pub request: RefCell<Option<IdentityVerification>>,
+        /// The identity verification presented by this info bar.
+        #[property(get, set = Self::set_verification, explicit_notify)]
+        pub verification: RefCell<Option<IdentityVerification>>,
         pub state_handler: RefCell<Option<SignalHandlerId>>,
         pub user_handler: RefCell<Option<SignalHandlerId>>,
     }
@@ -50,13 +53,13 @@ mod imp {
                     return;
                 };
 
-                let request = obj.request().unwrap();
-                request.accept();
-                window.session_view().select_item(Some(request));
+                let verification = obj.verification().unwrap();
+                verification.accept();
+                window.session_view().select_item(Some(verification));
             });
 
             klass.install_action("verification.decline", None, move |widget, _, _| {
-                widget.request().unwrap().cancel(true);
+                widget.verification().unwrap().cancel(true);
             });
         }
 
@@ -65,39 +68,60 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for VerificationInfoBar {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<IdentityVerification>("request")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
+    #[glib::derived_properties]
+    impl ObjectImpl for VerificationInfoBar {}
 
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "request" => self.obj().set_request(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "request" => self.obj().request().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
     impl WidgetImpl for VerificationInfoBar {}
     impl BinImpl for VerificationInfoBar {}
+
+    impl VerificationInfoBar {
+        /// Set the identity verification presented by this info bar.
+        fn set_verification(&self, verification: Option<IdentityVerification>) {
+            if *self.verification.borrow() == verification {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(old_verification) = &*self.verification.borrow() {
+                if let Some(handler) = self.state_handler.take() {
+                    old_verification.disconnect(handler);
+                }
+
+                if let Some(handler) = self.user_handler.take() {
+                    old_verification.user().disconnect(handler);
+                }
+            }
+
+            if let Some(verification) = &verification {
+                let handler = verification.connect_notify_local(
+                    Some("state"),
+                    clone!(@weak obj => move |_, _| {
+                        obj.update_view();
+                    }),
+                );
+
+                self.state_handler.replace(Some(handler));
+
+                let handler =
+                    verification
+                        .user()
+                        .connect_display_name_notify(clone!(@weak obj => move |_| {
+                            obj.update_view();
+                        }));
+
+                self.user_handler.replace(Some(handler));
+            }
+
+            self.verification.replace(verification);
+
+            obj.update_view();
+            obj.notify_verification();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// An info bar presenting an ongoing identity verification.
     pub struct VerificationInfoBar(ObjectSubclass<imp::VerificationInfoBar>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -107,68 +131,19 @@ impl VerificationInfoBar {
         glib::Object::builder().property("label", &label).build()
     }
 
-    /// The verification request this InfoBar is showing.
-    pub fn request(&self) -> Option<IdentityVerification> {
-        self.imp().request.borrow().clone()
-    }
-
-    /// Set the verification request this InfoBar is showing.
-    pub fn set_request(&self, request: Option<IdentityVerification>) {
-        let imp = self.imp();
-
-        if let Some(old_request) = &*imp.request.borrow() {
-            if Some(old_request) == request.as_ref() {
-                return;
-            }
-
-            if let Some(handler) = imp.state_handler.take() {
-                old_request.disconnect(handler);
-            }
-
-            if let Some(handler) = imp.user_handler.take() {
-                old_request.user().disconnect(handler);
-            }
-        }
-
-        if let Some(ref request) = request {
-            let handler = request.connect_notify_local(
-                Some("state"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_view();
-                }),
-            );
-
-            imp.state_handler.replace(Some(handler));
-
-            let handler = request.user().connect_notify_local(
-                Some("display-name"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_view();
-                }),
-            );
-
-            imp.user_handler.replace(Some(handler));
-        }
-
-        imp.request.replace(request);
-
-        self.update_view();
-        self.notify("request");
-    }
-
     pub fn update_view(&self) {
         let imp = self.imp();
-        let visible = if let Some(request) = self.request() {
-            if request.is_finished() {
+        let visible = if let Some(verification) = self.verification() {
+            if verification.is_finished() {
                 false
-            } else if matches!(request.state(), VerificationState::Requested) {
+            } else if matches!(verification.state(), VerificationState::Requested) {
                 imp.label.set_markup(&gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
                     "{user_name} wants to be verified",
                     &[(
                         "user_name",
-                        &format!("<b>{}</b>", request.user().display_name()),
+                        &format!("<b>{}</b>", verification.user().display_name()),
                     )],
                 ));
                 imp.accept_btn.set_label(&gettext("Verify"));

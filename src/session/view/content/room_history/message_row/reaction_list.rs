@@ -35,9 +35,7 @@ mod imp {
     }
 
     impl ObjectImpl for MessageReactionList {}
-
     impl WidgetImpl for MessageReactionList {}
-
     impl BinImpl for MessageReactionList {}
 }
 

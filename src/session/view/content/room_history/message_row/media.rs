@@ -56,22 +56,26 @@ mod imp {
     use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/media.ui"
     )]
+    #[properties(wrapper_type = super::MessageMedia)]
     pub struct MessageMedia {
         /// The intended display width of the media.
+        #[property(get, set = Self::set_width, explicit_notify, default = -1, minimum = -1)]
         pub width: Cell<i32>,
         /// The intended display height of the media.
+        #[property(get, set = Self::set_height, explicit_notify, default = -1, minimum = -1)]
         pub height: Cell<i32>,
         /// The state of the media.
+        #[property(get, builder(MediaState::default()))]
         pub state: Cell<MediaState>,
         /// Whether to display this media in a compact format.
+        #[property(get)]
         pub compact: Cell<bool>,
         #[template_child]
         pub media: TemplateChild<gtk::Overlay>,
@@ -97,61 +101,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MessageMedia {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecInt::builder("width")
-                        .minimum(-1)
-                        .default_value(-1)
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecInt::builder("height")
-                        .minimum(-1)
-                        .default_value(-1)
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<MediaState>("state")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("compact")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "width" => {
-                    obj.set_width(value.get().unwrap());
-                }
-                "height" => {
-                    obj.set_height(value.get().unwrap());
-                }
-                "state" => {
-                    obj.set_state(value.get().unwrap());
-                }
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "width" => obj.width().to_value(),
-                "height" => obj.height().to_value(),
-                "state" => obj.state().to_value(),
-                "compact" => obj.compact().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn dispose(&self) {
             self.media.unparent();
         }
@@ -229,10 +180,32 @@ mod imp {
             }
         }
     }
+
+    impl MessageMedia {
+        /// Set the intended display width of the media.
+        fn set_width(&self, width: i32) {
+            if self.width.get() == width {
+                return;
+            }
+
+            self.width.set(width);
+            self.obj().notify_width();
+        }
+
+        /// Set the intended display height of the media.
+        fn set_height(&self, height: i32) {
+            if self.height.get() == height {
+                return;
+            }
+
+            self.height.set(height);
+            self.obj().notify_height();
+        }
+    }
 }
 
 glib::wrapper! {
-    /// A widget displaying a media message in the timeline.
+    /// A widget displaying a media (image or video) message in the timeline.
     pub struct MessageMedia(ObjectSubclass<imp::MessageMedia>)
         @extends gtk::Widget, @implements gtk::Accessible;
 }
@@ -250,43 +223,8 @@ impl MessageMedia {
             .unwrap();
     }
 
-    /// The intended display width of the media.
-    pub fn width(&self) -> i32 {
-        self.imp().width.get()
-    }
-
-    /// Set the intended display width of the media.
-    pub fn set_width(&self, width: i32) {
-        if self.width() == width {
-            return;
-        }
-
-        self.imp().width.set(width);
-        self.notify("width");
-    }
-
-    /// The intended display height of the media.
-    pub fn height(&self) -> i32 {
-        self.imp().height.get()
-    }
-
-    /// Set the intended display height of the media.
-    pub fn set_height(&self, height: i32) {
-        if self.height() == height {
-            return;
-        }
-
-        self.imp().height.set(height);
-        self.notify("height");
-    }
-
-    /// The state of the media.
-    pub fn state(&self) -> MediaState {
-        self.imp().state.get()
-    }
-
     /// Set the state of the media.
-    pub fn set_state(&self, state: MediaState) {
+    fn set_state(&self, state: MediaState) {
         let imp = self.imp();
 
         if self.state() == state {
@@ -309,18 +247,13 @@ impl MessageMedia {
         }
 
         imp.state.set(state);
-        self.notify("state");
-    }
-
-    /// Whether to display this media in a compact format.
-    pub fn compact(&self) -> bool {
-        self.imp().compact.get()
+        self.notify_state();
     }
 
     /// Set whether to display this media in a compact format.
     fn set_compact(&self, compact: bool) {
         self.imp().compact.set(compact);
-        self.notify("compact");
+        self.notify_compact();
     }
 
     /// Display the given `image`, in a `compact` format or not.

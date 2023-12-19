@@ -72,7 +72,7 @@
             </child>
             <child>
               <object class="ContentVerificationInfoBar" id="verification_info_bar">
-                <binding name="request">
+                <binding name="verification">
                   <lookup name="verification">
                     <lookup name="room">ContentRoomHistory</lookup>
                   </lookup>

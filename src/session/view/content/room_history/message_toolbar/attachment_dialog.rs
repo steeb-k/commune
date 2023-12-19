@@ -63,6 +63,7 @@ mod imp {
 }
 
 glib::wrapper! {
+    /// A dialog to preview an attachment before sending it.
     pub struct AttachmentDialog(ObjectSubclass<imp::AttachmentDialog>)
         @extends gtk::Widget, gtk::Window, gtk::Root, adw::Window;
 }

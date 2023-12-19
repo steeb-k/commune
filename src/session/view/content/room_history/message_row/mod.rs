@@ -25,17 +25,17 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/mod.ui"
     )]
+    #[properties(wrapper_type = super::MessageRow)]
     pub struct MessageRow {
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
@@ -55,7 +55,14 @@ mod imp {
         pub read_receipts: TemplateChild<ReadReceiptsList>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The event that is presented.
+        #[property(get, set = Self::set_event, explicit_notify)]
         pub event: BoundObject<Event>,
+        /// Whether this item should show its header.
+        ///
+        /// This is ignored if this event doesn’t have a header.
+        #[property(get = Self::show_header, set = Self::set_show_header, explicit_notify)]
+        pub show_header: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -77,53 +84,19 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for MessageRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecBoolean::builder("show-header")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<Event>("event")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-            match pspec.name() {
-                "show-header" => obj.set_show_header(value.get().unwrap()),
-                "event" => obj.set_event(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-            match pspec.name() {
-                "show-header" => obj.show_header().to_value(),
-                "event" => obj.event().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.content.connect_notify_local(
-                Some("format"),
-                clone!(@weak self as imp => move |content, _|
+            self.content
+                .connect_format_notify(clone!(@weak self as imp => move |content|
                     imp.reactions.set_visible(!matches!(
                         content.format(),
                         ContentFormat::Compact | ContentFormat::Ellipsized
                     ));
-                ),
-            );
+                ));
 
             let system_settings = Application::default().system_settings();
             let system_settings_handler = system_settings.connect_notify_local(
@@ -149,9 +122,94 @@ mod imp {
 
     impl WidgetImpl for MessageRow {}
     impl BinImpl for MessageRow {}
+
+    impl MessageRow {
+        /// Whether this item should show its header.
+        ///
+        /// This is ignored if this event doesn’t have a header.
+        fn show_header(&self) -> bool {
+            self.avatar.is_visible() && self.header.is_visible()
+        }
+
+        /// Set whether this item should show its header.
+        fn set_show_header(&self, visible: bool) {
+            let obj = self.obj();
+
+            self.avatar.set_visible(visible);
+            self.header.set_visible(visible);
+
+            if let Some(row) = obj.parent() {
+                if visible {
+                    row.add_css_class("has-header");
+                } else {
+                    row.remove_css_class("has-header");
+                }
+            }
+
+            obj.notify_show_header();
+        }
+
+        /// Set the event that is presented.
+        fn set_event(&self, event: Event) {
+            let Some(room) = event.room() else {
+                return;
+            };
+            let obj = self.obj();
+
+            // Remove signals and bindings from the previous event.
+            self.event.disconnect_signals();
+            while let Some(binding) = self.bindings.borrow_mut().pop() {
+                binding.unbind();
+            }
+
+            self.avatar
+                .set_data(Some(event.sender().avatar_data().clone()));
+
+            let display_name_binding = event
+                .sender()
+                .bind_property("display-name", &*self.display_name, "label")
+                .sync_create()
+                .build();
+
+            let show_header_binding = event
+                .bind_property("show-header", &*obj, "show-header")
+                .sync_create()
+                .build();
+
+            let state_binding = event
+                .bind_property("state", &*self.message_state, "state")
+                .sync_create()
+                .build();
+
+            self.bindings.borrow_mut().append(&mut vec![
+                display_name_binding,
+                show_header_binding,
+                state_binding,
+            ]);
+
+            let timestamp_handler = event.connect_timestamp_notify(clone!(@weak obj => move |_| {
+                obj.update_timestamp();
+            }));
+
+            let source_handler = event.connect_source_notify(clone!(@weak obj => move |_| {
+                obj.update_content();
+            }));
+
+            self.reactions
+                .set_reaction_list(&room.get_or_create_members(), &event.reactions());
+            self.read_receipts.set_source(&event.read_receipts());
+            self.event
+                .set(event, vec![timestamp_handler, source_handler]);
+            obj.notify_event();
+
+            obj.update_content();
+            obj.update_timestamp();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row displaying a message in the timeline.
     pub struct MessageRow(ObjectSubclass<imp::MessageRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -161,99 +219,8 @@ impl MessageRow {
         glib::Object::new()
     }
 
-    /// Whether this item should show its header.
-    ///
-    /// This is ignored if this event doesn’t have a header.
-    pub fn show_header(&self) -> bool {
-        let imp = self.imp();
-        imp.avatar.is_visible() && imp.header.is_visible()
-    }
-
-    /// Set whether this item should show its header.
-    pub fn set_show_header(&self, visible: bool) {
-        let imp = self.imp();
-        imp.avatar.set_visible(visible);
-        imp.header.set_visible(visible);
-
-        if let Some(row) = self.parent() {
-            if visible {
-                row.add_css_class("has-header");
-            } else {
-                row.remove_css_class("has-header");
-            }
-        }
-
-        self.notify("show-header");
-    }
-
     pub fn set_content_format(&self, format: ContentFormat) {
         self.imp().content.set_format(format);
-    }
-
-    pub fn event(&self) -> Option<Event> {
-        self.imp().event.obj()
-    }
-
-    pub fn set_event(&self, event: Event) {
-        let Some(room) = event.room() else {
-            return;
-        };
-        let imp = self.imp();
-
-        // Remove signals and bindings from the previous event.
-        imp.event.disconnect_signals();
-        while let Some(binding) = imp.bindings.borrow_mut().pop() {
-            binding.unbind();
-        }
-
-        imp.avatar
-            .set_data(Some(event.sender().avatar_data().clone()));
-
-        let display_name_binding = event
-            .sender()
-            .bind_property("display-name", &imp.display_name.get(), "label")
-            .sync_create()
-            .build();
-
-        let show_header_binding = event
-            .bind_property("show-header", self, "show-header")
-            .sync_create()
-            .build();
-
-        let state_binding = event
-            .bind_property("state", &*imp.message_state, "state")
-            .sync_create()
-            .build();
-
-        imp.bindings.borrow_mut().append(&mut vec![
-            display_name_binding,
-            show_header_binding,
-            state_binding,
-        ]);
-
-        let timestamp_handler = event.connect_notify_local(
-            Some("timestamp"),
-            clone!(@weak self as obj => move |_,_| {
-                obj.update_timestamp();
-            }),
-        );
-
-        let source_handler = event.connect_notify_local(
-            Some("source"),
-            clone!(@weak self as obj => move |_, _| {
-                obj.update_content();
-            }),
-        );
-
-        imp.reactions
-            .set_reaction_list(&room.get_or_create_members(), &event.reactions());
-        imp.read_receipts.set_source(&event.read_receipts());
-        imp.event
-            .set(event, vec![timestamp_handler, source_handler]);
-        self.notify("event");
-
-        self.update_content();
-        self.update_timestamp();
     }
 
     /// Update the displayed timestamp for the current event with the current

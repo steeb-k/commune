@@ -23,10 +23,15 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::ItemRow)]
     pub struct ItemRow {
+        /// The ancestor room history of this row.
+        #[property(get, set = Self::set_room_history, construct_only)]
         pub room_history: glib::WeakRef<RoomHistory>,
         pub message_toolbar_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The [`TimelineItem`] presented by this row.
+        #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: RefCell<Option<TimelineItem>>,
         pub action_group: RefCell<Option<gio::SimpleActionGroup>>,
         pub notify_handlers: RefCell<Vec<glib::SignalHandlerId>>,
@@ -47,40 +52,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for ItemRow {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<TimelineItem>("item").build(),
-                    glib::ParamSpecObject::builder::<RoomHistory>("room-history")
-                        .construct_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "item" => obj.set_item(value.get().unwrap()),
-                "room-history" => obj.set_room_history(value.get().ok().as_ref()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "item" => obj.item().to_value(),
-                "room-history" => obj.room_history().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -96,7 +69,9 @@ mod imp {
                 for handler in handlers {
                     event.disconnect(handler);
                 }
-            } else if let Some(binding) = self.binding.take() {
+            }
+
+            if let Some(binding) = self.binding.take() {
                 binding.unbind();
             }
 
@@ -128,7 +103,9 @@ mod imp {
                 return;
             };
 
-            let room_history = obj.room_history();
+            let Some(room_history) = obj.room_history() else {
+                return;
+            };
             let popover = room_history.item_context_menu().to_owned();
             room_history.set_sticky(false);
 
@@ -178,9 +155,148 @@ mod imp {
             obj.set_popover(Some(popover));
         }
     }
+
+    impl ItemRow {
+        /// Set the ancestor room history of this row.
+        fn set_room_history(&self, room_history: RoomHistory) {
+            let obj = self.obj();
+
+            self.room_history.set(Some(&room_history));
+
+            let related_event_handler = room_history
+                .message_toolbar()
+                .connect_related_event_notify(clone!(@weak obj => move |message_toolbar| {
+                    obj.update_for_related_event(message_toolbar.related_event());
+                }));
+            self.message_toolbar_handler
+                .replace(Some(related_event_handler));
+        }
+
+        /// Set the [`TimelineItem`] presented by this row.
+        ///
+        /// This tries to reuse the widget and only update the content whenever
+        /// possible, but it will create a new widget and drop the old one if it
+        /// has to.
+        fn set_item(&self, item: Option<TimelineItem>) {
+            let obj = self.obj();
+
+            // Reinitialize the header.
+            obj.remove_css_class("has-header");
+
+            if let Some(event) = self.item.borrow().and_downcast_ref::<Event>() {
+                for handler in self.notify_handlers.take() {
+                    event.disconnect(handler);
+                }
+            }
+            if let Some(binding) = self.binding.take() {
+                binding.unbind()
+            }
+
+            if let Some(item) = &item {
+                if let Some(event) = item.downcast_ref::<Event>() {
+                    let source_notify_handler =
+                        event.connect_source_notify(clone!(@weak obj => move |event| {
+                            obj.set_event_widget(event.clone());
+                            obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
+                        }));
+                    let is_highlighted_notify_handler =
+                        event.connect_is_highlighted_notify(clone!(@weak obj => move |_| {
+                            obj.update_highlight();
+                        }));
+                    self.notify_handlers
+                        .replace(vec![source_notify_handler, is_highlighted_notify_handler]);
+
+                    obj.set_event_widget(event.clone());
+                    obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
+                } else if let Some(item) = item.downcast_ref::<VirtualItem>() {
+                    obj.set_popover(None);
+                    obj.set_action_group(None);
+                    obj.set_event_actions(None);
+
+                    match &*item.kind() {
+                        VirtualItemKind::Spinner => {
+                            if !obj.child().is_some_and(|widget| widget.is::<Spinner>()) {
+                                let spinner = Spinner::default();
+                                spinner.set_margin_top(12);
+                                spinner.set_margin_bottom(12);
+                                obj.set_child(Some(&spinner));
+                            }
+                        }
+                        VirtualItemKind::Typing => {
+                            let child = if let Some(child) = obj.child().and_downcast::<TypingRow>()
+                            {
+                                child
+                            } else {
+                                let child = TypingRow::new();
+                                obj.set_child(Some(&child));
+                                child
+                            };
+
+                            child.set_list(
+                                obj.room_history()
+                                    .and_then(|h| h.room())
+                                    .map(|room| room.typing_list()),
+                            );
+                        }
+                        VirtualItemKind::TimelineStart => {
+                            let label = gettext("This is the start of the visible history");
+
+                            if let Some(child) = obj.child().and_downcast::<DividerRow>() {
+                                child.set_label(label);
+                            } else {
+                                let child = DividerRow::with_label(label);
+                                obj.set_child(Some(&child));
+                            };
+                        }
+                        VirtualItemKind::DayDivider(date) => {
+                            let child =
+                                if let Some(child) = obj.child().and_downcast::<DividerRow>() {
+                                    child
+                                } else {
+                                    let child = DividerRow::new();
+                                    obj.set_child(Some(&child));
+                                    child
+                                };
+
+                            let fmt = if date.year() == glib::DateTime::now_local().unwrap().year()
+                            {
+                                // Translators: This is a date format in the day divider without the
+                                // year. For example, "Friday, May 5".
+                                // Please use `-` before specifiers that add spaces on single
+                                // digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                                gettext("%A, %B %-e")
+                            } else {
+                                // Translators: This is a date format in the day divider with the
+                                // year. For ex. "Friday, May 5,
+                                // 2023". Please use `-` before
+                                // specifiers that add spaces on single digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                                gettext("%A, %B %-e, %Y")
+                            };
+
+                            child.set_label(date.format(&fmt).unwrap())
+                        }
+                        VirtualItemKind::NewMessages => {
+                            let label = gettext("New Messages");
+
+                            if let Some(child) = obj.child().and_downcast::<DividerRow>() {
+                                child.set_label(label);
+                            } else {
+                                let child = DividerRow::with_label(label);
+                                obj.set_child(Some(&child));
+                            };
+                        }
+                    }
+                }
+            }
+            self.item.replace(item);
+
+            obj.update_highlight();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A row presenting an item in the room history.
     pub struct ItemRow(ObjectSubclass<imp::ItemRow>)
         @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
 }
@@ -193,31 +309,6 @@ impl ItemRow {
             .build()
     }
 
-    /// The ancestor room history of this row.
-    pub fn room_history(&self) -> RoomHistory {
-        self.imp().room_history.upgrade().unwrap()
-    }
-
-    /// Set the ancestor room history of this row.
-    fn set_room_history(&self, room_history: Option<&RoomHistory>) {
-        let Some(room_history) = room_history else {
-            // Ignore missing `RoomHistory`.
-            return;
-        };
-
-        let imp = self.imp();
-        imp.room_history.set(Some(room_history));
-
-        let related_event_handler = room_history.message_toolbar().connect_notify_local(
-            Some("related-event"),
-            clone!(@weak self as obj => move |message_toolbar, _| {
-                obj.update_for_related_event(message_toolbar.related_event());
-            }),
-        );
-        imp.message_toolbar_handler
-            .replace(Some(related_event_handler));
-    }
-
     pub fn action_group(&self) -> Option<gio::SimpleActionGroup> {
         self.imp().action_group.borrow().clone()
     }
@@ -228,134 +319,6 @@ impl ItemRow {
         }
 
         self.imp().action_group.replace(action_group);
-    }
-
-    /// Get the row's [`TimelineItem`].
-    pub fn item(&self) -> Option<TimelineItem> {
-        self.imp().item.borrow().clone()
-    }
-
-    /// This method sets this row to a new [`TimelineItem`].
-    ///
-    /// It tries to reuse the widget and only update the content whenever
-    /// possible, but it will create a new widget and drop the old one if it
-    /// has to.
-    fn set_item(&self, item: Option<TimelineItem>) {
-        let imp = self.imp();
-
-        // Reinitialize the header.
-        self.remove_css_class("has-header");
-
-        if let Some(event) = imp.item.borrow().and_downcast_ref::<Event>() {
-            let handlers = imp.notify_handlers.take();
-
-            for handler in handlers {
-                event.disconnect(handler);
-            }
-        } else if let Some(binding) = imp.binding.take() {
-            binding.unbind()
-        }
-
-        if let Some(ref item) = item {
-            if let Some(event) = item.downcast_ref::<Event>() {
-                let source_notify_handler =
-                    event.connect_source_notify(clone!(@weak self as obj => move |event| {
-                        obj.set_event_widget(event.clone());
-                        obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
-                    }));
-                let is_highlighted_notify_handler = event.connect_notify_local(
-                    Some("is-highlighted"),
-                    clone!(@weak self as obj => move |_, _| {
-                        obj.update_highlight();
-                    }),
-                );
-                imp.notify_handlers
-                    .replace(vec![source_notify_handler, is_highlighted_notify_handler]);
-
-                self.set_event_widget(event.clone());
-                self.set_action_group(self.set_event_actions(Some(event.upcast_ref())));
-            } else if let Some(item) = item.downcast_ref::<VirtualItem>() {
-                self.set_popover(None);
-                self.set_action_group(None);
-                self.set_event_actions(None);
-
-                match &*item.kind() {
-                    VirtualItemKind::Spinner => {
-                        if !self.child().map_or(false, |widget| widget.is::<Spinner>()) {
-                            let spinner = Spinner::default();
-                            spinner.set_margin_top(12);
-                            spinner.set_margin_bottom(12);
-                            self.set_child(Some(&spinner));
-                        }
-                    }
-                    VirtualItemKind::Typing => {
-                        let child = if let Some(child) = self.child().and_downcast::<TypingRow>() {
-                            child
-                        } else {
-                            let child = TypingRow::new();
-                            self.set_child(Some(&child));
-                            child
-                        };
-
-                        child.set_list(
-                            self.room_history()
-                                .room()
-                                .as_ref()
-                                .map(|room| room.typing_list())
-                                .as_ref(),
-                        );
-                    }
-                    VirtualItemKind::TimelineStart => {
-                        let label = gettext("This is the start of the visible history");
-
-                        if let Some(child) = self.child().and_downcast::<DividerRow>() {
-                            child.set_label(&label);
-                        } else {
-                            let child = DividerRow::with_label(label);
-                            self.set_child(Some(&child));
-                        };
-                    }
-                    VirtualItemKind::DayDivider(date) => {
-                        let child = if let Some(child) = self.child().and_downcast::<DividerRow>() {
-                            child
-                        } else {
-                            let child = DividerRow::new();
-                            self.set_child(Some(&child));
-                            child
-                        };
-
-                        let fmt = if date.year() == glib::DateTime::now_local().unwrap().year() {
-                            // Translators: This is a date format in the day divider without the
-                            // year. For example, "Friday, May 5".
-                            // Please use `-` before specifiers that add spaces on single digits.
-                            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-                            gettext("%A, %B %-e")
-                        } else {
-                            // Translators: This is a date format in the day divider with the year.
-                            // For ex. "Friday, May 5, 2023".
-                            // Please use `-` before specifiers that add spaces on single digits.
-                            // See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-                            gettext("%A, %B %-e, %Y")
-                        };
-
-                        child.set_label(&date.format(&fmt).unwrap())
-                    }
-                    VirtualItemKind::NewMessages => {
-                        let label = gettext("New Messages");
-
-                        if let Some(child) = self.child().and_downcast::<DividerRow>() {
-                            child.set_label(&label);
-                        } else {
-                            let child = DividerRow::with_label(label);
-                            self.set_child(Some(&child));
-                        };
-                    }
-                }
-            }
-        }
-        imp.item.replace(item);
-
-        self.update_highlight();
     }
 
     fn set_event_widget(&self, event: Event) {

@@ -18,25 +18,36 @@ use crate::{
 const MAX_MEMBERS: usize = 32;
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/completion/completion_popover.ui"
     )]
+    #[properties(wrapper_type = super::CompletionPopover)]
     pub struct CompletionPopover {
         #[template_child]
         pub list: TemplateChild<gtk::ListBox>,
+        /// The parent `GtkTextView` to autocomplete.
+        #[property(get = Self::view)]
+        view: PhantomData<gtk::TextView>,
         /// The user ID of the current session.
+        #[property(get, set = Self::set_user_id, explicit_notify, nullable)]
         pub user_id: RefCell<Option<String>>,
         /// The members list with expression watches.
         pub members_expr: ExpressionListModel,
+        /// The room members used for completion.
+        #[property(get = Self::members, set = Self::set_members, explicit_notify, nullable)]
+        members: PhantomData<Option<MemberList>>,
         /// The sorted and filtered room members.
+        #[property(get)]
         pub filtered_members: gtk::FilterListModel,
         /// The rows in the popover.
         pub rows: [CompletionRow; MAX_MEMBERS],
@@ -65,50 +76,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for CompletionPopover {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<gtk::TextView>("view")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecString::builder("user-id")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<MemberList>("members")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecObject::builder::<gtk::FilterListModel>("filtered-members")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "user-id" => obj.set_user_id(value.get().unwrap()),
-                "members" => obj.set_members(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "view" => obj.view().to_value(),
-                "user-id" => obj.user_id().to_value(),
-                "members" => obj.members().to_value(),
-                "filtered-members" => obj.filtered_members().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -272,6 +241,38 @@ mod imp {
 
     impl WidgetImpl for CompletionPopover {}
     impl PopoverImpl for CompletionPopover {}
+
+    impl CompletionPopover {
+        /// The parent `GtkTextView` to autocomplete.
+        fn view(&self) -> gtk::TextView {
+            self.obj().parent().and_downcast::<gtk::TextView>().unwrap()
+        }
+
+        /// Set the ID of the logged-in user.
+        fn set_user_id(&self, user_id: Option<String>) {
+            if *self.user_id.borrow() == user_id {
+                return;
+            }
+
+            self.user_id.replace(user_id);
+            self.obj().notify_user_id();
+        }
+
+        /// The room members used for completion.
+        fn members(&self) -> Option<MemberList> {
+            self.members_expr.model().and_downcast()
+        }
+
+        /// Set the room members used for completion.
+        fn set_members(&self, members: Option<MemberList>) {
+            if self.members() == members {
+                return;
+            }
+
+            self.members_expr.set_model(members.and_upcast());
+            self.obj().notify_members();
+        }
+    }
 }
 
 glib::wrapper! {
@@ -283,48 +284,6 @@ glib::wrapper! {
 impl CompletionPopover {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The parent `GtkTextView` to autocomplete.
-    pub fn view(&self) -> gtk::TextView {
-        self.parent().and_downcast::<gtk::TextView>().unwrap()
-    }
-
-    /// The ID of the logged-in user.
-    pub fn user_id(&self) -> Option<String> {
-        self.imp().user_id.borrow().clone()
-    }
-
-    /// Set the ID of the logged-in user.
-    pub fn set_user_id(&self, user_id: Option<String>) {
-        let imp = self.imp();
-
-        if imp.user_id.borrow().as_ref() == user_id.as_ref() {
-            return;
-        }
-
-        imp.user_id.replace(user_id);
-        self.notify("user-id");
-    }
-
-    /// The room members used for completion.
-    pub fn members(&self) -> Option<MemberList> {
-        self.imp().members_expr.model().and_downcast()
-    }
-
-    /// Set the room members used for completion.
-    pub fn set_members(&self, members: Option<MemberList>) {
-        if self.members() == members {
-            return;
-        }
-
-        self.imp().members_expr.set_model(members.and_upcast());
-        self.notify("members");
-    }
-
-    /// The sorted and filtered room members.
-    pub fn filtered_members(&self) -> &gtk::FilterListModel {
-        &self.imp().filtered_members
     }
 
     fn current_word(&self) -> Option<(gtk::TextIter, gtk::TextIter, String)> {

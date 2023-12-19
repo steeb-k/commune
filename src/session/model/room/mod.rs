@@ -125,6 +125,10 @@ mod imp {
         pub predecessor_id: OnceCell<OwnedRoomId>,
         /// The ID of the successor of this Room, if this room was upgraded.
         pub successor_id: OnceCell<OwnedRoomId>,
+        /// The ID of the successor of this Room, if this room was upgraded, as
+        /// a string.
+        #[property(get = Self::successor_id_string)]
+        pub successor_id_string: PhantomData<Option<String>>,
         /// The successor of this Room, if this room was upgraded and the
         /// successor was joined.
         #[property(get)]
@@ -273,6 +277,11 @@ mod imp {
         /// Whether this room was tombstoned.
         fn is_tombstoned(&self) -> bool {
             self.matrix_room.borrow().as_ref().unwrap().is_tombstoned()
+        }
+
+        /// The ID of the successor of this Room, if this room was upgraded.
+        fn successor_id_string(&self) -> Option<String> {
+            self.successor_id.get().map(ToString::to_string)
         }
 
         /// Set the notifications setting for this room.

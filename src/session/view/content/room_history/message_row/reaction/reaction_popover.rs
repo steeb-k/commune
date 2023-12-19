@@ -5,18 +5,19 @@ use crate::session::view::content::room_history::member_timestamp::row::MemberTi
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use once_cell::sync::Lazy;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/reaction/reaction_popover.ui"
     )]
+    #[properties(wrapper_type = super::ReactionPopover)]
     pub struct ReactionPopover {
         #[template_child]
         pub list: TemplateChild<gtk::ListView>,
         /// The reaction senders to display.
+        #[property(get, set = Self::set_senders, construct_only)]
         pub senders: glib::WeakRef<gio::ListStore>,
     }
 
@@ -36,43 +37,20 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for ReactionPopover {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<gio::ListStore>("senders")
-                    .construct_only()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "senders" => obj.set_senders(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "senders" => obj.senders().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for ReactionPopover {}
 
     impl WidgetImpl for ReactionPopover {}
-
     impl PopoverImpl for ReactionPopover {}
+
+    impl ReactionPopover {
+        /// Set the reaction senders to display.
+        fn set_senders(&self, senders: gio::ListStore) {
+            self.senders.set(Some(&senders));
+            self.list
+                .set_model(Some(&gtk::NoSelection::new(Some(senders))));
+        }
+    }
 }
 
 glib::wrapper! {
@@ -85,24 +63,5 @@ impl ReactionPopover {
     /// Constructs a new `ReactionPopover` with the given reaction senders.
     pub fn new(senders: &gio::ListStore) -> Self {
         glib::Object::builder().property("senders", senders).build()
-    }
-
-    /// The reaction senders to display.
-    pub fn senders(&self) -> Option<gio::ListStore> {
-        self.imp().senders.upgrade()
-    }
-
-    /// Set the reaction senders to display.
-    fn set_senders(&self, senders: Option<gio::ListStore>) {
-        let Some(senders) = senders else {
-            // Ignore missing reaction senders.
-            return;
-        };
-        let imp = self.imp();
-
-        imp.senders.set(Some(&senders));
-        imp.list
-            .set_model(Some(&gtk::NoSelection::new(Some(senders))));
-        self.notify("senders");
     }
 }

@@ -49,6 +49,7 @@ mod imp {
     use std::{
         cell::{Cell, RefCell},
         collections::HashMap,
+        marker::PhantomData,
     };
 
     use glib::{signal::SignalHandlerId, subclass::InitializingObject};
@@ -56,16 +57,27 @@ mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/mod.ui")]
+    #[properties(wrapper_type = super::RoomHistory)]
     pub struct RoomHistory {
+        /// The room currently displayed.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: RefCell<Option<Room>>,
         /// Whether this is the only view visible, i.e. there is no sidebar.
+        #[property(get, set)]
         pub only_view: Cell<bool>,
+        /// Whether this `RoomHistory` is empty, aka no room is currently
+        /// displayed.
+        #[property(get = Self::empty)]
+        empty: PhantomData<bool>,
         pub room_members: RefCell<Option<MemberList>>,
         pub room_handlers: RefCell<Vec<SignalHandlerId>>,
         pub timeline_handlers: RefCell<Vec<SignalHandlerId>>,
         pub is_auto_scrolling: Cell<bool>,
+        /// Whether the room history should stick to the newest message in the
+        /// timeline.
+        #[property(get, set = Self::set_sticky, explicit_notify)]
         pub sticky: Cell<bool>,
         pub item_context_menu: OnceCell<gtk::PopoverMenu>,
         pub item_reaction_chooser: ReactionChooser,
@@ -193,50 +205,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for RoomHistory {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Room>("room")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("only-view").build(),
-                    glib::ParamSpecBoolean::builder("empty")
-                        .explicit_notify()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("sticky")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get().unwrap()),
-                "only-view" => self.only_view.set(value.get().unwrap()),
-                "sticky" => obj.set_sticky(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                "only-view" => self.only_view.get().to_value(),
-                "empty" => obj.is_empty().to_value(),
-                "sticky" => obj.sticky().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.setup_listview();
             self.setup_drop_target();
@@ -376,9 +346,134 @@ mod imp {
             self.drag_overlay.set_drop_target(target);
         }
     }
+
+    impl RoomHistory {
+        /// Set the room currently displayed.
+        fn set_room(&self, room: Option<Room>) {
+            if *self.room.borrow() == room {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(room) = &*self.room.borrow() {
+                for handler in self.room_handlers.take() {
+                    room.disconnect(handler);
+                }
+
+                for handler in self.timeline_handlers.take() {
+                    room.timeline().disconnect(handler);
+                }
+
+                for (_, expr_watch) in self.room_expr_watches.take() {
+                    expr_watch.unwatch();
+                }
+            }
+
+            if let Some(source_id) = self.scroll_timeout.take() {
+                source_id.remove();
+            }
+            if let Some(source_id) = self.read_timeout.take() {
+                source_id.remove();
+            }
+
+            if let Some(room) = &room {
+                let timeline = room.timeline();
+
+                let category_handler = room.connect_category_notify(clone!(@weak obj => move |_| {
+                    obj.update_room_state();
+                }));
+
+                let tombstoned_handler =
+                    room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
+                        obj.update_tombstoned_banner();
+                    }));
+
+                let successor_handler =
+                    room.connect_successor_id_string_notify(clone!(@weak obj => move |_| {
+                        obj.update_tombstoned_banner();
+                    }));
+
+                let successor_room_handler =
+                    room.connect_successor_notify(clone!(@weak obj => move |_| {
+                        obj.update_tombstoned_banner();
+                    }));
+
+                self.room_handlers.replace(vec![
+                    category_handler,
+                    tombstoned_handler,
+                    successor_handler,
+                    successor_room_handler,
+                ]);
+
+                let empty_handler = timeline.connect_empty_notify(clone!(@weak obj => move |_| {
+                    obj.update_view();
+                }));
+
+                let state_handler =
+                    timeline.connect_state_notify(clone!(@weak obj => move |timeline| {
+                        obj.update_view();
+
+                        // Always test if we need to load more when timeline is ready.
+                        if timeline.state() == TimelineState::Ready {
+                            obj.start_loading();
+                        }
+                    }));
+
+                self.timeline_handlers
+                    .replace(vec![empty_handler, state_handler]);
+
+                timeline.remove_empty_typing_row();
+                obj.trigger_read_receipts_update();
+
+                obj.init_invite_action(room);
+                obj.scroll_down();
+            }
+
+            // Keep a strong reference to the members list before changing the model, so all
+            // events use the same list.
+            self.room_members
+                .replace(room.as_ref().map(|r| r.get_or_create_members()));
+
+            let model = room.as_ref().map(|room| room.timeline().items());
+            obj.selection_model().set_model(model.as_ref());
+
+            self.is_loading.set(false);
+            self.room.replace(room);
+            obj.update_view();
+            obj.start_loading();
+            obj.update_room_state();
+            obj.update_tombstoned_banner();
+
+            obj.notify_room();
+            obj.notify_empty();
+        }
+
+        /// Whether this `RoomHistory` is empty, aka no room is currently
+        /// displayed.
+        fn empty(&self) -> bool {
+            self.room.borrow().is_none()
+        }
+
+        /// Set whether the room history should stick to the newest message in
+        /// the timeline.
+        fn set_sticky(&self, sticky: bool) {
+            if self.sticky.get() == sticky {
+                return;
+            }
+
+            if !sticky {
+                self.scroll_btn_revealer.set_visible(true);
+            }
+            self.scroll_btn_revealer.set_reveal_child(!sticky);
+
+            self.sticky.set(sticky);
+            self.obj().notify_sticky();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A view that displays the timeline of a room and ways to send new messages.
     pub struct RoomHistory(ObjectSubclass<imp::RoomHistory>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -393,134 +488,9 @@ impl RoomHistory {
         &self.imp().message_toolbar
     }
 
-    /// Set the room currently displayed.
-    pub fn set_room(&self, room: Option<Room>) {
-        let imp = self.imp();
-
-        if self.room() == room {
-            return;
-        }
-
-        if let Some(room) = self.room() {
-            for handler in imp.room_handlers.take() {
-                room.disconnect(handler);
-            }
-
-            for handler in imp.timeline_handlers.take() {
-                room.timeline().disconnect(handler);
-            }
-
-            for (_, expr_watch) in imp.room_expr_watches.take() {
-                expr_watch.unwatch();
-            }
-        }
-
-        if let Some(source_id) = imp.scroll_timeout.take() {
-            source_id.remove();
-        }
-        if let Some(source_id) = imp.read_timeout.take() {
-            source_id.remove();
-        }
-
-        if let Some(ref room) = room {
-            let timeline = room.timeline();
-
-            let category_handler = room.connect_notify_local(
-                Some("category"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_room_state();
-                }),
-            );
-
-            let tombstoned_handler = room.connect_notify_local(
-                Some("tombstoned"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_tombstoned_banner();
-                }),
-            );
-
-            let successor_handler = room.connect_notify_local(
-                Some("successor"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_tombstoned_banner();
-                }),
-            );
-
-            let successor_room_handler = room.connect_notify_local(
-                Some("successor-room"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_tombstoned_banner();
-                }),
-            );
-
-            imp.room_handlers.replace(vec![
-                category_handler,
-                tombstoned_handler,
-                successor_handler,
-                successor_room_handler,
-            ]);
-
-            let empty_handler = timeline.connect_notify_local(
-                Some("empty"),
-                clone!(@weak self as obj => move |_, _| {
-                    obj.update_view();
-                }),
-            );
-
-            let state_handler = timeline.connect_notify_local(
-                Some("state"),
-                clone!(@weak self as obj => move |timeline, _| {
-                    obj.update_view();
-
-                    // Always test if we need to load more when timeline is ready.
-                    if timeline.state() == TimelineState::Ready {
-                        obj.start_loading();
-                    }
-                }),
-            );
-
-            imp.timeline_handlers
-                .replace(vec![empty_handler, state_handler]);
-
-            timeline.remove_empty_typing_row();
-            self.trigger_read_receipts_update();
-
-            self.init_invite_action(room);
-            self.scroll_down();
-        }
-
-        // Keep a strong reference to the members list before changing the model, so all
-        // events use the same list.
-        imp.room_members
-            .replace(room.as_ref().map(|r| r.get_or_create_members()));
-
-        let model = room.as_ref().map(|room| room.timeline().items());
-        self.selection_model().set_model(model.as_ref());
-
-        imp.is_loading.set(false);
-        imp.room.replace(room);
-        self.update_view();
-        self.start_loading();
-        self.update_room_state();
-        self.update_tombstoned_banner();
-
-        self.notify("room");
-        self.notify("empty");
-    }
-
-    /// The room currently displayed.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.borrow().clone()
-    }
-
     /// The members of the room currently displayed.
     pub fn room_members(&self) -> Option<MemberList> {
         self.imp().room_members.borrow().clone()
-    }
-
-    /// Whether this `RoomHistory` is empty, aka no room is currently displayed.
-    pub fn is_empty(&self) -> bool {
-        self.imp().room.borrow().is_none()
     }
 
     fn selection_model(&self) -> &gtk::NoSelection {
@@ -697,30 +667,6 @@ impl RoomHistory {
     /// Returns the parent GtkWindow containing this widget.
     fn parent_window(&self) -> Option<gtk::Window> {
         self.root().and_downcast()
-    }
-
-    /// Whether the room history should stick to the newest message in the
-    /// timeline.
-    pub fn sticky(&self) -> bool {
-        self.imp().sticky.get()
-    }
-
-    /// Set whether the room history should stick to the newest message in the
-    /// timeline.
-    pub fn set_sticky(&self, sticky: bool) {
-        let imp = self.imp();
-
-        if self.sticky() == sticky {
-            return;
-        }
-
-        if !sticky {
-            imp.scroll_btn_revealer.set_visible(true);
-        }
-        imp.scroll_btn_revealer.set_reveal_child(!sticky);
-
-        imp.sticky.set(sticky);
-        self.notify("sticky");
     }
 
     /// Scroll to the newest message in the timeline

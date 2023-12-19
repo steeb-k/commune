@@ -24,19 +24,21 @@ enum WithMentions<'a> {
 mod imp {
     use std::cell::{Cell, RefCell};
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::MessageText)]
     pub struct MessageText {
         /// The original text of the message that is displayed.
+        #[property(get)]
         pub original_text: RefCell<String>,
         /// Whether the original text is HTML.
         ///
         /// Only used for emotes.
+        #[property(get)]
         pub is_html: Cell<bool>,
         /// The text format.
+        #[property(get, builder(ContentFormat::default()))]
         pub format: Cell<ContentFormat>,
         /// The sender of the message, if we need to listen to changes.
         pub sender: BoundObjectWeakRef<Member>,
@@ -49,39 +51,10 @@ mod imp {
         type ParentType = adw::Bin;
     }
 
-    impl ObjectImpl for MessageText {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecString::builder("original-text")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecBoolean::builder("is-html")
-                        .read_only()
-                        .build(),
-                    glib::ParamSpecEnum::builder::<ContentFormat>("format")
-                        .read_only()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "original-text" => obj.original_text().to_value(),
-                "is-html" => obj.is_html().to_value(),
-                "format" => obj.format().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MessageText {}
 
     impl WidgetImpl for MessageText {}
-
     impl BinImpl for MessageText {}
 }
 
@@ -305,11 +278,6 @@ impl MessageText {
         }
     }
 
-    /// The original text of the message that is displayed.
-    pub fn original_text(&self) -> String {
-        self.imp().original_text.borrow().clone()
-    }
-
     /// Whether the given text is different than the current original text.
     fn original_text_changed(&self, text: &str) -> bool {
         *self.imp().original_text.borrow() != text
@@ -318,12 +286,7 @@ impl MessageText {
     /// Set the original text of the message to display.
     fn set_original_text(&self, text: String) {
         self.imp().original_text.replace(text);
-        self.notify("original-text");
-    }
-
-    /// Whether the original text of the message is HTML.
-    pub fn is_html(&self) -> bool {
-        self.imp().is_html.get()
+        self.notify_original_text();
     }
 
     /// Set whether the original text of the message is HTML.
@@ -333,12 +296,7 @@ impl MessageText {
         }
 
         self.imp().is_html.set(is_html);
-        self.notify("is-html");
-    }
-
-    /// The text format.
-    pub fn format(&self) -> ContentFormat {
-        self.imp().format.get()
+        self.notify_is_html();
     }
 
     /// Whether the given format is different than the current format.
@@ -349,7 +307,7 @@ impl MessageText {
     /// Set the text format.
     fn set_format(&self, format: ContentFormat) {
         self.imp().format.set(format);
-        self.notify("format");
+        self.notify_format();
     }
 
     /// Whether the sender of the message changed.

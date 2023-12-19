@@ -39,12 +39,13 @@ pub enum ContentFormat {
 mod imp {
     use std::cell::Cell;
 
-    use once_cell::sync::Lazy;
-
     use super::*;
 
-    #[derive(Debug, Default)]
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::MessageContent)]
     pub struct MessageContent {
+        /// The displayed format of the message.
+        #[property(get, set = Self::set_format, explicit_notify, builder(ContentFormat::default()))]
         pub format: Cell<ContentFormat>,
     }
 
@@ -55,37 +56,27 @@ mod imp {
         type ParentType = adw::Bin;
     }
 
-    impl ObjectImpl for MessageContent {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecEnum::builder::<ContentFormat>("format")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            match pspec.name() {
-                "format" => self.obj().set_format(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            match pspec.name() {
-                "format" => self.obj().format().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-    }
+    #[glib::derived_properties]
+    impl ObjectImpl for MessageContent {}
 
     impl WidgetImpl for MessageContent {}
     impl BinImpl for MessageContent {}
+
+    impl MessageContent {
+        /// Set the displayed format of the message.
+        fn set_format(&self, format: ContentFormat) {
+            if self.format.get() == format {
+                return;
+            }
+
+            self.format.set(format);
+            self.obj().notify_format();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// The content of a message in the timeline.
     pub struct MessageContent(ObjectSubclass<imp::MessageContent>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -93,21 +84,6 @@ glib::wrapper! {
 impl MessageContent {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The displayed format of the message.
-    pub fn format(&self) -> ContentFormat {
-        self.imp().format.get()
-    }
-
-    /// Set the displayed format of the message.
-    pub fn set_format(&self, format: ContentFormat) {
-        if self.format() == format {
-            return;
-        }
-
-        self.imp().format.set(format);
-        self.notify("format");
     }
 
     /// Access the widget with the own content of the event.
