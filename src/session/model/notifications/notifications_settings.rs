@@ -209,16 +209,13 @@ impl NotificationsSettings {
 
         if default_rooms_notifications_is_all(api.clone(), false).await {
             self.set_global_setting_inner(NotificationsGlobalSetting::All);
-        } else if default_rooms_notifications_is_all(api.clone(), true).await {
+        } else if default_rooms_notifications_is_all(api, true).await {
             self.set_global_setting_inner(NotificationsGlobalSetting::DirectAndMentions);
         } else {
             self.set_global_setting_inner(NotificationsGlobalSetting::MentionsOnly);
         }
 
-        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
-            .await
-            .unwrap();
-        self.update_keywords_list(&keywords);
+        self.update_keywords_list().await;
     }
 
     /// Set whether notifications are enabled for this session.
@@ -303,11 +300,19 @@ impl NotificationsSettings {
     }
 
     /// Update the local list of keywords with the remote one.
-    fn update_keywords_list<'a>(&self, keywords: impl IntoIterator<Item = &'a String>) {
+    async fn update_keywords_list(&self) {
+        let Some(api) = self.api() else {
+            return;
+        };
+
+        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
+            .await
+            .unwrap();
+
         let list = &self.imp().keywords_list;
         let mut diverges_at = None;
 
-        let keywords = keywords.into_iter().map(|s| s.as_str()).collect::<Vec<_>>();
+        let keywords = keywords.iter().map(|s| s.as_str()).collect::<Vec<_>>();
         let new_len = keywords.len() as u32;
         let old_len = list.n_items();
 
@@ -346,19 +351,15 @@ impl NotificationsSettings {
             return Err(NotificationSettingsError::UnableToUpdatePushRule);
         };
 
-        let api_clone = api.clone();
         let keyword_clone = keyword.clone();
-        let handle = spawn_tokio!(async move { api_clone.remove_keyword(&keyword_clone).await });
+        let handle = spawn_tokio!(async move { api.remove_keyword(&keyword_clone).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Failed to remove notification keyword `{keyword}`: {error}");
             return Err(error);
         }
 
-        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
-            .await
-            .unwrap();
-        self.update_keywords_list(&keywords);
+        self.update_keywords_list().await;
 
         Ok(())
     }
@@ -370,19 +371,15 @@ impl NotificationsSettings {
             return Err(NotificationSettingsError::UnableToUpdatePushRule);
         };
 
-        let api_clone = api.clone();
         let keyword_clone = keyword.clone();
-        let handle = spawn_tokio!(async move { api_clone.add_keyword(keyword_clone).await });
+        let handle = spawn_tokio!(async move { api.add_keyword(keyword_clone).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Failed to add notification keyword `{keyword}`: {error}");
             return Err(error);
         }
 
-        let keywords = spawn_tokio!(async move { api.enabled_keywords().await })
-            .await
-            .unwrap();
-        self.update_keywords_list(&keywords);
+        self.update_keywords_list().await;
 
         Ok(())
     }
