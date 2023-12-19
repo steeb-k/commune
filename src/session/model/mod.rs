@@ -10,7 +10,9 @@ mod verification;
 
 pub use self::{
     avatar_data::{AvatarData, AvatarImage, AvatarUriSource},
-    notifications::{Notifications, NotificationsGlobalSetting, NotificationsSettings},
+    notifications::{
+        Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
+    },
     room::{
         Event, EventKey, HighlightFlags, Member, MemberList, MemberRole, Membership, MessageState,
         PowerLevel, ReactionGroup, ReactionList, Room, RoomType, Timeline, TimelineItem,

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use futures_util::StreamExt;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
@@ -6,12 +8,15 @@ use matrix_sdk::{
     },
     NotificationSettingsError,
 };
-use ruma::push::{PredefinedOverrideRuleId, RuleKind};
+use ruma::{
+    push::{PredefinedOverrideRuleId, RuleKind},
+    OwnedRoomId, RoomId,
+};
 use tokio::sync::broadcast::error::RecvError;
 use tracing::{error, warn};
 
 use crate::{
-    session::model::{Session, SessionState},
+    session::model::{Room, Session, SessionState},
     spawn, spawn_tokio,
 };
 
@@ -30,6 +35,47 @@ pub enum NotificationsGlobalSetting {
     DirectAndMentions = 1,
     /// Only mentions and keywords in every room.
     MentionsOnly = 2,
+}
+
+/// The possible values for a room notifications setting.
+#[derive(
+    Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::Display, strum::EnumString,
+)]
+#[repr(u32)]
+#[enum_type(name = "NotificationsRoomSetting")]
+#[strum(serialize_all = "kebab-case")]
+pub enum NotificationsRoomSetting {
+    /// Use the global setting.
+    #[default]
+    Global = 0,
+    /// All messages.
+    All = 1,
+    /// Only mentions and keywords.
+    MentionsOnly = 2,
+    /// No notifications.
+    Mute = 3,
+}
+
+impl NotificationsRoomSetting {
+    /// Convert to a [`RoomNotificationMode`].
+    fn to_notification_mode(self) -> Option<RoomNotificationMode> {
+        match self {
+            Self::Global => None,
+            Self::All => Some(RoomNotificationMode::AllMessages),
+            Self::MentionsOnly => Some(RoomNotificationMode::MentionsAndKeywordsOnly),
+            Self::Mute => Some(RoomNotificationMode::Mute),
+        }
+    }
+}
+
+impl From<RoomNotificationMode> for NotificationsRoomSetting {
+    fn from(value: RoomNotificationMode) -> Self {
+        match value {
+            RoomNotificationMode::AllMessages => Self::All,
+            RoomNotificationMode::MentionsAndKeywordsOnly => Self::MentionsOnly,
+            RoomNotificationMode::Mute => Self::Mute,
+        }
+    }
 }
 
 mod imp {
@@ -57,6 +103,10 @@ mod imp {
         /// The list of keywords that trigger notifications.
         #[property(get)]
         pub keywords_list: gtk::StringList,
+        /// The map of room ID to per-room notification setting.
+        ///
+        /// Any room not in this map uses the global setting.
+        pub per_room_settings: RefCell<HashMap<OwnedRoomId, NotificationsRoomSetting>>,
     }
 
     #[glib::object_subclass]
@@ -216,6 +266,7 @@ impl NotificationsSettings {
         }
 
         self.update_keywords_list().await;
+        self.update_per_room_settings().await;
     }
 
     /// Set whether notifications are enabled for this session.
@@ -380,6 +431,95 @@ impl NotificationsSettings {
         }
 
         self.update_keywords_list().await;
+
+        Ok(())
+    }
+
+    /// Update the local list of per-room settings with the remote one.
+    async fn update_per_room_settings(&self) {
+        let Some(api) = self.api() else {
+            return;
+        };
+
+        let api_clone = api.clone();
+        let room_ids = spawn_tokio!(async move {
+            api_clone
+                .get_rooms_with_user_defined_rules(Some(true))
+                .await
+        })
+        .await
+        .unwrap();
+
+        // Update the local map.
+        let mut per_room_settings = HashMap::with_capacity(room_ids.len());
+        for room_id in room_ids {
+            let Ok(room_id) = RoomId::parse(room_id) else {
+                continue;
+            };
+
+            let room_id_clone = room_id.clone();
+            let api_clone = api.clone();
+            let handle = spawn_tokio!(async move {
+                api_clone
+                    .get_user_defined_room_notification_mode(&room_id_clone)
+                    .await
+            });
+
+            if let Some(setting) = handle.await.unwrap() {
+                per_room_settings.insert(room_id, setting.into());
+            }
+        }
+
+        self.imp()
+            .per_room_settings
+            .replace(per_room_settings.clone());
+
+        // Update the setting in the rooms.
+        // Since we don't know when a room was added or removed, we have to update every
+        // room.
+        let Some(session) = self.session() else {
+            return;
+        };
+        let room_list = session.room_list();
+
+        for room in room_list.iter::<Room>() {
+            let Ok(room) = room else {
+                // Returns an error when the list changed, just stop.
+                break;
+            };
+
+            if let Some(setting) = per_room_settings.get(room.room_id()) {
+                room.set_notifications_setting(*setting);
+            } else {
+                room.set_notifications_setting(NotificationsRoomSetting::Global);
+            }
+        }
+    }
+
+    /// Set the notification setting for the room with the given ID.
+    pub async fn set_per_room_setting(
+        &self,
+        room_id: OwnedRoomId,
+        setting: NotificationsRoomSetting,
+    ) -> Result<(), NotificationSettingsError> {
+        let Some(api) = self.api() else {
+            error!("Cannot update notifications settings when API is not initialized");
+            return Err(NotificationSettingsError::UnableToUpdatePushRule);
+        };
+
+        let room_id_clone = room_id.clone();
+        let handle = if let Some(mode) = setting.to_notification_mode() {
+            spawn_tokio!(async move { api.set_room_notification_mode(&room_id_clone, mode).await })
+        } else {
+            spawn_tokio!(async move { api.delete_user_defined_room_rules(&room_id_clone).await })
+        };
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Failed to update notifications setting for room `{room_id}`: {error}");
+            return Err(error);
+        }
+
+        self.update_per_room_settings().await;
 
         Ok(())
     }

@@ -50,8 +50,8 @@ pub use self::{
     typing_list::TypingList,
 };
 use super::{
-    room_list::RoomMetainfo, AvatarData, AvatarImage, AvatarUriSource, IdentityVerification,
-    Session, SidebarItem, SidebarItemImpl,
+    notifications::NotificationsRoomSetting, room_list::RoomMetainfo, AvatarData, AvatarImage,
+    AvatarUriSource, IdentityVerification, Session, SidebarItem, SidebarItemImpl,
 };
 use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
@@ -153,6 +153,9 @@ mod imp {
         /// Whether this room has been upgraded.
         #[property(get = Self::is_tombstoned)]
         pub is_tombstoned: PhantomData<bool>,
+        /// The notifications settings for this room.
+        #[property(get, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
+        pub notifications_setting: Cell<NotificationsRoomSetting>,
     }
 
     #[glib::object_subclass]
@@ -239,7 +242,7 @@ mod imp {
         }
 
         /// The display name of this room.
-        pub fn display_name(&self) -> String {
+        fn display_name(&self) -> String {
             let display_name = self.display_name.borrow().clone();
             // Translators: This is displayed when the room name is unknown yet.
             display_name.unwrap_or_else(|| gettext("Unknown"))
@@ -268,8 +271,18 @@ mod imp {
         }
 
         /// Whether this room was tombstoned.
-        pub fn is_tombstoned(&self) -> bool {
+        fn is_tombstoned(&self) -> bool {
             self.matrix_room.borrow().as_ref().unwrap().is_tombstoned()
+        }
+
+        /// Set the notifications setting for this room.
+        fn set_notifications_setting(&self, setting: NotificationsRoomSetting) {
+            if self.notifications_setting.get() == setting {
+                return;
+            }
+
+            self.notifications_setting.set(setting);
+            self.obj().notify_notifications_setting();
         }
     }
 }

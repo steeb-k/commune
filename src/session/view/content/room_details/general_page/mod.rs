@@ -18,8 +18,8 @@ use ruma::{
 use tracing::error;
 
 use crate::{
-    components::{CustomEntry, EditableAvatar, SpinnerButton},
-    session::model::{AvatarData, AvatarImage, MemberList, Room},
+    components::{CustomEntry, EditableAvatar, LoadingBin, SpinnerButton},
+    session::model::{AvatarData, AvatarImage, MemberList, NotificationsRoomSetting, Room},
     spawn, spawn_tokio, toast,
     utils::{
         and_expr,
@@ -31,7 +31,10 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -63,13 +66,38 @@ mod imp {
         pub save_details_btn: TemplateChild<SpinnerButton>,
         #[template_child]
         pub members_count: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub notifications: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        pub notifications_global_bin: TemplateChild<LoadingBin>,
+        #[template_child]
+        pub notifications_global_radio: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        pub notifications_all_bin: TemplateChild<LoadingBin>,
+        #[template_child]
+        pub notifications_all_radio: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        pub notifications_mentions_bin: TemplateChild<LoadingBin>,
+        #[template_child]
+        pub notifications_mentions_radio: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        pub notifications_mute_bin: TemplateChild<LoadingBin>,
+        #[template_child]
+        pub notifications_mute_radio: TemplateChild<gtk::CheckButton>,
         /// Whether edit mode is enabled.
         #[property(get, set = Self::set_edit_mode_enabled, explicit_notify)]
         pub edit_mode_enabled: Cell<bool>,
+        /// The notifications setting for the room.
+        #[property(get = Self::notifications_setting, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
+        pub notifications_setting: PhantomData<NotificationsRoomSetting>,
+        /// Whether the notifications section is busy.
+        #[property(get)]
+        pub notifications_loading: Cell<bool>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
         pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
+        pub notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -82,6 +110,9 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
+
+            klass
+                .install_property_action("room.set-notifications-setting", "notifications-setting");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -131,6 +162,9 @@ mod imp {
                 room.connect_joined_members_count_notify(clone!(@weak obj => move |room| {
                     obj.member_count_changed(room.joined_members_count());
                 })),
+                room.connect_notifications_setting_notify(clone!(@weak obj => move |_| {
+                    obj.update_notifications();
+                })),
             ];
 
             obj.member_count_changed(room.joined_members_count());
@@ -143,6 +177,23 @@ mod imp {
 
             self.room.set(&room, room_handler_ids);
             obj.notify_room();
+
+            if let Some(session) = room.session() {
+                let settings = session.notifications().settings();
+                let notifications_settings_handlers = vec![
+                    settings.connect_account_enabled_notify(clone!(@weak obj => move |_| {
+                        obj.update_notifications();
+                    })),
+                    settings.connect_session_enabled_notify(clone!(@weak obj => move |_| {
+                        obj.update_notifications();
+                    })),
+                ];
+
+                self.notifications_settings_handlers
+                    .replace(notifications_settings_handlers);
+            }
+
+            obj.update_notifications();
         }
 
         /// Set whether edit mode is enabled.
@@ -155,6 +206,23 @@ mod imp {
             obj.enable_details(enabled);
             self.edit_mode_enabled.set(enabled);
             obj.notify_edit_mode_enabled();
+        }
+
+        /// The notifications setting for the room.
+        fn notifications_setting(&self) -> NotificationsRoomSetting {
+            self.room
+                .obj()
+                .map(|r| r.notifications_setting())
+                .unwrap_or_default()
+        }
+
+        /// Set the notifications setting for the room.
+        fn set_notifications_setting(&self, setting: NotificationsRoomSetting) {
+            if self.notifications_setting() == setting {
+                return;
+            }
+
+            self.obj().notifications_setting_changed(setting);
         }
     }
 }
@@ -564,10 +632,94 @@ impl GeneralPage {
 
     fn disconnect_all(&self) {
         let imp = self.imp();
+
+        if let Some(settings) = imp
+            .room
+            .obj()
+            .and_then(|r| r.session())
+            .map(|s| s.notifications().settings())
+        {
+            for handler in imp.notifications_settings_handlers.take() {
+                settings.disconnect(handler);
+            }
+        }
+
         imp.room.disconnect_signals();
 
         for watch in imp.expr_watches.take() {
             watch.unwatch();
         }
+    }
+
+    /// Update the section about notifications.
+    fn update_notifications(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(session) = room.session() else {
+            return;
+        };
+        let imp = self.imp();
+
+        // Updates the active radio button.
+        self.notify_notifications_setting();
+
+        let settings = session.notifications().settings();
+        let sensitive = settings.account_enabled()
+            && settings.session_enabled()
+            && !self.notifications_loading();
+        imp.notifications.set_sensitive(sensitive);
+    }
+
+    /// Update the loading state in the notifications section.
+    fn set_notifications_loading(&self, loading: bool, setting: NotificationsRoomSetting) {
+        let imp = self.imp();
+
+        // Only show the spinner on the selected one.
+        imp.notifications_global_bin
+            .set_is_loading(loading && setting == NotificationsRoomSetting::Global);
+        imp.notifications_all_bin
+            .set_is_loading(loading && setting == NotificationsRoomSetting::All);
+        imp.notifications_mentions_bin
+            .set_is_loading(loading && setting == NotificationsRoomSetting::MentionsOnly);
+        imp.notifications_mute_bin
+            .set_is_loading(loading && setting == NotificationsRoomSetting::Mute);
+
+        self.imp().notifications_loading.set(loading);
+        self.notify_notifications_loading();
+    }
+
+    /// Handle a change of the notifications setting.
+    fn notifications_setting_changed(&self, setting: NotificationsRoomSetting) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(session) = room.session() else {
+            return;
+        };
+        let imp = self.imp();
+
+        if setting == room.notifications_setting() {
+            // Nothing to do.
+            return;
+        }
+
+        imp.notifications.set_sensitive(false);
+        self.set_notifications_loading(true, setting);
+
+        let settings = session.notifications().settings();
+        spawn!(
+            clone!(@weak self as obj, @weak room, @weak settings => async move {
+                if settings.set_per_room_setting(room.room_id().to_owned(), setting).await.is_err() {
+                    toast!(
+                        obj,
+                        gettext("Could not change notifications setting")
+                    );
+                }
+
+                obj.set_notifications_loading(false, setting);
+                obj.update_notifications();
+            })
+        );
     }
 }
