@@ -13,18 +13,21 @@ use crate::{
 mod imp {
     use std::{cell::RefCell, collections::HashSet};
 
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/invite.ui")]
+    #[properties(wrapper_type = super::Invite)]
     pub struct Invite {
+        /// The room currently displayed.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: RefCell<Option<Room>>,
         pub room_members: RefCell<Option<MemberList>>,
         pub accept_requests: RefCell<HashSet<Room>>,
         pub decline_requests: RefCell<HashSet<Room>>,
-        pub category_handler: RefCell<Option<SignalHandlerId>>,
+        pub category_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub room_topic: TemplateChild<gtk::Label>,
         #[template_child]
@@ -60,36 +63,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Invite {
-        fn properties() -> &'static [glib::ParamSpec] {
-            use once_cell::sync::Lazy;
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![glib::ParamSpecObject::builder::<Room>("room")
-                    .explicit_notify()
-                    .build()]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.set_room(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "room" => obj.room().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -108,13 +83,92 @@ mod imp {
                 &[("user", "<widget>")],
             )));
         }
+
+        fn dispose(&self) {
+            if let Some(room) = self.room.take() {
+                if let Some(handler) = self.category_handler.take() {
+                    room.disconnect(handler);
+                }
+            }
+        }
     }
 
     impl WidgetImpl for Invite {}
     impl BinImpl for Invite {}
+
+    impl Invite {
+        /// Set the room currently displayed.
+        fn set_room(&self, room: Option<Room>) {
+            if *self.room.borrow() == room {
+                return;
+            }
+            let obj = self.obj();
+
+            match &room {
+                Some(room) if self.accept_requests.borrow().contains(room) => {
+                    obj.action_set_enabled("invite.accept", false);
+                    obj.action_set_enabled("invite.decline", false);
+                    self.accept_button.set_loading(true);
+                }
+                Some(room) if self.decline_requests.borrow().contains(room) => {
+                    obj.action_set_enabled("invite.accept", false);
+                    obj.action_set_enabled("invite.decline", false);
+                    self.decline_button.set_loading(true);
+                }
+                _ => obj.reset(),
+            }
+
+            if let Some(room) = self.room.take() {
+                if let Some(handler) = self.category_handler.take() {
+                    room.disconnect(handler);
+                }
+            }
+
+            if let Some(room) = &room {
+                let category_handler = room.connect_category_notify(
+                    clone!(@weak obj => move |room| {
+                        let category = room.category();
+
+                        if category == RoomType::Left {
+                            // We declined the invite or the invite was retracted, we should close the room
+                            // if it is opened.
+                            let Some(session) = room.session() else {
+                                return;
+                            };
+                            let selection = session.sidebar_list_model().selection_model();
+                            if let Some(selected_room) = selection.selected_item().and_downcast::<Room>() {
+                                if selected_room == *room {
+                                    selection.set_selected_item(Option::<glib::Object>::None);
+                                }
+                            }
+                        }
+
+                        if category != RoomType::Invited {
+                            let imp = obj.imp();
+                            imp.decline_requests.borrow_mut().remove(room);
+                            imp.accept_requests.borrow_mut().remove(room);
+                            obj.reset();
+                            if let Some(category_handler) = imp.category_handler.take() {
+                                room.disconnect(category_handler);
+                            }
+                        }
+                    }),
+                );
+                self.category_handler.replace(Some(category_handler));
+            }
+
+            // Keep a strong reference to the members list.
+            self.room_members
+                .replace(room.as_ref().map(|r| r.get_or_create_members()));
+            self.room.replace(room);
+
+            obj.notify_room();
+        }
+    }
 }
 
 glib::wrapper! {
+    /// A view presenting an invitation to a room.
     pub struct Invite(ObjectSubclass<imp::Invite>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
@@ -122,81 +176,6 @@ glib::wrapper! {
 impl Invite {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Set the room currently displayed.
-    pub fn set_room(&self, room: Option<Room>) {
-        let imp = self.imp();
-
-        if self.room() == room {
-            return;
-        }
-
-        match room {
-            Some(ref room) if imp.accept_requests.borrow().contains(room) => {
-                self.action_set_enabled("invite.accept", false);
-                self.action_set_enabled("invite.decline", false);
-                imp.accept_button.set_loading(true);
-            }
-            Some(ref room) if imp.decline_requests.borrow().contains(room) => {
-                self.action_set_enabled("invite.accept", false);
-                self.action_set_enabled("invite.decline", false);
-                imp.decline_button.set_loading(true);
-            }
-            _ => self.reset(),
-        }
-
-        if let Some(category_handler) = imp.category_handler.take() {
-            if let Some(room) = self.room() {
-                room.disconnect(category_handler);
-            }
-        }
-
-        if let Some(ref room) = room {
-            let handler_id = room.connect_notify_local(
-                Some("category"),
-                clone!(@weak self as obj => move |room, _| {
-                    let category = room.category();
-
-                    if category == RoomType::Left {
-                        // We declined the invite or the invite was retracted, we should close the room
-                        // if it is opened.
-                        let Some(session) = room.session() else {
-                            return;
-                        };
-                        let selection = session.sidebar_list_model().selection_model();
-                        if let Some(selected_room) = selection.selected_item().and_downcast::<Room>() {
-                            if selected_room == *room {
-                                selection.set_selected_item(Option::<glib::Object>::None);
-                            }
-                        }
-                    }
-
-                    if category != RoomType::Invited {
-                        let imp = obj.imp();
-                        imp.decline_requests.borrow_mut().remove(room);
-                        imp.accept_requests.borrow_mut().remove(room);
-                        obj.reset();
-                        if let Some(category_handler) = imp.category_handler.take() {
-                            room.disconnect(category_handler);
-                        }
-                    }
-                }),
-            );
-            imp.category_handler.replace(Some(handler_id));
-        }
-
-        // Keep a strong reference to the members list.
-        imp.room_members
-            .replace(room.as_ref().map(|r| r.get_or_create_members()));
-        imp.room.replace(room);
-
-        self.notify("room");
-    }
-
-    /// The room currently displayed.
-    pub fn room(&self) -> Option<Room> {
-        self.imp().room.borrow().clone()
     }
 
     fn reset(&self) {

@@ -18,20 +18,25 @@ use crate::session::model::{
 mod imp {
     use std::cell::{Cell, RefCell};
 
-    use glib::{object::WeakRef, signal::SignalHandlerId, subclass::InitializingObject};
-    use once_cell::sync::Lazy;
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate)]
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/mod.ui")]
+    #[properties(wrapper_type = super::Content)]
     pub struct Content {
-        pub session: WeakRef<Session>,
+        /// The current session.
+        #[property(get, set = Self::set_session, explicit_notify, nullable)]
+        pub session: glib::WeakRef<Session>,
         /// Whether this is the only visible view, i.e. there is no sidebar.
+        #[property(get, set)]
         pub only_view: Cell<bool>,
         pub item_binding: RefCell<Option<glib::Binding>>,
+        /// The item currently displayed.
+        #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: RefCell<Option<glib::Object>>,
-        pub signal_handler: RefCell<Option<SignalHandlerId>>,
+        pub signal_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -64,43 +69,8 @@ mod imp {
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for Content {
-        fn properties() -> &'static [glib::ParamSpec] {
-            static PROPERTIES: Lazy<Vec<glib::ParamSpec>> = Lazy::new(|| {
-                vec![
-                    glib::ParamSpecObject::builder::<Session>("session").build(),
-                    glib::ParamSpecBoolean::builder("only-view").build(),
-                    glib::ParamSpecObject::builder::<glib::Object>("item")
-                        .explicit_notify()
-                        .build(),
-                ]
-            });
-
-            PROPERTIES.as_ref()
-        }
-
-        fn set_property(&self, _id: usize, value: &glib::Value, pspec: &glib::ParamSpec) {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.set_session(value.get().unwrap()),
-                "only-view" => self.only_view.set(value.get().unwrap()),
-                "item" => obj.set_item(value.get().unwrap()),
-                _ => unimplemented!(),
-            }
-        }
-
-        fn property(&self, _id: usize, pspec: &glib::ParamSpec) -> glib::Value {
-            let obj = self.obj();
-
-            match pspec.name() {
-                "session" => obj.session().to_value(),
-                "only-view" => self.only_view.get().to_value(),
-                "item" => obj.item().to_value(),
-                _ => unimplemented!(),
-            }
-        }
-
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -121,12 +91,80 @@ mod imp {
 
     impl NavigationPageImpl for Content {
         fn hidden(&self) {
-            self.obj().set_item(None);
+            self.obj().set_item(None::<glib::Object>);
+        }
+    }
+
+    impl Content {
+        /// Set the current session.
+        fn set_session(&self, session: Option<Session>) {
+            if session == self.session.upgrade() {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(binding) = self.item_binding.take() {
+                binding.unbind();
+            }
+
+            if let Some(session) = &session {
+                let item_binding = session
+                    .sidebar_list_model()
+                    .selection_model()
+                    .bind_property("selected-item", &*obj, "item")
+                    .sync_create()
+                    .bidirectional()
+                    .build();
+
+                self.item_binding.replace(Some(item_binding));
+            }
+
+            self.session.set(session.as_ref());
+            obj.notify_session();
+        }
+
+        /// Set the item currently displayed.
+        fn set_item(&self, item: Option<glib::Object>) {
+            if *self.item.borrow() == item {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(item) = self.item.take() {
+                if let Some(signal_handler) = self.signal_handler.take() {
+                    item.disconnect(signal_handler);
+                }
+            }
+
+            if let Some(item) = &item {
+                if let Some(room) = item.downcast_ref::<Room>() {
+                    let handler_id = room.connect_category_notify(clone!(@weak obj => move |_| {
+                        obj.update_visible_child();
+                    }));
+
+                    self.signal_handler.replace(Some(handler_id));
+                } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+                    let handler_id = verification.connect_notify_local(
+                        Some("state"),
+                        clone!(@weak obj => move |verification, _| {
+                            if verification.is_finished() {
+                                obj.set_item(None::<glib::Object>);
+                            }
+                        }),
+                    );
+                    self.signal_handler.replace(Some(handler_id));
+                }
+            }
+
+            self.item.replace(item);
+            obj.update_visible_child();
+            obj.notify_item();
         }
     }
 }
 
 glib::wrapper! {
+    /// A view displaying the selected content in the sidebar.
     pub struct Content(ObjectSubclass<imp::Content>)
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
@@ -149,89 +187,6 @@ impl Content {
         }
     }
 
-    /// The current session.
-    pub fn session(&self) -> Option<Session> {
-        self.imp().session.upgrade()
-    }
-
-    /// Set the current session.
-    pub fn set_session(&self, session: Option<Session>) {
-        if session == self.session() {
-            return;
-        }
-
-        let imp = self.imp();
-
-        if let Some(binding) = imp.item_binding.take() {
-            binding.unbind();
-        }
-
-        if let Some(session) = &session {
-            let item_binding = session
-                .sidebar_list_model()
-                .selection_model()
-                .bind_property("selected-item", self, "item")
-                .sync_create()
-                .bidirectional()
-                .build();
-
-            imp.item_binding.replace(Some(item_binding));
-        }
-
-        imp.session.set(session.as_ref());
-        self.notify("session");
-    }
-
-    /// Set the item currently displayed.
-    pub fn set_item(&self, item: Option<glib::Object>) {
-        let imp = self.imp();
-
-        if self.item() == item {
-            return;
-        }
-
-        if let Some(signal_handler) = imp.signal_handler.take() {
-            if let Some(item) = self.item() {
-                item.disconnect(signal_handler);
-            }
-        }
-
-        if let Some(ref item) = item {
-            if item.is::<Room>() {
-                let handler_id = item.connect_notify_local(
-                    Some("category"),
-                    clone!(@weak self as obj => move |_, _| {
-                        obj.update_visible_child();
-                    }),
-                );
-
-                imp.signal_handler.replace(Some(handler_id));
-            }
-
-            if item.is::<IdentityVerification>() {
-                let handler_id = item.connect_notify_local(
-                    Some("state"),
-                    clone!(@weak self as obj => move |request, _| {
-                        let request = request.downcast_ref::<IdentityVerification>().unwrap();
-                        if request.is_finished() {
-                            obj.set_item(None);
-                        }
-                    }),
-                );
-                imp.signal_handler.replace(Some(handler_id));
-            }
-        }
-
-        imp.item.replace(item);
-        self.update_visible_child();
-        self.notify("item");
-    }
-
-    /// The item currently displayed.
-    pub fn item(&self) -> Option<glib::Object> {
-        self.imp().item.borrow().clone()
-    }
-
     /// Update the visible child according to the current item.
     fn update_visible_child(&self) {
         let imp = self.imp();
@@ -241,12 +196,12 @@ impl Content {
                 imp.stack.set_visible_child(&*imp.empty_page);
             }
             Some(o) if o.is::<Room>() => {
-                if let Some(room) = imp.item.borrow().and_downcast_ref::<Room>() {
+                if let Ok(room) = o.downcast::<Room>() {
                     if room.category() == RoomType::Invited {
-                        imp.invite.set_room(Some(room.clone()));
+                        imp.invite.set_room(Some(room));
                         imp.stack.set_visible_child(&*imp.invite);
                     } else {
-                        imp.room_history.set_room(Some(room.clone()));
+                        imp.room_history.set_room(Some(room));
                         imp.stack.set_visible_child(&*imp.room_history);
                     }
                 }
@@ -259,10 +214,10 @@ impl Content {
                 imp.stack.set_visible_child(&*imp.explore);
             }
             Some(o) if o.is::<IdentityVerification>() => {
-                if let Some(item) = imp.item.borrow().and_downcast_ref::<IdentityVerification>() {
-                    if item.mode() != VerificationMode::CurrentSession {
+                if let Ok(verification) = o.downcast::<IdentityVerification>() {
+                    if verification.mode() != VerificationMode::CurrentSession {
                         imp.identity_verification_widget
-                            .set_request(Some(item.clone()));
+                            .set_request(Some(verification));
                         imp.stack.set_visible_child(&*imp.verification_page);
                     }
                 }
