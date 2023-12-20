@@ -122,7 +122,7 @@ impl AvatarImage {
             .and_then(|data| ImagePaintable::from_bytes(&glib::Bytes::from(&data), None).ok())
             .map(|texture| texture.upcast());
         self.imp().paintable.replace(paintable);
-        self.notify("paintable");
+        self.notify_paintable();
     }
 
     fn load(&self) {

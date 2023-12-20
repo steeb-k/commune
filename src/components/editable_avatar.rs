@@ -313,7 +313,7 @@ impl EditableAvatar {
             file.and_then(|file| ImagePaintable::from_file(file).ok())
                 .map(|texture| texture.upcast()),
         );
-        self.notify("temp-image");
+        self.notify_temp_image();
     }
 
     /// Show an avatar with `temp_image` instead of `avatar`.

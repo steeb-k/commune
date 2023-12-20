@@ -257,7 +257,7 @@ impl Login {
         }
 
         imp.domain.replace(domain);
-        self.notify("domain");
+        self.notify_domain();
     }
 
     /// The URL of the homeserver to log into.

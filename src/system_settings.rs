@@ -145,7 +145,7 @@ impl SystemSettings {
         }
 
         self.imp().clock_format.set(clock_format);
-        self.notify("clock-format");
+        self.notify_clock_format();
     }
 }
 

@@ -91,7 +91,7 @@ impl ExpressionListModel {
         };
 
         self.items_changed(0, removed, added);
-        self.notify("model");
+        self.notify_model();
     }
 
     /// The expressions to watch.

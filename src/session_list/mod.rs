@@ -100,13 +100,13 @@ impl SessionList {
         }
 
         self.imp().state.set(state);
-        self.notify("state");
+        self.notify_state();
     }
 
     /// Set the error message.
     fn set_error(&self, message: String) {
         self.imp().error.replace(Some(message));
-        self.notify("error");
+        self.notify_error();
     }
 
     /// The settings of the sessions.
@@ -173,7 +173,7 @@ impl SessionList {
         self.items_changed(index as u32, removed, 1);
 
         if was_empty {
-            self.notify("is-empty");
+            self.notify_is_empty();
         }
 
         index
@@ -187,7 +187,7 @@ impl SessionList {
             self.items_changed(position as u32, 1, 0);
 
             if self.is_empty() {
-                self.notify("is-empty");
+                self.notify_is_empty();
             }
         }
     }

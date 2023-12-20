@@ -216,11 +216,11 @@ impl MembersPage {
         let watch = can_invite.watch(
             glib::Object::NONE,
             clone!(@weak self as obj => move || {
-                obj.notify("can-invite");
+                obj.notify_can_invite();
             }),
         );
 
         self.imp().can_invite_watch.replace(Some(watch));
-        self.notify("can-invite");
+        self.notify_can_invite();
     }
 }

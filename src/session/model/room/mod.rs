@@ -1014,11 +1014,11 @@ impl Room {
                         }));
                     }
                     AnySyncStateEvent::RoomName(_) => {
-                        self.notify("name");
+                        self.notify_name();
                         self.load_display_name();
                     }
                     AnySyncStateEvent::RoomTopic(_) => {
-                        self.notify("topic");
+                        self.notify_topic();
                     }
                     AnySyncStateEvent::RoomPowerLevels(SyncStateEvent::Original(event)) => {
                         self.power_levels().update_from_event(event.clone());

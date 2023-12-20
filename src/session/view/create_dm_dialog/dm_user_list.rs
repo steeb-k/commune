@@ -109,7 +109,7 @@ impl DmUserList {
         }
 
         imp.state.set(state);
-        self.notify("state");
+        self.notify_state();
     }
 
     fn set_list(&self, users: Vec<DmUser>) {
