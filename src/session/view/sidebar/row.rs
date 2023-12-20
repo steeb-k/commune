@@ -96,7 +96,7 @@ mod imp {
 
         /// Set the list row to track for expander state.
         fn set_list_row(&self, list_row: Option<gtk::TreeListRow>) {
-            if self.list_row.borrow().clone() == list_row {
+            if *self.list_row.borrow() == list_row {
                 return;
             }
             let obj = self.obj();

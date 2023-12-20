@@ -82,7 +82,7 @@ mod imp {
     impl MediaItem {
         /// Set the media event.
         fn set_event(&self, event: Option<HistoryViewerEvent>) {
-            if self.event.borrow().clone() == event {
+            if *self.event.borrow() == event {
                 return;
             }
             let obj = self.obj();

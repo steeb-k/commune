@@ -150,7 +150,7 @@ impl ImportExportKeysSubpage {
     /// Set the path to export the keys to.
     fn set_file_path(&self, path: Option<gio::File>) {
         let imp = self.imp();
-        if imp.file_path.borrow().as_ref() == path.as_ref() {
+        if *imp.file_path.borrow() == path {
             return;
         }
 

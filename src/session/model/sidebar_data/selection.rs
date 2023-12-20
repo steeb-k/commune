@@ -161,7 +161,7 @@ mod imp {
 
         /// Set the selected item.
         fn set_selected_item(&self, item: Option<glib::Object>) {
-            if self.selected_item.borrow().as_ref() == item.as_ref() {
+            if *self.selected_item.borrow() == item {
                 return;
             }
             let obj = self.obj();

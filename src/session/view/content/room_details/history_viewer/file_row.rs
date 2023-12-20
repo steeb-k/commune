@@ -67,7 +67,7 @@ mod imp {
     impl FileRow {
         /// Set the file event.
         fn set_event(&self, event: Option<HistoryViewerEvent>) {
-            if self.event.borrow().clone() == event {
+            if *self.event.borrow() == event {
                 return;
             }
 

@@ -37,7 +37,7 @@ mod imp {
     impl AvatarData {
         /// Set the data of the user-defined image.
         fn set_image(&self, image: Option<AvatarImage>) {
-            if self.image.borrow().as_ref() == image.as_ref() {
+            if *self.image.borrow() == image {
                 return;
             }
 
@@ -47,7 +47,7 @@ mod imp {
 
         /// Set the display name used as a fallback for this avatar.
         fn set_display_name(&self, display_name: Option<String>) {
-            if self.display_name.borrow().as_ref() == display_name.as_ref() {
+            if *self.display_name.borrow() == display_name {
                 return;
             }
 

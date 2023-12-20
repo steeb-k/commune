@@ -65,7 +65,7 @@ mod imp {
     impl CategoryRow {
         /// Set the category represented by this row.
         fn set_category(&self, category: Option<Category>) {
-            if self.category.borrow().clone() == category {
+            if *self.category.borrow() == category {
                 return;
             }
 

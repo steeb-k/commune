@@ -91,7 +91,7 @@ mod imp {
     impl LabelWithWidgets {
         /// Set the text of the label.
         fn set_label(&self, label: Option<String>) {
-            if self.label.borrow().as_ref() == label.as_ref() {
+            if *self.label.borrow() == label {
                 return;
             }
 
@@ -104,7 +104,7 @@ mod imp {
 
         /// Set the placeholder that is replaced with widgets.
         fn set_placeholder(&self, placeholder: Option<String>) {
-            if self.placeholder.borrow().as_ref() == placeholder.as_ref() {
+            if *self.placeholder.borrow() == placeholder {
                 return;
             }
 
@@ -187,7 +187,7 @@ impl LabelWithWidgets {
     }
 
     pub fn widgets(&self) -> Vec<gtk::Widget> {
-        self.imp().widgets.borrow().to_owned()
+        self.imp().widgets.borrow().clone()
     }
 
     fn invalidate_child_widgets(&self) {

@@ -139,7 +139,7 @@ mod imp {
     impl EditableAvatar {
         /// Set the [`AvatarData`] to display.
         fn set_data(&self, data: Option<AvatarData>) {
-            if self.data.borrow().as_ref() == data.as_ref() {
+            if *self.data.borrow() == data {
                 return;
             }
 

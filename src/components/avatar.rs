@@ -87,7 +87,7 @@ mod imp {
 
         /// Set the [`AvatarData`] displayed by this widget.
         fn set_data(&self, data: Option<AvatarData>) {
-            if self.data.borrow().as_ref() == data.as_ref() {
+            if *self.data.borrow() == data {
                 return;
             }
 

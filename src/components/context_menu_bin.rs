@@ -118,7 +118,7 @@ mod imp {
     impl ContextMenuBin {
         /// Set the popover displaying the context menu.
         fn set_popover(&self, popover: Option<gtk::PopoverMenu>) {
-            if self.popover.borrow().as_ref() == popover.as_ref() {
+            if *self.popover.borrow() == popover {
                 return;
             }
 

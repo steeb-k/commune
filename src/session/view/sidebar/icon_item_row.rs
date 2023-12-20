@@ -44,7 +44,7 @@ mod imp {
     impl IconItemRow {
         /// Set the [`IconItem`] of this row.
         fn set_icon_item(&self, icon_item: Option<IconItem>) {
-            if self.icon_item.borrow().clone() == icon_item {
+            if *self.icon_item.borrow() == icon_item {
                 return;
             }
             let obj = self.obj();

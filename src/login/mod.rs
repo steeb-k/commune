@@ -252,7 +252,7 @@ impl Login {
     fn set_domain(&self, domain: Option<OwnedServerName>) {
         let imp = self.imp();
 
-        if imp.domain.borrow().as_ref() == domain.as_ref() {
+        if *imp.domain.borrow() == domain {
             return;
         }
 

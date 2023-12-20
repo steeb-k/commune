@@ -42,7 +42,7 @@ mod imp {
     impl DmUserRow {
         /// Set the user displayed by this row.
         fn set_user(&self, user: Option<DmUser>) {
-            if self.user.borrow().clone() == user {
+            if *self.user.borrow() == user {
                 return;
             }
 

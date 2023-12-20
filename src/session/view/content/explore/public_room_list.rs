@@ -199,9 +199,9 @@ impl PublicRoomList {
         network: Option<String>,
     ) -> bool {
         let imp = self.imp();
-        imp.search_term.borrow().as_ref() == search_term.as_ref()
-            && imp.server.borrow().as_ref() == server.as_ref()
-            && imp.network.borrow().as_ref() == network.as_ref()
+        *imp.search_term.borrow() == search_term
+            && *imp.server.borrow() == server
+            && *imp.network.borrow() == network
     }
 
     pub fn load_public_rooms(&self, clear: bool) {
@@ -228,9 +228,9 @@ impl PublicRoomList {
         }
 
         let client = self.session().unwrap().client();
-        let search_term = imp.search_term.borrow().to_owned();
-        let server = imp.server.borrow().to_owned();
-        let network = imp.network.borrow().to_owned();
+        let search_term = imp.search_term.borrow().clone();
+        let server = imp.server.borrow().clone();
+        let network = imp.network.borrow().clone();
         let current_search_term = search_term.clone();
         let current_server = server.clone();
         let current_network = network.clone();

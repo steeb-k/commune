@@ -73,7 +73,7 @@ mod imp {
         fn set_search_term(&self, search_term: Option<String>) {
             let search_term = search_term.filter(|s| !s.is_empty());
 
-            if search_term.as_ref() == self.search_term.borrow().as_ref() {
+            if search_term == *self.search_term.borrow() {
                 return;
             }
             let obj = self.obj();

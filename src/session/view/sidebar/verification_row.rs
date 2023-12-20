@@ -43,7 +43,7 @@ mod imp {
     impl VerificationRow {
         /// Set the identity verification represented by this row.
         fn set_identity_verification(&self, verification: Option<IdentityVerification>) {
-            if self.identity_verification.borrow().clone() == verification {
+            if *self.identity_verification.borrow() == verification {
                 return;
             }
 

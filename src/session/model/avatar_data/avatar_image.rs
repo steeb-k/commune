@@ -82,7 +82,7 @@ mod imp {
         fn set_uri(&self, uri: Option<String>) {
             let uri = uri.map(OwnedMxcUri::from);
 
-            if self.uri.borrow().as_ref() == uri.as_ref() {
+            if *self.uri.borrow() == uri {
                 return;
             }
             let obj = self.obj();
