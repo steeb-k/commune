@@ -114,19 +114,13 @@ mod imp {
                 self.listview
                     .set_model(Some(&gtk::NoSelection::new(Some(public_room_list.clone()))));
 
-                public_room_list.connect_notify_local(
-                    Some("loading"),
-                    clone!(@weak obj => move |_, _| {
-                        obj.update_visible_child();
-                    }),
-                );
+                public_room_list.connect_loading_notify(clone!(@weak obj => move |_| {
+                    obj.update_visible_child();
+                }));
 
-                public_room_list.connect_notify_local(
-                    Some("empty"),
-                    clone!(@weak obj => move |_, _| {
-                        obj.update_visible_child();
-                    }),
-                );
+                public_room_list.connect_empty_notify(clone!(@weak obj => move |_| {
+                    obj.update_visible_child();
+                }));
 
                 self.public_room_list.replace(Some(public_room_list));
                 obj.update_visible_child();

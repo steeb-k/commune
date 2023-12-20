@@ -130,9 +130,8 @@ mod imp {
                 }),
             );
 
-            self.content.connect_notify_local(
-                Some("item"),
-                clone!(@weak obj => move |_, _| {
+            self.content
+                .connect_item_notify(clone!(@weak obj => move |_| {
                     let Some(session) = obj.session() else {
                         return;
                     };
@@ -142,8 +141,7 @@ mod imp {
 
                     // When switching to a room, withdraw its notifications.
                     session.notifications().withdraw_all_for_room(&room);
-                }),
-            );
+                }));
 
             obj.connect_root_notify(|obj| {
                 let Some(window) = obj.parent_window() else {

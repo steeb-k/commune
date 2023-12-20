@@ -57,12 +57,9 @@ mod imp {
 
             for item in list.iter() {
                 if let Some(category) = item.downcast_ref::<Category>() {
-                    category.connect_notify_local(
-                        Some("empty"),
-                        clone!(@weak obj => move |category, _| {
-                            obj.update_item(category);
-                        }),
-                    );
+                    category.connect_empty_notify(clone!(@weak obj => move |category| {
+                        obj.update_item(category);
+                    }));
                 }
                 obj.update_item(item);
             }

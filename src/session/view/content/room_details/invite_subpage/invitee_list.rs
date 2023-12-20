@@ -207,9 +207,8 @@ impl InviteeList {
                                     item.display_name.as_deref(),
                                     item.avatar_url.as_deref(),
                                 );
-                                user.connect_notify_local(
-                                    Some("invited"),
-                                    clone!(@weak self as obj => move |user, _| {
+                                user.connect_invited_notify(
+                                    clone!(@weak self as obj => move |user| {
                                         if user.invited() && user.invite_exception().is_none() {
                                             obj.add_invitee(user.clone());
                                         } else {

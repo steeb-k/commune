@@ -48,15 +48,13 @@ mod imp {
             app.set_up_gactions();
             app.set_up_accels();
 
-            self.session_list.connect_notify_local(
-                Some("error"),
-                clone!(@weak app => move |session_list, _| {
+            self.session_list
+                .connect_error_notify(clone!(@weak app => move |session_list| {
                     if let Some(message) = session_list.error() {
                         let window = app.present_main_window();
                         window.show_secret_error(&message);
                     }
-                }),
-            );
+                }));
             spawn!(
                 clone!(@weak self.session_list as session_list => async move {
                     session_list.restore_sessions().await;

@@ -48,12 +48,10 @@ mod imp {
             let obj = self.obj();
 
             let system_settings = Application::default().system_settings();
-            let system_settings_handler = system_settings.connect_notify_local(
-                Some("clock-format"),
-                clone!(@weak obj => move |_,_| {
+            let system_settings_handler =
+                system_settings.connect_clock_format_notify(clone!(@weak obj => move |_| {
                     obj.update_timestamp();
-                }),
-            );
+                }));
             self.system_settings_handler
                 .replace(Some(system_settings_handler));
         }

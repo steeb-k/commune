@@ -196,14 +196,11 @@ mod imp {
                     obj.switch_to_greeter_page();
                 }
             } else {
-                session_list.connect_notify_local(
-                    Some("state"),
-                    clone!(@weak obj => move |session_list, _| {
-                        if session_list.state() == LoadingState::Ready && session_list.is_empty() {
-                            obj.switch_to_greeter_page();
-                        }
-                    }),
-                );
+                session_list.connect_state_notify(clone!(@weak obj => move |session_list| {
+                    if session_list.state() == LoadingState::Ready && session_list.is_empty() {
+                        obj.switch_to_greeter_page();
+                    }
+                }));
             }
 
             let monitor = gio::NetworkMonitor::default();

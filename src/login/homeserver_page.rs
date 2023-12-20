@@ -64,13 +64,10 @@ mod imp {
             self.login.disconnect_signals();
 
             if let Some(login) = login {
-                let handler = login.connect_notify_local(
-                    Some("autodiscovery"),
-                    clone!(@weak obj => move |_, _| {
-                        obj.update_next_state();
-                        obj.update_text();
-                    }),
-                );
+                let handler = login.connect_autodiscovery_notify(clone!(@weak obj => move |_| {
+                    obj.update_next_state();
+                    obj.update_text();
+                }));
 
                 self.login.set(login, vec![handler]);
             }

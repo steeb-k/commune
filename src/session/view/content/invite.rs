@@ -68,10 +68,9 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.room_topic
-                .connect_notify_local(Some("label"), |room_topic, _| {
-                    room_topic.set_visible(!room_topic.label().is_empty());
-                });
+            self.room_topic.connect_label_notify(|room_topic| {
+                room_topic.set_visible(!room_topic.label().is_empty());
+            });
 
             self.room_topic
                 .set_visible(!self.room_topic.label().is_empty());
