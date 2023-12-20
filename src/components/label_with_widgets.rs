@@ -199,7 +199,7 @@ impl LabelWithWidgets {
     fn allocate_shapes(&self) {
         let imp = self.imp();
 
-        if imp.label.borrow().as_ref().map_or(true, |s| s.is_empty()) {
+        if !imp.label.borrow().as_ref().is_some_and(|s| !s.is_empty()) {
             // No need to compute shapes if the label is empty.
             return;
         }

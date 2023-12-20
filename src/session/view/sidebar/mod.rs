@@ -143,7 +143,7 @@ mod imp {
                 .focus_child()
                 .and_then(|w| w.focus_child())
                 .and_then(|w| w.focus_child());
-            if focus_child.map_or(false, |w| w.is::<gtk::ListView>())
+            if focus_child.is_some_and(|w| w.is::<gtk::ListView>())
                 && matches!(
                     direction_type,
                     gtk::DirectionType::TabForward | gtk::DirectionType::TabBackward

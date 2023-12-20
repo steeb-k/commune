@@ -178,7 +178,7 @@ impl User {
     /// Load whether this user is verified.
     fn init_is_verified(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            let verified = obj.crypto_identity().await.map_or(false, |i| i.is_verified());
+            let verified = obj.crypto_identity().await.is_some_and(|i| i.is_verified());
 
             if verified == obj.verified() {
                 return;

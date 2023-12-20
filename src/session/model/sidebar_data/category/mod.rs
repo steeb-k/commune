@@ -84,7 +84,7 @@ mod imp {
                                 .map(|target_room_type| (source_room_type, target_room_type))
                         });
 
-                room_types.map_or(false, |(source_room_type, target_room_type)| {
+                room_types.is_some_and(|(source_room_type, target_room_type)| {
                     source_room_type.can_change_to(target_room_type)
                 })
             };

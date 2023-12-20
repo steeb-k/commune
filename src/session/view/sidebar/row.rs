@@ -322,14 +322,14 @@ impl Row {
         if let Some(source_type) = source_type {
             if self
                 .room_type()
-                .map_or(false, |row_type| source_type.can_change_to(row_type))
+                .is_some_and(|row_type| source_type.can_change_to(row_type))
             {
                 self.remove_css_class("drop-disabled");
 
                 if self
                     .item()
                     .and_downcast::<Category>()
-                    .map_or(false, |category| category.empty())
+                    .is_some_and(|category| category.empty())
                 {
                     self.add_css_class("drop-empty");
                 } else {

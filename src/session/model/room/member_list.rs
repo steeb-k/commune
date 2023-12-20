@@ -273,6 +273,6 @@ impl MemberList {
             .members
             .borrow()
             .get(user_id)
-            .map_or_else(|| Membership::Leave, |member| member.membership())
+            .map_or(Membership::Leave, |member| member.membership())
     }
 }
