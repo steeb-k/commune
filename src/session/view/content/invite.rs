@@ -138,7 +138,7 @@ mod imp {
                             let selection = session.sidebar_list_model().selection_model();
                             if let Some(selected_room) = selection.selected_item().and_downcast::<Room>() {
                                 if selected_room == *room {
-                                    selection.set_selected_item(Option::<glib::Object>::None);
+                                    selection.set_selected_item(None::<glib::Object>);
                                 }
                             }
                         }

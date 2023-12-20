@@ -124,7 +124,7 @@ impl AudioRow {
                 // The GStreamer backend doesn't work with input streams so
                 // we need to store the file.
                 // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                let (file, _) = gio::File::new_tmp(Option::<String>::None).unwrap();
+                let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
                 file.replace_contents(
                     &data,
                     None,

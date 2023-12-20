@@ -153,7 +153,7 @@ mod imp {
                 );
             } else {
                 self.keywords.bind_model(
-                    Option::<&gio::ListModel>::None,
+                    None::<&gio::ListModel>,
                     clone!(@weak obj => @default-return { adw::ActionRow::new().upcast() }, move |item| obj.create_keyword_row(item)),
                 );
             }
