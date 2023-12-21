@@ -15,7 +15,7 @@ use matrix_sdk::{
 use tracing::error;
 
 use super::{Event, Member, Membership, Room};
-use crate::{spawn, spawn_tokio, utils::LoadingState};
+use crate::{prelude::*, spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -67,6 +67,12 @@ mod imp {
         /// Set the room these members belong to.
         fn set_room(&self, room: Room) {
             let obj = self.obj();
+
+            let own_member = room.own_member();
+            self.members
+                .borrow_mut()
+                .insert(own_member.user_id(), own_member);
+
             self.room.set(Some(&room));
             obj.notify_room();
 
@@ -90,7 +96,9 @@ glib::wrapper! {
 
 impl MemberList {
     pub fn new(room: &Room) -> Self {
-        glib::Object::builder().property("room", room).build()
+        glib::Object::builder::<Self>()
+            .property("room", room)
+            .build()
     }
 
     /// Set whether this list is being loaded.

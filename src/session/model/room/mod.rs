@@ -72,7 +72,7 @@ mod imp {
         /// The room API of the SDK.
         pub matrix_room: OnceCell<MatrixRoom>,
         /// The current session.
-        #[property(get, construct_only)]
+        #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
         /// The name that is set for this room.
         ///
@@ -92,6 +92,9 @@ mod imp {
         /// The timeline of this room.
         #[property(get)]
         pub timeline: OnceCell<Timeline>,
+        /// The member corresponding to our own user.
+        #[property(get)]
+        pub own_member: OnceCell<Member>,
         /// The members of this room.
         #[property(get)]
         pub members: glib::WeakRef<MemberList>,
@@ -179,6 +182,14 @@ mod imp {
     impl SidebarItemImpl for Room {}
 
     impl Room {
+        /// Set the current session
+        fn set_session(&self, session: Session) {
+            self.session.set(Some(&session));
+
+            let own_member = Member::new(&self.obj(), session.user_id());
+            self.own_member.set(own_member).unwrap();
+        }
+
         /// The room API of the SDK.
         pub fn matrix_room(&self) -> &MatrixRoom {
             self.matrix_room.get().unwrap()
@@ -290,6 +301,13 @@ impl Room {
             glib::Priority::DEFAULT_IDLE,
             clone!(@weak self as obj => async move {
                 obj.load_display_name().await;
+            })
+        );
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_own_member().await;
             })
         );
 
@@ -807,6 +825,24 @@ impl Room {
         typing_list.update(members);
     }
 
+    /// Create and load our own member from the store.
+    async fn load_own_member(&self) {
+        let own_member = self.own_member();
+        let user_id = own_member.user_id();
+        let matrix_room = self.matrix_room().clone();
+
+        let handle = spawn_tokio!(async move { matrix_room.get_member_no_sync(&user_id).await });
+
+        match handle.await.unwrap() {
+            Ok(Some(matrix_member)) => own_member.update_from_room_member(&matrix_member),
+            Ok(None) => {}
+            Err(error) => error!(
+                "Failed to load own member for room {}: {error}",
+                self.room_id()
+            ),
+        }
+    }
+
     /// The members of this room.
     ///
     /// This creates the [`MemberList`] if no strong reference to it exists.
@@ -984,6 +1020,8 @@ impl Room {
             .iter()
             .flat_map(|e| e.event.deserialize().ok())
             .collect();
+        let own_member = self.own_member();
+        let own_user_id = own_member.user_id();
 
         for event in events.iter() {
             if let AnySyncTimelineEvent::State(state_event) = event {
@@ -991,6 +1029,8 @@ impl Room {
                     AnySyncStateEvent::RoomMember(SyncStateEvent::Original(event)) => {
                         if let Some(members) = self.members() {
                             members.update_member_for_member_event(event);
+                        } else if event.state_key == own_user_id {
+                            own_member.update_from_member_event(event);
                         }
 
                         // If we show the other user's avatar or name, a member event might change
