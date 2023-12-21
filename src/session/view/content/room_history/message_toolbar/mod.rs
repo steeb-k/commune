@@ -1,3 +1,4 @@
+use adw::subclass::prelude::*;
 use ashpd::{
     desktop::location::{Accuracy, LocationProxy},
     WindowIdentifier,
@@ -9,7 +10,6 @@ use gtk::{
     gdk, gio,
     glib::{self, clone},
     prelude::*,
-    subclass::prelude::*,
     CompositeTemplate,
 };
 use matrix_sdk::{
@@ -87,6 +87,8 @@ mod imp {
         pub markdown_enabled: Cell<bool>,
         pub completion: CompletionPopover,
         #[template_child]
+        pub main_stack: TemplateChild<gtk::Stack>,
+        #[template_child]
         pub message_entry: TemplateChild<sourceview::View>,
         #[template_child]
         pub related_event_header: TemplateChild<LabelWithWidgets>,
@@ -104,7 +106,7 @@ mod imp {
     impl ObjectSubclass for MessageToolbar {
         const NAME: &'static str = "MessageToolbar";
         type Type = super::MessageToolbar;
-        type ParentType = gtk::Box;
+        type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             CustomEntry::static_type();
@@ -252,7 +254,7 @@ mod imp {
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
 
-            obj.set_sensitive(obj.can_send_messages());
+            obj.update_can_send_messages();
         }
 
         fn dispose(&self) {
@@ -261,7 +263,7 @@ mod imp {
     }
 
     impl WidgetImpl for MessageToolbar {}
-    impl BoxImpl for MessageToolbar {}
+    impl BinImpl for MessageToolbar {}
 
     impl MessageToolbar {
         /// Set the room currently displayed.
@@ -294,7 +296,7 @@ mod imp {
 glib::wrapper! {
     /// A toolbar with different actions to send messages.
     pub struct MessageToolbar(ObjectSubclass<imp::MessageToolbar>)
-        @extends gtk::Widget, gtk::Box, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
@@ -348,6 +350,10 @@ impl MessageToolbar {
     }
 
     pub fn set_reply_to(&self, event: Event) {
+        if !self.can_send_messages() {
+            return;
+        }
+
         let imp = self.imp();
         imp.related_event_header
             .set_widgets(vec![Pill::for_user(event.sender().upcast_ref())]);
@@ -366,6 +372,9 @@ impl MessageToolbar {
 
     /// Set the event to edit.
     pub fn set_edit(&self, event: Event) {
+        if !self.can_send_messages() {
+            return;
+        }
         let Some(room) = event.room() else {
             return;
         };
@@ -709,6 +718,10 @@ impl MessageToolbar {
     }
 
     pub async fn send_file(&self, file: gio::File) {
+        if !self.can_send_messages() {
+            return;
+        }
+
         match load_file(&file).await {
             Ok((bytes, file_info)) => {
                 let window = self.root().and_downcast::<gtk::Window>().unwrap();
@@ -855,9 +868,13 @@ impl MessageToolbar {
         if self.can_send_messages() == can_send {
             return;
         }
+        let imp = self.imp();
 
-        self.imp().can_send_messages.set(can_send);
-        self.set_sensitive(can_send);
+        imp.can_send_messages.set(can_send);
+
+        let page = if can_send { "enabled" } else { "disabled" };
+        imp.main_stack.set_visible_child_name(page);
+
         self.notify_can_send_messages();
     }
 
