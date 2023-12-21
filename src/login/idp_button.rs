@@ -3,7 +3,9 @@ use matrix_sdk::ruma::api::client::session::get_login_types::v3::{
     IdentityProvider, IdentityProviderBrand,
 };
 
-#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+use crate::gettext_f;
+
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::Display)]
 #[repr(i32)]
 #[enum_type(name = "IdpBrand")]
 pub enum IdpBrand {
@@ -59,32 +61,6 @@ impl TryFrom<&IdentityProviderBrand> for IdpBrand {
     }
 }
 
-impl From<IdpBrand> for &str {
-    fn from(val: IdpBrand) -> Self {
-        let dark = adw::StyleManager::default().is_dark();
-        match val {
-            IdpBrand::Apple => {
-                if dark {
-                    "idp-apple-dark"
-                } else {
-                    "idp-apple"
-                }
-            }
-            IdpBrand::Facebook => "idp-facebook",
-            IdpBrand::GitHub => {
-                if dark {
-                    "idp-github-dark"
-                } else {
-                    "idp-github"
-                }
-            }
-            IdpBrand::GitLab => "idp-gitlab",
-            IdpBrand::Google => "idp-google",
-            IdpBrand::Twitter => "idp-twitter",
-        }
-    }
-}
-
 mod imp {
     use std::cell::{Cell, OnceCell};
 
@@ -129,6 +105,15 @@ mod imp {
             adw::StyleManager::default()
                 .connect_dark_notify(clone!(@weak obj => move |_| obj.update_icon()));
             obj.update_icon();
+
+            obj.set_tooltip_text(Some(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                // This is the tooltip text on buttons to log in via Single Sign-On.
+                // The brand is something like Facebook, Apple, GitHub…
+                "Log in with {brand}",
+                &[("brand", &self.brand.get().to_string())],
+            )))
         }
     }
 

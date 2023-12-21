@@ -21,6 +21,7 @@ src/greeter.ui
 src/login/advanced_dialog.ui
 src/login/homeserver_page.rs
 src/login/homeserver_page.ui
+src/login/idp_button.rs
 src/login/method_page.rs
 src/login/method_page.ui
 src/login/mod.rs
