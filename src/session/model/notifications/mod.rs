@@ -129,7 +129,7 @@ impl Notifications {
             }
         };
 
-        let matrix_room = room.matrix_room();
+        let matrix_room = room.matrix_room().clone();
         let sender_id = event.sender();
         let owned_sender_id = sender_id.to_owned();
         let handle =

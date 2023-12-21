@@ -69,10 +69,8 @@ mod imp {
     #[derive(Default, glib::Properties)]
     #[properties(wrapper_type = super::Room)]
     pub struct Room {
-        /// The ID of this room.
-        #[property(set = Self::set_room_id, construct_only, type = String)]
-        pub room_id: OnceCell<OwnedRoomId>,
-        pub matrix_room: RefCell<Option<MatrixRoom>>,
+        /// The room API of the SDK.
+        pub matrix_room: OnceCell<MatrixRoom>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
@@ -184,7 +182,6 @@ mod imp {
                 return;
             };
 
-            obj.set_matrix_room(session.client().get_room(obj.room_id()).unwrap());
             self.timeline.set(Timeline::new(&obj)).unwrap();
 
             self.timeline
@@ -192,7 +189,9 @@ mod imp {
                 .unwrap()
                 .sdk_items()
                 .connect_items_changed(clone!(@weak obj => move |_, _, _, _| {
-                    obj.update_is_read();
+                    spawn!(clone!(@weak obj => async move {
+                        obj.update_is_read().await;
+                    }));
                 }));
 
             // Initialize the avatar first since loading is async.
@@ -232,9 +231,9 @@ mod imp {
     impl SidebarItemImpl for Room {}
 
     impl Room {
-        /// Set the ID of this room.
-        fn set_room_id(&self, room_id: String) {
-            self.room_id.set(RoomId::parse(room_id).unwrap()).unwrap();
+        /// The room API of the SDK.
+        pub fn matrix_room(&self) -> &MatrixRoom {
+            self.matrix_room.get().unwrap()
         }
 
         /// The name of this room.
@@ -242,7 +241,7 @@ mod imp {
         /// This can be empty, the display name should be used instead in the
         /// interface.
         fn name(&self) -> Option<String> {
-            self.matrix_room.borrow().as_ref().unwrap().name()
+            self.matrix_room().name()
         }
 
         /// The display name of this room.
@@ -254,29 +253,21 @@ mod imp {
 
         /// The number of unread notifications of this room.
         fn notification_count(&self) -> u64 {
-            self.matrix_room
-                .borrow()
-                .as_ref()
-                .unwrap()
+            self.matrix_room()
                 .unread_notification_counts()
                 .notification_count
         }
 
         /// The topic of this room.
         fn topic(&self) -> Option<String> {
-            self.matrix_room
-                .borrow()
-                .as_ref()
-                .unwrap()
-                .topic()
-                .filter(|topic| {
-                    !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some()
-                })
+            self.matrix_room().topic().filter(|topic| {
+                !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some()
+            })
         }
 
         /// Whether this room was tombstoned.
         fn is_tombstoned(&self) -> bool {
-            self.matrix_room.borrow().as_ref().unwrap().is_tombstoned()
+            self.matrix_room().is_tombstoned()
         }
 
         /// The ID of the successor of this Room, if this room was upgraded.
@@ -304,13 +295,14 @@ glib::wrapper! {
 }
 
 impl Room {
-    pub fn new(session: &Session, room_id: &RoomId, metainfo: Option<&RoomMetainfo>) -> Self {
+    pub fn new(session: &Session, matrix_room: MatrixRoom, metainfo: Option<RoomMetainfo>) -> Self {
         let this = glib::Object::builder::<Self>()
             .property("session", session)
-            .property("room-id", &room_id.to_string())
             .build();
 
-        if let Some(&RoomMetainfo {
+        this.set_matrix_room(matrix_room);
+
+        if let Some(RoomMetainfo {
             latest_activity,
             is_read,
         }) = metainfo
@@ -324,23 +316,19 @@ impl Room {
         this
     }
 
-    /// The ID of this room.
-    pub fn room_id(&self) -> &RoomId {
-        self.imp().room_id.get().unwrap()
+    /// The room API of the SDK.
+    pub fn matrix_room(&self) -> &MatrixRoom {
+        self.imp().matrix_room()
     }
 
-    pub fn matrix_room(&self) -> MatrixRoom {
-        self.imp().matrix_room.borrow().as_ref().unwrap().clone()
-    }
-
-    /// Set the new sdk room struct represented by this `Room`
+    /// Set the room API of the SDK.
     fn set_matrix_room(&self, matrix_room: MatrixRoom) {
         let imp = self.imp();
 
         self.set_joined_members_count(matrix_room.joined_members_count());
         self.set_is_join_rule_public(matrix_room.join_rule() == JoinRule::Public);
 
-        imp.matrix_room.replace(Some(matrix_room));
+        imp.matrix_room.set(matrix_room).unwrap();
 
         self.load_display_name();
         self.load_predecessor();
@@ -362,6 +350,11 @@ impl Room {
         }));
     }
 
+    /// The ID of this room.
+    pub fn room_id(&self) -> &RoomId {
+        self.matrix_room().room_id()
+    }
+
     /// The state of the room.
     pub fn state(&self) -> RoomState {
         self.matrix_room().state()
@@ -378,7 +371,7 @@ impl Room {
     }
 
     pub async fn load_is_direct(&self) {
-        let matrix_room = self.matrix_room();
+        let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.is_direct().await });
 
         match handle.await.unwrap() {
@@ -441,8 +434,7 @@ impl Room {
             return Ok(());
         }
 
-        let matrix_room = self.matrix_room();
-
+        let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.forget().await });
 
         match handle.await.unwrap() {
@@ -490,7 +482,6 @@ impl Room {
     /// Note: Rooms can't be moved to the invite category and they can't be
     /// moved once they are upgraded.
     pub async fn set_category(&self, category: RoomType) -> MatrixResult<()> {
-        let matrix_room = self.matrix_room();
         let previous_category = self.category();
 
         if previous_category == category {
@@ -517,6 +508,7 @@ impl Room {
 
         self.set_category_internal(category);
 
+        let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move {
             match matrix_room.state() {
                 RoomState::Invited => match category {
@@ -653,7 +645,7 @@ impl Room {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Couldn’t set the room category: {error}");
+                error!("Could not set the room category: {error}");
 
                 // Load the previous category
                 self.load_category();
@@ -670,12 +662,12 @@ impl Room {
         }
 
         let matrix_room = self.matrix_room();
-
         match matrix_room.state() {
             RoomState::Joined => {
                 if matrix_room.is_space() {
                     self.set_category_internal(RoomType::Space);
                 } else {
+                    let matrix_room = matrix_room.clone();
                     let tags = spawn_tokio!(async move { matrix_room.tags().await });
 
                     spawn!(
@@ -778,7 +770,9 @@ impl Room {
         for (_event_id, receipts) in content.iter() {
             if let Some(users) = receipts.get(&ReceiptType::Read) {
                 if users.contains_key(own_user_id) {
-                    self.update_is_read();
+                    spawn!(clone!(@weak self as obj => async move {
+                        obj.update_is_read().await;
+                    }));
                 }
             }
         }
@@ -843,13 +837,7 @@ impl Room {
             return;
         }
 
-        let counts = self
-            .imp()
-            .matrix_room
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .unread_notification_counts();
+        let counts = self.matrix_room().unread_notification_counts();
 
         if counts.highlight_count > 0 {
             highlight = HighlightFlags::all();
@@ -870,14 +858,12 @@ impl Room {
         self.notify_highlight();
     }
 
-    fn update_is_read(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            if let Some(has_unread) = obj.timeline().has_unread_messages().await {
-                obj.set_is_read(!has_unread);
-            }
+    async fn update_is_read(&self) {
+        if let Some(has_unread) = self.timeline().has_unread_messages().await {
+            self.set_is_read(!has_unread);
+        }
 
-            obj.update_highlight();
-        }));
+        self.update_highlight();
     }
 
     /// Set whether all messages of this room are read.
@@ -901,7 +887,7 @@ impl Room {
     }
 
     fn load_display_name(&self) {
-        let matrix_room = self.matrix_room();
+        let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.display_name().await });
 
         spawn!(
@@ -963,6 +949,7 @@ impl Room {
         };
 
         let inviter_id_clone = inviter_id.clone();
+        let matrix_room = matrix_room.clone();
         let handle =
             spawn_tokio!(async move { matrix_room.get_member_no_sync(&inviter_id_clone).await });
 
@@ -1052,7 +1039,7 @@ impl Room {
     }
 
     fn load_power_levels(&self) {
-        let matrix_room = self.matrix_room();
+        let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move {
             let state_event = match matrix_room
                 .get_state_event_static::<RoomPowerLevelsEventContent>()
@@ -1100,7 +1087,7 @@ impl Room {
 
     /// Send a `key` reaction for the `relates_to` event ID in this room.
     pub async fn send_reaction(&self, key: String, relates_to: OwnedEventId) -> MatrixResult<()> {
-        let matrix_room = self.matrix_room();
+        let matrix_room = self.matrix_room().clone();
 
         spawn_tokio!(async move {
             matrix_room
@@ -1124,6 +1111,7 @@ impl Room {
             return Ok(());
         };
 
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move {
             matrix_room
                 .redact(&redacted_event_id, reason.as_deref(), None)
@@ -1142,6 +1130,7 @@ impl Room {
             return;
         };
 
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move { matrix_room.typing_notice(is_typing).await });
 
         spawn!(
@@ -1175,6 +1164,7 @@ impl Room {
             return Ok(());
         }
 
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move { matrix_room.join().await });
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
@@ -1193,6 +1183,7 @@ impl Room {
             return Ok(());
         }
 
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move { matrix_room.leave().await });
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
@@ -1375,6 +1366,7 @@ impl Room {
             return;
         };
 
+        let matrix_room = matrix_room.clone();
         let body = body.to_string();
         spawn_tokio!(async move {
             // Needed to hold the thumbnail data until it is sent.
@@ -1422,6 +1414,7 @@ impl Room {
         }
 
         let user_ids_clone = user_ids.to_owned();
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move {
             let invitations = user_ids_clone
                 .iter()
@@ -1485,7 +1478,7 @@ impl Room {
     }
 
     async fn setup_is_encrypted(&self) {
-        let matrix_room = self.matrix_room();
+        let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.is_encrypted().await });
 
         if handle
@@ -1540,6 +1533,7 @@ impl Room {
         // We don't have the active member count for invited rooms so process them too.
         if let Some(session) = self.session() {
             if avatar_url.is_none() && members_count > 0 && members_count <= 2 {
+                let matrix_room = matrix_room.clone();
                 let handle =
                     spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
                 let members = match handle.await.unwrap() {

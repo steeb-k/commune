@@ -241,7 +241,7 @@ impl VerificationList {
                             continue;
                         };
 
-                        let matrix_room = room.matrix_room();
+                        let matrix_room = room.matrix_room().clone();
                         let owned_user_id_to_verify = user_id_to_verify.clone();
                         let handle = spawn_tokio!(async move {
                             matrix_room

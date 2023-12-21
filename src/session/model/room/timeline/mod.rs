@@ -483,10 +483,9 @@ impl Timeline {
             let Some(room) = self.room() else {
                 return Err(MatrixError::UnknownError("Failed to upgrade Room".into()));
             };
-            let matrix_room = room.matrix_room();
+            let matrix_room = room.matrix_room().clone();
             let event_id_clone = event_id.clone();
-            let handle =
-                spawn_tokio!(async move { matrix_room.event(event_id_clone.as_ref()).await });
+            let handle = spawn_tokio!(async move { matrix_room.event(&event_id_clone).await });
             match handle.await.unwrap() {
                 Ok(room_event) => room_event.event.deserialize_as().map_err(Into::into),
                 Err(error) => {
@@ -505,64 +504,61 @@ impl Timeline {
         };
         let imp = self.imp();
         let room_id = room.room_id().to_owned();
-        let matrix_room = room.matrix_room();
+        let matrix_room = room.matrix_room().clone();
 
         let matrix_timeline = spawn_tokio!(async move {
-            Arc::new(
-                matrix_room
-                    .timeline_builder()
-                    .event_filter(|any, room_version| {
-                        // Make sure we don't try to show events that can't be shown.
-                        if !default_event_filter(any, room_version) {
-                            return false;
-                        }
+            matrix_room
+                .timeline_builder()
+                .event_filter(|any, room_version| {
+                    // Make sure we don't try to show events that can't be shown.
+                    if !default_event_filter(any, room_version) {
+                        return false;
+                    }
 
-                        // Only show events we want.
-                        match any {
-                            AnySyncTimelineEvent::MessageLike(msg) => match msg {
-                                AnySyncMessageLikeEvent::RoomMessage(
-                                    SyncMessageLikeEvent::Original(ev),
-                                ) => {
-                                    matches!(
-                                        ev.content.msgtype,
-                                        MessageType::Audio(_)
-                                            | MessageType::Emote(_)
-                                            | MessageType::File(_)
-                                            | MessageType::Image(_)
-                                            | MessageType::Location(_)
-                                            | MessageType::Notice(_)
-                                            | MessageType::ServerNotice(_)
-                                            | MessageType::Text(_)
-                                            | MessageType::Video(_)
-                                            | MessageType::VerificationRequest(_)
-                                    )
-                                }
-                                AnySyncMessageLikeEvent::Sticker(
-                                    SyncMessageLikeEvent::Original(_),
+                    // Only show events we want.
+                    match any {
+                        AnySyncTimelineEvent::MessageLike(msg) => match msg {
+                            AnySyncMessageLikeEvent::RoomMessage(
+                                SyncMessageLikeEvent::Original(ev),
+                            ) => {
+                                matches!(
+                                    ev.content.msgtype,
+                                    MessageType::Audio(_)
+                                        | MessageType::Emote(_)
+                                        | MessageType::File(_)
+                                        | MessageType::Image(_)
+                                        | MessageType::Location(_)
+                                        | MessageType::Notice(_)
+                                        | MessageType::ServerNotice(_)
+                                        | MessageType::Text(_)
+                                        | MessageType::Video(_)
+                                        | MessageType::VerificationRequest(_)
                                 )
-                                | AnySyncMessageLikeEvent::RoomEncrypted(
-                                    SyncMessageLikeEvent::Original(_),
-                                ) => true,
-                                _ => false,
-                            },
-                            AnySyncTimelineEvent::State(state) => matches!(
-                                state,
-                                AnySyncStateEvent::RoomMember(_)
-                                    | AnySyncStateEvent::RoomCreate(_)
-                                    | AnySyncStateEvent::RoomEncryption(_)
-                                    | AnySyncStateEvent::RoomThirdPartyInvite(_)
-                                    | AnySyncStateEvent::RoomTombstone(_)
-                            ),
-                        }
-                    })
-                    .add_failed_to_parse(false)
-                    .build()
-                    .await,
-            )
+                            }
+                            AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))
+                            | AnySyncMessageLikeEvent::RoomEncrypted(
+                                SyncMessageLikeEvent::Original(_),
+                            ) => true,
+                            _ => false,
+                        },
+                        AnySyncTimelineEvent::State(state) => matches!(
+                            state,
+                            AnySyncStateEvent::RoomMember(_)
+                                | AnySyncStateEvent::RoomCreate(_)
+                                | AnySyncStateEvent::RoomEncryption(_)
+                                | AnySyncStateEvent::RoomThirdPartyInvite(_)
+                                | AnySyncStateEvent::RoomTombstone(_)
+                        ),
+                    }
+                })
+                .add_failed_to_parse(false)
+                .build()
+                .await
         })
         .await
         .unwrap();
 
+        let matrix_timeline = Arc::new(matrix_timeline);
         imp.timeline.set(matrix_timeline.clone()).unwrap();
 
         let (values, timeline_stream) = matrix_timeline.subscribe().await;

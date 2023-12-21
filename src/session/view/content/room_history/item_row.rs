@@ -424,7 +424,7 @@ impl ItemRow {
                         let Some(room) = event.room() else {
                             return;
                         };
-                        let matrix_room = room.matrix_room();
+                        let matrix_room = room.matrix_room().clone();
                         let event_id = event.event_id().unwrap();
                         spawn!(clone!(@weak widget => async move {
                             let handle = spawn_tokio!(async move {

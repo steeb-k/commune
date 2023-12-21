@@ -522,8 +522,8 @@ impl MediaViewer {
         let Some(event_id) = self.imp().event_id.borrow().clone() else {
             return;
         };
-        let matrix_room = room.matrix_room();
 
+        let matrix_room = room.matrix_room().clone();
         let handle =
             spawn_tokio!(async move { matrix_room.matrix_to_event_permalink(event_id).await });
 

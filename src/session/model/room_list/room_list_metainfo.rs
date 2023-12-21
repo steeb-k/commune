@@ -33,15 +33,11 @@ impl RoomListMetainfo {
             return IndexMap::new();
         };
         let client = session.client();
-        let room_ids = client
-            .rooms()
-            .into_iter()
-            .map(|room| room.room_id().to_owned())
-            .collect::<HashSet<_>>();
 
         // Load the serialized map from the store.
+        let client_clone = client.clone();
         let handle = spawn_tokio!(async move {
-            client
+            client_clone
                 .store()
                 .get_custom_value(ROOMS_METAINFO_KEY.as_bytes())
                 .await
@@ -62,25 +58,28 @@ impl RoomListMetainfo {
             }
         };
 
-        // Remove unknown rooms.
-        rooms_metainfo.retain(|room_id, _| room_ids.contains(room_id));
-
         // We need to acquire the lock now to make sure we have the full map before any
         // change happens and the map tries to be persisted.
         let mut rooms_metainfo_guard = self.rooms_metainfo.lock().await;
 
         // Restore rooms and listen to changes.
-        let mut rooms = IndexMap::with_capacity(room_ids.len());
-        for room_id in room_ids {
-            let metainfo = rooms_metainfo.get(&room_id);
-            let room = Room::new(&session, &room_id, metainfo);
+        let matrix_rooms = client.rooms();
+        let mut rooms = IndexMap::with_capacity(matrix_rooms.len());
+
+        for matrix_room in matrix_rooms {
+            let room_id = matrix_room.room_id().to_owned();
+            let metainfo = rooms_metainfo.remove(&room_id);
+
+            let room = Room::new(&session, matrix_room, metainfo);
 
             self.watch_room(&room);
 
+            if let Some(metainfo) = metainfo {
+                rooms_metainfo_guard.insert(room_id.clone(), metainfo);
+            }
+
             rooms.insert(room_id, room);
         }
-
-        *rooms_metainfo_guard = rooms_metainfo;
 
         rooms
     }

@@ -149,6 +149,7 @@ impl MemberList {
         }
 
         // We don't have everything locally, request the rest from the server.
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move {
             let mut memberships = RoomMemberships::all();
             memberships.remove(RoomMemberships::LEAVE);

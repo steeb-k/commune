@@ -11,7 +11,7 @@ use matrix_sdk::{
     RoomMemberships,
 };
 use ruma::UserId;
-use tracing::error;
+use tracing::{error, warn};
 
 mod room_list_metainfo;
 
@@ -260,16 +260,23 @@ impl RoomList {
             return;
         };
         let imp = self.imp();
+        let client = session.client();
 
         let mut new_rooms = HashMap::new();
 
         for (room_id, left_room) in rooms.leave {
             let room = match self.get(&room_id) {
                 Some(room) => room,
-                None => new_rooms
-                    .entry(room_id.clone())
-                    .or_insert_with_key(|room_id| Room::new(&session, room_id, None))
-                    .clone(),
+                None => match client.get_room(&room_id) {
+                    Some(matrix_room) => new_rooms
+                        .entry(room_id.clone())
+                        .or_insert_with(|| Room::new(&session, matrix_room, None))
+                        .clone(),
+                    None => {
+                        warn!("Could not find left room {room_id}");
+                        continue;
+                    }
+                },
             };
 
             self.pending_rooms_remove((*room_id).into());
@@ -280,10 +287,16 @@ impl RoomList {
         for (room_id, joined_room) in rooms.join {
             let room = match self.get(&room_id) {
                 Some(room) => room,
-                None => new_rooms
-                    .entry(room_id.clone())
-                    .or_insert_with_key(|room_id| Room::new(&session, room_id, None))
-                    .clone(),
+                None => match client.get_room(&room_id) {
+                    Some(matrix_room) => new_rooms
+                        .entry(room_id.clone())
+                        .or_insert_with(|| Room::new(&session, matrix_room, None))
+                        .clone(),
+                    None => {
+                        warn!("Could not find joined room {room_id}");
+                        continue;
+                    }
+                },
             };
 
             self.pending_rooms_remove((*room_id).into());
@@ -295,10 +308,16 @@ impl RoomList {
         for (room_id, _invited_room) in rooms.invite {
             let room = match self.get(&room_id) {
                 Some(room) => room,
-                None => new_rooms
-                    .entry(room_id.clone())
-                    .or_insert_with_key(|room_id| Room::new(&session, room_id, None))
-                    .clone(),
+                None => match client.get_room(&room_id) {
+                    Some(matrix_room) => new_rooms
+                        .entry(room_id.clone())
+                        .or_insert_with(|| Room::new(&session, matrix_room, None))
+                        .clone(),
+                    None => {
+                        warn!("Could not find invited room {room_id}");
+                        continue;
+                    }
+                },
             };
 
             self.pending_rooms_remove((*room_id).into());
@@ -404,7 +423,7 @@ impl RoomList {
 
         let mut final_rooms = vec![];
         for room in direct_rooms {
-            let matrix_room = room.matrix_room();
+            let matrix_room = room.matrix_room().clone();
             let handle =
                 spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
 

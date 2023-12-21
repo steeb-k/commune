@@ -526,8 +526,8 @@ impl RoomHistory {
 
     pub async fn permalink(&self) {
         if let Some(room) = self.room() {
-            let room = room.matrix_room();
-            let handle = spawn_tokio!(async move { room.matrix_to_permalink().await });
+            let matrix_room = room.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.matrix_to_permalink().await });
             match handle.await.unwrap() {
                 Ok(permalink) => {
                     self.clipboard().set_text(&permalink.to_string());

@@ -345,6 +345,7 @@ impl GeneralPage {
         let (action, weak_action) = OngoingAsyncAction::set(uri.to_string());
         imp.changing_avatar.replace(Some(action));
 
+        let matrix_room = matrix_room.clone();
         let handle =
             spawn_tokio!(async move { matrix_room.set_avatar_url(&uri, Some(image_info)).await });
 
@@ -402,6 +403,7 @@ impl GeneralPage {
         let (action, weak_action) = OngoingAsyncAction::remove();
         imp.changing_avatar.replace(Some(action));
 
+        let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move { matrix_room.remove_avatar().await });
 
         // We don't need to handle the success of the request, we should receive the
