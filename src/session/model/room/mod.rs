@@ -174,58 +174,6 @@ mod imp {
                 Lazy::new(|| vec![Signal::builder("room-forgotten").build()]);
             SIGNALS.as_ref()
         }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-            let Some(session) = obj.session() else {
-                return;
-            };
-
-            self.timeline.set(Timeline::new(&obj)).unwrap();
-
-            self.timeline
-                .get()
-                .unwrap()
-                .sdk_items()
-                .connect_items_changed(clone!(@weak obj => move |_, _, _, _| {
-                    spawn!(clone!(@weak obj => async move {
-                        obj.update_is_read().await;
-                    }));
-                }));
-
-            // Initialize the avatar first since loading is async.
-            self.avatar_data
-                .set(AvatarData::with_image(AvatarImage::new(
-                    &session,
-                    obj.matrix_room().avatar_url().as_deref(),
-                    AvatarUriSource::Room,
-                )))
-                .unwrap();
-            spawn!(clone!(@weak obj => async move {
-                obj.load_avatar().await;
-            }));
-
-            obj.load_power_levels();
-
-            spawn!(clone!(@strong obj => async move {
-                obj.setup_is_encrypted().await;
-            }));
-
-            obj.bind_property("display-name", &obj.avatar_data(), "display-name")
-                .sync_create()
-                .build();
-
-            if !matches!(obj.category(), RoomType::Left | RoomType::Outdated) {
-                // Load the room history when idle
-                spawn!(
-                    glib::source::Priority::LOW,
-                    clone!(@weak obj => async move {
-                        obj.timeline().load().await;
-                    })
-                );
-            }
-        }
     }
 
     impl SidebarItemImpl for Room {}
@@ -330,24 +278,78 @@ impl Room {
 
         imp.matrix_room.set(matrix_room).unwrap();
 
-        self.load_display_name();
+        self.init_avatar_data();
         self.load_predecessor();
         self.load_tombstone();
         self.load_category();
-        self.setup_receipts();
-        self.setup_typing();
+        self.set_up_receipts();
+        self.set_up_typing();
+        self.init_timeline();
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_is_direct().await;
-        }));
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_display_name().await;
+            })
+        );
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.watch_room_info().await;
-        }));
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_is_direct().await;
+            })
+        );
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_inviter().await;
-        }));
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.watch_room_info().await;
+            })
+        );
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_inviter().await;
+            })
+        );
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.init_power_levels().await;
+            })
+        );
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_is_encrypted().await;
+            })
+        );
+    }
+
+    fn init_timeline(&self) {
+        let timeline = Timeline::new(self);
+        self.imp().timeline.set(timeline.clone()).unwrap();
+
+        timeline
+            .sdk_items()
+            .connect_items_changed(clone!(@weak self as obj => move |_, _, _, _| {
+                spawn!(clone!(@weak obj => async move {
+                    obj.update_is_read().await;
+                }));
+            }));
+
+        if !matches!(self.category(), RoomType::Left | RoomType::Outdated) {
+            // Load the room history when idle.
+            spawn!(
+                glib::source::Priority::LOW,
+                clone!(@weak self as obj => async move {
+                    obj.timeline().load().await;
+                })
+            );
+        }
     }
 
     /// The ID of this room.
@@ -655,7 +657,8 @@ impl Room {
         }
     }
 
-    pub fn load_category(&self) {
+    /// Load the category from the SDK.
+    fn load_category(&self) {
         // Don't load the category if this room was upgraded
         if self.category() == RoomType::Outdated {
             return;
@@ -719,7 +722,8 @@ impl Room {
         self.set_joined_members_count(room_info.joined_members_count());
     }
 
-    fn setup_typing(&self) {
+    /// Start listening to typing events.
+    fn set_up_typing(&self) {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             return;
@@ -741,7 +745,8 @@ impl Room {
         });
     }
 
-    fn setup_receipts(&self) {
+    /// Start listening to read receipts events.
+    fn set_up_receipts(&self) {
         // Listen to changes in the read receipts.
         let room_weak = glib::SendWeakRef::from(self.downgrade());
         self.matrix_room().add_event_handler(
@@ -867,7 +872,7 @@ impl Room {
     }
 
     /// Set whether all messages of this room are read.
-    pub fn set_is_read(&self, is_read: bool) {
+    fn set_is_read(&self, is_read: bool) {
         if is_read == self.is_read() {
             return;
         }
@@ -886,31 +891,31 @@ impl Room {
         self.notify_display_name();
     }
 
-    fn load_display_name(&self) {
+    /// Load the display name from the SDK.
+    async fn load_display_name(&self) {
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.display_name().await });
 
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                // FIXME: We should retry to if the request failed
-                match handle.await.unwrap() {
-                        Ok(display_name) => { let name = match display_name {
-                            DisplayName::Named(s) | DisplayName::Calculated(s) | DisplayName::Aliased(s) => {
-                                s
-                            }
-                            // Translators: This is the name of a room that is empty but had another user before.
-                            // Do NOT translate the content between '{' and '}', this is a variable name.
-                            DisplayName::EmptyWas(s) => gettext_f("Empty Room (was {user})", &[("user", &s)]),
-                            // Translators: This is the name of a room without other users.
-                            DisplayName::Empty => gettext("Empty Room"),
-                        };
-                            obj.set_display_name(Some(name))
+        // FIXME: We should retry if the request failed
+        match handle.await.unwrap() {
+            Ok(display_name) => {
+                let name = match display_name {
+                    DisplayName::Named(s)
+                    | DisplayName::Calculated(s)
+                    | DisplayName::Aliased(s) => s,
+                    // Translators: This is the name of a room that is empty but had another user
+                    // before. Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    DisplayName::EmptyWas(s) => {
+                        gettext_f("Empty Room (was {user})", &[("user", &s)])
                     }
-                        Err(error) => error!("Couldn’t fetch display name: {error}"),
+                    // Translators: This is the name of a room without other users.
+                    DisplayName::Empty => gettext("Empty Room"),
                 };
-            })
-        );
+                self.set_display_name(Some(name))
+            }
+            Err(error) => error!("Couldn’t fetch display name: {error}"),
+        };
     }
 
     pub fn power_levels(&self) -> PowerLevels {
@@ -990,8 +995,8 @@ impl Room {
 
                         // If we show the other user's avatar or name, a member event might change
                         // one of them.
-                        self.load_display_name();
                         spawn!(clone!(@weak self as obj => async move {
+                            obj.load_display_name().await;
                             obj.load_avatar().await;
                         }));
                     }
@@ -1002,7 +1007,9 @@ impl Room {
                     }
                     AnySyncStateEvent::RoomName(_) => {
                         self.notify_name();
-                        self.load_display_name();
+                        spawn!(clone!(@weak self as obj => async move {
+                            obj.load_display_name().await;
+                        }));
                     }
                     AnySyncStateEvent::RoomTopic(_) => {
                         self.notify_topic();
@@ -1038,7 +1045,8 @@ impl Room {
         self.notify_latest_activity();
     }
 
-    fn load_power_levels(&self) {
+    /// Initialize the power levels from the store.
+    async fn init_power_levels(&self) {
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move {
             let state_event = match matrix_room
@@ -1060,14 +1068,9 @@ impl Room {
                 })
         });
 
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                if let Some(event) = handle.await.unwrap() {
-                    obj.power_levels().update_from_event(event);
-                }
-            })
-        );
+        if let Some(event) = handle.await.unwrap() {
+            self.power_levels().update_from_event(event);
+        }
     }
 
     /// Send a message with the given `content` in this room.
@@ -1473,11 +1476,12 @@ impl Room {
         // }
 
         spawn!(clone!(@strong self as obj => async move {
-            obj.setup_is_encrypted().await;
+            obj.load_is_encrypted().await;
         }));
     }
 
-    async fn setup_is_encrypted(&self) {
+    /// Load whether the room is encrypted from the SDK.
+    async fn load_is_encrypted(&self) {
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.is_encrypted().await });
 
@@ -1505,6 +1509,32 @@ impl Room {
     /// This is to identify the room easily in logs.
     pub fn human_readable_id(&self) -> String {
         format!("{} ({})", self.display_name(), self.room_id())
+    }
+
+    /// Initialize the avatar data for the room.
+    fn init_avatar_data(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let avatar_data = AvatarData::with_image(AvatarImage::new(
+            &session,
+            self.matrix_room().avatar_url().as_deref(),
+            AvatarUriSource::Room,
+        ));
+
+        self.bind_property("display-name", &avatar_data, "display-name")
+            .sync_create()
+            .build();
+
+        self.imp().avatar_data.set(avatar_data).unwrap();
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_avatar().await;
+            })
+        );
     }
 
     /// Load the avatar for the room.
