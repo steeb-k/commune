@@ -5,6 +5,7 @@ use matrix_sdk::ruma::api::client::session::get_login_types::v3::{
 
 use crate::gettext_f;
 
+/// The possible brands of SSO providers.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, strum::Display)]
 #[repr(i32)]
 #[enum_type(name = "IdpBrand")]
@@ -15,11 +16,11 @@ pub enum IdpBrand {
     GitHub = 2,
     GitLab = 3,
     Google = 4,
-    Twitter = 5,
+    X = 5,
 }
 
 impl IdpBrand {
-    /// Get the icon name of this brand, according to the current theme.
+    /// The icon name of this brand, according to the current theme.
     pub fn icon(&self) -> &'static str {
         let dark = adw::StyleManager::default().is_dark();
         match self {
@@ -40,7 +41,13 @@ impl IdpBrand {
             }
             IdpBrand::GitLab => "idp-gitlab",
             IdpBrand::Google => "idp-google",
-            IdpBrand::Twitter => "idp-twitter",
+            IdpBrand::X => {
+                if dark {
+                    "idp-x-dark"
+                } else {
+                    "idp-x-light"
+                }
+            }
         }
     }
 }
@@ -55,7 +62,7 @@ impl TryFrom<&IdentityProviderBrand> for IdpBrand {
             IdentityProviderBrand::GitHub => Ok(IdpBrand::GitHub),
             IdentityProviderBrand::GitLab => Ok(IdpBrand::GitLab),
             IdentityProviderBrand::Google => Ok(IdpBrand::Google),
-            IdentityProviderBrand::Twitter => Ok(IdpBrand::Twitter),
+            IdentityProviderBrand::Twitter => Ok(IdpBrand::X),
             _ => Err(()),
         }
     }
