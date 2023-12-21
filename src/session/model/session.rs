@@ -8,10 +8,7 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{
-    config::SyncSettings, matrix_auth::MatrixSession, room::Room as MatrixRoom, sync::SyncResponse,
-    Client,
-};
+use matrix_sdk::{config::SyncSettings, matrix_auth::MatrixSession, sync::SyncResponse, Client};
 use ruma::{
     api::client::{
         error::ErrorKind,
@@ -19,10 +16,7 @@ use ruma::{
         session::logout,
     },
     assign,
-    events::{
-        direct::DirectEventContent, room::encryption::SyncRoomEncryptionEvent,
-        GlobalAccountDataEvent,
-    },
+    events::{direct::DirectEventContent, GlobalAccountDataEvent},
 };
 use tokio::task::JoinHandle;
 use tracing::{debug, error};
@@ -219,7 +213,6 @@ impl Session {
 
         self.room_list().load().await;
         self.setup_direct_room_handler();
-        self.setup_room_encrypted_changes();
 
         self.set_state(SessionState::InitialSync);
         self.sync();
@@ -507,25 +500,6 @@ impl Session {
                                 }
                             }
                         });
-                    });
-                }
-            },
-        );
-    }
-
-    fn setup_room_encrypted_changes(&self) {
-        let session_weak = glib::SendWeakRef::from(self.downgrade());
-        self.client().add_event_handler(
-            move |_: SyncRoomEncryptionEvent, matrix_room: MatrixRoom| {
-                let session_weak = session_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        if let Some(session) = session_weak.upgrade() {
-                            if let Some(room) = session.room_list().get(matrix_room.room_id()) {
-                                room.set_is_encrypted(true);
-                            }
-                        }
                     });
                 }
             },

@@ -26,6 +26,7 @@ use ruma::{
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
         room::{
+            encryption::SyncRoomEncryptionEvent,
             join_rules::JoinRule,
             power_levels::{PowerLevelAction, RoomPowerLevelsEventContent},
         },
@@ -296,6 +297,7 @@ impl Room {
         self.set_up_receipts();
         self.set_up_typing();
         self.init_timeline();
+        self.set_up_is_encrypted();
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
@@ -336,13 +338,6 @@ impl Room {
             glib::Priority::DEFAULT_IDLE,
             clone!(@weak self as obj => async move {
                 obj.init_power_levels().await;
-            })
-        );
-
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_is_encrypted().await;
             })
         );
     }
@@ -1500,7 +1495,7 @@ impl Room {
     }
 
     /// Set whether this room is encrypted.
-    pub fn set_is_encrypted(&self, is_encrypted: bool) {
+    fn set_is_encrypted(&self, is_encrypted: bool) {
         let was_encrypted = self.encrypted();
         if was_encrypted == is_encrypted {
             return;
@@ -1518,6 +1513,31 @@ impl Room {
         spawn!(clone!(@strong self as obj => async move {
             obj.load_is_encrypted().await;
         }));
+    }
+
+    /// Listen to changes in room encryption.
+    fn set_up_is_encrypted(&self) {
+        let matrix_room = self.matrix_room();
+
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
+        matrix_room.add_event_handler(move |_: SyncRoomEncryptionEvent| {
+            let obj_weak = obj_weak.clone();
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    if let Some(obj) = obj_weak.upgrade() {
+                        obj.set_is_encrypted(true);
+                    }
+                });
+            }
+        });
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.load_is_encrypted().await;
+            })
+        );
     }
 
     /// Load whether the room is encrypted from the SDK.
