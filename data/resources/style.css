@@ -582,32 +582,32 @@ typing-row .cutout {
   padding: 2px;
 }
 
-.h1 {
+room-history-row .h1, .related-event-content .h1 {
   font-weight: 800;
   font-size: 15pt;
 }
 
-.h2 {
+room-history-row .h2, .related-event-content .h2 {
   font-weight: 800;
   font-size: 14pt;
 }
 
-.h3 {
+room-history-row .h3, .related-event-content .h3  {
   font-weight: 700;
   font-size: 14pt;
 }
 
-.h4 {
+room-history-row .h4, .related-event-content .h4  {
   font-weight: 700;
   font-size: 13pt;
 }
 
-.h5 {
+room-history-row .h5, .related-event-content .h5  {
   font-weight: 700;
   font-size: 12pt;
 }
 
-.h6 {
+room-history-row .h6, .related-event-content .h6  {
   font-weight: 700;
   font-size: 11pt;
 }
