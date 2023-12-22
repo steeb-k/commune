@@ -678,37 +678,37 @@ roomtitle .subtitle {
 
 /* Media History Viewer */
 
-mediahistoryviewer {
+media-history-viewer {
   background: black;
   color: white;
 }
 
-mediahistoryviewer headerbar {
+media-history-viewer headerbar {
   background: none;
   box-shadow: none;
 }
 
-mediahistoryviewer gridview {
+media-history-viewer gridview {
   background: none;
   padding: 2px;
 }
 
-mediahistoryviewer gridview > child {
+media-history-viewer gridview > child {
   background: none;
   padding: 2px;
   /* ease-out-quad */
   transition: 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-mediahistoryviewer gridview > child:hover {
+media-history-viewer gridview > child:hover {
   transform: scale(1.03);
 }
 
-mediahistoryviewer gridview > child:active {
+media-history-viewer gridview > child:active {
   transform: scale(0.98);
 }
 
-mediahistoryvieweritem > overlay > image {
+media-history-vieweritem > overlay > image {
   border-radius: 100%;
   padding: 12px;
   -gtk-icon-size: 24px;
@@ -717,14 +717,14 @@ mediahistoryvieweritem > overlay > image {
 
 /* File History Viewer */
 
-filehistoryviewer listview > row {
+file-history-viewer listview > row {
   border-radius: 0;
 }
 
 
 /* Audio History Viewer */
 
-audiohistoryviewer listview > row {
+audio-history-viewer listview > row {
   border-radius: 0;
 }
 

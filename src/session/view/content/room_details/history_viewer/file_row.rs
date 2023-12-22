@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, CompositeTemplate};
-use matrix_sdk::ruma::events::{room::message::MessageType, AnyMessageLikeEventContent};
+use matrix_sdk::ruma::events::room::message::MessageType;
 use tracing::error;
 
 use super::HistoryViewerEvent;
@@ -72,18 +72,14 @@ mod imp {
             }
 
             if let Some(event) = &event {
-                if let Some(AnyMessageLikeEventContent::RoomMessage(content)) =
-                    event.original_content()
-                {
-                    if let MessageType::File(file) = content.msgtype {
-                        self.title_label.set_label(&file.body);
+                if let MessageType::File(file) = event.message_content() {
+                    self.title_label.set_label(&file.body);
 
-                        if let Some(size) = file.info.and_then(|i| i.size) {
-                            let size = glib::format_size(size.into());
-                            self.size_label.set_label(&size);
-                        } else {
-                            self.size_label.set_label(&gettext("Unknown size"));
-                        }
+                    if let Some(size) = file.info.and_then(|i| i.size) {
+                        let size = glib::format_size(size.into());
+                        self.size_label.set_label(&size);
+                    } else {
+                        self.size_label.set_label(&gettext("Unknown size"));
                     }
                 }
             }

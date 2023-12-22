@@ -3,10 +3,7 @@ use matrix_sdk::{
     media::{MediaEventContent, MediaThumbnailSize},
     ruma::{
         api::client::media::get_content_thumbnail::v3::Method,
-        events::{
-            room::message::{ImageMessageEventContent, MessageType, VideoMessageEventContent},
-            AnyMessageLikeEventContent,
-        },
+        events::room::message::{ImageMessageEventContent, MessageType, VideoMessageEventContent},
         uint,
     },
 };
@@ -48,7 +45,7 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.set_css_name("mediahistoryvieweritem");
+            klass.set_css_name("media-history-vieweritem");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -94,22 +91,14 @@ mod imp {
                 let Some(session) = room.session() else {
                     return;
                 };
-                match event.original_content() {
-                    Some(AnyMessageLikeEventContent::RoomMessage(message)) => match message.msgtype
-                    {
-                        MessageType::Image(content) => {
-                            obj.show_image(content, &session);
-                        }
-                        MessageType::Video(content) => {
-                            obj.show_video(content, &session);
-                        }
-                        _ => {
-                            panic!("Unexpected message type");
-                        }
-                    },
-                    _ => {
-                        panic!("Unexpected message type");
+                match event.message_content() {
+                    MessageType::Image(content) => {
+                        obj.show_image(content, &session);
                     }
+                    MessageType::Video(content) => {
+                        obj.show_video(content, &session);
+                    }
+                    _ => {}
                 }
             }
 

@@ -2,10 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use glib::clone;
 use gtk::{gio, glib, CompositeTemplate};
-use matrix_sdk::ruma::events::{
-    room::message::{AudioMessageEventContent, MessageType},
-    AnyMessageLikeEventContent,
-};
+use matrix_sdk::ruma::events::room::message::{AudioMessageEventContent, MessageType};
 use tracing::warn;
 
 use super::HistoryViewerEvent;
@@ -70,34 +67,30 @@ mod imp {
             let obj = self.obj();
 
             if let Some(event) = &event {
-                if let Some(AnyMessageLikeEventContent::RoomMessage(content)) =
-                    event.original_content()
-                {
-                    if let MessageType::Audio(audio) = content.msgtype {
-                        self.title_label.set_label(&audio.body);
+                if let MessageType::Audio(audio) = event.message_content() {
+                    self.title_label.set_label(&audio.body);
 
-                        if let Some(duration) = audio.info.as_ref().and_then(|i| i.duration) {
-                            let duration_secs = duration.as_secs();
-                            let secs = duration_secs % 60;
-                            let mins = (duration_secs % (60 * 60)) / 60;
-                            let hours = duration_secs / (60 * 60);
+                    if let Some(duration) = audio.info.as_ref().and_then(|i| i.duration) {
+                        let duration_secs = duration.as_secs();
+                        let secs = duration_secs % 60;
+                        let mins = (duration_secs % (60 * 60)) / 60;
+                        let hours = duration_secs / (60 * 60);
 
-                            let duration = if hours > 0 {
-                                format!("{hours:02}:{mins:02}:{secs:02}")
-                            } else {
-                                format!("{mins:02}:{secs:02}")
-                            };
-
-                            self.duration_label.set_label(&duration);
+                        let duration = if hours > 0 {
+                            format!("{hours:02}:{mins:02}:{secs:02}")
                         } else {
-                            self.duration_label.set_label(&gettext("Unknown duration"));
-                        }
+                            format!("{mins:02}:{secs:02}")
+                        };
 
-                        if let Some(session) = event.room().and_then(|r| r.session()) {
-                            spawn!(clone!(@weak obj, @weak session => async move {
-                                obj.download_audio(audio, &session).await;
-                            }));
-                        }
+                        self.duration_label.set_label(&duration);
+                    } else {
+                        self.duration_label.set_label(&gettext("Unknown duration"));
+                    }
+
+                    if let Some(session) = event.room().and_then(|r| r.session()) {
+                        spawn!(clone!(@weak obj, @weak session => async move {
+                            obj.download_audio(audio, &session).await;
+                        }));
                     }
                 }
             }

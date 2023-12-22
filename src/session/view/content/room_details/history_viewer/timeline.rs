@@ -4,7 +4,7 @@ use matrix_sdk::{
     ruma::{
         api::client::filter::{RoomEventFilter, UrlFilter},
         assign,
-        events::{room::message::MessageType, AnyMessageLikeEventContent, MessageLikeEventType},
+        events::MessageLikeEventType,
         uint,
     },
 };
@@ -15,15 +15,6 @@ use crate::{
     session::model::{Room, TimelineState},
     spawn_tokio,
 };
-
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, glib::Enum)]
-#[enum_type(name = "ContentHistoryViewerTimelineFilter")]
-pub enum TimelineFilter {
-    #[default]
-    Media,
-    Files,
-    Audio,
-}
 
 mod imp {
     use std::{
@@ -36,32 +27,29 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::Timeline)]
-    pub struct Timeline {
+    #[properties(wrapper_type = super::HistoryViewerTimeline)]
+    pub struct HistoryViewerTimeline {
         /// The room that this timeline belongs to.
         #[property(get, construct_only)]
         pub room: OnceCell<Room>,
         /// The state of this timeline.
         #[property(get, builder(TimelineState::default()))]
         pub state: Cell<TimelineState>,
-        /// The filter applied to this timeline.
-        #[property(get, construct_only, builder(TimelineFilter::default()))]
-        pub filter: Cell<TimelineFilter>,
         pub list: RefCell<Vec<HistoryViewerEvent>>,
         pub last_token: Arc<Mutex<String>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Timeline {
-        const NAME: &'static str = "ContentHistoryViewerTimeline";
-        type Type = super::Timeline;
+    impl ObjectSubclass for HistoryViewerTimeline {
+        const NAME: &'static str = "HistoryViewerTimeline";
+        type Type = super::HistoryViewerTimeline;
         type Interfaces = (gio::ListModel,);
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Timeline {}
+    impl ObjectImpl for HistoryViewerTimeline {}
 
-    impl ListModelImpl for Timeline {
+    impl ListModelImpl for HistoryViewerTimeline {
         fn item_type(&self) -> glib::Type {
             HistoryViewerEvent::static_type()
         }
@@ -79,19 +67,19 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A room timeline that filters its events by media type.
-    pub struct Timeline(ObjectSubclass<imp::Timeline>)
+    /// A room timeline for the history viewers.
+    pub struct HistoryViewerTimeline(ObjectSubclass<imp::HistoryViewerTimeline>)
         @implements gio::ListModel;
 }
 
-impl Timeline {
-    pub fn new(room: &Room, filter: TimelineFilter) -> Self {
-        glib::Object::builder()
-            .property("room", room)
-            .property("filter", filter)
-            .build()
+impl HistoryViewerTimeline {
+    pub fn new(room: &Room) -> Self {
+        glib::Object::builder().property("room", room).build()
     }
 
+    /// Load more events in the timeline.
+    ///
+    /// Returns `true` if more events can be loaded.
     pub async fn load(&self) -> bool {
         let imp = self.imp();
 
@@ -143,37 +131,7 @@ impl Timeline {
                     let events: Vec<HistoryViewerEvent> = events
                         .chunk
                         .into_iter()
-                        .filter_map(|event| {
-                            let event = HistoryViewerEvent::try_new(event, &room)?;
-
-                            match event.original_content() {
-                                Some(AnyMessageLikeEventContent::RoomMessage(content)) => {
-                                    match self.filter() {
-                                        TimelineFilter::Media
-                                            if matches!(content.msgtype, MessageType::Image(_))
-                                                || matches!(
-                                                    content.msgtype,
-                                                    MessageType::Video(_)
-                                                ) =>
-                                        {
-                                            Some(event)
-                                        }
-                                        TimelineFilter::Files
-                                            if matches!(content.msgtype, MessageType::File(_)) =>
-                                        {
-                                            Some(event)
-                                        }
-                                        TimelineFilter::Audio
-                                            if matches!(content.msgtype, MessageType::Audio(_)) =>
-                                        {
-                                            Some(event)
-                                        }
-                                        _ => None,
-                                    }
-                                }
-                                _ => None,
-                            }
-                        })
+                        .filter_map(|event| HistoryViewerEvent::try_new(&room, event))
                         .collect();
 
                     self.append(events);
@@ -187,7 +145,7 @@ impl Timeline {
                 }
             },
             Err(error) => {
-                error!("Failed to load events: {}", error);
+                error!("Failed to load history viewer timeline events: {error}");
                 self.set_state(TimelineState::Error);
                 false
             }

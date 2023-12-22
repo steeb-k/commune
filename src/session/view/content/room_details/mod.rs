@@ -10,7 +10,9 @@ use gtk::{glib, CompositeTemplate};
 
 pub use self::{
     general_page::GeneralPage,
-    history_viewer::{AudioHistoryViewer, FileHistoryViewer, MediaHistoryViewer},
+    history_viewer::{
+        AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, MediaHistoryViewer,
+    },
     invite_subpage::InviteSubpage,
     members_page::MembersPage,
 };
@@ -26,7 +28,10 @@ pub enum SubpageName {
 }
 
 mod imp {
-    use std::{cell::RefCell, collections::HashMap};
+    use std::{
+        cell::{OnceCell, RefCell},
+        collections::HashMap,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -39,6 +44,9 @@ mod imp {
         /// The room to show the details for.
         #[property(get, construct_only)]
         pub room: RefCell<Option<Room>>,
+        /// The timeline for the history viewers.
+        #[property(get = Self::timeline)]
+        pub timeline: OnceCell<HistoryViewerTimeline>,
         /// The subpages that are loaded.
         ///
         /// We keep them around to avoid reloading them if the user reopens the
@@ -81,6 +89,20 @@ mod imp {
     impl WindowImpl for RoomDetails {}
     impl AdwWindowImpl for RoomDetails {}
     impl PreferencesWindowImpl for RoomDetails {}
+
+    impl RoomDetails {
+        /// The timeline for the history viewers.
+        fn timeline(&self) -> HistoryViewerTimeline {
+            self.timeline
+                .get_or_init(|| {
+                    let room = self.room.borrow().clone().expect(
+                        "timeline should not be requested before RoomDetails is constructed",
+                    );
+                    HistoryViewerTimeline::new(&room)
+                })
+                .clone()
+        }
+    }
 }
 
 glib::wrapper! {
@@ -108,9 +130,9 @@ impl RoomDetails {
         let subpage = subpages.entry(name).or_insert_with(|| match name {
             SubpageName::Members => MembersPage::new(&room).upcast(),
             SubpageName::Invite => InviteSubpage::new(&room).upcast(),
-            SubpageName::MediaHistory => MediaHistoryViewer::new(&room).upcast(),
-            SubpageName::FileHistory => FileHistoryViewer::new(&room).upcast(),
-            SubpageName::AudioHistory => AudioHistoryViewer::new(&room).upcast(),
+            SubpageName::MediaHistory => MediaHistoryViewer::new(&self.timeline()).upcast(),
+            SubpageName::FileHistory => FileHistoryViewer::new(&self.timeline()).upcast(),
+            SubpageName::AudioHistory => AudioHistoryViewer::new(&self.timeline()).upcast(),
         });
 
         if is_initial {

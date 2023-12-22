@@ -1,13 +1,13 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use super::{FileRow, Timeline, TimelineFilter};
-use crate::{session::model::Room, spawn};
+use super::{FileRow, HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline};
+use crate::spawn;
 
 const MIN_N_ITEMS: u32 = 20;
 
 mod imp {
-    use std::{cell::OnceCell, marker::PhantomData};
+    use std::cell::OnceCell;
 
     use glib::subclass::InitializingObject;
 
@@ -19,10 +19,9 @@ mod imp {
     )]
     #[properties(wrapper_type = super::FileHistoryViewer)]
     pub struct FileHistoryViewer {
-        /// The room to search for audio events.
-        #[property(get = Self::room, set = Self::set_room, construct_only)]
-        pub room: PhantomData<Room>,
-        pub room_timeline: OnceCell<Timeline>,
+        /// The timeline containing the file events.
+        #[property(get, set = Self::set_timeline, construct_only)]
+        pub timeline: OnceCell<HistoryViewerTimeline>,
         #[template_child]
         pub list_view: TemplateChild<gtk::ListView>,
     }
@@ -35,9 +34,10 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             FileRow::static_type();
+
             Self::bind_template(klass);
 
-            klass.set_css_name("filehistoryviewer");
+            klass.set_css_name("file-history-viewer");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -52,34 +52,36 @@ mod imp {
     impl NavigationPageImpl for FileHistoryViewer {}
 
     impl FileHistoryViewer {
-        /// The room to search for audio events.
-        fn room(&self) -> Room {
-            self.room_timeline.get().unwrap().room()
-        }
+        /// Set the timeline containing the media events.
+        fn set_timeline(&self, timeline: HistoryViewerTimeline) {
+            let filter = gtk::CustomFilter::new(|obj| {
+                obj.downcast_ref::<HistoryViewerEvent>()
+                    .is_some_and(|e| e.event_type() == HistoryViewerEventType::File)
+            });
+            let filter_model = gtk::FilterListModel::new(Some(timeline.clone()), Some(filter));
 
-        /// Set the room to search for audio events.
-        fn set_room(&self, room: Room) {
-            let timeline = Timeline::new(&room, TimelineFilter::Files);
-            let model = gtk::NoSelection::new(Some(timeline.clone()));
+            let model = gtk::NoSelection::new(Some(filter_model));
             self.list_view.set_model(Some(&model));
 
             // Load an initial number of items
-            spawn!(clone!(@weak self as imp, @weak timeline => async move {
-                while timeline.n_items() < MIN_N_ITEMS {
-                    if !timeline.load().await {
-                        break;
+            spawn!(
+                clone!(@weak self as imp, @weak timeline, @weak model => async move {
+                    while model.n_items() < MIN_N_ITEMS {
+                        if !timeline.load().await {
+                            break;
+                        }
                     }
-                }
 
-                let adj = imp.list_view.vadjustment().unwrap();
-                adj.connect_value_notify(clone!(@weak timeline => move |adj| {
-                    if adj.value() + adj.page_size() * 2.0 >= adj.upper() {
-                        spawn!(async move { timeline.load().await; });
-                    }
-                }));
-            }));
+                    let adj = imp.list_view.vadjustment().unwrap();
+                    adj.connect_value_notify(clone!(@weak timeline => move |adj| {
+                        if adj.value() + adj.page_size() * 2.0 >= adj.upper() {
+                            spawn!(async move { timeline.load().await; });
+                        }
+                    }));
+                })
+            );
 
-            self.room_timeline.set(timeline).unwrap();
+            self.timeline.set(timeline).unwrap();
         }
     }
 }
@@ -91,7 +93,9 @@ glib::wrapper! {
 }
 
 impl FileHistoryViewer {
-    pub fn new(room: &Room) -> Self {
-        glib::Object::builder().property("room", room).build()
+    pub fn new(timeline: &HistoryViewerTimeline) -> Self {
+        glib::Object::builder()
+            .property("timeline", timeline)
+            .build()
     }
 }

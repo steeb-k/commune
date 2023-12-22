@@ -7,11 +7,13 @@ mod media;
 mod media_item;
 mod timeline;
 
-pub use self::{audio::AudioHistoryViewer, file::FileHistoryViewer, media::MediaHistoryViewer};
+pub use self::{
+    audio::AudioHistoryViewer, file::FileHistoryViewer, media::MediaHistoryViewer,
+    timeline::HistoryViewerTimeline,
+};
 use self::{
     audio_row::AudioRow,
-    event::HistoryViewerEvent,
+    event::{HistoryViewerEvent, HistoryViewerEventType},
     file_row::FileRow,
     media_item::MediaItem,
-    timeline::{Timeline, TimelineFilter},
 };
