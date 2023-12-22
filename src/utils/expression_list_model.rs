@@ -75,7 +75,7 @@ impl ExpressionListModel {
 
         let added = if let Some(model) = model {
             let items_changed_handler = model.connect_items_changed(
-                clone!(@weak self as obj => move |_, pos, removed, added| {
+                clone!(@strong self as obj => move |_, pos, removed, added| {
                     obj.watch_items(pos, removed, added);
                     obj.items_changed(pos, removed, added);
                 }),
@@ -135,7 +135,7 @@ impl ExpressionListModel {
             for expression in &expressions {
                 item_watches.push(expression.watch(
                     Some(&item),
-                    clone!(@weak self as obj, @weak item => move || {
+                    clone!(@strong self as obj, @weak item => move || {
                         obj.item_expr_changed(&item);
                     }),
                 ));
