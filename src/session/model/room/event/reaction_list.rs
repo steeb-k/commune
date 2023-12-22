@@ -5,10 +5,9 @@ use super::ReactionGroup;
 use crate::session::model::User;
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{OnceCell, RefCell};
 
     use indexmap::IndexMap;
-    use once_cell::sync::OnceCell;
 
     use super::*;
 
@@ -34,9 +33,11 @@ mod imp {
         fn item_type(&self) -> glib::Type {
             ReactionGroup::static_type()
         }
+
         fn n_items(&self) -> u32 {
             self.reactions.borrow().len() as u32
         }
+
         fn item(&self, position: u32) -> Option<glib::Object> {
             let reactions = self.reactions.borrow();
 
@@ -48,9 +49,9 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// List of all `ReactionGroup`s for a `SupportedEvent`. Implements `ListModel`.
+    /// List of all `ReactionGroup`s for an event.
     ///
-    /// `ReactionGroup`s are sorted in "insertion order".
+    /// Implements `ListModel`. `ReactionGroup`s are sorted in "insertion order".
     pub struct ReactionList(ObjectSubclass<imp::ReactionList>)
         @implements gio::ListModel;
 }

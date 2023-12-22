@@ -11,7 +11,7 @@ pub mod sourceview;
 pub mod template_callbacks;
 
 use std::{
-    cell::RefCell,
+    cell::{OnceCell, RefCell},
     rc::{Rc, Weak},
 };
 
@@ -24,7 +24,7 @@ use gtk::{
     glib::{self, closure, Object},
 };
 use matrix_sdk::ruma::UInt;
-use once_cell::sync::{Lazy, OnceCell};
+use once_cell::sync::Lazy;
 use regex::Regex;
 use tracing::error;
 

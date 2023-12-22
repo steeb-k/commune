@@ -5,10 +5,10 @@ use tracing::warn;
 const ANIMATION_DURATION: u32 = 250;
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
-    use glib::{clone, subclass::Signal, WeakRef};
-    use once_cell::{sync::Lazy, unsync::OnceCell};
+    use glib::{clone, subclass::Signal};
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -20,7 +20,7 @@ mod imp {
         pub reveal_child: Cell<bool>,
         /// The source widget this revealer is transitioning from.
         #[property(get, set = Self::set_source_widget, explicit_notify, nullable)]
-        pub source_widget: WeakRef<gtk::Widget>,
+        pub source_widget: glib::WeakRef<gtk::Widget>,
         pub source_widget_texture: RefCell<Option<gdk::Texture>>,
         pub animation: OnceCell<adw::TimedAnimation>,
     }
