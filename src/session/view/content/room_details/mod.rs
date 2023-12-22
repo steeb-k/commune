@@ -16,32 +16,13 @@ pub use self::{
 };
 use crate::session::model::Room;
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Variant)]
 pub enum SubpageName {
     Members,
     Invite,
     MediaHistory,
     FileHistory,
     AudioHistory,
-}
-
-impl glib::variant::StaticVariantType for SubpageName {
-    fn static_variant_type() -> std::borrow::Cow<'static, glib::VariantTy> {
-        String::static_variant_type()
-    }
-}
-
-impl glib::variant::FromVariant for SubpageName {
-    fn from_variant(variant: &glib::variant::Variant) -> Option<Self> {
-        match variant.str()? {
-            "members" => Some(Self::Members),
-            "invite" => Some(Self::Invite),
-            "media-history" => Some(Self::MediaHistory),
-            "file-history" => Some(Self::FileHistory),
-            "audio-history" => Some(Self::AudioHistory),
-            _ => None,
-        }
-    }
 }
 
 mod imp {
