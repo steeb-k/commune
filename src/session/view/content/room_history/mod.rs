@@ -36,7 +36,7 @@ use crate::{
     prelude::*,
     session::model::{Event, EventKey, MemberList, Room, RoomType, Timeline, TimelineState},
     spawn, spawn_tokio, toast,
-    utils::{message_dialog, template_callbacks::TemplateCallbacks},
+    utils::{message_dialog, template_callbacks::TemplateCallbacks, BoundObject},
     Window,
 };
 
@@ -47,13 +47,12 @@ const READ_TIMEOUT: Duration = Duration::from_secs(5);
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         collections::HashMap,
         marker::PhantomData,
     };
 
-    use glib::{signal::SignalHandlerId, subclass::InitializingObject};
-    use once_cell::unsync::OnceCell;
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
@@ -63,7 +62,7 @@ mod imp {
     pub struct RoomHistory {
         /// The room currently displayed.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: RefCell<Option<Room>>,
+        pub room: BoundObject<Room>,
         /// Whether this is the only view visible, i.e. there is no sidebar.
         #[property(get, set)]
         pub only_view: Cell<bool>,
@@ -72,8 +71,7 @@ mod imp {
         #[property(get = Self::empty)]
         empty: PhantomData<bool>,
         pub room_members: RefCell<Option<MemberList>>,
-        pub room_handlers: RefCell<Vec<SignalHandlerId>>,
-        pub timeline_handlers: RefCell<Vec<SignalHandlerId>>,
+        pub timeline_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         pub is_auto_scrolling: Cell<bool>,
         /// Whether the room history should stick to the newest message in the
         /// timeline.
@@ -224,11 +222,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.take() {
-                for handler in self.room_handlers.take() {
-                    room.disconnect(handler);
-                }
-
+            if let Some(room) = self.room.obj() {
                 for handler in self.timeline_handlers.take() {
                     room.timeline().disconnect(handler);
                 }
@@ -350,23 +344,21 @@ mod imp {
     impl RoomHistory {
         /// Set the room currently displayed.
         fn set_room(&self, room: Option<Room>) {
-            if *self.room.borrow() == room {
+            let prev_room = self.room.obj();
+
+            if prev_room == room {
                 return;
             }
             let obj = self.obj();
 
-            if let Some(room) = &*self.room.borrow() {
-                for handler in self.room_handlers.take() {
-                    room.disconnect(handler);
-                }
-
+            if let Some(room) = prev_room {
                 for handler in self.timeline_handlers.take() {
                     room.timeline().disconnect(handler);
                 }
-
-                for (_, expr_watch) in self.room_expr_watches.take() {
-                    expr_watch.unwatch();
-                }
+            }
+            self.room.disconnect_signals();
+            for (_, expr_watch) in self.room_expr_watches.take() {
+                expr_watch.unwatch();
             }
 
             if let Some(source_id) = self.scroll_timeout.take() {
@@ -376,8 +368,13 @@ mod imp {
                 source_id.remove();
             }
 
-            if let Some(room) = &room {
+            if let Some(room) = room {
                 let timeline = room.timeline();
+
+                // Keep a strong reference to the members list before changing the model, so all
+                // events use the same list.
+                self.room_members
+                    .replace(Some(room.get_or_create_members()));
 
                 let category_handler = room.connect_category_notify(clone!(@weak obj => move |_| {
                     obj.update_room_state();
@@ -398,12 +395,15 @@ mod imp {
                         obj.update_tombstoned_banner();
                     }));
 
-                self.room_handlers.replace(vec![
-                    category_handler,
-                    tombstoned_handler,
-                    successor_handler,
-                    successor_room_handler,
-                ]);
+                self.room.set(
+                    room,
+                    vec![
+                        category_handler,
+                        tombstoned_handler,
+                        successor_handler,
+                        successor_room_handler,
+                    ],
+                );
 
                 let empty_handler = timeline.connect_empty_notify(clone!(@weak obj => move |_| {
                     obj.update_view();
@@ -423,22 +423,16 @@ mod imp {
                     .replace(vec![empty_handler, state_handler]);
 
                 timeline.remove_empty_typing_row();
-                obj.trigger_read_receipts_update();
+                obj.selection_model().set_model(Some(&timeline.items()));
 
-                obj.init_invite_action(room);
+                obj.trigger_read_receipts_update();
+                obj.init_invite_action();
                 obj.scroll_down();
+            } else {
+                obj.selection_model().set_model(None::<&gio::ListModel>);
             }
 
-            // Keep a strong reference to the members list before changing the model, so all
-            // events use the same list.
-            self.room_members
-                .replace(room.as_ref().map(|r| r.get_or_create_members()));
-
-            let model = room.as_ref().map(|room| room.timeline().items());
-            obj.selection_model().set_model(model.as_ref());
-
             self.is_loading.set(false);
-            self.room.replace(room);
             obj.update_view();
             obj.start_loading();
             obj.update_room_state();
@@ -451,7 +445,7 @@ mod imp {
         /// Whether this `RoomHistory` is empty, aka no room is currently
         /// displayed.
         fn empty(&self) -> bool {
-            self.room.borrow().is_none()
+            self.room.obj().is_none()
         }
 
         /// Set whether the room history should stick to the newest message in
@@ -541,7 +535,10 @@ impl RoomHistory {
         }
     }
 
-    fn init_invite_action(&self, room: &Room) {
+    fn init_invite_action(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
         let invite_possible = room.own_user_is_allowed_to_expr(PowerLevelAction::Invite);
 
         let watch = invite_possible.watch(
@@ -584,7 +581,7 @@ impl RoomHistory {
     fn update_room_state(&self) {
         let imp = self.imp();
 
-        if let Some(room) = &*imp.room.borrow() {
+        if let Some(room) = self.room() {
             let menu_visible = if room.category() == RoomType::Left {
                 self.action_set_enabled("room-history.leave", false);
                 false
@@ -599,7 +596,7 @@ impl RoomHistory {
     fn update_view(&self) {
         let imp = self.imp();
 
-        if let Some(room) = &*imp.room.borrow() {
+        if let Some(room) = self.room() {
             if room.timeline().empty() {
                 if room.timeline().state() == TimelineState::Error {
                     imp.stack.set_visible_child(&*imp.error);
