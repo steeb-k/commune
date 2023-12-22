@@ -11,6 +11,7 @@ use ruma::{
     serde::Raw,
     EventId, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
 };
+use serde::Deserialize;
 use tracing::error;
 
 mod reaction_group;
@@ -111,7 +112,7 @@ mod imp {
     #[properties(wrapper_type = super::Event)]
     pub struct Event {
         /// The underlying SDK timeline item.
-        #[property(get = Self::item, set = Self::set_item, type = BoxedEventTimelineItem)]
+        #[property(set = Self::set_item, type = BoxedEventTimelineItem)]
         pub item: RefCell<Option<BoxedEventTimelineItem>>,
         /// The room containing this `Event`.
         #[property(get, set = Self::set_room, construct_only)]
@@ -129,12 +130,35 @@ mod imp {
         /// been echoed back by the server.
         #[property(get = Self::source)]
         pub source: PhantomData<Option<String>>,
+        /// The event ID of this `Event`, if it has been received from the
+        /// server, as a string.
+        #[property(get = Self::event_id_string)]
+        pub event_id_string: PhantomData<Option<String>>,
+        /// The ID of the sender of this `Event`, as a string.
+        #[property(get = Self::sender_id_string)]
+        pub sender_id_string: PhantomData<String>,
         /// The timestamp of this `Event`.
         #[property(get = Self::timestamp)]
         pub timestamp: PhantomData<glib::DateTime>,
+        /// The full formatted timestamp of this `Event`.
+        #[property(get = Self::timestamp_full)]
+        pub timestamp_full: PhantomData<String>,
         /// Whether this `Event` was edited.
         #[property(get = Self::is_edited)]
         pub is_edited: PhantomData<bool>,
+        /// The pretty-formatted JSON source for the latest edit of this
+        /// `Event`, if any.
+        #[property(get = Self::latest_edit_source)]
+        pub latest_edit_source: PhantomData<String>,
+        /// The ID for the latest edit of this `Event`.
+        #[property(get = Self::latest_edit_event_id_string)]
+        pub latest_edit_event_id_string: PhantomData<String>,
+        /// The timestamp for the latest edit of this `Event`, if any.
+        #[property(get = Self::latest_edit_timestamp)]
+        pub latest_edit_timestamp: PhantomData<Option<glib::DateTime>>,
+        /// The full formatted timestamp for the latest edit of this `Event`.
+        #[property(get = Self::latest_edit_timestamp_full)]
+        pub latest_edit_timestamp_full: PhantomData<String>,
         /// Whether this `Event` should be highlighted.
         #[property(get = Self::is_highlighted)]
         pub is_highlighted: PhantomData<bool>,
@@ -152,8 +176,15 @@ mod imp {
                 read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
                 state: Default::default(),
                 source: Default::default(),
+                event_id_string: Default::default(),
+                sender_id_string: Default::default(),
                 timestamp: Default::default(),
+                timestamp_full: Default::default(),
                 is_edited: Default::default(),
+                latest_edit_source: Default::default(),
+                latest_edit_event_id_string: Default::default(),
+                latest_edit_timestamp: Default::default(),
+                latest_edit_timestamp_full: Default::default(),
                 is_highlighted: Default::default(),
                 has_read_receipts: Default::default(),
             }
@@ -204,29 +235,36 @@ mod imp {
     }
 
     impl Event {
-        /// The underlying SDK timeline item of this `Event`.
-        fn item(&self) -> BoxedEventTimelineItem {
-            self.item.borrow().clone().unwrap()
-        }
-
         /// Set the underlying SDK timeline item of this `Event`.
         fn set_item(&self, item: BoxedEventTimelineItem) {
             let obj = self.obj();
 
+            let prev_source = self.source();
             let was_edited = self.is_edited();
             let was_highlighted = self.is_highlighted();
+            let prev_latest_edit_source = self.latest_edit_source();
 
             self.reactions.update(item.reactions().clone());
             obj.update_read_receipts(item.read_receipts());
+
             self.item.replace(Some(item));
 
-            obj.notify_source();
+            if self.source() != prev_source {
+                obj.notify_source();
+            }
             if self.is_edited() != was_edited {
                 obj.notify_is_edited();
             }
             if self.is_highlighted() != was_highlighted {
                 obj.notify_is_highlighted();
             }
+            if self.latest_edit_source() != prev_latest_edit_source {
+                obj.notify_latest_edit_source();
+                obj.notify_latest_edit_event_id_string();
+                obj.notify_latest_edit_timestamp();
+                obj.notify_latest_edit_timestamp_full();
+            }
+
             obj.update_state();
         }
 
@@ -235,16 +273,28 @@ mod imp {
         fn source(&self) -> Option<String> {
             self.item
                 .borrow()
-                .as_ref()
-                .unwrap()
+                .as_ref()?
                 .original_json()
-                .map(|raw| {
-                    // We have to convert it to a Value, because a RawValue cannot be
-                    // pretty-printed.
-                    let json = serde_json::to_value(raw).unwrap();
+                .map(raw_to_pretty_string)
+        }
 
-                    serde_json::to_string_pretty(&json).unwrap()
-                })
+        /// The event ID of this `Event`, if it has been received from the
+        /// server, as a string.
+        fn event_id_string(&self) -> Option<String> {
+            self.item
+                .borrow()
+                .as_ref()?
+                .event_id()
+                .map(ToString::to_string)
+        }
+
+        /// The ID of the sender of this `Event`, as a string.
+        fn sender_id_string(&self) -> String {
+            self.item
+                .borrow()
+                .as_ref()
+                .map(|i| i.sender().to_string())
+                .unwrap_or_default()
         }
 
         /// Set the room that contains this `Event`.
@@ -264,6 +314,14 @@ mod imp {
                 .unwrap()
         }
 
+        /// The full formatted timestamp of this `Event`.
+        fn timestamp_full(&self) -> String {
+            self.timestamp()
+                .format("%c")
+                .map(Into::into)
+                .unwrap_or_default()
+        }
+
         /// Whether this `Event` was edited.
         fn is_edited(&self) -> bool {
             let item_ref = self.item.borrow();
@@ -275,6 +333,64 @@ mod imp {
                 TimelineItemContent::Message(msg) => msg.is_edited(),
                 _ => false,
             }
+        }
+
+        /// The JSON source for the latest edit of this `Event`, if any.
+        fn latest_edit_raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
+            let borrowed_item = self.item.borrow();
+            let Some(item) = borrowed_item.as_ref() else {
+                return None;
+            };
+
+            if let Some(raw) = item.latest_edit_json() {
+                return Some(raw.clone());
+            }
+
+            item.original_json()
+                .and_then(|r| r.get_field::<RawUnsigned>("unsigned").ok().flatten())
+                .and_then(|u| u.relations)
+                .and_then(|r| r.replace)
+        }
+
+        /// The pretty-formatted JSON source for the latest edit of this
+        /// `Event`.
+        fn latest_edit_source(&self) -> String {
+            self.latest_edit_raw()
+                .as_ref()
+                .map(raw_to_pretty_string)
+                .unwrap_or_default()
+        }
+
+        /// The ID of the latest edit of this `Event`.
+        fn latest_edit_event_id_string(&self) -> String {
+            self.latest_edit_raw()
+                .as_ref()
+                .and_then(|r| r.get_field::<String>("event_id").ok().flatten())
+                .unwrap_or_default()
+        }
+
+        /// The timestamp of the latest edit of this `Event`, if any.
+        fn latest_edit_timestamp(&self) -> Option<glib::DateTime> {
+            self.latest_edit_raw()
+                .as_ref()
+                .and_then(|r| {
+                    r.get_field::<MilliSecondsSinceUnixEpoch>("origin_server_ts")
+                        .ok()
+                        .flatten()
+                })
+                .map(|ts| {
+                    glib::DateTime::from_unix_utc(ts.as_secs().into())
+                        .and_then(|t| t.to_local())
+                        .unwrap()
+                })
+        }
+
+        /// The full formatted timestamp of the latest edit of this `Event`.
+        fn latest_edit_timestamp_full(&self) -> String {
+            self.latest_edit_timestamp()
+                .and_then(|d| d.format("%c").ok())
+                .map(Into::into)
+                .unwrap_or_default()
         }
 
         /// Whether this `Event` should be highlighted.
@@ -628,4 +744,31 @@ pub fn count_as_unread(content: &TimelineItemContent) -> bool {
         ),
         _ => false,
     }
+}
+
+/// Convert raw JSON to a pretty-formatted JSON string.
+fn raw_to_pretty_string<T>(raw: &Raw<T>) -> String {
+    // We have to convert it to a Value, because a RawValue cannot be
+    // pretty-printed.
+    let json = serde_json::to_value(raw).unwrap();
+
+    serde_json::to_string_pretty(&json).unwrap()
+}
+
+/// Raw unsigned event data.
+///
+/// Used as a fallback to get the latest edit's JSON.
+#[derive(Debug, Clone, Deserialize)]
+struct RawUnsigned {
+    #[serde(rename = "m.relations")]
+    relations: Option<RawBundledRelations>,
+}
+
+/// Raw bundled event relations.
+///
+/// Used as a fallback to get the latest edit's JSON.
+#[derive(Debug, Clone, Deserialize)]
+struct RawBundledRelations {
+    #[serde(rename = "m.replace")]
+    replace: Option<Raw<AnySyncTimelineEvent>>,
 }

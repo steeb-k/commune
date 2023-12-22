@@ -106,7 +106,8 @@ src/session/view/content/verification/session_verification.rs
 src/session/view/content/verification/session_verification.ui
 src/session/view/create_dm_dialog/mod.rs
 src/session/view/create_dm_dialog/mod.ui
-src/session/view/event_source_dialog.ui
+src/session/view/event_details_dialog.rs
+src/session/view/event_details_dialog.ui
 src/session/view/join_room_dialog.rs
 src/session/view/join_room_dialog.ui
 src/session/view/media_viewer.rs

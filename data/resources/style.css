@@ -633,8 +633,12 @@ roomtitle .subtitle {
 
 /* Event Source Dialog */
 
-.event-source-dialog .sourceview {
+.event-details-dialog .sourceview {
   font-family: monospace;
+}
+
+.event-details-dialog .sourceview-expander-row row {
+  padding: 0;
 }
 
 

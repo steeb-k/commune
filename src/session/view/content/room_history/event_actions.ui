@@ -67,8 +67,8 @@
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_View Source</attribute>
-        <attribute name="action">event.view-source</attribute>
+        <attribute name="label" translatable="yes">_View Details</attribute>
+        <attribute name="action">event.view-details</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>

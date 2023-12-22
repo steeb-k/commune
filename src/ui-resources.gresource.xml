@@ -91,7 +91,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/verification/session_verification.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/dm_user_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/event_source_dialog.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/join_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/media_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/room_creation.ui</file>

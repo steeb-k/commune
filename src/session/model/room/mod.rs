@@ -75,6 +75,9 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
+        /// The ID of this room, as a string.
+        #[property(get = Self::room_id_string)]
+        pub room_id_string: PhantomData<String>,
         /// The name that is set for this room.
         ///
         /// This can be empty, the display name should be used instead in the
@@ -194,6 +197,11 @@ mod imp {
         /// The room API of the SDK.
         pub fn matrix_room(&self) -> &MatrixRoom {
             self.matrix_room.get().unwrap()
+        }
+
+        /// The room ID of this room, as a string.
+        fn room_id_string(&self) -> String {
+            self.matrix_room().room_id().to_string()
         }
 
         /// The name of this room.

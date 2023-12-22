@@ -12,7 +12,7 @@ use crate::{
     prelude::*,
     session::{
         model::{Event, EventKey, TimelineItem, VirtualItem, VirtualItemKind},
-        view::EventSourceDialog,
+        view::EventDetailsDialog,
     },
     spawn, spawn_tokio, toast,
     utils::media::save_to_file,
@@ -406,10 +406,10 @@ impl ItemRow {
         if event.raw().is_some() {
             action_group.add_action_entries([
                 // View Event Source
-                gio::ActionEntry::builder("view-source")
+                gio::ActionEntry::builder("view-details")
                     .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
                         let window = widget.root().and_downcast().unwrap();
-                        let dialog = EventSourceDialog::new(&window, &event);
+                        let dialog = EventDetailsDialog::new(&window, &event);
                         dialog.present();
                     }))
                     .build(),
