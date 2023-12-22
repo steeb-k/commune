@@ -134,28 +134,7 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Sidebar {
-        fn focus(&self, direction_type: gtk::DirectionType) -> bool {
-            // WORKAROUND: This works around the tab behavior `gtk::ListViews have`
-            // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4840
-            let focus_child = self
-                .obj()
-                .focus_child()
-                .and_then(|w| w.focus_child())
-                .and_then(|w| w.focus_child());
-            if focus_child.is_some_and(|w| w.is::<gtk::ListView>())
-                && matches!(
-                    direction_type,
-                    gtk::DirectionType::TabForward | gtk::DirectionType::TabBackward
-                )
-            {
-                false
-            } else {
-                self.parent_focus(direction_type)
-            }
-        }
-    }
-
+    impl WidgetImpl for Sidebar {}
     impl NavigationPageImpl for Sidebar {}
 
     impl Sidebar {

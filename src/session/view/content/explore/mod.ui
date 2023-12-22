@@ -88,6 +88,7 @@
                           <object class="GtkListView" id="listview">
                             <property name="margin-end">24</property>
                             <property name="margin-start">24</property>
+                            <property name="tab-behavior">item</property>
                             <property name="factory">
                               <object class="GtkBuilderListItemFactory">
                                 <property name="bytes"><![CDATA[

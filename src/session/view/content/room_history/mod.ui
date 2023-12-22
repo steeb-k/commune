@@ -161,6 +161,7 @@
                                     <style>
                                       <class name="navigation-sidebar"/>
                                     </style>
+                                    <property name="tab-behavior">item</property>
                                     <accessibility>
                                       <property name="label" translatable="yes">Room History</property>
                                     </accessibility>

@@ -140,6 +140,7 @@
                       <class name="sidebar-list"/>
                     </style>
                     <property name="single-click-activate">true</property>
+                    <property name="tab-behavior">item</property>
                     <accessibility>
                       <property name="label" translatable="yes">Sidebar</property>
                       <property name="description" translatable="yes">Allows to navigate between rooms</property>

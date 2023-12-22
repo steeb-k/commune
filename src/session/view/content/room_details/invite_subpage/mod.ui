@@ -97,6 +97,7 @@
                         <property name="margin-end">12</property>
                         <property name="margin-start">12</property>
                         <property name="single-click-activate">True</property>
+                        <property name="tab-behavior">item</property>
                         <property name="factory">
                           <object class="GtkBuilderListItemFactory">
                             <property name="bytes"><![CDATA[
