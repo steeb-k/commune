@@ -1070,12 +1070,6 @@ impl Room {
                 }
             }
         }
-
-        if let Some(session) = self.session() {
-            session
-                .verification_list()
-                .handle_response_room(self.clone(), events);
-        }
     }
 
     /// Set the timestamp of the room's latest possibly unread event.

@@ -28,7 +28,6 @@ pub use self::{
     },
     user::{User, UserExt},
     verification::{
-        IdentityVerification, SasData, VerificationList, VerificationMode, VerificationState,
-        VerificationSupportedMethods,
+        IdentityVerification, VerificationList, VerificationState, VerificationSupportedMethods,
     },
 };

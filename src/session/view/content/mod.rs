@@ -10,9 +10,7 @@ use self::{
     explore::Explore, invite::Invite, room_details::RoomDetails, room_history::RoomHistory,
 };
 use crate::{
-    session::model::{
-        IconItem, IdentityVerification, ItemType, Room, RoomType, Session, VerificationMode,
-    },
+    session::model::{IconItem, IdentityVerification, ItemType, Room, RoomType, Session},
     verification_view::IdentityVerificationView,
 };
 
@@ -78,7 +76,7 @@ mod imp {
             self.stack
                 .connect_visible_child_notify(clone!(@weak self as imp => move |stack| {
                     if stack.visible_child().as_ref() != Some(imp.verification_page.upcast_ref::<gtk::Widget>()) {
-                        imp.identity_verification_widget.set_request(None::<IdentityVerification>);
+                        imp.identity_verification_widget.set_verification(None::<IdentityVerification>);
                     }
                 }));
 
@@ -216,11 +214,9 @@ impl Content {
             }
             Some(o) if o.is::<IdentityVerification>() => {
                 if let Ok(verification) = o.downcast::<IdentityVerification>() {
-                    if verification.mode() != VerificationMode::CurrentSession {
-                        imp.identity_verification_widget
-                            .set_request(Some(verification));
-                        imp.stack.set_visible_child(&*imp.verification_page);
-                    }
+                    imp.identity_verification_widget
+                        .set_verification(Some(verification));
+                    imp.stack.set_visible_child(&*imp.verification_page);
                 }
             }
             _ => {}

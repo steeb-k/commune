@@ -7,8 +7,10 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/Fractal/ui/session/view/content/verification/emoji.ui")]
-    pub struct Emoji {
+    #[template(
+        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/sas_emoji.ui"
+    )]
+    pub struct SasEmoji {
         #[template_child]
         pub emoji: TemplateChild<gtk::Label>,
         #[template_child]
@@ -16,9 +18,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Emoji {
-        const NAME: &'static str = "VerificationEmoji";
-        type Type = super::Emoji;
+    impl ObjectSubclass for SasEmoji {
+        const NAME: &'static str = "IdentityVerificationSasEmoji";
+        type Type = super::SasEmoji;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -30,18 +32,18 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for Emoji {}
-    impl WidgetImpl for Emoji {}
-    impl BinImpl for Emoji {}
+    impl ObjectImpl for SasEmoji {}
+    impl WidgetImpl for SasEmoji {}
+    impl BinImpl for SasEmoji {}
 }
 
 glib::wrapper! {
-    /// Preference Window to display and update room details.
-    pub struct Emoji(ObjectSubclass<imp::Emoji>)
+    /// An emoji for SAS verification.
+    pub struct SasEmoji(ObjectSubclass<imp::SasEmoji>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl Emoji {
+impl SasEmoji {
     pub fn new(symbol: &str, name: &str) -> Self {
         let obj: Self = glib::Object::new();
 
@@ -49,6 +51,7 @@ impl Emoji {
         obj
     }
 
+    /// Set the emoji.
     pub fn set_emoji(&self, symbol: &str, name: &str) {
         let imp = self.imp();
 

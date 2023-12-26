@@ -1,7 +1,10 @@
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
 use super::{item_list::ItemList, selection::Selection};
-use crate::session::model::Room;
+use crate::{
+    session::model::{IdentityVerification, Room},
+    utils::BoundObjectWeakRef,
+};
 
 mod imp {
     use std::cell::OnceCell;
@@ -23,6 +26,8 @@ mod imp {
         /// The selection model.
         #[property(get)]
         pub selection_model: Selection,
+        /// The selected item, if it has signal handlers.
+        pub selected_item: BoundObjectWeakRef<glib::Object>,
     }
 
     #[glib::object_subclass]
@@ -32,7 +37,28 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for SidebarListModel {}
+    impl ObjectImpl for SidebarListModel {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.selection_model.connect_selected_item_notify(
+                clone!(@weak self as imp => move |selection_model| {
+                    imp.selected_item.disconnect_signals();
+
+                    if let Some(item) = &selection_model.selected_item() {
+                        if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+                            let verification_handler = verification.connect_replaced(
+                                clone!(@weak selection_model => move |_, new_verification| {
+                                    selection_model.set_selected_item(Some(new_verification.clone()));
+                                }),
+                            );
+                            imp.selected_item.set(item, vec![verification_handler]);
+                        }
+                    }
+                }),
+            );
+        }
+    }
 
     impl SidebarListModel {
         /// Set the list of items in the sidebar.

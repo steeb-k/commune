@@ -158,7 +158,7 @@ pub struct BoundObject<T: glib::ObjectType> {
 }
 
 impl<T: glib::ObjectType> BoundObject<T> {
-    /// Creates a new empty `BoundObjectWeakRef`.
+    /// Creates a new empty `BoundObject`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -229,8 +229,7 @@ pub struct BoundObjectWeakRef<T: glib::ObjectType> {
 }
 
 impl<T: glib::ObjectType> BoundObjectWeakRef<T> {
-    /// Creates a new empty `BoundObjectWeakRef` with the given object and
-    /// signal handlers IDs.
+    /// Creates a new empty `BoundObjectWeakRef`.
     pub fn new() -> Self {
         Self::default()
     }
@@ -289,6 +288,70 @@ impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObjectWeakRef<T> {
 
     fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
         f(&self.obj())
+    }
+}
+
+/// Wrapper to manage a bound construct-only object.
+///
+/// This keeps a strong reference to the object.
+#[derive(Debug)]
+pub struct BoundConstructOnlyObject<T: glib::ObjectType> {
+    obj: OnceCell<T>,
+    signal_handler_ids: RefCell<Vec<glib::SignalHandlerId>>,
+}
+
+impl<T: glib::ObjectType> BoundConstructOnlyObject<T> {
+    /// Creates a new empty `BoundConstructOnlyObject`.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set the given object and signal handlers IDs.
+    ///
+    /// Panics if the object was already set.
+    pub fn set(&self, obj: T, signal_handler_ids: Vec<glib::SignalHandlerId>) {
+        self.obj.set(obj).unwrap();
+        self.signal_handler_ids.replace(signal_handler_ids);
+    }
+
+    /// Get a strong reference to the object.
+    ///
+    /// Panics if the object has not been set yet.
+    pub fn obj(&self) -> &T {
+        self.obj.get().unwrap()
+    }
+}
+
+impl<T: glib::ObjectType> Default for BoundConstructOnlyObject<T> {
+    fn default() -> Self {
+        Self {
+            obj: Default::default(),
+            signal_handler_ids: Default::default(),
+        }
+    }
+}
+
+impl<T: glib::ObjectType> Drop for BoundConstructOnlyObject<T> {
+    fn drop(&mut self) {
+        let signal_handler_ids = self.signal_handler_ids.take();
+
+        if let Some(obj) = self.obj.get() {
+            for signal_handler_id in signal_handler_ids {
+                obj.disconnect(signal_handler_id)
+            }
+        }
+    }
+}
+
+impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::Property for BoundConstructOnlyObject<T> {
+    type Value = T;
+}
+
+impl<T: IsA<glib::Object>> glib::PropertyGet for BoundConstructOnlyObject<T> {
+    type Value = T;
+
+    fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
+        f(self.obj())
     }
 }
 

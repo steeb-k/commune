@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="IdentityVerificationCompletedPage" parent="AdwBin">
+    <child>
+      <object class="GtkScrolledWindow" id="scrolled_window">
+        <property name="hscrollbar-policy">never</property>
+        <property name="propagate-natural-height">True</property>
+        <property name="child">
+          <object class="AdwClamp">
+            <property name="maximum-size">400</property>
+            <property name="tightening-threshold">300</property>
+            <property name="child">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">18</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkLabel" id="title">
+                    <property name="wrap">True</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="justify">center</property>
+                    <style>
+                      <class name="title-1"/>
+                    </style>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkPicture">
+                    <property name="file">resource:///org/gnome/Fractal/assets/setup-complete.svg</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="message">
+                    <property name="wrap">True</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="justify">center</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="dismiss_btn">
+                    <property name="halign">center</property>
+                    <property name="label" translatable="yes">Dismiss</property>
+                    <signal name="clicked" handler="dismiss" swapped="yes"/>
+                    <style>
+                      <class name="suggested-action"/>
+                      <class name="pill"/>
+                    </style>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </property>
+      </object>
+    </child>
+  </template>
+</interface>

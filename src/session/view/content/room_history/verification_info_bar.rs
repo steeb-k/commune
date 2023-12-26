@@ -5,7 +5,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use crate::{
     gettext_f,
     session::model::{IdentityVerification, VerificationState},
-    Window,
+    spawn, toast, Window,
 };
 
 mod imp {
@@ -52,14 +52,35 @@ mod imp {
                 let Some(window) = obj.root().and_downcast::<Window>() else {
                     return;
                 };
+                let Some(verification) = obj.verification() else {
+                    return;
+                };
 
-                let verification = obj.verification().unwrap();
-                verification.accept();
-                window.session_view().select_item(Some(verification));
+                if verification.state() == VerificationState::Requested {
+                    window.session_view().select_verification(verification);
+                } else {
+                    spawn!(
+                        clone!(@weak obj, @weak verification, @weak window => async move {
+                            if verification.accept().await.is_err() {
+                                toast!(obj, gettext("Failed to accept verification"));
+                            } else {
+                                window.session_view().select_verification(verification);
+                            }
+                        })
+                    );
+                }
             });
 
-            klass.install_action("verification.decline", None, move |widget, _, _| {
-                widget.verification().unwrap().cancel(true);
+            klass.install_action("verification.decline", None, move |obj, _, _| {
+                let Some(verification) = obj.verification() else {
+                    return;
+                };
+
+                spawn!(clone!(@weak obj, @weak verification => async move {
+                    if verification.cancel().await.is_err() {
+                        toast!(obj, gettext("Failed to decline verification"));
+                    }
+                }));
             });
         }
 

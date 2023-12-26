@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="IdentityVerificationView" parent="AdwBin">
+    <child>
+      <object class="GtkStack" id="main_stack">
+        <property name="transition-type">crossfade</property>
+        <property name="vexpand">True</property>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">accept-request</property>
+            <property name="child">
+              <object class="IdentityVerificationAcceptRequestPage" id="accept_request_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">wait-for-other-party</property>
+            <property name="child">
+              <object class="IdentityVerificationWaitForOtherPage" id="wait_for_other_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">no-supported-methods</property>
+            <property name="child">
+              <object class="IdentityVerificationNoSupportedMethodsPage" id="no_supported_methods_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">choose-method</property>
+            <property name="child">
+              <object class="IdentityVerificationChooseMethodPage" id="choose_method_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">scan-qr-code</property>
+            <property name="child">
+              <object class="IdentityVerificationScanQrCodePage" id="scan_qr_code_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">qr-code-scanned</property>
+            <property name="child">
+              <object class="IdentityVerificationQrCodeScannedPage" id="qr_code_scanned_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">confirm-qr-code</property>
+            <property name="child">
+              <object class="IdentityVerificationConfirmQrCodePage" id="confirm_qr_code_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">sas</property>
+            <property name="child">
+              <object class="IdentityVerificationSasPage" id="sas_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">completed</property>
+            <property name="child">
+              <object class="IdentityVerificationCompletedPage" id="completed_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">cancelled</property>
+            <property name="child">
+              <object class="IdentityVerificationCancelledPage" id="cancelled_page">
+                <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
+              </object>
+            </property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

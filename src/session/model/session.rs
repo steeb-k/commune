@@ -213,6 +213,7 @@ impl Session {
 
         self.room_list().load().await;
         self.setup_direct_room_handler();
+        self.verification_list().init();
 
         self.set_state(SessionState::InitialSync);
         self.sync();
@@ -404,8 +405,6 @@ impl Session {
         match response {
             Ok(response) => {
                 self.room_list().handle_response_rooms(response.rooms);
-                self.verification_list()
-                    .handle_response_to_device(response.to_device);
 
                 if self.state() < SessionState::Ready {
                     self.set_state(SessionState::Ready);

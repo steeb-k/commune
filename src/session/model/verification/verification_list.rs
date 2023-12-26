@@ -1,50 +1,21 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::{
-    events::{
-        room::message::MessageType, AnySyncMessageLikeEvent, AnySyncTimelineEvent,
-        AnyToDeviceEvent, SyncMessageLikeEvent,
-    },
-    serde::Raw,
-    MilliSecondsSinceUnixEpoch, OwnedUserId, UserId,
+use matrix_sdk::{
+    encryption::verification::VerificationRequest, Client as MatrixClient, Room as MatrixRoom,
 };
-use ruma::events::key::verification::REQUEST_TIMESTAMP_TIMEOUT;
-use tracing::{debug, error, warn};
+use ruma::{
+    events::{
+        key::verification::request::ToDeviceKeyVerificationRequestEvent,
+        room::message::{MessageType, OriginalSyncRoomMessageEvent},
+    },
+    RoomId,
+};
+use tracing::{debug, error};
 
+use super::{load_supported_verification_methods, VerificationKey};
 use crate::{
-    prelude::*,
-    session::model::{IdentityVerification, Member, Room, Session},
+    session::model::{IdentityVerification, Member, Session, User},
     spawn, spawn_tokio,
 };
-
-#[derive(Hash, PartialEq, Eq, Debug)]
-pub struct FlowId {
-    user_id: OwnedUserId,
-    flow_id: String,
-}
-
-impl FlowId {
-    pub fn new(user_id: OwnedUserId, flow_id: String) -> Self {
-        Self { user_id, flow_id }
-    }
-}
-
-#[derive(Hash, PartialEq, Eq, Debug)]
-struct FlowIdUnowned<'a> {
-    user_id: &'a UserId,
-    flow_id: &'a str,
-}
-
-impl<'a> FlowIdUnowned<'a> {
-    pub fn new(user_id: &'a UserId, flow_id: &'a str) -> Self {
-        Self { user_id, flow_id }
-    }
-}
-
-impl indexmap::Equivalent<FlowId> for FlowIdUnowned<'_> {
-    fn equivalent(&self, key: &FlowId) -> bool {
-        self.user_id == &*key.user_id && self.flow_id == &*key.flow_id
-    }
-}
 
 mod imp {
     use std::cell::RefCell;
@@ -59,7 +30,7 @@ mod imp {
     #[properties(wrapper_type = super::VerificationList)]
     pub struct VerificationList {
         /// The ongoing verification requests.
-        pub list: RefCell<IndexMap<FlowId, IdentityVerification>>,
+        pub list: RefCell<IndexMap<VerificationKey, IdentityVerification>>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
@@ -106,323 +77,253 @@ glib::wrapper! {
 }
 
 impl VerificationList {
+    /// Construct a new `VerificationList` with the given session.
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }
 
-    pub fn handle_response_to_device(&self, to_device_events: Vec<Raw<AnyToDeviceEvent>>) {
-        for event in to_device_events.iter().filter_map(|e| e.deserialize().ok()) {
-            debug!("Received to-device verification event: {event:?}");
-            let request = match event {
-                AnyToDeviceEvent::KeyVerificationRequest(e) => {
-                    if let Some(request) = self.get_by_id(&e.sender, &e.content.transaction_id) {
-                        Some(request)
-                    } else {
-                        let Some(session) = self.session() else {
-                            return;
-                        };
-                        let user = session.user();
-                        // ToDevice verifications can only be send by us
-                        if *e.sender != *user.user_id() {
-                            warn!("Received a device verification event from a different user, which isn't allowed");
-                            continue;
-                        }
-
-                        // Ignore requests that are too old
-                        let start_time =
-                            if let Some(time) = start_time_from_timestamp(&e.content.timestamp) {
-                                time
-                            } else {
-                                continue;
-                            };
-
-                        let request = IdentityVerification::for_flow_id(
-                            e.content.transaction_id.as_str(),
-                            &user,
-                            &start_time,
-                        );
-                        self.add(request.clone());
-                        Some(request)
-                    }
-                }
-                AnyToDeviceEvent::KeyVerificationReady(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::KeyVerificationStart(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::KeyVerificationCancel(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::KeyVerificationAccept(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::KeyVerificationMac(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::KeyVerificationKey(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::KeyVerificationDone(e) => {
-                    self.get_by_id(&e.sender, &e.content.transaction_id)
-                }
-                AnyToDeviceEvent::SecretSend(_) => {
-                    self.emit_by_name::<()>("secret-received", &[]);
-                    continue;
-                }
-                _ => continue,
-            };
-            if let Some(request) = request {
-                request.notify_state_changed();
-            } else {
-                warn!("Received verification event, but we don't have the initial event.");
-            }
-        }
-    }
-
-    pub fn handle_response_room(&self, room: Room, events: Vec<AnySyncTimelineEvent>) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.handle_response_room_inner(room, events).await;
-        }));
-    }
-
-    async fn handle_response_room_inner(&self, room: Room, events: Vec<AnySyncTimelineEvent>) {
-        for message_event in events.iter().filter_map(|event| {
-            if let AnySyncTimelineEvent::MessageLike(message_event) = event {
-                Some(message_event)
-            } else {
-                None
-            }
-        }) {
-            let request = match message_event {
-                AnySyncMessageLikeEvent::RoomMessage(SyncMessageLikeEvent::Original(message)) => {
-                    if let MessageType::VerificationRequest(request) = &message.content.msgtype {
-                        debug!("Received in-room verification event: {message:?}");
-                        // Ignore request that are too old
-                        let start_time = if let Some(time) =
-                            start_time_from_timestamp(&message.origin_server_ts)
-                        {
-                            time
-                        } else {
-                            continue;
-                        };
-
-                        let Some(session) = self.session() else {
-                            return;
-                        };
-                        let own_user_id = session.user_id();
-
-                        let user_id_to_verify = if request.to == own_user_id {
-                            // The request was sent by another user to verify us
-                            &message.sender
-                        } else if message.sender == own_user_id {
-                            // The request was sent by us to verify another user
-                            &request.to
-                        } else {
-                            // Ignore the request when it doesn't verify us or wasn't set by us
-                            continue;
-                        };
-
-                        let matrix_room = room.matrix_room().clone();
-                        let owned_user_id_to_verify = user_id_to_verify.clone();
-                        let handle = spawn_tokio!(async move {
-                            matrix_room
-                                .get_member_no_sync(&owned_user_id_to_verify)
-                                .await
-                        });
-
-                        let member = match handle.await.unwrap() {
-                            Ok(member) => member,
-                            Err(error) => {
-                                error!("Failed to get member for verification: {error}");
-                                None
-                            }
-                        };
-
-                        let user_to_verify = Member::new(&room, user_id_to_verify);
-
-                        if let Some(member) = member {
-                            user_to_verify.update_from_room_member(&member);
-                        }
-
-                        // Ignore the request when we have a newer one
-                        let previous_verification = room.verification();
-                        if !(previous_verification.is_none()
-                            || start_time > previous_verification.unwrap().start_time())
-                        {
-                            continue;
-                        }
-
-                        let request = if let Some(request) =
-                            self.get_by_id(user_id_to_verify, &message.event_id)
-                        {
-                            request
-                        } else {
-                            let request = IdentityVerification::for_flow_id(
-                                message.event_id.as_str(),
-                                &user_to_verify.upcast(),
-                                &start_time,
-                            );
-
-                            self.add(request.clone());
-                            request
-                        };
-
-                        room.set_verification(request);
-                    }
-
-                    continue;
-                }
-                AnySyncMessageLikeEvent::KeyVerificationReady(SyncMessageLikeEvent::Original(
-                    e,
-                )) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                AnySyncMessageLikeEvent::KeyVerificationStart(SyncMessageLikeEvent::Original(
-                    e,
-                )) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                AnySyncMessageLikeEvent::KeyVerificationCancel(SyncMessageLikeEvent::Original(
-                    e,
-                )) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                AnySyncMessageLikeEvent::KeyVerificationAccept(SyncMessageLikeEvent::Original(
-                    e,
-                )) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                AnySyncMessageLikeEvent::KeyVerificationKey(SyncMessageLikeEvent::Original(e)) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                AnySyncMessageLikeEvent::KeyVerificationMac(SyncMessageLikeEvent::Original(e)) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                AnySyncMessageLikeEvent::KeyVerificationDone(SyncMessageLikeEvent::Original(e)) => {
-                    debug!("Received in-room verification event: {e:?}");
-                    self.get_by_id(&e.sender, &e.content.relates_to.event_id)
-                }
-                _ => {
-                    continue;
-                }
-            };
-
-            if let Some(request) = request {
-                request.notify_state_changed();
-            }
-        }
-    }
-
-    /// Add a new `IdentityVerification` request
-    pub fn add(&self, request: IdentityVerification) {
-        // Don't add requests that failed to start.
-        let Some(flow_id) = request.flow_id() else {
-            return;
-        };
-        // Don't add requests that are already finished
-        if request.is_finished() {
-            return;
-        }
-
-        let length = {
-            let mut list = self.imp().list.borrow_mut();
-            let length = list.len();
-            request.connect_notify_local(
-                Some("state"),
-                clone!(@weak self as obj => move |request, _| {
-                    if request.is_finished() {
-                        obj.remove(request);
-                    }
-                }),
-            );
-
-            list.insert(
-                FlowId::new(UserExt::user_id(&request.user()), flow_id.to_owned()),
-                request,
-            );
-            length as u32
-        };
-
-        self.items_changed(length, 0, 1)
-    }
-
-    pub fn remove(&self, request: &IdentityVerification) {
-        // Requests without a flow ID are never added.
-        let Some(flow_id) = request.flow_id() else {
-            return;
-        };
-
-        let position = if let Some((position, ..)) =
-            self.imp()
-                .list
-                .borrow_mut()
-                .shift_remove_full(&FlowIdUnowned::new(
-                    &UserExt::user_id(&request.user()),
-                    &flow_id,
-                )) {
-            position
-        } else {
-            return;
-        };
-
-        self.items_changed(position as u32, 1, 0);
-    }
-
-    pub fn get_by_id(
-        &self,
-        user_id: &UserId,
-        flow_id: impl AsRef<str>,
-    ) -> Option<IdentityVerification> {
-        let flow_id = FlowIdUnowned::new(user_id, flow_id.as_ref());
-        self.imp().list.borrow().get(&flow_id).cloned()
-    }
-
-    // Returns the first valid session verification if any
-    pub fn get_session(&self) -> Option<IdentityVerification> {
+    /// Initialize this list to listen to new verification requests.
+    pub fn init(&self) {
         let Some(session) = self.session() else {
-            return None;
+            return;
         };
+
+        let client = session.client();
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
+
+        let obj_weak_clone = obj_weak.clone();
+        client.add_event_handler(
+            move |ev: ToDeviceKeyVerificationRequestEvent, client: MatrixClient| {
+                let obj_weak = obj_weak_clone.clone();
+                async move {
+                    let Some(request) = client
+                        .encryption()
+                        .get_verification_request(&ev.sender, &ev.content.transaction_id)
+                        .await
+                    else {
+                        // This might be normal if the request has already timed out.
+                        debug!(
+                            "To-device verification request `({}, {})` not found in the SDK",
+                            ev.sender, ev.content.transaction_id
+                        );
+                        return;
+                    };
+
+                    if !request.is_self_verification() {
+                        // We only support in-room verifications for other users.
+                        debug!(
+                            "To-device verification request `({}, {})` for other users is not supported",
+                            ev.sender, ev.content.transaction_id
+                        );
+                        return;
+                    }
+
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.add_to_device_request(request);
+                            }
+                        });
+                    });
+                }
+            },
+        );
+
+        client.add_event_handler(
+            move |ev: OriginalSyncRoomMessageEvent, room: MatrixRoom, client: MatrixClient| {
+                let obj_weak = obj_weak.clone();
+                async move {
+                    let MessageType::VerificationRequest(_) = &ev.content.msgtype else {
+                        return;
+                    };
+                    let Some(request) = client
+                        .encryption()
+                        .get_verification_request(&ev.sender, &ev.event_id)
+                        .await
+                    else {
+                        // This might be normal if the request has already timed out.
+                        debug!(
+                            "To-device verification request `({}, {})` not found in the SDK",
+                            ev.sender, ev.event_id
+                        );
+                        return;
+                    };
+                    let room_id = room.room_id().to_owned();
+
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = obj_weak.upgrade() {
+                                obj.add_in_room_request(request, &room_id).await;
+                            }
+                        });
+                    });
+                }
+            },
+        );
+    }
+
+    /// Add a verification received via a to-device event.
+    fn add_to_device_request(&self, request: VerificationRequest) {
+        if request.is_done() || request.is_cancelled() || request.is_passive() {
+            // Ignore requests that are already finished.
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let verification = IdentityVerification::new(request, &session.user(), None);
+        self.add(verification);
+    }
+
+    /// Add a verification received via an in-room event.
+    async fn add_in_room_request(&self, request: VerificationRequest, room_id: &RoomId) {
+        if request.is_done() || request.is_cancelled() || request.is_passive() {
+            // Ignore requests that are already finished.
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+        let Some(room) = session.room_list().get(room_id) else {
+            error!(
+                "Room for verification request `({}, {})` not found",
+                request.other_user_id(),
+                request.flow_id()
+            );
+            return;
+        };
+
+        let other_user_id = request.other_user_id().to_owned();
+        let member = room
+            .members()
+            .map(|l| l.get_or_create(other_user_id.clone()))
+            .unwrap_or_else(|| Member::new(&room, &other_user_id));
+
+        // Ensure the member is up-to-date.
+        let matrix_room = room.matrix_room().clone();
+        let handle =
+            spawn_tokio!(async move { matrix_room.get_member_no_sync(&other_user_id).await });
+        match handle.await.unwrap() {
+            Ok(Some(matrix_member)) => member.update_from_room_member(&matrix_member),
+            Ok(None) => {
+                error!(
+                    "Room member for verification request `({}, {})` not found",
+                    request.other_user_id(),
+                    request.flow_id()
+                );
+                return;
+            }
+            Err(error) => {
+                error!(
+                    "Failed to get room member for verification request `({}, {})`: {error}",
+                    request.other_user_id(),
+                    request.flow_id()
+                );
+                return;
+            }
+        }
+
+        let verification = IdentityVerification::new(request, member.upcast_ref(), Some(&room));
+        self.add(verification);
+    }
+
+    /// Add the given verification to the list.
+    fn add(&self, verification: IdentityVerification) {
+        let imp = self.imp();
+
+        let key = verification.key();
+
+        // Don't add request that already exists.
+        if imp.list.borrow().contains_key(&key) {
+            return;
+        }
+
+        verification.connect_remove_from_list(clone!(@weak self as obj => move |verification| {
+            obj.remove(&verification.key());
+        }));
+
+        let (pos, _) = imp.list.borrow_mut().insert_full(key, verification);
+
+        self.items_changed(pos as u32, 0, 1)
+    }
+
+    /// Remove the verification with the given key.
+    pub fn remove(&self, key: &VerificationKey) {
+        let Some((pos, ..)) = self.imp().list.borrow_mut().shift_remove_full(key) else {
+            return;
+        };
+
+        self.items_changed(pos as u32, 1, 0);
+    }
+
+    /// Get the verification with the given key.
+    pub fn get(&self, key: &VerificationKey) -> Option<IdentityVerification> {
+        self.imp().list.borrow().get(key).cloned()
+    }
+
+    // Returns the ongoing session verification, if any.
+    pub fn ongoing_session_verification(&self) -> Option<IdentityVerification> {
         let list = self.imp().list.borrow();
-        let user_id = session.user_id();
-
-        for (_, item) in list.iter() {
-            if !item.is_finished() && item.user().user_id() == *user_id {
-                return Some(item.to_owned());
-            }
-        }
-
-        None
-    }
-}
-
-fn start_time_from_timestamp(timestamp: &MilliSecondsSinceUnixEpoch) -> Option<glib::DateTime> {
-    if let Some(time) = timestamp.to_system_time() {
-        if let Ok(duration) = time.elapsed() {
-            if duration > REQUEST_TIMESTAMP_TIMEOUT {
-                debug!("Received verification event that already timed out");
-                return None;
-            }
-
-            if let Ok(time) =
-                glib::DateTime::from_unix_utc(timestamp.as_secs().into()).and_then(|t| t.to_local())
-            {
-                return Some(time);
-            } else {
-                warn!("Ignore verification request because getting a correct timestamp failed");
-            }
-        } else {
-            warn!("Ignore verification request because it was sent in the future. The system time of the server or the local machine is probably wrong.");
-        }
-    } else {
-        warn!("Ignore verification request because getting a correct timestamp failed");
+        list.values()
+            .find(|v| v.is_self_verification() && !v.is_finished())
+            .cloned()
     }
 
-    None
+    /// Create and send a new verification request.
+    ///
+    /// If `user` is `None`, a new session verification is started for our own
+    /// user and sent to other devices.
+    pub async fn create(&self, user: Option<User>) -> Result<IdentityVerification, ()> {
+        let Some(session) = self.session() else {
+            error!("Failed to create identity verification: failed to upgrade session");
+            return Err(());
+        };
+
+        let user = user.unwrap_or_else(|| session.user());
+
+        let supported_methods = load_supported_verification_methods().await;
+
+        let Some(identity) = user.crypto_identity().await else {
+            error!("Failed to create identity verification: cryptographic identity not found");
+            return Err(());
+        };
+
+        let handle = spawn_tokio!(async move {
+            identity
+                .request_verification_with_methods(supported_methods)
+                .await
+        });
+
+        match handle.await.unwrap() {
+            Ok(request) => {
+                let room = if let Some(room_id) = request.room_id() {
+                    let Some(room) = session.room_list().get(room_id) else {
+                        error!(
+                            "Room for verification request `({}, {})` not found",
+                            request.other_user_id(),
+                            request.flow_id()
+                        );
+                        return Err(());
+                    };
+                    Some(room)
+                } else {
+                    None
+                };
+
+                let verification = IdentityVerification::new(request, &user, room.as_ref());
+                self.add(verification.clone());
+
+                Ok(verification)
+            }
+            Err(error) => {
+                error!("Failed to create identity verification: {error}");
+                Err(())
+            }
+        }
+    }
 }

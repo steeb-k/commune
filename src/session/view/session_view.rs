@@ -4,12 +4,12 @@ use gtk::{
     glib::{clone, signal::SignalHandlerId},
     CompositeTemplate,
 };
-use ruma::{RoomId, UserId};
+use ruma::RoomId;
 use tracing::{error, warn};
 
 use super::{Content, CreateDmDialog, JoinRoomDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
-    session::model::{Event, Room, Selection, Session, SidebarListModel},
+    session::model::{Event, IdentityVerification, Room, Selection, Session, SidebarListModel},
     spawn, toast, Window,
 };
 
@@ -234,17 +234,9 @@ impl SessionView {
         }
     }
 
-    /// Select the verification with the given flow ID for the user with the
-    /// given ID in this view.
-    pub fn select_verification_by_id(&self, user_id: &UserId, flow_id: &str) {
-        if let Some(verification) = self
-            .session()
-            .and_then(|s| s.verification_list().get_by_id(user_id, flow_id))
-        {
-            self.select_item(Some(verification));
-        } else {
-            warn!("A verification with flow ID {flow_id} could not be found");
-        }
+    /// Select the given verification in this view.
+    pub fn select_verification(&self, verification: IdentityVerification) {
+        self.select_item(Some(verification));
     }
 
     fn toggle_room_search(&self) {

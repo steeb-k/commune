@@ -100,8 +100,18 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/verification_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/user_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">shortcuts.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">verification_view/emoji.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/accept_request_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/cancelled_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/choose_method_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/completed_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/confirm_qr_code_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/no_supported_methods_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/qr_code_scanned_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/sas_emoji.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/sas_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/scan_qr_code_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/wait_for_other_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">verification_view/session_verification_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
   </gresource>

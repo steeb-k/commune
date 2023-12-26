@@ -3,7 +3,7 @@ use std::cell::Cell;
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use gettextrs::gettext;
 use gtk::{self, gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use ruma::{RoomId, UserId};
+use ruma::RoomId;
 use tracing::{error, warn};
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     login::Login,
     prelude::*,
     session::{
-        model::{Session, SessionState},
+        model::{IdentityVerification, Session, SessionState},
         view::{AccountSettings, SessionView},
     },
     session_list::{FailedSession, SessionInfo},
@@ -475,11 +475,9 @@ impl Window {
 
     /// Show the verification with the given flow ID for the user with the given
     /// ID for the given session.
-    pub fn show_verification(&self, session_id: &str, user_id: &UserId, flow_id: &str) {
+    pub fn show_verification(&self, session_id: &str, verification: IdentityVerification) {
         if self.set_current_session_by_id(session_id) {
-            self.imp()
-                .session
-                .select_verification_by_id(user_id, flow_id);
+            self.imp().session.select_verification(verification);
 
             self.present();
         }

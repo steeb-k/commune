@@ -204,14 +204,14 @@ impl UserPage {
 
         self.action_set_enabled("user-page.verify-user", false);
         imp.verify_button.set_loading(true);
-        let verification = user.verify_identity().await;
-
-        let Some(flow_id) = verification.flow_id() else {
-            toast!(self, gettext("Failed to start user verification"));
-            self.action_set_enabled("user-page.verify-user", true);
-            imp.verify_button.set_loading(false);
-
-            return;
+        let verification = match user.verify_identity().await {
+            Ok(verification) => verification,
+            Err(()) => {
+                toast!(self, gettext("Failed to start user verification"));
+                self.action_set_enabled("user-page.verify-user", true);
+                imp.verify_button.set_loading(false);
+                return;
+            }
         };
 
         let Some(parent_window) = self.root().and_downcast::<gtk::Window>() else {
@@ -219,11 +219,7 @@ impl UserPage {
         };
 
         if let Some(main_window) = parent_window.transient_for().and_downcast::<Window>() {
-            main_window.show_verification(
-                user.session().session_id(),
-                &UserExt::user_id(&user),
-                &flow_id,
-            );
+            main_window.show_verification(user.session().session_id(), verification);
         }
 
         parent_window.close();

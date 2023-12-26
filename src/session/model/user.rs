@@ -8,10 +8,7 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use super::{
-    AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Room, Session,
-    VerificationState,
-};
+use super::{AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Room, Session};
 use crate::{components::Pill, prelude::*, spawn, spawn_tokio};
 
 #[glib::flags(name = "UserActions")]
@@ -160,19 +157,11 @@ impl User {
     }
 
     /// Start a verification of the identity of this user.
-    pub async fn verify_identity(&self) -> IdentityVerification {
-        let request = IdentityVerification::create(&self.session(), Some(self.clone())).await;
-        self.session().verification_list().add(request.clone());
-        // FIXME: actually listen to room events to get updates for verification state
-        request.connect_notify_local(
-            Some("state"),
-            clone!(@weak self as obj => move |request,_| {
-                if request.state() == VerificationState::Completed {
-                    obj.init_is_verified();
-                }
-            }),
-        );
-        request
+    pub async fn verify_identity(&self) -> Result<IdentityVerification, ()> {
+        self.session()
+            .verification_list()
+            .create(Some(self.clone()))
+            .await
     }
 
     /// Load whether this user is verified.

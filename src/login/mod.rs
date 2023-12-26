@@ -486,10 +486,16 @@ impl Login {
             return;
         }
 
-        let stack = &imp.main_stack;
-        let widget = SessionVerificationView::new(self, &session);
-        stack.add_named(&widget, Some(LoginPage::SessionVerification.as_ref()));
-        stack.set_visible_child(&widget);
+        let verification_view = SessionVerificationView::new(&session);
+        verification_view.connect_completed(clone!(@weak self as obj => move |_| {
+            obj.show_completed();
+        }));
+
+        imp.main_stack.add_named(
+            &verification_view,
+            Some(LoginPage::SessionVerification.as_ref()),
+        );
+        self.set_visible_child(LoginPage::SessionVerification);
     }
 
     /// Get the session verification, if any.

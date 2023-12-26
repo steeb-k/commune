@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="VerificationEmoji" parent="AdwBin">
+  <template class="IdentityVerificationSasEmoji" parent="AdwBin">
     <property name="valign">center</property>
     <child>
       <object class="GtkBox">
@@ -21,4 +21,3 @@
     </child>
   </template>
 </interface>
-
