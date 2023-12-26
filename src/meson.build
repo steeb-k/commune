@@ -86,6 +86,7 @@ doc_deps = [
   '--package=matrix-sdk-store-encryption',
   '--package=matrix-sdk-ui',
   '--package=fractal',
+  '--package=ashpd',
 ]
 
 custom_target(
