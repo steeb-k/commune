@@ -188,11 +188,11 @@ login {
 
 /* Verification */
 
-.session-verification clamp {
+session-verification clamp {
   margin: 12px;
 }
 
-.session-verification .text-button {
+session-verification .text-button {
   min-width: 200px;
 }
 

@@ -54,7 +54,7 @@ mod imp {
         #[template_child]
         pub bootstrap_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub bootstrap_setup_button: TemplateChild<SpinnerButton>,
+        pub bootstrap_setup_btn: TemplateChild<SpinnerButton>,
         #[template_child]
         pub verification_page: TemplateChild<IdentityVerificationView>,
         /// The state of the cross-signing identity.
@@ -72,21 +72,7 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.install_action(
-                "session-verification.show-recovery",
-                None,
-                move |obj, _, _| {
-                    obj.show_recovery();
-                },
-            );
-
-            klass.install_action(
-                "session-verification.reset-identity",
-                None,
-                move |obj, _, _| {
-                    obj.show_bootstrap();
-                },
-            );
+            klass.set_css_name("session-verification");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -104,22 +90,6 @@ mod imp {
                 ]
             });
             SIGNALS.as_ref()
-        }
-
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            obj.action_set_enabled("session-verification.show-recovery", false);
-
-            self.bootstrap_setup_button
-                .connect_clicked(clone!(@weak obj => move |button| {
-                    button.set_loading(true);
-
-                    spawn!(clone!(@weak obj => async move {
-                        obj.bootstrap_cross_signing().await;
-                    }));
-                }));
         }
 
         fn dispose(&self) {
@@ -303,7 +273,7 @@ impl SessionVerificationView {
     /// Reset the UI to its initial state.
     fn reset(&self) {
         let imp = self.imp();
-        imp.bootstrap_setup_button.set_loading(false);
+        imp.bootstrap_setup_btn.set_loading(false);
         imp.send_request_btn.set_loading(false);
     }
 
@@ -321,6 +291,7 @@ impl SessionVerificationView {
     }
 
     /// Show the recovery flow.
+    #[template_callback]
     fn show_recovery(&self) {
         let imp = self.imp();
         imp.set_verification(None);
@@ -328,6 +299,7 @@ impl SessionVerificationView {
     }
 
     /// Show the bootstrap page.
+    #[template_callback]
     fn show_bootstrap(&self) {
         let imp = self.imp();
         imp.set_verification(None);
@@ -340,7 +312,7 @@ impl SessionVerificationView {
 
         let imp = self.imp();
         let label = &imp.bootstrap_label;
-        let setup_btn = &imp.bootstrap_setup_button;
+        let setup_btn = &imp.bootstrap_setup_btn;
 
         match identity_state {
             IdentityState::Missing => {
@@ -394,7 +366,16 @@ impl SessionVerificationView {
     }
 
     /// Create a new encryption user identity.
-    async fn bootstrap_cross_signing(&self) {
+    #[template_callback]
+    fn bootstrap_cross_signing(&self) {
+        self.imp().bootstrap_setup_btn.set_loading(true);
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.bootstrap_cross_signing_inner().await;
+        }));
+    }
+
+    async fn bootstrap_cross_signing_inner(&self) {
         let Some(session) = self.session() else {
             return;
         };
