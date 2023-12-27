@@ -13,3 +13,4 @@ Categories=GNOME;GTK;Network;InstantMessaging;
 Keywords=Matrix;matrix.org;chat;irc;communications;talk;riot;element;
 # Translators: Do NOT translate or transliterate this text (these are enum types)!
 X-Purism-FormFactor=Workstation;Mobile;
+DBusActivatable=true

@@ -1,4 +1,5 @@
 subdir('icons')
+
 # Desktop file
 desktop_conf = configuration_data()
 desktop_conf.set('icon', application_id)
@@ -79,7 +80,6 @@ configure_file(
   install: true,
   install_dir: datadir / 'glib-2.0' / 'schemas'
 )
-
 # Validate GSchema
 if glib_compile_schemas.found()
   test(
@@ -89,5 +89,17 @@ if glib_compile_schemas.found()
     ]
   )
 endif
+
+# D-Bus service file
+service_conf = configuration_data()
+service_conf.set('application_id', application_id)
+service_conf.set('bindir', bindir)
+configure_file(
+  input: 'org.gnome.Fractal.service.in',
+  output: '@0@.service'.format(application_id),
+  configuration: service_conf,
+  install: true,
+  install_dir: datadir / 'dbus-1/services',
+)
 
 subdir('resources')
