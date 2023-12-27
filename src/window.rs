@@ -11,6 +11,7 @@ use crate::{
     components::Spinner,
     error_page::ErrorPage,
     greeter::Greeter,
+    intent,
     login::Login,
     prelude::*,
     session::{
@@ -480,6 +481,20 @@ impl Window {
             self.imp().session.select_verification(verification);
 
             self.present();
+        }
+    }
+
+    /// Process the given intent.
+    ///
+    /// If a session is needed, the session must already be ready.
+    pub fn process_intent_ready(&self, intent: intent::AppIntent) {
+        match intent {
+            intent::AppIntent::ShowRoom(intent::ShowRoomPayload {
+                session_id,
+                room_id,
+            }) => {
+                self.show_room(&session_id, &room_id);
+            }
         }
     }
 }

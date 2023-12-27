@@ -17,8 +17,7 @@ pub use self::notifications_settings::{
 };
 use super::{Room, Session};
 use crate::{
-    application::AppShowRoomPayload, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body,
-    Application, Window,
+    intent, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body, Application, Window,
 };
 
 mod imp {
@@ -162,7 +161,7 @@ impl Notifications {
         let notification = gio::Notification::new(&room.display_name());
         notification.set_priority(gio::NotificationPriority::High);
 
-        let payload = AppShowRoomPayload {
+        let payload = intent::ShowRoomPayload {
             session_id: session_id.to_owned(),
             room_id: room_id.to_owned(),
         };

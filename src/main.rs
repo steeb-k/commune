@@ -13,6 +13,7 @@ mod contrib;
 mod error_page;
 mod greeter;
 mod i18n;
+mod intent;
 mod login;
 mod prelude;
 mod secret;
