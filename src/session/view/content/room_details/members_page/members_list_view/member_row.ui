@@ -70,7 +70,7 @@
             <property name="halign">start</property>
             <property name="ellipsize">end</property>
             <binding name="label">
-              <lookup name="user-id" type="Member">
+              <lookup name="user-id-string" type="Member">
                 <lookup name="member">ContentMemberRow</lookup>
               </lookup>
             </binding>

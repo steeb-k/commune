@@ -688,7 +688,7 @@ impl Timeline {
         let Some(session) = room.session() else {
             return None;
         };
-        let own_user_id = session.user_id().to_owned();
+        let own_user_id = session.user_id().clone();
         let matrix_timeline = self.matrix_timeline();
 
         let user_receipt_item = spawn_tokio!(async move {

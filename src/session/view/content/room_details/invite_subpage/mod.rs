@@ -94,7 +94,7 @@ mod imp {
                 }));
 
             self.text_buffer.connect_delete_range(|_, start, end| {
-                let mut current = start.to_owned();
+                let mut current = *start;
                 loop {
                     if let Some(anchor) = current.child_anchor() {
                         let user = anchor.widgets()[0]
@@ -288,7 +288,7 @@ impl InviteSubpage {
         let invitees: Vec<OwnedUserId> = user_list
             .invitees()
             .into_iter()
-            .map(|i| i.user_id())
+            .map(|i| i.user_id().clone())
             .collect();
 
         match room.invite(&invitees).await {

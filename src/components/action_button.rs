@@ -110,7 +110,7 @@ mod imp {
         }
 
         fn set_action_target_value(&self, value: Option<&glib::Variant>) {
-            self.set_action_target(value.map(ToOwned::to_owned));
+            self.set_action_target(value.cloned());
         }
     }
 

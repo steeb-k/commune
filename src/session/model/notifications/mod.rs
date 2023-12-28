@@ -155,7 +155,7 @@ impl Notifications {
             }
         };
 
-        let room_id = room.room_id();
+        let room_id = room.room_id().to_owned();
         let event_id = event.event_id();
 
         let notification = gio::Notification::new(&room.display_name());
@@ -163,7 +163,7 @@ impl Notifications {
 
         let payload = intent::ShowRoomPayload {
             session_id: session_id.to_owned(),
-            room_id: room_id.to_owned(),
+            room_id: room_id.clone(),
         };
 
         notification
@@ -174,13 +174,13 @@ impl Notifications {
             notification.set_icon(&icon);
         }
 
-        let id = notification_id(session_id, room_id, event_id);
+        let id = notification_id(session_id, &room_id, event_id);
         app.send_notification(Some(&id), &notification);
 
         self.imp()
             .list
             .borrow_mut()
-            .entry(room_id.to_owned())
+            .entry(room_id)
             .or_default()
             .push(event_id.to_owned());
     }

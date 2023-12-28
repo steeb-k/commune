@@ -137,7 +137,7 @@ mod imp {
                     popover.add_child(reaction_chooser, "reaction-chooser");
                 }
 
-                reaction_chooser.set_reactions(Some(event.reactions().to_owned()));
+                reaction_chooser.set_reactions(Some(event.reactions()));
 
                 // Open emoji chooser
                 let more_reactions = gio::SimpleAction::new("more-reactions", None);
@@ -448,7 +448,7 @@ impl ItemRow {
 
             if let TimelineItemContent::Message(message) = event.content() {
                 let own_user_id = session.user_id();
-                let is_from_own_user = event.sender_id() == own_user_id;
+                let is_from_own_user = event.sender_id() == *own_user_id;
 
                 // Remove message
                 fn update_remove_action(

@@ -880,7 +880,7 @@ impl MessageToolbar {
 
     fn set_up_can_send_messages(&self, room: Option<&Room>) {
         if let Some((room, own_user_id)) =
-            room.and_then(|r| r.session().map(|s| (r, s.user_id().to_owned())))
+            room.and_then(|r| r.session().map(|s| (r, s.user_id().clone())))
         {
             let imp = self.imp();
 
@@ -919,7 +919,7 @@ impl MessageToolbar {
         }
 
         room.power_levels().member_is_allowed_to(
-            &member.user_id(),
+            member.user_id(),
             PowerLevelAction::SendMessage(MessageLikeEventType::RoomMessage),
         )
     }
@@ -956,7 +956,7 @@ impl Iterator for SplitMentions {
             let (name, uri) = if let Some(user) = pill.user() {
                 (
                     user.display_name(),
-                    UserExt::user_id(&user).matrix_to_uri().to_string(),
+                    user.user_id().matrix_to_uri().to_string(),
                 )
             } else if let Some(room) = pill.room() {
                 (

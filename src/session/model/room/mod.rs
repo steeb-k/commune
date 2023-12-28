@@ -190,7 +190,7 @@ mod imp {
         fn set_session(&self, session: Session) {
             self.session.set(Some(&session));
 
-            let own_member = Member::new(&self.obj(), session.user_id());
+            let own_member = Member::new(&self.obj(), session.user_id().clone());
             self.own_member.set(own_member).unwrap();
         }
 
@@ -822,7 +822,7 @@ impl Room {
         let members = content
             .user_ids
             .into_iter()
-            .filter_map(|user_id| (user_id != own_user_id).then(|| members.get_or_create(user_id)))
+            .filter_map(|user_id| (user_id != *own_user_id).then(|| members.get_or_create(user_id)))
             .collect();
 
         typing_list.update(members);
@@ -831,7 +831,7 @@ impl Room {
     /// Create and load our own member from the store.
     async fn load_own_member(&self) {
         let own_member = self.own_member();
-        let user_id = own_member.user_id();
+        let user_id = own_member.user_id().clone();
         let matrix_room = self.matrix_room().clone();
 
         let handle = spawn_tokio!(async move { matrix_room.get_member_no_sync(&user_id).await });
@@ -973,7 +973,7 @@ impl Room {
             return;
         }
 
-        let own_user_id = session.user_id().to_owned();
+        let own_user_id = session.user_id().clone();
         let matrix_room_clone = matrix_room.clone();
         let handle =
             spawn_tokio!(async move { matrix_room_clone.get_member_no_sync(&own_user_id).await });
@@ -1006,7 +1006,7 @@ impl Room {
             }
         };
 
-        let inviter = Member::new(self, &inviter_id);
+        let inviter = Member::new(self, inviter_id);
         inviter.update_from_room_member(&inviter_member);
 
         self.imp().inviter.replace(Some(inviter));
@@ -1032,7 +1032,7 @@ impl Room {
                     AnySyncStateEvent::RoomMember(SyncStateEvent::Original(event)) => {
                         if let Some(members) = self.members() {
                             members.update_member_for_member_event(event);
-                        } else if event.state_key == own_user_id {
+                        } else if event.state_key == *own_user_id {
                             own_member.update_from_member_event(event);
                         }
 
@@ -1191,7 +1191,7 @@ impl Room {
         room_action: PowerLevelAction,
     ) -> gtk::ClosureExpression {
         let session = self.session().unwrap();
-        let user_id = session.user_id().to_owned();
+        let user_id = session.user_id().clone();
         self.power_levels()
             .member_is_allowed_to_expr(user_id, room_action)
     }

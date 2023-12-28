@@ -6,7 +6,7 @@ use matrix_sdk::{
             room::member::{MembershipState, RoomMemberEventContent},
             OriginalSyncStateEvent, StrippedStateEvent,
         },
-        OwnedMxcUri, UserId,
+        OwnedMxcUri, OwnedUserId,
     },
 };
 use tracing::error;
@@ -98,12 +98,14 @@ glib::wrapper! {
 }
 
 impl Member {
-    pub fn new(room: &Room, user_id: &UserId) -> Self {
+    pub fn new(room: &Room, user_id: OwnedUserId) -> Self {
         let session = room.session();
-        glib::Object::builder()
+        let obj = glib::Object::builder::<Self>()
             .property("session", &session)
-            .property("user-id", user_id.as_str())
-            .build()
+            .build();
+
+        obj.upcast_ref::<User>().imp().set_user_id(user_id);
+        obj
     }
 
     /// Set the power level of the member.
@@ -143,7 +145,7 @@ impl Member {
 
     /// Update the user based on the room member.
     pub fn update_from_room_member(&self, member: &RoomMember) {
-        if member.user_id() != &*self.user_id() {
+        if member.user_id() != self.user_id() {
             error!("Tried Member update from RoomMember with wrong user ID.");
             return;
         };
@@ -159,7 +161,7 @@ impl Member {
 
     /// Update the user based on the room member state event
     pub fn update_from_member_event(&self, event: &impl MemberEvent) {
-        if event.state_key() != &*self.user_id() {
+        if event.state_key() != self.user_id() {
             error!("Tried Member update from MemberEvent with wrong user ID.");
             return;
         };
@@ -179,12 +181,12 @@ impl Member {
 }
 
 pub trait MemberEvent {
-    fn sender(&self) -> &UserId;
+    fn sender(&self) -> &OwnedUserId;
     fn content(&self) -> &RoomMemberEventContent;
-    fn state_key(&self) -> &UserId;
+    fn state_key(&self) -> &OwnedUserId;
 
     fn avatar_url(&self) -> Option<OwnedMxcUri> {
-        self.content().avatar_url.to_owned()
+        self.content().avatar_url.clone()
     }
 
     fn display_name(&self) -> Option<String> {
@@ -200,24 +202,24 @@ pub trait MemberEvent {
 }
 
 impl MemberEvent for OriginalSyncStateEvent<RoomMemberEventContent> {
-    fn sender(&self) -> &UserId {
+    fn sender(&self) -> &OwnedUserId {
         &self.sender
     }
     fn content(&self) -> &RoomMemberEventContent {
         &self.content
     }
-    fn state_key(&self) -> &UserId {
+    fn state_key(&self) -> &OwnedUserId {
         &self.state_key
     }
 }
 impl MemberEvent for StrippedStateEvent<RoomMemberEventContent> {
-    fn sender(&self) -> &UserId {
+    fn sender(&self) -> &OwnedUserId {
         &self.sender
     }
     fn content(&self) -> &RoomMemberEventContent {
         &self.content
     }
-    fn state_key(&self) -> &UserId {
+    fn state_key(&self) -> &OwnedUserId {
         &self.state_key
     }
 }

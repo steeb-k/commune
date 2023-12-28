@@ -9,7 +9,7 @@ use matrix_sdk::{
 use once_cell::sync::Lazy;
 use oo7::{Item, Keyring};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use ruma::{DeviceId, OwnedDeviceId, OwnedUserId, UserId};
+use ruma::{OwnedDeviceId, OwnedUserId, UserId};
 use serde::{Deserialize, Serialize};
 use serde_json::error::Error as JsonError;
 use thiserror::Error;
@@ -259,7 +259,7 @@ impl StoredSession {
             }
         };
         let device_id = match attr.get("device-id") {
-            Some(string) => <&DeviceId>::from(string.as_str()).to_owned(),
+            Some(string) => OwnedDeviceId::from(string.as_str()),
             None => {
                 return Err(SecretError::Invalid(gettext(
                     "Could not find device ID in stored session",

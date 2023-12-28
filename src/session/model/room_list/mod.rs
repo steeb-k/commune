@@ -221,10 +221,10 @@ impl RoomList {
             for room_id in imp.tombstoned_rooms.borrow().iter() {
                 if let Some(room) = list.get(room_id) {
                     if room.update_outdated() {
-                        to_remove.push(room_id.to_owned());
+                        to_remove.push(room_id.clone());
                     }
                 } else {
-                    to_remove.push(room_id.to_owned());
+                    to_remove.push(room_id.clone());
                 }
             }
 

@@ -43,7 +43,7 @@
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <binding name="label">
-                  <lookup name="user-id" type="CreateDmDialogUser">
+                  <lookup name="user-id-string" type="CreateDmDialogUser">
                     <lookup name="user">CreateDmDialogUserRow</lookup>
                   </lookup>
                 </binding>

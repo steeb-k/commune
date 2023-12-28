@@ -4,7 +4,7 @@ use ruma::{
     api::client::room::create_room,
     assign,
     events::{room::encryption::RoomEncryptionEventContent, InitialStateEvent},
-    OwnedMxcUri, OwnedUserId, UserId,
+    OwnedMxcUri, OwnedUserId,
 };
 use tracing::{debug, error};
 
@@ -34,8 +34,10 @@ mod imp {
     #[properties(wrapper_type = super::User)]
     pub struct User {
         /// The ID of this user.
-        #[property(get = Self::user_id, set = Self::set_user_id, construct_only, type = String)]
         pub user_id: OnceCell<OwnedUserId>,
+        /// The ID of this user, as a string.
+        #[property(get = Self::user_id_string)]
+        pub user_id_string: PhantomData<String>,
         /// The display name of this user.
         #[property(get = Self::display_name, set = Self::set_display_name, explicit_notify, nullable)]
         pub display_name: RefCell<String>,
@@ -72,24 +74,25 @@ mod imp {
                 AvatarUriSource::User,
             ));
             self.avatar_data.set(avatar_data).unwrap();
+        }
+    }
 
+    impl User {
+        /// The ID of this user, as a string.
+        fn user_id_string(&self) -> String {
+            self.user_id.get().unwrap().to_string()
+        }
+
+        /// Set the ID of this user.
+        pub fn set_user_id(&self, user_id: OwnedUserId) {
+            self.user_id.set(user_id).unwrap();
+
+            let obj = self.obj();
             obj.bind_property("display-name", &obj.avatar_data(), "display-name")
                 .sync_create()
                 .build();
 
             obj.init_is_verified();
-        }
-    }
-
-    impl User {
-        /// The ID of this user.
-        fn user_id(&self) -> String {
-            self.user_id.get().unwrap().to_string()
-        }
-
-        /// Set the ID of this user.
-        fn set_user_id(&self, user_id: String) {
-            self.user_id.set(UserId::parse(user_id).unwrap()).unwrap();
         }
 
         /// The display name of this user.
@@ -133,18 +136,20 @@ glib::wrapper! {
 
 impl User {
     /// Constructs a new user with the given user ID for the given session.
-    pub fn new(session: &Session, user_id: &UserId) -> Self {
-        glib::Object::builder()
+    pub fn new(session: &Session, user_id: OwnedUserId) -> Self {
+        let obj = glib::Object::builder::<Self>()
             .property("session", session)
-            .property("user-id", user_id.as_str())
-            .build()
+            .build();
+
+        obj.imp().set_user_id(user_id);
+        obj
     }
 
     /// Get the cryptographic identity (aka cross-signing identity) of this
     /// user.
     pub async fn crypto_identity(&self) -> Option<UserIdentity> {
         let encryption = self.session().client().encryption();
-        let user_id = UserExt::user_id(self);
+        let user_id = self.user_id().clone();
         let handle = spawn_tokio!(async move { encryption.get_user_identity(&user_id).await });
 
         match handle.await.unwrap() {
@@ -184,10 +189,7 @@ impl User {
     /// A direct chat is a joined room marked as direct, with only our own user
     /// and the other user in it.
     pub async fn direct_chat(&self) -> Option<Room> {
-        self.session()
-            .room_list()
-            .direct_chat(&UserExt::user_id(self))
-            .await
+        self.session().room_list().direct_chat(self.user_id()).await
     }
 
     /// Create an encrypted direct chat with this user.
@@ -195,7 +197,7 @@ impl User {
         let request = assign!(create_room::v3::Request::new(),
         {
             is_direct: true,
-            invite: vec![UserExt::user_id(self)],
+            invite: vec![self.user_id().clone()],
             preset: Some(create_room::v3::RoomPreset::TrustedPrivateChat),
             initial_state: vec![
                InitialStateEvent::new(RoomEncryptionEventContent::with_recommended_defaults()).to_raw_any(),
@@ -246,13 +248,13 @@ pub trait UserExt: IsA<User> {
     }
 
     /// The ID of this user.
-    fn user_id(&self) -> OwnedUserId {
-        self.upcast_ref().imp().user_id.get().unwrap().clone()
+    fn user_id(&self) -> &OwnedUserId {
+        self.upcast_ref().imp().user_id.get().unwrap()
     }
 
     /// Whether this user is the same as the session's user.
     fn is_own_user(&self) -> bool {
-        self.session().user_id() == self.upcast_ref().imp().user_id.get().unwrap()
+        self.session().user_id() == self.user_id()
     }
 
     /// The display name of this user.
@@ -301,7 +303,7 @@ pub trait UserExt: IsA<User> {
     /// This overwrites the already loaded display name and avatar.
     fn load_profile(&self) {
         let client = self.session().client();
-        let user_id = self.user_id();
+        let user_id = self.user_id().clone();
         let user = self.upcast_ref::<User>();
 
         let handle = spawn_tokio!(async move { client.get_profile(&user_id).await });

@@ -203,22 +203,22 @@ impl InviteeList {
                             None => {
                                 let user = Invitee::new(
                                     &session,
-                                    &item.user_id,
+                                    item.user_id.clone(),
                                     item.display_name.as_deref(),
-                                    item.avatar_url.as_deref(),
+                                    item.avatar_url,
                                 );
                                 user.connect_invited_notify(
                                     clone!(@weak self as obj => move |user| {
                                         if user.invited() && user.invite_exception().is_none() {
                                             obj.add_invitee(user.clone());
                                         } else {
-                                            obj.remove_invitee(&user.user_id())
+                                            obj.remove_invitee(user.user_id())
                                         }
                                     }),
                                 );
                                 // If it is the "custom user" from the search term, fetch the avatar
                                 // and display name
-                                let user_id = user.user_id();
+                                let user_id = user.user_id().clone();
                                 if user_id == search_term {
                                     let client = session.client();
                                     let handle = spawn_tokio!(async move {
@@ -320,7 +320,7 @@ impl InviteeList {
         self.imp()
             .invitee_list
             .borrow_mut()
-            .insert(user.user_id(), user.clone());
+            .insert(user.user_id().clone(), user.clone());
         self.emit_by_name::<()>("invitee-added", &[&user]);
         self.notify_has_selected();
     }

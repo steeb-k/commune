@@ -1,5 +1,5 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use ruma::{DeviceId, UserId};
+use ruma::{OwnedDeviceId, OwnedUserId};
 use url::Url;
 
 use crate::{secret::StoredSession, session::model::AvatarData};
@@ -30,15 +30,15 @@ mod imp {
         /// The Matrix session's info.
         #[property(get, construct_only)]
         pub info: OnceCell<StoredSession>,
-        /// The Matrix session's user ID.
-        #[property(get = Self::user_id)]
-        pub user_id: PhantomData<String>,
-        /// The Matrix session's homeserver.
-        #[property(get = Self::homeserver)]
-        pub homeserver: PhantomData<String>,
-        /// The Matrix session's device ID.
-        #[property(get = Self::device_id)]
-        pub device_id: PhantomData<String>,
+        /// The Matrix session's user ID, as a string.
+        #[property(get = Self::user_id_string)]
+        pub user_id_string: PhantomData<String>,
+        /// The Matrix session's homeserver, as a string.
+        #[property(get = Self::homeserver_string)]
+        pub homeserver_string: PhantomData<String>,
+        /// The Matrix session's device ID, as a string.
+        #[property(get = Self::device_id_string)]
+        pub device_id_string: PhantomData<String>,
         /// The local session's ID.
         #[property(get = Self::session_id)]
         pub session_id: PhantomData<String>,
@@ -64,18 +64,18 @@ mod imp {
             self.info.get().unwrap()
         }
 
-        /// The Matrix session's user ID.
-        fn user_id(&self) -> String {
+        /// The Matrix session's user ID, as a string.
+        fn user_id_string(&self) -> String {
             self.info().user_id.to_string()
         }
 
-        /// The Matrix session's homeserver.
-        fn homeserver(&self) -> String {
+        /// The Matrix session's homeserver, as a string.
+        fn homeserver_string(&self) -> String {
             self.info().homeserver.to_string()
         }
 
-        /// The Matrix session's device ID.
-        fn device_id(&self) -> String {
+        /// The Matrix session's device ID, as a string.
+        fn device_id_string(&self) -> String {
             self.info().device_id.to_string()
         }
 
@@ -108,7 +108,7 @@ pub trait SessionInfoExt: 'static {
     fn info(&self) -> &StoredSession;
 
     /// The Matrix session's user ID.
-    fn user_id(&self) -> &UserId {
+    fn user_id(&self) -> &OwnedUserId {
         &self.info().user_id
     }
 
@@ -118,7 +118,7 @@ pub trait SessionInfoExt: 'static {
     }
 
     /// The Matrix session's device ID.
-    fn device_id(&self) -> &DeviceId {
+    fn device_id(&self) -> &OwnedDeviceId {
         &self.info().device_id
     }
 

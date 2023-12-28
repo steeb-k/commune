@@ -48,7 +48,7 @@
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <binding name="label">
-                  <lookup name="user-id" type="Invitee">
+                  <lookup name="user-id-string" type="Invitee">
                     <lookup name="user">ContentInviteInviteeRow</lookup>
                   </lookup>
                 </binding>

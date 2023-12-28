@@ -93,7 +93,7 @@ mod imp {
             let not_own_user = gtk::BoolFilter::builder()
                 .expression(gtk::ClosureExpression::new::<bool>(
                     &[
-                        Member::this_expression("user-id"),
+                        Member::this_expression("user-id-string"),
                         obj.property_expression("user-id"),
                     ],
                     closure!(
@@ -138,7 +138,7 @@ mod imp {
                 .match_mode(gtk::StringFilterMatchMode::Substring)
                 .expression(gtk::ClosureExpression::new::<String>(
                     &[
-                        Member::this_expression("user-id"),
+                        Member::this_expression("user-id-string"),
                         Member::this_expression("display-name"),
                     ],
                     closure!(

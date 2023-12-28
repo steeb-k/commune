@@ -71,7 +71,7 @@ mod imp {
             let own_member = room.own_member();
             self.members
                 .borrow_mut()
-                .insert(own_member.user_id(), own_member);
+                .insert(own_member.user_id().clone(), own_member);
 
             self.room.set(Some(&room));
             obj.notify_room();
@@ -192,7 +192,7 @@ impl MemberList {
         let prev_len = members.len();
         for member in new_members {
             if let Entry::Vacant(entry) = members.entry(member.user_id().into()) {
-                entry.insert(Member::new(&room, member.user_id()));
+                entry.insert(Member::new(&room, member.user_id().to_owned()));
             }
         }
         let num_members_added = members.len().saturating_sub(prev_len);
@@ -247,7 +247,7 @@ impl MemberList {
             .entry(user_id)
             .or_insert_with_key(|user_id| {
                 was_member_added = true;
-                Member::new(&self.room().unwrap(), user_id)
+                Member::new(&self.room().unwrap(), user_id.clone())
             })
             .clone();
 
@@ -270,7 +270,7 @@ impl MemberList {
         &self,
         event: &OriginalSyncStateEvent<RoomMemberEventContent>,
     ) {
-        self.get_or_create(event.state_key.to_owned())
+        self.get_or_create(event.state_key.clone())
             .update_from_member_event(event);
     }
 

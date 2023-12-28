@@ -59,7 +59,7 @@ mod imp {
             }
 
             if let Some(member) = &member {
-                self.avatar.set_data(Some(member.avatar_data().to_owned()));
+                self.avatar.set_data(Some(member.avatar_data()));
                 self.display_name.set_label(&member.display_name());
                 self.id.set_label(member.user_id().as_str());
             } else {

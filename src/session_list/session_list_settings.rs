@@ -72,7 +72,7 @@ impl SessionListSettings {
             .sessions
             .borrow()
             .iter()
-            .map(|(session_id, session)| (session_id.to_owned(), session.stored_settings()))
+            .map(|(session_id, session)| (session_id.clone(), session.stored_settings()))
             .collect::<Vec<_>>();
 
         if let Err(error) = Application::default().settings().set_string(

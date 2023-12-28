@@ -148,7 +148,7 @@ mod imp {
         fn user(&self) -> User {
             let obj = self.obj();
             self.user
-                .get_or_init(|| User::new(&obj, &obj.info().user_id))
+                .get_or_init(|| User::new(&obj, obj.info().user_id.clone()))
                 .clone()
         }
     }

@@ -140,7 +140,7 @@ mod imp {
                 .and_then(|row| row.sidebar())
             {
                 let popover = sidebar.room_row_popover();
-                obj.set_popover(Some(popover.to_owned()));
+                obj.set_popover(Some(popover.clone()));
             }
         }
     }

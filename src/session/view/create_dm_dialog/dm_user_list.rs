@@ -173,14 +173,14 @@ impl DmUserList {
                 for item in response.results.into_iter() {
                     let user = DmUser::new(
                         &session,
-                        &item.user_id,
+                        item.user_id,
                         item.display_name.as_deref(),
-                        item.avatar_url.as_deref(),
+                        item.avatar_url,
                     );
 
                     // If it is the "custom user" from the search term, fetch the avatar
                     // and display name
-                    if add_custom && user.user_id() == search_term {
+                    if add_custom && *user.user_id() == search_term {
                         user.load_profile();
                     }
 

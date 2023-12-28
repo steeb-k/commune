@@ -202,7 +202,7 @@ impl VerificationList {
         let member = room
             .members()
             .map(|l| l.get_or_create(other_user_id.clone()))
-            .unwrap_or_else(|| Member::new(&room, &other_user_id));
+            .unwrap_or_else(|| Member::new(&room, other_user_id.clone()));
 
         // Ensure the member is up-to-date.
         let matrix_room = room.matrix_room().clone();

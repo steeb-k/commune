@@ -331,7 +331,7 @@ mod imp {
         fn display_name(&self) -> String {
             let user = self.user.obj();
 
-            if user.user_id() != *user.session().user_id() {
+            if user.user_id() != user.session().user_id() {
                 user.display_name()
             } else {
                 // TODO: give this request a name based on the device

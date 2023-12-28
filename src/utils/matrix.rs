@@ -356,9 +356,9 @@ fn parse_pill(s: &str, room: &Room, session: &Session) -> Option<Pill> {
     let uri = html_escape::decode_html_entities(s);
 
     let id = if let Ok(mx_uri) = MatrixUri::parse(&uri) {
-        mx_uri.id().to_owned()
+        mx_uri.id().clone()
     } else if let Ok(mx_to_uri) = MatrixToUri::parse(&uri) {
-        mx_to_uri.id().to_owned()
+        mx_to_uri.id().clone()
     } else {
         return None;
     };

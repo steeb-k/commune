@@ -84,7 +84,7 @@ impl AttachmentDialog {
             .property("transient-for", transient_for)
             .property("title", title)
             .build();
-        obj.imp().media.view_file(file.to_owned());
+        obj.imp().media.view_file(file.clone());
         obj.imp().send_button.grab_focus();
         obj
     }

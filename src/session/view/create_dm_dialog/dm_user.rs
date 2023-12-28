@@ -1,5 +1,5 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::{MxcUri, UserId};
+use matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
 
 use crate::{
     prelude::*,
@@ -59,17 +59,17 @@ glib::wrapper! {
 impl DmUser {
     pub fn new(
         session: &Session,
-        user_id: &UserId,
+        user_id: OwnedUserId,
         display_name: Option<&str>,
-        avatar_url: Option<&MxcUri>,
+        avatar_url: Option<OwnedMxcUri>,
     ) -> Self {
         let obj: Self = glib::Object::builder()
             .property("session", session)
-            .property("user-id", user_id.as_str())
             .property("display-name", display_name)
             .build();
-        // FIXME: we should make the avatar_url settable as property
-        obj.set_avatar_url(avatar_url.map(std::borrow::ToOwned::to_owned));
+
+        obj.set_avatar_url(avatar_url);
+        obj.upcast_ref::<User>().imp().set_user_id(user_id);
         obj
     }
 }

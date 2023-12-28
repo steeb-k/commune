@@ -49,7 +49,7 @@
                             <property name="wrap">true</property>
                             <property name="wrap-mode">word-char</property>
                             <binding name="label">
-                              <lookup name="user-id">
+                              <lookup name="user-id-string">
                                 <lookup name="user">UserPage</lookup>
                               </lookup>
                             </binding>

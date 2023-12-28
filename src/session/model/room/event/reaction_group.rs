@@ -72,11 +72,11 @@ mod imp {
 
         /// Whether this group has a reaction from our own user.
         fn has_user(&self) -> bool {
-            let user_id = UserExt::user_id(self.user.get().unwrap());
+            let user_id = self.user.get().unwrap().user_id();
             self.reactions
                 .borrow()
                 .as_ref()
-                .filter(|reactions| reactions.by_sender(&user_id).next().is_some())
+                .filter(|reactions| reactions.by_sender(user_id).next().is_some())
                 .is_some()
         }
     }
@@ -99,14 +99,16 @@ impl ReactionGroup {
     /// The event ID of the reaction in this group sent by the logged-in user,
     /// if any.
     pub fn user_reaction_event_key(&self) -> Option<EventKey> {
-        let user_id = UserExt::user_id(&self.user());
+        let user = self.user();
+        let user_id = user.user_id();
+
         self.imp()
             .reactions
             .borrow()
             .as_ref()
             .and_then(|reactions| {
                 reactions
-                    .by_sender(&user_id)
+                    .by_sender(user_id)
                     .next()
                     .and_then(|timeline_key| match timeline_key {
                         (Some(txn_id), None) => Some(EventKey::TransactionId(txn_id.clone())),

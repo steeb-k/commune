@@ -273,8 +273,7 @@ impl Window {
                 .session_selection
                 .selected_item()
                 .and_downcast::<SessionInfo>()?
-                .session_id()
-                .to_owned(),
+                .session_id(),
         )
     }
 

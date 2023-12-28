@@ -34,7 +34,7 @@ mod imp {
 
     impl PlayVideoRendererImpl for VideoPlayerRenderer {
         fn create_video_sink(&self, _player: &Play) -> gst::Element {
-            self.sink.get().unwrap().to_owned().upcast()
+            self.sink.get().unwrap().clone().upcast()
         }
     }
 
