@@ -4,10 +4,10 @@ use std::time::Duration;
 use ashpd::desktop::camera;
 use gtk::{glib, subclass::prelude::*};
 use once_cell::sync::Lazy;
-use tokio::time::timeout;
+use tracing::error;
 
 use super::camera_paintable::CameraPaintable;
-use crate::spawn_tokio;
+use crate::{spawn_tokio, utils::timeout_future};
 
 mod imp {
     use super::*;
@@ -31,58 +31,82 @@ glib::wrapper! {
 }
 
 impl Camera {
-    /// Create a new `Camera`. You should consider using `Camera::default()` to
-    /// get a shared Object
-    pub fn new() -> Self {
+    /// Create a new `Camera`.
+    ///
+    /// Use `Camera::default()` to get a shared GObject.
+    fn new() -> Self {
         glib::Object::new()
     }
 
-    pub async fn has_camera(&self) -> Result<bool, ashpd::Error> {
-        let camera = camera::Camera::new().await?;
+    /// Ask the system whether cameras are available.
+    pub async fn has_cameras(&self) -> bool {
+        let handle = spawn_tokio!(async move {
+            let camera = match camera::Camera::new().await {
+                Ok(camera) => camera,
+                Err(error) => {
+                    error!("Failed to create instance of camera proxy: {error}");
+                    return false;
+                }
+            };
 
-        if camera.is_present().await? {
-            // Apparently is-camera-present doesn't report the correct value: https://github.com/flatpak/xdg-desktop-portal/issues/486#issuecomment-897636589
-            // We need to use the proper timeout based on the executer
-            if glib::MainContext::default().is_owner() {
-                Ok(
-                    crate::utils::timeout_future(Duration::from_secs(1), camera::request())
-                        .await
-                        .is_ok(),
-                )
-            } else {
-                Ok(timeout(Duration::from_secs(1), camera::request())
-                    .await
-                    .is_ok())
+            match camera.is_present().await {
+                Ok(is_present) => is_present,
+                Err(error) => {
+                    error!("Failed to check whether system has cameras: {error}");
+                    false
+                }
             }
-        } else {
-            Ok(false)
+        });
+        let abort_handle = handle.abort_handle();
+
+        match timeout_future(Duration::from_secs(1), handle).await {
+            Ok(is_present) => is_present.expect("The task should not have been aborted"),
+            Err(_) => {
+                abort_handle.abort();
+                error!("Failed to check whether system has cameras: the request timed out");
+                false
+            }
         }
     }
 
-    /// Get the a `gdk::Paintable` displaying the content of a camera
-    /// This will panic if not called from the `MainContext` gtk is running on
+    /// Get the a `gdk::Paintable` displaying the content of a camera.
+    ///
+    /// Panics if not called from the `MainContext` where GTK is running.
     pub async fn paintable(&self) -> Option<CameraPaintable> {
         // We need to make sure that the Paintable is taken only from the MainContext
         assert!(glib::MainContext::default().is_owner());
+        let imp = self.imp();
 
-        crate::utils::timeout_future(Duration::from_secs(1), self.paintable_internal())
-            .await
-            .ok()?
-    }
+        if let Some(paintable) = imp.paintable.upgrade() {
+            return Some(paintable);
+        }
 
-    async fn paintable_internal(&self) -> Option<CameraPaintable> {
-        if let Some(paintable) = self.imp().paintable.upgrade() {
-            Some(paintable)
-        } else if let Ok(Some((stream_fd, streams))) =
-            spawn_tokio!(async move { camera::request().await })
-                .await
-                .unwrap()
-        {
-            let paintable = CameraPaintable::new(stream_fd, streams).await;
-            self.imp().paintable.set(Some(&paintable));
-            Some(paintable)
-        } else {
-            None
+        let handle = spawn_tokio!(async move { camera::request().await });
+        let abort_handle = handle.abort_handle();
+
+        match timeout_future(Duration::from_secs(1), handle).await {
+            Ok(tokio_res) => match tokio_res.expect("The task should not have been aborted") {
+                Ok(Some((fd, streams))) => {
+                    let paintable = CameraPaintable::new(fd, streams).await;
+                    imp.paintable.set(Some(&paintable));
+
+                    Some(paintable)
+                }
+                Ok(None) => {
+                    error!("Failed to request access to cameras: the response is empty");
+                    None
+                }
+                Err(error) => {
+                    error!("Failed to request access to cameras: {error}");
+                    None
+                }
+            },
+            Err(_) => {
+                // Error because we reached the timeout.
+                abort_handle.abort();
+                error!("Failed to request access to cameras: the request timed out");
+                None
+            }
         }
     }
 }

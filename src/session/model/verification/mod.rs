@@ -1,6 +1,5 @@
 use matrix_sdk::encryption::verification::VerificationRequest;
 use ruma::{events::key::verification::VerificationMethod, OwnedUserId};
-use tracing::error;
 
 mod identity_verification;
 mod verification_list;
@@ -11,7 +10,7 @@ pub use self::{
     },
     verification_list::VerificationList,
 };
-use crate::{contrib::Camera, spawn_tokio};
+use crate::contrib::Camera;
 
 /// A unique key to identify an identity verification.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
@@ -45,16 +44,9 @@ async fn load_supported_verification_methods() -> Vec<VerificationMethod> {
         VerificationMethod::ReciprocateV1,
     ];
 
-    let handle = spawn_tokio!(async move { Camera::default().has_camera().await });
-    let has_camera = match handle.await.unwrap() {
-        Ok(has_camera) => has_camera,
-        Err(error) => {
-            error!("Failed to check whether system has a camera: {error}");
-            false
-        }
-    };
+    let has_cameras = Camera::default().has_cameras().await;
 
-    if has_camera {
+    if has_cameras {
         methods.push(VerificationMethod::QrCodeScanV1);
     }
 
