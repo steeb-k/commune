@@ -1,12 +1,15 @@
 use std::{
     cell::Cell,
     collections::{HashMap, HashSet},
+    fmt,
 };
 
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
 use matrix_sdk::{
-    ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomAliasId, RoomId, RoomOrAliasId},
+    ruma::{
+        OwnedRoomAliasId, OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId,
+    },
     sync::Rooms as ResponseRooms,
     RoomMemberships,
 };
@@ -147,7 +150,7 @@ impl RoomList {
     }
 
     /// Get the room with the given identifier, if any.
-    pub fn get_by_identifier(&self, identifier: RoomIdentifier) -> Option<Room> {
+    pub fn get_by_identifier(&self, identifier: &RoomIdentifier) -> Option<Room> {
         match identifier {
             RoomIdentifier::Id(room_id) => self.get(room_id),
             RoomIdentifier::Alias(room_alias) => self
@@ -155,7 +158,7 @@ impl RoomList {
                 .list
                 .borrow()
                 .values()
-                .find(|room| room.matrix_room().canonical_alias().as_deref() == Some(room_alias))
+                .find(|room| room.matrix_room().canonical_alias().as_ref() == Some(room_alias))
                 .cloned(),
         }
     }
@@ -337,7 +340,7 @@ impl RoomList {
         &self,
         identifier: OwnedRoomOrAliasId,
         via: Vec<OwnedServerName>,
-    ) -> Result<(), String> {
+    ) -> Result<OwnedRoomId, String> {
         let Some(session) = self.session() else {
             return Err("Failed to upgrade Session".to_owned());
         };
@@ -355,7 +358,7 @@ impl RoomList {
         match handle.await.unwrap() {
             Ok(matrix_room) => {
                 self.pending_rooms_replace_or_remove(&identifier, matrix_room.room_id());
-                Ok(())
+                Ok(matrix_room.room_id().to_owned())
             }
             Err(error) => {
                 self.pending_rooms_remove(&identifier);
@@ -387,7 +390,7 @@ impl RoomList {
     }
 
     /// Get the room with the given identifier, if it is joined.
-    pub fn joined_room(&self, identifier: RoomIdentifier) -> Option<Room> {
+    pub fn joined_room(&self, identifier: &RoomIdentifier) -> Option<Room> {
         self.get_by_identifier(identifier)
             .filter(|room| room.is_joined())
     }
@@ -458,38 +461,46 @@ impl RoomList {
 }
 
 /// A unique identifier for a room.
-#[derive(Debug, Clone, Copy)]
-pub enum RoomIdentifier<'a> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RoomIdentifier {
     /// A room ID.
-    Id(&'a RoomId),
+    Id(OwnedRoomId),
     /// A room alias.
-    Alias(&'a RoomAliasId),
+    Alias(OwnedRoomAliasId),
 }
 
-impl<'a> From<&'a RoomId> for RoomIdentifier<'a> {
-    fn from(value: &'a RoomId) -> Self {
+impl From<OwnedRoomId> for RoomIdentifier {
+    fn from(value: OwnedRoomId) -> Self {
         Self::Id(value)
     }
 }
 
-impl<'a> From<&'a RoomAliasId> for RoomIdentifier<'a> {
-    fn from(value: &'a RoomAliasId) -> Self {
+impl From<OwnedRoomAliasId> for RoomIdentifier {
+    fn from(value: OwnedRoomAliasId) -> Self {
         Self::Alias(value)
     }
 }
 
-impl<'a> From<&'a RoomOrAliasId> for RoomIdentifier<'a> {
-    fn from(value: &'a RoomOrAliasId) -> Self {
+impl From<OwnedRoomOrAliasId> for RoomIdentifier {
+    fn from(value: OwnedRoomOrAliasId) -> Self {
         if value.is_room_id() {
-            RoomIdentifier::Id(value.as_str().try_into().unwrap())
+            Self::Id(
+                value
+                    .try_into()
+                    .expect("Conversion into known variant should not fail"),
+            )
         } else {
-            RoomIdentifier::Alias(value.as_str().try_into().unwrap())
+            Self::Alias(
+                value
+                    .try_into()
+                    .expect("Conversion into known variant should not fail"),
+            )
         }
     }
 }
 
-impl<'a> From<RoomIdentifier<'a>> for &'a RoomOrAliasId {
-    fn from(value: RoomIdentifier<'a>) -> Self {
+impl From<RoomIdentifier> for OwnedRoomOrAliasId {
+    fn from(value: RoomIdentifier) -> Self {
         match value {
             RoomIdentifier::Id(id) => id.into(),
             RoomIdentifier::Alias(alias) => alias.into(),
@@ -497,11 +508,11 @@ impl<'a> From<RoomIdentifier<'a>> for &'a RoomOrAliasId {
     }
 }
 
-impl<'a> From<RoomIdentifier<'a>> for OwnedRoomOrAliasId {
-    fn from(value: RoomIdentifier<'a>) -> Self {
-        match value {
-            RoomIdentifier::Id(id) => id.to_owned().into(),
-            RoomIdentifier::Alias(alias) => alias.to_owned().into(),
+impl fmt::Display for RoomIdentifier {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Id(id) => id.fmt(f),
+            Self::Alias(alias) => alias.fmt(f),
         }
     }
 }

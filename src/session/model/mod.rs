@@ -19,7 +19,7 @@ pub use self::{
         TimelineItemExt, TimelineState, TypingList, UserReadReceipt, VirtualItem, VirtualItemKind,
         POWER_LEVEL_MAX, POWER_LEVEL_MIN,
     },
-    room_list::RoomList,
+    room_list::{RoomIdentifier, RoomList},
     session::{Session, SessionState},
     session_settings::{SessionSettings, StoredSessionSettings},
     sidebar_data::{
