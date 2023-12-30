@@ -193,11 +193,18 @@ mod imp {
                 obj.update_content();
             }));
 
+            let edit_source_handler =
+                event.connect_latest_edit_source_notify(clone!(@weak obj => move |_| {
+                    obj.update_content();
+                }));
+
             self.reactions
                 .set_reaction_list(&room.get_or_create_members(), &event.reactions());
             self.read_receipts.set_source(&event.read_receipts());
-            self.event
-                .set(event, vec![timestamp_handler, source_handler]);
+            self.event.set(
+                event,
+                vec![timestamp_handler, source_handler, edit_source_handler],
+            );
             obj.notify_event();
 
             obj.update_content();

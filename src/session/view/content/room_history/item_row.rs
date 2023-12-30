@@ -199,12 +199,23 @@ mod imp {
                             obj.set_event_widget(event.clone());
                             obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
                         }));
+
+                    let edit_source_notify_handler =
+                        event.connect_latest_edit_source_notify(clone!(@weak obj => move |event| {
+                            obj.set_event_widget(event.clone());
+                            obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
+                        }));
+
                     let is_highlighted_notify_handler =
                         event.connect_is_highlighted_notify(clone!(@weak obj => move |_| {
                             obj.update_highlight();
                         }));
-                    self.notify_handlers
-                        .replace(vec![source_notify_handler, is_highlighted_notify_handler]);
+
+                    self.notify_handlers.replace(vec![
+                        source_notify_handler,
+                        edit_source_notify_handler,
+                        is_highlighted_notify_handler,
+                    ]);
 
                     obj.set_event_widget(event.clone());
                     obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
