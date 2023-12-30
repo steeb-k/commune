@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt, ops::Deref};
+use std::{borrow::Cow, fmt};
 
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
@@ -81,18 +81,6 @@ pub enum MessageState {
     Edited = 4,
 }
 
-#[derive(Clone, Debug, glib::Boxed)]
-#[boxed_type(name = "BoxedEventTimelineItem")]
-pub struct BoxedEventTimelineItem(pub EventTimelineItem);
-
-impl Deref for BoxedEventTimelineItem {
-    type Target = EventTimelineItem;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 /// A user's read receipt.
 #[derive(Clone, Debug)]
 pub struct UserReadReceipt {
@@ -112,8 +100,7 @@ mod imp {
     #[properties(wrapper_type = super::Event)]
     pub struct Event {
         /// The underlying SDK timeline item.
-        #[property(set = Self::set_item, type = BoxedEventTimelineItem)]
-        pub item: RefCell<Option<BoxedEventTimelineItem>>,
+        pub item: RefCell<Option<EventTimelineItem>>,
         /// The room containing this `Event`.
         #[property(get, set = Self::set_room, construct_only)]
         pub room: glib::WeakRef<Room>,
@@ -236,7 +223,7 @@ mod imp {
 
     impl Event {
         /// Set the underlying SDK timeline item of this `Event`.
-        fn set_item(&self, item: BoxedEventTimelineItem) {
+        pub fn set_item(&self, item: EventTimelineItem) {
             let obj = self.obj();
 
             let prev_source = self.source();
@@ -418,11 +405,13 @@ glib::wrapper! {
 impl Event {
     /// Create a new `Event` with the given SDK timeline item.
     pub fn new(item: EventTimelineItem, room: &Room) -> Self {
-        let item = BoxedEventTimelineItem(item);
-        glib::Object::builder()
-            .property("item", &item)
+        let obj = glib::Object::builder::<Self>()
             .property("room", room)
-            .build()
+            .build();
+
+        obj.imp().set_item(item);
+
+        obj
     }
 
     /// Try to update this `Event` with the given SDK timeline item.
@@ -433,13 +422,13 @@ impl Event {
             EventKey::TransactionId(txn_id)
                 if item.is_local_echo() && item.transaction_id() == Some(txn_id) =>
             {
-                self.set_item(BoxedEventTimelineItem(item.clone()));
+                self.imp().set_item(item.clone());
                 return true;
             }
             EventKey::EventId(event_id)
                 if !item.is_local_echo() && item.event_id() == Some(event_id) =>
             {
-                self.set_item(BoxedEventTimelineItem(item.clone()));
+                self.imp().set_item(item.clone());
                 return true;
             }
             _ => {}
