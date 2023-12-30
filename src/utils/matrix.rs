@@ -9,6 +9,7 @@ use matrix_sdk::{config::RequestConfig, Client, ClientBuildError};
 use ruma::{
     events::{room::message::MessageType, AnyMessageLikeEventContent, AnySyncTimelineEvent},
     matrix_uri::MatrixId,
+    serde::Raw,
     MatrixToUri, MatrixUri,
 };
 use thiserror::Error;
@@ -390,4 +391,18 @@ fn parse_pill(s: &str, room: &Room, session: &Session) -> Option<Pill> {
         }
         _ => None,
     }
+}
+
+/// Compare two raw JSON sources.
+pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
+    let Some(lhs) = lhs else {
+        // They are equal only if both are `None`.
+        return rhs.is_none();
+    };
+    let Some(rhs) = rhs else {
+        // They cannot be equal.
+        return false;
+    };
+
+    lhs.json().get() == rhs.json().get()
 }

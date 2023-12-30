@@ -22,7 +22,10 @@ use super::{
     timeline::{TimelineItem, TimelineItemImpl},
     Member, Room,
 };
-use crate::{spawn_tokio, utils::matrix::get_media_content};
+use crate::{
+    spawn_tokio,
+    utils::matrix::{get_media_content, raw_eq},
+};
 
 /// The unique key to identify an event in a room.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -226,17 +229,17 @@ mod imp {
         pub fn set_item(&self, item: EventTimelineItem) {
             let obj = self.obj();
 
-            let prev_source = self.source();
+            let prev_raw = self.raw();
             let was_edited = self.is_edited();
             let was_highlighted = self.is_highlighted();
-            let prev_latest_edit_source = self.latest_edit_source();
+            let prev_latest_edit_raw = self.latest_edit_raw();
 
             self.reactions.update(item.reactions().clone());
             obj.update_read_receipts(item.read_receipts());
 
             self.item.replace(Some(item));
 
-            if self.source() != prev_source {
+            if !raw_eq(prev_raw.as_ref(), self.raw().as_ref()) {
                 obj.notify_source();
             }
             if self.is_edited() != was_edited {
@@ -245,7 +248,10 @@ mod imp {
             if self.is_highlighted() != was_highlighted {
                 obj.notify_is_highlighted();
             }
-            if self.latest_edit_source() != prev_latest_edit_source {
+            if !raw_eq(
+                prev_latest_edit_raw.as_ref(),
+                self.latest_edit_raw().as_ref(),
+            ) {
                 obj.notify_latest_edit_source();
                 obj.notify_latest_edit_event_id_string();
                 obj.notify_latest_edit_timestamp();
@@ -253,6 +259,12 @@ mod imp {
             }
 
             obj.update_state();
+        }
+
+        /// The raw JSON source for this `Event`, if it has been echoed back
+        /// by the server.
+        pub fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
+            self.item.borrow().as_ref()?.original_json().cloned()
         }
 
         /// The pretty-formatted JSON source for this `Event`, if it has
@@ -440,13 +452,7 @@ impl Event {
     /// The raw JSON source for this `Event`, if it has been echoed back
     /// by the server.
     pub fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
-        self.imp()
-            .item
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .original_json()
-            .cloned()
+        self.imp().raw()
     }
 
     /// The unique of this `Event` in the timeline.
