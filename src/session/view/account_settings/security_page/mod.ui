@@ -6,6 +6,33 @@
     <property name="name">security</property>
     <child>
       <object class="AdwPreferencesGroup">
+        <child>
+          <object class="AdwActionRow">
+            <property name="title" translatable="yes">Ignored Users</property>
+            <property name="subtitle" translatable="yes">All messages or invitations sent by these users will be ignored. You will still see some of their activity, like when they join or leave a room.</property>
+            <property name="activatable">True</property>
+            <signal name="activated" handler="show_ignored_users_page" swapped="yes"/>
+            <child type="suffix">
+              <object class="GtkLabel" id="ignored_users_count">
+                <property name="valign">center</property>
+                <property name="halign">center</property>
+                <property name="accessible-role">presentation</property>
+              </object>
+            </child>
+            <child type="suffix">
+              <object class="GtkImage">
+                <property name="valign">center</property>
+                <property name="halign">center</property>
+                <property name="icon-name">go-next-symbolic</property>
+                <property name="accessible-role">presentation</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="AdwPreferencesGroup">
         <!-- Translators: 'Room encryption keys' are encryption keys for all rooms. -->
         <property name="title" translatable="yes">Room Encryption Keys</property>
         <child>
@@ -62,6 +89,9 @@
       </object>
     </child>
   </template>
+  <object class="IgnoredUsersSubpage" id="ignored_users_subpage">
+    <property name="session" bind-source="SecurityPage" bind-property="session" bind-flags="sync-create"/>
+  </object>
   <object class="ImportExportKeysSubpage" id="import_export_keys_subpage">
     <property name="session" bind-source="SecurityPage" bind-property="session" bind-flags="sync-create"/>
   </object>

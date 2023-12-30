@@ -52,7 +52,7 @@ pub use self::{
 };
 use super::{
     notifications::NotificationsRoomSetting, room_list::RoomMetainfo, AvatarData, AvatarImage,
-    AvatarUriSource, IdentityVerification, Session, SidebarItem, SidebarItemImpl,
+    AvatarUriSource, IdentityVerification, Session, SidebarItem, SidebarItemImpl, User,
 };
 use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
@@ -581,8 +581,7 @@ impl Room {
                     RoomType::Left => {
                         matrix_room.leave().await?;
                     }
-                    RoomType::Outdated => unimplemented!(),
-                    RoomType::Space => unimplemented!(),
+                    RoomType::Outdated | RoomType::Space | RoomType::Ignored => unimplemented!(),
                 },
                 RoomState::Joined => match category {
                     RoomType::Invited => {}
@@ -614,8 +613,7 @@ impl Room {
                     RoomType::Left => {
                         matrix_room.leave().await?;
                     }
-                    RoomType::Outdated => unimplemented!(),
-                    RoomType::Space => unimplemented!(),
+                    RoomType::Outdated | RoomType::Space | RoomType::Ignored => unimplemented!(),
                 },
                 RoomState::Left => match category {
                     RoomType::Invited => {}
@@ -657,8 +655,7 @@ impl Room {
                         matrix_room.join().await?;
                     }
                     RoomType::Left => {}
-                    RoomType::Outdated => unimplemented!(),
-                    RoomType::Space => unimplemented!(),
+                    RoomType::Outdated | RoomType::Space | RoomType::Ignored => unimplemented!(),
                 },
             }
 
@@ -683,6 +680,10 @@ impl Room {
         // Don't load the category if this room was upgraded
         if self.category() == RoomType::Outdated {
             return;
+        }
+
+        if self.inviter().is_some_and(|i| i.is_ignored()) {
+            self.set_category_internal(RoomType::Ignored);
         }
 
         let matrix_room = self.matrix_room();
@@ -1009,8 +1010,16 @@ impl Room {
         let inviter = Member::new(self, inviter_id);
         inviter.update_from_room_member(&inviter_member);
 
+        inviter.upcast_ref::<User>().connect_is_ignored_notify(
+            clone!(@weak self as obj => move |_| {
+                obj.load_category();
+            }),
+        );
+
         self.imp().inviter.replace(Some(inviter));
+
         self.notify_inviter();
+        self.load_category();
     }
 
     /// Update the room state based on the new sync response

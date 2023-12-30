@@ -39,6 +39,8 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/notifications_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/ignored_users_subpage/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/import_export_keys_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/security_page/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/explore/mod.ui</file>

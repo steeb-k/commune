@@ -82,14 +82,10 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            // Filter the members that are joined and that are not our user.
-            let joined_expr = Member::this_expression("membership").chain_closure::<bool>(
-                closure!(|_obj: Option<glib::Object>, membership: Membership| {
-                    membership == Membership::Join
-                }),
-            );
-            let joined = gtk::BoolFilter::new(Some(&joined_expr));
-
+            // Filter the members, the criteria:
+            // - not our user
+            // - not ignored
+            // - joined
             let not_own_user = gtk::BoolFilter::builder()
                 .expression(gtk::ClosureExpression::new::<bool>(
                     &[
@@ -103,9 +99,25 @@ mod imp {
                     ),
                 ))
                 .build();
+
+            let ignored_expr = Member::this_expression("is-ignored");
+            let not_ignored = gtk::BoolFilter::builder()
+                .expression(&ignored_expr)
+                .invert(true)
+                .build();
+
+            let joined_expr = Member::this_expression("membership").chain_closure::<bool>(
+                closure!(|_obj: Option<glib::Object>, membership: Membership| {
+                    membership == Membership::Join
+                }),
+            );
+            let joined = gtk::BoolFilter::new(Some(&joined_expr));
+
             let filter = gtk::EveryFilter::new();
-            filter.append(joined);
             filter.append(not_own_user);
+            filter.append(not_ignored);
+            filter.append(joined);
+
             let first_model = gtk::FilterListModel::builder()
                 .filter(&filter)
                 .model(&self.members_expr)
@@ -152,6 +164,7 @@ mod imp {
             self.filtered_members.set_model(Some(&second_model));
 
             self.members_expr.set_expressions(vec![
+                ignored_expr.upcast(),
                 joined_expr.upcast(),
                 latest_activity_expr.upcast(),
                 display_name_expr.upcast(),

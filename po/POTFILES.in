@@ -48,6 +48,9 @@ src/session/view/account_settings/general_page/mod.ui
 src/session/view/account_settings/mod.ui
 src/session/view/account_settings/notifications_page.rs
 src/session/view/account_settings/notifications_page.ui
+src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs
+src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui
+src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui
 src/session/view/account_settings/security_page/import_export_keys_subpage.rs
 src/session/view/account_settings/security_page/import_export_keys_subpage.ui
 src/session/view/account_settings/security_page/mod.rs

@@ -291,7 +291,7 @@ impl RoomRow {
                     self.action_set_enabled("room-row.forget", true);
                     return;
                 }
-                RoomType::Outdated | RoomType::Space => {}
+                RoomType::Outdated | RoomType::Space | RoomType::Ignored => {}
             }
         }
 

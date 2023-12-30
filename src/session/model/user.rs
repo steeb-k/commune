@@ -54,6 +54,10 @@ mod imp {
         /// this user.
         #[property(get = Self::allowed_actions)]
         pub allowed_actions: PhantomData<UserActions>,
+        /// Whether this user is currently ignored..
+        #[property(get)]
+        pub is_ignored: Cell<bool>,
+        ignored_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -75,6 +79,14 @@ mod imp {
             ));
             self.avatar_data.set(avatar_data).unwrap();
         }
+
+        fn dispose(&self) {
+            if let Some(session) = self.session.get() {
+                if let Some(handler) = self.ignored_handler.take() {
+                    session.ignored_users().disconnect(handler);
+                }
+            }
+        }
     }
 
     impl User {
@@ -85,12 +97,27 @@ mod imp {
 
         /// Set the ID of this user.
         pub fn set_user_id(&self, user_id: OwnedUserId) {
-            self.user_id.set(user_id).unwrap();
+            self.user_id.set(user_id.clone()).unwrap();
 
             let obj = self.obj();
             obj.bind_property("display-name", &obj.avatar_data(), "display-name")
                 .sync_create()
                 .build();
+
+            let ignored_users = self.session.get().unwrap().ignored_users();
+            let ignored_handler = ignored_users.connect_items_changed(
+                clone!(@weak self as imp => move |ignored_users, _, _, _| {
+                    let user_id = imp.user_id.get().unwrap();
+                    let is_ignored = ignored_users.contains(user_id);
+
+                    if imp.is_ignored.get() != is_ignored {
+                        imp.is_ignored.set(is_ignored);
+                        imp.obj().notify_is_ignored();
+                    }
+                }),
+            );
+            self.is_ignored.set(ignored_users.contains(&user_id));
+            self.ignored_handler.replace(Some(ignored_handler));
 
             obj.init_is_verified();
         }
@@ -239,6 +266,16 @@ impl User {
         debug!("Creating direct chat with {user_id}…");
         self.create_direct_chat().await.map_err(|_| ())
     }
+
+    /// Ignore this user.
+    pub async fn ignore(&self) -> Result<(), ()> {
+        self.session().ignored_users().add(self.user_id()).await
+    }
+
+    /// Stop ignoring this user.
+    pub async fn stop_ignoring(&self) -> Result<(), ()> {
+        self.session().ignored_users().remove(self.user_id()).await
+    }
 }
 
 pub trait UserExt: IsA<User> {
@@ -319,6 +356,11 @@ pub trait UserExt: IsA<User> {
                 }
             };
         }));
+    }
+
+    /// Whether this user is currently ignored.
+    fn is_ignored(&self) -> bool {
+        self.upcast_ref().is_ignored()
     }
 }
 

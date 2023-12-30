@@ -11,14 +11,26 @@ use crate::session::model::CategoryType;
 #[repr(u32)]
 #[enum_type(name = "RoomType")]
 pub enum RoomType {
+    /// The user was invited to the room.
     Invited = 0,
+    /// The room is joined and has the `m.favourite` tag.
     Favorite = 1,
+    /// The room is joined and has no known tag.
     #[default]
     Normal = 2,
+    /// The room is joined and has the `m.lowpriority` tag.
     LowPriority = 3,
+    /// The room was left by the user, or they were kicked or banned.
     Left = 4,
+    /// The room was upgraded and their successor was joined.
     Outdated = 5,
+    /// The room is a space.
     Space = 6,
+    /// The room should be ignored.
+    ///
+    /// According to the Matrix specification, invites from ignored users
+    /// should be ignored.
+    Ignored = 7,
 }
 
 impl RoomType {
@@ -43,15 +55,14 @@ impl RoomType {
             Self::Left => {
                 matches!(category, Self::Favorite | Self::Normal | Self::LowPriority)
             }
-            Self::Outdated => false,
-            Self::Space => false,
+            Self::Ignored | Self::Outdated | Self::Space => false,
         }
     }
 
     /// Whether this `RoomType` corresponds to the given state.
     pub fn is_state(&self, state: RoomState) -> bool {
         match self {
-            RoomType::Invited => state == RoomState::Invited,
+            RoomType::Invited | RoomType::Ignored => state == RoomState::Invited,
             RoomType::Favorite
             | RoomType::Normal
             | RoomType::LowPriority
@@ -92,6 +103,7 @@ impl TryFrom<&CategoryType> for RoomType {
                 Err("CategoryType::VerificationRequest cannot be a RoomType")
             }
             CategoryType::Space => Ok(Self::Space),
+            CategoryType::Ignored => Ok(Self::Ignored),
         }
     }
 }

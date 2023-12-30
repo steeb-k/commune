@@ -32,6 +32,10 @@ mod imp {
         pub verified_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub verify_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub ignored_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub ignored_button: TemplateChild<SpinnerButton>,
         /// The current user.
         #[property(get, set = Self::set_user, construct_only)]
         pub user: BoundObject<User>,
@@ -46,6 +50,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
 
             klass.install_action_async(
                 "user-page.open-direct-chat",
@@ -95,17 +100,25 @@ mod imp {
             let is_verified_handler = user.connect_verified_notify(clone!(@weak obj => move |_| {
                 obj.update_verified();
             }));
+            let is_ignored_handler = user.connect_is_ignored_notify(clone!(@weak obj => move |_| {
+                obj.update_direct_chat();
+                obj.update_ignored();
+            }));
 
             // We don't need to listen to changes of the property, it never changes after
             // construction.
-            self.direct_chat_button.set_visible(!user.is_own_user());
+            let is_own_user = user.is_own_user();
+            self.ignored_row.set_visible(!is_own_user);
 
-            self.user.set(user, vec![is_verified_handler]);
+            self.user
+                .set(user, vec![is_verified_handler, is_ignored_handler]);
 
             spawn!(clone!(@weak obj => async move {
                 obj.load_direct_chat().await;
             }));
+            obj.update_direct_chat();
             obj.update_verified();
+            obj.update_ignored();
         }
     }
 }
@@ -116,10 +129,19 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl UserPage {
     /// Construct a new `UserPage` for the given user.
     pub fn new(user: &impl IsA<User>) -> Self {
         glib::Object::builder().property("user", user).build()
+    }
+
+    /// Update the visibility of the direct chat button.
+    fn update_direct_chat(&self) {
+        let is_visible = self
+            .user()
+            .is_some_and(|u| !u.is_own_user() && !u.is_ignored());
+        self.imp().direct_chat_button.set_visible(is_visible);
     }
 
     /// Load whether the current user has a direct chat or not.
@@ -223,5 +245,46 @@ impl UserPage {
         }
 
         parent_window.close();
+    }
+
+    /// Update the ignored row.
+    fn update_ignored(&self) {
+        let Some(user) = self.user() else {
+            return;
+        };
+        let imp = self.imp();
+
+        if user.is_ignored() {
+            imp.ignored_row.set_title(&gettext("Ignored"));
+            imp.ignored_button.set_label(gettext("Stop Ignoring"));
+            imp.ignored_button.remove_css_class("destructive-action");
+        } else {
+            imp.ignored_row.set_title(&gettext("Not Ignored"));
+            imp.ignored_button.set_label(gettext("Ignore"));
+            imp.ignored_button.add_css_class("destructive-action");
+        }
+    }
+
+    /// Toggle whether the user is ignored or not.
+    #[template_callback]
+    fn toggle_ignored(&self) {
+        let Some(user) = self.user() else {
+            return;
+        };
+        let is_ignored = user.is_ignored();
+
+        self.imp().ignored_button.set_loading(true);
+
+        spawn!(clone!(@weak self as obj, @weak user => async move {
+            if is_ignored {
+                if user.stop_ignoring().await.is_err() {
+                    toast!(obj, gettext("Failed to stop ignoring user"));
+                }
+            } else if user.ignore().await.is_err() {
+                toast!(obj, gettext("Failed to ignore user"));
+            }
+
+            obj.imp().ignored_button.set_loading(false);
+        }));
     }
 }

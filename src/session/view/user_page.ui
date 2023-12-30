@@ -92,6 +92,7 @@
                             </style>
                             <child>
                               <object class="AdwActionRow" id="verified_row">
+                                <property name="selectable">False</property>
                                 <property name="activatable-widget">verify_button</property>
                                 <child>
                                   <object class="GtkStack" id="verified_stack">
@@ -125,6 +126,18 @@
                                         </property>
                                       </object>
                                     </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow" id="ignored_row">
+                                <property name="selectable">False</property>
+                                <property name="activatable-widget">ignored_button</property>
+                                <child>
+                                  <object class="SpinnerButton" id="ignored_button">
+                                    <property name="valign">center</property>
+                                    <signal name="clicked" handler="toggle_ignored" swapped="yes"/>
                                   </object>
                                 </child>
                               </object>

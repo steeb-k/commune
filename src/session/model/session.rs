@@ -23,8 +23,8 @@ use tracing::{debug, error};
 use url::Url;
 
 use super::{
-    AvatarData, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel, User,
-    VerificationList,
+    AvatarData, IgnoredUsers, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel,
+    User, VerificationList,
 };
 use crate::{
     prelude::*,
@@ -86,6 +86,9 @@ mod imp {
         /// The notifications API for this session.
         #[property(get)]
         pub notifications: Notifications,
+        /// The ignored users API for this session.
+        #[property(get)]
+        pub ignored_users: IgnoredUsers,
     }
 
     #[glib::object_subclass]
@@ -101,6 +104,7 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
+            self.ignored_users.set_session(Some(obj.clone()));
             self.notifications.set_session(Some(obj.clone()));
 
             let monitor = gio::NetworkMonitor::default();
