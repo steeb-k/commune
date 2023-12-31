@@ -129,12 +129,13 @@ power-level-badge {
 }
 
 power-level-badge.admin {
-  color: @light_1;
-  background-color: @red_2;
+  color: @error_fg_color;
+  background-color: @error_bg_color;
 }
 
 power-level-badge.mod {
-  background-color: @yellow_5;
+  color: @warning_fg_color;
+  background-color: @warning_bg_color;
 }
 
 media-viewer headerbar {
