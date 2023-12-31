@@ -64,23 +64,31 @@
                   </object>
                 </child>
                 <child>
-                  <object class="AdwEntryRow" id="username_entry">
+                  <object class="GtkListBox">
                     <style>
-                      <class name="card"/>
+                      <class name="boxed-list"/>
                     </style>
-                    <property name="title" translatable="yes">Matrix Username</property>
-                    <signal name="changed" handler="update_next_state" swapped="yes"/>
-                    <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
+                    <child>
+                      <object class="AdwEntryRow" id="username_entry">
+                        <property name="title" translatable="yes">Matrix Username</property>
+                        <signal name="changed" handler="update_next_state" swapped="yes"/>
+                        <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>
-                  <object class="AdwPasswordEntryRow" id="password_entry">
+                  <object class="GtkListBox">
                     <style>
-                      <class name="card"/>
+                      <class name="boxed-list"/>
                     </style>
-                    <property name="title" translatable="yes">Password</property>
-                    <signal name="changed" handler="update_next_state" swapped="yes"/>
-                    <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
+                    <child>
+                      <object class="AdwPasswordEntryRow" id="password_entry">
+                        <property name="title" translatable="yes">Password</property>
+                        <signal name="changed" handler="update_next_state" swapped="yes"/>
+                        <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>

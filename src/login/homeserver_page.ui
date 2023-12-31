@@ -37,12 +37,16 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
                     <child>
-                      <object class="AdwEntryRow" id="homeserver_entry">
+                      <object class="GtkListBox">
                         <style>
-                          <class name="card"/>
+                          <class name="boxed-list"/>
                         </style>
-                        <signal name="changed" handler="update_next_state" swapped="yes"/>
-                        <signal name="entry-activated" handler="fetch_homeserver_details" swapped="yes"/>
+                        <child>
+                          <object class="AdwEntryRow" id="homeserver_entry">
+                            <signal name="changed" handler="update_next_state" swapped="yes"/>
+                            <signal name="entry-activated" handler="fetch_homeserver_details"   swapped="yes"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                     <child>
