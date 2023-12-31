@@ -37,7 +37,7 @@ mod imp {
         #[template_child]
         pub ignored_button: TemplateChild<SpinnerButton>,
         /// The current user.
-        #[property(get, set = Self::set_user, construct_only)]
+        #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: BoundObject<User>,
         pub bindings: RefCell<Vec<glib::Binding>>,
     }
@@ -84,34 +84,46 @@ mod imp {
 
     impl UserPage {
         /// Set the current user.
-        fn set_user(&self, user: User) {
+        fn set_user(&self, user: Option<User>) {
+            if self.user.obj() == user {
+                return;
+            }
             let obj = self.obj();
 
-            let title_binding = user
-                .bind_property("display-name", &*obj, "title")
-                .sync_create()
-                .build();
-            let avatar_binding = user
-                .bind_property("avatar-data", &*self.avatar, "data")
-                .sync_create()
-                .build();
-            self.bindings.replace(vec![title_binding, avatar_binding]);
+            for binding in self.bindings.take() {
+                binding.unbind();
+            }
+            self.user.disconnect_signals();
 
-            let is_verified_handler = user.connect_verified_notify(clone!(@weak obj => move |_| {
-                obj.update_verified();
-            }));
-            let is_ignored_handler = user.connect_is_ignored_notify(clone!(@weak obj => move |_| {
-                obj.update_direct_chat();
-                obj.update_ignored();
-            }));
+            if let Some(user) = user {
+                let title_binding = user
+                    .bind_property("display-name", &*obj, "title")
+                    .sync_create()
+                    .build();
+                let avatar_binding = user
+                    .bind_property("avatar-data", &*self.avatar, "data")
+                    .sync_create()
+                    .build();
+                self.bindings.replace(vec![title_binding, avatar_binding]);
 
-            // We don't need to listen to changes of the property, it never changes after
-            // construction.
-            let is_own_user = user.is_own_user();
-            self.ignored_row.set_visible(!is_own_user);
+                let is_verified_handler =
+                    user.connect_verified_notify(clone!(@weak obj => move |_| {
+                        obj.update_verified();
+                    }));
+                let is_ignored_handler =
+                    user.connect_is_ignored_notify(clone!(@weak obj => move |_| {
+                        obj.update_direct_chat();
+                        obj.update_ignored();
+                    }));
 
-            self.user
-                .set(user, vec![is_verified_handler, is_ignored_handler]);
+                // We don't need to listen to changes of the property, it never changes after
+                // construction.
+                let is_own_user = user.is_own_user();
+                self.ignored_row.set_visible(!is_own_user);
+
+                self.user
+                    .set(user, vec![is_verified_handler, is_ignored_handler]);
+            }
 
             spawn!(clone!(@weak obj => async move {
                 obj.load_direct_chat().await;
@@ -119,6 +131,7 @@ mod imp {
             obj.update_direct_chat();
             obj.update_verified();
             obj.update_ignored();
+            obj.notify_user();
         }
     }
 }
