@@ -54,7 +54,7 @@
               </object>
             </child>
             <child>
-              <object class="Badge">
+              <object class="PowerLevelBadge">
                 <binding name="power-level">
                   <lookup name="power-level" type="Member">
                     <lookup name="member">ContentMemberRow</lookup>

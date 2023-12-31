@@ -2,7 +2,6 @@ mod action_button;
 mod audio_player;
 mod auth_dialog;
 mod avatar;
-mod badge;
 mod button_row;
 mod context_menu_bin;
 mod custom_entry;
@@ -16,6 +15,7 @@ mod location_viewer;
 mod media_content_viewer;
 mod overlapping_avatars;
 mod pill;
+mod power_level_badge;
 mod reaction_chooser;
 mod room_title;
 mod scale_revealer;
@@ -30,7 +30,6 @@ pub use self::{
     audio_player::AudioPlayer,
     auth_dialog::{AuthDialog, AuthError},
     avatar::Avatar,
-    badge::Badge,
     button_row::ButtonRow,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     custom_entry::CustomEntry,
@@ -44,6 +43,7 @@ pub use self::{
     media_content_viewer::{ContentType, MediaContentViewer},
     overlapping_avatars::OverlappingAvatars,
     pill::Pill,
+    power_level_badge::PowerLevelBadge,
     reaction_chooser::ReactionChooser,
     room_title::RoomTitle,
     scale_revealer::ScaleRevealer,

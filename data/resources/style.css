@@ -119,7 +119,7 @@ levelbar.discrete.error block.filled {
   background-color: @accent_bg_color;
 }
 
-.badge {
+power-level-badge {
   color: @dark_5;
   background-color: @light_3;
   border-radius: 0.4em;
@@ -128,12 +128,12 @@ levelbar.discrete.error block.filled {
   margin-left: 0.5em;
 }
 
-.badge.admin {
+power-level-badge.admin {
   color: @light_1;
   background-color: @red_2;
 }
 
-.badge.mod {
+power-level-badge.mod {
   background-color: @yellow_5;
 }
 

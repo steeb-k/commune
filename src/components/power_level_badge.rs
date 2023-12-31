@@ -9,36 +9,39 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::Badge)]
-    pub struct Badge {
+    #[properties(wrapper_type = super::PowerLevelBadge)]
+    pub struct PowerLevelBadge {
+        pub label: gtk::Label,
         /// The power level displayed by this badge.
-        #[property(get, set = Self::set_power_level, explicit_notify, builder().minimum(POWER_LEVEL_MIN).maximum(POWER_LEVEL_MAX))]
+        #[property(get, set = Self::set_power_level, explicit_notify, minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
         pub power_level: Cell<PowerLevel>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Badge {
-        const NAME: &'static str = "Badge";
-        type Type = super::Badge;
+    impl ObjectSubclass for PowerLevelBadge {
+        const NAME: &'static str = "PowerLevelBadge";
+        type Type = super::PowerLevelBadge;
         type ParentType = adw::Bin;
+
+        fn class_init(klass: &mut Self::Class) {
+            klass.set_css_name("power-level-badge");
+        }
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Badge {
+    impl ObjectImpl for PowerLevelBadge {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
 
-            obj.add_css_class("badge");
-            let label = gtk::Label::new(Some("default"));
-            obj.set_child(Some(&label));
+            obj.set_child(Some(&self.label));
         }
     }
 
-    impl WidgetImpl for Badge {}
-    impl BinImpl for Badge {}
+    impl WidgetImpl for PowerLevelBadge {}
+    impl BinImpl for PowerLevelBadge {}
 
-    impl Badge {
+    impl PowerLevelBadge {
         /// Set the power level this badge displays.
         fn set_power_level(&self, power_level: PowerLevel) {
             let obj = self.obj();
@@ -55,40 +58,37 @@ glib::wrapper! {
     ///
     /// The badge displays admin for a power level of 100 and mod for levels
     /// over or equal to 50.
-    pub struct Badge(ObjectSubclass<imp::Badge>)
+    pub struct PowerLevelBadge(ObjectSubclass<imp::PowerLevelBadge>)
         @extends gtk::Widget, adw::Bin;
 }
 
-impl Badge {
+impl PowerLevelBadge {
     pub fn new() -> Self {
         glib::Object::new()
     }
 
+    /// Update the badge for the given power level.
     fn update_badge(&self, power_level: PowerLevel) {
-        let label: gtk::Label = self.child().and_downcast().unwrap();
+        let label = &self.imp().label;
         let role = MemberRole::from(power_level);
 
-        let visible = match role {
+        match role {
             MemberRole::Admin => {
                 label.set_text(&format!("{role} {power_level}"));
                 self.add_css_class("admin");
                 self.remove_css_class("mod");
-                true
             }
             MemberRole::Mod => {
                 label.set_text(&format!("{role} {power_level}"));
                 self.add_css_class("mod");
                 self.remove_css_class("admin");
-                true
             }
-            MemberRole::Peasant if power_level != 0 => {
+            MemberRole::Peasant => {
                 label.set_text(&power_level.to_string());
                 self.remove_css_class("admin");
                 self.remove_css_class("mod");
-                true
             }
-            _ => false,
         };
-        self.set_visible(visible);
+        self.set_visible(power_level != 0);
     }
 }
