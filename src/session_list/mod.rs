@@ -133,6 +133,11 @@ impl SessionList {
         self.imp().list.borrow().get_index_of(session_id)
     }
 
+    /// The first session in the list, if any.
+    pub fn first(&self) -> Option<SessionInfo> {
+        self.imp().list.borrow().first().map(|(_, v)| v.clone())
+    }
+
     /// Insert the given session to the list.
     ///
     /// If a session with the same ID already exists, it is replaced.

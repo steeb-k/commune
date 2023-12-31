@@ -1,6 +1,9 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::fmt::Write;
+use std::{
+    fmt::{self, Write},
+    str::FromStr,
+};
 
 use gtk::prelude::*;
 use html2pango::html_escape;
@@ -10,7 +13,8 @@ use ruma::{
     events::{room::message::MessageType, AnyMessageLikeEventContent, AnySyncTimelineEvent},
     matrix_uri::MatrixId,
     serde::Raw,
-    MatrixToUri, MatrixUri,
+    IdParseError, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId,
+    OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomOrAliasId,
 };
 use thiserror::Error;
 
@@ -405,4 +409,207 @@ pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
     };
 
     lhs.json().get() == rhs.json().get()
+}
+
+/// A unique identifier for a room.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum MatrixRoomId {
+    /// A room ID.
+    Id(OwnedRoomId),
+    /// A room alias.
+    Alias(OwnedRoomAliasId),
+}
+
+impl From<OwnedRoomId> for MatrixRoomId {
+    fn from(value: OwnedRoomId) -> Self {
+        Self::Id(value)
+    }
+}
+
+impl From<OwnedRoomAliasId> for MatrixRoomId {
+    fn from(value: OwnedRoomAliasId) -> Self {
+        Self::Alias(value)
+    }
+}
+
+impl From<OwnedRoomOrAliasId> for MatrixRoomId {
+    fn from(value: OwnedRoomOrAliasId) -> Self {
+        if value.is_room_id() {
+            Self::Id(
+                value
+                    .try_into()
+                    .expect("Conversion into known variant should not fail"),
+            )
+        } else {
+            Self::Alias(
+                value
+                    .try_into()
+                    .expect("Conversion into known variant should not fail"),
+            )
+        }
+    }
+}
+
+impl From<MatrixRoomId> for OwnedRoomOrAliasId {
+    fn from(value: MatrixRoomId) -> Self {
+        match value {
+            MatrixRoomId::Id(id) => id.into(),
+            MatrixRoomId::Alias(alias) => alias.into(),
+        }
+    }
+}
+
+impl fmt::Display for MatrixRoomId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Id(id) => id.fmt(f),
+            Self::Alias(alias) => alias.fmt(f),
+        }
+    }
+}
+
+/// A URI for a Matrix ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MatrixIdUri {
+    /// A room.
+    Room(MatrixRoomIdUri),
+    /// A user.
+    User(OwnedUserId),
+    /// An event.
+    Event(MatrixEventIdUri),
+}
+
+impl MatrixIdUri {
+    /// Constructs a `MatrixIdUri` from the given ID and servers list.
+    fn try_from_parts(id: MatrixId, via: &[OwnedServerName]) -> Result<Self, ()> {
+        let uri = match id {
+            MatrixId::Room(room_id) => Self::Room(MatrixRoomIdUri {
+                id: room_id.into(),
+                via: via.to_owned(),
+            }),
+            MatrixId::RoomAlias(room_alias) => Self::Room(MatrixRoomIdUri {
+                id: room_alias.into(),
+                via: via.to_owned(),
+            }),
+            MatrixId::User(user_id) => Self::User(user_id),
+            MatrixId::Event(room_id, event_id) => Self::Event(MatrixEventIdUri {
+                event_id,
+                room_uri: MatrixRoomIdUri {
+                    id: room_id.into(),
+                    via: via.to_owned(),
+                },
+            }),
+            _ => return Err(()),
+        };
+
+        Ok(uri)
+    }
+
+    /// Try parsing a `&str` into a `MatrixIdUri`.
+    pub fn parse(s: &str) -> Result<Self, MatrixIdUriParseError> {
+        if let Ok(uri) = MatrixToUri::parse(s) {
+            return uri.try_into();
+        }
+
+        MatrixUri::parse(s)?.try_into()
+    }
+}
+
+impl TryFrom<&MatrixUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: &MatrixUri) -> Result<Self, Self::Error> {
+        // We ignore the action, because we always offer to join a room or DM a user.
+        Self::try_from_parts(uri.id().clone(), uri.via())
+            .map_err(|_| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
+    }
+}
+
+impl TryFrom<MatrixUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: MatrixUri) -> Result<Self, Self::Error> {
+        Self::try_from(&uri)
+    }
+}
+
+impl TryFrom<&MatrixToUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: &MatrixToUri) -> Result<Self, Self::Error> {
+        Self::try_from_parts(uri.id().clone(), uri.via())
+            .map_err(|_| MatrixIdUriParseError::UnsupportedId(uri.id().clone()))
+    }
+}
+
+impl TryFrom<MatrixToUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(uri: MatrixToUri) -> Result<Self, Self::Error> {
+        Self::try_from(&uri)
+    }
+}
+
+impl FromStr for MatrixIdUri {
+    type Err = MatrixIdUriParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
+    }
+}
+
+/// A URI for a Matrix room ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MatrixRoomIdUri {
+    /// The room ID.
+    pub id: MatrixRoomId,
+    /// Matrix servers usable to route a `RoomId`.
+    pub via: Vec<OwnedServerName>,
+}
+
+impl MatrixRoomIdUri {
+    /// Try parsing a `&str` into a `MatrixRoomIdUri`.
+    pub fn parse(s: &str) -> Option<MatrixRoomIdUri> {
+        MatrixIdUri::parse(s)
+            .ok()
+            .and_then(|uri| match uri {
+                MatrixIdUri::Room(room_uri) => Some(room_uri),
+                _ => None,
+            })
+            .or_else(|| {
+                RoomOrAliasId::parse(s)
+                    .ok()
+                    .map(MatrixRoomId::from)
+                    .map(Into::into)
+            })
+    }
+}
+
+impl From<MatrixRoomId> for MatrixRoomIdUri {
+    fn from(id: MatrixRoomId) -> Self {
+        Self {
+            id,
+            via: Vec::new(),
+        }
+    }
+}
+
+/// A URI for a Matrix event ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MatrixEventIdUri {
+    /// The event ID.
+    pub event_id: OwnedEventId,
+    /// The event's room ID URI.
+    pub room_uri: MatrixRoomIdUri,
+}
+
+/// Errors encountered when parsing a Matrix ID URI.
+#[derive(Debug, Clone, Error)]
+pub enum MatrixIdUriParseError {
+    /// Not a valid Matrix URI.
+    #[error(transparent)]
+    InvalidUri(#[from] IdParseError),
+    /// Unsupported Matrix ID.
+    #[error("unsupported Matrix ID: {0:?}")]
+    UnsupportedId(MatrixId),
 }

@@ -2,7 +2,7 @@
 Name=Fractal
 Comment=Fractal is a decentralized, secure messaging client for collaborative group communication.
 GenericName=Fractal group messaging
-Exec=fractal
+Exec=fractal %U
 # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
 Icon=@icon@
 Type=Application
@@ -14,3 +14,4 @@ Keywords=Matrix;matrix.org;chat;irc;communications;talk;riot;element;
 # Translators: Do NOT translate or transliterate this text (these are enum types)!
 X-Purism-FormFactor=Workstation;Mobile;
 DBusActivatable=true
+MimeType=x-scheme-handler/matrix;

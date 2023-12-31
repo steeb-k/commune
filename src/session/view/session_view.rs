@@ -4,13 +4,17 @@ use gtk::{
     glib::{clone, signal::SignalHandlerId},
     CompositeTemplate,
 };
-use ruma::RoomId;
+use ruma::{OwnedUserId, RoomId};
 use tracing::{error, warn};
 
-use super::{Content, CreateDmDialog, JoinRoomDialog, MediaViewer, RoomCreation, Sidebar};
+use super::{
+    Content, CreateDmDialog, JoinRoomDialog, MediaViewer, RoomCreation, Sidebar, UserProfileDialog,
+};
 use crate::{
     session::model::{Event, IdentityVerification, Room, Selection, Session, SidebarListModel},
-    spawn, toast, Window,
+    spawn, toast,
+    utils::matrix::{MatrixRoomId, MatrixRoomIdUri},
+    Window,
 };
 
 mod imp {
@@ -84,9 +88,7 @@ mod imp {
             });
 
             klass.install_action("session.show-join-room", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.show_join_room_dialog().await;
-                }));
+                obj.show_join_room_dialog(None);
             });
 
             klass.install_action("session.create-dm", None, move |obj, _, _| {
@@ -234,6 +236,21 @@ impl SessionView {
         }
     }
 
+    /// Select the room with the given identifier in this view, if it exists.
+    ///
+    /// Returns `true` if the room was found.
+    pub fn select_room_if_exists(&self, room_id: &MatrixRoomId) -> bool {
+        if let Some(room) = self
+            .session()
+            .and_then(|s| s.room_list().joined_room(room_id))
+        {
+            self.select_room(Some(room));
+            true
+        } else {
+            false
+        }
+    }
+
     /// Select the given verification in this view.
     pub fn select_verification(&self, verification: IdentityVerification) {
         self.select_item(Some(verification));
@@ -267,12 +284,26 @@ impl SessionView {
         window.present();
     }
 
-    async fn show_join_room_dialog(&self) {
+    /// Offer to the user to join a room.
+    ///
+    /// If no room URI is provided, the user will have to enter one.
+    pub fn show_join_room_dialog(&self, room_uri: Option<MatrixRoomIdUri>) {
         let Some(session) = self.session() else {
             return;
         };
 
+        if let Some(room_uri) = &room_uri {
+            if self.select_room_if_exists(&room_uri.id) {
+                return;
+            }
+        }
+
         let dialog = JoinRoomDialog::new(self.parent_window().as_ref(), &session);
+
+        if let Some(uri) = room_uri {
+            dialog.set_uri(uri);
+        }
+
         dialog.present();
     }
 
@@ -305,5 +336,15 @@ impl SessionView {
         imp.media_viewer
             .set_message(&room, event.event_id().unwrap(), message);
         imp.media_viewer.reveal(source_widget);
+    }
+
+    /// Show the profile of the given user.
+    pub fn show_user_profile_dialog(&self, user_id: OwnedUserId) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let dialog = UserProfileDialog::new(self.parent_window().as_ref(), &session, user_id);
+        dialog.present();
     }
 }

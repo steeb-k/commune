@@ -799,3 +799,17 @@ dragoverlay statuspage {
 .account-settings listview {
 	background: transparent;
 }
+
+
+/* Account Chooser Dialog */
+
+.account-chooser list {
+	background: transparent;
+}
+
+.account-chooser list row {
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  min-height: 32px;
+  border-radius: 12px;
+}

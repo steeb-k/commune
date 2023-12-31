@@ -4,6 +4,7 @@
 )]
 #![allow(clippy::new_without_default)]
 
+mod account_chooser_dialog;
 mod account_switcher;
 mod application;
 mod components;

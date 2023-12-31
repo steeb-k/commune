@@ -3,21 +3,23 @@ use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::{
     api::client::space::{get_hierarchy, SpaceHierarchyRoomsChunk},
-    assign,
-    matrix_uri::MatrixId,
-    uint, MatrixToUri, MatrixUri, OwnedRoomOrAliasId, OwnedServerName, RoomOrAliasId,
+    assign, uint,
 };
 use tracing::{debug, error};
 
 use crate::{
-    components::{Avatar, SpinnerButton, ToastableWindow},
+    components::{Avatar, Spinner, SpinnerButton, ToastableWindow},
     i18n::ngettext_f,
     prelude::*,
-    session::model::{AvatarData, AvatarImage, AvatarUriSource, RoomIdentifier, Session},
-    spawn, spawn_tokio, toast, Window,
+    session::model::{AvatarData, AvatarImage, AvatarUriSource, Session},
+    spawn, spawn_tokio, toast,
+    utils::matrix::{MatrixRoomId, MatrixRoomIdUri},
+    Window,
 };
 
 mod imp {
+    use std::cell::{Cell, RefCell};
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -26,9 +28,6 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/join_room_dialog.ui")]
     #[properties(wrapper_type = super::JoinRoomDialog)]
     pub struct JoinRoomDialog {
-        /// The current session.
-        #[property(get, set = Self::set_session, construct_only)]
-        pub session: glib::WeakRef<Session>,
         #[template_child]
         pub go_back_btn: TemplateChild<gtk::Button>,
         #[template_child]
@@ -53,6 +52,12 @@ mod imp {
         pub room_members_count: TemplateChild<gtk::Label>,
         #[template_child]
         pub join_btn: TemplateChild<SpinnerButton>,
+        /// The current session.
+        #[property(get, set = Self::set_session, construct_only)]
+        pub session: glib::WeakRef<Session>,
+        /// The URI to preview.
+        pub uri: RefCell<Option<MatrixRoomIdUri>>,
+        pub disable_go_back: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -62,6 +67,8 @@ mod imp {
         type ParentType = ToastableWindow;
 
         fn class_init(klass: &mut Self::Class) {
+            Spinner::static_type();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
@@ -101,7 +108,8 @@ mod imp {
 
         /// Whether we can go back to the previous screen.
         pub fn can_go_back(&self) -> bool {
-            self.stack.visible_child_name().as_deref() == Some("details")
+            !self.disable_go_back.get()
+                && self.stack.visible_child_name().as_deref() == Some("details")
         }
 
         /// Set the currently visible page.
@@ -127,6 +135,19 @@ impl JoinRoomDialog {
             .build()
     }
 
+    /// Set the room URI to look up.
+    pub fn set_uri(&self, uri: MatrixRoomIdUri) {
+        let imp = self.imp();
+
+        imp.uri.replace(Some(uri.clone()));
+        imp.disable_go_back.set(true);
+        imp.set_visible_page("loading");
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.look_up_room_inner(uri).await;
+        }));
+    }
+
     /// Update the state of the entry page.
     #[template_callback]
     fn update_entry_page(&self) {
@@ -138,17 +159,17 @@ impl JoinRoomDialog {
         };
         imp.entry_page.set_sensitive(true);
 
-        let Some((identifier, _)) = parse_room(&imp.search_entry.text()) else {
+        let Some(uri) = MatrixRoomIdUri::parse(&imp.search_entry.text()) else {
             imp.look_up_btn.set_sensitive(false);
+            imp.uri.take();
             return;
         };
         imp.look_up_btn.set_sensitive(true);
 
-        if session
-            .room_list()
-            .joined_room(&identifier.into())
-            .is_some()
-        {
+        let id = uri.id.clone();
+        imp.uri.replace(Some(uri));
+
+        if session.room_list().joined_room(&id).is_some() {
             // Translators: This is a verb, as in 'View Room'.
             imp.look_up_btn.set_label(gettext("View"));
         } else {
@@ -162,12 +183,9 @@ impl JoinRoomDialog {
     /// If the room is not, this will open it instead.
     #[template_callback]
     fn look_up_room(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
         let imp = self.imp();
 
-        let Some((identifier, _)) = parse_room(&imp.search_entry.text()) else {
+        let Some(uri) = imp.uri.borrow().clone() else {
             return;
         };
         let Some(window) = self.transient_for().and_downcast::<Window>() else {
@@ -178,18 +196,16 @@ impl JoinRoomDialog {
         imp.entry_page.set_sensitive(false);
 
         // Join or view the room with the given identifier.
-        let identifier = RoomIdentifier::from(identifier);
-        if let Some(room) = session.room_list().joined_room(&identifier) {
-            window.session_view().select_room(Some(room));
+        if window.session_view().select_room_if_exists(&uri.id) {
             self.close();
         } else {
             spawn!(clone!(@weak self as obj => async move {
-                obj.look_up_room_inner(identifier).await;
+                obj.look_up_room_inner(uri).await;
             }));
         }
     }
 
-    async fn look_up_room_inner(&self, identifier: RoomIdentifier) {
+    async fn look_up_room_inner(&self, uri: MatrixRoomIdUri) {
         let Some(session) = self.session() else {
             return;
         };
@@ -201,9 +217,9 @@ impl JoinRoomDialog {
 
         let client = session.client();
 
-        let room_id = match identifier.clone() {
-            RoomIdentifier::Id(room_id) => room_id,
-            RoomIdentifier::Alias(alias) => {
+        let room_id = match uri.id.clone() {
+            MatrixRoomId::Id(room_id) => room_id,
+            MatrixRoomId::Alias(alias) => {
                 let client_clone = client.clone();
                 let handle =
                     spawn_tokio!(async move { client_clone.resolve_room_alias(&alias).await });
@@ -211,8 +227,8 @@ impl JoinRoomDialog {
                 match handle.await.unwrap() {
                     Ok(response) => response.room_id,
                     Err(error) => {
-                        error!("Failed to resolve room alias `{identifier}`: {error}");
-                        self.fill_details_not_found(&identifier);
+                        error!("Failed to resolve room alias `{}`: {error}", uri.id);
+                        self.fill_details_not_found(&uri);
                         return;
                     }
                 }
@@ -243,11 +259,11 @@ impl JoinRoomDialog {
                 }
             }
             Err(error) => {
-                error!("Failed to get room details for room `{identifier}`: {error}");
+                error!("Failed to get room details for room `{}`: {error}", uri.id);
             }
         }
 
-        self.fill_details_not_found(&identifier);
+        self.fill_details_not_found(&uri);
     }
 
     /// Fill the details with the given result.
@@ -308,10 +324,10 @@ impl JoinRoomDialog {
     }
 
     /// Fill the details when no result is available
-    fn fill_details_not_found(&self, identifier: &RoomIdentifier) {
+    fn fill_details_not_found(&self, uri: &MatrixRoomIdUri) {
         let imp = self.imp();
 
-        let name = identifier.to_string();
+        let name = uri.id.to_string();
         imp.room_name.set_label(&name);
 
         let avatar_data = AvatarData::new();
@@ -332,13 +348,14 @@ impl JoinRoomDialog {
     /// Join the room that was entered, if it is valid.
     #[template_callback]
     fn join_room(&self) {
-        let Some((room_id, via)) = parse_room(&self.imp().search_entry.text()) else {
-            return;
-        };
         let Some(session) = self.session() else {
             return;
         };
         let imp = self.imp();
+
+        let Some(uri) = imp.uri.borrow().clone() else {
+            return;
+        };
 
         imp.go_back_btn.set_sensitive(false);
         imp.join_btn.set_loading(true);
@@ -346,7 +363,7 @@ impl JoinRoomDialog {
         // Join the room with the given identifier.
         let room_list = session.room_list();
         spawn!(clone!(@weak self as obj, @weak room_list => async move {
-            match room_list.join_by_id_or_alias(room_id, via).await {
+            match room_list.join_by_id_or_alias(uri.id.into(), uri.via).await {
                 Ok(room_id) => {
                     if let Some(room) = room_list.get_wait(&room_id).await {
                         if let Some(window) = obj.transient_for().and_downcast_ref::<Window>() {
@@ -383,32 +400,4 @@ impl JoinRoomDialog {
             self.close()
         }
     }
-}
-
-fn parse_room(room: &str) -> Option<(OwnedRoomOrAliasId, Vec<OwnedServerName>)> {
-    MatrixUri::parse(room)
-        .ok()
-        .and_then(|uri| match uri.id() {
-            MatrixId::Room(room_id) => Some((room_id.clone().into(), uri.via().to_owned())),
-            MatrixId::RoomAlias(room_alias) => {
-                Some((room_alias.clone().into(), uri.via().to_owned()))
-            }
-            _ => None,
-        })
-        .or_else(|| {
-            MatrixToUri::parse(room)
-                .ok()
-                .and_then(|uri| match uri.id() {
-                    MatrixId::Room(room_id) => Some((room_id.clone().into(), uri.via().to_owned())),
-                    MatrixId::RoomAlias(room_alias) => {
-                        Some((room_alias.clone().into(), uri.via().to_owned()))
-                    }
-                    _ => None,
-                })
-        })
-        .or_else(|| {
-            RoomOrAliasId::parse(room)
-                .ok()
-                .map(|room_id| (room_id, vec![]))
-        })
 }

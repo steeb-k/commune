@@ -1,6 +1,7 @@
 mod avatar_data;
 mod ignored_users;
 mod notifications;
+mod remote_user;
 mod room;
 mod room_list;
 mod session;
@@ -15,13 +16,14 @@ pub use self::{
     notifications::{
         Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
     },
+    remote_user::RemoteUser,
     room::{
         Event, EventKey, HighlightFlags, Member, MemberList, MemberRole, Membership, MessageState,
         PowerLevel, ReactionGroup, ReactionList, Room, RoomType, Timeline, TimelineItem,
         TimelineItemExt, TimelineState, TypingList, UserReadReceipt, VirtualItem, VirtualItemKind,
         POWER_LEVEL_MAX, POWER_LEVEL_MIN,
     },
-    room_list::{RoomIdentifier, RoomList},
+    room_list::RoomList,
     session::{Session, SessionState},
     session_settings::{SessionSettings, StoredSessionSettings},
     sidebar_data::{

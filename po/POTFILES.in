@@ -4,6 +4,7 @@ data/org.gnome.Fractal.desktop.in.in
 data/org.gnome.Fractal.gschema.xml.in
 data/org.gnome.Fractal.metainfo.xml.in.in
 
+src/account_chooser_dialog/mod.ui
 src/account_switcher/account_switcher_button.ui
 src/account_switcher/account_switcher_popover.ui
 src/account_switcher/session_item.ui
@@ -119,6 +120,7 @@ src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
 src/session/view/user_page.rs
 src/session/view/user_page.ui
+src/session/view/user_profile_dialog.ui
 src/session_list/mod.rs
 src/shortcuts.ui
 src/user_facing_error.rs

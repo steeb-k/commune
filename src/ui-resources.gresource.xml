@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/gnome/Fractal/ui/">
+    <file compressed="true" preprocess="xml-stripblanks">account_chooser_dialog/account_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">account_chooser_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">account_switcher/account_switcher_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">account_switcher/account_switcher_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">account_switcher/avatar_with_selection.ui</file>
@@ -101,6 +103,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/verification_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/user_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/user_profile_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/accept_request_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/cancelled_page.ui</file>

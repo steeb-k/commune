@@ -7,6 +7,7 @@ use ruma::RoomId;
 use tracing::{error, warn};
 
 use crate::{
+    account_chooser_dialog::AccountChooserDialog,
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
     components::Spinner,
     error_page::ErrorPage,
@@ -483,16 +484,37 @@ impl Window {
         }
     }
 
-    /// Process the given intent.
+    /// Ask the user to choose a session to process a Matrix ID URI.
     ///
-    /// If a session is needed, the session must already be ready.
-    pub fn process_intent_ready(&self, intent: intent::AppIntent) {
+    /// The session list must be ready.
+    ///
+    /// Returns the ID of the selected session, if any.
+    pub async fn choose_session_for_uri(&self) -> Option<String> {
+        let dialog = AccountChooserDialog::new(Some(self), Application::default().session_list());
+        dialog.choose_account().await
+    }
+
+    /// Process the given session intent.
+    ///
+    /// The session must be ready.
+    pub fn process_session_intent_ready(&self, intent: intent::SessionIntent) {
+        let session_id = intent.session_id();
+
+        if !self.set_current_session_by_id(session_id) {
+            error!("Cannot switch to unknown session with ID `{session_id}`");
+            return;
+        }
+
+        let session_view = &self.imp().session;
         match intent {
-            intent::AppIntent::ShowRoom(intent::ShowRoomPayload {
-                session_id,
-                room_id,
-            }) => {
-                self.show_room(&session_id, &room_id);
+            intent::SessionIntent::ShowRoom(p) => {
+                session_view.select_room_by_id(&p.room_id);
+            }
+            intent::SessionIntent::JoinRoom(p) => {
+                session_view.show_join_room_dialog(Some(p.room_uri));
+            }
+            intent::SessionIntent::ShowUser(p) => {
+                session_view.show_user_profile_dialog(p.user_id);
             }
         }
     }

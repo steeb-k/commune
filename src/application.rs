@@ -2,7 +2,6 @@ use std::{cell::RefCell, fmt, rc::Rc};
 
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use gio::{ApplicationFlags, Settings};
 use gtk::{gio, glib, glib::clone, prelude::*};
 use tracing::{debug, error, info, warn};
 
@@ -13,7 +12,7 @@ use crate::{
     spawn,
     system_settings::SystemSettings,
     toast,
-    utils::{BoundObjectWeakRef, LoadingState},
+    utils::{matrix::MatrixIdUri, BoundObjectWeakRef, LoadingState},
     Window,
 };
 
@@ -23,7 +22,7 @@ mod imp {
     #[derive(Debug)]
     pub struct Application {
         /// The application settings.
-        pub settings: Settings,
+        pub settings: gio::Settings,
         /// The system settings.
         pub system_settings: SystemSettings,
         /// The list of logged-in sessions.
@@ -34,7 +33,7 @@ mod imp {
     impl Default for Application {
         fn default() -> Self {
             Self {
-                settings: Settings::new(config::APP_ID),
+                settings: gio::Settings::new(config::APP_ID),
                 system_settings: Default::default(),
                 session_list: Default::default(),
                 intent_handler: Default::default(),
@@ -79,8 +78,20 @@ mod imp {
             self.obj().present_main_window();
         }
 
-        fn startup(&self) {
-            self.parent_startup();
+        fn open(&self, files: &[gio::File], _hint: &str) {
+            debug!("Application::open");
+
+            self.obj().present_main_window();
+
+            if files.len() > 1 {
+                warn!("Trying to open several URIs, only the first one will be processed");
+            }
+
+            if let Some(uri) = files.first().map(|f| f.uri()) {
+                self.obj().process_uri(&uri);
+            } else {
+                debug!("No URI to open");
+            }
         }
     }
 
@@ -97,7 +108,7 @@ impl Application {
     pub fn new() -> Self {
         glib::Object::builder()
             .property("application-id", Some(config::APP_ID))
-            .property("flags", ApplicationFlags::default())
+            .property("flags", gio::ApplicationFlags::HANDLES_OPEN)
             .property("resource-base-path", Some("/org/gnome/Fractal/"))
             .build()
     }
@@ -117,7 +128,7 @@ impl Application {
     }
 
     /// The application settings.
-    pub fn settings(&self) -> Settings {
+    pub fn settings(&self) -> gio::Settings {
         self.imp().settings.clone()
     }
 
@@ -161,7 +172,7 @@ impl Application {
                         return;
                     };
 
-                    app.process_intent(intent::AppIntent::ShowRoom(payload));
+                    app.process_intent(intent::SessionIntent::ShowRoom(payload));
                 })
                 .build(),
         ]);
@@ -209,8 +220,17 @@ impl Application {
         dialog.present();
     }
 
+    /// Process the given URI.
+    fn process_uri(&self, uri: &str) {
+        match MatrixIdUri::parse(uri) {
+            Ok(matrix_id) => self.process_intent(matrix_id),
+            Err(error) => warn!("Invalid Matrix URI: {error}"),
+        }
+    }
+
     /// Process the given intent, as soon as possible.
-    fn process_intent(&self, intent: intent::AppIntent) {
+    fn process_intent(&self, intent: impl Into<intent::AppIntent>) {
+        let intent = intent.into();
         debug!("Processing intent {intent:?}");
 
         // We only handle a single intent at time, the latest one.
@@ -219,7 +239,29 @@ impl Application {
         let session_list = self.session_list();
 
         if session_list.state() == LoadingState::Ready {
-            self.process_session_intent(intent);
+            match intent {
+                intent::AppIntent::WithSession(session_intent) => {
+                    self.process_session_intent(session_intent);
+                }
+                intent::AppIntent::ShowMatrixId(matrix_uri) => match session_list.n_items() {
+                    0 => {
+                        warn!("Cannot open URI with no logged in session");
+                    }
+                    1 => {
+                        let session = session_list.first().expect("There should be one session");
+                        let session_intent = intent::SessionIntent::with_matrix_uri(
+                            session.session_id(),
+                            matrix_uri,
+                        );
+                        self.process_session_intent(session_intent);
+                    }
+                    _ => {
+                        spawn!(clone!(@weak self as obj => async move {
+                            obj.choose_session_for_uri(matrix_uri).await;
+                        }));
+                    }
+                },
+            }
         } else {
             // Wait for the list to be ready.
             let cell = Rc::new(RefCell::new(Some(intent)));
@@ -229,7 +271,7 @@ impl Application {
                         app.imp().intent_handler.disconnect_signals();
 
                         if let Some(intent) = cell.take() {
-                            app.process_session_intent(intent);
+                            app.process_intent(intent);
                         }
                     }
                 }),
@@ -240,8 +282,23 @@ impl Application {
         }
     }
 
+    /// Ask the user to choose a session to process the given Matrix ID URI.
+    ///
+    /// The session list needs to be ready.
+    async fn choose_session_for_uri(&self, matrix_uri: MatrixIdUri) {
+        let main_window = self.present_main_window();
+
+        let Some(session_id) = main_window.choose_session_for_uri().await else {
+            warn!("No session selected to show URI");
+            return;
+        };
+
+        let session_intent = intent::SessionIntent::with_matrix_uri(session_id, matrix_uri);
+        self.process_session_intent(session_intent);
+    }
+
     /// Process the given for a session, as soon as the session is ready.
-    fn process_session_intent(&self, intent: intent::AppIntent) {
+    fn process_session_intent(&self, intent: intent::SessionIntent) {
         let Some(session_info) = self.session_list().get(intent.session_id()) else {
             warn!("Could not find session to process intent {intent:?}");
             toast!(self.present_main_window(), gettext("Session not found"));
@@ -252,7 +309,8 @@ impl Application {
             warn!("Could not process intent {intent:?} for failed session");
         } else if let Some(session) = session_info.downcast_ref::<Session>() {
             if session.state() == SessionState::Ready {
-                self.present_main_window().process_intent_ready(intent);
+                self.present_main_window()
+                    .process_session_intent_ready(intent);
             } else {
                 // Wait for the session to be ready.
                 let cell = Rc::new(RefCell::new(Some(intent)));
@@ -262,7 +320,7 @@ impl Application {
                             app.imp().intent_handler.disconnect_signals();
 
                             if let Some(intent) = cell.take() {
-                                app.present_main_window().process_intent_ready(intent);
+                                app.present_main_window().process_session_intent_ready(intent);
                             }
                         }
                     }),

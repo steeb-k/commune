@@ -106,6 +106,17 @@
             </child>
             <child>
               <object class="GtkStackPage">
+                <property name="name">loading</property>
+                <property name="child">
+                  <object class="Spinner">
+                    <property name="valign">center</property>
+                    <property name="halign">center</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
                 <property name="name">details</property>
                 <property name="child">
                   <object class="GtkScrolledWindow">
