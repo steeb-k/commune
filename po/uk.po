@@ -3,13 +3,13 @@
 # This file is distributed under the same license as the fractal package.
 #
 # Artem Polishchuk <ego.cordatus@gmail.com>, 2019.
-# Yuri Chornoivan <yurchor@ukr.net>, 2020, 2021, 2022, 2023.
+# Yuri Chornoivan <yurchor@ukr.net>, 2020, 2021, 2022, 2023, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-12-29 14:21+0000\n"
-"PO-Revision-Date: 2023-12-29 21:01+0200\n"
+"POT-Creation-Date: 2023-12-31 14:31+0000\n"
+"PO-Revision-Date: 2024-01-01 14:19+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -206,7 +206,7 @@ msgstr "Розпізнавання за допомогою браузера"
 #: src/components/auth_dialog.ui:114
 #: src/session/view/account_settings/general_page/mod.rs:304
 #: src/session/view/content/room_details/general_page/mod.rs:390
-#: src/session/view/content/room_history/item_row.rs:710
+#: src/session/view/content/room_history/item_row.rs:721
 #: src/session/view/content/room_history/message_toolbar/mod.ui:77
 #: src/session/view/content/room_history/message_toolbar/mod.ui:79
 #: src/session/view/content/room_history/verification_info_bar.rs:176
@@ -615,7 +615,7 @@ msgstr "Не вдалося отримати зашифровані дані у 
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
-#: src/session/model/session.rs:443
+#: src/session/model/session.rs:447
 msgid "Failed to logout the session."
 msgstr "Не вдалося вийти з сеансу."
 
@@ -636,12 +636,12 @@ msgstr "Звичайний користувач"
 msgid "Unknown"
 msgstr "Невідомий"
 
-#: src/session/model/room/mod.rs:949
+#: src/session/model/room/mod.rs:950
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:952
+#: src/session/model/room/mod.rs:953
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
@@ -652,30 +652,30 @@ msgid "Failed to join room {room_name}. Try again later."
 msgstr ""
 "Не вдалося долучитися до кімнати {room_name}. Повторіть спробу пізніше."
 
-#: src/session/model/sidebar_data/category/category_type.rs:28
+#: src/session/model/sidebar_data/category/category_type.rs:29
 msgid "Verifications"
 msgstr "Перевірки"
 
 #. Translators: As in 'Invited Room Members'.
-#: src/session/model/sidebar_data/category/category_type.rs:29
+#: src/session/model/sidebar_data/category/category_type.rs:30
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:256
 #: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:84
 msgid "Invited"
 msgstr "Запрошено"
 
-#: src/session/model/sidebar_data/category/category_type.rs:30
+#: src/session/model/sidebar_data/category/category_type.rs:31
 msgid "Favorites"
 msgstr "Улюблені"
 
-#: src/session/model/sidebar_data/category/category_type.rs:31
+#: src/session/model/sidebar_data/category/category_type.rs:32
 msgid "Rooms"
 msgstr "Кімнати"
 
-#: src/session/model/sidebar_data/category/category_type.rs:32
+#: src/session/model/sidebar_data/category/category_type.rs:33
 msgid "Low Priority"
 msgstr "Низький пріоритет"
 
-#: src/session/model/sidebar_data/category/category_type.rs:33
+#: src/session/model/sidebar_data/category/category_type.rs:34
 msgid "Historical"
 msgstr "Історичні"
 
@@ -991,7 +991,7 @@ msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
 #: src/session/view/account_settings/general_page/mod.rs:305
 #: src/session/view/content/room_details/general_page/mod.rs:391
-#: src/session/view/content/room_history/item_row.rs:711
+#: src/session/view/content/room_history/item_row.rs:722
 msgid "Remove"
 msgstr "Вилучити"
 
@@ -1125,9 +1125,45 @@ msgstr "Додати ключове слово…"
 msgid "Add Keyword"
 msgstr "Додавання ключового слова"
 
+#: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
+#: src/session/view/user_page.rs:281
+#| msgid "Failed to restore previous sessions"
+msgid "Failed to stop ignoring user"
+msgstr "Не вдалося припинити ігнорувати користувача"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:27
+#: src/session/view/user_page.rs:259
+msgid "Stop Ignoring"
+msgstr "Припинити ігнорування"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:4
+#: src/session/view/account_settings/security_page/mod.ui:11
+msgid "Ignored Users"
+msgstr "Ігноровані користувачі"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:18
+#| msgid "Toggle Room Members Search"
+msgid "Toggle Ignored Users Search"
+msgstr "Перемкнути пошук ігнорованих користувачів"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:33
+#| msgid "Search for room members"
+msgid "Search for ignored users"
+msgstr "Шукати ігнорованих користувачів"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:74
+msgid "No Ignored Users"
+msgstr "Немає ігнорованих користувачів"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
+msgid "You can add users to this list from their room member profile."
+msgstr ""
+"Ви можете додати користувачів до цього списку з їхньої сторінки учасника"
+" кімнати."
+
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:176
-#: src/session/view/account_settings/security_page/mod.ui:14
+#: src/session/view/account_settings/security_page/mod.ui:41
 msgid "Export Room Encryption Keys"
 msgstr "Експортувати ключі шифрування кімнати"
 
@@ -1157,7 +1193,7 @@ msgstr "Експортувати ключі"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:188
-#: src/session/view/account_settings/security_page/mod.ui:22
+#: src/session/view/account_settings/security_page/mod.ui:49
 msgid "Import Room Encryption Keys"
 msgstr "Імпортувати ключі шифрування кімнати"
 
@@ -1248,12 +1284,12 @@ msgid "Choose…"
 msgstr "Вибрати…"
 
 #. Translators: As in "The signing key is available".
-#: src/session/view/account_settings/security_page/mod.rs:148
+#: src/session/view/account_settings/security_page/mod.rs:198
 msgid "Available"
 msgstr "Доступний"
 
 #. Translators: As in "The signing key is not available".
-#: src/session/view/account_settings/security_page/mod.rs:153
+#: src/session/view/account_settings/security_page/mod.rs:203
 msgid "Not available"
 msgstr "Недоступний"
 
@@ -1262,24 +1298,33 @@ msgstr "Недоступний"
 msgid "Security"
 msgstr "Безпека"
 
+#: src/session/view/account_settings/security_page/mod.ui:12
+msgid ""
+"All messages or invitations sent by these users will be ignored. You will "
+"still see some of their activity, like when they join or leave a room."
+msgstr ""
+"Усі повідомлення або запрошення, які надсилатимуть ці користувачі, буде"
+" проігноровано. Попри це, ви бачитимете деякі з їхніх дій, зокрема дії з"
+" долучення до кімнати або її полишення."
+
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/mod.ui:10
+#: src/session/view/account_settings/security_page/mod.ui:37
 msgid "Room Encryption Keys"
 msgstr "Ключі шифрування кімнати"
 
-#: src/session/view/account_settings/security_page/mod.ui:31
+#: src/session/view/account_settings/security_page/mod.ui:58
 msgid "Cross-Signing"
 msgstr "Перехресне підписування"
 
-#: src/session/view/account_settings/security_page/mod.ui:34
+#: src/session/view/account_settings/security_page/mod.ui:61
 msgid "Master key"
 msgstr "Основний ключ"
 
-#: src/session/view/account_settings/security_page/mod.ui:44
+#: src/session/view/account_settings/security_page/mod.ui:71
 msgid "Self-signing key"
 msgstr "Ключ самопідписування"
 
-#: src/session/view/account_settings/security_page/mod.ui:54
+#: src/session/view/account_settings/security_page/mod.ui:81
 msgid "User-signing key"
 msgstr "Ключ підписування користувача"
 
@@ -1526,7 +1571,7 @@ msgid "Could not load the full list of room members"
 msgstr "Не вдалося завантажити повний список учасників кімнати."
 
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
-#: src/session/view/user_page.rs:187
+#: src/session/view/user_page.rs:209
 msgid "Identity verified"
 msgstr "Профіль перевірено"
 
@@ -1615,7 +1660,7 @@ msgstr "В_илучити"
 msgid "_View Source"
 msgstr "П_ереглянути код"
 
-#: src/session/view/content/room_history/item_row.rs:242
+#: src/session/view/content/room_history/item_row.rs:253
 msgid "This is the start of the visible history"
 msgstr "Це початок видимого журналу"
 
@@ -1623,7 +1668,7 @@ msgstr "Це початок видимого журналу"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:267
+#: src/session/view/content/room_history/item_row.rs:278
 msgid "%A, %B %-e"
 msgstr "%A, %-d %B"
 
@@ -1631,55 +1676,55 @@ msgstr "%A, %-d %B"
 #. year. For ex. "Friday, May 5,
 #. 2023". Please use `-` before
 #. specifiers that add spaces on single digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:273
+#: src/session/view/content/room_history/item_row.rs:284
 msgid "%A, %B %-e, %Y"
 msgstr "%A, %-e %b %Y"
 
-#: src/session/view/content/room_history/item_row.rs:279
+#: src/session/view/content/room_history/item_row.rs:290
 msgid "New Messages"
 msgstr "Нові повідомлення"
 
-#: src/session/view/content/room_history/item_row.rs:436
+#: src/session/view/content/room_history/item_row.rs:447
 #: src/session/view/content/room_history/mod.rs:528
 #: src/session/view/media_viewer.rs:533
 msgid "Permalink copied to clipboard"
 msgstr "Стале посилання скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/item_row.rs:440
+#: src/session/view/content/room_history/item_row.rs:451
 #: src/session/view/content/room_history/mod.rs:532
 #: src/session/view/media_viewer.rs:537
 msgid "Failed to copy the permalink"
 msgstr "Не вдалося скопіювати стале посилання"
 
-#: src/session/view/content/room_history/item_row.rs:529
-#: src/session/view/content/room_history/item_row.rs:566
-#: src/session/view/content/room_history/item_row.rs:593
+#: src/session/view/content/room_history/item_row.rs:540
+#: src/session/view/content/room_history/item_row.rs:577
+#: src/session/view/content/room_history/item_row.rs:604
 msgid "Message copied to clipboard"
 msgstr "Повідомлення скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/item_row.rs:608
+#: src/session/view/content/room_history/item_row.rs:619
 msgid "Thumbnail copied to clipboard"
 msgstr "Мініатюру скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/item_row.rs:704
+#: src/session/view/content/room_history/item_row.rs:715
 msgid "Remove Message?"
 msgstr "Вилучити повідомлення?"
 
-#: src/session/view/content/room_history/item_row.rs:706
+#: src/session/view/content/room_history/item_row.rs:717
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Ви справді хочете вилучити це повідомлення? Наслідки цієї дії не може бути "
 "скасовано."
 
-#: src/session/view/content/room_history/item_row.rs:721
+#: src/session/view/content/room_history/item_row.rs:732
 msgid "Failed to remove message"
 msgstr "Не вдалося вилучити повідомлення"
 
-#: src/session/view/content/room_history/item_row.rs:744
+#: src/session/view/content/room_history/item_row.rs:755
 msgid "Failed to remove reaction"
 msgstr "Не вдалося вилучити реакцію"
 
-#: src/session/view/content/room_history/item_row.rs:751
+#: src/session/view/content/room_history/item_row.rs:762
 msgid "Failed to add reaction"
 msgstr "Не вдалося додати реакцію"
 
@@ -2125,7 +2170,7 @@ msgid "{user_name} wants to be verified"
 msgstr "{user_name} хоче пройти перевірку"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:170
-#: src/session/view/user_page.ui:106
+#: src/session/view/user_page.ui:107
 #: src/verification_view/identity_verification_view/accept_request_page.ui:53
 msgid "Verify"
 msgstr "Перевірити"
@@ -2145,7 +2190,7 @@ msgid "An error occurred while searching for users"
 msgstr "Під час пошуку користувачів сталася помилка"
 
 #: src/session/view/create_dm_dialog/mod.rs:177
-#: src/session/view/user_page.rs:162
+#: src/session/view/user_page.rs:184
 msgid "Failed to create a new Direct Chat"
 msgstr "Не вдалося розпочати безпосереднє спілкування"
 
@@ -2259,8 +2304,6 @@ msgstr "Шукати"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/view/join_room_dialog.rs:298
-#| msgid "1 Member"
-#| msgid_plural "{n} Members"
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "{n} учасник"
@@ -2274,9 +2317,9 @@ msgid ""
 "known by the homeserver or because its details are private. You can still "
 "try to join it."
 msgstr ""
-"Попередній перегляд подробиць щодо кімнати неможливий. Причиною може бути"
-" те, що кімната не є відомою домашньому серверу, або те, що подробиці є"
-" конфіденційними. Попри це, ви можете до неї долучитися."
+"Попередній перегляд подробиць щодо кімнати неможливий. Причиною може бути "
+"те, що кімната не є відомою домашньому серверу, або те, що подробиці є "
+"конфіденційними. Попри це, ви можете до неї долучитися."
 
 #: src/session/view/join_room_dialog.ui:4
 #: src/session/view/join_room_dialog.ui:39
@@ -2284,7 +2327,6 @@ msgid "Join a Room"
 msgstr "Увійти до кімнати"
 
 #: src/session/view/join_room_dialog.ui:73
-#| msgid "Enter a room ID, room alias, or permalink."
 msgid "Enter a room ID, room alias, or permalink to look up a room."
 msgstr ""
 "Введіть ідентифікатор кімнати, альтернативну назву кімнати або постійне "
@@ -2527,21 +2569,38 @@ msgstr "Не вдалося забути про {room}."
 msgid "Direct chat with {name}"
 msgstr "Безпосереднє спілкування з {name}"
 
-#: src/session/view/user_page.rs:136
+#: src/session/view/user_page.rs:158
 msgid "Open Direct Chat"
 msgstr "Відкрити безпосередній чат"
 
-#: src/session/view/user_page.rs:138
+#: src/session/view/user_page.rs:160
 msgid "Create Direct Chat"
 msgstr "Створити безпосередній чат"
 
-#: src/session/view/user_page.rs:194
+#: src/session/view/user_page.rs:216
 msgid "Identity not verified"
 msgstr "Профіль не пройшов перевірки"
 
-#: src/session/view/user_page.rs:210
+#: src/session/view/user_page.rs:232
 msgid "Failed to start user verification"
 msgstr "Не вдалося розпочати перевірку користувача"
+
+#: src/session/view/user_page.rs:258
+msgid "Ignored"
+msgstr "Ігноровано"
+
+#: src/session/view/user_page.rs:262
+msgid "Not Ignored"
+msgstr "Не ігноровано"
+
+#: src/session/view/user_page.rs:263
+msgid "Ignore"
+msgstr "Ігнорувати"
+
+#: src/session/view/user_page.rs:284
+#| msgid "Failed to remove message"
+msgid "Failed to ignore user"
+msgstr "Не вдалося почати ігнорувати користувача"
 
 #: src/session_list/mod.rs:249
 msgid "Failed to restore previous sessions"
@@ -2641,36 +2700,36 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Не вдалося відкрити сховище."
 
-#: src/utils/matrix.rs:109
+#: src/utils/matrix.rs:110
 msgid "{user} sent an audio file."
 msgstr "Користувачем {user} надіслано звуковий файл."
 
-#: src/utils/matrix.rs:112 src/utils/matrix.rs:123 src/utils/matrix.rs:127
-#: src/utils/matrix.rs:131
+#: src/utils/matrix.rs:113 src/utils/matrix.rs:124 src/utils/matrix.rs:128
+#: src/utils/matrix.rs:132
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
-#: src/utils/matrix.rs:115
+#: src/utils/matrix.rs:116
 msgid "{user} sent a file."
 msgstr "Користувачем {user} надіслано файл."
 
-#: src/utils/matrix.rs:117
+#: src/utils/matrix.rs:118
 msgid "{user} sent an image."
 msgstr "Користувачем {user} надіслано зображення."
 
-#: src/utils/matrix.rs:120
+#: src/utils/matrix.rs:121
 msgid "{user} sent their location."
 msgstr "Користувачем {user} надіслано дані щодо місця перебування."
 
-#: src/utils/matrix.rs:135
+#: src/utils/matrix.rs:136
 msgid "{user} sent a video."
 msgstr "Користувачем {user} надіслано відео."
 
-#: src/utils/matrix.rs:138
+#: src/utils/matrix.rs:139
 msgid "{user} sent a verification request."
 msgstr "Користувачем {user} надіслано запит щодо перевірки."
 
-#: src/utils/matrix.rs:146
+#: src/utils/matrix.rs:147
 msgid "{user} sent a sticker."
 msgstr "Користувачем {user} надіслано наліпку."
 
