@@ -1,15 +1,31 @@
+use std::ops::Deref;
+
 use gtk::{glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use ruma::{
     events::{
         room::power_levels::{PowerLevelAction, RoomPowerLevels, RoomPowerLevelsEventContent},
-        OriginalSyncStateEvent,
+        SyncStateEvent,
     },
     OwnedUserId, UserId,
 };
 
-#[derive(Clone, Debug, Default, glib::Boxed)]
-#[boxed_type(name = "BoxedPowerLevelsEventContent")]
-pub struct BoxedPowerLevelsEventContent(RoomPowerLevelsEventContent);
+#[derive(Clone, Debug, glib::Boxed)]
+#[boxed_type(name = "BoxedPowerLevels")]
+pub struct BoxedPowerLevels(RoomPowerLevels);
+
+impl Deref for BoxedPowerLevels {
+    type Target = RoomPowerLevels;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Default for BoxedPowerLevels {
+    fn default() -> Self {
+        Self(RoomPowerLevelsEventContent::default().into())
+    }
+}
 
 /// Power level of a user.
 ///
@@ -29,7 +45,7 @@ mod imp {
     pub struct PowerLevels {
         /// The source of the power levels information.
         #[property(get)]
-        pub power_levels: RefCell<BoxedPowerLevelsEventContent>,
+        pub power_levels: RefCell<BoxedPowerLevels>,
     }
 
     #[glib::object_subclass]
@@ -55,8 +71,10 @@ impl PowerLevels {
     /// Returns whether the member with the given user ID is allowed to do the
     /// given action.
     pub fn member_is_allowed_to(&self, user_id: &UserId, room_action: PowerLevelAction) -> bool {
-        let content = self.imp().power_levels.borrow().0.clone();
-        RoomPowerLevels::from(content).user_can_do(user_id, room_action)
+        self.imp()
+            .power_levels
+            .borrow()
+            .user_can_do(user_id, room_action)
     }
 
     /// Creates an expression that is true when the member with the given user
@@ -69,17 +87,18 @@ impl PowerLevels {
         gtk::ClosureExpression::new::<bool>(
             &[self.property_expression("power-levels")],
             closure_local!(
-                move |_: Option<glib::Object>, content: BoxedPowerLevelsEventContent| {
-                    RoomPowerLevels::from(content.0).user_can_do(&user_id, room_action.clone())
+                move |_: Option<glib::Object>, power_levels: BoxedPowerLevels| {
+                    power_levels.user_can_do(&user_id, room_action.clone())
                 }
             ),
         )
     }
 
     /// Updates the power levels from the given event.
-    pub fn update_from_event(&self, event: OriginalSyncStateEvent<RoomPowerLevelsEventContent>) {
-        let content = BoxedPowerLevelsEventContent(event.content);
-        self.imp().power_levels.replace(content);
+    pub fn update_from_event(&self, event: &SyncStateEvent<RoomPowerLevelsEventContent>) {
+        self.imp()
+            .power_levels
+            .replace(BoxedPowerLevels(event.power_levels()));
         self.notify_power_levels();
     }
 }

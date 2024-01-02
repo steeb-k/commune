@@ -1104,8 +1104,8 @@ impl Room {
                     AnySyncStateEvent::RoomTopic(_) => {
                         self.notify_topic();
                     }
-                    AnySyncStateEvent::RoomPowerLevels(SyncStateEvent::Original(event)) => {
-                        self.power_levels().update_from_event(event.clone());
+                    AnySyncStateEvent::RoomPowerLevels(event) => {
+                        self.power_levels().update_from_event(event);
                     }
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();
@@ -1147,13 +1147,13 @@ impl Room {
             state_event
                 .and_then(|r| r.deserialize().ok())
                 .and_then(|ev| match ev {
-                    SyncOrStrippedState::Sync(SyncStateEvent::Original(e)) => Some(e),
+                    SyncOrStrippedState::Sync(e) => Some(e),
                     _ => None,
                 })
         });
 
         if let Some(event) = handle.await.unwrap() {
-            self.power_levels().update_from_event(event);
+            self.power_levels().update_from_event(&event);
         }
     }
 
@@ -1524,6 +1524,117 @@ impl Room {
             Ok(())
         } else {
             Err(failed_invites)
+        }
+    }
+
+    /// Kick the given users from this room.
+    ///
+    /// The users are a list of `(user_id, reason)` tuples.
+    ///
+    /// Returns `Ok(())` if all the kicks are sent successfully, otherwise
+    /// returns the list of users who could not be kicked.
+    pub async fn kick<'a>(
+        &self,
+        users: &'a [(OwnedUserId, Option<String>)],
+    ) -> Result<(), Vec<&'a UserId>> {
+        let users_clone = users.to_owned();
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            let futures = users_clone
+                .iter()
+                .map(|(user_id, reason)| matrix_room.kick_user(user_id, reason.as_deref()));
+            futures_util::future::join_all(futures).await
+        });
+
+        let mut failed_kicks = Vec::new();
+        for (index, result) in handle.await.unwrap().iter().enumerate() {
+            match result {
+                Ok(_) => {}
+                Err(error) => {
+                    error!("Failed to kick user with ID {}: {error}", users[index].0);
+                    failed_kicks.push(&*users[index].0);
+                }
+            }
+        }
+
+        if failed_kicks.is_empty() {
+            Ok(())
+        } else {
+            Err(failed_kicks)
+        }
+    }
+
+    /// Ban the given users from this room.
+    ///
+    /// The users are a list of `(user_id, reason)` tuples.
+    ///
+    /// Returns `Ok(())` if all the bans are sent successfully, otherwise
+    /// returns the list of users who could not be banned.
+    pub async fn ban<'a>(
+        &self,
+        users: &'a [(OwnedUserId, Option<String>)],
+    ) -> Result<(), Vec<&'a UserId>> {
+        let users_clone = users.to_owned();
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            let futures = users_clone
+                .iter()
+                .map(|(user_id, reason)| matrix_room.ban_user(user_id, reason.as_deref()));
+            futures_util::future::join_all(futures).await
+        });
+
+        let mut failed_bans = Vec::new();
+        for (index, result) in handle.await.unwrap().iter().enumerate() {
+            match result {
+                Ok(_) => {}
+                Err(error) => {
+                    error!("Failed to ban user with ID {}: {error}", users[index].0);
+                    failed_bans.push(&*users[index].0);
+                }
+            }
+        }
+
+        if failed_bans.is_empty() {
+            Ok(())
+        } else {
+            Err(failed_bans)
+        }
+    }
+
+    /// Unban the given users from this room.
+    ///
+    /// The users are a list of `(user_id, reason)` tuples.
+    ///
+    /// Returns `Ok(())` if all the unbans are sent successfully, otherwise
+    /// returns the list of users who could not be unbanned.
+    pub async fn unban<'a>(
+        &self,
+        users: &'a [(OwnedUserId, Option<String>)],
+    ) -> Result<(), Vec<&'a UserId>> {
+        let users_clone = users.to_owned();
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            let futures = users_clone
+                .iter()
+                .map(|(user_id, reason)| matrix_room.unban_user(user_id, reason.as_deref()));
+            futures_util::future::join_all(futures).await
+        });
+
+        let mut failed_unbans = Vec::new();
+        for (index, result) in handle.await.unwrap().iter().enumerate() {
+            match result {
+                Ok(_) => {}
+                Err(error) => {
+                    error!("Failed to unban user with ID {}: {error}", users[index].0);
+                    failed_unbans.push(&*users[index].0);
+                }
+            }
+        }
+
+        if failed_unbans.is_empty() {
+            Ok(())
+        } else {
+            Err(failed_unbans)
         }
     }
 

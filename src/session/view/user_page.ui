@@ -71,6 +71,82 @@
                       </object>
                     </child>
                     <child>
+                      <object class="GtkBox" id="room_box">
+                        <property name="visible">False</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">12</property>
+                        <child>
+                          <object class="GtkLabel" id="room_title">
+                            <property name="ellipsize">end</property>
+                            <property name="xalign">0.0</property>
+                            <style>
+                              <class name="heading"/>
+                              <class name="h4"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkListBox">
+                            <style>
+                              <class name="boxed-list"/>
+                            </style>
+                            <child>
+                              <object class="AdwActionRow" id="role_row">
+                                <property name="selectable">False</property>
+                                <property name="title" translatable="yes">Role</property>
+                                <child>
+                                  <object class="GtkLabel" id="role_label">
+                                    <property name="ellipsize">end</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="power_level_label"/>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="invite_button">
+                            <style>
+                              <class name="row"/>
+                            </style>
+                            <signal name="clicked" handler="invite_user" swapped="yes"/>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="kick_button">
+                            <style>
+                              <class name="row"/>
+                              <class name="destructive-action"/>
+                            </style>
+                            <signal name="clicked" handler="kick_user" swapped="yes"/>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="ban_button">
+                            <style>
+                              <class name="row"/>
+                              <class name="destructive-action"/>
+                            </style>
+                            <!-- Translators: As in, 'Ban room member'. -->
+                            <property name="label" translatable="yes">Ban</property>
+                            <signal name="clicked" handler="ban_user" swapped="yes"/>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="SpinnerButton" id="unban_button">
+                            <style>
+                              <class name="row"/>
+                            </style>
+                            <!-- Translators: As in, 'Unban room member'. -->
+                            <property name="label" translatable="yes">Unban</property>
+                            <signal name="clicked" handler="unban_user" swapped="yes"/>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkBox">
                         <property name="orientation">vertical</property>
                         <property name="spacing">12</property>

@@ -1,4 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{
     gio,
     glib::{self, clone, closure},
@@ -10,9 +11,12 @@ mod members_list_view;
 use members_list_view::{ExtraLists, MembersListView, MembershipSubpageItem};
 use ruma::{events::room::power_levels::PowerLevelAction, UserId};
 
-use crate::session::{
-    model::{Member, Membership, Room},
-    view::UserPage,
+use crate::{
+    session::{
+        model::{Member, Membership, Room},
+        view::UserPage,
+    },
+    toast,
 };
 
 mod imp {
@@ -80,7 +84,11 @@ mod imp {
                 };
 
                 let member = room.get_or_create_members().get_or_create(user_id);
-                let user_page = UserPage::new(&member);
+                let user_page = UserPage::with_room_member(&room, &member);
+                user_page.connect_close(clone!(@weak widget => move |_| {
+                    let _ = widget.activate_action("navigation.pop", None);
+                    toast!(widget, gettext("The user is not in the room members list anymore"));
+                }));
 
                 widget.imp().navigation_view.push(&user_page);
             });

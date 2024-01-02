@@ -1,20 +1,27 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gettextrs::{gettext, pgettext};
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    CompositeTemplate,
+};
+use ruma::events::{room::power_levels::PowerLevelAction, StateEventType};
 
 use crate::{
     components::{Avatar, SpinnerButton},
+    i18n::gettext_f,
     prelude::*,
-    session::model::User,
+    session::model::{Member, MemberRole, Membership, Room, User},
     spawn, toast,
-    utils::BoundObject,
+    utils::{message_dialog::confirm_room_member_destructive_action, BoundObject},
     Window,
 };
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::subclass::InitializingObject;
+    use glib::subclass::{InitializingObject, Signal};
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -33,13 +40,35 @@ mod imp {
         #[template_child]
         pub verify_button: TemplateChild<SpinnerButton>,
         #[template_child]
+        pub room_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub room_title: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub role_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub role_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub power_level_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub invite_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub kick_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub ban_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub unban_button: TemplateChild<SpinnerButton>,
+        #[template_child]
         pub ignored_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub ignored_button: TemplateChild<SpinnerButton>,
         /// The current user.
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: BoundObject<User>,
+        /// The room, if the user is a room member.
+        #[property(get, set = Self::set_room, construct_only)]
+        pub room: BoundObject<Room>,
         pub bindings: RefCell<Vec<glib::Binding>>,
+        pub power_levels_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -72,9 +101,21 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for UserPage {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("close").build()]);
+            SIGNALS.as_ref()
+        }
+
         fn dispose(&self) {
             for binding in self.bindings.take() {
                 binding.unbind();
+            }
+
+            if let Some(room) = self.room.obj() {
+                if let Some(handler) = self.power_levels_handler.take() {
+                    room.power_levels().disconnect(handler);
+                }
             }
         }
     }
@@ -106,32 +147,76 @@ mod imp {
                     .build();
                 self.bindings.replace(vec![title_binding, avatar_binding]);
 
-                let is_verified_handler =
-                    user.connect_verified_notify(clone!(@weak obj => move |_| {
-                        obj.update_verified();
-                    }));
-                let is_ignored_handler =
+                let mut handlers = Vec::new();
+                handlers.push(user.connect_verified_notify(clone!(@weak obj => move |_| {
+                    obj.update_verified();
+                })));
+                handlers.push(
                     user.connect_is_ignored_notify(clone!(@weak obj => move |_| {
                         obj.update_direct_chat();
                         obj.update_ignored();
-                    }));
+                    })),
+                );
+
+                if let Some(member) = user.downcast_ref::<Member>() {
+                    handlers.push(member.connect_membership_notify(
+                        clone!(@weak obj => move |member| {
+                            if member.membership() == Membership::Leave {
+                                obj.emit_by_name::<()>("close", &[]);
+                            } else {
+                                obj.update_room();
+                            }
+                        }),
+                    ));
+                    handlers.push(member.connect_power_level_notify(
+                        clone!(@weak obj => move |_| {
+                            obj.update_room();
+                        }),
+                    ));
+                }
 
                 // We don't need to listen to changes of the property, it never changes after
                 // construction.
                 let is_own_user = user.is_own_user();
                 self.ignored_row.set_visible(!is_own_user);
 
-                self.user
-                    .set(user, vec![is_verified_handler, is_ignored_handler]);
+                self.user.set(user, handlers);
             }
 
             spawn!(clone!(@weak obj => async move {
                 obj.load_direct_chat().await;
             }));
             obj.update_direct_chat();
+            obj.update_room();
             obj.update_verified();
             obj.update_ignored();
             obj.notify_user();
+        }
+
+        /// Set the room, if the user is a room member.
+        fn set_room(&self, room: Option<Room>) {
+            let Some(room) = room else {
+                // Nothing to do when there is no room.
+                return;
+            };
+            let obj = self.obj();
+
+            let power_levels_handler =
+                room.power_levels()
+                    .connect_power_levels_notify(clone!(@weak obj => move |_| {
+                        obj.update_room();
+                    }));
+            self.power_levels_handler
+                .replace(Some(power_levels_handler));
+
+            let display_name_handler =
+                room.connect_display_name_notify(clone!(@weak obj => move |_| {
+                    obj.update_room();
+                }));
+
+            self.room.set(room, vec![display_name_handler]);
+
+            obj.update_room();
         }
     }
 }
@@ -147,6 +232,14 @@ impl UserPage {
     /// Construct a new `UserPage` for the given user.
     pub fn new(user: &impl IsA<User>) -> Self {
         glib::Object::builder().property("user", user).build()
+    }
+
+    /// Construct a new `UserPage` for the given room member.
+    pub fn with_room_member(room: &Room, user: &Member) -> Self {
+        glib::Object::builder()
+            .property("room", room)
+            .property("user", user)
+            .build()
     }
 
     /// Update the visibility of the direct chat button.
@@ -209,6 +302,297 @@ impl UserPage {
         }
 
         parent_window.close();
+    }
+
+    /// Whether our own user can do the given action on the current user.
+    fn own_user_can(&self, action: PowerLevelUserAction) -> bool {
+        let Some(room) = self.room() else {
+            return false;
+        };
+        let Some(session) = room.session() else {
+            return false;
+        };
+        let Some(user) = self.user() else {
+            return false;
+        };
+
+        let own_user_id = session.user_id();
+        let other_user_id = user.user_id();
+        let power_levels = room.power_levels().power_levels();
+
+        if own_user_id == other_user_id {
+            // The only action we can do for our own user is change the power level.
+            return action == PowerLevelUserAction::ChangePowerLevel
+                && power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels);
+        }
+
+        let own_pl = power_levels.for_user(own_user_id);
+        let other_pl = power_levels.for_user(other_user_id);
+
+        // TODO: Use Ruma's type and RoomPowerLevels methods when we use a recent enough
+        // version.
+        match action {
+            PowerLevelUserAction::Ban => {
+                power_levels.user_can_ban(own_user_id) && own_pl > other_pl
+            }
+            PowerLevelUserAction::Unban => {
+                power_levels.user_can_ban(own_user_id)
+                    && power_levels.user_can_kick(own_user_id)
+                    && own_pl > other_pl
+            }
+            PowerLevelUserAction::Invite => power_levels.user_can_invite(own_user_id),
+            PowerLevelUserAction::Kick => {
+                power_levels.user_can_kick(own_user_id) && own_pl > other_pl
+            }
+            PowerLevelUserAction::ChangePowerLevel => {
+                power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels)
+                    && own_pl > other_pl
+            }
+        }
+    }
+
+    /// Update the room section.
+    fn update_room(&self) {
+        let imp = self.imp();
+
+        let Some(room) = self.room() else {
+            imp.room_box.set_visible(false);
+            return;
+        };
+        let Some(member) = self.user().and_downcast::<Member>() else {
+            imp.room_box.set_visible(false);
+            return;
+        };
+
+        let membership = member.membership();
+        if membership == Membership::Leave {
+            imp.room_box.set_visible(false);
+            return;
+        }
+
+        let room_title = gettext_f("In {room_name}", &[("room_name", &room.display_name())]);
+        imp.room_title.set_label(&room_title);
+
+        match membership {
+            Membership::Leave => unreachable!(),
+            Membership::Join => {
+                let power_level = member.power_level();
+                let role = MemberRole::from(power_level);
+
+                imp.role_label.set_label(&role.to_string());
+                imp.power_level_label.set_label(&power_level.to_string());
+            }
+            Membership::Invite => {
+                // Translators: As in, 'The room member was invited'.
+                imp.role_label.set_label(&pgettext("member", "Invited"));
+            }
+            Membership::Ban => {
+                // Translators: As in, 'The room member was banned'.
+                imp.role_label.set_label(&pgettext("member", "Banned"));
+            }
+            Membership::Knock => {
+                // Translators: As in, 'The room member knocked to request access to the room'.
+                imp.role_label.set_label(&pgettext("member", "Knocked"));
+            }
+            Membership::Custom => {
+                // Translators: As in, 'The room member has an unknown role'.
+                imp.role_label.set_label(&pgettext("member", "Unknown"));
+            }
+        }
+
+        if matches!(membership, Membership::Ban) {
+            imp.role_label.add_css_class("error");
+        } else {
+            imp.role_label.remove_css_class("error");
+        }
+        imp.power_level_label
+            .set_visible(matches!(membership, Membership::Join));
+
+        let can_invite = matches!(membership, Membership::Knock)
+            && self.own_user_can(PowerLevelUserAction::Invite);
+        if can_invite {
+            imp.invite_button.set_label(gettext("Allow Access"));
+            imp.invite_button.set_visible(true);
+        } else {
+            imp.invite_button.set_visible(false);
+        }
+
+        let can_kick = matches!(
+            membership,
+            Membership::Join | Membership::Invite | Membership::Knock
+        ) && self.own_user_can(PowerLevelUserAction::Kick);
+        if can_kick {
+            let label = match membership {
+                Membership::Invite => gettext("Revoke Invite"),
+                Membership::Knock => gettext("Deny Access"),
+                // Translators: As in, 'Kick room member'.
+                _ => gettext("Kick"),
+            };
+            imp.kick_button.set_label(label);
+            imp.kick_button.set_visible(true);
+        } else {
+            imp.kick_button.set_visible(false);
+        }
+
+        let can_ban = matches!(
+            membership,
+            Membership::Join | Membership::Invite | Membership::Knock
+        ) && self.own_user_can(PowerLevelUserAction::Ban);
+        imp.ban_button.set_visible(can_ban);
+
+        let can_unban =
+            matches!(membership, Membership::Ban) && self.own_user_can(PowerLevelUserAction::Unban);
+        imp.unban_button.set_visible(can_unban);
+
+        imp.room_box.set_visible(true);
+    }
+
+    /// Reset the initial state of the buttons of the room section.
+    fn reset_room(&self) {
+        let imp = self.imp();
+
+        imp.kick_button.set_loading(false);
+        imp.kick_button.set_sensitive(true);
+
+        imp.invite_button.set_loading(false);
+        imp.invite_button.set_sensitive(true);
+
+        imp.ban_button.set_loading(false);
+        imp.ban_button.set_sensitive(true);
+
+        imp.unban_button.set_loading(false);
+        imp.unban_button.set_sensitive(true);
+    }
+
+    /// Invite the user to the room.
+    #[template_callback]
+    fn invite_user(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(user) = self.user() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.invite_button.set_loading(true);
+        imp.kick_button.set_sensitive(false);
+        imp.ban_button.set_sensitive(false);
+        imp.unban_button.set_sensitive(false);
+
+        let user_id = user.user_id().clone();
+        spawn!(clone!(@weak self as obj, @weak room => async move {
+            if room.invite(&[user_id]).await.is_err() {
+                toast!(obj, gettext("Failed to invite user"));
+            }
+
+            obj.reset_room()
+        }));
+    }
+
+    /// Kick the user from the room.
+    #[template_callback]
+    fn kick_user(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(member) = self.user().and_downcast::<Member>() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.kick_button.set_loading(true);
+        imp.invite_button.set_sensitive(false);
+        imp.ban_button.set_sensitive(false);
+        imp.unban_button.set_sensitive(false);
+
+        spawn!(
+            clone!(@weak self as obj, @weak room, @weak member, @weak window => async move {
+                let (confirmed, reason) = confirm_room_member_destructive_action(&room, &member, PowerLevelAction::Kick, &window).await;
+                if !confirmed {
+                    obj.reset_room();
+                    return;
+                }
+
+                let user_id = member.user_id().clone();
+                if room.kick(&[(user_id, reason)]).await.is_err() {
+                    let error = match member.membership() {
+                        Membership::Invite => gettext("Failed to revoke invite of user"),
+                        Membership::Knock => gettext("Failed to deny access to user"),
+                        _ => gettext("Failed to kick user"),
+                    };
+                    toast!(obj, error);
+
+                    obj.reset_room();
+                }
+            })
+        );
+    }
+
+    /// Ban the room member.
+    #[template_callback]
+    fn ban_user(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(member) = self.user().and_downcast::<Member>() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.ban_button.set_loading(true);
+        imp.invite_button.set_sensitive(false);
+        imp.kick_button.set_sensitive(false);
+        imp.unban_button.set_sensitive(false);
+
+        spawn!(
+            clone!(@weak self as obj, @weak room, @weak member, @weak window => async move {
+                let (confirmed, reason) = confirm_room_member_destructive_action(&room, &member, PowerLevelAction::Ban, &window).await;
+                if !confirmed {
+                    obj.reset_room();
+                    return;
+                }
+
+                let user_id = member.user_id().clone();
+                if room.ban(&[(user_id, reason)]).await.is_err() {
+                    toast!(obj, gettext("Failed to ban user"));
+                }
+
+                obj.reset_room();
+            })
+        );
+    }
+
+    /// Unban the room member.
+    #[template_callback]
+    fn unban_user(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(member) = self.user().and_downcast::<Member>() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.unban_button.set_loading(true);
+        imp.invite_button.set_sensitive(false);
+        imp.kick_button.set_sensitive(false);
+        imp.ban_button.set_sensitive(false);
+
+        let user_id = member.user_id().clone();
+        spawn!(clone!(@weak self as obj, @weak room => async move {
+            if room.unban(&[(user_id, None)]).await.is_err() {
+                toast!(obj, gettext("Failed to unban user"));
+            }
+
+            obj.reset_room();
+        }));
     }
 
     /// Update the verified row.
@@ -300,4 +684,35 @@ impl UserPage {
             obj.imp().ignored_button.set_loading(false);
         }));
     }
+
+    /// Connect to the signal emitted when the page should be closed.
+    pub fn connect_close<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "close",
+            true,
+            closure_local!(|obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+}
+
+/// The actions to other users that can be limited by power levels.
+// TODO: Use Ruma's type and RoomPowerLevels methods when we use a recent enough version.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PowerLevelUserAction {
+    /// Ban a user.
+    Ban,
+
+    /// Unban a user.
+    Unban,
+
+    /// Invite a user.
+    Invite,
+
+    /// Kick a user.
+    Kick,
+
+    /// Change a user's power level.
+    ChangePowerLevel,
 }
