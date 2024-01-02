@@ -14,6 +14,13 @@
                 <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
               </lookup>
             </binding>
+            <binding name="inhibit-remove">
+              <closure type="gboolean" function="invert_boolean">
+                <lookup name="has-avatar">
+                  <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                </lookup>
+              </closure>
+            </binding>
           </object>
         </child>
         <child>

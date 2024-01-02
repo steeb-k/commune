@@ -87,6 +87,12 @@ mod imp {
         /// The display name of this room.
         #[property(get = Self::display_name, type = String)]
         pub display_name: RefCell<Option<String>>,
+        /// Whether this room has an avatar explicitly set.
+        ///
+        /// This is `false` if there is no avatar or if the avatar is the one
+        /// from the other member.
+        #[property(get)]
+        pub has_avatar: Cell<bool>,
         /// The Avatar data of this room.
         #[property(get)]
         pub avatar_data: OnceCell<AvatarData>,
@@ -217,6 +223,16 @@ mod imp {
             let display_name = self.display_name.borrow().clone();
             // Translators: This is displayed when the room name is unknown yet.
             display_name.unwrap_or_else(|| gettext("Unknown"))
+        }
+
+        /// Set whether this room has an avatar explicitly set.
+        pub fn set_has_avatar(&self, has_avatar: bool) {
+            if self.has_avatar.get() == has_avatar {
+                return;
+            }
+
+            self.has_avatar.set(has_avatar);
+            self.obj().notify_has_avatar();
         }
 
         /// The number of unread notifications of this room.
@@ -1587,10 +1603,14 @@ impl Room {
         let Some(session) = self.session() else {
             return;
         };
+        let imp = self.imp();
+
+        let avatar_url = self.matrix_room().avatar_url();
+        imp.set_has_avatar(avatar_url.is_some());
 
         let avatar_data = AvatarData::with_image(AvatarImage::new(
             &session,
-            self.matrix_room().avatar_url().as_deref(),
+            avatar_url.as_deref(),
             AvatarUriSource::Room,
         ));
 
@@ -1598,7 +1618,7 @@ impl Room {
             .sync_create()
             .build();
 
-        self.imp().avatar_data.set(avatar_data).unwrap();
+        imp.avatar_data.set(avatar_data).unwrap();
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
@@ -1612,6 +1632,8 @@ impl Room {
     async fn load_avatar(&self) {
         let matrix_room = self.matrix_room();
         let mut avatar_url = matrix_room.avatar_url();
+
+        self.imp().set_has_avatar(avatar_url.is_some());
 
         let members_count = if matrix_room.state() == RoomState::Invited {
             // We don't have the members count for invited rooms, use the SDK's

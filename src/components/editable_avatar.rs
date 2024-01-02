@@ -51,6 +51,9 @@ mod imp {
         /// Whether this avatar is changeable.
         #[property(get, set = Self::set_editable, explicit_notify)]
         pub editable: Cell<bool>,
+        /// Whether to prevent the remove button from showing.
+        #[property(get, set = Self::set_inhibit_remove, explicit_notify)]
+        pub inhibit_remove: Cell<bool>,
         /// The current state of the edit.
         #[property(get, set = Self::set_state, explicit_notify, builder(EditableAvatarState::default()))]
         pub state: Cell<EditableAvatarState>,
@@ -127,8 +130,13 @@ mod imp {
                 .chain_closure::<bool>(closure!(
                     |_: Option<glib::Object>, image: Option<gdk::Paintable>| { image.is_some() }
                 ));
+
             let editable_expr = obj.property_expression("editable");
-            let button_remove_visible = expression::and(editable_expr, image_present_expr);
+            let remove_not_inhibited_expr =
+                expression::not(obj.property_expression("inhibit-remove"));
+            let can_remove_expr = expression::and(editable_expr, remove_not_inhibited_expr);
+
+            let button_remove_visible = expression::and(can_remove_expr, image_present_expr);
             button_remove_visible.bind(&*self.button_remove, "visible", glib::Object::NONE);
         }
     }
@@ -155,6 +163,16 @@ mod imp {
 
             self.editable.set(editable);
             self.obj().notify_editable();
+        }
+
+        /// Set whether to prevent the remove button from showing..
+        fn set_inhibit_remove(&self, inhibit: bool) {
+            if self.inhibit_remove.get() == inhibit {
+                return;
+            }
+
+            self.inhibit_remove.set(inhibit);
+            self.obj().notify_inhibit_remove();
         }
 
         /// Set the state of the edit.
