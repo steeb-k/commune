@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-12-31 14:31+0000\n"
-"PO-Revision-Date: 2024-01-01 14:19+0200\n"
+"POT-Creation-Date: 2024-01-02 10:12+0000\n"
+"PO-Revision-Date: 2024-01-02 12:45+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -135,7 +135,7 @@ msgstr ""
 "Працюйте у декількох облікових записах одночасно (із підтримкою єдиного "
 "входу в усі одразу)"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:180
+#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:191
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
@@ -150,6 +150,15 @@ msgstr "Перегляд журналу мультимедіа кімнати Ma
 #: data/org.gnome.Fractal.metainfo.xml.in.in:41
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Інтерфейс «Фрактала» адаптується до малих екранів"
+
+#: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:34
+#| msgid "Deactivate Account"
+msgid "Select an Account"
+msgstr "Виберіть обліковий запис"
+
+#: src/account_chooser_dialog/mod.ui:63
+msgid "Select the account you want to open the URI with."
+msgstr "Виберіть обліковий запис, для якого ви хочете відкрити адресу."
 
 #: src/account_switcher/account_switcher_button.ui:4
 #: src/account_switcher/account_switcher_button.ui:6
@@ -166,20 +175,20 @@ msgstr "Д_одати обліковий запис"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
-#: src/application.rs:187
+#: src/application.rs:198
 msgid "© 2017-2023 The Fractal Team"
 msgstr "© Команда «Фрактал», 2017-2023"
 
-#: src/application.rs:201
+#: src/application.rs:212
 msgid "translator-credits"
 msgstr "Artem Polishchuk <ego.cordatus@gmail.com>, 2019."
 
 #. This can't be added via the builder
-#: src/application.rs:207
+#: src/application.rs:218
 msgid "Name by"
 msgstr "Авторка назви"
 
-#: src/application.rs:247
+#: src/application.rs:304
 msgid "Session not found"
 msgstr "Не знайдено сеансу"
 
@@ -331,11 +340,11 @@ msgstr ""
 msgid "Failed to Initialize the Session"
 msgstr "Не вдалося ініціалізувати сеанс"
 
-#: src/greeter.rs:75 src/login/mod.rs:583 src/window.rs:423
+#: src/greeter.rs:75 src/login/mod.rs:583 src/window.rs:424
 msgid "No network connection"
 msgstr "Немає з'єднання з мережею"
 
-#: src/greeter.rs:79 src/login/mod.rs:588 src/window.rs:427
+#: src/greeter.rs:79 src/login/mod.rs:588 src/window.rs:428
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
@@ -405,14 +414,14 @@ msgstr "Адреса вашого домашнього сервера Matrix, н
 msgid "Homeserver"
 msgstr "Домашній сервер"
 
-#: src/login/homeserver_page.ui:66 src/login/method_page.ui:110
+#: src/login/homeserver_page.ui:70 src/login/method_page.ui:118
 #: src/verification_view/session_verification_view.ui:293
 #: src/verification_view/session_verification_view.ui:365
 msgid "Next"
 msgstr "Далі"
 
 #. Translators: As in 'Advanced Settings'.
-#: src/login/homeserver_page.ui:81
+#: src/login/homeserver_page.ui:85
 msgid "Advanced…"
 msgstr "Додатково…"
 
@@ -434,15 +443,15 @@ msgstr "Увійти до {domain_name}"
 msgid "Log in"
 msgstr "Увійти"
 
-#: src/login/method_page.ui:71
+#: src/login/method_page.ui:73
 msgid "Matrix Username"
 msgstr "Ім'я користувача Matrix"
 
-#: src/login/method_page.ui:81
+#: src/login/method_page.ui:87
 msgid "Password"
 msgstr "Пароль"
 
-#: src/login/method_page.ui:103
+#: src/login/method_page.ui:111
 msgid "More SSO Providers"
 msgstr "Додаткові надавачі SSO"
 
@@ -647,7 +656,7 @@ msgstr "Порожня кімната"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:370
+#: src/session/model/room_list/mod.rs:368
 msgid "Failed to join room {room_name}. Try again later."
 msgstr ""
 "Не вдалося долучитися до кімнати {room_name}. Повторіть спробу пізніше."
@@ -1126,13 +1135,12 @@ msgid "Add Keyword"
 msgstr "Додавання ключового слова"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
-#: src/session/view/user_page.rs:281
-#| msgid "Failed to restore previous sessions"
+#: src/session/view/user_page.rs:294
 msgid "Failed to stop ignoring user"
 msgstr "Не вдалося припинити ігнорувати користувача"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:27
-#: src/session/view/user_page.rs:259
+#: src/session/view/user_page.rs:272
 msgid "Stop Ignoring"
 msgstr "Припинити ігнорування"
 
@@ -1142,12 +1150,10 @@ msgid "Ignored Users"
 msgstr "Ігноровані користувачі"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:18
-#| msgid "Toggle Room Members Search"
 msgid "Toggle Ignored Users Search"
 msgstr "Перемкнути пошук ігнорованих користувачів"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:33
-#| msgid "Search for room members"
 msgid "Search for ignored users"
 msgstr "Шукати ігнорованих користувачів"
 
@@ -1158,8 +1164,8 @@ msgstr "Немає ігнорованих користувачів"
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
 msgid "You can add users to this list from their room member profile."
 msgstr ""
-"Ви можете додати користувачів до цього списку з їхньої сторінки учасника"
-" кімнати."
+"Ви можете додати користувачів до цього списку з їхньої сторінки учасника "
+"кімнати."
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:176
@@ -1303,9 +1309,9 @@ msgid ""
 "All messages or invitations sent by these users will be ignored. You will "
 "still see some of their activity, like when they join or leave a room."
 msgstr ""
-"Усі повідомлення або запрошення, які надсилатимуть ці користувачі, буде"
-" проігноровано. Попри це, ви бачитимете деякі з їхніх дій, зокрема дії з"
-" долучення до кімнати або її полишення."
+"Усі повідомлення або запрошення, які надсилатимуть ці користувачі, буде "
+"проігноровано. Попри це, ви бачитимете деякі з їхніх дій, зокрема дії з "
+"долучення до кімнати або її полишення."
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/mod.ui:37
@@ -1340,14 +1346,14 @@ msgstr "Список кімнат"
 #: src/session/view/content/explore/public_room_row.rs:156
 #: src/session/view/content/room_history/mod.rs:862
 #: src/session/view/content/room_history/state_row/tombstone.rs:88
-#: src/session/view/join_room_dialog.rs:153
+#: src/session/view/join_room_dialog.rs:174
 msgid "View"
 msgstr "Перегляд"
 
 #: src/session/view/content/explore/public_room_row.rs:158
 #: src/session/view/content/room_history/mod.rs:865
 #: src/session/view/content/room_history/state_row/tombstone.rs:90
-#: src/session/view/join_room_dialog.ui:178
+#: src/session/view/join_room_dialog.ui:189
 msgid "Join"
 msgstr "Увійти"
 
@@ -1571,7 +1577,7 @@ msgid "Could not load the full list of room members"
 msgstr "Не вдалося завантажити повний список учасників кімнати."
 
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
-#: src/session/view/user_page.rs:209
+#: src/session/view/user_page.rs:222
 msgid "Identity verified"
 msgstr "Профіль перевірено"
 
@@ -2190,7 +2196,7 @@ msgid "An error occurred while searching for users"
 msgstr "Під час пошуку користувачів сталася помилка"
 
 #: src/session/view/create_dm_dialog/mod.rs:177
-#: src/session/view/user_page.rs:184
+#: src/session/view/user_page.rs:197
 msgid "Failed to create a new Direct Chat"
 msgstr "Не вдалося розпочати безпосереднє спілкування"
 
@@ -2296,14 +2302,14 @@ msgid "Latest Edit"
 msgstr "Найсвіжіше редагування"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/session/view/join_room_dialog.rs:156
+#: src/session/view/join_room_dialog.rs:177
 #: src/session/view/join_room_dialog.ui:89
 msgid "Look Up"
 msgstr "Шукати"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/join_room_dialog.rs:298
+#: src/session/view/join_room_dialog.rs:314
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "{n} учасник"
@@ -2311,7 +2317,7 @@ msgstr[1] "{n} учасники"
 msgstr[2] "{n} учасників"
 msgstr[3] "1 учасник"
 
-#: src/session/view/join_room_dialog.rs:322
+#: src/session/view/join_room_dialog.rs:338
 msgid ""
 "The room details cannot be previewed. It can be because the room is not "
 "known by the homeserver or because its details are private. You can still "
@@ -2569,40 +2575,43 @@ msgstr "Не вдалося забути про {room}."
 msgid "Direct chat with {name}"
 msgstr "Безпосереднє спілкування з {name}"
 
-#: src/session/view/user_page.rs:158
+#: src/session/view/user_page.rs:171
 msgid "Open Direct Chat"
 msgstr "Відкрити безпосередній чат"
 
-#: src/session/view/user_page.rs:160
+#: src/session/view/user_page.rs:173
 msgid "Create Direct Chat"
 msgstr "Створити безпосередній чат"
 
-#: src/session/view/user_page.rs:216
+#: src/session/view/user_page.rs:229
 msgid "Identity not verified"
 msgstr "Профіль не пройшов перевірки"
 
-#: src/session/view/user_page.rs:232
+#: src/session/view/user_page.rs:245
 msgid "Failed to start user verification"
 msgstr "Не вдалося розпочати перевірку користувача"
 
-#: src/session/view/user_page.rs:258
+#: src/session/view/user_page.rs:271
 msgid "Ignored"
 msgstr "Ігноровано"
 
-#: src/session/view/user_page.rs:262
+#: src/session/view/user_page.rs:275
 msgid "Not Ignored"
 msgstr "Не ігноровано"
 
-#: src/session/view/user_page.rs:263
+#: src/session/view/user_page.rs:276
 msgid "Ignore"
 msgstr "Ігнорувати"
 
-#: src/session/view/user_page.rs:284
-#| msgid "Failed to remove message"
+#: src/session/view/user_page.rs:297
 msgid "Failed to ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
-#: src/session_list/mod.rs:249
+#: src/session/view/user_profile_dialog.ui:4
+msgid "User Profile"
+msgstr "Профіль користувача"
+
+#: src/session_list/mod.rs:254
 msgid "Failed to restore previous sessions"
 msgstr "Не вдалося відновити попередні сеанси"
 
@@ -2700,36 +2709,36 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Не вдалося відкрити сховище."
 
-#: src/utils/matrix.rs:110
+#: src/utils/matrix.rs:114
 msgid "{user} sent an audio file."
 msgstr "Користувачем {user} надіслано звуковий файл."
 
-#: src/utils/matrix.rs:113 src/utils/matrix.rs:124 src/utils/matrix.rs:128
-#: src/utils/matrix.rs:132
+#: src/utils/matrix.rs:117 src/utils/matrix.rs:128 src/utils/matrix.rs:132
+#: src/utils/matrix.rs:136
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
-#: src/utils/matrix.rs:116
+#: src/utils/matrix.rs:120
 msgid "{user} sent a file."
 msgstr "Користувачем {user} надіслано файл."
 
-#: src/utils/matrix.rs:118
+#: src/utils/matrix.rs:122
 msgid "{user} sent an image."
 msgstr "Користувачем {user} надіслано зображення."
 
-#: src/utils/matrix.rs:121
+#: src/utils/matrix.rs:125
 msgid "{user} sent their location."
 msgstr "Користувачем {user} надіслано дані щодо місця перебування."
 
-#: src/utils/matrix.rs:136
+#: src/utils/matrix.rs:140
 msgid "{user} sent a video."
 msgstr "Користувачем {user} надіслано відео."
 
-#: src/utils/matrix.rs:139
+#: src/utils/matrix.rs:143
 msgid "{user} sent a verification request."
 msgstr "Користувачем {user} надіслано запит щодо перевірки."
 
-#: src/utils/matrix.rs:147
+#: src/utils/matrix.rs:151
 msgid "{user} sent a sticker."
 msgstr "Користувачем {user} надіслано наліпку."
 
