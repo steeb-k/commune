@@ -133,7 +133,7 @@ which is currently only implemented by gnome-keyring.
 Any version that is not sandboxed relies on software that implements the [Secret **Service** API](https://www.freedesktop.org/wiki/Specifications/secret-storage-spec/)
 to store those secrets. Therefore, you need to have software providing that service on your system,
 like gnome-keyring, KeepassXC ([setup guide](https://avaldes.co/2020/01/28/secret-service-keepassxc.html)),
-or a recent version of KWallet. Once again, if you are using GNOME this should just work.
+or KWallet (since version 5.97). Once again, if you are using GNOME this should just work.
 
 If you prefer to use software that only implements the Secret Service API while using the Flatpaks,
 you need to make sure that no service implementing the Secret portal backend interface is running,
