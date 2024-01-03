@@ -452,6 +452,7 @@ impl ItemRow {
         };
 
         let action_group = gio::SimpleActionGroup::new();
+        let room = event.room();
 
         if event.has_source() {
             action_group.add_action_entries([
@@ -467,7 +468,7 @@ impl ItemRow {
         }
 
         action_group.add_action_entries([
-            // Create a permalink
+            // Create a permalink.
             gio::ActionEntry::builder("permalink")
                 .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
                     spawn!(clone!(@weak widget, @weak event => async move {
@@ -482,8 +483,20 @@ impl ItemRow {
                 .build(),
         ]);
 
+        if room.is_joined() {
+            action_group.add_action_entries([
+                // Report the event.
+                gio::ActionEntry::builder("report")
+                    .activate(clone!(@weak self as widget => move |_, _, _| {
+                        spawn!(clone!(@weak widget => async move {
+                            widget.report_event().await;
+                        }));
+                    }))
+                    .build(),
+            ]);
+        }
+
         if let TimelineItemContent::Message(message) = event.content() {
-            let room = event.room();
             let own_member = room.own_member();
             let own_user_id = own_member.user_id();
             let is_from_own_user = event.sender_id() == *own_user_id;
@@ -719,6 +732,63 @@ impl ItemRow {
 
         if event.room().toggle_reaction(key, event_id).await.is_err() {
             toast!(self, gettext("Failed to toggle reaction"));
+        }
+    }
+
+    /// Report the current event.
+    async fn report_event(&self) {
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+        let Some(event) = self.item().and_downcast::<Event>() else {
+            return;
+        };
+        let Some(event_id) = event.event_id() else {
+            return;
+        };
+
+        // Ask the user to confirm, and provide optional reason.
+        let reason_entry = adw::EntryRow::builder()
+            .title(gettext("Reason (optional)"))
+            .build();
+        let list_box = gtk::ListBox::builder()
+            .css_classes(["boxed-list"])
+            .margin_top(6)
+            .accessible_role(gtk::AccessibleRole::Group)
+            .build();
+        list_box.append(&reason_entry);
+
+        let confirm_dialog = adw::MessageDialog::builder()
+            .transient_for(&window)
+            .default_response("cancel")
+            .heading(gettext("Report Event?"))
+            .body(gettext(
+                "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator won’t be able to see the content of the event if it is encrypted or redacted.",
+            ))
+            .extra_child(&list_box)
+            .build();
+        confirm_dialog.add_responses(&[
+            ("cancel", &gettext("Cancel")),
+            // Translators: This is a verb, as in 'Report Event'.
+            ("report", &gettext("Report")),
+        ]);
+        confirm_dialog.set_response_appearance("report", adw::ResponseAppearance::Destructive);
+
+        if confirm_dialog.choose_future().await != "report" {
+            return;
+        }
+
+        let reason = Some(reason_entry.text())
+            .filter(|s| !s.is_empty())
+            .map(Into::into);
+
+        if event
+            .room()
+            .report_events(&[(event_id, reason)])
+            .await
+            .is_err()
+        {
+            toast!(self, gettext("Failed to report event"));
         }
     }
 }

@@ -39,8 +39,8 @@ use ruma::{
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
         AnySyncTimelineEvent, SyncEphemeralRoomEvent, SyncStateEvent,
     },
-    MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedUserId, RoomId,
-    UserId,
+    EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedUserId,
+    RoomId, UserId,
 };
 use tracing::{debug, error, warn};
 
@@ -2033,5 +2033,45 @@ impl Room {
 
         // Fallback to using just the room ID, without routing.
         self.room_id().matrix_event_uri(event_id)
+    }
+
+    /// Report the given events in this room.
+    ///
+    /// The events are a list of `(event_id, reason)` tuples.
+    ///
+    /// Returns `Ok(())` if all the reports are sent successfully, otherwise
+    /// returns the list of event IDs that could not be reported.
+    pub async fn report_events<'a>(
+        &self,
+        events: &'a [(OwnedEventId, Option<String>)],
+    ) -> Result<(), Vec<&'a EventId>> {
+        let events_clone = events.to_owned();
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            let futures = events_clone
+                .into_iter()
+                .map(|(event_id, reason)| matrix_room.report_content(event_id, None, reason));
+            futures_util::future::join_all(futures).await
+        });
+
+        let mut failed = Vec::new();
+        for (index, result) in handle.await.unwrap().iter().enumerate() {
+            match result {
+                Ok(_) => {}
+                Err(error) => {
+                    error!(
+                        "Failed to report content with event ID {}: {error}",
+                        events[index].0,
+                    );
+                    failed.push(&*events[index].0);
+                }
+            }
+        }
+
+        if failed.is_empty() {
+            Ok(())
+        } else {
+            Err(failed)
+        }
     }
 }

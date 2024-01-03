@@ -74,6 +74,11 @@
     </section>
     <section>
       <item>
+        <attribute name="label" translatable="yes">Rep_ort</attribute>
+        <attribute name="action">event.report</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">Re_move</attribute>
         <attribute name="action">event.remove</attribute>
         <attribute name="hidden-when">action-missing</attribute>
@@ -149,6 +154,11 @@
     </section>
     <section>
       <item>
+        <attribute name="label" translatable="yes">Rep_ort</attribute>
+        <attribute name="action">event.report</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">Re_move</attribute>
         <attribute name="action">event.remove</attribute>
         <attribute name="hidden-when">action-missing</attribute>
@@ -176,6 +186,11 @@
       </item>
     </section>
     <section>
+      <item>
+        <attribute name="label" translatable="yes">Rep_ort</attribute>
+        <attribute name="action">event.report</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
       <item>
         <attribute name="label" translatable="yes">Re_move</attribute>
         <attribute name="action">event.remove</attribute>
