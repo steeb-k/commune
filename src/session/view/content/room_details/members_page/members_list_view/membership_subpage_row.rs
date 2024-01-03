@@ -21,6 +21,9 @@ mod imp {
         /// The item presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: BoundObject<MembershipSubpageItem>,
+        /// The icon of this row.
+        #[property(get = Self::icon)]
+        pub icon: PhantomData<Option<String>>,
         /// The label of this row.
         #[property(get = Self::label)]
         pub label: PhantomData<Option<String>>,
@@ -74,7 +77,17 @@ mod imp {
             }
 
             obj.notify_item();
+            obj.notify_icon();
             obj.notify_label();
+        }
+
+        /// The icon of this row.
+        fn icon(&self) -> Option<String> {
+            match self.item.obj()?.state() {
+                Membership::Invite => Some("user-add-symbolic".to_owned()),
+                Membership::Ban => Some("blocked-symbolic".to_owned()),
+                _ => None,
+            }
         }
 
         /// The label of this row.

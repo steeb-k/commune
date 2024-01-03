@@ -10,8 +10,8 @@
         <child>
           <object class="GtkImage">
             <property name="valign">center</property>
-            <property name="icon-name">users-symbolic</property>
             <property name="accessible-role">presentation</property>
+            <property name="icon-name" bind-source="MembersPageMembershipSubpageRow" bind-property="icon" bind-flags="sync-create"/>
             <style>
               <class name="icon"/>
             </style>
