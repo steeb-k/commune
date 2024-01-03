@@ -125,6 +125,10 @@ mod imp {
                 }
             });
 
+            obj.property_expression("list-model")
+                .chain_property::<SidebarListModel>("selection-model")
+                .bind(&*self.listview, "model", None::<&glib::Object>);
+
             // FIXME: Remove this hack once https://gitlab.gnome.org/GNOME/gtk/-/issues/4938 is resolved
             self.scrolled_window
                 .vscrollbar()
@@ -197,8 +201,6 @@ mod imp {
                 self.bindings.replace(bindings);
             }
 
-            self.listview
-                .set_model(list_model.as_ref().map(|m| m.selection_model()).as_ref());
             self.list_model.set(list_model.as_ref());
             obj.notify_list_model();
         }

@@ -7,7 +7,10 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::OnceCell;
+    use std::{
+        cell::{Cell, OnceCell},
+        marker::PhantomData,
+    };
 
     use super::*;
 
@@ -17,15 +20,19 @@ mod imp {
         /// The list of items in the sidebar.
         #[property(get, set = Self::set_item_list, construct_only)]
         pub item_list: OnceCell<ItemList>,
-        /// The tree list model.
-        #[property(get)]
-        pub tree_model: OnceCell<gtk::TreeListModel>,
         /// The string filter.
         #[property(get)]
         pub string_filter: gtk::StringFilter,
-        /// The selection model.
+        /// Whether the string filter is active.
         #[property(get)]
-        pub selection_model: Selection,
+        pub is_filtered: Cell<bool>,
+        /// The selection model.
+        #[property(get = Self::selection_model)]
+        pub selection_model: PhantomData<Selection>,
+        /// The unfiltered selection model.
+        pub unfiltered_selection_model: Selection,
+        /// The filtered selection model.
+        pub filtered_selection_model: Selection,
         /// The selected item, if it has signal handlers.
         pub selected_item: BoundObjectWeakRef<glib::Object>,
     }
@@ -41,7 +48,19 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.selection_model.connect_selected_item_notify(
+            // Keep the selected item in sync.
+            self.unfiltered_selection_model
+                .bind_property(
+                    "selected-item",
+                    &self.filtered_selection_model,
+                    "selected-item",
+                )
+                .bidirectional()
+                .sync_create()
+                .build();
+
+            // When a verification is replaced, select the replacement automatically.
+            self.unfiltered_selection_model.connect_selected_item_notify(
                 clone!(@weak self as imp => move |selection_model| {
                     imp.selected_item.disconnect_signals();
 
@@ -57,6 +76,13 @@ mod imp {
                     }
                 }),
             );
+
+            // Switch between the filtered and unfiltered list models.
+            self.string_filter.connect_search_notify(
+                clone!(@weak self as imp => move |string_filter| {
+                    imp.set_is_filtered(string_filter.search().filter(|s| !s.is_empty()).is_some());
+                }),
+            );
         }
     }
 
@@ -65,10 +91,18 @@ mod imp {
         fn set_item_list(&self, item_list: ItemList) {
             self.item_list.set(item_list.clone()).unwrap();
 
-            let tree_model = gtk::TreeListModel::new(item_list, false, true, |item| {
+            let unfiltered_tree_model =
+                gtk::TreeListModel::new(item_list.clone(), false, true, |item| {
+                    item.clone().downcast().ok()
+                });
+            self.unfiltered_selection_model
+                .set_model(Some(unfiltered_tree_model));
+
+            // We keep two separate models, so the filtered list is always expanded and
+            // searches in all rooms.
+            let filtered_tree_model = gtk::TreeListModel::new(item_list, false, true, |item| {
                 item.clone().downcast().ok()
             });
-            self.tree_model.set(tree_model.clone()).unwrap();
 
             let room_expression =
                 gtk::TreeListRow::this_expression("item").chain_property::<Room>("display-name");
@@ -79,10 +113,34 @@ mod imp {
             // Default to an empty string to be able to bind to GtkEditable::text.
             self.string_filter.set_search(Some(""));
 
-            let filter_model =
-                gtk::FilterListModel::new(Some(tree_model), Some(self.string_filter.clone()));
+            let filter_model = gtk::FilterListModel::new(
+                Some(filtered_tree_model),
+                Some(self.string_filter.clone()),
+            );
 
-            self.selection_model.set_model(Some(filter_model));
+            self.filtered_selection_model.set_model(Some(filter_model));
+        }
+
+        /// Set whether the string filter is active.
+        fn set_is_filtered(&self, is_filtered: bool) {
+            if self.is_filtered.get() == is_filtered {
+                return;
+            }
+
+            self.is_filtered.set(is_filtered);
+
+            let obj = self.obj();
+            obj.notify_is_filtered();
+            obj.notify_selection_model();
+        }
+
+        /// The selection model.
+        fn selection_model(&self) -> Selection {
+            if self.is_filtered.get() {
+                self.filtered_selection_model.clone()
+            } else {
+                self.unfiltered_selection_model.clone()
+            }
         }
     }
 }
