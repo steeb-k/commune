@@ -78,6 +78,12 @@ mod imp {
         /// The ID of this room, as a string.
         #[property(get = Self::room_id_string)]
         pub room_id_string: PhantomData<String>,
+        /// The version of this room.
+        #[property(get = Self::version)]
+        pub version: PhantomData<String>,
+        /// Whether this room is federated.
+        #[property(get = Self::federated)]
+        pub federated: PhantomData<bool>,
         /// The name that is set for this room.
         ///
         /// This can be empty, the display name should be used instead in the
@@ -208,6 +214,22 @@ mod imp {
         /// The room ID of this room, as a string.
         fn room_id_string(&self) -> String {
             self.matrix_room().room_id().to_string()
+        }
+
+        /// The version of this room.
+        fn version(&self) -> String {
+            self.matrix_room()
+                .create_content()
+                .map(|c| c.room_version.to_string())
+                .unwrap_or_default()
+        }
+
+        /// Whether this room is federated.
+        fn federated(&self) -> bool {
+            self.matrix_room()
+                .create_content()
+                .map(|c| c.federate)
+                .unwrap_or_default()
         }
 
         /// The name of this room.

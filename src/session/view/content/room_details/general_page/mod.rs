@@ -83,6 +83,10 @@ mod imp {
         pub notifications_mute_bin: TemplateChild<LoadingBin>,
         #[template_child]
         pub notifications_mute_radio: TemplateChild<gtk::CheckButton>,
+        #[template_child]
+        pub room_id: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub room_federated: TemplateChild<adw::ActionRow>,
         /// Whether edit mode is enabled.
         #[property(get, set = Self::set_edit_mode_enabled, explicit_notify)]
         pub edit_mode_enabled: Cell<bool>,
@@ -193,6 +197,7 @@ mod imp {
             }
 
             obj.update_notifications();
+            obj.update_federated();
         }
 
         /// Set whether edit mode is enabled.
@@ -722,5 +727,30 @@ impl GeneralPage {
                 obj.update_notifications();
             })
         );
+    }
+
+    /// Copy the room ID to the clipboard.
+    #[template_callback]
+    fn copy_room_id(&self) {
+        let text = self.imp().room_id.subtitle().unwrap_or_default();
+        self.clipboard().set_text(&text);
+        toast!(self, gettext("Matrix room ID copied to clipboard"));
+    }
+
+    /// Update the room federation row.
+    fn update_federated(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let subtitle = if room.federated() {
+            // Translators: As in, 'Room federated'.
+            gettext("Federated")
+        } else {
+            // Translators: As in, 'Room not federated'.
+            gettext("Not federated")
+        };
+
+        self.imp().room_federated.set_subtitle(&subtitle);
     }
 }
