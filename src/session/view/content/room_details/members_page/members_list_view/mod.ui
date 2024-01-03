@@ -46,8 +46,6 @@
                 <property name="propagate-natural-height">True</property>
                 <property name="child">
                   <object class="AdwClampScrollable">
-                    <property name="tightening-threshold">300</property>
-                    <property name="maximum-size">400</property>
                     <property name="margin-start">12</property>
                     <property name="margin-end">12</property>
                     <property name="child">
