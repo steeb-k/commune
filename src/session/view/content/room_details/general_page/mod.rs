@@ -1,7 +1,7 @@
 use std::convert::From;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
+use gettextrs::{gettext, ngettext};
 use gtk::{
     gio,
     glib::{self, clone},
@@ -63,6 +63,8 @@ mod imp {
         pub edit_details_btn: TemplateChild<gtk::Button>,
         #[template_child]
         pub save_details_btn: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub members_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub members_count: TemplateChild<gtk::Label>,
         #[template_child]
@@ -633,7 +635,11 @@ impl GeneralPage {
     }
 
     fn member_count_changed(&self, n: u64) {
-        self.imp().members_count.set_text(&format!("{n}"));
+        let imp = self.imp();
+        imp.members_count.set_text(&format!("{n}"));
+
+        let n = n.try_into().unwrap_or(u32::MAX);
+        imp.members_row.set_title(&ngettext("Member", "Members", n));
     }
 
     fn disconnect_all(&self) {

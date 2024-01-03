@@ -116,8 +116,7 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="AdwActionRow">
-            <property name="title" translatable="yes">Members</property>
+          <object class="AdwActionRow" id="members_row">
             <property name="icon-name">users-symbolic</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'members'</property>

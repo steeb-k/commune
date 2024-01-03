@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
+use gettextrs::ngettext;
 use gtk::{
     gio, glib,
     glib::{clone, closure},
@@ -23,7 +23,10 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::Cell, marker::PhantomData};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -48,6 +51,7 @@ mod imp {
         /// Whether our own user can send an invite in the current room.
         #[property(get, set = Self::set_can_invite, explicit_notify)]
         pub can_invite: Cell<bool>,
+        items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -132,6 +136,19 @@ mod imp {
                         .unwrap();
                     }
                 }));
+
+            obj.connect_tag_notify(|obj| {
+                obj.imp().update_title();
+            });
+            self.update_title();
+        }
+
+        fn dispose(&self) {
+            if let Some(model) = self.model() {
+                if let Some(handler) = self.items_changed_handler.take() {
+                    model.disconnect(handler);
+                }
+            }
         }
     }
 
@@ -146,12 +163,30 @@ mod imp {
 
         /// Set the model used for this view.
         fn set_model(&self, model: Option<gio::ListModel>) {
-            if self.model() == model {
+            let prev_model = self.model();
+
+            if prev_model == model {
                 return;
+            }
+
+            if let Some(model) = prev_model {
+                if let Some(handler) = self.items_changed_handler.take() {
+                    model.disconnect(handler);
+                }
+            }
+
+            if let Some(model) = &model {
+                let items_changed_handler =
+                    model.connect_items_changed(clone!(@weak self as imp => move |_, _, _, _| {
+                        imp.update_title();
+                    }));
+                self.items_changed_handler
+                    .replace(Some(items_changed_handler));
             }
 
             self.filtered_model.set_model(model.as_ref());
             self.obj().notify_model();
+            self.update_title();
         }
 
         /// Set whether our own user can send an invite in the current room.
@@ -163,6 +198,26 @@ mod imp {
             self.can_invite.set(can_invite);
             self.obj().notify_can_invite();
         }
+
+        /// Update the page title for the current state.
+        fn update_title(&self) {
+            let Some(model) = self.model() else {
+                return;
+            };
+            let obj = self.obj();
+            let Some(tag) = obj.tag() else {
+                return;
+            };
+
+            let count = model.n_items();
+            let title = match &*tag {
+                "invited" => ngettext("Invited Room Member", "Invited Room Members", count),
+                "banned" => ngettext("Banned Room Member", "Banned Room Members", count),
+                _ => ngettext("Room Member", "Room Members", count),
+            };
+
+            obj.set_title(&title);
+        }
     }
 }
 
@@ -173,16 +228,15 @@ glib::wrapper! {
 
 impl MembersListView {
     pub fn new(model: &impl IsA<gio::ListModel>, membership: Membership) -> Self {
-        let (tag, title) = match membership {
-            Membership::Invite => ("invited", gettext("Invited Room Members")),
-            Membership::Ban => ("banned", gettext("Banned Room Members")),
-            _ => ("joined", gettext("Room Members")),
+        let tag = match membership {
+            Membership::Invite => "invited",
+            Membership::Ban => "banned",
+            _ => "joined",
         };
 
         glib::Object::builder()
             .property("model", model)
             .property("tag", tag)
-            .property("title", title)
             .build()
     }
 }

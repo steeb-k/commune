@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
+use gettextrs::npgettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
 use super::MembershipSubpageItem;
@@ -69,6 +69,7 @@ mod imp {
                 let handler = model.connect_items_changed(
                     clone!(@weak self as imp => move |model, _, _, _| {
                         imp.member_count_changed(model.n_items());
+                        imp.obj().notify_label();
                     }),
                 );
                 self.member_count_changed(model.n_items());
@@ -92,11 +93,14 @@ mod imp {
 
         /// The label of this row.
         fn label(&self) -> Option<String> {
-            match self.item.obj()?.state() {
-                // Translators: As in 'Invited Room Members'.
-                Membership::Invite => Some(gettext("Invited")),
-                // Translators: As in 'Banned Room Members'.
-                Membership::Ban => Some(gettext("Banned")),
+            let item = self.item.obj()?;
+            let count = item.model().n_items();
+
+            match item.state() {
+                // Translators: As in 'Invited Room Member(s)'.
+                Membership::Invite => Some(npgettext("members", "Invited", "Invited", count)),
+                // Translators: As in 'Banned Room Member(s)'.
+                Membership::Ban => Some(npgettext("members", "Banned", "Banned", count)),
                 _ => None,
             }
         }
