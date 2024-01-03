@@ -6,7 +6,7 @@ use gtk::{
     CompositeTemplate,
 };
 use pulldown_cmark::{Event, Parser, Tag};
-use secular::lower_lay_string;
+use secular::normalized_lower_lay_string;
 
 use super::CompletionRow;
 use crate::{
@@ -155,7 +155,7 @@ mod imp {
                     ],
                     closure!(
                         |_: Option<glib::Object>, user_id: &str, display_name: &str| {
-                            lower_lay_string(&format!("{display_name} {user_id}"))
+                            normalized_lower_lay_string(&format!("{display_name} {user_id}"))
                         }
                     ),
                 ))
@@ -558,9 +558,9 @@ impl CompletionPopover {
             .filter()
             .and_downcast::<gtk::StringFilter>()
             .unwrap();
-        let term = self
-            .current_word()
-            .and_then(|(_, _, term)| (!term.is_empty()).then(|| lower_lay_string(&term)));
+        let term = self.current_word().and_then(|(_, _, term)| {
+            (!term.is_empty()).then(|| normalized_lower_lay_string(&term))
+        });
         filter.set_search(term.as_deref());
 
         let new_len = filtered_members.n_items();
