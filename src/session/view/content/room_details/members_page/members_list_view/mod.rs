@@ -19,6 +19,7 @@ use self::{
 use crate::{
     prelude::*,
     session::model::{Member, Membership},
+    utils::expression,
 };
 
 mod imp {
@@ -96,14 +97,15 @@ mod imp {
             );
             let search_filter = gtk::StringFilter::builder()
                 .match_mode(gtk::StringFilterMatchMode::Substring)
-                .expression(&member_expr)
+                .expression(expression::normalize_string(member_expr))
                 .ignore_case(true)
                 .build();
 
-            self.search_entry
-                .bind_property("text", &search_filter, "search")
-                .sync_create()
-                .build();
+            expression::normalize_string(self.search_entry.property_expression("text")).bind(
+                &search_filter,
+                "search",
+                None::<&glib::Object>,
+            );
 
             self.filtered_model.set_filter(Some(&search_filter));
 
