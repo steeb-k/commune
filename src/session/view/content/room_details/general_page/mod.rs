@@ -22,9 +22,8 @@ use crate::{
     session::model::{AvatarData, AvatarImage, MemberList, NotificationsRoomSetting, Room},
     spawn, spawn_tokio, toast,
     utils::{
-        and_expr,
+        expression,
         media::{get_image_info, load_file},
-        not_expr, or_expr,
         template_callbacks::TemplateCallbacks,
         BoundObjectWeakRef, OngoingAsyncAction,
     },
@@ -454,10 +453,10 @@ impl GeneralPage {
             room.own_user_is_allowed_to_expr(PowerLevelAction::SendState(StateEventType::RoomName));
         let room_topic_changeable = room
             .own_user_is_allowed_to_expr(PowerLevelAction::SendState(StateEventType::RoomTopic));
-        let edit_mode_disabled = not_expr(self.property_expression("edit-mode-enabled"));
+        let edit_mode_disabled = expression::not(self.property_expression("edit-mode-enabled"));
 
-        let details_changeable = or_expr(room_name_changeable, room_topic_changeable);
-        let edit_details_visible = and_expr(edit_mode_disabled, details_changeable);
+        let details_changeable = expression::or(room_name_changeable, room_topic_changeable);
+        let edit_details_visible = expression::and(edit_mode_disabled, details_changeable);
 
         let expr_watch =
             edit_details_visible.bind(&*imp.edit_details_btn, "visible", gtk::Widget::NONE);

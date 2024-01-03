@@ -1,0 +1,36 @@
+//! Collection of common expressions.
+
+use gtk::{glib, glib::closure};
+
+/// Returns an expression that is the and’ed result of the given boolean
+/// expressions.
+pub fn and(
+    a_expr: impl AsRef<gtk::Expression>,
+    b_expr: impl AsRef<gtk::Expression>,
+) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<bool>(
+        &[a_expr.as_ref(), b_expr.as_ref()],
+        closure!(|_: Option<glib::Object>, a: bool, b: bool| { a && b }),
+    )
+}
+
+/// Returns an expression that is the or’ed result of the given boolean
+/// expressions.
+pub fn or(
+    a_expr: impl AsRef<gtk::Expression>,
+    b_expr: impl AsRef<gtk::Expression>,
+) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<bool>(
+        &[a_expr.as_ref(), b_expr.as_ref()],
+        closure!(|_: Option<glib::Object>, a: bool, b: bool| { a || b }),
+    )
+}
+
+/// Returns an expression that is the inverted result of the given boolean
+/// expression.
+pub fn not<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<bool>(
+        &[a_expr],
+        closure!(|_: Option<glib::Object>, a: bool| { !a }),
+    )
+}

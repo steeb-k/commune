@@ -1,6 +1,7 @@
 //! Collection of common methods and types.
 
 mod dummy_object;
+pub mod expression;
 mod expression_list_model;
 pub mod macros;
 pub mod matrix;
@@ -19,10 +20,7 @@ use futures_util::{
     future::{self, Either, Future},
     pin_mut,
 };
-use gtk::{
-    gio::{self, prelude::*},
-    glib::{self, closure, Object},
-};
+use gtk::{gio, glib, prelude::*};
 use matrix_sdk::ruma::UInt;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -30,38 +28,6 @@ use tracing::error;
 
 pub use self::{dummy_object::DummyObject, expression_list_model::ExpressionListModel};
 use crate::RUNTIME;
-
-/// Returns an expression that is the and’ed result of the given boolean
-/// expressions.
-#[allow(dead_code)]
-pub fn and_expr(
-    a_expr: impl AsRef<gtk::Expression>,
-    b_expr: impl AsRef<gtk::Expression>,
-) -> gtk::ClosureExpression {
-    gtk::ClosureExpression::new::<bool>(
-        &[a_expr.as_ref(), b_expr.as_ref()],
-        closure!(|_: Option<Object>, a: bool, b: bool| { a && b }),
-    )
-}
-
-/// Returns an expression that is the or’ed result of the given boolean
-/// expressions.
-pub fn or_expr(
-    a_expr: impl AsRef<gtk::Expression>,
-    b_expr: impl AsRef<gtk::Expression>,
-) -> gtk::ClosureExpression {
-    gtk::ClosureExpression::new::<bool>(
-        &[a_expr.as_ref(), b_expr.as_ref()],
-        closure!(|_: Option<Object>, a: bool, b: bool| { a || b }),
-    )
-}
-
-/// Returns an expression that is the inverted result of the given boolean
-/// expressions.
-#[allow(dead_code)]
-pub fn not_expr<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
-    gtk::ClosureExpression::new::<bool>(&[a_expr], closure!(|_: Option<Object>, a: bool| { !a }))
-}
 
 /// Converts a `UInt` to `i32`.
 ///

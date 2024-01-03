@@ -14,7 +14,7 @@ use super::{ActionButton, ActionState, ImagePaintable};
 use crate::{
     session::model::{AvatarData, AvatarImage},
     spawn, toast,
-    utils::and_expr,
+    utils::expression,
 };
 
 /// The state of the editable avatar.
@@ -128,7 +128,7 @@ mod imp {
                     |_: Option<glib::Object>, image: Option<gdk::Paintable>| { image.is_some() }
                 ));
             let editable_expr = obj.property_expression("editable");
-            let button_remove_visible = and_expr(editable_expr, image_present_expr);
+            let button_remove_visible = expression::and(editable_expr, image_present_expr);
             button_remove_visible.bind(&*self.button_remove, "visible", glib::Object::NONE);
         }
     }
