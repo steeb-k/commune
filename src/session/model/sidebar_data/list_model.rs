@@ -3,7 +3,7 @@ use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use super::{item_list::ItemList, selection::Selection};
 use crate::{
     session::model::{IdentityVerification, Room},
-    utils::BoundObjectWeakRef,
+    utils::{expression, BoundObjectWeakRef},
 };
 
 mod imp {
@@ -104,11 +104,12 @@ mod imp {
                 item.clone().downcast().ok()
             });
 
-            let room_expression =
+            let room_name_expression =
                 gtk::TreeListRow::this_expression("item").chain_property::<Room>("display-name");
             self.string_filter
                 .set_match_mode(gtk::StringFilterMatchMode::Substring);
-            self.string_filter.set_expression(Some(&room_expression));
+            self.string_filter
+                .set_expression(Some(expression::normalize_string(room_name_expression)));
             self.string_filter.set_ignore_case(true);
             // Default to an empty string to be able to bind to GtkEditable::text.
             self.string_filter.set_search(Some(""));

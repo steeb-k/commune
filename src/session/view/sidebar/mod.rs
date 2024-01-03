@@ -18,6 +18,7 @@ use crate::{
         Category, CategoryType, IconItem, IdentityVerification, Room, RoomType, Selection,
         SidebarListModel, User,
     },
+    utils::expression,
 };
 
 mod imp {
@@ -63,7 +64,8 @@ mod imp {
         /// The list model of this sidebar.
         #[property(get, set = Self::set_list_model, explicit_notify, nullable)]
         pub list_model: glib::WeakRef<SidebarListModel>,
-        pub bindings: RefCell<Vec<glib::Binding>>,
+        pub binding: RefCell<Option<glib::Binding>>,
+        pub expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
         pub offline_handler_id: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -136,6 +138,15 @@ mod imp {
                 .unwrap()
                 .set_overflow(gtk::Overflow::Hidden);
         }
+
+        fn dispose(&self) {
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
+            if let Some(expr_watch) = self.expr_watch.take() {
+                expr_watch.unwatch();
+            }
+        }
     }
 
     impl WidgetImpl for Sidebar {}
@@ -177,28 +188,29 @@ mod imp {
             }
             let obj = self.obj();
 
-            for binding in self.bindings.take() {
+            if let Some(binding) = self.binding.take() {
                 binding.unbind();
+            }
+            if let Some(expr_watch) = self.expr_watch.take() {
+                expr_watch.unwatch();
             }
 
             if let Some(list_model) = &list_model {
-                let bindings = vec![
-                    obj.bind_property(
+                let binding = obj
+                    .bind_property(
                         "drop-source-category-type",
                         &list_model.item_list(),
                         "show-all-for-category",
                     )
                     .sync_create()
-                    .build(),
-                    list_model
-                        .string_filter()
-                        .bind_property("search", &*self.room_search_entry, "text")
-                        .sync_create()
-                        .bidirectional()
-                        .build(),
-                ];
+                    .build();
+                self.binding.replace(Some(binding));
 
-                self.bindings.replace(bindings);
+                let expr_watch = expression::normalize_string(
+                    self.room_search_entry.property_expression("text"),
+                )
+                .bind(&list_model.string_filter(), "search", None::<&glib::Object>);
+                self.expr_watch.replace(Some(expr_watch));
             }
 
             self.list_model.set(list_model.as_ref());
