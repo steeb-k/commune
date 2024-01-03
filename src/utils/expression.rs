@@ -1,6 +1,7 @@
 //! Collection of common expressions.
 
 use gtk::{glib, glib::closure};
+use secular::normalized_lower_lay_string;
 
 /// Returns an expression that is the and’ed result of the given boolean
 /// expressions.
@@ -32,5 +33,14 @@ pub fn not<E: AsRef<gtk::Expression>>(a_expr: E) -> gtk::ClosureExpression {
     gtk::ClosureExpression::new::<bool>(
         &[a_expr],
         closure!(|_: Option<glib::Object>, a: bool| { !a }),
+    )
+}
+
+/// Returns an expression that is the normalized version of the given string
+/// expression.
+pub fn normalize_string<E: AsRef<gtk::Expression>>(expr: E) -> gtk::ClosureExpression {
+    gtk::ClosureExpression::new::<String>(
+        &[expr],
+        closure!(|_: Option<glib::Object>, s: &str| { normalized_lower_lay_string(s) }),
     )
 }

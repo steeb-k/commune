@@ -12,7 +12,7 @@ use super::CompletionRow;
 use crate::{
     components::Pill,
     session::model::{Member, MemberList, Membership},
-    utils::ExpressionListModel,
+    utils::{expression, ExpressionListModel},
 };
 
 const MAX_MEMBERS: usize = 32;
@@ -145,20 +145,21 @@ mod imp {
                 .build();
 
             // Setup the search filter.
+            let member_search_string_expr = gtk::ClosureExpression::new::<String>(
+                &[
+                    Member::this_expression("user-id-string"),
+                    Member::this_expression("display-name"),
+                ],
+                closure!(
+                    |_: Option<glib::Object>, user_id: &str, display_name: &str| {
+                        format!("{display_name} {user_id}")
+                    }
+                ),
+            );
             let search = gtk::StringFilter::builder()
                 .ignore_case(true)
                 .match_mode(gtk::StringFilterMatchMode::Substring)
-                .expression(gtk::ClosureExpression::new::<String>(
-                    &[
-                        Member::this_expression("user-id-string"),
-                        Member::this_expression("display-name"),
-                    ],
-                    closure!(
-                        |_: Option<glib::Object>, user_id: &str, display_name: &str| {
-                            normalized_lower_lay_string(&format!("{display_name} {user_id}"))
-                        }
-                    ),
-                ))
+                .expression(expression::normalize_string(member_search_string_expr))
                 .build();
             self.filtered_members.set_filter(Some(&search));
             self.filtered_members.set_model(Some(&second_model));
