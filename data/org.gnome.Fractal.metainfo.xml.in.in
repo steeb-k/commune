@@ -65,6 +65,46 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="6~rc" type="development" date="2024-01-04">
+      <description>
+        <p>
+          It is a new year 🎆️, and what better to way to celebrate this than to release Fractal
+          6.rc? It has been only 2 weeks since our latest beta release, but we have been hard at
+          work during the holidays.
+        </p>
+        <p>
+          Here is an excerpt:
+        </p>
+        <ul>
+          <li>
+            Matrix URIs can be opened with Fractal, it is even registered as a handler for the
+            matrix scheme
+          </li>
+          <li>
+            Our Join Room dialog now shows some room details as a preview upon entering an
+            identifier or URI
+          </li>
+          <li>
+            The verification flow was rewritten to rely more on the Matrix Rust SDK, hopefully
+            solving most issues that occurred before
+          </li>
+          <li>
+            Room members now have a profile page that allows, among other things, to kick, ban or
+            ignore them
+          </li>
+          <li>Speaking of ignoring users, the list can be managed from the account settings</li>
+          <li>
+            The dialog to view an event’s source was reworked to show more details about the
+            event
+          </li>
+        </ul>
+        <p>
+          … and a lot of other improvements, fixes and new translations thanks to all our
+          contributors, and our upstream projects. As the version implies, it should be mostly
+          stable and we expect to only include minor improvements until the release of Fractal 6.
+        </p>
+      </description>
+    </release>
     <release version="6~beta" type="development" date="2023-12-21">
       <description>
         <p>
