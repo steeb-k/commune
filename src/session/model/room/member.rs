@@ -109,7 +109,7 @@ impl Member {
     }
 
     /// Set the power level of the member.
-    fn set_power_level(&self, power_level: PowerLevel) {
+    pub(super) fn set_power_level(&self, power_level: PowerLevel) {
         if self.power_level() == power_level {
             return;
         }

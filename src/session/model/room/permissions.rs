@@ -38,9 +38,9 @@ mod imp {
     #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::Permissions)]
     pub struct Permissions {
-        /// The member corresponding to our own user.
+        /// The room where these permissions apply.
         #[property(get)]
-        pub own_member: OnceCell<Member>,
+        pub room: glib::WeakRef<Room>,
         /// The source of the power levels information.
         pub power_levels: RefCell<RoomPowerLevels>,
         power_levels_drop_guard: OnceCell<EventHandlerDropGuard>,
@@ -75,7 +75,7 @@ mod imp {
     impl Default for Permissions {
         fn default() -> Self {
             Self {
-                own_member: Default::default(),
+                room: Default::default(),
                 power_levels: RefCell::new(RoomPowerLevelsEventContent::default().into()),
                 power_levels_drop_guard: Default::default(),
                 is_joined: Default::default(),
@@ -107,18 +107,26 @@ mod imp {
     }
 
     impl Permissions {
-        /// Initialize our own member.
+        /// Initialize the room.
         pub(super) fn init_own_member(&self, own_member: Member) {
             own_member.connect_membership_notify(clone!(@weak self as imp => move |_| {
                 imp.update_is_joined();
             }));
 
-            self.own_member.set(own_member).unwrap();
             self.update_is_joined();
         }
 
+        /// The room member for our own user.
+        pub(super) fn own_member(&self) -> Option<Member> {
+            self.room.upgrade().map(|r| r.own_member())
+        }
+
         /// Initialize the power levels from the store.
-        pub(super) async fn init_power_levels(&self, room: &Room) {
+        pub(super) async fn init_power_levels(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
             let matrix_room = room.matrix_room();
 
             let matrix_room_clone = matrix_room.clone();
@@ -170,7 +178,7 @@ mod imp {
 
         /// Update whether our own member is joined
         fn update_is_joined(&self) {
-            let Some(own_member) = self.own_member.get() else {
+            let Some(own_member) = self.own_member() else {
                 return;
             };
 
@@ -186,8 +194,19 @@ mod imp {
 
         /// Update the power levels with the given event.
         fn update_power_levels(&self, event: &SyncStateEvent<RoomPowerLevelsEventContent>) {
-            self.power_levels.replace(event.power_levels());
+            let power_levels = event.power_levels();
+            self.power_levels.replace(power_levels.clone());
             self.permissions_changed();
+
+            if let Some(room) = self.room.upgrade() {
+                if let Some(members) = room.members() {
+                    members.update_power_levels(&power_levels);
+                } else {
+                    let own_member = room.own_member();
+                    let own_user_id = own_member.user_id();
+                    own_member.set_power_level(power_levels.for_user(own_user_id).into());
+                }
+            }
         }
 
         /// Trigger updates when the permissions changed.
@@ -211,7 +230,7 @@ mod imp {
                 return false;
             }
 
-            let Some(own_member) = self.own_member.get() else {
+            let Some(own_member) = self.own_member() else {
                 return false;
             };
 
@@ -307,7 +326,7 @@ mod imp {
                 return false;
             }
 
-            let Some(own_member) = self.own_member.get() else {
+            let Some(own_member) = self.own_member() else {
                 return false;
             };
 
@@ -367,17 +386,21 @@ impl Permissions {
     pub(super) async fn init(&self, room: &Room) {
         let imp = self.imp();
 
+        imp.room.set(Some(room));
         imp.init_own_member(room.own_member());
-        imp.init_power_levels(room).await;
+        imp.init_power_levels().await;
     }
 
     /// Whether our own user can do the given action on the user with the given
     /// ID.
     pub fn can_do_to_user(&self, user_id: &UserId, action: PowerLevelUserAction) -> bool {
-        let own_member = self.own_member();
+        let imp = self.imp();
+        let Some(own_member) = imp.own_member() else {
+            return false;
+        };
         let own_user_id = own_member.user_id();
 
-        let power_levels = self.imp().power_levels.borrow();
+        let power_levels = imp.power_levels.borrow();
 
         if own_user_id == user_id {
             // The only action we can do for our own user is change the power level.

@@ -12,6 +12,7 @@ use matrix_sdk::{
     },
     RoomMemberships,
 };
+use ruma::events::room::power_levels::RoomPowerLevels;
 use tracing::error;
 
 use super::{Event, Member, Membership, Room};
@@ -272,6 +273,15 @@ impl MemberList {
     ) {
         self.get_or_create(event.state_key.clone())
             .update_from_member_event(event);
+    }
+
+    /// Updates the room members' power level.
+    pub(super) fn update_power_levels(&self, power_levels: &RoomPowerLevels) {
+        // We need to go through the whole list because we don't know who was
+        // added/removed.
+        for (user_id, member) in &*self.imp().members.borrow() {
+            member.set_power_level(power_levels.for_user(user_id).into());
+        }
     }
 
     /// Returns the Membership of a given UserId.
