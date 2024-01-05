@@ -93,7 +93,7 @@ pub struct UserReadReceipt {
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
     };
 
@@ -106,7 +106,7 @@ mod imp {
         pub item: RefCell<Option<EventTimelineItem>>,
         /// The room containing this `Event`.
         #[property(get, set = Self::set_room, construct_only)]
-        pub room: glib::WeakRef<Room>,
+        pub room: OnceCell<Room>,
         /// The reactions on this event.
         #[property(get)]
         pub reactions: ReactionList,
@@ -298,7 +298,8 @@ mod imp {
 
         /// Set the room that contains this `Event`.
         fn set_room(&self, room: Room) {
-            self.room.set(Some(&room));
+            self.room.set(room.clone()).unwrap();
+
             if let Some(session) = room.session() {
                 self.reactions.set_user(session.user().clone());
             }
@@ -499,7 +500,6 @@ impl Event {
     /// available, otherwise it will be created on every call.
     pub fn sender(&self) -> Member {
         self.room()
-            .unwrap()
             .get_or_create_members()
             .get_or_create(self.sender_id())
     }
@@ -657,14 +657,11 @@ impl Event {
     ///
     /// This is a no-op if called for a local event.
     pub async fn fetch_missing_details(&self) -> Result<(), TimelineError> {
-        let Some(room) = self.room() else {
-            return Ok(());
-        };
         let Some(event_id) = self.event_id() else {
             return Ok(());
         };
 
-        let timeline = room.timeline().matrix_timeline();
+        let timeline = self.room().timeline().matrix_timeline();
         spawn_tokio!(async move { timeline.fetch_details_for_event(&event_id).await })
             .await
             .unwrap()
@@ -684,12 +681,7 @@ impl Event {
     /// Returns `Err` if an error occurred while fetching the content. Panics on
     /// an incompatible event.
     pub async fn get_media_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
-        let Some(room) = self.room() else {
-            return Err(matrix_sdk::Error::UnknownError(
-                "Failed to upgrade Room".into(),
-            ));
-        };
-        let Some(session) = room.session() else {
+        let Some(session) = self.room().session() else {
             return Err(matrix_sdk::Error::UnknownError(
                 "Failed to upgrade Session".into(),
             ));

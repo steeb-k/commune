@@ -406,9 +406,10 @@ impl ItemRow {
     /// Unsets the actions if `event` is `None`.
     fn set_event_actions(&self, event: Option<&Event>) -> Option<gio::SimpleActionGroup> {
         self.clear_expression_watches();
-        let Some((event, room, session)) =
-            event.and_then(|e| e.room().and_then(|r| r.session().map(|s| (e, r, s))))
-        else {
+        let Some((event, room, session)) = event.and_then(|e| {
+            let r = e.room();
+            r.session().map(|s| (e, r, s))
+        }) else {
             self.insert_action_group("event", gio::ActionGroup::NONE);
             return None;
         };
@@ -432,10 +433,7 @@ impl ItemRow {
                 // Create a permalink
                 gio::ActionEntry::builder("permalink")
                     .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                        let Some(room) = event.room() else {
-                            return;
-                        };
-                        let matrix_room = room.matrix_room().clone();
+                        let matrix_room = event.room().matrix_room().clone();
                         let event_id = event.event_id().unwrap();
                         spawn!(clone!(@weak widget => async move {
                             let handle = spawn_tokio!(async move {
@@ -705,9 +703,6 @@ impl ItemRow {
         let Some(event_id) = event.event_id() else {
             return;
         };
-        let Some(room) = event.room() else {
-            return;
-        };
 
         let confirm_dialog = adw::MessageDialog::builder()
             .transient_for(&window)
@@ -727,7 +722,7 @@ impl ItemRow {
             return;
         }
 
-        if let Err(error) = room.redact(event_id, None).await {
+        if let Err(error) = event.room().redact(event_id, None).await {
             error!("Failed to redact event: {error}");
             toast!(self, gettext("Failed to remove message"));
         }
@@ -741,23 +736,20 @@ impl ItemRow {
         let Some(event_id) = event.event_id() else {
             return;
         };
-        let Some(room) = event.room() else {
-            return;
-        };
         let reaction_group = event.reactions().reaction_group_by_key(&key);
 
         if let Some(reaction_key) = reaction_group.and_then(|group| group.user_reaction_event_key())
         {
             // The user already sent that reaction, redact it if it has been sent.
             if let EventKey::EventId(reaction_id) = reaction_key {
-                if let Err(error) = room.redact(reaction_id, None).await {
+                if let Err(error) = event.room().redact(reaction_id, None).await {
                     error!("Failed to remove reaction: {error}");
                     toast!(self, gettext("Failed to remove reaction"));
                 }
             }
         } else {
             // The user didn't send that reaction, send it.
-            if let Err(error) = room.send_reaction(key, event_id).await {
+            if let Err(error) = event.room().send_reaction(key, event_id).await {
                 error!("Failed to add reaction: {error}");
                 toast!(self, gettext("Failed to add reaction"));
             }

@@ -103,10 +103,6 @@ impl StateRow {
     }
 
     fn update_with_other_state(&self, event: &Event, other_state: &OtherState) {
-        let Some(room) = event.room() else {
-            return;
-        };
-
         let widget = match other_state.content() {
             AnyOtherFullStateEventContent::RoomCreate(content) => {
                 WidgetType::Creation(StateCreation::new(content))
@@ -132,7 +128,7 @@ impl StateRow {
                 ))
             }
             AnyOtherFullStateEventContent::RoomTombstone(_) => {
-                WidgetType::Tombstone(StateTombstone::new(&room))
+                WidgetType::Tombstone(StateTombstone::new(&event.room()))
             }
             _ => {
                 warn!(

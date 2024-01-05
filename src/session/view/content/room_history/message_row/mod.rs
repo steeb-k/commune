@@ -149,9 +149,6 @@ mod imp {
 
         /// Set the event that is presented.
         fn set_event(&self, event: Event) {
-            let Some(room) = event.room() else {
-                return;
-            };
             let obj = self.obj();
 
             // Remove signals and bindings from the previous event.
@@ -199,7 +196,7 @@ mod imp {
                 }));
 
             self.reactions
-                .set_reaction_list(&room.get_or_create_members(), &event.reactions());
+                .set_reaction_list(&event.room().get_or_create_members(), &event.reactions());
             self.read_receipts.set_source(&event.read_receipts());
             self.event.set(
                 event,

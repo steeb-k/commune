@@ -101,10 +101,7 @@ impl MessageContent {
     }
 
     pub fn update_for_event(&self, event: &Event) {
-        let Some(room) = event.room() else {
-            return;
-        };
-
+        let room = event.room();
         let format = self.format();
         if format == ContentFormat::Natural {
             if let Some(related_content) = event.reply_to_event_content() {

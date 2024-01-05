@@ -375,9 +375,7 @@ impl MessageToolbar {
         if !self.can_send_messages() {
             return;
         }
-        let Some(room) = event.room() else {
-            return;
-        };
+
         // We don't support editing non-text messages.
         let Some((text, formatted)) = event.message().and_then(|msg| match msg {
             MessageType::Emote(emote) => Some((format!("/me {}", emote.body), emote.formatted)),
@@ -390,7 +388,7 @@ impl MessageToolbar {
         let mentions = if let Some(html) =
             formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
         {
-            let (_, mentions) = extract_mentions(&html, &room);
+            let (_, mentions) = extract_mentions(&html, &event.room());
             let mut pos = 0;
             // This is looking for the mention link's inner text in the Markdown
             // so it is not super reliable: if there is other text that matches
