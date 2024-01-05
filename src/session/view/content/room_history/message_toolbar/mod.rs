@@ -20,14 +20,11 @@ use matrix_sdk::{
     },
 };
 use ruma::events::{
-    room::{
-        message::{
-            AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
-            OriginalSyncRoomMessageEvent, RoomMessageEventContent,
-        },
-        power_levels::PowerLevelAction,
+    room::message::{
+        AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
+        OriginalSyncRoomMessageEvent, RoomMessageEventContent,
     },
-    AnyMessageLikeEventContent, MessageLikeEventType,
+    AnyMessageLikeEventContent,
 };
 use sourceview::prelude::*;
 use tracing::{debug, error, warn};
@@ -41,7 +38,7 @@ use crate::{
     components::{CustomEntry, LabelWithWidgets, Pill},
     gettext_f,
     prelude::*,
-    session::model::{Event, EventKey, Member, Membership, Room},
+    session::model::{Event, EventKey, Room},
     spawn, spawn_tokio, toast,
     utils::{
         matrix::extract_mentions,
@@ -77,11 +74,7 @@ mod imp {
         /// The room to send messages in.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: glib::WeakRef<Room>,
-        /// Whether our own user can send messages in the current room.
-        #[property(get)]
-        pub can_send_messages: Cell<bool>,
-        pub own_member: glib::WeakRef<Member>,
-        pub power_levels_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub can_send_message_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// Whether outgoing messages should be interpreted as markdown.
         #[property(get, set)]
         pub markdown_enabled: Cell<bool>,
@@ -177,7 +170,7 @@ mod imp {
             // Clipboard.
             self.message_entry
                 .connect_paste_clipboard(clone!(@weak obj => move |entry| {
-                    if !obj.can_send_messages() {
+                    if !obj.imp().can_send_message() {
                         return;
                     }
 
@@ -253,12 +246,16 @@ mod imp {
 
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
-
-            obj.update_can_send_messages();
         }
 
         fn dispose(&self) {
             self.completion.unparent();
+
+            if let Some(room) = self.room.upgrade() {
+                if let Some(handler) = self.can_send_message_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+            }
         }
     }
 
@@ -275,20 +272,46 @@ mod imp {
             let obj = self.obj();
 
             if let Some(room) = old_room {
-                if let Some(handler) = self.power_levels_handler.take() {
-                    room.power_levels().disconnect(handler);
+                if let Some(handler) = self.can_send_message_handler.take() {
+                    room.permissions().disconnect(handler);
                 }
             }
-
             obj.clear_related_event();
+
+            if let Some(room) = &room {
+                let can_send_message_handler = room.permissions().connect_can_send_message_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.can_send_message_updated();
+                    }),
+                );
+                self.can_send_message_handler
+                    .replace(Some(can_send_message_handler));
+            }
 
             self.room.set(room.as_ref());
 
             obj.update_completion(room.as_ref());
-            obj.set_up_can_send_messages(room.as_ref());
+            self.can_send_message_updated();
             self.message_entry.grab_focus();
 
             obj.notify_room();
+        }
+
+        /// Whether our own user can send a message in the current room.
+        pub(super) fn can_send_message(&self) -> bool {
+            self.room
+                .upgrade()
+                .is_some_and(|r| r.permissions().can_send_message())
+        }
+
+        /// Update whether our own user can send a message in the current room.
+        fn can_send_message_updated(&self) {
+            let page = if self.can_send_message() {
+                "enabled"
+            } else {
+                "disabled"
+            };
+            self.main_stack.set_visible_child_name(page);
         }
     }
 }
@@ -303,11 +326,6 @@ glib::wrapper! {
 impl MessageToolbar {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// The `Member` for our own user in the current room.
-    pub fn own_member(&self) -> Option<Member> {
-        self.imp().own_member.upgrade()
     }
 
     /// Set the type of related event of the composer.
@@ -350,11 +368,11 @@ impl MessageToolbar {
     }
 
     pub fn set_reply_to(&self, event: Event) {
-        if !self.can_send_messages() {
+        let imp = self.imp();
+        if !imp.can_send_message() {
             return;
         }
 
-        let imp = self.imp();
         imp.related_event_header
             .set_widgets(vec![Pill::for_user(event.sender().upcast_ref())]);
         imp.related_event_header
@@ -372,7 +390,8 @@ impl MessageToolbar {
 
     /// Set the event to edit.
     pub fn set_edit(&self, event: Event) {
-        if !self.can_send_messages() {
+        let imp = self.imp();
+        if !imp.can_send_message() {
             return;
         }
 
@@ -411,7 +430,6 @@ impl MessageToolbar {
             Vec::new()
         };
 
-        let imp = self.imp();
         imp.related_event_header.set_widgets::<gtk::Widget>(vec![]);
         imp.related_event_header
             // Translators: In this string, 'Edit' is a noun.
@@ -461,14 +479,14 @@ impl MessageToolbar {
     }
 
     fn send_text_message(&self) {
-        if !self.can_send_messages() {
+        let imp = self.imp();
+        if !imp.can_send_message() {
             return;
         }
         let Some(room) = self.room() else {
             return;
         };
 
-        let imp = self.imp();
         let buffer = imp.message_entry.buffer();
         let (start_iter, end_iter) = buffer.bounds();
         let body_len = buffer.text(&start_iter, &end_iter, true).len();
@@ -583,14 +601,15 @@ impl MessageToolbar {
     }
 
     fn open_emoji(&self) {
-        if !self.can_send_messages() {
+        let imp = self.imp();
+        if !imp.can_send_message() {
             return;
         }
-        self.imp().message_entry.emit_insert_emoji();
+        imp.message_entry.emit_insert_emoji();
     }
 
     async fn send_location(&self) -> ashpd::Result<()> {
-        if !self.can_send_messages() {
+        if !self.imp().can_send_message() {
             return Ok(());
         }
         let Some(room) = self.room() else {
@@ -659,7 +678,7 @@ impl MessageToolbar {
     }
 
     async fn send_image(&self, image: gdk::Texture) {
-        if !self.can_send_messages() {
+        if !self.imp().can_send_message() {
             return;
         }
 
@@ -687,7 +706,7 @@ impl MessageToolbar {
     }
 
     pub async fn select_file(&self) {
-        if !self.can_send_messages() {
+        if !self.imp().can_send_message() {
             return;
         }
 
@@ -716,7 +735,7 @@ impl MessageToolbar {
     }
 
     pub async fn send_file(&self, file: gio::File) {
-        if !self.can_send_messages() {
+        if !self.imp().can_send_message() {
             return;
         }
 
@@ -816,7 +835,7 @@ impl MessageToolbar {
     }
 
     pub fn handle_paste_action(&self) {
-        if !self.can_send_messages() {
+        if !self.imp().can_send_message() {
             return;
         }
 
@@ -857,69 +876,6 @@ impl MessageToolbar {
         if let Some(room) = self.room() {
             room.send_typing_notification(typing);
         }
-    }
-
-    /// Update whether our own user can send messages in the current room.
-    fn update_can_send_messages(&self) {
-        let can_send = self.compute_can_send_messages();
-
-        if self.can_send_messages() == can_send {
-            return;
-        }
-        let imp = self.imp();
-
-        imp.can_send_messages.set(can_send);
-
-        let page = if can_send { "enabled" } else { "disabled" };
-        imp.main_stack.set_visible_child_name(page);
-
-        self.notify_can_send_messages();
-    }
-
-    fn set_up_can_send_messages(&self, room: Option<&Room>) {
-        if let Some((room, own_user_id)) =
-            room.and_then(|r| r.session().map(|s| (r, s.user_id().clone())))
-        {
-            let imp = self.imp();
-
-            let own_member = room
-                .get_or_create_members()
-                .get_or_create(own_user_id.clone());
-
-            // We don't need to keep the handler around, the member should be dropped when
-            // switching rooms.
-            own_member.connect_membership_notify(clone!(@weak self as obj => move |_| {
-                obj.update_can_send_messages();
-            }));
-            imp.own_member.set(Some(&own_member));
-
-            let power_levels_handler = room.power_levels().connect_power_levels_notify(
-                clone!(@weak self as obj => move |_| {
-                    obj.update_can_send_messages();
-                }),
-            );
-            imp.power_levels_handler.replace(Some(power_levels_handler));
-        }
-
-        self.update_can_send_messages();
-    }
-
-    fn compute_can_send_messages(&self) -> bool {
-        let Some(room) = self.room() else {
-            return false;
-        };
-        let Some(member) = self.own_member() else {
-            return false;
-        };
-
-        if member.membership() != Membership::Join {
-            return false;
-        }
-
-        room.power_levels().member_is_allowed_to(
-            member.user_id(),
-            PowerLevelAction::SendMessage(MessageLikeEventType::RoomMessage),
-        )
     }
 }
 

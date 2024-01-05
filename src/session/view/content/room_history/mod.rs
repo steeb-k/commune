@@ -19,8 +19,7 @@ use gtk::{
 };
 use matrix_sdk::ruma::EventId;
 use ruma::{
-    api::client::receipt::create_receipt::v3::ReceiptType,
-    events::{receipt::ReceiptThread, room::power_levels::PowerLevelAction},
+    api::client::receipt::create_receipt::v3::ReceiptType, events::receipt::ReceiptThread,
     OwnedEventId,
 };
 use tracing::{error, warn};
@@ -48,7 +47,6 @@ const READ_TIMEOUT: Duration = Duration::from_secs(5);
 mod imp {
     use std::{
         cell::{Cell, OnceCell, RefCell},
-        collections::HashMap,
         marker::PhantomData,
     };
 
@@ -111,7 +109,7 @@ mod imp {
         /// The GtkSelectionModel used in the listview.
         // TODO: use gtk::MultiSelection to allow selection
         pub selection_model: OnceCell<gtk::NoSelection>,
-        pub room_expr_watches: RefCell<HashMap<&'static str, gtk::ExpressionWatch>>,
+        pub can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -226,10 +224,10 @@ mod imp {
                 for handler in self.timeline_handlers.take() {
                     room.timeline().disconnect(handler);
                 }
-            }
 
-            for (_, expr_watch) in self.room_expr_watches.take() {
-                expr_watch.unwatch();
+                if let Some(handler) = self.can_invite_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
             }
         }
     }
@@ -355,11 +353,12 @@ mod imp {
                 for handler in self.timeline_handlers.take() {
                     room.timeline().disconnect(handler);
                 }
+
+                if let Some(handler) = self.can_invite_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
             }
             self.room.disconnect_signals();
-            for (_, expr_watch) in self.room_expr_watches.take() {
-                expr_watch.unwatch();
-            }
 
             if let Some(source_id) = self.scroll_timeout.take() {
                 source_id.remove();
@@ -539,29 +538,17 @@ impl RoomHistory {
         let Some(room) = self.room() else {
             return;
         };
-        let invite_possible = room.own_user_is_allowed_to_expr(PowerLevelAction::Invite);
+        let permissions = room.permissions();
 
-        let watch = invite_possible.watch(
-            glib::Object::NONE,
-            clone!(@weak self as obj => move || {
-                obj.update_invite_action();
-            }),
-        );
-
+        let can_invite_handler =
+            permissions.connect_can_invite_notify(clone!(@weak self as obj => move |permissions| {
+                obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
+            }));
         self.imp()
-            .room_expr_watches
-            .borrow_mut()
-            .insert("invite-action", watch);
-        self.update_invite_action();
-    }
+            .can_invite_handler
+            .replace(Some(can_invite_handler));
 
-    fn update_invite_action(&self) {
-        if let Some(invite_action) = self.imp().room_expr_watches.borrow().get("invite-action") {
-            let allow_invite = invite_action
-                .evaluate_as::<bool>()
-                .expect("Created expression needs to be valid and a boolean");
-            self.action_set_enabled("room-history.invite-members", allow_invite);
-        };
+        self.action_set_enabled("room-history.invite-members", permissions.can_invite());
     }
 
     /// Opens the room details.

@@ -5,12 +5,11 @@ use gtk::{
     glib::{self, clone, closure},
     CompositeTemplate,
 };
+use ruma::UserId;
 
 mod members_list_view;
 
-use members_list_view::{ExtraLists, MembersListView, MembershipSubpageItem};
-use ruma::{events::room::power_levels::PowerLevelAction, UserId};
-
+use self::members_list_view::{ExtraLists, MembersListView, MembershipSubpageItem};
 use crate::{
     session::{
         model::{Member, Membership, Room},
@@ -20,8 +19,6 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
-
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -37,10 +34,6 @@ mod imp {
         pub room: glib::WeakRef<Room>,
         #[template_child]
         pub navigation_view: TemplateChild<adw::NavigationView>,
-        pub can_invite_watch: RefCell<Option<gtk::ExpressionWatch>>,
-        /// Whether our own user can send an invite in the current room.
-        #[property(get = Self::can_invite)]
-        pub can_invite: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -100,13 +93,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MembersPage {
-        fn dispose(&self) {
-            if let Some(watch) = self.can_invite_watch.take() {
-                watch.unwatch();
-            }
-        }
-    }
+    impl ObjectImpl for MembersPage {}
 
     impl WidgetImpl for MembersPage {}
     impl NavigationPageImpl for MembersPage {}
@@ -116,23 +103,10 @@ mod imp {
         fn set_room(&self, room: Room) {
             let obj = self.obj();
 
-            if let Some(watch) = self.can_invite_watch.take() {
-                watch.unwatch();
-            }
-
             obj.init_members_list(&room);
-            obj.init_can_invite(&room);
 
             self.room.set(Some(&room));
             obj.notify_room();
-        }
-
-        /// Whether our own user can send an invite in the current room.
-        fn can_invite(&self) -> bool {
-            self.can_invite_watch.borrow().as_ref().is_some_and(|w| {
-                w.evaluate_as::<bool>()
-                    .expect("Created expression is valid and a boolean")
-            })
         }
     }
 }
@@ -186,18 +160,22 @@ impl MembersPage {
 
         let main_list = gtk::FlattenListModel::new(Some(model_list));
 
+        let permissions = room.permissions();
         let joined_view = MembersListView::new(&main_list, Membership::Join);
-        self.bind_property("can-invite", &joined_view, "can-invite")
+        permissions
+            .bind_property("can-invite", &joined_view, "can-invite")
             .sync_create()
             .build();
         imp.navigation_view.add(&joined_view);
         let invited_view = MembersListView::new(&invited_members, Membership::Invite);
-        self.bind_property("can-invite", &invited_view, "can-invite")
+        permissions
+            .bind_property("can-invite", &invited_view, "can-invite")
             .sync_create()
             .build();
         imp.navigation_view.add(&invited_view);
         let banned_view = MembersListView::new(&banned_members, Membership::Ban);
-        self.bind_property("can-invite", &banned_view, "can-invite")
+        permissions
+            .bind_property("can-invite", &banned_view, "can-invite")
             .sync_create()
             .build();
         imp.navigation_view.add(&banned_view);
@@ -216,19 +194,5 @@ impl MembersPage {
 
         let filter_model = gtk::FilterListModel::new(Some(model), Some(membership_filter));
         filter_model.upcast()
-    }
-
-    fn init_can_invite(&self, room: &Room) {
-        let can_invite = room.own_user_is_allowed_to_expr(PowerLevelAction::Invite);
-
-        let watch = can_invite.watch(
-            glib::Object::NONE,
-            clone!(@weak self as obj => move || {
-                obj.notify_can_invite();
-            }),
-        );
-
-        self.imp().can_invite_watch.replace(Some(watch));
-        self.notify_can_invite();
     }
 }

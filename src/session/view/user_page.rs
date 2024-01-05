@@ -5,13 +5,13 @@ use gtk::{
     glib::{clone, closure_local},
     CompositeTemplate,
 };
-use ruma::events::{room::power_levels::PowerLevelAction, StateEventType};
+use ruma::events::room::power_levels::PowerLevelAction;
 
 use crate::{
     components::{Avatar, SpinnerButton},
     i18n::gettext_f,
     prelude::*,
-    session::model::{Member, MemberRole, Membership, Room, User},
+    session::model::{Member, MemberRole, Membership, PowerLevelUserAction, Room, User},
     spawn, toast,
     utils::{message_dialog::confirm_room_member_destructive_action, BoundObject},
     Window,
@@ -68,7 +68,7 @@ mod imp {
         #[property(get, set = Self::set_room, construct_only)]
         pub room: BoundObject<Room>,
         pub bindings: RefCell<Vec<glib::Binding>>,
-        pub power_levels_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -113,8 +113,8 @@ mod imp {
             }
 
             if let Some(room) = self.room.obj() {
-                if let Some(handler) = self.power_levels_handler.take() {
-                    room.power_levels().disconnect(handler);
+                if let Some(handler) = self.permissions_handler.take() {
+                    room.permissions().disconnect(handler);
                 }
             }
         }
@@ -201,13 +201,12 @@ mod imp {
             };
             let obj = self.obj();
 
-            let power_levels_handler =
-                room.power_levels()
-                    .connect_power_levels_notify(clone!(@weak obj => move |_| {
+            let permissions_handler =
+                room.permissions()
+                    .connect_changed(clone!(@weak obj => move |_| {
                         obj.update_room();
                     }));
-            self.power_levels_handler
-                .replace(Some(power_levels_handler));
+            self.permissions_handler.replace(Some(permissions_handler));
 
             let display_name_handler =
                 room.connect_display_name_notify(clone!(@weak obj => move |_| {
@@ -304,53 +303,6 @@ impl UserPage {
         parent_window.close();
     }
 
-    /// Whether our own user can do the given action on the current user.
-    fn own_user_can(&self, action: PowerLevelUserAction) -> bool {
-        let Some(room) = self.room() else {
-            return false;
-        };
-        let Some(session) = room.session() else {
-            return false;
-        };
-        let Some(user) = self.user() else {
-            return false;
-        };
-
-        let own_user_id = session.user_id();
-        let other_user_id = user.user_id();
-        let power_levels = room.power_levels().power_levels();
-
-        if own_user_id == other_user_id {
-            // The only action we can do for our own user is change the power level.
-            return action == PowerLevelUserAction::ChangePowerLevel
-                && power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels);
-        }
-
-        let own_pl = power_levels.for_user(own_user_id);
-        let other_pl = power_levels.for_user(other_user_id);
-
-        // TODO: Use Ruma's type and RoomPowerLevels methods when we use a recent enough
-        // version.
-        match action {
-            PowerLevelUserAction::Ban => {
-                power_levels.user_can_ban(own_user_id) && own_pl > other_pl
-            }
-            PowerLevelUserAction::Unban => {
-                power_levels.user_can_ban(own_user_id)
-                    && power_levels.user_can_kick(own_user_id)
-                    && own_pl > other_pl
-            }
-            PowerLevelUserAction::Invite => power_levels.user_can_invite(own_user_id),
-            PowerLevelUserAction::Kick => {
-                power_levels.user_can_kick(own_user_id) && own_pl > other_pl
-            }
-            PowerLevelUserAction::ChangePowerLevel => {
-                power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels)
-                    && own_pl > other_pl
-            }
-        }
-    }
-
     /// Update the room section.
     fn update_room(&self) {
         let imp = self.imp();
@@ -408,8 +360,10 @@ impl UserPage {
         imp.power_level_label
             .set_visible(matches!(membership, Membership::Join));
 
-        let can_invite = matches!(membership, Membership::Knock)
-            && self.own_user_can(PowerLevelUserAction::Invite);
+        let permissions = room.permissions();
+        let user_id = member.user_id();
+
+        let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
         if can_invite {
             imp.invite_button.set_label(gettext("Allow Access"));
             imp.invite_button.set_visible(true);
@@ -420,7 +374,7 @@ impl UserPage {
         let can_kick = matches!(
             membership,
             Membership::Join | Membership::Invite | Membership::Knock
-        ) && self.own_user_can(PowerLevelUserAction::Kick);
+        ) && permissions.can_do_to_user(user_id, PowerLevelUserAction::Kick);
         if can_kick {
             let label = match membership {
                 Membership::Invite => gettext("Revoke Invite"),
@@ -437,11 +391,11 @@ impl UserPage {
         let can_ban = matches!(
             membership,
             Membership::Join | Membership::Invite | Membership::Knock
-        ) && self.own_user_can(PowerLevelUserAction::Ban);
+        ) && permissions.can_do_to_user(user_id, PowerLevelUserAction::Ban);
         imp.ban_button.set_visible(can_ban);
 
-        let can_unban =
-            matches!(membership, Membership::Ban) && self.own_user_can(PowerLevelUserAction::Unban);
+        let can_unban = matches!(membership, Membership::Ban)
+            && permissions.can_do_to_user(user_id, PowerLevelUserAction::Unban);
         imp.unban_button.set_visible(can_unban);
 
         imp.room_box.set_visible(true);
@@ -695,24 +649,4 @@ impl UserPage {
             }),
         )
     }
-}
-
-/// The actions to other users that can be limited by power levels.
-// TODO: Use Ruma's type and RoomPowerLevels methods when we use a recent enough version.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PowerLevelUserAction {
-    /// Ban a user.
-    Ban,
-
-    /// Unban a user.
-    Unban,
-
-    /// Invite a user.
-    Invite,
-
-    /// Kick a user.
-    Kick,
-
-    /// Change a user's power level.
-    ChangePowerLevel,
 }

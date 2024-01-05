@@ -8,13 +8,7 @@ use gtk::{
     CompositeTemplate,
 };
 use matrix_sdk::RoomState;
-use ruma::{
-    assign,
-    events::{
-        room::{avatar::ImageInfo, power_levels::PowerLevelAction},
-        StateEventType,
-    },
-};
+use ruma::{assign, events::room::avatar::ImageInfo};
 use tracing::error;
 
 use crate::{
@@ -173,7 +167,7 @@ mod imp {
             ];
 
             obj.member_count_changed(room.joined_members_count());
-            obj.init_avatar(&room);
+            obj.init_avatar();
             obj.init_edit_mode(&room);
 
             // Keep strong reference to members list.
@@ -250,7 +244,7 @@ impl GeneralPage {
         self.imp().room_members.borrow().clone().unwrap()
     }
 
-    fn init_avatar(&self, room: &Room) {
+    fn init_avatar(&self) {
         let avatar = &*self.imp().avatar;
         avatar.connect_edit_avatar(clone!(@weak self as obj => move |_, file| {
             spawn!(
@@ -266,13 +260,6 @@ impl GeneralPage {
                 })
             );
         }));
-
-        // Hide avatar controls when the user is not eligible to perform the actions.
-        let room_avatar_changeable = room
-            .own_user_is_allowed_to_expr(PowerLevelAction::SendState(StateEventType::RoomAvatar));
-
-        let expr_watch = room_avatar_changeable.bind(avatar, "editable", gtk::Widget::NONE);
-        self.imp().expr_watches.borrow_mut().push(expr_watch);
     }
 
     fn avatar_changed(&self, uri: Option<String>) {
@@ -456,10 +443,9 @@ impl GeneralPage {
         self.enable_details(false);
 
         // Hide edit controls when the user is not eligible to perform the actions.
-        let room_name_changeable =
-            room.own_user_is_allowed_to_expr(PowerLevelAction::SendState(StateEventType::RoomName));
-        let room_topic_changeable = room
-            .own_user_is_allowed_to_expr(PowerLevelAction::SendState(StateEventType::RoomTopic));
+        let permissions = room.permissions();
+        let room_name_changeable = permissions.property_expression("can-change-name");
+        let room_topic_changeable = permissions.property_expression("can-change-topic");
         let edit_mode_disabled = expression::not(self.property_expression("edit-mode-enabled"));
 
         let details_changeable = expression::or(room_name_changeable, room_topic_changeable);

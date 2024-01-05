@@ -12,7 +12,7 @@ use matrix_sdk::{
 use tracing::error;
 
 use super::{
-    power_levels::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
+    permissions::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
     MemberRole, Room,
 };
 use crate::{prelude::*, session::model::User};

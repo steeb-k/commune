@@ -9,6 +9,13 @@
         </style>
         <child>
           <object class="ComponentsEditableAvatar" id="avatar">
+            <binding name="editable">
+              <lookup name="can-change-avatar">
+                <lookup name="permissions">
+                  <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                </lookup>
+              </lookup>
+            </binding>
             <binding name="data">
               <lookup name="avatar-data">
                 <lookup name="room">ContentRoomDetailsGeneralPage</lookup>

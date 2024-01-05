@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone};
 use matrix_sdk_ui::timeline::TimelineItemContent;
 use once_cell::sync::Lazy;
-use ruma::events::room::{message::MessageType, power_levels::PowerLevelAction};
+use ruma::events::room::message::MessageType;
 use tracing::error;
 
 use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
@@ -19,7 +19,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, collections::HashMap, rc::Rc};
+    use std::{cell::RefCell, rc::Rc};
 
     use super::*;
 
@@ -34,11 +34,11 @@ mod imp {
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: RefCell<Option<TimelineItem>>,
         pub action_group: RefCell<Option<gio::SimpleActionGroup>>,
-        pub notify_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        pub event_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub binding: RefCell<Option<glib::Binding>>,
         pub reaction_chooser: RefCell<Option<ReactionChooser>>,
         pub emoji_chooser: RefCell<Option<gtk::EmojiChooser>>,
-        pub actions_expression_watches: RefCell<HashMap<&'static str, gtk::ExpressionWatch>>,
     }
 
     #[glib::object_subclass]
@@ -64,19 +64,17 @@ mod imp {
 
         fn dispose(&self) {
             if let Some(event) = self.item.borrow().and_downcast_ref::<Event>() {
-                let handlers = self.notify_handlers.take();
-
-                for handler in handlers {
+                for handler in self.event_handlers.take() {
                     event.disconnect(handler);
+                }
+
+                if let Some(handler) = self.permissions_handler.take() {
+                    event.room().permissions().disconnect(handler);
                 }
             }
 
             if let Some(binding) = self.binding.take() {
                 binding.unbind();
-            }
-
-            for expr_watch in self.actions_expression_watches.take().values() {
-                expr_watch.unwatch();
             }
 
             if let Some(room_history) = self.room_history.upgrade() {
@@ -184,8 +182,12 @@ mod imp {
             obj.remove_css_class("has-header");
 
             if let Some(event) = self.item.borrow().and_downcast_ref::<Event>() {
-                for handler in self.notify_handlers.take() {
+                for handler in self.event_handlers.take() {
                     event.disconnect(handler);
+                }
+
+                if let Some(handler) = self.permissions_handler.take() {
+                    event.room().permissions().disconnect(handler);
                 }
             }
             if let Some(binding) = self.binding.take() {
@@ -211,11 +213,18 @@ mod imp {
                             obj.update_highlight();
                         }));
 
-                    self.notify_handlers.replace(vec![
+                    self.event_handlers.replace(vec![
                         source_notify_handler,
                         edit_source_notify_handler,
                         is_highlighted_notify_handler,
                     ]);
+
+                    let permissions_handler = event.room().permissions().connect_changed(
+                        clone!(@weak obj, @weak event => move |_| {
+                            obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
+                        }),
+                    );
+                    self.permissions_handler.replace(Some(permissions_handler));
 
                     obj.set_event_widget(event.clone());
                     obj.set_action_group(obj.set_event_actions(Some(event.upcast_ref())));
@@ -405,7 +414,6 @@ impl ItemRow {
     ///
     /// Unsets the actions if `event` is `None`.
     fn set_event_actions(&self, event: Option<&Event>) -> Option<gio::SimpleActionGroup> {
-        self.clear_expression_watches();
         let Some((event, room, session)) = event.and_then(|e| {
             let r = e.room();
             r.session().map(|s| (e, r, s))
@@ -459,46 +467,18 @@ impl ItemRow {
                 let own_user_id = session.user_id();
                 let is_from_own_user = event.sender_id() == *own_user_id;
 
-                // Remove message
-                fn update_remove_action(
-                    obj: &ItemRow,
-                    action_group: &gio::SimpleActionGroup,
-                    allowed: bool,
-                ) {
-                    if allowed {
-                        action_group.add_action_entries([gio::ActionEntry::builder("remove")
-                            .activate(clone!(@weak obj, => move |_, _, _| {
-                                spawn!(clone!(@weak obj => async move {
-                                    obj.redact_message().await;
-                                }));
-                            }))
-                            .build()]);
-                    } else {
-                        action_group.remove_action("remove");
-                    }
-                }
-
-                if is_from_own_user {
-                    update_remove_action(self, &action_group, true);
-                } else {
-                    let remove_watch = room
-                        .own_user_is_allowed_to_expr(PowerLevelAction::Redact)
-                        .watch(
-                            glib::Object::NONE,
-                            clone!(@weak self as obj, @weak action_group => move || {
-                                let Some(allowed) = obj.expression_watch(&"remove").and_then(|e| e.evaluate_as::<bool>()) else {
-                                    return;
-                                };
-
-                                update_remove_action(&obj, &action_group, allowed);
-                            }),
-                        );
-
-                    let allowed = remove_watch.evaluate_as::<bool>().unwrap();
-                    update_remove_action(self, &action_group, allowed);
-
-                    self.set_expression_watch("remove", remove_watch);
-                }
+                let permissions = room.permissions();
+                if (is_from_own_user && permissions.can_redact_own())
+                    || permissions.can_redact_other()
+                {
+                    action_group.add_action_entries([gio::ActionEntry::builder("remove")
+                        .activate(clone!(@weak self as obj, => move |_, _, _| {
+                            spawn!(clone!(@weak obj => async move {
+                                obj.redact_message().await;
+                            }));
+                        }))
+                        .build()]);
+                };
 
                 action_group.add_action_entries([
                     // Send/redact a reaction
@@ -669,27 +649,6 @@ impl ItemRow {
 
             save_to_file(&obj, data, filename).await;
         }));
-    }
-
-    fn set_expression_watch(&self, key: &'static str, expr_watch: gtk::ExpressionWatch) {
-        self.imp()
-            .actions_expression_watches
-            .borrow_mut()
-            .insert(key, expr_watch);
-    }
-
-    fn expression_watch(&self, key: &&str) -> Option<gtk::ExpressionWatch> {
-        self.imp()
-            .actions_expression_watches
-            .borrow()
-            .get(key)
-            .cloned()
-    }
-
-    fn clear_expression_watches(&self) {
-        for expr_watch in self.imp().actions_expression_watches.take().values() {
-            expr_watch.unwatch();
-        }
     }
 
     /// Redact the event of this row.

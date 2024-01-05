@@ -3,7 +3,7 @@ mod highlight_flags;
 mod member;
 mod member_list;
 mod member_role;
-mod power_levels;
+mod permissions;
 mod room_type;
 mod timeline;
 mod typing_list;
@@ -15,7 +15,8 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
     attachment::{generate_image_thumbnail, AttachmentConfig, AttachmentInfo, Thumbnail},
-    deserialized_responses::{MemberEvent, SyncOrStrippedState, SyncTimelineEvent},
+    deserialized_responses::{MemberEvent, SyncTimelineEvent},
+    event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
     sync::{JoinedRoom, LeftRoom},
     DisplayName, HttpError, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
@@ -25,11 +26,7 @@ use ruma::{
         reaction::ReactionEventContent,
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
-        room::{
-            encryption::SyncRoomEncryptionEvent,
-            join_rules::JoinRule,
-            power_levels::{PowerLevelAction, RoomPowerLevelsEventContent},
-        },
+        room::{encryption::SyncRoomEncryptionEvent, join_rules::JoinRule},
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
@@ -45,7 +42,9 @@ pub use self::{
     member::{Member, Membership},
     member_list::MemberList,
     member_role::MemberRole,
-    power_levels::{PowerLevel, PowerLevels, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
+    permissions::{
+        Permissions, PowerLevel, PowerLevelUserAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
+    },
     room_type::RoomType,
     timeline::*,
     typing_list::TypingList,
@@ -123,7 +122,9 @@ mod imp {
         /// This is only set when this room is an invitation.
         #[property(get)]
         pub inviter: RefCell<Option<Member>>,
-        pub power_levels: RefCell<PowerLevels>,
+        /// The permissions of our own user in this room
+        #[property(get)]
+        pub permissions: Permissions,
         /// The timestamp of the room's latest activity.
         ///
         /// This is the timestamp of the latest event that counts as possibly
@@ -177,6 +178,8 @@ mod imp {
         /// The notifications settings for this room.
         #[property(get, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
         pub notifications_setting: Cell<NotificationsRoomSetting>,
+        pub typing_drop_guard: OnceCell<EventHandlerDropGuard>,
+        pub receipts_drop_guard: OnceCell<EventHandlerDropGuard>,
     }
 
     #[glib::object_subclass]
@@ -383,7 +386,7 @@ impl Room {
         spawn!(
             glib::Priority::DEFAULT_IDLE,
             clone!(@weak self as obj => async move {
-                obj.init_power_levels().await;
+                obj.imp().permissions.init(&obj).await;
             })
         );
     }
@@ -784,32 +787,50 @@ impl Room {
 
     /// Start listening to typing events.
     fn set_up_typing(&self) {
+        let imp = self.imp();
+        if imp.typing_drop_guard.get().is_some() {
+            // The event handler is already set up.
+            return;
+        }
+
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             return;
         };
 
         let room_weak = glib::SendWeakRef::from(self.downgrade());
-        matrix_room.add_event_handler(move |event: SyncEphemeralRoomEvent<TypingEventContent>| {
-            let room_weak = room_weak.clone();
-            async move {
-                let ctx = glib::MainContext::default();
-                ctx.spawn(async move {
-                    spawn!(async move {
-                        if let Some(obj) = room_weak.upgrade() {
-                            obj.handle_typing_event(event.content)
-                        }
+        let handle = matrix_room.add_event_handler(
+            move |event: SyncEphemeralRoomEvent<TypingEventContent>| {
+                let room_weak = room_weak.clone();
+                async move {
+                    let ctx = glib::MainContext::default();
+                    ctx.spawn(async move {
+                        spawn!(async move {
+                            if let Some(obj) = room_weak.upgrade() {
+                                obj.handle_typing_event(event.content)
+                            }
+                        });
                     });
-                });
-            }
-        });
+                }
+            },
+        );
+
+        let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
+        imp.typing_drop_guard.set(drop_guard).unwrap();
     }
 
     /// Start listening to read receipts events.
     fn set_up_receipts(&self) {
+        let imp = self.imp();
+        if imp.receipts_drop_guard.get().is_some() {
+            // The event handler is already set up.
+            return;
+        }
+
         // Listen to changes in the read receipts.
+        let matrix_room = self.matrix_room();
         let room_weak = glib::SendWeakRef::from(self.downgrade());
-        self.matrix_room().add_event_handler(
+        let handle = matrix_room.add_event_handler(
             move |event: SyncEphemeralRoomEvent<ReceiptEventContent>| {
                 let room_weak = room_weak.clone();
                 async move {
@@ -824,6 +845,9 @@ impl Room {
                 }
             },
         );
+
+        let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
+        imp.receipts_drop_guard.set(drop_guard).unwrap();
     }
 
     fn handle_receipt_event(&self, content: ReceiptEventContent) {
@@ -996,10 +1020,6 @@ impl Room {
         };
     }
 
-    pub fn power_levels(&self) -> PowerLevels {
-        self.imp().power_levels.borrow().clone()
-    }
-
     /// Load the member that invited us to this room, when applicable.
     async fn load_inviter(&self) {
         let Some(session) = self.session() else {
@@ -1104,9 +1124,6 @@ impl Room {
                     AnySyncStateEvent::RoomTopic(_) => {
                         self.notify_topic();
                     }
-                    AnySyncStateEvent::RoomPowerLevels(event) => {
-                        self.power_levels().update_from_event(event);
-                    }
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();
                     }
@@ -1127,34 +1144,6 @@ impl Room {
 
         self.imp().latest_activity.set(latest_activity);
         self.notify_latest_activity();
-    }
-
-    /// Initialize the power levels from the store.
-    async fn init_power_levels(&self) {
-        let matrix_room = self.matrix_room().clone();
-        let handle = spawn_tokio!(async move {
-            let state_event = match matrix_room
-                .get_state_event_static::<RoomPowerLevelsEventContent>()
-                .await
-            {
-                Ok(state_event) => state_event,
-                Err(error) => {
-                    error!("Initial load of room power levels failed: {error}");
-                    return None;
-                }
-            };
-
-            state_event
-                .and_then(|r| r.deserialize().ok())
-                .and_then(|ev| match ev {
-                    SyncOrStrippedState::Sync(e) => Some(e),
-                    _ => None,
-                })
-        });
-
-        if let Some(event) = handle.await.unwrap() {
-            self.power_levels().update_from_event(&event);
-        }
     }
 
     /// Send a message with the given `content` in this room.
@@ -1229,18 +1218,6 @@ impl Room {
                 };
             })
         );
-    }
-
-    /// Creates an expression that is true when our own user is allowed to do
-    /// the given action in this `Room`.
-    pub fn own_user_is_allowed_to_expr(
-        &self,
-        room_action: PowerLevelAction,
-    ) -> gtk::ClosureExpression {
-        let session = self.session().unwrap();
-        let user_id = session.user_id().clone();
-        self.power_levels()
-            .member_is_allowed_to_expr(user_id, room_action)
     }
 
     pub async fn accept_invite(&self) -> MatrixResult<()> {
