@@ -120,6 +120,9 @@ mod imp {
         /// been echoed back by the server.
         #[property(get = Self::source)]
         pub source: PhantomData<Option<String>>,
+        /// Whether we have the JSON source of this event.
+        #[property(get = Self::has_source)]
+        pub has_source: PhantomData<bool>,
         /// The event ID of this `Event`, if it has been received from the
         /// server, as a string.
         #[property(get = Self::event_id_string)]
@@ -166,6 +169,7 @@ mod imp {
                 read_receipts: gio::ListStore::new::<glib::BoxedAnyObject>(),
                 state: Default::default(),
                 source: Default::default(),
+                has_source: Default::default(),
                 event_id_string: Default::default(),
                 sender_id_string: Default::default(),
                 timestamp: Default::default(),
@@ -233,6 +237,7 @@ mod imp {
             let was_edited = self.is_edited();
             let was_highlighted = self.is_highlighted();
             let prev_latest_edit_raw = self.latest_edit_raw();
+            let had_source = self.has_source();
 
             self.reactions.update(item.reactions().clone());
             obj.update_read_receipts(item.read_receipts());
@@ -257,6 +262,9 @@ mod imp {
                 obj.notify_latest_edit_timestamp();
                 obj.notify_latest_edit_timestamp_full();
             }
+            if self.has_source() != had_source {
+                obj.notify_has_source();
+            }
 
             obj.update_state();
         }
@@ -275,6 +283,14 @@ mod imp {
                 .as_ref()?
                 .original_json()
                 .map(raw_to_pretty_string)
+        }
+
+        /// Whether we have the JSON source of this event.
+        fn has_source(&self) -> bool {
+            self.item
+                .borrow()
+                .as_ref()
+                .is_some_and(|i| i.original_json().is_some())
         }
 
         /// The event ID of this `Event`, if it has been received from the

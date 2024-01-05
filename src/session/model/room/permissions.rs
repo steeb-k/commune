@@ -61,6 +61,9 @@ mod imp {
         /// Whether our own member can send a message.
         #[property(get)]
         pub can_send_message: Cell<bool>,
+        /// Whether our own member can send a reaction.
+        #[property(get)]
+        pub can_send_reaction: Cell<bool>,
         /// Whether our own member can redact their own event.
         #[property(get)]
         pub can_redact_own: Cell<bool>,
@@ -81,6 +84,7 @@ mod imp {
                 can_change_topic: Default::default(),
                 can_invite: Default::default(),
                 can_send_message: Default::default(),
+                can_send_reaction: Default::default(),
                 can_redact_own: Default::default(),
                 can_redact_other: Default::default(),
             }
@@ -193,6 +197,7 @@ mod imp {
             self.update_can_change_topic();
             self.update_can_invite();
             self.update_can_send_message();
+            self.update_can_send_reaction();
             self.update_can_redact_own();
             self.update_can_redact_other();
             self.obj().emit_by_name::<()>("changed", &[]);
@@ -278,6 +283,20 @@ mod imp {
 
             self.can_send_message.set(can_send_message);
             self.obj().notify_can_send_message();
+        }
+
+        /// Update whether our own member can send a reaction.
+        fn update_can_send_reaction(&self) {
+            let can_send_reaction = self.is_allowed_to(PowerLevelAction::SendMessage(
+                MessageLikeEventType::Reaction,
+            ));
+
+            if self.can_send_reaction.get() == can_send_reaction {
+                return;
+            };
+
+            self.can_send_reaction.set(can_send_reaction);
+            self.obj().notify_can_send_reaction();
         }
 
         /// Whether our own member can redact an event.
