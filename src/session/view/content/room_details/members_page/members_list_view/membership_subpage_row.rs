@@ -3,10 +3,10 @@ use gettextrs::npgettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
 use super::MembershipSubpageItem;
-use crate::{session::model::Membership, utils::BoundObject};
+use crate::session::model::Membership;
 
 mod imp {
-    use std::marker::PhantomData;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
 
@@ -20,7 +20,8 @@ mod imp {
     pub struct MembershipSubpageRow {
         /// The item presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: BoundObject<MembershipSubpageItem>,
+        pub item: RefCell<Option<MembershipSubpageItem>>,
+        items_changed_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The icon of this row.
         #[property(get = Self::icon)]
         pub icon: PhantomData<Option<String>>,
@@ -48,7 +49,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MembershipSubpageRow {}
+    impl ObjectImpl for MembershipSubpageRow {
+        fn dispose(&self) {
+            if let Some(item) = &*self.item.borrow() {
+                if let Some(handler) = self.items_changed_handler.take() {
+                    item.model().disconnect(handler);
+                }
+            }
+        }
+    }
 
     impl WidgetImpl for MembershipSubpageRow {}
     impl BinImpl for MembershipSubpageRow {}
@@ -56,26 +65,33 @@ mod imp {
     impl MembershipSubpageRow {
         /// Set the item presented by this row.
         fn set_item(&self, item: Option<MembershipSubpageItem>) {
-            if self.item.obj() == item {
+            if *self.item.borrow() == item {
                 return;
             }
             let obj = self.obj();
 
-            self.item.disconnect_signals();
+            if let Some(item) = &*self.item.borrow() {
+                if let Some(handler) = self.items_changed_handler.take() {
+                    item.model().disconnect(handler);
+                }
+            }
 
-            if let Some(item) = item {
+            if let Some(item) = &item {
                 let model = item.model();
 
-                let handler = model.connect_items_changed(
+                let items_changed_handler = model.connect_items_changed(
                     clone!(@weak self as imp => move |model, _, _, _| {
                         imp.member_count_changed(model.n_items());
                         imp.obj().notify_label();
                     }),
                 );
-                self.member_count_changed(model.n_items());
+                self.items_changed_handler
+                    .replace(Some(items_changed_handler));
 
-                self.item.set(item, vec![handler])
+                self.member_count_changed(model.n_items());
             }
+
+            self.item.replace(item);
 
             obj.notify_item();
             obj.notify_icon();
@@ -84,7 +100,7 @@ mod imp {
 
         /// The icon of this row.
         fn icon(&self) -> Option<String> {
-            match self.item.obj()?.state() {
+            match self.item.borrow().as_ref()?.state() {
                 Membership::Invite => Some("user-add-symbolic".to_owned()),
                 Membership::Ban => Some("blocked-symbolic".to_owned()),
                 _ => None,
@@ -93,7 +109,7 @@ mod imp {
 
         /// The label of this row.
         fn label(&self) -> Option<String> {
-            let item = self.item.obj()?;
+            let item = self.item.borrow().clone()?;
             let count = item.model().n_items();
 
             match item.state() {
