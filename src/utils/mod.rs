@@ -3,6 +3,7 @@
 mod dummy_object;
 pub mod expression;
 mod expression_list_model;
+mod location;
 pub mod macros;
 pub mod matrix;
 pub mod media;
@@ -26,7 +27,11 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use tracing::error;
 
-pub use self::{dummy_object::DummyObject, expression_list_model::ExpressionListModel};
+pub use self::{
+    dummy_object::DummyObject,
+    expression_list_model::ExpressionListModel,
+    location::{Location, LocationError, LocationExt},
+};
 use crate::RUNTIME;
 
 /// Converts a `UInt` to `i32`.

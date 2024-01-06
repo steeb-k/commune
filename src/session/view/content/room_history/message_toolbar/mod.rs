@@ -1,10 +1,5 @@
 use adw::subclass::prelude::*;
-use ashpd::{
-    desktop::location::{Accuracy, LocationProxy},
-    WindowIdentifier,
-};
-use futures_util::{future, pin_mut, FutureExt, StreamExt, TryFutureExt};
-use geo_uri::GeoUri;
+use futures_util::{future, pin_mut, StreamExt};
 use gettextrs::{gettext, pgettext};
 use gtk::{
     gdk, gio,
@@ -39,11 +34,12 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{Event, EventKey, Room},
-    spawn, spawn_tokio, toast,
+    spawn, toast,
     utils::{
         matrix::extract_mentions,
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
         template_callbacks::TemplateCallbacks,
+        Location, LocationError, TokioDrop,
     },
 };
 
@@ -108,51 +104,36 @@ mod imp {
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
 
-            klass.install_action(
-                "message-toolbar.send-text-message",
+            klass.install_action("message-toolbar.send-text-message", None, |widget, _, _| {
+                widget.send_text_message();
+            });
+
+            klass.install_action_async(
+                "message-toolbar.select-file",
                 None,
-                move |widget, _, _| {
-                    widget.send_text_message();
+                |widget, _, _| async move {
+                    widget.select_file().await;
                 },
             );
 
-            klass.install_action("message-toolbar.select-file", None, move |widget, _, _| {
-                spawn!(clone!(@weak widget => async move {
-                    widget.select_file().await;
-                }));
-            });
-
-            klass.install_action("message-toolbar.open-emoji", None, move |widget, _, _| {
+            klass.install_action("message-toolbar.open-emoji", None, |widget, _, _| {
                 widget.open_emoji();
             });
 
-            klass.install_action("message-toolbar.send-location", None, move |widget, _, _| {
-                spawn!(clone!(@weak widget => async move {
-                    let toast_error = match widget.send_location().await {
-                        // Do nothing if the request was cancelled by the user
-                        Err(ashpd::Error::Response(ashpd::desktop::ResponseError::Cancelled)) => {
-                            error!("Location request was cancelled by the user");
-                            Some(gettext("The location request has been cancelled."))
-                        },
-                        Err(error) => {
-                            error!("Failed to send location {error}");
-                            Some(gettext("Failed to retrieve current location."))
-                        }
-                        _ => None,
-                    };
-
-                    if let Some(message) = toast_error {
-                        toast!(widget, message);
-                    }
-                }));
-            });
+            klass.install_action_async(
+                "message-toolbar.send-location",
+                None,
+                |widget, _, _| async move {
+                    widget.send_location().await;
+                },
+            );
 
             klass.install_property_action("message-toolbar.markdown", "markdown-enabled");
 
             klass.install_action(
                 "message-toolbar.clear-related-event",
                 None,
-                move |widget, _, _| widget.clear_related_event(),
+                |widget, _, _| widget.clear_related_event(),
             );
         }
 
@@ -246,6 +227,10 @@ mod imp {
 
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
+
+            // Location.
+            let location = Location::new();
+            obj.action_set_enabled("message-toolbar.send-location", location.is_available());
         }
 
         fn dispose(&self) {
@@ -608,70 +593,99 @@ impl MessageToolbar {
         imp.message_entry.emit_insert_emoji();
     }
 
-    async fn send_location(&self) -> ashpd::Result<()> {
+    async fn send_location(&self) {
         if !self.imp().can_send_message() {
-            return Ok(());
+            return;
         }
         let Some(room) = self.room() else {
-            return Ok(());
+            return;
         };
         let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return Ok(());
+            return;
         };
+
+        let location = Location::new();
+        if !location.is_available() {
+            return;
+        }
 
         // Show the dialog as loading first.
         let dialog = AttachmentDialog::new(&window, &gettext("Your Location"));
         let response_fut = dialog.response_future();
         pin_mut!(response_fut);
 
-        let location_fut = spawn_tokio!(async move {
-            let proxy = LocationProxy::new().await?;
-            let identifier = WindowIdentifier::default();
-
-            let session = proxy
-                .create_session(Some(0), Some(0), Some(Accuracy::Exact))
-                .await?;
-
-            // We want to be listening for new locations whenever the session is up
-            // otherwise we might lose the first response and will have to wait for a future
-            // update by geoclue
-            // FIXME: We should update the location on the map according to updates received
-            // by the proxy.
-            let mut stream = proxy.receive_location_updated().await?;
-            let (_, location) = futures_util::try_join!(
-                proxy.start(&session, &identifier).into_future(),
-                stream.next().map(|l| l.ok_or(ashpd::Error::NoResponse))
-            )?;
-
-            ashpd::Result::Ok(location)
-        });
-        let location_abort_handle = location_fut.abort_handle();
-
-        // See if the user cancels before we get the location.
-        let (location, response_fut) = match future::select(location_fut, response_fut).await {
-            future::Either::Left((location, response_fut)) => (location.unwrap()?, response_fut),
+        // Listen whether the user cancels before the location API is initialized.
+        let location_init_fut = location.init();
+        pin_mut!(location_init_fut);
+        let response_fut = match future::select(location_init_fut, response_fut).await {
+            future::Either::Left((init_res, response_fut)) => match init_res {
+                Ok(_) => response_fut,
+                Err(error) => {
+                    dialog.close();
+                    self.location_error_toast(error);
+                    return;
+                }
+            },
             future::Either::Right(_) => {
-                location_abort_handle.abort();
                 // The only possible response at this stage should be cancel.
-                return Ok(());
+                return;
             }
         };
 
-        let geo_uri = GeoUri::builder()
-            .latitude(location.latitude())
-            .longitude(location.longitude())
-            .build()
-            .expect("Got invalid coordinates from ashpd");
+        // Listen whether the user cancels before the location stream is ready.
+        let location_stream_fut = location.updates_stream();
+        pin_mut!(location_stream_fut);
+        let (mut location_stream, response_fut) =
+            match future::select(location_stream_fut, response_fut).await {
+                future::Either::Left((stream_res, response_fut)) => match stream_res {
+                    Ok(stream) => (stream, response_fut),
+                    Err(error) => {
+                        dialog.close();
+                        self.location_error_toast(error);
+                        return;
+                    }
+                },
+                future::Either::Right(_) => {
+                    // The only possible response at this stage should be cancel.
+                    return;
+                }
+            };
 
-        dialog.set_location(&geo_uri);
-        if response_fut.await != gtk::ResponseType::Ok {
-            return Ok(());
+        // Listen to location changes while waiting for the user's response.
+        let mut response_fut_wrapper = Some(response_fut);
+        let mut geo_uri_wrapper = None;
+        loop {
+            let response_fut = response_fut_wrapper.take().unwrap();
+
+            match future::select(location_stream.next(), response_fut).await {
+                future::Either::Left((update, response_fut)) => {
+                    if let Some(uri) = update {
+                        dialog.set_location(&uri);
+                        geo_uri_wrapper.replace(uri);
+                    }
+                    response_fut_wrapper.replace(response_fut);
+                }
+                future::Either::Right((response, _)) => {
+                    // The linux location stream requires a tokio executor when dropped.
+                    let stream_drop = TokioDrop::new();
+                    let _ = stream_drop.set(location_stream);
+
+                    if response == gtk::ResponseType::Ok {
+                        break;
+                    } else {
+                        return;
+                    }
+                }
+            };
         }
 
+        let Some(geo_uri) = geo_uri_wrapper else {
+            return;
+        };
+
         let geo_uri_string = geo_uri.to_string();
-        let iso8601_datetime =
-            glib::DateTime::from_unix_local(location.timestamp().as_secs() as i64)
-                .expect("Valid location timestamp");
+        let timestamp =
+            glib::DateTime::now_local().expect("Should be able to get the local timestamp");
         let location_body = gettext_f(
             // Translators: Do NOT translate the content between '{' and '}', this is a variable
             // name.
@@ -680,7 +694,7 @@ impl MessageToolbar {
                 ("geo_uri", &geo_uri_string),
                 (
                     "iso8601_datetime",
-                    iso8601_datetime.format_iso8601().unwrap().as_str(),
+                    timestamp.format_iso8601().unwrap().as_str(),
                 ),
             ],
         );
@@ -690,8 +704,16 @@ impl MessageToolbar {
                 geo_uri_string,
             ))),
         ));
+    }
 
-        Ok(())
+    /// Show a toast for the given location error;
+    fn location_error_toast(&self, error: LocationError) {
+        let msg = match error {
+            LocationError::Cancelled => gettext("The location request has been cancelled."),
+            LocationError::Other => gettext("Failed to retrieve current location."),
+        };
+
+        toast!(self, msg);
     }
 
     async fn send_image(&self, image: gdk::Texture) {
