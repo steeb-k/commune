@@ -1313,8 +1313,8 @@ impl Room {
 
     /// The ID of the predecessor of this room, if this room is an upgrade to a
     /// previous room.
-    pub fn predecessor_id(&self) -> Option<&RoomId> {
-        self.imp().predecessor_id.get().map(std::ops::Deref::deref)
+    pub fn predecessor_id(&self) -> Option<&OwnedRoomId> {
+        self.imp().predecessor_id.get()
     }
 
     /// Load the predecessor of this room.

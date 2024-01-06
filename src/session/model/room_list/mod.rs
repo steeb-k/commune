@@ -151,13 +151,47 @@ impl RoomList {
     pub fn get_by_identifier(&self, identifier: &MatrixRoomId) -> Option<Room> {
         match identifier {
             MatrixRoomId::Id(room_id) => self.get(room_id),
-            MatrixRoomId::Alias(room_alias) => self
-                .imp()
-                .list
-                .borrow()
-                .values()
-                .find(|room| room.matrix_room().canonical_alias().as_ref() == Some(room_alias))
-                .cloned(),
+            MatrixRoomId::Alias(room_alias) => {
+                let mut matches = self
+                    .imp()
+                    .list
+                    .borrow()
+                    .iter()
+                    .filter(|(_, room)| {
+                        let matrix_room = room.matrix_room();
+                        matrix_room.canonical_alias().as_ref() == Some(room_alias)
+                            || matrix_room.alt_aliases().contains(room_alias)
+                    })
+                    .map(|(room_id, room)| (room_id.clone(), room.clone()))
+                    .collect::<HashMap<_, _>>();
+
+                if matches.len() <= 1 {
+                    return matches.into_values().next();
+                }
+
+                // The alias is shared between upgraded rooms. We want the latest room, so
+                // filter out those that are predecessors.
+                let predecessors = matches
+                    .iter()
+                    .filter_map(|(_, room)| room.predecessor_id().cloned())
+                    .collect::<Vec<_>>();
+                for room_id in predecessors {
+                    matches.remove(&room_id);
+                }
+
+                if matches.len() <= 1 {
+                    return matches.into_values().next();
+                }
+
+                // Ideally this should not happen, return the one with the latest activity.
+                matches
+                    .into_values()
+                    .fold(None::<Room>, |latest_room, room| {
+                        latest_room
+                            .filter(|r| r.latest_activity() >= room.latest_activity())
+                            .or(Some(room))
+                    })
+            }
         }
     }
 
