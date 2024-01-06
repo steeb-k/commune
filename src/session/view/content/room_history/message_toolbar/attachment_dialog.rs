@@ -1,12 +1,13 @@
-use std::cell::Cell;
-
 use adw::subclass::prelude::*;
-use gtk::{gdk, gio, glib, glib::clone, prelude::*, CompositeTemplate};
-use once_cell::sync::Lazy;
+use futures_channel::oneshot;
+use gtk::{gdk, gio, glib, prelude::*, CompositeTemplate};
+use tracing::error;
 
-use crate::components::MediaContentViewer;
+use crate::components::{LoadingBin, MediaContentViewer};
 
 mod imp {
+    use std::cell::RefCell;
+
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
@@ -14,11 +15,15 @@ mod imp {
         resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/attachment_dialog.ui"
     )]
     pub struct AttachmentDialog {
-        pub send: Cell<bool>,
+        #[template_child]
+        pub cancel_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub send_button: TemplateChild<gtk::Button>,
         #[template_child]
+        pub loading_bin: TemplateChild<LoadingBin>,
+        #[template_child]
         pub media: TemplateChild<MediaContentViewer>,
+        pub sender: RefCell<Option<oneshot::Sender<gtk::ResponseType>>>,
     }
 
     #[glib::object_subclass]
@@ -29,6 +34,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
 
             klass.add_binding_action(
                 gdk::Key::Escape,
@@ -36,12 +42,6 @@ mod imp {
                 "window.close",
                 None,
             );
-
-            klass.install_action("attachment-dialog.send", None, move |window, _, _| {
-                window.imp().send.set(true);
-                window.emit_by_name::<()>("send", &[]);
-                window.close();
-            });
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -50,16 +50,47 @@ mod imp {
     }
 
     impl ObjectImpl for AttachmentDialog {
-        fn signals() -> &'static [glib::subclass::Signal] {
-            static SIGNALS: Lazy<Vec<glib::subclass::Signal>> =
-                Lazy::new(|| vec![glib::subclass::Signal::builder("send").run_first().build()]);
-            SIGNALS.as_ref()
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.set_loading(true);
         }
     }
 
     impl WidgetImpl for AttachmentDialog {}
-    impl WindowImpl for AttachmentDialog {}
+
+    impl WindowImpl for AttachmentDialog {
+        fn close_request(&self) -> glib::Propagation {
+            self.send_response(gtk::ResponseType::Cancel);
+
+            glib::Propagation::Proceed
+        }
+    }
+
     impl AdwWindowImpl for AttachmentDialog {}
+
+    impl AttachmentDialog {
+        /// Set whether this dialog is loading.
+        pub(super) fn set_loading(&self, loading: bool) {
+            self.loading_bin.set_is_loading(loading);
+            self.send_button.set_sensitive(!loading);
+
+            if loading {
+                self.cancel_button.grab_focus();
+            } else {
+                self.send_button.grab_focus();
+            }
+        }
+
+        /// Sent the given response.
+        pub(super) fn send_response(&self, response: gtk::ResponseType) {
+            if let Some(sender) = self.sender.take() {
+                if sender.send(response).is_err() {
+                    error!("Failed to send attachment dialog response {response:?}");
+                }
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -68,69 +99,56 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::Window, gtk::Root, adw::Window;
 }
 
+#[gtk::template_callbacks]
 impl AttachmentDialog {
-    pub fn for_image(transient_for: &gtk::Window, title: &str, image: &gdk::Texture) -> Self {
-        let obj: Self = glib::Object::builder()
-            .property("transient-for", transient_for)
-            .property("title", title)
-            .build();
-        obj.imp().media.view_image(image);
-        obj.imp().send_button.grab_focus();
-        obj
-    }
-
-    pub fn for_file(transient_for: &gtk::Window, title: &str, file: &gio::File) -> Self {
-        let obj: Self = glib::Object::builder()
-            .property("transient-for", transient_for)
-            .property("title", title)
-            .build();
-        obj.imp().media.view_file(file.clone());
-        obj.imp().send_button.grab_focus();
-        obj
-    }
-
-    pub fn for_location(
-        transient_for: &gtk::Window,
-        title: &str,
-        geo_uri: &geo_uri::GeoUri,
-    ) -> Self {
-        let obj: Self = glib::Object::builder()
-            .property("transient-for", transient_for)
-            .property("title", title)
-            .build();
-        obj.imp().media.view_location(geo_uri);
-        obj.imp().send_button.grab_focus();
-        obj
-    }
-
-    /// Show the dialog asynchronously.
+    /// Create an attachment dialog with the given title.
     ///
-    /// Returns `gtk::ResponseType::Ok` if the user clicked on send, otherwise
-    /// returns `gtk::ResponseType::Cancel`.
-    pub async fn run_future(&self) -> gtk::ResponseType {
-        let (sender, receiver) = futures_channel::oneshot::channel();
-        let sender = Cell::new(Some(sender));
+    /// Its initial state is loading.
+    pub fn new(transient_for: &gtk::Window, title: &str) -> Self {
+        glib::Object::builder()
+            .property("transient-for", transient_for)
+            .property("title", title)
+            .build()
+    }
 
-        let handler_id = self.connect_close_request(
-            clone!(@weak self as obj => @default-return glib::Propagation::Proceed, move |_| {
-                if let Some(sender) = sender.take() {
-                    let response = if obj.imp().send.get() {
-                        gtk::ResponseType::Ok
-                    } else {
-                        gtk::ResponseType::Cancel
-                    };
+    /// Set the image to preview.
+    pub fn set_image(&self, image: &gdk::Texture) {
+        let imp = self.imp();
+        imp.media.view_image(image);
+        imp.set_loading(false);
+    }
 
-                    sender.send(response).unwrap();
-                }
-                glib::Propagation::Proceed
-            }),
-        );
+    /// Set the file to preview.
+    pub fn set_file(&self, file: &gio::File) {
+        let imp = self.imp();
+        imp.media.view_file(file.clone());
+        imp.set_loading(false);
+    }
+
+    /// Create an attachment dialog to preview and send a location.
+    pub fn set_location(&self, geo_uri: &geo_uri::GeoUri) {
+        let imp = self.imp();
+        imp.media.view_location(geo_uri);
+        imp.set_loading(false);
+    }
+
+    /// Emit the signal that the user wants to send the attachment.
+    #[template_callback]
+    fn send(&self) {
+        self.imp().send_response(gtk::ResponseType::Ok);
+        self.close();
+    }
+
+    /// Present the dialog and wait for the user to select a response.
+    ///
+    /// The response is [`gtk::ResponseType::Ok`] if the user clicked on send,
+    /// otherwise it is [`gtk::ResponseType::Cancel`].
+    pub async fn response_future(&self) -> gtk::ResponseType {
+        let (sender, receiver) = oneshot::channel();
+        self.imp().sender.replace(Some(sender));
 
         self.present();
-        let res = receiver.await.unwrap();
 
-        self.disconnect(handler_id);
-
-        res
+        receiver.await.unwrap_or(gtk::ResponseType::Cancel)
     }
 }

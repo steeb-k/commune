@@ -12,7 +12,7 @@
           <object class="GtkHeaderBar">
             <property name="show-title-buttons">False</property>
             <child>
-              <object class="GtkButton">
+              <object class="GtkButton" id="cancel_button">
                 <property name="label" translatable="yes">_Cancel</property>
                 <property name="use-underline">True</property>
                 <property name="action-name">window.close</property>
@@ -22,7 +22,7 @@
               <object class="GtkButton" id="send_button">
                 <property name="label" translatable="yes">_Send</property>
                 <property name="use-underline">True</property>
-                <property name="action-name">attachment-dialog.send</property>
+                <signal name="clicked" handler="send" swapped="yes"/>
                 <style>
                   <class name="suggested-action"/>
                 </style>
@@ -31,7 +31,11 @@
           </object>
         </child>
         <property name="content">
-          <object class="ComponentsMediaContentViewer" id="media"/>
+          <object class="LoadingBin" id="loading_bin">
+            <property name="child">
+              <object class="ComponentsMediaContentViewer" id="media"/>
+            </property>
+          </object>
         </property>
       </object>
     </property>

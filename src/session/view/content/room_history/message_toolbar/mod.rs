@@ -3,7 +3,7 @@ use ashpd::{
     desktop::location::{Accuracy, LocationProxy},
     WindowIdentifier,
 };
-use futures_util::{FutureExt, StreamExt, TryFutureExt};
+use futures_util::{future, pin_mut, FutureExt, StreamExt, TryFutureExt};
 use geo_uri::GeoUri;
 use gettextrs::{gettext, pgettext};
 use gtk::{
@@ -615,8 +615,16 @@ impl MessageToolbar {
         let Some(room) = self.room() else {
             return Ok(());
         };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return Ok(());
+        };
 
-        let handle = spawn_tokio!(async move {
+        // Show the dialog as loading first.
+        let dialog = AttachmentDialog::new(&window, &gettext("Your Location"));
+        let response_fut = dialog.response_future();
+        pin_mut!(response_fut);
+
+        let location_fut = spawn_tokio!(async move {
             let proxy = LocationProxy::new().await?;
             let identifier = WindowIdentifier::default();
 
@@ -637,17 +645,26 @@ impl MessageToolbar {
 
             ashpd::Result::Ok(location)
         });
+        let location_abort_handle = location_fut.abort_handle();
 
-        let location = handle.await.unwrap()?;
+        // See if the user cancels before we get the location.
+        let (location, response_fut) = match future::select(location_fut, response_fut).await {
+            future::Either::Left((location, response_fut)) => (location.unwrap()?, response_fut),
+            future::Either::Right(_) => {
+                location_abort_handle.abort();
+                // The only possible response at this stage should be cancel.
+                return Ok(());
+            }
+        };
+
         let geo_uri = GeoUri::builder()
             .latitude(location.latitude())
             .longitude(location.longitude())
             .build()
             .expect("Got invalid coordinates from ashpd");
 
-        let window = self.root().and_downcast::<gtk::Window>().unwrap();
-        let dialog = AttachmentDialog::for_location(&window, &gettext("Your Location"), &geo_uri);
-        if dialog.run_future().await != gtk::ResponseType::Ok {
+        dialog.set_location(&geo_uri);
+        if response_fut.await != gtk::ResponseType::Ok {
             return Ok(());
         }
 
@@ -684,9 +701,10 @@ impl MessageToolbar {
 
         let window = self.root().and_downcast::<gtk::Window>().unwrap();
         let filename = filename_for_mime(Some(mime::IMAGE_PNG.as_ref()), None);
-        let dialog = AttachmentDialog::for_image(&window, &filename, &image);
+        let dialog = AttachmentDialog::new(&window, &filename);
+        dialog.set_image(&image);
 
-        if dialog.run_future().await != gtk::ResponseType::Ok {
+        if dialog.response_future().await != gtk::ResponseType::Ok {
             return;
         }
 
@@ -742,9 +760,10 @@ impl MessageToolbar {
         match load_file(&file).await {
             Ok((bytes, file_info)) => {
                 let window = self.root().and_downcast::<gtk::Window>().unwrap();
-                let dialog = AttachmentDialog::for_file(&window, &file_info.filename, &file);
+                let dialog = AttachmentDialog::new(&window, &file_info.filename);
+                dialog.set_file(&file);
 
-                if dialog.run_future().await != gtk::ResponseType::Ok {
+                if dialog.response_future().await != gtk::ResponseType::Ok {
                     return;
                 }
 

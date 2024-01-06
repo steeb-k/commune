@@ -237,8 +237,6 @@ impl MediaContentViewer {
 
     /// View the given location as a geo URI.
     pub fn view_location(&self, geo_uri: &GeoUri) {
-        self.show_loading();
-
         let imp = self.imp();
 
         let location = if let Some(location) = imp.viewer.child().and_downcast::<LocationViewer>() {
