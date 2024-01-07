@@ -5,52 +5,26 @@ use futures_util::StreamExt;
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use tracing::error;
 
+use super::{ClockFormat, SystemSettings, SystemSettingsImpl};
 use crate::{spawn, spawn_tokio};
 
 const GNOME_DESKTOP_NAMESPACE: &str = "org.gnome.desktop.interface";
+const CLOCK_FORMAT_KEY: &str = "clock-format";
 
 mod imp {
-    use std::cell::Cell;
-
     use super::*;
 
-    #[derive(Debug, glib::Properties)]
-    #[properties(wrapper_type = super::SystemSettings)]
-    pub struct SystemSettings {
-        /// The clock format setting.
-        #[property(get, builder(ClockFormat::default()))]
-        pub clock_format: Cell<ClockFormat>,
-    }
-
-    impl Default for SystemSettings {
-        fn default() -> Self {
-            // Use the locale's default clock format as a fallback.
-            let local_formatted_time = glib::DateTime::now_local()
-                .and_then(|d| d.format("%X"))
-                .map(|s| s.to_ascii_lowercase());
-            let clock_format = match &local_formatted_time {
-                Ok(s) if s.ends_with("am") || s.ends_with("pm") => ClockFormat::TwelveHours,
-                Ok(_) => ClockFormat::TwentyFourHours,
-                Err(error) => {
-                    error!("Failed to get local formatted time: {error}");
-                    ClockFormat::TwelveHours
-                }
-            };
-
-            Self {
-                clock_format: Cell::new(clock_format),
-            }
-        }
-    }
+    #[derive(Debug, Default)]
+    pub struct LinuxSystemSettings {}
 
     #[glib::object_subclass]
-    impl ObjectSubclass for SystemSettings {
-        const NAME: &'static str = "SystemSettings";
-        type Type = super::SystemSettings;
+    impl ObjectSubclass for LinuxSystemSettings {
+        const NAME: &'static str = "LinuxSystemSettings";
+        type Type = super::LinuxSystemSettings;
+        type ParentType = SystemSettings;
     }
 
-    #[glib::derived_properties]
-    impl ObjectImpl for SystemSettings {
+    impl ObjectImpl for LinuxSystemSettings {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -60,14 +34,17 @@ mod imp {
             }));
         }
     }
+
+    impl SystemSettingsImpl for LinuxSystemSettings {}
 }
 
 glib::wrapper! {
-    /// An API to access system settings.
-    pub struct SystemSettings(ObjectSubclass<imp::SystemSettings>);
+    /// API to access system settings on Linux.
+    pub struct LinuxSystemSettings(ObjectSubclass<imp::LinuxSystemSettings>)
+        @extends SystemSettings;
 }
 
-impl SystemSettings {
+impl LinuxSystemSettings {
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -89,13 +66,15 @@ impl SystemSettings {
         let proxy_clone = proxy.clone();
         match spawn_tokio!(async move {
             proxy_clone
-                .read::<ClockFormat>(GNOME_DESKTOP_NAMESPACE, ClockFormat::KEY)
+                .read::<ClockFormat>(GNOME_DESKTOP_NAMESPACE, CLOCK_FORMAT_KEY)
                 .await
         })
         .await
         .unwrap()
         {
-            Ok(clock_format) => self.set_clock_format(clock_format),
+            Ok(clock_format) => self
+                .upcast_ref::<SystemSettings>()
+                .set_clock_format(clock_format),
             Err(error) => {
                 error!("Failed to access clock format system setting: {error}");
                 return;
@@ -104,7 +83,7 @@ impl SystemSettings {
 
         let clock_format_changed_stream = match spawn_tokio!(async move {
             proxy
-                .receive_setting_changed_with_args(GNOME_DESKTOP_NAMESPACE, ClockFormat::KEY)
+                .receive_setting_changed_with_args(GNOME_DESKTOP_NAMESPACE, CLOCK_FORMAT_KEY)
                 .await
         })
         .await
@@ -130,45 +109,19 @@ impl SystemSettings {
                 };
 
                 if let Some(obj) = obj_weak.upgrade() {
-                    obj.set_clock_format(clock_format);
+                    obj.upcast_ref::<SystemSettings>().set_clock_format(clock_format);
                 } else {
                     error!("Could not update clock format setting: could not upgrade weak reference");
                 }
             }
         }).await;
     }
-
-    /// Set the clock format setting.
-    fn set_clock_format(&self, clock_format: ClockFormat) {
-        if self.clock_format() == clock_format {
-            return;
-        }
-
-        self.imp().clock_format.set(clock_format);
-        self.notify_clock_format();
-    }
 }
 
-impl Default for SystemSettings {
+impl Default for LinuxSystemSettings {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// The clock format setting.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
-#[repr(u32)]
-#[enum_type(name = "ClockFormat")]
-pub enum ClockFormat {
-    /// The 12h format, i.e. AM/PM.
-    #[default]
-    TwelveHours = 0,
-    /// The 24h format.
-    TwentyFourHours = 1,
-}
-
-impl ClockFormat {
-    const KEY: &'static str = "clock-format";
 }
 
 impl TryFrom<&zvariant::OwnedValue> for ClockFormat {
