@@ -8,8 +8,8 @@ use futures_util::StreamExt;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::Error as MatrixError;
 use matrix_sdk_ui::timeline::{
-    default_event_filter, BackPaginationStatus, PaginationOptions, RoomExt,
-    Timeline as SdkTimeline, TimelineItem as SdkTimelineItem,
+    default_event_filter, AnyOtherFullStateEventContent, BackPaginationStatus, PaginationOptions,
+    RoomExt, Timeline as SdkTimeline, TimelineItem as SdkTimelineItem, TimelineItemContent,
 };
 use ruma::{
     events::{
@@ -89,6 +89,9 @@ mod imp {
         /// Whether the timeline is empty.
         #[property(get = Self::is_empty)]
         pub empty: PhantomData<bool>,
+        /// Whether the timeline has the `m.room.create` event of the room.
+        #[property(get)]
+        pub has_room_create: Cell<bool>,
     }
 
     impl Default for Timeline {
@@ -115,6 +118,7 @@ mod imp {
                 diff_handle: Default::default(),
                 back_pagination_status_handle: Default::default(),
                 empty: Default::default(),
+                has_room_create: Default::default(),
             }
         }
     }
@@ -161,6 +165,16 @@ mod imp {
         /// Whether the timeline is empty.
         fn is_empty(&self) -> bool {
             self.sdk_items.n_items() == 0
+        }
+
+        /// Set whether the timeline has the `m.room.create` event of the room.
+        pub(super) fn set_has_room_create(&self, has_room_create: bool) {
+            if self.has_room_create.get() == has_room_create {
+                return;
+            }
+
+            self.has_room_create.set(has_room_create);
+            self.obj().notify_has_room_create();
         }
     }
 }
@@ -212,7 +226,9 @@ impl Timeline {
                 );
             }
             VectorDiff::Clear => {
-                self.clear();
+                imp.sdk_items.remove_all();
+                imp.event_map.borrow_mut().clear();
+                imp.set_has_room_create(false);
             }
             VectorDiff::PushFront { value } => {
                 let item = self.create_item(&value);
@@ -305,6 +321,10 @@ impl Timeline {
                 sdk_items.splice(new_len, old_len - new_len, &[] as &[glib::Object]);
             }
             VectorDiff::Reset { values } => {
+                // Reset the state.
+                imp.event_map.borrow_mut().clear();
+                imp.set_has_room_create(false);
+
                 let new_list = values
                     .into_iter()
                     .map(|item| self.create_item(&item))
@@ -369,8 +389,9 @@ impl Timeline {
         let item = TimelineItem::new(item, &room);
 
         if let Some(event) = item.downcast_ref::<Event>() {
-            self.imp()
-                .event_map
+            let imp = self.imp();
+
+            imp.event_map
                 .borrow_mut()
                 .insert(event.key(), event.clone());
 
@@ -381,6 +402,10 @@ impl Timeline {
                     member.set_latest_activity(event.origin_server_ts_u64());
                 }
             }
+
+            if is_room_create_event(event) {
+                imp.set_has_room_create(true);
+            }
         }
 
         item
@@ -389,7 +414,13 @@ impl Timeline {
     /// Remove the given item from this `Timeline`.
     fn remove_item(&self, item: &TimelineItem) {
         if let Some(event) = item.downcast_ref::<Event>() {
-            self.imp().event_map.borrow_mut().remove(&event.key());
+            let imp = self.imp();
+
+            imp.event_map.borrow_mut().remove(&event.key());
+
+            if is_room_create_event(event) {
+                imp.set_has_room_create(false);
+            }
         }
     }
 
@@ -427,13 +458,6 @@ impl Timeline {
             error!("Failed to load timeline: {error}");
             self.set_state(TimelineState::Error);
         }
-    }
-
-    fn clear(&self) {
-        let imp = self.imp();
-
-        imp.sdk_items.remove_all();
-        imp.event_map.take();
     }
 
     /// Get the event with the given key from this `Timeline`.
@@ -721,5 +745,16 @@ impl Timeline {
         // timeline, and there are not enough events in the timeline to know if there
         // are unread messages.
         None
+    }
+}
+
+/// Whether the given event is an `m.room.create` event.
+fn is_room_create_event(event: &Event) -> bool {
+    match event.content() {
+        TimelineItemContent::OtherState(other_state) => matches!(
+            other_state.content(),
+            AnyOtherFullStateEventContent::RoomCreate(_)
+        ),
+        _ => false,
     }
 }

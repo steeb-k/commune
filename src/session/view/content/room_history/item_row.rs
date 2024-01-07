@@ -269,6 +269,21 @@ mod imp {
                         VirtualItemKind::TimelineStart => {
                             let label = gettext("This is the start of the visible history");
 
+                            // Hide this if the `m.room.create` event is visible.
+                            if let Some(timeline) = self
+                                .room_history
+                                .upgrade()
+                                .and_then(|h| h.room())
+                                .map(|r| r.timeline())
+                            {
+                                let binding = timeline
+                                    .bind_property("has-room-create", &*obj, "visible")
+                                    .sync_create()
+                                    .invert_boolean()
+                                    .build();
+                                self.binding.replace(Some(binding));
+                            }
+
                             if let Some(child) = obj.child().and_downcast::<DividerRow>() {
                                 child.set_label(label);
                             } else {
