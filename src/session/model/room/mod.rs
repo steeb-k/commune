@@ -100,7 +100,7 @@ mod imp {
         pub has_avatar: Cell<bool>,
         /// The Avatar data of this room.
         #[property(get)]
-        pub avatar_data: OnceCell<AvatarData>,
+        pub avatar_data: AvatarData,
         /// The category of this room.
         #[property(get, builder(RoomType::default()))]
         pub category: Cell<RoomType>,
@@ -166,6 +166,10 @@ mod imp {
         /// Whether this room is a direct chat.
         #[property(get)]
         pub is_direct: Cell<bool>,
+        /// The other member of the room, if this room is a direct chat and
+        /// there is only one other member.
+        #[property(get)]
+        pub direct_member: RefCell<Option<Member>>,
         /// The number of unread notifications of this room.
         #[property(get = Self::notification_count)]
         pub notification_count: PhantomData<u64>,
@@ -195,6 +199,15 @@ mod imp {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("room-forgotten").build()]);
             SIGNALS.as_ref()
+        }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.obj()
+                .bind_property("display-name", &self.avatar_data, "display-name")
+                .sync_create()
+                .build();
         }
     }
 
@@ -339,7 +352,7 @@ impl Room {
 
         imp.matrix_room.set(matrix_room).unwrap();
 
-        self.init_avatar_data();
+        self.update_avatar();
         self.load_predecessor();
         self.load_tombstone();
         self.load_category();
@@ -432,8 +445,13 @@ impl Room {
 
         self.imp().is_direct.set(is_direct);
         self.notify_is_direct();
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.load_direct_member().await;
+        }));
     }
 
+    /// Load whether the room is direct or not.
     pub async fn load_is_direct(&self) {
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.is_direct().await });
@@ -448,27 +466,117 @@ impl Room {
 
     /// The ID of the other user, if this is a direct chat and there is only one
     /// other user.
-    pub fn direct_user_id(&self) -> Option<OwnedUserId> {
+    async fn direct_user_id(&self) -> Option<OwnedUserId> {
         let matrix_room = self.matrix_room();
 
-        if matrix_room.state() == RoomState::Left {
-            // We most likely cannot re-join a direct room that was left.
-            return None;
-        }
-
-        if matrix_room.active_members_count() > 2 {
-            // We only want a 1-to-1 room. The count might be 1 if the other user left, but
-            // we can reinvite them.
-            return None;
-        }
-
+        // Check if the room direct and if there only one target.
         let direct_targets = matrix_room.direct_targets();
         if direct_targets.len() != 1 {
             // It was a direct chat with several users.
             return None;
         }
 
-        direct_targets.into_iter().next()
+        let direct_target_user_id = direct_targets.into_iter().next().unwrap();
+
+        // Check that there are still at most 2 members.
+        let members_count = matrix_room.active_members_count();
+
+        if members_count > 2 {
+            // We only want a 1-to-1 room. The count might be 1 if the other user left, but
+            // we can reinvite them.
+            return None;
+        }
+
+        // Check that the members count is correct. It might not be correct if the room
+        // was just joined, or if it is in an invited state.
+        let matrix_room_clone = matrix_room.clone();
+        let handle =
+            spawn_tokio!(async move { matrix_room_clone.members(RoomMemberships::ACTIVE).await });
+
+        let members = match handle.await.unwrap() {
+            Ok(m) => m,
+            Err(error) => {
+                error!("Failed to load room members: {error}");
+                vec![]
+            }
+        };
+
+        let members_count = members_count.max(members.len() as u64);
+        if members_count > 2 {
+            // Same as before.
+            return None;
+        }
+
+        let own_user_id = matrix_room.own_user_id();
+        let mut has_other_member = false;
+
+        // Get the other member from the list.
+        for member in members {
+            let user_id = member.user_id();
+
+            if user_id != direct_target_user_id && user_id != own_user_id {
+                has_other_member = true;
+                break;
+            }
+        }
+
+        if has_other_member {
+            // There is a non-direct member.
+            return None;
+        }
+
+        Some(direct_target_user_id)
+    }
+
+    /// Set the other member of the room, if this room is a direct chat and
+    /// there is only one other member..
+    fn set_direct_member(&self, member: Option<Member>) {
+        if self.direct_member() == member {
+            return;
+        }
+
+        self.imp().direct_member.replace(member);
+        self.notify_direct_member();
+        self.update_avatar();
+    }
+
+    /// Load the other member of the room, if this room is a direct chat and
+    /// there is only one other member.
+    async fn load_direct_member(&self) {
+        let Some(direct_user_id) = self.direct_user_id().await else {
+            self.set_direct_member(None);
+            return;
+        };
+
+        if self
+            .direct_member()
+            .is_some_and(|m| *m.user_id() == direct_user_id)
+        {
+            // Already up-to-date.
+            return;
+        }
+
+        let direct_member = if let Some(members) = self.members() {
+            members.get_or_create(direct_user_id.clone())
+        } else {
+            Member::new(self, direct_user_id.clone())
+        };
+
+        let matrix_room = self.matrix_room().clone();
+        let handle =
+            spawn_tokio!(async move { matrix_room.get_member_no_sync(&direct_user_id).await });
+
+        match handle.await.unwrap() {
+            Ok(Some(matrix_member)) => {
+                direct_member.update_from_room_member(&matrix_member);
+            }
+            Ok(None) => {}
+            Err(error) => {
+                error!("Failed to get direct member: {error}");
+            }
+        }
+
+        self.set_direct_member(Some(direct_member));
     }
 
     /// Ensure the direct user of this room is an active member.
@@ -479,7 +587,7 @@ impl Room {
     /// This is a noop if there is no supposed direct user or if the user is
     /// already an active member.
     pub async fn ensure_direct_user(&self) -> Result<(), ()> {
-        let Some(user_id) = self.direct_user_id() else {
+        let Some(member) = self.direct_member() else {
             warn!("Cannot ensure direct user in a room without direct target");
             return Ok(());
         };
@@ -488,7 +596,9 @@ impl Room {
             return Ok(());
         }
 
-        self.invite(&[user_id]).await.map_err(|_| ())
+        self.invite(&[member.user_id().clone()])
+            .await
+            .map_err(|_| ())
     }
 
     /// Forget a room that is left.
@@ -1092,6 +1202,8 @@ impl Room {
             .collect();
         let own_member = self.own_member();
         let own_user_id = own_member.user_id();
+        let direct_member = self.direct_member();
+        let direct_member_id = direct_member.as_ref().map(|m| m.user_id());
 
         for event in events.iter() {
             if let AnySyncTimelineEvent::State(state_event) = event {
@@ -1101,19 +1213,20 @@ impl Room {
                             members.update_member_for_member_event(event);
                         } else if event.state_key == *own_user_id {
                             own_member.update_from_member_event(event);
+                        } else if Some(&event.state_key) == direct_member_id {
+                            if let Some(member) = &direct_member {
+                                member.update_from_member_event(event);
+                            }
                         }
 
-                        // If we show the other user's avatar or name, a member event might change
-                        // one of them.
+                        // It might change the direct member.
                         spawn!(clone!(@weak self as obj => async move {
+                            obj.load_direct_member().await;
                             obj.load_display_name().await;
-                            obj.load_avatar().await;
                         }));
                     }
                     AnySyncStateEvent::RoomAvatar(SyncStateEvent::Original(_)) => {
-                        spawn!(clone!(@weak self as obj => async move {
-                            obj.load_avatar().await;
-                        }));
+                        self.update_avatar();
                     }
                     AnySyncStateEvent::RoomName(_) => {
                         self.notify_name();
@@ -1708,105 +1821,39 @@ impl Room {
         format!("{} ({})", self.display_name(), self.room_id())
     }
 
-    /// Initialize the avatar data for the room.
-    fn init_avatar_data(&self) {
+    /// Update the avatar for the room.
+    fn update_avatar(&self) {
         let Some(session) = self.session() else {
             return;
         };
         let imp = self.imp();
 
-        let avatar_url = self.matrix_room().avatar_url();
-        imp.set_has_avatar(avatar_url.is_some());
+        if let Some(avatar_url) = self.matrix_room().avatar_url() {
+            imp.set_has_avatar(true);
 
-        let avatar_data = AvatarData::with_image(AvatarImage::new(
-            &session,
-            avatar_url.as_deref(),
-            AvatarUriSource::Room,
-        ));
+            let avatar_image = if let Some(avatar_image) = imp
+                .avatar_data
+                .image()
+                .filter(|i| i.uri_source() == AvatarUriSource::Room)
+            {
+                avatar_image
+            } else {
+                let avatar_image =
+                    AvatarImage::new(&session, Some(&avatar_url), AvatarUriSource::Room);
+                imp.avatar_data.set_image(Some(avatar_image.clone()));
+                avatar_image
+            };
+            avatar_image.set_uri(Some(avatar_url.to_string()));
 
-        self.bind_property("display-name", &avatar_data, "display-name")
-            .sync_create()
-            .build();
-
-        imp.avatar_data.set(avatar_data).unwrap();
-
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_avatar().await;
-            })
-        );
-    }
-
-    /// Load the avatar for the room.
-    async fn load_avatar(&self) {
-        let matrix_room = self.matrix_room();
-        let mut avatar_url = matrix_room.avatar_url();
-
-        self.imp().set_has_avatar(avatar_url.is_some());
-
-        let members_count = if matrix_room.state() == RoomState::Invited {
-            // We don't have the members count for invited rooms, use the SDK's
-            // members instead.
-            let matrix_room_clone = matrix_room.clone();
-            spawn_tokio!(async move {
-                matrix_room_clone
-                    .members_no_sync(RoomMemberships::ACTIVE)
-                    .await
-            })
-            .await
-            .unwrap()
-            .map(|m| m.len() as u64)
-            .unwrap_or_default()
-        } else {
-            matrix_room.active_members_count()
-        };
-
-        // Check if this is a 1-to-1 room to see if we can use a fallback.
-        // We don't have the active member count for invited rooms so process them too.
-        if let Some(session) = self.session() {
-            if avatar_url.is_none() && members_count > 0 && members_count <= 2 {
-                let matrix_room = matrix_room.clone();
-                let handle =
-                    spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
-                let members = match handle.await.unwrap() {
-                    Ok(m) => m,
-                    Err(e) => {
-                        error!("Failed to load room members: {e}");
-                        vec![]
-                    }
-                };
-
-                let own_user_id = session.user_id();
-                let mut has_own_member = false;
-                let mut other_member = None;
-
-                // Get the other member from the list.
-                for member in members {
-                    if member.user_id() == own_user_id {
-                        has_own_member = true;
-                    } else {
-                        other_member = Some(member);
-                    }
-
-                    if has_own_member && other_member.is_some() {
-                        break;
-                    }
-                }
-
-                // Fallback to other user's avatar if this is a 1-to-1 room.
-                if members_count == 1 || (members_count == 2 && has_own_member) {
-                    if let Some(other_member) = other_member {
-                        avatar_url = other_member.avatar_url().map(ToOwned::to_owned)
-                    }
-                }
-            }
+            return;
         }
 
-        self.avatar_data()
-            .image()
-            .unwrap()
-            .set_uri(avatar_url.map(String::from));
+        imp.set_has_avatar(false);
+
+        if let Some(direct_member) = self.direct_member() {
+            imp.avatar_data
+                .set_image(direct_member.avatar_data().image());
+        }
     }
 
     /// Set whether anyone can join this room.

@@ -446,7 +446,9 @@ impl RoomList {
             .list
             .borrow()
             .values()
-            .filter(|r| r.is_joined() && r.direct_user_id().as_deref() == Some(user_id))
+            .filter(|r| {
+                r.is_joined() && r.direct_member().as_ref().map(|m| &**m.user_id()) == Some(user_id)
+            })
             .cloned()
             .collect::<Vec<_>>();
 

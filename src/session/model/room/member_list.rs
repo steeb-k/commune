@@ -74,6 +74,12 @@ mod imp {
                 .borrow_mut()
                 .insert(own_member.user_id().clone(), own_member);
 
+            if let Some(member) = room.direct_member() {
+                self.members
+                    .borrow_mut()
+                    .insert(member.user_id().clone(), member);
+            }
+
             self.room.set(Some(&room));
             obj.notify_room();
 
