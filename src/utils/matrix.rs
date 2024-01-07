@@ -11,6 +11,7 @@ use html5gum::{HtmlString, Token, Tokenizer};
 use matrix_sdk::{config::RequestConfig, Client, ClientBuildError};
 use ruma::{
     events::{room::message::MessageType, AnyMessageLikeEventContent, AnySyncTimelineEvent},
+    html::{HtmlSanitizerMode, RemoveReplyFallback},
     matrix_uri::MatrixId,
     serde::Raw,
     IdParseError, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId,
@@ -112,7 +113,9 @@ pub fn get_event_body(
     };
 
     match event.original_content()? {
-        AnyMessageLikeEventContent::RoomMessage(message) => {
+        AnyMessageLikeEventContent::RoomMessage(mut message) => {
+            message.sanitize(HtmlSanitizerMode::Compat, RemoveReplyFallback::Yes);
+
             let body = match message.msgtype {
                 MessageType::Audio(_) => {
                     gettext_f("{user} sent an audio file.", &[("user", sender_name)])
