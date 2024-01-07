@@ -10,7 +10,7 @@ use super::{
     reply::MessageReply, text::MessageText,
 };
 use crate::{
-    session::model::{Event, Member, Room},
+    session::model::{content_can_show_header, Event, Member, Room},
     spawn,
     utils::media::filename_for_mime,
 };
@@ -122,19 +122,24 @@ impl MessageContent {
                             event.reply_to_id().unwrap()
                         );
                     }
-                    TimelineDetails::Ready(related_content) => {
+                    TimelineDetails::Ready(replied_to_event) => {
                         // We should have a strong reference to the list in the RoomHistory so we
                         // can use `get_or_create_members()`.
-                        let sender = room
+                        let replied_to_sender = room
                             .get_or_create_members()
-                            .get_or_create(related_content.sender().to_owned());
+                            .get_or_create(replied_to_event.sender().to_owned());
+                        let replied_to_content = replied_to_event.content();
+
                         let reply = MessageReply::new();
-                        reply.set_related_content_sender(sender.upcast_ref());
+                        reply.set_show_related_content_header(content_can_show_header(
+                            replied_to_content,
+                        ));
+                        reply.set_related_content_sender(replied_to_sender.upcast_ref());
                         build_content(
                             reply.related_content(),
-                            related_content.content().clone(),
+                            replied_to_content.clone(),
                             ContentFormat::Compact,
-                            sender,
+                            replied_to_sender,
                             &room,
                         );
                         build_content(

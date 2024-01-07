@@ -201,22 +201,7 @@ mod imp {
         }
 
         fn can_hide_header(&self) -> bool {
-            match self.obj().content() {
-                TimelineItemContent::Message(message) => {
-                    matches!(
-                        message.msgtype(),
-                        MessageType::Audio(_)
-                            | MessageType::File(_)
-                            | MessageType::Image(_)
-                            | MessageType::Location(_)
-                            | MessageType::Notice(_)
-                            | MessageType::Text(_)
-                            | MessageType::Video(_)
-                    )
-                }
-                TimelineItemContent::Sticker(_) => true,
-                _ => false,
-            }
+            content_can_show_header(&self.obj().content())
         }
 
         fn event_sender_id(&self) -> Option<OwnedUserId> {
@@ -745,6 +730,26 @@ pub fn count_as_unread(content: &TimelineItemContent) -> bool {
             state.content(),
             AnyOtherFullStateEventContent::RoomTombstone(_)
         ),
+        _ => false,
+    }
+}
+
+/// Whether we can show the header for the given content.
+pub fn content_can_show_header(content: &TimelineItemContent) -> bool {
+    match content {
+        TimelineItemContent::Message(message) => {
+            matches!(
+                message.msgtype(),
+                MessageType::Audio(_)
+                    | MessageType::File(_)
+                    | MessageType::Image(_)
+                    | MessageType::Location(_)
+                    | MessageType::Notice(_)
+                    | MessageType::Text(_)
+                    | MessageType::Video(_)
+            )
+        }
+        TimelineItemContent::Sticker(_) => true,
         _ => false,
     }
 }
