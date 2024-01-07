@@ -6,7 +6,7 @@ use matrix_sdk::{
 };
 use tracing::error;
 
-use super::{Device, DeviceListItem};
+use super::{UserSession, UserSessionsListItem};
 use crate::{session::model::Session, spawn, spawn_tokio};
 
 mod imp {
@@ -18,40 +18,40 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::DeviceList)]
-    pub struct DeviceList {
-        /// The list of device list items.
-        pub list: RefCell<Vec<DeviceListItem>>,
+    #[properties(wrapper_type = super::UserSessionsList)]
+    pub struct UserSessionsList {
+        /// The list of user session list items.
+        pub list: RefCell<Vec<UserSessionsListItem>>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
-        /// The device of this session.
-        pub current_device_inner: RefCell<Option<DeviceListItem>>,
-        /// The device of this session, or a replacement list item if it is not
+        /// The current user session.
+        pub current_user_session_inner: RefCell<Option<UserSessionsListItem>>,
+        /// The current user session, or a replacement list item if it is not
         /// found.
-        #[property(get = Self::current_device)]
-        current_device: PhantomData<DeviceListItem>,
+        #[property(get = Self::current_user_session)]
+        current_user_session: PhantomData<UserSessionsListItem>,
         pub loading: Cell<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for DeviceList {
-        const NAME: &'static str = "DeviceList";
-        type Type = super::DeviceList;
+    impl ObjectSubclass for UserSessionsList {
+        const NAME: &'static str = "UserSessionsList";
+        type Type = super::UserSessionsList;
         type Interfaces = (gio::ListModel,);
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for DeviceList {
+    impl ObjectImpl for UserSessionsList {
         fn constructed(&self) {
             self.parent_constructed();
-            self.obj().load_devices();
+            self.obj().load();
         }
     }
 
-    impl ListModelImpl for DeviceList {
+    impl ListModelImpl for UserSessionsList {
         fn item_type(&self) -> glib::Type {
-            DeviceListItem::static_type()
+            UserSessionsListItem::static_type()
         }
 
         fn n_items(&self) -> u32 {
@@ -67,17 +67,17 @@ mod imp {
         }
     }
 
-    impl DeviceList {
-        /// The device of this session.
-        fn current_device(&self) -> DeviceListItem {
-            self.current_device_inner
+    impl UserSessionsList {
+        /// The current user session.
+        fn current_user_session(&self) -> UserSessionsListItem {
+            self.current_user_session_inner
                 .borrow()
                 .clone()
                 .unwrap_or_else(|| {
                     if self.loading.get() {
-                        DeviceListItem::for_loading_spinner()
+                        UserSessionsListItem::for_loading_spinner()
                     } else {
-                        DeviceListItem::for_error(gettext("Failed to load connected device."))
+                        UserSessionsListItem::for_error(gettext("Failed to load connected device."))
                     }
                 })
         }
@@ -85,12 +85,12 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// List of active devices for the logged in user.
-    pub struct DeviceList(ObjectSubclass<imp::DeviceList>)
+    /// List of active user sessions for the logged-in user.
+    pub struct UserSessionsList(ObjectSubclass<imp::UserSessionsList>)
         @implements gio::ListModel;
 }
 
-impl DeviceList {
+impl UserSessionsList {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }
@@ -102,27 +102,29 @@ impl DeviceList {
             return;
         }
         if loading {
-            self.update_list(vec![DeviceListItem::for_loading_spinner()]);
+            self.update_list(vec![UserSessionsListItem::for_loading_spinner()]);
         }
         imp.loading.set(loading);
-        self.notify_current_device();
+        self.notify_current_user_session();
     }
 
-    /// Set the device of this session.
-    fn set_current_device(&self, device: Option<DeviceListItem>) {
-        self.imp().current_device_inner.replace(device);
+    /// Set the current user session.
+    fn set_current_user_session(&self, user_session: Option<UserSessionsListItem>) {
+        self.imp().current_user_session_inner.replace(user_session);
 
-        self.notify_current_device();
+        self.notify_current_user_session();
     }
 
-    fn update_list(&self, devices: Vec<DeviceListItem>) {
-        let added = devices.len();
+    /// Update the list with the given user sessions.
+    fn update_list(&self, user_sessions: Vec<UserSessionsListItem>) {
+        let added = user_sessions.len();
 
-        let prev_devices = self.imp().list.replace(devices);
+        let prev_user_sessions = self.imp().list.replace(user_sessions);
 
-        self.items_changed(0, prev_devices.len() as u32, added as u32);
+        self.items_changed(0, prev_user_sessions.len() as u32, added as u32);
     }
 
+    /// Process the user sessions received in the response.
     fn finish_loading(
         &self,
         response: Result<(Option<MatrixDevice>, Vec<MatrixDevice>, CryptoDevices), Error>,
@@ -132,25 +134,33 @@ impl DeviceList {
         };
 
         match response {
-            Ok((current_device, devices, crypto_devices)) => {
-                let devices = devices
+            Ok((current_user_session, user_sessions, crypto_sessions)) => {
+                let user_sessions = user_sessions
                     .into_iter()
-                    .map(|device| {
-                        let crypto_device = crypto_devices.get(&device.device_id);
-                        DeviceListItem::for_device(Device::new(&session, device, crypto_device))
+                    .map(|user_session| {
+                        let crypto_session = crypto_sessions.get(&user_session.device_id);
+                        UserSessionsListItem::for_user_session(UserSession::new(
+                            &session,
+                            user_session,
+                            crypto_session,
+                        ))
                     })
                     .collect();
 
-                self.update_list(devices);
+                self.update_list(user_sessions);
 
-                self.set_current_device(current_device.map(|device| {
-                    let crypto_device = crypto_devices.get(&device.device_id);
-                    DeviceListItem::for_device(Device::new(&session, device, crypto_device))
+                self.set_current_user_session(current_user_session.map(|user_session| {
+                    let crypto_session = crypto_sessions.get(&user_session.device_id);
+                    UserSessionsListItem::for_user_session(UserSession::new(
+                        &session,
+                        user_session,
+                        crypto_session,
+                    ))
                 }));
             }
             Err(error) => {
-                error!("Couldn’t load device list: {error}");
-                self.update_list(vec![DeviceListItem::for_error(gettext(
+                error!("Couldn’t load user sessions list: {error}");
+                self.update_list(vec![UserSessionsListItem::for_error(gettext(
                     "Failed to load the list of connected devices.",
                 ))]);
             }
@@ -158,7 +168,8 @@ impl DeviceList {
         self.set_loading(false);
     }
 
-    pub fn load_devices(&self) {
+    /// Load the list of user sessions.
+    pub fn load(&self) {
         let Some(session) = self.session() else {
             return;
         };
@@ -168,7 +179,7 @@ impl DeviceList {
 
         let handle = spawn_tokio!(async move {
             let user_id = client.user_id().unwrap();
-            let crypto_devices = client.encryption().get_user_devices(user_id).await?;
+            let crypto_sessions = client.encryption().get_user_devices(user_id).await?;
 
             match client.devices().await {
                 Ok(mut response) => {
@@ -176,7 +187,7 @@ impl DeviceList {
                         .devices
                         .sort_unstable_by(|a, b| b.last_seen_ts.cmp(&a.last_seen_ts));
 
-                    let current_device = if let Some(current_device_id) = client.device_id() {
+                    let current_user_session = if let Some(current_device_id) = client.device_id() {
                         if let Some(index) = response
                             .devices
                             .iter()
@@ -190,7 +201,7 @@ impl DeviceList {
                         None
                     };
 
-                    Ok((current_device, response.devices, crypto_devices))
+                    Ok((current_user_session, response.devices, crypto_sessions))
                 }
                 Err(error) => Err(Error::Http(error)),
             }

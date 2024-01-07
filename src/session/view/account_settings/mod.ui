@@ -24,7 +24,7 @@
       </object>
     </child>
     <child>
-      <object class="DevicesPage">
+      <object class="UserSessionsPage">
         <binding name="user">
           <lookup name="user">
             <lookup name="session">AccountSettings</lookup>

@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 use tracing::error;
 
-use super::Device;
+use super::UserSession;
 use crate::{
     components::{AuthError, SpinnerButton},
     gettext_f, spawn,
@@ -20,10 +20,10 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/account_settings/devices_page/device_row.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/account_settings/user_sessions_page/user_session_row.ui"
     )]
-    #[properties(wrapper_type = super::DeviceRow)]
-    pub struct DeviceRow {
+    #[properties(wrapper_type = super::UserSessionRow)]
+    pub struct UserSessionRow {
         #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
@@ -36,19 +36,19 @@ mod imp {
         pub delete_logout_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub verify_button: TemplateChild<SpinnerButton>,
-        /// The device displayed by this row.
-        #[property(get, set = Self::set_device, construct_only)]
-        pub device: RefCell<Option<Device>>,
-        /// Whether this is the device of the current session.
+        /// The user session displayed by this row.
+        #[property(get, set = Self::set_user_session, construct_only)]
+        pub user_session: RefCell<Option<UserSession>>,
+        /// Whether this shows the current user session.
         #[property(get, construct_only)]
-        pub is_current_device: Cell<bool>,
+        pub is_current_user_session: Cell<bool>,
         pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for DeviceRow {
-        const NAME: &'static str = "AccountSettingsDeviceRow";
-        type Type = super::DeviceRow;
+    impl ObjectSubclass for UserSessionRow {
+        const NAME: &'static str = "AccountSettingsUserSessionRow";
+        type Type = super::UserSessionRow;
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
@@ -61,12 +61,12 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for DeviceRow {
+    impl ObjectImpl for UserSessionRow {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
 
-            match &obj.is_current_device() {
+            match &obj.is_current_user_session() {
                 false => self
                     .delete_logout_button
                     .set_label(gettext("Disconnect Session")),
@@ -79,7 +79,7 @@ mod imp {
 
             self.delete_logout_button
                 .connect_clicked(clone!(@weak obj => move |_| {
-                    match &obj.is_current_device() {
+                    match &obj.is_current_user_session() {
                         false=> obj.delete(),
                         true => obj.activate_action("account-settings.logout", None).unwrap()
                     }
@@ -106,67 +106,67 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for DeviceRow {}
-    impl ListBoxRowImpl for DeviceRow {}
+    impl WidgetImpl for UserSessionRow {}
+    impl ListBoxRowImpl for UserSessionRow {}
 
-    impl DeviceRow {
-        /// Set the device displayed by this row.
-        fn set_device(&self, device: Device) {
+    impl UserSessionRow {
+        /// Set the user session displayed by this row.
+        fn set_user_session(&self, user_session: UserSession) {
             let obj = self.obj();
 
-            self.display_name.set_label(&device.display_name());
-            obj.set_tooltip_text(Some(device.device_id().as_str()));
+            self.display_name.set_label(&user_session.display_name());
+            obj.set_tooltip_text(Some(user_session.device_id().as_str()));
 
-            self.verified_icon.set_visible(device.verified());
+            self.verified_icon.set_visible(user_session.verified());
             // TODO: Implement verification
             // imp.verify_button.set_visible(!device.is_verified());
 
-            let last_seen_ip = device.last_seen_ip();
+            let last_seen_ip = user_session.last_seen_ip();
             if let Some(last_seen_ip) = &last_seen_ip {
                 self.last_seen_ip.set_label(last_seen_ip);
             }
             self.last_seen_ip.set_visible(last_seen_ip.is_some());
 
             self.last_seen_ts
-                .set_visible(device.last_seen_ts().is_some());
+                .set_visible(user_session.last_seen_ts().is_some());
 
-            self.device.replace(Some(device));
-            obj.notify_device();
+            self.user_session.replace(Some(user_session));
 
+            obj.notify_user_session();
             obj.update_last_seen_ts();
         }
     }
 }
 
 glib::wrapper! {
-    /// A row presenting a device.
-    pub struct DeviceRow(ObjectSubclass<imp::DeviceRow>)
+    /// A row presenting a user session.
+    pub struct UserSessionRow(ObjectSubclass<imp::UserSessionRow>)
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
-impl DeviceRow {
-    pub fn new(device: &Device, is_current_device: bool) -> Self {
+impl UserSessionRow {
+    pub fn new(user_session: &UserSession, is_current_user_session: bool) -> Self {
         glib::Object::builder()
-            .property("device", device)
-            .property("is-current-device", is_current_device)
+            .property("user-session", user_session)
+            .property("is-current-user-session", is_current_user_session)
             .build()
     }
 
     fn delete(&self) {
         self.imp().delete_logout_button.set_loading(true);
 
-        let Some(device) = self.device() else {
+        let Some(user_session) = self.user_session() else {
             return;
         };
 
         spawn!(clone!(@weak self as obj => async move {
             let window: Option<gtk::Window> = obj.root().and_downcast();
-            match device.delete(window.as_ref()).await {
+            match user_session.delete(window.as_ref()).await {
                 Ok(_) => obj.set_visible(false),
                 Err(AuthError::UserCancelled) => {},
                 Err(error) => {
-                    error!("Failed to disconnect device {}: {error:?}", device.device_id());
-                    let device_name = device.display_name();
+                    error!("Failed to disconnect user session {}: {error:?}", user_session.device_id());
+                    let device_name = user_session.display_name();
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
                     let error_message = gettext_f("Failed to disconnect device “{device_name}”", &[("device_name", &device_name)]);
                     toast!(obj, error_message);
@@ -176,10 +176,10 @@ impl DeviceRow {
         }));
     }
 
-    /// Update the last seen timestamp according to the current device and clock
-    /// format setting.
+    /// Update the last seen timestamp according to the current user session and
+    /// clock format setting.
     fn update_last_seen_ts(&self) {
-        let Some(datetime) = self.device().and_then(|d| d.last_seen_ts()) else {
+        let Some(datetime) = self.user_session().and_then(|s| s.last_seen_ts()) else {
             return;
         };
 

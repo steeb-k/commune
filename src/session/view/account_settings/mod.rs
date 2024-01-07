@@ -5,14 +5,14 @@ use gtk::{
     CompositeTemplate,
 };
 
-mod devices_page;
 mod general_page;
 mod notifications_page;
 mod security_page;
+mod user_sessions_page;
 
 use self::{
-    devices_page::DevicesPage, general_page::GeneralPage, notifications_page::NotificationsPage,
-    security_page::SecurityPage,
+    general_page::GeneralPage, notifications_page::NotificationsPage, security_page::SecurityPage,
+    user_sessions_page::UserSessionsPage,
 };
 use crate::{session::model::Session, utils::BoundObjectWeakRef};
 
@@ -44,7 +44,7 @@ mod imp {
         type ParentType = adw::PreferencesWindow;
 
         fn class_init(klass: &mut Self::Class) {
-            DevicesPage::static_type();
+            UserSessionsPage::static_type();
             GeneralPage::static_type();
             NotificationsPage::static_type();
             SecurityPage::static_type();

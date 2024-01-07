@@ -1,10 +1,8 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    encryption::identities::Device as CryptoDevice,
-    ruma::{
-        api::client::device::{delete_device, Device as MatrixDevice},
-        assign,
-    },
+use matrix_sdk::encryption::identities::Device as CryptoDevice;
+use ruma::{
+    api::client::device::{delete_device, Device as MatrixDevice},
+    assign,
 };
 
 use crate::{
@@ -18,71 +16,71 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::Device)]
-    pub struct Device {
-        /// The device data.
-        pub device: OnceCell<MatrixDevice>,
-        /// The encryption API of the device.
-        pub crypto_device: OnceCell<CryptoDevice>,
+    #[properties(wrapper_type = super::UserSession)]
+    pub struct UserSession {
+        /// The user session data.
+        pub data: OnceCell<MatrixDevice>,
+        /// The encryption API of the user session.
+        pub crypto: OnceCell<CryptoDevice>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
-        /// The ID of the device.
+        /// The ID of the user session.
         #[property(get = Self::device_id)]
         device_id: PhantomData<String>,
-        /// The display name of the device.
+        /// The display name of the user session.
         #[property(get = Self::display_name)]
         display_name: PhantomData<String>,
-        /// The last IP address the device used.
+        /// The last IP address used by the user session.
         #[property(get = Self::last_seen_ip)]
         last_seen_ip: PhantomData<Option<String>>,
-        /// The last time the device was used.
+        /// The last time the user session was used.
         #[property(get = Self::last_seen_ts)]
         last_seen_ts: PhantomData<Option<glib::DateTime>>,
-        /// Whether this device is verified.
+        /// Whether this user session is verified.
         #[property(get = Self::verified)]
         verified: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Device {
-        const NAME: &'static str = "Device";
-        type Type = super::Device;
+    impl ObjectSubclass for UserSession {
+        const NAME: &'static str = "UserSession";
+        type Type = super::UserSession;
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Device {}
+    impl ObjectImpl for UserSession {}
 
-    impl Device {
-        /// The device data.
-        fn device(&self) -> &MatrixDevice {
-            self.device.get().unwrap()
+    impl UserSession {
+        /// The user session data.
+        pub(super) fn data(&self) -> &MatrixDevice {
+            self.data.get().unwrap()
         }
 
-        /// The ID of this device.
+        /// The ID of this user session.
         fn device_id(&self) -> String {
-            self.device().device_id.to_string()
+            self.data().device_id.to_string()
         }
 
         /// The display name of the device.
         fn display_name(&self) -> String {
-            if let Some(display_name) = self.device().display_name.clone() {
+            if let Some(display_name) = self.data().display_name.clone() {
                 display_name
             } else {
                 self.device_id()
             }
         }
 
-        /// The last IP address the device used.
+        /// The last IP address used by the user session.
         fn last_seen_ip(&self) -> Option<String> {
             // TODO: Would be nice to also show the location
             // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/700
-            self.device().last_seen_ip.clone()
+            self.data().last_seen_ip.clone()
         }
 
-        /// The last time the device was used.
+        /// The last time the user session was used.
         fn last_seen_ts(&self) -> Option<glib::DateTime> {
-            self.device().last_seen_ts.map(|last_seen_ts| {
+            self.data().last_seen_ts.map(|last_seen_ts| {
                 glib::DateTime::from_unix_utc(last_seen_ts.as_secs().into())
                     .and_then(|t| t.to_local())
                     .unwrap()
@@ -91,41 +89,35 @@ mod imp {
 
         /// Whether this device is verified.
         fn verified(&self) -> bool {
-            self.crypto_device
-                .get()
-                .is_some_and(|device| device.is_verified())
+            self.crypto.get().is_some_and(|d| d.is_verified())
         }
     }
 }
 
 glib::wrapper! {
-    /// `glib::Object` representation of a Device/Session of a User.
-    pub struct Device(ObjectSubclass<imp::Device>);
+    /// A user's session.
+    pub struct UserSession(ObjectSubclass<imp::UserSession>);
 }
 
-impl Device {
-    pub fn new(
-        session: &Session,
-        device: MatrixDevice,
-        crypto_device: Option<CryptoDevice>,
-    ) -> Self {
+impl UserSession {
+    pub fn new(session: &Session, data: MatrixDevice, crypto: Option<CryptoDevice>) -> Self {
         let obj: Self = glib::Object::builder().property("session", session).build();
 
-        obj.set_matrix_device(device, crypto_device);
+        obj.set_data(data, crypto);
 
         obj
     }
 
-    /// Set the Matrix device of this `Device`.
-    fn set_matrix_device(&self, device: MatrixDevice, crypto_device: Option<CryptoDevice>) {
+    /// Set the SDK data of this `UserSession`.
+    fn set_data(&self, data: MatrixDevice, crypto: Option<CryptoDevice>) {
         let imp = self.imp();
-        imp.device.set(device).unwrap();
-        if let Some(crypto_device) = crypto_device {
-            imp.crypto_device.set(crypto_device).unwrap();
+        imp.data.set(data).unwrap();
+        if let Some(crypto) = crypto {
+            imp.crypto.set(crypto).unwrap();
         }
     }
 
-    /// Deletes the `Device`.
+    /// Deletes the `UserSession`.
     pub async fn delete(
         &self,
         transient_for: Option<&impl IsA<gtk::Window>>,
@@ -133,7 +125,7 @@ impl Device {
         let Some(session) = self.session() else {
             return Err(AuthError::NoSession);
         };
-        let device_id = self.imp().device.get().unwrap().device_id.clone();
+        let device_id = self.imp().data().device_id.clone();
 
         let dialog = AuthDialog::new(transient_for, &session);
 

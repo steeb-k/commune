@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="DevicesPage" parent="AdwPreferencesPage">
+  <template class="UserSessionsPage" parent="AdwPreferencesPage">
     <property name="icon-name">devices-symbolic</property>
     <property name="title" translatable="yes">Sessions</property>
     <property name="name">sessions</property>
@@ -36,4 +36,3 @@
     </child>
   </template>
 </interface>
-
