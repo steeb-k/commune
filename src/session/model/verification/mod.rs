@@ -10,7 +10,7 @@ pub use self::{
     },
     verification_list::VerificationList,
 };
-use crate::contrib::Camera;
+use crate::{contrib::Camera, prelude::*};
 
 /// A unique key to identify an identity verification.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]

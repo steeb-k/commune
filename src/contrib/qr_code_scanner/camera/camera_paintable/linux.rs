@@ -24,53 +24,39 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::encryption::verification::QrVerificationData;
 use tracing::{debug, error};
 
+use super::{Action, CameraPaintable, CameraPaintableImpl};
 use crate::contrib::qr_code_scanner::{qr_code_detector::QrCodeDetector, QrVerificationDataBoxed};
-
-pub enum Action {
-    QrCodeDetected(QrVerificationData),
-}
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::subclass;
-    use once_cell::sync::Lazy;
-
     use super::*;
 
     #[derive(Debug, Default)]
-    pub struct CameraPaintable {
+    pub struct LinuxCameraPaintable {
         pub pipeline: RefCell<Option<(gst::Pipeline, BusWatchGuard)>>,
         pub sink_paintable: RefCell<Option<gdk::Paintable>>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for CameraPaintable {
-        const NAME: &'static str = "CameraPaintable";
-        type Type = super::CameraPaintable;
+    impl ObjectSubclass for LinuxCameraPaintable {
+        const NAME: &'static str = "LinuxCameraPaintable";
+        type Type = super::LinuxCameraPaintable;
+        type ParentType = CameraPaintable;
         type Interfaces = (gdk::Paintable,);
     }
 
-    impl ObjectImpl for CameraPaintable {
+    impl ObjectImpl for LinuxCameraPaintable {
         fn dispose(&self) {
             self.obj().set_pipeline(None);
         }
-
-        fn signals() -> &'static [subclass::Signal] {
-            static SIGNALS: Lazy<Vec<subclass::Signal>> = Lazy::new(|| {
-                vec![subclass::Signal::builder("code-detected")
-                    .param_types([QrVerificationDataBoxed::static_type()])
-                    .run_first()
-                    .build()]
-            });
-            SIGNALS.as_ref()
-        }
     }
 
-    impl PaintableImpl for CameraPaintable {
+    impl CameraPaintableImpl for LinuxCameraPaintable {}
+
+    impl PaintableImpl for LinuxCameraPaintable {
         fn intrinsic_height(&self) -> i32 {
             if let Some(paintable) = self.sink_paintable.borrow().as_ref() {
                 paintable.intrinsic_height()
@@ -122,10 +108,12 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct CameraPaintable(ObjectSubclass<imp::CameraPaintable>) @implements gdk::Paintable;
+    /// A paintable to display the output of a camera on Linux.
+    pub struct LinuxCameraPaintable(ObjectSubclass<imp::LinuxCameraPaintable>)
+        @extends CameraPaintable, @implements gdk::Paintable;
 }
 
-impl CameraPaintable {
+impl LinuxCameraPaintable {
     pub async fn new<F: AsRawFd>(fd: F, streams: Vec<camera::Stream>) -> Self {
         let self_: Self = glib::Object::new();
 

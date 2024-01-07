@@ -21,11 +21,6 @@ codegen-units = 16
 
 # Please keep dependencies sorted.
 [dependencies]
-ashpd = { version = "0.6", default-features = false, features = [
-    "pipewire",
-    "tracing",
-    "tokio",
-] }
 djb_hash = "0.1"
 eyeball-im = "0.4"
 futures-channel = "0.3"
@@ -40,11 +35,6 @@ indexmap = "2"
 mime = "0.3"
 mime_guess = "2"
 once_cell = "1"
-oo7 = { version = "0.2", default-features = false, features = [
-    "native_crypto",
-    "tokio",
-    "tracing",
-] }
 pulldown-cmark = "0.9"
 qrcode = "0.12"
 rand = "0.8"
@@ -106,3 +96,16 @@ features = [
     "compat-get-3pids",
     "html",
 ]
+
+# Linux-only dependencies.
+[target.'cfg(target_os = "linux")'.dependencies]
+ashpd = { version = "0.6", default-features = false, features = [
+    "pipewire",
+    "tracing",
+    "tokio",
+] }
+oo7 = { version = "0.2", default-features = false, features = [
+    "native_crypto",
+    "tokio",
+    "tracing",
+] }

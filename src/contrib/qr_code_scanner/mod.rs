@@ -3,10 +3,9 @@ use gtk::{gdk, glib, glib::subclass, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::verification::QrVerificationData;
 
 mod camera;
-mod camera_paintable;
 mod qr_code_detector;
 
-pub use camera::Camera;
+pub use camera::{Camera, CameraExt};
 
 mod imp {
     use std::cell::RefCell;

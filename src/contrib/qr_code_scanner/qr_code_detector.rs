@@ -8,7 +8,7 @@ use thiserror::Error;
 use tracing::debug;
 
 use super::*;
-use crate::contrib::qr_code_scanner::camera_paintable::Action;
+use crate::contrib::qr_code_scanner::camera::Action;
 
 const HEADER: &[u8] = b"MATRIX";
 
