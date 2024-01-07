@@ -102,7 +102,11 @@ pub fn validate_password(password: &str) -> PasswordValidity {
 /// Only returns the body for messages.
 ///
 /// If it's a media message, this will return a localized body.
-pub fn get_event_body(event: &AnySyncTimelineEvent, sender_name: &str) -> Option<String> {
+pub fn get_event_body(
+    event: &AnySyncTimelineEvent,
+    sender_name: &str,
+    show_sender: bool,
+) -> Option<String> {
     let AnySyncTimelineEvent::MessageLike(event) = event else {
         return None;
     };
@@ -113,10 +117,7 @@ pub fn get_event_body(event: &AnySyncTimelineEvent, sender_name: &str) -> Option
                 MessageType::Audio(_) => {
                     gettext_f("{user} sent an audio file.", &[("user", sender_name)])
                 }
-                MessageType::Emote(content) => gettext_f(
-                    "{user}: {message}",
-                    &[("user", sender_name), ("message", &content.body)],
-                ),
+                MessageType::Emote(content) => format!("{sender_name} {}", content.body),
                 MessageType::File(_) => gettext_f("{user} sent a file.", &[("user", sender_name)]),
                 MessageType::Image(_) => {
                     gettext_f("{user} sent an image.", &[("user", sender_name)])
@@ -124,18 +125,15 @@ pub fn get_event_body(event: &AnySyncTimelineEvent, sender_name: &str) -> Option
                 MessageType::Location(_) => {
                     gettext_f("{user} sent their location.", &[("user", sender_name)])
                 }
-                MessageType::Notice(content) => gettext_f(
-                    "{user}: {message}",
-                    &[("user", sender_name), ("message", &content.body)],
-                ),
-                MessageType::ServerNotice(content) => gettext_f(
-                    "{user}: {message}",
-                    &[("user", sender_name), ("message", &content.body)],
-                ),
-                MessageType::Text(content) => gettext_f(
-                    "{user}: {message}",
-                    &[("user", sender_name), ("message", &content.body)],
-                ),
+                MessageType::Notice(content) => {
+                    text_event_body(content.body, sender_name, show_sender)
+                }
+                MessageType::ServerNotice(content) => {
+                    text_event_body(content.body, sender_name, show_sender)
+                }
+                MessageType::Text(content) => {
+                    text_event_body(content.body, sender_name, show_sender)
+                }
                 MessageType::Video(_) => {
                     gettext_f("{user} sent a video.", &[("user", sender_name)])
                 }
@@ -152,6 +150,17 @@ pub fn get_event_body(event: &AnySyncTimelineEvent, sender_name: &str) -> Option
             &[("user", sender_name)],
         )),
         _ => None,
+    }
+}
+
+fn text_event_body(message: String, sender_name: &str, show_sender: bool) -> String {
+    if show_sender {
+        gettext_f(
+            "{user}: {message}",
+            &[("user", sender_name), ("message", &message)],
+        )
+    } else {
+        message
     }
 }
 

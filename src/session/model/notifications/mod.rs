@@ -128,6 +128,7 @@ impl Notifications {
             }
         };
 
+        let is_direct = room.direct_member().is_some();
         let matrix_room = room.matrix_room().clone();
         let sender_id = event.sender();
         let owned_sender_id = sender_id.to_owned();
@@ -147,7 +148,7 @@ impl Notifications {
             .and_then(|m| m.display_name())
             .unwrap_or_else(|| sender_id.localpart());
 
-        let body = match get_event_body(&event, sender_name) {
+        let body = match get_event_body(&event, sender_name, !is_direct) {
             Some(body) => body,
             None => {
                 debug!("Received notification for event of unexpected type {event:?}",);
