@@ -25,7 +25,7 @@ mod imp {
 
     #[repr(C)]
     pub struct LocationClass {
-        pub parent_class: glib::object::Class<adw::Bin>,
+        pub parent_class: glib::object::Class<glib::Object>,
         pub is_available: fn(&super::Location) -> bool,
         pub init: fn(&super::Location) -> LocalBoxFuture<Result<(), LocationError>>,
         pub updates_stream: LocationUpdatesFn,

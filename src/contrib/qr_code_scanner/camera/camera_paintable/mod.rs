@@ -19,7 +19,7 @@ mod imp {
 
     #[repr(C)]
     pub struct CameraPaintableClass {
-        pub parent_class: glib::object::Class<adw::Bin>,
+        pub parent_class: glib::object::Class<glib::Object>,
     }
 
     unsafe impl ClassStruct for CameraPaintableClass {

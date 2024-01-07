@@ -18,7 +18,7 @@ mod imp {
 
     #[repr(C)]
     pub struct CameraClass {
-        pub parent_class: glib::object::Class<adw::Bin>,
+        pub parent_class: glib::object::Class<glib::Object>,
         pub has_cameras: fn(&super::Camera) -> LocalBoxFuture<bool>,
         pub paintable: fn(&super::Camera) -> LocalBoxFuture<Option<CameraPaintable>>,
     }
