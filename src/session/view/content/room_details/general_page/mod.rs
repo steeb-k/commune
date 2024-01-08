@@ -97,6 +97,7 @@ mod imp {
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
         pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
         pub notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -151,6 +152,13 @@ mod imp {
                 );
             self.expr_watches.borrow_mut().push(expr_watch);
 
+            let membership_handler =
+                room.own_member()
+                    .connect_membership_notify(clone!(@weak obj => move |_| {
+                        obj.update_sections();
+                    }));
+            self.membership_handler.replace(Some(membership_handler));
+
             let room_handler_ids = vec![
                 room.connect_name_notify(clone!(@weak obj => move |room| {
                     obj.name_changed(room.name());
@@ -194,6 +202,7 @@ mod imp {
 
             obj.update_notifications();
             obj.update_federated();
+            obj.update_sections();
         }
 
         /// Set whether edit mode is enabled.
@@ -242,6 +251,17 @@ impl GeneralPage {
     /// The members of the room.
     pub fn room_members(&self) -> MemberList {
         self.imp().room_members.borrow().clone().unwrap()
+    }
+
+    /// Update the visible sections according to the current state.
+    fn update_sections(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let imp = self.imp();
+
+        let is_joined = room.is_joined();
+        imp.notifications.set_visible(is_joined);
     }
 
     fn init_avatar(&self) {
@@ -631,14 +651,16 @@ impl GeneralPage {
     fn disconnect_all(&self) {
         let imp = self.imp();
 
-        if let Some(settings) = imp
-            .room
-            .obj()
-            .and_then(|r| r.session())
-            .map(|s| s.notifications().settings())
-        {
-            for handler in imp.notifications_settings_handlers.take() {
-                settings.disconnect(handler);
+        if let Some(room) = self.room() {
+            if let Some(session) = room.session() {
+                let settings = session.notifications().settings();
+                for handler in imp.notifications_settings_handlers.take() {
+                    settings.disconnect(handler);
+                }
+            }
+
+            if let Some(handler) = imp.membership_handler.take() {
+                room.own_member().disconnect(handler);
             }
         }
 

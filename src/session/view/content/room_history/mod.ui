@@ -23,6 +23,16 @@
         <attribute name="action">room-history.leave</attribute>
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">Re_join Room</attribute>
+        <attribute name="action">room-history.join</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Forget Room</attribute>
+        <attribute name="action">room-history.forget</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
     </section>
   </menu>
   <template class="ContentRoomHistory" parent="AdwBin">

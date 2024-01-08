@@ -32,8 +32,11 @@ use self::{
 use super::{room_details, RoomDetails};
 use crate::{
     components::{DragOverlay, ReactionChooser, RoomTitle, Spinner},
+    i18n::gettext_f,
     prelude::*,
-    session::model::{Event, EventKey, MemberList, Room, RoomType, Timeline, TimelineState},
+    session::model::{
+        Event, EventKey, MemberList, Membership, Room, RoomType, Timeline, TimelineState,
+    },
     spawn, spawn_tokio, toast,
     utils::{message_dialog, template_callbacks::TemplateCallbacks, BoundObject},
     Window,
@@ -110,6 +113,7 @@ mod imp {
         // TODO: use gtk::MultiSelection to allow selection
         pub selection_model: OnceCell<gtk::NoSelection>,
         pub can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -132,6 +136,16 @@ mod imp {
             klass.install_action("room-history.leave", None, move |obj, _, _| {
                 spawn!(clone!(@weak obj => async move {
                     obj.leave().await;
+                }));
+            });
+            klass.install_action("room-history.join", None, move |obj, _, _| {
+                spawn!(clone!(@weak obj => async move {
+                    obj.join().await;
+                }));
+            });
+            klass.install_action("room-history.forget", None, move |obj, _, _| {
+                spawn!(clone!(@weak obj => async move {
+                    obj.forget().await;
                 }));
             });
 
@@ -227,6 +241,9 @@ mod imp {
 
                 if let Some(handler) = self.can_invite_handler.take() {
                     room.permissions().disconnect(handler);
+                }
+                if let Some(handler) = self.membership_handler.take() {
+                    room.own_member().disconnect(handler);
                 }
             }
         }
@@ -357,6 +374,9 @@ mod imp {
                 if let Some(handler) = self.can_invite_handler.take() {
                     room.permissions().disconnect(handler);
                 }
+                if let Some(handler) = self.membership_handler.take() {
+                    room.own_member().disconnect(handler);
+                }
             }
             self.room.disconnect_signals();
 
@@ -375,9 +395,12 @@ mod imp {
                 self.room_members
                     .replace(Some(room.get_or_create_members()));
 
-                let category_handler = room.connect_category_notify(clone!(@weak obj => move |_| {
-                    obj.update_room_state();
-                }));
+                let membership_handler =
+                    room.own_member()
+                        .connect_membership_notify(clone!(@weak obj => move |_| {
+                            obj.update_menu();
+                        }));
+                self.membership_handler.replace(Some(membership_handler));
 
                 let tombstoned_handler =
                     room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
@@ -394,13 +417,18 @@ mod imp {
                         obj.update_tombstoned_banner();
                     }));
 
+                let join_rule_handler =
+                    room.connect_join_rule_changed(clone!(@weak obj => move |_| {
+                        obj.update_menu();
+                    }));
+
                 self.room.set(
                     room,
                     vec![
-                        category_handler,
                         tombstoned_handler,
                         successor_handler,
                         successor_room_handler,
+                        join_rule_handler,
                     ],
                 );
 
@@ -434,7 +462,7 @@ mod imp {
             self.is_loading.set(false);
             obj.update_view();
             obj.start_loading();
-            obj.update_room_state();
+            obj.update_menu();
             obj.update_tombstoned_banner();
 
             obj.notify_room();
@@ -493,7 +521,7 @@ impl RoomHistory {
     }
 
     /// Leave the room.
-    pub async fn leave(&self) {
+    async fn leave(&self) {
         let Some(window) = self.root().and_downcast::<gtk::Window>() else {
             return;
         };
@@ -512,6 +540,41 @@ impl RoomHistory {
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
                     "Failed to leave {room}",
                 ),
+                @room,
+            );
+        }
+    }
+
+    /// Join the room.
+    async fn join(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        if room.set_category(RoomType::Normal).await.is_err() {
+            toast!(
+                self,
+                gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "Failed to join room {room_name}. Try again later.",
+                    &[("room_name", &room.display_name())],
+                )
+            );
+        }
+    }
+
+    /// Forget the room.
+    async fn forget(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        if room.forget().await.is_err() {
+            toast!(
+                self,
+                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                gettext("Failed to forget {room}."),
                 @room,
             );
         }
@@ -565,19 +628,25 @@ impl RoomHistory {
         }
     }
 
-    fn update_room_state(&self) {
+    fn update_menu(&self) {
         let imp = self.imp();
+        let Some(room) = self.room() else {
+            imp.room_menu.set_visible(false);
+            return;
+        };
 
-        if let Some(room) = self.room() {
-            let menu_visible = if room.category() == RoomType::Left {
-                self.action_set_enabled("room-history.leave", false);
-                false
-            } else {
-                self.action_set_enabled("room-history.leave", true);
-                true
-            };
-            imp.room_menu.set_visible(menu_visible);
-        }
+        let membership = room.own_member().membership();
+        self.action_set_enabled("room-history.leave", membership == Membership::Join);
+        self.action_set_enabled(
+            "room-history.join",
+            membership == Membership::Leave && room.can_join(),
+        );
+        self.action_set_enabled(
+            "room-history.forget",
+            matches!(membership, Membership::Leave | Membership::Ban),
+        );
+
+        imp.room_menu.set_visible(true);
     }
 
     fn update_view(&self) {

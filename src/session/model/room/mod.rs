@@ -635,15 +635,9 @@ impl Room {
         }
     }
 
+    /// Whether this room is joined.
     pub fn is_joined(&self) -> bool {
-        matches!(
-            self.category(),
-            RoomType::Favorite
-                | RoomType::Normal
-                | RoomType::LowPriority
-                | RoomType::Outdated
-                | RoomType::Space
-        )
+        self.own_member().membership() == Membership::Join
     }
 
     fn set_category_internal(&self, category: RoomType) {
@@ -1874,6 +1868,14 @@ impl Room {
         if let Some(direct_member) = self.direct_member() {
             imp.avatar_data
                 .set_image(direct_member.avatar_data().image());
+        }
+
+        if imp.avatar_data.image().is_none() {
+            imp.avatar_data.set_image(Some(AvatarImage::new(
+                &session,
+                None,
+                AvatarUriSource::Room,
+            )))
         }
     }
 
