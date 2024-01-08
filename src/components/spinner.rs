@@ -16,6 +16,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_layout_manager_type::<gtk::BinLayout>();
+            klass.set_css_name("spinner-wrapper");
         }
     }
 

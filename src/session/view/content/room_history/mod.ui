@@ -89,7 +89,7 @@
                     <property name="halign">center</property>
                     <property name="vexpand">True</property>
                     <style>
-                      <class name="session-loading-spinner"/>
+                      <class name="large"/>
                     </style>
                   </object>
                 </child>

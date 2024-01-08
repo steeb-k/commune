@@ -161,6 +161,11 @@ editable-avatar .cutout {
   padding: 2px;
 }
 
+spinner-wrapper.large spinner {
+  min-width: 32px;
+  min-height: 32px;
+}
+
 
 /* Login */
 
@@ -177,13 +182,6 @@ login {
   padding: 4px;
   -gtk-icon-size: 26px;
   min-height: 34px;
-}
-
-/* Session */
-
-.session-loading-spinner {
-  min-width: 32px;
-  min-height: 32px;
 }
 
 
