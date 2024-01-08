@@ -17,7 +17,7 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
     let (heading, body, response) = if room.category() == RoomType::Invited {
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
-        let body = if room.is_join_rule_public() {
+        let body = if room.can_join() {
             gettext("Do you really want to decline this invite? You can join this room on your own later.")
         } else {
             gettext(
@@ -30,7 +30,7 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
     } else {
         // We are leaving a room that was joined.
         let heading = gettext("Leave Room?");
-        let body = if room.is_join_rule_public() {
+        let body = if room.can_join() {
             gettext("Do you really want to leave this room? You can come back later.")
         } else {
             gettext(
@@ -78,7 +78,7 @@ pub async fn confirm_room_member_destructive_action(
             (heading, body, response)
         }
         PowerLevelAction::Kick => {
-            let can_rejoin = room.is_join_rule_public();
+            let can_rejoin = room.anyone_can_join();
 
             match member.membership() {
                 Membership::Invite => {

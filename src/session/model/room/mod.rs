@@ -31,7 +31,10 @@ use ruma::{
         reaction::ReactionEventContent,
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
-        room::{encryption::SyncRoomEncryptionEvent, join_rules::JoinRule},
+        room::{
+            encryption::SyncRoomEncryptionEvent,
+            join_rules::{AllowRule, JoinRule},
+        },
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
@@ -165,9 +168,6 @@ mod imp {
         /// The list of members currently typing in this room.
         #[property(get)]
         pub typing_list: TypingList,
-        /// Whether anyone can join this room.
-        #[property(get)]
-        pub is_join_rule_public: Cell<bool>,
         /// Whether this room is a direct chat.
         #[property(get)]
         pub is_direct: Cell<bool>,
@@ -201,8 +201,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Room {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> =
-                Lazy::new(|| vec![Signal::builder("room-forgotten").build()]);
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![
+                    Signal::builder("room-forgotten").build(),
+                    Signal::builder("join-rule-changed").build(),
+                ]
+            });
             SIGNALS.as_ref()
         }
 
@@ -353,7 +357,6 @@ impl Room {
         let imp = self.imp();
 
         self.set_joined_members_count(matrix_room.joined_members_count());
-        self.set_is_join_rule_public(matrix_room.join_rule() == JoinRule::Public);
 
         imp.matrix_room.set(matrix_room).unwrap();
 
@@ -1245,8 +1248,8 @@ impl Room {
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();
                     }
-                    AnySyncStateEvent::RoomJoinRules(event) => {
-                        self.set_is_join_rule_public(*event.join_rule() == JoinRule::Public);
+                    AnySyncStateEvent::RoomJoinRules(_) => {
+                        self.emit_by_name::<()>("join-rule-changed", &[]);
                     }
                     _ => {}
                 }
@@ -1420,10 +1423,21 @@ impl Room {
         self.update_for_events(response_room.timeline.events);
     }
 
-    /// Connect to the signal sent when a room was forgotten.
+    /// Connect to the signal emitted when the room was forgotten.
     pub fn connect_room_forgotten<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "room-forgotten",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+
+    /// Connect to the signal emitted when the join rule of the room changed.
+    pub fn connect_join_rule_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "join-rule-changed",
             true,
             closure_local!(move |obj: Self| {
                 f(&obj);
@@ -1863,13 +1877,38 @@ impl Room {
         }
     }
 
-    /// Set whether anyone can join this room.
-    fn set_is_join_rule_public(&self, is_public: bool) {
-        if self.is_join_rule_public() == is_public {
-            return;
+    /// Whether our own user can join this room on their own.
+    pub fn can_join(&self) -> bool {
+        if self.own_member().membership() == Membership::Ban {
+            return false;
         }
 
-        self.imp().is_join_rule_public.set(is_public);
-        self.notify_is_join_rule_public();
+        let join_rule = self.matrix_room().join_rule();
+
+        match join_rule {
+            JoinRule::Public => true,
+            JoinRule::Restricted(rules) => rules
+                .allow
+                .into_iter()
+                .all(|rule| self.passes_restricted_allow_rule(rule)),
+            _ => false,
+        }
+    }
+
+    /// Whether our account passes the given restricted allow rule.
+    fn passes_restricted_allow_rule(&self, rule: AllowRule) -> bool {
+        match rule {
+            AllowRule::RoomMembership(room_membership) => self.session().is_some_and(|s| {
+                s.room_list()
+                    .joined_room(&room_membership.room_id.into())
+                    .is_some()
+            }),
+            _ => false,
+        }
+    }
+
+    /// Whether anyone can join this room.
+    pub fn anyone_can_join(&self) -> bool {
+        self.matrix_room().join_rule() == JoinRule::Public
     }
 }
