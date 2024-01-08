@@ -181,12 +181,24 @@ mod imp {
                 let name_handler = room.connect_display_name_notify(clone!(@weak obj => move |_| {
                     obj.update_accessibility_label();
                 }));
+                let join_rule_handler =
+                    room.connect_join_rule_changed(clone!(@weak obj => move |_| {
+                        obj.update_actions()
+                    }));
+
                 if room.category() == RoomType::Left {
                     self.display_name.add_css_class("dim-label");
                 }
 
-                self.room
-                    .set(room, vec![highlight_handler, direct_handler, name_handler]);
+                self.room.set(
+                    room,
+                    vec![
+                        highlight_handler,
+                        direct_handler,
+                        name_handler,
+                        join_rule_handler,
+                    ],
+                );
 
                 obj.update_accessibility_label();
             }
@@ -287,7 +299,7 @@ impl RoomRow {
                     self.action_set_enabled("room-row.set-normal", false);
                     self.action_set_enabled("room-row.set-lowpriority", false);
                     self.action_set_enabled("room-row.leave", false);
-                    self.action_set_enabled("room-row.join", true);
+                    self.action_set_enabled("room-row.join", room.can_join());
                     self.action_set_enabled("room-row.forget", true);
                     return;
                 }
