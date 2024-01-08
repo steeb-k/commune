@@ -186,22 +186,17 @@ mod imp {
                 obj.update_timestamp();
             }));
 
-            let source_handler = event.connect_source_notify(clone!(@weak obj => move |_| {
+            // Listening to changes in the source might not be enough, there are changes
+            // that we display that don't affect the source, like related events.
+            let item_changed_handler = event.connect_item_changed(clone!(@weak obj => move |_| {
                 obj.update_content();
             }));
-
-            let edit_source_handler =
-                event.connect_latest_edit_source_notify(clone!(@weak obj => move |_| {
-                    obj.update_content();
-                }));
 
             self.reactions
                 .set_reaction_list(&event.room().get_or_create_members(), &event.reactions());
             self.read_receipts.set_source(&event.read_receipts());
-            self.event.set(
-                event,
-                vec![timestamp_handler, source_handler, edit_source_handler],
-            );
+            self.event
+                .set(event, vec![timestamp_handler, item_changed_handler]);
             obj.notify_event();
 
             obj.update_content();

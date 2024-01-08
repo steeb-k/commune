@@ -1,6 +1,6 @@
 use std::{borrow::Cow, fmt};
 
-use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gio, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use indexmap::IndexMap;
 use matrix_sdk_ui::timeline::{
     AnyOtherFullStateEventContent, Error as TimelineError, EventSendState, EventTimelineItem,
@@ -96,6 +96,9 @@ mod imp {
         cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
     };
+
+    use glib::subclass::Signal;
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -193,7 +196,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Event {}
+    impl ObjectImpl for Event {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("item-changed").build()]);
+            SIGNALS.as_ref()
+        }
+    }
 
     impl TimelineItemImpl for Event {
         fn id(&self) -> String {
@@ -252,6 +261,7 @@ mod imp {
             }
 
             obj.update_state();
+            obj.emit_by_name::<()>("item-changed", &[]);
         }
 
         /// The raw JSON source for this `Event`, if it has been echoed back
@@ -711,6 +721,17 @@ impl Event {
     /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
     pub fn counts_as_unread(&self) -> bool {
         count_as_unread(self.imp().item.borrow().as_ref().unwrap().content())
+    }
+
+    /// Listen to the signal emitted when the SDK item changed.
+    pub fn connect_item_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "item-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }
 
