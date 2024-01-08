@@ -5,8 +5,12 @@ use indexmap::{IndexMap, IndexSet};
 use ruma::OwnedUserId;
 use tracing::error;
 
-use super::{user_session::UserSessionData, UserSession};
-use crate::{session::model::Session, spawn, spawn_tokio, utils::LoadingState};
+mod user_session;
+
+pub use self::user_session::UserSession;
+use self::user_session::UserSessionData;
+use super::Session;
+use crate::{spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::{
@@ -20,7 +24,7 @@ mod imp {
     #[properties(wrapper_type = super::UserSessionsList)]
     pub struct UserSessionsList {
         /// The current session.
-        #[property(get, construct_only)]
+        #[property(get)]
         pub session: glib::WeakRef<Session>,
         /// The ID of the user the sessions belong to.
         pub user_id: OnceCell<OwnedUserId>,
@@ -61,16 +65,6 @@ mod imp {
     impl ObjectImpl for UserSessionsList {}
 
     impl UserSessionsList {
-        /// Set the ID of the user the sessions belong to.
-        pub(super) fn set_user_id(&self, user_id: OwnedUserId) {
-            self.user_id.set(user_id).unwrap();
-
-            let obj = self.obj();
-            spawn!(clone!(@weak obj => async move {
-                obj.load().await;
-            }));
-        }
-
         /// Set the current user session.
         pub(super) fn set_current_session(&self, user_session: Option<UserSession>) {
             if *self.current_session.borrow() == user_session {
@@ -112,14 +106,19 @@ glib::wrapper! {
 }
 
 impl UserSessionsList {
-    pub fn new(session: &Session, user_id: OwnedUserId) -> Self {
-        let obj = glib::Object::builder::<Self>()
-            .property("session", session)
-            .build();
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
 
-        obj.imp().set_user_id(user_id);
+    /// Initialize this list with the given session and user ID.
+    pub fn init(&self, session: &Session, user_id: OwnedUserId) {
+        let imp = self.imp();
+        imp.session.set(Some(session));
+        imp.user_id.set(user_id).unwrap();
 
-        obj
+        spawn!(clone!(@weak self as obj => async move {
+            obj.load().await;
+        }));
     }
 
     /// The ID of the user the sessions belong to.
@@ -234,5 +233,11 @@ impl UserSessionsList {
         }
 
         imp.set_loading_state(LoadingState::Ready);
+    }
+}
+
+impl Default for UserSessionsList {
+    fn default() -> Self {
+        Self::new()
     }
 }

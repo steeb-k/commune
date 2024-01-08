@@ -8,6 +8,7 @@ mod session;
 mod session_settings;
 mod sidebar_data;
 mod user;
+mod user_sessions_list;
 mod verification;
 
 pub use self::{
@@ -31,6 +32,7 @@ pub use self::{
         SidebarItemImpl, SidebarListModel,
     },
     user::{User, UserExt},
+    user_sessions_list::{UserSession, UserSessionsList},
     verification::{
         IdentityVerification, VerificationList, VerificationState, VerificationSupportedMethods,
     },

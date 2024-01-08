@@ -24,7 +24,7 @@ use url::Url;
 
 use super::{
     AvatarData, IgnoredUsers, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel,
-    User, VerificationList,
+    User, UserSessionsList, VerificationList,
 };
 use crate::{
     prelude::*,
@@ -89,6 +89,9 @@ mod imp {
         /// The ignored users API for this session.
         #[property(get)]
         pub ignored_users: IgnoredUsers,
+        /// The list of sessions for this session's user.
+        #[property(get)]
+        pub user_sessions: UserSessionsList,
     }
 
     #[glib::object_subclass]
@@ -106,6 +109,7 @@ mod imp {
 
             self.ignored_users.set_session(Some(obj.clone()));
             self.notifications.set_session(Some(obj.clone()));
+            self.user_sessions.init(&obj, obj.user_id().clone());
 
             let monitor = gio::NetworkMonitor::default();
             let handler_id = monitor.connect_network_changed(clone!(@weak obj => move |_, _| {

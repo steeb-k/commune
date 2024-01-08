@@ -25,8 +25,8 @@
     </child>
     <child>
       <object class="UserSessionsPage">
-        <binding name="user">
-          <lookup name="user">
+        <binding name="user-sessions">
+          <lookup name="user-sessions">
             <lookup name="session">AccountSettings</lookup>
           </lookup>
         </binding>

@@ -2,15 +2,14 @@ use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use tracing::error;
 
-mod user_session;
 mod user_session_row;
-mod user_sessions_list;
 
-use self::{
-    user_session::UserSession, user_session_row::UserSessionRow,
-    user_sessions_list::UserSessionsList,
+use self::user_session_row::UserSessionRow;
+use crate::{
+    session::model::{User, UserSession, UserSessionsList},
+    spawn,
+    utils::{BoundObject, LoadingState},
 };
-use crate::{prelude::*, session::model::User, spawn, utils::LoadingState};
 
 mod imp {
     use std::cell::RefCell;
@@ -25,12 +24,6 @@ mod imp {
     )]
     #[properties(wrapper_type = super::UserSessionsPage)]
     pub struct UserSessionsPage {
-        /// The logged-in user.
-        #[property(get, set = Self::set_user, explicit_notify)]
-        pub user: RefCell<Option<User>>,
-        /// The list of user sessions.
-        #[property(get)]
-        pub user_sessions: RefCell<Option<UserSessionsList>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -41,6 +34,10 @@ mod imp {
         pub other_sessions_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
         pub other_sessions: TemplateChild<gtk::ListBox>,
+        /// The list of user sessions.
+        #[property(get, set = Self::set_user_sessions, explicit_notify, nullable)]
+        pub user_sessions: BoundObject<UserSessionsList>,
+        other_sessions_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -60,37 +57,41 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for UserSessionsPage {}
+    impl ObjectImpl for UserSessionsPage {
+        fn dispose(&self) {
+            if let Some(user_sessions) = self.user_sessions.obj() {
+                if let Some(handler) = self.other_sessions_handler.take() {
+                    user_sessions.other_sessions().disconnect(handler);
+                }
+            }
+
+            // AdwPreferencesPage doesn't handle children other than AdwPreferencesGroup.
+            self.stack.unparent();
+        }
+    }
 
     impl WidgetImpl for UserSessionsPage {}
     impl PreferencesPageImpl for UserSessionsPage {}
 
     impl UserSessionsPage {
-        /// Set the logged-in user.
-        fn set_user(&self, user: Option<User>) {
-            if *self.user.borrow() == user {
+        /// Set the list of user sessions.
+        fn set_user_sessions(&self, user_sessions: Option<UserSessionsList>) {
+            let prev_user_sessions = self.user_sessions.obj();
+
+            if prev_user_sessions == user_sessions {
                 return;
             }
-            let obj = self.obj();
 
-            if let Some(user) = &user {
-                let user_sessions = UserSessionsList::new(&user.session(), user.user_id().clone());
+            if let Some(user_sessions) = prev_user_sessions {
+                if let Some(handler) = self.other_sessions_handler.take() {
+                    user_sessions.other_sessions().disconnect(handler);
+                }
+            }
+            self.user_sessions.disconnect_signals();
 
-                user_sessions.connect_loading_state_notify(clone!(@weak self as imp => move |_| {
-                    imp.update_state();
-                }));
-
-                user_sessions.connect_is_empty_notify(clone!(@weak self as imp => move |_| {
-                    imp.update_state();
-                }));
-
-                user_sessions.connect_current_session_notify(
-                    clone!(@weak self as imp => move |_| {
-                        imp.update_current_session();
-                    }),
-                );
-
+            if let Some(user_sessions) = user_sessions {
                 let other_sessions = user_sessions.other_sessions();
+
                 self.other_sessions
                     .bind_model(Some(&other_sessions), |item| {
                         let Some(user_session) = item.downcast_ref::<UserSession>() else {
@@ -101,22 +102,44 @@ mod imp {
                         UserSessionRow::new(user_session).upcast()
                     });
 
-                other_sessions.connect_items_changed(
+                let other_sessions_handler = other_sessions.connect_items_changed(
                     clone!(@weak self as imp => move |other_sessions, _, _, _| {
                         imp.other_sessions_group.set_visible(other_sessions.n_items() > 0);
                     }),
                 );
+                self.other_sessions_handler
+                    .replace(Some(other_sessions_handler));
                 self.other_sessions_group
                     .set_visible(other_sessions.n_items() > 0);
 
-                self.user_sessions.replace(Some(user_sessions));
+                let loading_state_handler = user_sessions.connect_loading_state_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_state();
+                    }),
+                );
+                let is_empty_handler =
+                    user_sessions.connect_is_empty_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_state();
+                    }));
+                let current_session_handler = user_sessions.connect_current_session_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_current_session();
+                    }),
+                );
+
+                self.user_sessions.set(
+                    user_sessions,
+                    vec![
+                        loading_state_handler,
+                        is_empty_handler,
+                        current_session_handler,
+                    ],
+                );
             } else {
                 self.other_sessions.unbind_model();
-                self.user_sessions.take();
             }
 
-            self.user.replace(user);
-            obj.notify_user();
+            self.obj().notify_user_sessions();
 
             self.update_current_session();
             self.update_state();
@@ -126,8 +149,7 @@ mod imp {
         fn update_state(&self) {
             let (is_empty, state) = self
                 .user_sessions
-                .borrow()
-                .as_ref()
+                .obj()
                 .map(|s| (s.is_empty(), s.loading_state()))
                 .unwrap_or((true, LoadingState::Loading));
 
@@ -148,11 +170,7 @@ mod imp {
                 self.current_session.remove(&child);
             }
 
-            let current_session = self
-                .user_sessions
-                .borrow()
-                .as_ref()
-                .and_then(|s| s.current_session());
+            let current_session = self.user_sessions.obj().and_then(|s| s.current_session());
             let Some(current_session) = current_session else {
                 self.current_session_group.set_visible(false);
                 return;

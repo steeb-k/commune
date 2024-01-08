@@ -2,10 +2,11 @@ use adw::{self, prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 
-use super::UserSession;
 use crate::{
     components::{AuthError, SpinnerButton},
-    gettext_f, spawn,
+    gettext_f,
+    session::model::UserSession,
+    spawn,
     system_settings::ClockFormat,
     toast, Application,
 };
