@@ -90,6 +90,10 @@ levelbar.discrete.error block.filled {
 	min-width: 86px;
 }
 
+.fix-preferences-page {
+  margin: 24px 12px;
+  border-spacing: 24px;
+}
 
 /* Components */
 

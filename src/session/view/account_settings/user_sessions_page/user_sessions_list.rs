@@ -1,214 +1,238 @@
-use gettextrs::gettext;
+use std::cmp;
+
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    encryption::identities::UserDevices as CryptoDevices,
-    ruma::api::client::device::Device as MatrixDevice, Error,
-};
+use indexmap::{IndexMap, IndexSet};
+use ruma::OwnedUserId;
 use tracing::error;
 
-use super::{UserSession, UserSessionsListItem};
-use crate::{session::model::Session, spawn, spawn_tokio};
+use super::{user_session::UserSessionData, UserSession};
+use crate::{session::model::Session, spawn, spawn_tokio, utils::LoadingState};
 
 mod imp {
     use std::{
-        cell::{Cell, RefCell},
+        cell::{Cell, OnceCell, RefCell},
         marker::PhantomData,
     };
 
     use super::*;
 
-    #[derive(Debug, Default, glib::Properties)]
+    #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::UserSessionsList)]
     pub struct UserSessionsList {
-        /// The list of user session list items.
-        pub list: RefCell<Vec<UserSessionsListItem>>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: glib::WeakRef<Session>,
+        /// The ID of the user the sessions belong to.
+        pub user_id: OnceCell<OwnedUserId>,
+        /// The other user sessions.
+        #[property(get)]
+        pub other_sessions: gio::ListStore,
         /// The current user session.
-        pub current_user_session_inner: RefCell<Option<UserSessionsListItem>>,
-        /// The current user session, or a replacement list item if it is not
-        /// found.
-        #[property(get = Self::current_user_session)]
-        current_user_session: PhantomData<UserSessionsListItem>,
-        pub loading: Cell<bool>,
+        #[property(get)]
+        current_session: RefCell<Option<UserSession>>,
+        /// The loading state of the list.
+        #[property(get, builder(LoadingState::default()))]
+        pub loading_state: Cell<LoadingState>,
+        /// Whether the list is empty.
+        #[property(get = Self::is_empty)]
+        pub is_empty: PhantomData<bool>,
+    }
+
+    impl Default for UserSessionsList {
+        fn default() -> Self {
+            Self {
+                session: Default::default(),
+                user_id: Default::default(),
+                other_sessions: gio::ListStore::new::<UserSession>(),
+                current_session: Default::default(),
+                loading_state: Default::default(),
+                is_empty: Default::default(),
+            }
+        }
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for UserSessionsList {
         const NAME: &'static str = "UserSessionsList";
         type Type = super::UserSessionsList;
-        type Interfaces = (gio::ListModel,);
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for UserSessionsList {
-        fn constructed(&self) {
-            self.parent_constructed();
-            self.obj().load();
-        }
-    }
-
-    impl ListModelImpl for UserSessionsList {
-        fn item_type(&self) -> glib::Type {
-            UserSessionsListItem::static_type()
-        }
-
-        fn n_items(&self) -> u32 {
-            self.list.borrow().len() as u32
-        }
-
-        fn item(&self, position: u32) -> Option<glib::Object> {
-            self.list
-                .borrow()
-                .get(position as usize)
-                .map(glib::object::Cast::upcast_ref::<glib::Object>)
-                .cloned()
-        }
-    }
+    impl ObjectImpl for UserSessionsList {}
 
     impl UserSessionsList {
-        /// The current user session.
-        fn current_user_session(&self) -> UserSessionsListItem {
-            self.current_user_session_inner
-                .borrow()
-                .clone()
-                .unwrap_or_else(|| {
-                    if self.loading.get() {
-                        UserSessionsListItem::for_loading_spinner()
-                    } else {
-                        UserSessionsListItem::for_error(gettext("Failed to load connected device."))
-                    }
-                })
+        /// Set the ID of the user the sessions belong to.
+        pub(super) fn set_user_id(&self, user_id: OwnedUserId) {
+            self.user_id.set(user_id).unwrap();
+
+            let obj = self.obj();
+            spawn!(clone!(@weak obj => async move {
+                obj.load().await;
+            }));
+        }
+
+        /// Set the current user session.
+        pub(super) fn set_current_session(&self, user_session: Option<UserSession>) {
+            if *self.current_session.borrow() == user_session {
+                return;
+            }
+
+            let was_empty = self.is_empty();
+
+            self.current_session.replace(user_session);
+
+            let obj = self.obj();
+            obj.notify_current_session();
+
+            if self.is_empty() != was_empty {
+                obj.notify_is_empty();
+            }
+        }
+
+        /// Set the loading state of the list.
+        pub(super) fn set_loading_state(&self, loading_state: LoadingState) {
+            if self.loading_state.get() == loading_state {
+                return;
+            }
+
+            self.loading_state.set(loading_state);
+            self.obj().notify_loading_state();
+        }
+
+        /// Whether the list is empty.
+        pub(super) fn is_empty(&self) -> bool {
+            self.current_session.borrow().is_none() && self.other_sessions.n_items() == 0
         }
     }
 }
 
 glib::wrapper! {
-    /// List of active user sessions for the logged-in user.
-    pub struct UserSessionsList(ObjectSubclass<imp::UserSessionsList>)
-        @implements gio::ListModel;
+    /// List of active user sessions for a user.
+    pub struct UserSessionsList(ObjectSubclass<imp::UserSessionsList>);
 }
 
 impl UserSessionsList {
-    pub fn new(session: &Session) -> Self {
-        glib::Object::builder().property("session", session).build()
+    pub fn new(session: &Session, user_id: OwnedUserId) -> Self {
+        let obj = glib::Object::builder::<Self>()
+            .property("session", session)
+            .build();
+
+        obj.imp().set_user_id(user_id);
+
+        obj
     }
 
-    fn set_loading(&self, loading: bool) {
-        let imp = self.imp();
-
-        if loading == imp.loading.get() {
-            return;
-        }
-        if loading {
-            self.update_list(vec![UserSessionsListItem::for_loading_spinner()]);
-        }
-        imp.loading.set(loading);
-        self.notify_current_user_session();
-    }
-
-    /// Set the current user session.
-    fn set_current_user_session(&self, user_session: Option<UserSessionsListItem>) {
-        self.imp().current_user_session_inner.replace(user_session);
-
-        self.notify_current_user_session();
-    }
-
-    /// Update the list with the given user sessions.
-    fn update_list(&self, user_sessions: Vec<UserSessionsListItem>) {
-        let added = user_sessions.len();
-
-        let prev_user_sessions = self.imp().list.replace(user_sessions);
-
-        self.items_changed(0, prev_user_sessions.len() as u32, added as u32);
-    }
-
-    /// Process the user sessions received in the response.
-    fn finish_loading(
-        &self,
-        response: Result<(Option<MatrixDevice>, Vec<MatrixDevice>, CryptoDevices), Error>,
-    ) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        match response {
-            Ok((current_user_session, user_sessions, crypto_sessions)) => {
-                let user_sessions = user_sessions
-                    .into_iter()
-                    .map(|user_session| {
-                        let crypto_session = crypto_sessions.get(&user_session.device_id);
-                        UserSessionsListItem::for_user_session(UserSession::new(
-                            &session,
-                            user_session,
-                            crypto_session,
-                        ))
-                    })
-                    .collect();
-
-                self.update_list(user_sessions);
-
-                self.set_current_user_session(current_user_session.map(|user_session| {
-                    let crypto_session = crypto_sessions.get(&user_session.device_id);
-                    UserSessionsListItem::for_user_session(UserSession::new(
-                        &session,
-                        user_session,
-                        crypto_session,
-                    ))
-                }));
-            }
-            Err(error) => {
-                error!("Couldn’t load user sessions list: {error}");
-                self.update_list(vec![UserSessionsListItem::for_error(gettext(
-                    "Failed to load the list of connected devices.",
-                ))]);
-            }
-        }
-        self.set_loading(false);
+    /// The ID of the user the sessions belong to.
+    pub fn user_id(&self) -> &OwnedUserId {
+        self.imp().user_id.get().unwrap()
     }
 
     /// Load the list of user sessions.
-    pub fn load(&self) {
+    pub async fn load(&self) {
+        if self.loading_state() == LoadingState::Loading {
+            // Don't load the list twice at the same time.
+            return;
+        }
+
         let Some(session) = self.session() else {
             return;
         };
+        let imp = self.imp();
+
+        imp.set_loading_state(LoadingState::Loading);
+
+        let user_id = self.user_id().clone();
         let client = session.client();
-
-        self.set_loading(true);
-
         let handle = spawn_tokio!(async move {
-            let user_id = client.user_id().unwrap();
-            let crypto_sessions = client.encryption().get_user_devices(user_id).await?;
-
-            match client.devices().await {
-                Ok(mut response) => {
-                    response
-                        .devices
-                        .sort_unstable_by(|a, b| b.last_seen_ts.cmp(&a.last_seen_ts));
-
-                    let current_user_session = if let Some(current_device_id) = client.device_id() {
-                        if let Some(index) = response
-                            .devices
-                            .iter()
-                            .position(|device| *device.device_id == current_device_id.as_ref())
-                        {
-                            Some(response.devices.remove(index))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    };
-
-                    Ok((current_user_session, response.devices, crypto_sessions))
+            let crypto_sessions = match client.encryption().get_user_devices(&user_id).await {
+                Ok(crypto_sessions) => Some(crypto_sessions),
+                Err(error) => {
+                    error!("Failed to get crypto sessions for user {user_id}: {error}");
+                    None
                 }
-                Err(error) => Err(Error::Http(error)),
+            };
+
+            let is_own_user = client.user_id().unwrap() == user_id;
+
+            let mut api_sessions = None;
+            if is_own_user {
+                match client.devices().await {
+                    Ok(response) => {
+                        api_sessions = Some(response.devices);
+                    }
+                    Err(error) => {
+                        error!("Failed to get sessions list for user {user_id}: {error}");
+                    }
+                }
+            }
+
+            (api_sessions, crypto_sessions)
+        });
+
+        let (api_sessions, crypto_sessions) = handle.await.unwrap();
+
+        if api_sessions.is_none() && crypto_sessions.is_none() {
+            imp.set_loading_state(LoadingState::Error);
+            return;
+        };
+
+        // Convert API sessions to a map.
+        let mut api_sessions = api_sessions
+            .into_iter()
+            .flatten()
+            .map(|d| (d.device_id.clone(), d))
+            .collect::<IndexMap<_, _>>();
+
+        // Sort the API sessions, last seen first, then sort by device ID.
+        api_sessions.sort_by(|_key_a, val_a, _key_b, val_b| {
+            match val_b.last_seen_ts.cmp(&val_a.last_seen_ts) {
+                cmp::Ordering::Equal => val_a.device_id.cmp(&val_b.device_id),
+                cmp => cmp,
             }
         });
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.finish_loading(handle.await.unwrap());
-        }));
+        // Build the full list of IDs while preserving the sorting order.
+        let ids = api_sessions
+            .keys()
+            .cloned()
+            .chain(
+                crypto_sessions
+                    .iter()
+                    .flat_map(|s| s.keys())
+                    .map(ToOwned::to_owned),
+            )
+            .collect::<IndexSet<_>>();
+
+        let (current, others) = ids
+            .into_iter()
+            .filter_map(|id| {
+                let data = match (
+                    api_sessions.remove(&id),
+                    crypto_sessions.as_ref().and_then(|s| s.get(&id)),
+                ) {
+                    (Some(api), Some(crypto)) => UserSessionData::Both { api, crypto },
+                    (Some(api), None) => UserSessionData::DevicesApi(api),
+                    (None, Some(crypto)) => UserSessionData::Crypto(crypto),
+                    _ => return None,
+                };
+
+                Some(UserSession::new(&session, data))
+            })
+            .partition::<Vec<_>, _>(|s| s.is_current());
+
+        if let Some(current) = current.into_iter().next() {
+            imp.set_current_session(Some(current));
+        }
+
+        let was_empty = imp.is_empty();
+
+        let removed = imp.other_sessions.n_items();
+        imp.other_sessions.splice(0, removed, &others);
+
+        if imp.is_empty() != was_empty {
+            self.notify_is_empty();
+        }
+
+        imp.set_loading_state(LoadingState::Ready);
     }
 }

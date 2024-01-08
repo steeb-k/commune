@@ -52,10 +52,9 @@ src/session/view/account_settings/security_page/import_export_keys_subpage.rs
 src/session/view/account_settings/security_page/import_export_keys_subpage.ui
 src/session/view/account_settings/security_page/mod.rs
 src/session/view/account_settings/security_page/mod.ui
-src/session/view/account_settings/user_sessions_page/user_sessions_list.rs
+src/session/view/account_settings/user_sessions_page/mod.ui
 src/session/view/account_settings/user_sessions_page/user_session_row.rs
 src/session/view/account_settings/user_sessions_page/user_session_row.ui
-src/session/view/account_settings/user_sessions_page/mod.ui
 src/session/view/content/explore/mod.ui
 src/session/view/content/explore/public_room_row.rs
 src/session/view/content/explore/servers_popover.ui

@@ -1,7 +1,6 @@
 use adw::{self, prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
-use tracing::error;
 
 use super::UserSession;
 use crate::{
@@ -12,7 +11,7 @@ use crate::{
 };
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
 
@@ -33,15 +32,12 @@ mod imp {
         #[template_child]
         pub last_seen_ts: TemplateChild<gtk::Label>,
         #[template_child]
-        pub delete_logout_button: TemplateChild<SpinnerButton>,
+        pub disconnect_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub verify_button: TemplateChild<SpinnerButton>,
         /// The user session displayed by this row.
         #[property(get, set = Self::set_user_session, construct_only)]
         pub user_session: RefCell<Option<UserSession>>,
-        /// Whether this shows the current user session.
-        #[property(get, construct_only)]
-        pub is_current_user_session: Cell<bool>,
         pub system_settings_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -53,6 +49,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -65,30 +62,6 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
-
-            match &obj.is_current_user_session() {
-                false => self
-                    .delete_logout_button
-                    .set_label(gettext("Disconnect Session")),
-                true => {
-                    self.delete_logout_button.set_label(gettext("Log Out"));
-                    self.delete_logout_button
-                        .add_css_class("destructive-action");
-                }
-            }
-
-            self.delete_logout_button
-                .connect_clicked(clone!(@weak obj => move |_| {
-                    match &obj.is_current_user_session() {
-                        false=> obj.delete(),
-                        true => obj.activate_action("account-settings.logout", None).unwrap()
-                    }
-                }));
-
-            self.verify_button
-                .connect_clicked(clone!(@weak obj => move |_| {
-                    todo!("Not implemented");
-                }));
 
             let system_settings = Application::default().system_settings();
             let system_settings_handler =
@@ -130,6 +103,13 @@ mod imp {
             self.last_seen_ts
                 .set_visible(user_session.last_seen_ts().is_some());
 
+            let disconnect_label = if user_session.is_current() {
+                gettext("Log Out")
+            } else {
+                gettext("Disconnect Session")
+            };
+            self.disconnect_button.set_label(disconnect_label);
+
             self.user_session.replace(Some(user_session));
 
             obj.notify_user_session();
@@ -144,35 +124,44 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::ListBoxRow, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl UserSessionRow {
-    pub fn new(user_session: &UserSession, is_current_user_session: bool) -> Self {
+    pub fn new(user_session: &UserSession) -> Self {
         glib::Object::builder()
             .property("user-session", user_session)
-            .property("is-current-user-session", is_current_user_session)
             .build()
     }
 
-    fn delete(&self) {
-        self.imp().delete_logout_button.set_loading(true);
-
+    /// Disconnect the user session.
+    #[template_callback]
+    fn disconnect(&self) {
         let Some(user_session) = self.user_session() else {
             return;
         };
 
-        spawn!(clone!(@weak self as obj => async move {
-            let window: Option<gtk::Window> = obj.root().and_downcast();
+        if user_session.is_current() {
+            self.activate_action("account-settings.logout", None)
+                .unwrap();
+            return;
+        }
+
+        self.imp().disconnect_button.set_loading(true);
+
+        spawn!(clone!(@weak self as obj, @weak user_session => async move {
+            let window = obj.root().and_downcast::<gtk::Window>();
+
             match user_session.delete(window.as_ref()).await {
                 Ok(_) => obj.set_visible(false),
                 Err(AuthError::UserCancelled) => {},
-                Err(error) => {
-                    error!("Failed to disconnect user session {}: {error:?}", user_session.device_id());
+                Err(_) => {
                     let device_name = user_session.display_name();
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
                     let error_message = gettext_f("Failed to disconnect device “{device_name}”", &[("device_name", &device_name)]);
                     toast!(obj, error_message);
                 },
             }
-            obj.imp().delete_logout_button.set_loading(false);
+
+            obj.imp().disconnect_button.set_loading(false);
         }));
     }
 
