@@ -1,8 +1,11 @@
 use std::cmp;
 
+use futures_util::StreamExt;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::{IndexMap, IndexSet};
+use matrix_sdk::Client;
 use ruma::OwnedUserId;
+use tokio::task::AbortHandle;
 use tracing::error;
 
 mod user_session;
@@ -40,6 +43,7 @@ mod imp {
         /// Whether the list is empty.
         #[property(get = Self::is_empty)]
         pub is_empty: PhantomData<bool>,
+        pub sessions_watch_abort_handle: RefCell<Option<AbortHandle>>,
     }
 
     impl Default for UserSessionsList {
@@ -51,6 +55,7 @@ mod imp {
                 current_session: Default::default(),
                 loading_state: Default::default(),
                 is_empty: Default::default(),
+                sessions_watch_abort_handle: Default::default(),
             }
         }
     }
@@ -62,7 +67,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for UserSessionsList {}
+    impl ObjectImpl for UserSessionsList {
+        fn dispose(&self) {
+            if let Some(abort_handle) = self.sessions_watch_abort_handle.take() {
+                abort_handle.abort();
+            }
+        }
+    }
 
     impl UserSessionsList {
         /// Set the current user session.
@@ -119,6 +130,47 @@ impl UserSessionsList {
         spawn!(clone!(@weak self as obj => async move {
             obj.load().await;
         }));
+        spawn!(clone!(@weak self as obj, @weak session => async move {
+            obj.init_sessions_watch(session.client()).await;
+        }));
+    }
+
+    /// Start listening to changes in the user sessions.
+    async fn init_sessions_watch(&self, client: Client) {
+        let stream = match client.encryption().devices_stream().await {
+            Ok(stream) => stream,
+            Err(error) => {
+                error!("Failed to access the user sessions stream: {error}");
+                return;
+            }
+        };
+
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
+        let user_id = self.user_id().clone();
+        let fut = stream.for_each(move |updates| {
+            let user_id = user_id.clone();
+            let obj_weak = obj_weak.clone();
+
+            async move {
+                if !updates.new.contains_key(&user_id) && !updates.changed.contains_key(&user_id) {
+                    return;
+                }
+
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.load().await;
+                        }
+                    });
+                });
+            }
+        });
+
+        let abort_handle = spawn_tokio!(fut).abort_handle();
+        self.imp()
+            .sessions_watch_abort_handle
+            .replace(Some(abort_handle));
     }
 
     /// The ID of the user the sessions belong to.
