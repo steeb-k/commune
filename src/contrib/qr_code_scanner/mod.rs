@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-use gtk::{gdk, glib, glib::subclass, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::closure_local, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::verification::QrVerificationData;
 
 mod camera;
@@ -11,6 +11,7 @@ mod imp {
     use std::cell::RefCell;
 
     use adw::subclass::prelude::*;
+    use glib::subclass::{InitializingObject, Signal};
     use gtk::CompositeTemplate;
     use once_cell::sync::Lazy;
 
@@ -36,14 +37,14 @@ mod imp {
             Self::bind_template(klass);
         }
 
-        fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
+        fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
     }
     impl ObjectImpl for QrCodeScanner {
-        fn signals() -> &'static [subclass::Signal] {
-            static SIGNALS: Lazy<Vec<subclass::Signal>> = Lazy::new(|| {
-                vec![subclass::Signal::builder("code-detected")
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![Signal::builder("code-detected")
                     .param_types([QrVerificationDataBoxed::static_type()])
                     .run_first()
                     .build()]
@@ -108,14 +109,13 @@ impl QrCodeScanner {
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
-        self.connect_local("code-detected", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            let data = values[1].get::<QrVerificationDataBoxed>().unwrap();
-
-            f(&obj, data.0);
-
-            None
-        })
+        self.connect_closure(
+            "code-detected",
+            true,
+            closure_local!(move |obj: Self, data: QrVerificationDataBoxed| {
+                f(&obj, data.0);
+            }),
+        )
     }
 }
 

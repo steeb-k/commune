@@ -1,5 +1,11 @@
 use glib::subclass::Signal;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+    CompositeTemplate,
+};
 
 use super::LoadingBin;
 
@@ -105,10 +111,12 @@ impl LoadingRow {
     }
 
     pub fn connect_retry<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("retry", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            f(&obj);
-            None
-        })
+        self.connect_closure(
+            "retry",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }

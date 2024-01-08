@@ -1,5 +1,10 @@
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    gio, glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use matrix_sdk::{
     ruma::{
         api::client::{profile::get_profile, user_directory::search_users},
@@ -347,23 +352,25 @@ impl InviteeList {
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
-        self.connect_local("invitee-added", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            let invitee = values[1].get::<Invitee>().unwrap();
-            f(&obj, &invitee);
-            None
-        })
+        self.connect_closure(
+            "invitee-added",
+            true,
+            closure_local!(move |obj: Self, invitee: Invitee| {
+                f(&obj, &invitee);
+            }),
+        )
     }
 
     pub fn connect_invitee_removed<F: Fn(&Self, &Invitee) + 'static>(
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
-        self.connect_local("invitee-removed", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            let invitee = values[1].get::<Invitee>().unwrap();
-            f(&obj, &invitee);
-            None
-        })
+        self.connect_closure(
+            "invitee-removed",
+            true,
+            closure_local!(move |obj: Self, invitee: Invitee| {
+                f(&obj, &invitee);
+            }),
+        )
     }
 }

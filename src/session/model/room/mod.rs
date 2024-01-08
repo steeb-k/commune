@@ -12,7 +12,12 @@ use std::{cell::RefCell, io::Cursor};
 
 use futures_util::StreamExt;
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use matrix_sdk::{
     attachment::{generate_image_thumbnail, AttachmentConfig, AttachmentInfo, Thumbnail},
     deserialized_responses::{MemberEvent, SyncTimelineEvent},
@@ -1417,11 +1422,13 @@ impl Room {
 
     /// Connect to the signal sent when a room was forgotten.
     pub fn connect_room_forgotten<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("room-forgotten", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            f(&obj);
-            None
-        })
+        self.connect_closure(
+            "room-forgotten",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 
     /// The ID of the predecessor of this room, if this room is an upgrade to a

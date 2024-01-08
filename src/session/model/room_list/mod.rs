@@ -3,7 +3,12 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    gio, glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use indexmap::map::IndexMap;
 use matrix_sdk::{
     ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId},
@@ -412,13 +417,13 @@ impl RoomList {
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
-        self.connect_local("pending-rooms-changed", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-
-            f(&obj);
-
-            None
-        })
+        self.connect_closure(
+            "pending-rooms-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 
     /// Get the room with the given identifier, if it is joined.

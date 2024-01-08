@@ -4,7 +4,7 @@ use adw::subclass::prelude::*;
 use gtk::{
     gdk,
     gio::prelude::*,
-    glib::{self, clone},
+    glib::{self, clone, closure_local},
     prelude::*,
     CompositeTemplate,
 };
@@ -359,13 +359,12 @@ impl AuthDialog {
     }
 
     pub fn connect_response<F: Fn(&Self, bool) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("response", true, move |values| {
-            let obj: Self = values[0].get().unwrap();
-            let response = values[1].get::<bool>().unwrap();
-
-            f(&obj, response);
-
-            None
-        })
+        self.connect_closure(
+            "response",
+            true,
+            closure_local!(move |obj: Self, response: bool| {
+                f(&obj, response);
+            }),
+        )
     }
 }

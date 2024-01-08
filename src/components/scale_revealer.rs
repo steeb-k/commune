@@ -1,5 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, graphene};
+use gtk::{gdk, glib, glib::closure_local, graphene};
 use tracing::warn;
 
 const ANIMATION_DURATION: u32 = 250;
@@ -206,11 +206,13 @@ impl ScaleRevealer {
     }
 
     pub fn connect_transition_done<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_local("transition-done", true, move |values| {
-            let obj = values[0].get::<Self>().unwrap();
-            f(&obj);
-            None
-        })
+        self.connect_closure(
+            "transition-done",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }
 
