@@ -7,7 +7,7 @@ use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     i18n::gettext_f,
     session::model::{HighlightFlags, Room, RoomType},
-    spawn, toast,
+    toast,
     utils::{message_dialog, BoundObject},
 };
 
@@ -47,47 +47,31 @@ mod imp {
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
-            klass.install_action("room-row.accept-invite", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Normal).await;
-                }));
+            klass.install_action_async("room-row.accept-invite", None, |obj, _, _| async move {
+                obj.set_category(RoomType::Normal).await;
             });
-            klass.install_action("room-row.reject-invite", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Left).await
-                }));
+            klass.install_action_async("room-row.reject-invite", None, |obj, _, _| async move {
+                obj.set_category(RoomType::Left).await;
             });
 
-            klass.install_action("room-row.set-favorite", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Favorite).await
-                }));
+            klass.install_action_async("room-row.set-favorite", None, |obj, _, _| async move {
+                obj.set_category(RoomType::Favorite).await;
             });
-            klass.install_action("room-row.set-normal", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Normal).await
-                }));
+            klass.install_action_async("room-row.set-normal", None, |obj, _, _| async move {
+                obj.set_category(RoomType::Normal).await;
             });
-            klass.install_action("room-row.set-lowpriority", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::LowPriority).await
-                }));
+            klass.install_action_async("room-row.set-lowpriority", None, |obj, _, _| async move {
+                obj.set_category(RoomType::LowPriority).await;
             });
 
-            klass.install_action("room-row.leave", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Left).await
-                }));
+            klass.install_action_async("room-row.leave", None, |obj, _, _| async move {
+                obj.set_category(RoomType::Left).await;
             });
-            klass.install_action("room-row.join", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.set_category(RoomType::Normal).await;
-                }));
+            klass.install_action_async("room-row.join", None, |obj, _, _| async move {
+                obj.set_category(RoomType::Normal).await;
             });
-            klass.install_action("room-row.forget", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.forget().await
-                }));
+            klass.install_action_async("room-row.forget", None, |obj, _, _| async move {
+                obj.forget().await;
             });
         }
 
@@ -173,7 +157,7 @@ mod imp {
 
                 let highlight_handler =
                     room.connect_highlight_notify(clone!(@weak obj => move |_| {
-                            obj.update_highlight();
+                        obj.update_highlight();
                     }));
                 let direct_handler = room.connect_is_direct_notify(clone!(@weak obj => move |_| {
                         obj.update_direct_icon();
