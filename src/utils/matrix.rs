@@ -5,7 +5,6 @@ use std::{
     str::FromStr,
 };
 
-use gtk::prelude::*;
 use html2pango::html_escape;
 use html5gum::{HtmlString, Token, Tokenizer};
 use matrix_sdk::{config::RequestConfig, Client, ClientBuildError};
@@ -25,7 +24,7 @@ use crate::{
     gettext_f,
     prelude::*,
     secret::StoredSession,
-    session::model::{Room, Session},
+    session::model::{RemoteRoom, Room, Session},
     spawn_tokio,
 };
 
@@ -372,38 +371,22 @@ pub fn extract_mentions(s: &str, room: &Room) -> (String, Vec<(Pill, String)>) {
 fn parse_pill(s: &str, room: &Room, session: &Session) -> Option<Pill> {
     let uri = html_escape::decode_html_entities(s);
 
-    let id = if let Ok(mx_uri) = MatrixUri::parse(&uri) {
-        mx_uri.id().clone()
-    } else if let Ok(mx_to_uri) = MatrixToUri::parse(&uri) {
-        mx_to_uri.id().clone()
-    } else {
+    let Ok(id) = MatrixIdUri::parse(&uri) else {
         return None;
     };
 
     match id {
-        MatrixId::Room(room_id) => session
+        MatrixIdUri::Room(room_uri) => session
             .room_list()
-            .get(&room_id)
-            .map(|room| Pill::for_room(&room)),
-        MatrixId::RoomAlias(room_alias) => {
-            // TODO: Handle non-canonical aliases.
-            session
-                .client()
-                .rooms()
-                .iter()
-                .find_map(|matrix_room| {
-                    matrix_room
-                        .canonical_alias()
-                        .filter(|alias| alias == &room_alias)
-                        .and_then(|_| session.room_list().get(matrix_room.room_id()))
-                })
-                .map(|room| Pill::for_room(&room))
-        }
-        MatrixId::User(user_id) => {
-            // We should have a strong reference to the list wherever we show a user pill so
-            // we can use `get_or_create_members()`.
-            let user = room.get_or_create_members().get_or_create(user_id).upcast();
-            Some(Pill::for_user(&user))
+            .get_by_identifier(&room_uri.id)
+            .as_ref()
+            .map(Pill::for_room)
+            .or_else(|| Some(Pill::for_remote_room(&RemoteRoom::new(session, room_uri)))),
+        MatrixIdUri::User(user_id) => {
+            // We should have a strong reference to the list wherever we show a user pill,
+            // so we can use `get_or_create_members()`.
+            let user = room.get_or_create_members().get_or_create(user_id);
+            Some(Pill::for_user(user))
         }
         _ => None,
     }

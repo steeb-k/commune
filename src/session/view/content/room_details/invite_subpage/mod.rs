@@ -222,7 +222,7 @@ impl InviteSubpage {
     fn add_user_pill(&self, user: &Invitee) {
         let imp = self.imp();
 
-        let pill = Pill::for_user(user.upcast_ref());
+        let pill = Pill::for_user(user.clone());
         pill.set_margin_start(3);
         pill.set_margin_end(3);
 

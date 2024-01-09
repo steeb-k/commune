@@ -359,7 +359,7 @@ impl MessageToolbar {
         }
 
         imp.related_event_header
-            .set_widgets(vec![Pill::for_user(event.sender().upcast_ref())]);
+            .set_widgets(vec![Pill::for_user(event.sender())]);
         imp.related_event_header
             // Translators: Do NOT translate the content between '{' and '}',
             // this is a variable name. In this string, 'Reply' is a noun.

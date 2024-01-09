@@ -325,7 +325,7 @@ pub trait UserExt: IsA<User> {
 
     /// Get a `Pill` representing this `User`.
     fn to_pill(&self) -> Pill {
-        let user = self.upcast_ref();
+        let user = self.upcast_ref().clone();
         Pill::for_user(user)
     }
 

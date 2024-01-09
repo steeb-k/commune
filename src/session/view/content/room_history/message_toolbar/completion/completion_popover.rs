@@ -662,7 +662,7 @@ impl CompletionPopover {
                     Some(anchor) => anchor,
                     None => buffer.create_child_anchor(&mut start),
                 };
-                let pill = Pill::for_user(member.upcast_ref());
+                let pill = Pill::for_user(member);
                 view.add_child_at_anchor(&pill, &anchor);
 
                 self.popdown();
