@@ -4,7 +4,7 @@ use ruma::{
     api::client::room::create_room,
     assign,
     events::{room::encryption::RoomEncryptionEventContent, InitialStateEvent},
-    OwnedMxcUri, OwnedUserId,
+    MatrixToUri, MatrixUri, OwnedMxcUri, OwnedUserId,
 };
 use tracing::{debug, error};
 
@@ -329,9 +329,19 @@ pub trait UserExt: IsA<User> {
         Pill::for_user(user)
     }
 
+    /// Get the `matrix.to` URI representation for this `User`.
+    fn matrix_to_uri(&self) -> MatrixToUri {
+        self.user_id().matrix_to_uri()
+    }
+
+    /// Get the `matrix:` URI representation for this `User`.
+    fn matrix_uri(&self) -> MatrixUri {
+        self.user_id().matrix_uri(false)
+    }
+
     /// Get the HTML mention representation for this `User`.
     fn html_mention(&self) -> String {
-        let uri = self.user_id().matrix_to_uri();
+        let uri = self.matrix_to_uri();
         format!("<a href=\"{uri}\">{}</a>", self.display_name())
     }
 

@@ -40,7 +40,7 @@ use ruma::{
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
         AnySyncTimelineEvent, SyncEphemeralRoomEvent, SyncStateEvent,
     },
-    OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
+    MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
 use tracing::{debug, error, warn};
 
@@ -1912,5 +1912,83 @@ impl Room {
     /// Whether anyone can join this room.
     pub fn anyone_can_join(&self) -> bool {
         self.matrix_room().join_rule() == JoinRule::Public
+    }
+
+    /// The `matrix.to` URI representation for this room.
+    pub async fn matrix_to_uri(&self) -> MatrixToUri {
+        let matrix_room = self.matrix_room().clone();
+
+        let handle = spawn_tokio!(async move { matrix_room.matrix_to_permalink().await });
+        match handle.await.unwrap() {
+            Ok(permalink) => {
+                return permalink;
+            }
+            Err(error) => {
+                error!("Could not get room event permalink: {error}");
+            }
+        }
+
+        // Fallback to using just the room ID, without routing.
+        self.room_id().matrix_to_uri()
+    }
+
+    /// The `matrix:` URI representation for this room.
+    pub async fn matrix_uri(&self) -> MatrixUri {
+        let matrix_room = self.matrix_room().clone();
+
+        let handle = spawn_tokio!(async move { matrix_room.matrix_permalink(false).await });
+        match handle.await.unwrap() {
+            Ok(permalink) => {
+                return permalink;
+            }
+            Err(error) => {
+                error!("Could not get room event permalink: {error}");
+            }
+        }
+
+        // Fallback to using just the room ID, without routing.
+        self.room_id().matrix_uri(false)
+    }
+
+    /// The `matrix.to` URI representation for the given event in this room.
+    pub async fn matrix_to_event_uri(&self, event_id: OwnedEventId) -> MatrixToUri {
+        let matrix_room = self.matrix_room().clone();
+
+        let event_id_clone = event_id.clone();
+        let handle =
+            spawn_tokio!(
+                async move { matrix_room.matrix_to_event_permalink(event_id_clone).await }
+            );
+        match handle.await.unwrap() {
+            Ok(permalink) => {
+                return permalink;
+            }
+            Err(error) => {
+                error!("Could not get room event permalink: {error}");
+            }
+        }
+
+        // Fallback to using just the room ID, without routing.
+        self.room_id().matrix_to_event_uri(event_id)
+    }
+
+    /// The `matrix:` URI representation for the given event in this room.
+    pub async fn matrix_event_uri(&self, event_id: OwnedEventId) -> MatrixUri {
+        let matrix_room = self.matrix_room().clone();
+
+        let event_id_clone = event_id.clone();
+        let handle =
+            spawn_tokio!(async move { matrix_room.matrix_event_permalink(event_id_clone).await });
+        match handle.await.unwrap() {
+            Ok(permalink) => {
+                return permalink;
+            }
+            Err(error) => {
+                error!("Could not get room event permalink: {error}");
+            }
+        }
+
+        // Fallback to using just the room ID, without routing.
+        self.room_id().matrix_event_uri(event_id)
     }
 }

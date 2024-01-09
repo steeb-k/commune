@@ -14,7 +14,7 @@ use crate::{
         model::{Event, EventKey, TimelineItem, VirtualItem, VirtualItemKind},
         view::EventDetailsDialog,
     },
-    spawn, spawn_tokio, toast,
+    spawn, toast,
     utils::media::save_to_file,
 };
 
@@ -467,23 +467,13 @@ impl ItemRow {
             // Create a permalink
             gio::ActionEntry::builder("permalink")
                 .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                    let matrix_room = event.room().matrix_room().clone();
-                    let event_id = event.event_id().unwrap();
+                    spawn!(clone!(@weak widget, @weak event => async move {
+                        let Some(permalink) = event.matrix_to_uri().await else {
+                            return;
+                        };
 
-                    spawn!(clone!(@weak widget => async move {
-                        let handle = spawn_tokio!(async move {
-                            matrix_room.matrix_to_event_permalink(event_id).await
-                        });
-                        match handle.await.unwrap() {
-                            Ok(permalink) => {
-                                widget.clipboard().set_text(&permalink.to_string());
-                                toast!(widget, gettext("Permalink copied to clipboard"));
-                            },
-                            Err(error) => {
-                                error!("Could not get permalink: {error}");
-                                toast!(widget, gettext("Failed to copy the permalink"));
-                            }
-                        }
+                        widget.clipboard().set_text(&permalink.to_string());
+                        toast!(widget, gettext("Permalink copied to clipboard"));
                     }));
                 }))
                 .build(),

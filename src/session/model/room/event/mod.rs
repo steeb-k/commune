@@ -9,7 +9,8 @@ use matrix_sdk_ui::timeline::{
 use ruma::{
     events::{receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent},
     serde::Raw,
-    EventId, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId, OwnedUserId,
+    EventId, MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
+    OwnedUserId,
 };
 use serde::Deserialize;
 use tracing::error;
@@ -721,6 +722,20 @@ impl Event {
     /// [MSC2654]: https://github.com/matrix-org/matrix-spec-proposals/pull/2654
     pub fn counts_as_unread(&self) -> bool {
         count_as_unread(self.imp().item.borrow().as_ref().unwrap().content())
+    }
+
+    /// The `matrix.to` URI representation for this event.
+    ///
+    /// Returns `None` if we don't have the ID of the event.
+    pub async fn matrix_to_uri(&self) -> Option<MatrixToUri> {
+        Some(self.room().matrix_to_event_uri(self.event_id()?).await)
+    }
+
+    /// The `matrix:` URI representation for this event.
+    ///
+    /// Returns `None` if we don't have the ID of the event.
+    pub async fn matrix_uri(&self) -> Option<MatrixUri> {
+        Some(self.room().matrix_event_uri(self.event_id()?).await)
     }
 
     /// Listen to the signal emitted when the SDK item changed.

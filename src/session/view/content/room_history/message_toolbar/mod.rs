@@ -14,12 +14,15 @@ use matrix_sdk::{
         AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
     },
 };
-use ruma::events::{
-    room::message::{
-        AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
-        OriginalSyncRoomMessageEvent, RoomMessageEventContent,
+use ruma::{
+    events::{
+        room::message::{
+            AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
+            OriginalSyncRoomMessageEvent, RoomMessageEventContent,
+        },
+        AnyMessageLikeEventContent,
     },
-    AnyMessageLikeEventContent,
+    matrix_uri::MatrixId,
 };
 use sourceview::prelude::*;
 use tracing::{debug, error, warn};
@@ -104,9 +107,13 @@ mod imp {
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
 
-            klass.install_action("message-toolbar.send-text-message", None, |widget, _, _| {
-                widget.send_text_message();
-            });
+            klass.install_action_async(
+                "message-toolbar.send-text-message",
+                None,
+                |widget, _, _| async move {
+                    widget.send_text_message().await;
+                },
+            );
 
             klass.install_action_async(
                 "message-toolbar.select-file",
@@ -169,13 +176,19 @@ mod imp {
             self.message_entry
                 .connect_copy_clipboard(clone!(@weak obj => move |entry| {
                     entry.stop_signal_emission_by_name("copy-clipboard");
-                    obj.copy_buffer_selection_to_clipboard();
+
+                    spawn!(clone!(@weak obj => async move {
+                        obj.copy_buffer_selection_to_clipboard().await;
+                    }));
                 }));
             self.message_entry
                 .connect_cut_clipboard(clone!(@weak obj => move |entry| {
                     entry.stop_signal_emission_by_name("cut-clipboard");
-                    obj.copy_buffer_selection_to_clipboard();
-                    entry.buffer().delete_selection(true, true);
+
+                    spawn!(clone!(@weak obj, @weak entry => async move {
+                        obj.copy_buffer_selection_to_clipboard().await;
+                        entry.buffer().delete_selection(true, true);
+                    }));
                 }));
 
             // Key bindings.
@@ -183,7 +196,9 @@ mod imp {
             key_events
                 .connect_key_pressed(clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_, key, _, modifier| {
                 if modifier.is_empty() && (key == gdk::Key::Return || key == gdk::Key::KP_Enter) {
-                    obj.send_text_message();
+                    spawn!(clone!(@weak obj => async move {
+                        obj.send_text_message().await;
+                    }));
                     glib::Propagation::Stop
                 } else if modifier.is_empty() && key == gdk::Key::Escape && obj.related_event_type() != RelatedEventType::None {
                     obj.clear_related_event();
@@ -463,7 +478,7 @@ impl MessageToolbar {
         SplitMentions { iter: start, end }
     }
 
-    fn send_text_message(&self) {
+    async fn send_text_message(&self) {
         let imp = self.imp();
         if !imp.can_send_message() {
             return;
@@ -482,7 +497,8 @@ impl MessageToolbar {
         // formatted_body is Markdown if is_markdown is true, and HTML if false.
         let mut formatted_body = String::with_capacity(body_len);
 
-        for chunk in self.split_buffer_mentions(start_iter, end_iter) {
+        let mut split_mentions = self.split_buffer_mentions(start_iter, end_iter);
+        while let Some(chunk) = split_mentions.next().await {
             match chunk {
                 MentionChunk::Text(text) => {
                     plain_body.push_str(&text);
@@ -900,17 +916,28 @@ impl MessageToolbar {
 
     // Copy the selection in the message entry to the clipboard while replacing
     // mentions.
-    fn copy_buffer_selection_to_clipboard(&self) {
-        if let Some((start, end)) = self.imp().message_entry.buffer().selection_bounds() {
-            let content: String = self
-                .split_buffer_mentions(start, end)
-                .map(|chunk| match chunk {
-                    MentionChunk::Text(str) => str,
-                    MentionChunk::Mention { name, .. } => name,
-                })
-                .collect();
-            self.clipboard().set_text(&content);
+    async fn copy_buffer_selection_to_clipboard(&self) {
+        let buffer = self.imp().message_entry.buffer();
+        let Some((start, end)) = buffer.selection_bounds() else {
+            return;
+        };
+
+        let body_len = buffer.text(&start, &end, true).len();
+        let mut body = String::with_capacity(body_len);
+
+        let mut split_mentions = self.split_buffer_mentions(start, end);
+        while let Some(chunk) = split_mentions.next().await {
+            match chunk {
+                MentionChunk::Text(text) => {
+                    body.push_str(&text);
+                }
+                MentionChunk::Mention { name, .. } => {
+                    body.push_str(&name);
+                }
+            }
         }
+
+        self.clipboard().set_text(&body);
     }
 
     fn send_typing_notification(&self, typing: bool) {
@@ -920,20 +947,28 @@ impl MessageToolbar {
     }
 }
 
+/// A chunk of a message.
 enum MentionChunk {
+    /// Some text.
     Text(String),
-    Mention { name: String, uri: String },
+    /// A mention.
+    Mention {
+        /// The string representation of the mention.
+        name: String,
+        /// The URI of the mention.
+        uri: String,
+    },
 }
 
+/// An iterator over the chunks of a message.
 struct SplitMentions {
     iter: gtk::TextIter,
     end: gtk::TextIter,
 }
 
-impl Iterator for SplitMentions {
-    type Item = MentionChunk;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl SplitMentions {
+    //
+    async fn next(&mut self) -> Option<MentionChunk> {
         if self.iter == self.end {
             // We reached the end.
             return None;
@@ -949,15 +984,15 @@ impl Iterator for SplitMentions {
         {
             // This chunk is a mention.
             let (name, uri) = if let Some(user) = pill.user() {
-                (
-                    user.display_name(),
-                    user.user_id().matrix_to_uri().to_string(),
-                )
+                (user.display_name(), user.matrix_to_uri().to_string())
             } else if let Some(room) = pill.room() {
-                (
-                    room.display_name(),
-                    room.room_id().matrix_to_uri().to_string(),
-                )
+                let matrix_to_uri = room.matrix_to_uri().await;
+                let string_repr = match matrix_to_uri.id() {
+                    MatrixId::Room(room_id) => room_id.to_string(),
+                    MatrixId::RoomAlias(alias) => alias.to_string(),
+                    _ => unreachable!(),
+                };
+                (string_repr, matrix_to_uri.to_string())
             } else {
                 unreachable!()
             };

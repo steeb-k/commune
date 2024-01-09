@@ -9,7 +9,7 @@ use crate::{
     components::{ContentType, ImagePaintable, MediaContentViewer, ScaleRevealer},
     prelude::*,
     session::model::Room,
-    spawn, spawn_tokio, toast,
+    spawn, toast,
     utils::{matrix::get_media_content, media::save_to_file},
     Window,
 };
@@ -523,19 +523,8 @@ impl MediaViewer {
             return;
         };
 
-        let matrix_room = room.matrix_room().clone();
-        let handle =
-            spawn_tokio!(async move { matrix_room.matrix_to_event_permalink(event_id).await });
-
-        match handle.await.unwrap() {
-            Ok(permalink) => {
-                self.clipboard().set_text(&permalink.to_string());
-                toast!(self, gettext("Permalink copied to clipboard"));
-            }
-            Err(error) => {
-                error!("Could not get permalink: {error}");
-                toast!(self, gettext("Failed to copy the permalink"));
-            }
-        }
+        let permalink = room.matrix_to_event_uri(event_id).await;
+        self.clipboard().set_text(&permalink.to_string());
+        toast!(self, gettext("Permalink copied to clipboard"));
     }
 }

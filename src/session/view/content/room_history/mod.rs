@@ -581,20 +581,13 @@ impl RoomHistory {
     }
 
     pub async fn permalink(&self) {
-        if let Some(room) = self.room() {
-            let matrix_room = room.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.matrix_to_permalink().await });
-            match handle.await.unwrap() {
-                Ok(permalink) => {
-                    self.clipboard().set_text(&permalink.to_string());
-                    toast!(self, gettext("Permalink copied to clipboard"));
-                }
-                Err(error) => {
-                    error!("Could not get permalink: {error}");
-                    toast!(self, gettext("Failed to copy the permalink"));
-                }
-            }
-        }
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let permalink = room.matrix_to_uri().await;
+        self.clipboard().set_text(&permalink.to_string());
+        toast!(self, gettext("Permalink copied to clipboard"));
     }
 
     fn init_invite_action(&self) {
