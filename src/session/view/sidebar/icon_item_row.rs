@@ -14,7 +14,7 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/icon_item_row.ui")]
     #[properties(wrapper_type = super::IconItemRow)]
     pub struct IconItemRow {
-        /// The [`IconItem`] of this row.
+        /// The [`SidebarIconItem`] of this row.
         #[property(get, set = Self::set_icon_item, explicit_notify, nullable)]
         pub icon_item: RefCell<Option<SidebarIconItem>>,
     }
@@ -42,7 +42,7 @@ mod imp {
     impl BinImpl for IconItemRow {}
 
     impl IconItemRow {
-        /// Set the [`IconItem`] of this row.
+        /// Set the [`SidebarIconItem`] of this row.
         fn set_icon_item(&self, icon_item: Option<SidebarIconItem>) {
             if *self.icon_item.borrow() == icon_item {
                 return;
