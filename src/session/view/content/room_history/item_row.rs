@@ -310,9 +310,9 @@ mod imp {
                                 gettext("%A, %B %-e")
                             } else {
                                 // Translators: This is a date format in the day divider with the
-                                // year. For ex. "Friday, May 5,
-                                // 2023". Please use `-` before
-                                // specifiers that add spaces on single digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+                                // year. For ex. "Friday, May 5, 2023".
+                                // Please use `-` before specifiers that add spaces on single
+                                // digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
                                 gettext("%A, %B %-e, %Y")
                             };
 
