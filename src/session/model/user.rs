@@ -362,6 +362,12 @@ pub trait UserExt: IsA<User> {
     fn is_ignored(&self) -> bool {
         self.upcast_ref().is_ignored()
     }
+
+    /// Conntect to the signal emitted when the display name changes.
+    fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.upcast_ref()
+            .connect_display_name_notify(move |user| f(user.downcast_ref().unwrap()))
+    }
 }
 
 impl<T: IsA<User>> UserExt for T {}

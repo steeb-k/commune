@@ -145,9 +145,8 @@ mod imp {
 
                     self.signal_handler.replace(Some(handler_id));
                 } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                    let handler_id = verification.connect_notify_local(
-                        Some("state"),
-                        clone!(@weak obj => move |verification, _| {
+                    let handler_id = verification.connect_state_notify(
+                        clone!(@weak obj => move |verification| {
                             if verification.is_finished() {
                                 obj.set_item(None::<glib::Object>);
                             }

@@ -227,12 +227,10 @@ impl ReadReceiptsList {
                 .and_then(|r| r.member())
             {
                 // Listen to changes of the display name.
-                let handler_id = member.connect_notify_local(
-                    Some("display-name"),
-                    clone!(@weak self as obj => move |member, _| {
+                let handler_id =
+                    member.connect_display_name_notify(clone!(@weak self as obj => move |member| {
                         obj.update_member_tooltip(member);
-                    }),
-                );
+                    }));
 
                 imp.receipt_member.set(&member, vec![handler_id]);
                 self.update_member_tooltip(&member);

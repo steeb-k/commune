@@ -276,12 +276,10 @@ mod imp {
             // to keep track of their name since it's used as the display name.
             if user.is::<Member>() {
                 let obj = self.obj();
-                let display_name_handler = user.connect_notify_local(
-                    Some("display-name"),
-                    clone!(@weak obj => move |_, _| {
+                let display_name_handler =
+                    user.connect_display_name_notify(clone!(@weak obj => move |_| {
                         obj.notify_display_name();
-                    }),
-                );
+                    }));
                 handlers.push(display_name_handler);
             }
 

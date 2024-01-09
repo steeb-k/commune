@@ -151,9 +151,8 @@ impl MessageText {
                 self.set_is_html(true);
                 self.set_format(format);
 
-                let handler = sender.connect_notify_local(
-                    Some("display-name"),
-                    clone!(@weak self as obj, @weak room => move |sender, _| {
+                let handler = sender.connect_display_name_notify(
+                    clone!(@weak self as obj, @weak room => move |sender| {
                         obj.update_emote(&room, &sender.display_name());
                     }),
                 );
@@ -181,9 +180,8 @@ impl MessageText {
         self.set_is_html(false);
         self.set_format(format);
 
-        let handler = sender.connect_notify_local(
-            Some("display-name"),
-            clone!(@weak self as obj, @weak room => move |sender, _| {
+        let handler = sender.connect_display_name_notify(
+            clone!(@weak self as obj, @weak room => move |sender| {
                 obj.update_emote(&room, &sender.display_name());
             }),
         );

@@ -114,12 +114,9 @@ mod imp {
             }
 
             if let Some(verification) = &verification {
-                let handler = verification.connect_notify_local(
-                    Some("state"),
-                    clone!(@weak obj => move |_, _| {
-                        obj.update_view();
-                    }),
-                );
+                let handler = verification.connect_state_notify(clone!(@weak obj => move |_| {
+                    obj.update_view();
+                }));
 
                 self.state_handler.replace(Some(handler));
 
