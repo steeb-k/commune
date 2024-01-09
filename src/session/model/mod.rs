@@ -1,6 +1,7 @@
 mod avatar_data;
 mod ignored_users;
 mod notifications;
+mod remote_room;
 mod remote_user;
 mod room;
 mod room_list;
@@ -17,6 +18,7 @@ pub use self::{
     notifications::{
         Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
     },
+    remote_room::RemoteRoom,
     remote_user::RemoteUser,
     room::{
         content_can_show_header, Event, EventKey, HighlightFlags, Member, MemberList, MemberRole,

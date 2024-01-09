@@ -432,6 +432,24 @@ pub enum MatrixRoomId {
     Alias(OwnedRoomAliasId),
 }
 
+impl MatrixRoomId {
+    /// The room ID, if this is an ID.
+    pub fn as_id(&self) -> Option<&OwnedRoomId> {
+        match self {
+            Self::Id(room_id) => Some(room_id),
+            Self::Alias(_) => None,
+        }
+    }
+
+    /// The room alias, if this is an alias.
+    pub fn as_alias(&self) -> Option<&OwnedRoomAliasId> {
+        match self {
+            Self::Id(_) => None,
+            Self::Alias(alias) => Some(alias),
+        }
+    }
+}
+
 impl From<OwnedRoomId> for MatrixRoomId {
     fn from(value: OwnedRoomId) -> Self {
         Self::Id(value)

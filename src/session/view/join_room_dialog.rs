@@ -1,19 +1,14 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use ruma::{
-    api::client::space::{get_hierarchy, SpaceHierarchyRoomsChunk},
-    assign, uint,
-};
-use tracing::{debug, error};
 
 use crate::{
     components::{Avatar, Spinner, SpinnerButton, ToastableWindow},
     i18n::ngettext_f,
     prelude::*,
-    session::model::{AvatarData, AvatarImage, AvatarUriSource, Session},
-    spawn, spawn_tokio, toast,
-    utils::matrix::{MatrixRoomId, MatrixRoomIdUri},
+    session::model::{RemoteRoom, Session},
+    spawn, toast,
+    utils::{matrix::MatrixRoomIdUri, LoadingState},
     Window,
 };
 
@@ -57,6 +52,9 @@ mod imp {
         pub session: glib::WeakRef<Session>,
         /// The URI to preview.
         pub uri: RefCell<Option<MatrixRoomIdUri>>,
+        /// The room that is previewed.
+        #[property(get)]
+        pub room: RefCell<Option<RemoteRoom>>,
         pub disable_go_back: Cell<bool>,
     }
 
@@ -106,6 +104,33 @@ mod imp {
             obj.update_entry_page();
         }
 
+        /// Set the room that is previewed.
+        pub(super) fn set_room(&self, room: Option<RemoteRoom>) {
+            if *self.room.borrow() == room {
+                return;
+            }
+            let obj = self.obj();
+
+            self.room.replace(room.clone());
+
+            if let Some(room) = room {
+                if matches!(
+                    room.loading_state(),
+                    LoadingState::Ready | LoadingState::Error
+                ) {
+                    obj.fill_details();
+                } else {
+                    room.connect_loading_state_notify(clone!(@weak obj => move |room| {
+                    if matches!(room.loading_state(), LoadingState::Ready | LoadingState::Error) {
+                        obj.fill_details();
+                    }
+                }));
+                }
+            }
+
+            obj.notify_room();
+        }
+
         /// Whether we can go back to the previous screen.
         pub fn can_go_back(&self) -> bool {
             !self.disable_go_back.get()
@@ -143,9 +168,7 @@ impl JoinRoomDialog {
         imp.disable_go_back.set(true);
         imp.set_visible_page("loading");
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.look_up_room_inner(uri).await;
-        }));
+        self.look_up_room_inner(uri);
     }
 
     /// Update the state of the entry page.
@@ -199,13 +222,11 @@ impl JoinRoomDialog {
         if window.session_view().select_room_if_exists(&uri.id) {
             self.close();
         } else {
-            spawn!(clone!(@weak self as obj => async move {
-                obj.look_up_room_inner(uri).await;
-            }));
+            self.look_up_room_inner(uri);
         }
     }
 
-    async fn look_up_room_inner(&self, uri: MatrixRoomIdUri) {
+    fn look_up_room_inner(&self, uri: MatrixRoomIdUri) {
         let Some(session) = self.session() else {
             return;
         };
@@ -215,97 +236,47 @@ impl JoinRoomDialog {
         imp.go_back_btn.set_sensitive(true);
         imp.join_btn.set_loading(false);
 
-        let client = session.client();
-
-        let room_id = match uri.id.clone() {
-            MatrixRoomId::Id(room_id) => room_id,
-            MatrixRoomId::Alias(alias) => {
-                let client_clone = client.clone();
-                let handle =
-                    spawn_tokio!(async move { client_clone.resolve_room_alias(&alias).await });
-
-                match handle.await.unwrap() {
-                    Ok(response) => response.room_id,
-                    Err(error) => {
-                        error!("Failed to resolve room alias `{}`: {error}", uri.id);
-                        self.fill_details_not_found(&uri);
-                        return;
-                    }
-                }
-            }
-        };
-
-        // FIXME: The space hierarchy endpoint gives us the room details we want, but it
-        // doesn't work if the room is not known by the homeserver. We need MSC3266 for
-        // a proper endpoint.
-        let request = assign!(get_hierarchy::v1::Request::new(room_id.clone()), {
-            // We are only interested in the single room.
-            limit: Some(uint!(1))
-        });
-        let handle = spawn_tokio!(async move { client.send(request, None).await });
-
-        match handle.await.unwrap() {
-            Ok(response) => {
-                if let Some(chunk) = response
-                    .rooms
-                    .into_iter()
-                    .next()
-                    .filter(|c| c.room_id == room_id)
-                {
-                    self.fill_details_found(&session, chunk);
-                    return;
-                } else {
-                    debug!("Endpoint did not return requested room");
-                }
-            }
-            Err(error) => {
-                error!("Failed to get room details for room `{}`: {error}", uri.id);
-            }
-        }
-
-        self.fill_details_not_found(&uri);
+        let room = RemoteRoom::new(&session, uri);
+        imp.set_room(Some(room));
     }
 
     /// Fill the details with the given result.
-    fn fill_details_found(&self, session: &Session, chunk: SpaceHierarchyRoomsChunk) {
+    fn fill_details(&self) {
         let imp = self.imp();
-
-        let name = if let Some(name) = chunk.name {
-            if let Some(alias) = chunk.canonical_alias {
-                imp.room_alias.set_label(alias.as_str());
-                imp.room_alias.set_visible(true);
-            }
-
-            name
-        } else if let Some(alias) = chunk.canonical_alias {
-            imp.room_alias.set_visible(false);
-
-            alias.to_string()
-        } else {
-            imp.room_alias.set_visible(false);
-
-            chunk.room_id.to_string()
+        let Some(room) = imp.room.borrow().clone() else {
+            return;
         };
-        imp.room_name.set_label(&name);
 
-        let avatar_data = AvatarData::new();
-        avatar_data.set_display_name(Some(name));
+        imp.room_name.set_label(&room.display_name());
 
-        if let Some(avatar_url) = chunk.avatar_url {
-            let image = AvatarImage::new(session, Some(&avatar_url), AvatarUriSource::Room);
-            avatar_data.set_image(Some(image));
+        let alias = room.alias();
+        if let Some(alias) = &alias {
+            imp.room_alias.set_label(alias.as_str());
+        }
+        imp.room_alias
+            .set_visible(room.name().is_some() && alias.is_some());
+
+        imp.room_avatar.set_data(Some(room.avatar_data()));
+
+        if room.loading_state() == LoadingState::Error {
+            imp.room_topic.set_label(&gettext(
+                "The room details cannot be previewed. It can be because the room is not known by the homeserver or because its details are private. You can still try to join it."
+            ));
+            imp.room_topic.set_visible(true);
+            imp.room_members_box.set_visible(false);
+
+            imp.set_visible_page("details");
+            return;
         }
 
-        imp.room_avatar.set_data(Some(avatar_data));
-
-        if let Some(topic) = chunk.topic {
+        if let Some(topic) = room.topic() {
             imp.room_topic.set_label(&topic);
             imp.room_topic.set_visible(true);
         } else {
             imp.room_topic.set_visible(false);
         }
 
-        let members_count = u32::try_from(chunk.num_joined_members).unwrap_or(u32::MAX);
+        let members_count = room.joined_members_count();
         imp.room_members_count.set_label(&members_count.to_string());
 
         let members_tooltip = ngettext_f(
@@ -319,28 +290,6 @@ impl JoinRoomDialog {
         imp.room_members_box
             .set_tooltip_text(Some(&members_tooltip));
         imp.room_members_box.set_visible(true);
-
-        imp.set_visible_page("details");
-    }
-
-    /// Fill the details when no result is available
-    fn fill_details_not_found(&self, uri: &MatrixRoomIdUri) {
-        let imp = self.imp();
-
-        let name = uri.id.to_string();
-        imp.room_name.set_label(&name);
-
-        let avatar_data = AvatarData::new();
-        avatar_data.set_display_name(Some(name));
-        imp.room_avatar.set_data(Some(avatar_data));
-
-        imp.room_topic.set_label(&gettext(
-            "The room details cannot be previewed. It can be because the room is not known by the homeserver or because its details are private. You can still try to join it."
-        ));
-        imp.room_topic.set_visible(true);
-
-        imp.room_alias.set_visible(false);
-        imp.room_members_box.set_visible(false);
 
         imp.set_visible_page("details");
     }
