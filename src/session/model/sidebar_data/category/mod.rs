@@ -33,8 +33,8 @@ mod imp {
         /// The filter of this category.
         pub filter: CategoryFilter,
         /// The type of this category.
-        #[property(get = Self::r#type, set = Self::set_type, construct_only, builder(CategoryType::default()))]
-        pub r#type: PhantomData<CategoryType>,
+        #[property(get = Self::category_type, set = Self::set_category_type, construct_only, builder(CategoryType::default()))]
+        pub category_type: PhantomData<CategoryType>,
         /// Whether this category is empty.
         #[property(get)]
         pub empty: Cell<bool>,
@@ -79,7 +79,7 @@ mod imp {
                     RoomType::try_from(for_category)
                         .ok()
                         .and_then(|source_room_type| {
-                            RoomType::try_from(obj.r#type())
+                            RoomType::try_from(obj.category_type())
                                 .ok()
                                 .map(|target_room_type| (source_room_type, target_room_type))
                         });
@@ -145,12 +145,12 @@ mod imp {
         }
 
         /// The type of this category.
-        fn r#type(&self) -> CategoryType {
+        fn category_type(&self) -> CategoryType {
             self.filter.category_type()
         }
 
         /// Set the type of this category.
-        fn set_type(&self, type_: CategoryType) {
+        fn set_category_type(&self, type_: CategoryType) {
             self.filter.set_category_type(type_);
         }
 
@@ -166,7 +166,7 @@ mod imp {
 
         /// The display name of this category.
         fn display_name(&self) -> String {
-            self.r#type().to_string()
+            self.category_type().to_string()
         }
     }
 }
@@ -181,9 +181,9 @@ glib::wrapper! {
 }
 
 impl Category {
-    pub fn new(type_: CategoryType, model: &impl IsA<gio::ListModel>) -> Self {
+    pub fn new(category_type: CategoryType, model: &impl IsA<gio::ListModel>) -> Self {
         glib::Object::builder()
-            .property("type", type_)
+            .property("category-type", category_type)
             .property("model", model)
             .build()
     }

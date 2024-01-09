@@ -203,7 +203,7 @@ impl Row {
             Some(room.category())
         } else {
             item.downcast_ref::<Category>()
-                .and_then(|category| RoomType::try_from(category.r#type()).ok())
+                .and_then(|category| RoomType::try_from(category.category_type()).ok())
         }
     }
 

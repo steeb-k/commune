@@ -78,7 +78,7 @@ mod imp {
 
         /// The label to show for this row.
         fn label(&self) -> Option<String> {
-            let to_type = self.category.borrow().as_ref()?.r#type();
+            let to_type = self.category.borrow().as_ref()?.category_type();
             let from_type = self.show_label_for_category.get();
 
             let label = match from_type {
