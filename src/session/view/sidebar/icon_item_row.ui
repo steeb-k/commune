@@ -7,7 +7,7 @@
         <child>
           <object class="GtkImage">
             <binding name="icon-name">
-              <lookup name="icon-name" type="IconItem">
+              <lookup name="icon-name" type="SidebarIconItem">
                 <lookup name="icon-item">SidebarIconItemRow</lookup>
               </lookup>
             </binding>
@@ -20,7 +20,7 @@
             <property name="hexpand">True</property>
             <property name="ellipsize">end</property>
             <binding name="label">
-              <lookup name="display-name" type="IconItem">
+              <lookup name="display-name" type="SidebarIconItem">
                 <lookup name="icon-item">SidebarIconItemRow</lookup>
               </lookup>
             </binding>

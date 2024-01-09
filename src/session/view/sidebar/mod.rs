@@ -15,7 +15,7 @@ use self::{
 use crate::{
     account_switcher::AccountSwitcherButton,
     session::model::{
-        Category, CategoryType, IconItem, IdentityVerification, Room, RoomType, Selection,
+        Category, CategoryType, IdentityVerification, Room, RoomType, Selection, SidebarIconItem,
         SidebarListModel, User,
     },
     utils::expression,
@@ -121,7 +121,7 @@ mod imp {
                 match row.item() {
                     Some(o) if o.is::<Category>() => row.set_expanded(!row.is_expanded()),
                     Some(o) if o.is::<Room>() => model.set_selected(pos),
-                    Some(o) if o.is::<IconItem>() => model.set_selected(pos),
+                    Some(o) if o.is::<SidebarIconItem>() => model.set_selected(pos),
                     Some(o) if o.is::<IdentityVerification>() => model.set_selected(pos),
                     _ => {}
                 }

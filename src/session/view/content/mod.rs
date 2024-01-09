@@ -10,7 +10,9 @@ use self::{
     explore::Explore, invite::Invite, room_details::RoomDetails, room_history::RoomHistory,
 };
 use crate::{
-    session::model::{IconItem, IdentityVerification, ItemType, Room, RoomType, Session},
+    session::model::{
+        IdentityVerification, Room, RoomType, Session, SidebarIconItem, SidebarIconItemType,
+    },
     verification_view::IdentityVerificationView,
 };
 
@@ -206,8 +208,8 @@ impl Content {
                 }
             }
             Some(o)
-                if o.downcast_ref::<IconItem>()
-                    .is_some_and(|i| i.r#type() == ItemType::Explore) =>
+                if o.downcast_ref::<SidebarIconItem>()
+                    .is_some_and(|i| i.item_type() == SidebarIconItemType::Explore) =>
             {
                 imp.explore.init();
                 imp.stack.set_visible_child(&*imp.explore);

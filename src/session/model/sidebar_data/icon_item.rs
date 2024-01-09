@@ -7,14 +7,14 @@ use super::{CategoryType, SidebarItem, SidebarItemExt, SidebarItemImpl};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[enum_type(name = "ItemType")]
-pub enum ItemType {
+#[enum_type(name = "SidebarIconItemType")]
+pub enum SidebarIconItemType {
     #[default]
     Explore = 0,
     Forget = 1,
 }
 
-impl ItemType {
+impl SidebarIconItemType {
     /// The icon name for this item type.
     pub fn icon_name(&self) -> &'static str {
         match self {
@@ -24,7 +24,7 @@ impl ItemType {
     }
 }
 
-impl fmt::Display for ItemType {
+impl fmt::Display for SidebarIconItemType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let label = match self {
             Self::Explore => gettext("Explore"),
@@ -41,11 +41,11 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::IconItem)]
-    pub struct IconItem {
+    #[properties(wrapper_type = super::SidebarIconItem)]
+    pub struct SidebarIconItem {
         /// The type of this item.
-        #[property(get, construct_only, builder(ItemType::default()))]
-        pub r#type: Cell<ItemType>,
+        #[property(get, construct_only, builder(SidebarIconItemType::default()))]
+        pub item_type: Cell<SidebarIconItemType>,
         /// The display name of this item.
         #[property(get = Self::display_name)]
         pub display_name: PhantomData<String>,
@@ -55,46 +55,48 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for IconItem {
-        const NAME: &'static str = "IconItem";
-        type Type = super::IconItem;
+    impl ObjectSubclass for SidebarIconItem {
+        const NAME: &'static str = "SidebarIconItem";
+        type Type = super::SidebarIconItem;
         type ParentType = SidebarItem;
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for IconItem {}
+    impl ObjectImpl for SidebarIconItem {}
 
-    impl SidebarItemImpl for IconItem {
+    impl SidebarItemImpl for SidebarIconItem {
         fn update_visibility(&self, for_category: CategoryType) {
             let obj = self.obj();
 
-            match self.r#type.get() {
-                ItemType::Explore => obj.set_visible(true),
-                ItemType::Forget => obj.set_visible(for_category == CategoryType::Left),
+            match self.item_type.get() {
+                SidebarIconItemType::Explore => obj.set_visible(true),
+                SidebarIconItemType::Forget => obj.set_visible(for_category == CategoryType::Left),
             }
         }
     }
 
-    impl IconItem {
+    impl SidebarIconItem {
         /// The display name of this item.
         fn display_name(&self) -> String {
-            self.r#type.get().to_string()
+            self.item_type.get().to_string()
         }
 
         /// The icon name used for this item.
         fn icon_name(&self) -> String {
-            self.r#type.get().icon_name().to_owned()
+            self.item_type.get().icon_name().to_owned()
         }
     }
 }
 
 glib::wrapper! {
     /// A top-level row in the sidebar with an icon.
-    pub struct IconItem(ObjectSubclass<imp::IconItem>) @extends SidebarItem;
+    pub struct SidebarIconItem(ObjectSubclass<imp::SidebarIconItem>) @extends SidebarItem;
 }
 
-impl IconItem {
-    pub fn new(type_: ItemType) -> Self {
-        glib::Object::builder().property("type", type_).build()
+impl SidebarIconItem {
+    pub fn new(item_type: SidebarIconItemType) -> Self {
+        glib::Object::builder()
+            .property("item-type", item_type)
+            .build()
     }
 }

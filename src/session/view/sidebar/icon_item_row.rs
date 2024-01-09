@@ -1,7 +1,7 @@
 use adw::subclass::prelude::BinImpl;
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::session::model::{IconItem, ItemType};
+use crate::session::model::{SidebarIconItem, SidebarIconItemType};
 
 mod imp {
     use std::cell::RefCell;
@@ -16,7 +16,7 @@ mod imp {
     pub struct IconItemRow {
         /// The [`IconItem`] of this row.
         #[property(get, set = Self::set_icon_item, explicit_notify, nullable)]
-        pub icon_item: RefCell<Option<IconItem>>,
+        pub icon_item: RefCell<Option<SidebarIconItem>>,
     }
 
     #[glib::object_subclass]
@@ -43,7 +43,7 @@ mod imp {
 
     impl IconItemRow {
         /// Set the [`IconItem`] of this row.
-        fn set_icon_item(&self, icon_item: Option<IconItem>) {
+        fn set_icon_item(&self, icon_item: Option<SidebarIconItem>) {
             if *self.icon_item.borrow() == icon_item {
                 return;
             }
@@ -51,7 +51,7 @@ mod imp {
 
             if icon_item
                 .as_ref()
-                .is_some_and(|i| i.r#type() == ItemType::Forget)
+                .is_some_and(|i| i.item_type() == SidebarIconItemType::Forget)
             {
                 obj.add_css_class("forget");
             } else {

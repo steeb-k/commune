@@ -5,8 +5,8 @@ use gtk::{accessible::Relation, gdk, glib, glib::clone};
 use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
 use crate::{
     session::model::{
-        Category, CategoryType, IconItem, IdentityVerification, ItemType, Room, RoomType,
-        SidebarItem,
+        Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
+        SidebarIconItemType, SidebarItem,
     },
     spawn, toast,
     utils::{message_dialog, BoundObjectWeakRef},
@@ -135,7 +135,7 @@ mod imp {
                     };
 
                     child.set_room(Some(room.clone()));
-                } else if let Some(icon_item) = item.downcast_ref::<IconItem>() {
+                } else if let Some(icon_item) = item.downcast_ref::<SidebarIconItem>() {
                     let child = if let Some(child) = obj.child().and_downcast::<IconItemRow>() {
                         child
                     } else {
@@ -207,13 +207,13 @@ impl Row {
         }
     }
 
-    /// Get the [`ItemType`] of this item.
+    /// Get the [`SidebarIconItemType`] of this item.
     ///
-    /// If this is not an [`IconItem`], returns `None`.
-    pub fn item_type(&self) -> Option<ItemType> {
+    /// If this is not a [`SidebarIconItem`], returns `None`.
+    pub fn item_type(&self) -> Option<SidebarIconItemType> {
         self.item()
-            .and_downcast_ref::<IconItem>()
-            .map(|i| i.r#type())
+            .and_downcast_ref::<SidebarIconItem>()
+            .map(|i| i.item_type())
     }
 
     /// Handle the drag-n-drop hovering this row.
@@ -234,7 +234,7 @@ impl Row {
                     return true;
                 }
             } else if let Some(item_type) = self.item_type() {
-                if room.category() == RoomType::Left && item_type == ItemType::Forget {
+                if room.category() == RoomType::Left && item_type == SidebarIconItemType::Forget {
                     self.add_css_class("drop-active");
                     sidebar.set_drop_active_target_type(None);
                     return true;
@@ -264,7 +264,7 @@ impl Row {
                     ret = true;
                 }
             } else if let Some(item_type) = self.item_type() {
-                if room.category() == RoomType::Left && item_type == ItemType::Forget {
+                if room.category() == RoomType::Left && item_type == SidebarIconItemType::Forget {
                     spawn!(clone!(@strong self as obj, @weak room => async move {
                         obj.forget_room(&room).await;
                     }));
@@ -338,7 +338,7 @@ impl Row {
             } else {
                 let is_forget_item = self
                     .item_type()
-                    .is_some_and(|item_type| item_type == ItemType::Forget);
+                    .is_some_and(|item_type| item_type == SidebarIconItemType::Forget);
                 if is_forget_item && source_type == RoomType::Left {
                     self.remove_css_class("drop-disabled");
                 } else {
