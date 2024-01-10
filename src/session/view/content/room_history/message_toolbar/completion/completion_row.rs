@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use crate::{
     components::Avatar,
     prelude::*,
-    session::model::{AvatarData, Member},
+    session::model::{Member, Room},
 };
 
 mod imp {
@@ -28,6 +28,9 @@ mod imp {
         /// The room member presented by this row.
         #[property(get, set = Self::set_member, explicit_notify, nullable)]
         pub member: RefCell<Option<Member>>,
+        /// The room presented by this row.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        pub room: RefCell<Option<Room>>,
     }
 
     #[glib::object_subclass]
@@ -62,14 +65,39 @@ mod imp {
                 self.avatar.set_data(Some(member.avatar_data()));
                 self.display_name.set_label(&member.display_name());
                 self.id.set_label(member.user_id().as_str());
-            } else {
-                self.avatar.set_data(None::<AvatarData>);
-                self.display_name.set_label("");
-                self.id.set_label("");
             }
 
             self.member.replace(member);
-            self.obj().notify_member();
+            self.room.replace(None);
+
+            let obj = self.obj();
+            obj.notify_member();
+            obj.notify_room();
+        }
+
+        /// Set the room displayed by this row.
+        fn set_room(&self, room: Option<Room>) {
+            if *self.room.borrow() == room {
+                return;
+            }
+
+            if let Some(room) = &room {
+                self.avatar.set_data(Some(room.avatar_data()));
+                self.display_name.set_label(&room.display_name());
+                self.id.set_label(
+                    room.alias()
+                        .as_ref()
+                        .map(|a| a.as_str())
+                        .unwrap_or_else(|| room.room_id().as_str()),
+                );
+            }
+
+            self.room.replace(room);
+            self.member.replace(None);
+
+            let obj = self.obj();
+            obj.notify_member();
+            obj.notify_room();
         }
     }
 }

@@ -2,8 +2,11 @@ use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTem
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
 
-use super::{CompletionMemberList, CompletionRow};
-use crate::{components::Pill, session::model::Member};
+use super::{CompletionMemberList, CompletionRoomList, CompletionRow};
+use crate::{
+    components::Pill,
+    session::model::{Member, Room},
+};
 
 const MAX_MEMBERS: usize = 32;
 
@@ -28,15 +31,21 @@ mod imp {
         /// The parent `GtkTextView` to autocomplete.
         #[property(get = Self::view)]
         view: PhantomData<gtk::TextView>,
+        /// The current room.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        pub room: glib::WeakRef<Room>,
         /// The sorted and filtered room members.
         #[property(get)]
-        pub filtered_members: CompletionMemberList,
+        pub member_list: CompletionMemberList,
+        /// The sorted and filtered rooms.
+        #[property(get)]
+        pub room_list: CompletionRoomList,
         /// The rows in the popover.
         pub rows: [CompletionRow; MAX_MEMBERS],
         /// The selected row in the popover.
         pub selected: Cell<Option<usize>>,
         /// The current autocompleted word.
-        pub current_word: RefCell<Option<(gtk::TextIter, gtk::TextIter, String)>>,
+        pub current_word: RefCell<Option<(gtk::TextIter, gtk::TextIter, SearchTerm)>>,
         /// Whether the popover is inhibited for the current word.
         pub inhibit: Cell<bool>,
         /// The buffer to complete with its cursor position signal handler ID.
@@ -107,7 +116,7 @@ mod imp {
                                     } else {
                                         0
                                     };
-                                    let n_members = imp.filtered_members.list().n_items() as usize;
+                                    let n_members = imp.member_list.list().n_items() as usize;
                                     let max = MAX_MEMBERS.min(n_members);
                                     if new_idx < max {
                                         obj.select_row_at_index(Some(new_idx));
@@ -150,6 +159,19 @@ mod imp {
     impl PopoverImpl for CompletionPopover {}
 
     impl CompletionPopover {
+        /// Set the current room.
+        fn set_room(&self, room: Option<&Room>) {
+            // `RoomHistory` should have a strong reference to the list so we can use
+            // `get_or_create_members()`.
+            self.member_list
+                .set_members(room.map(|r| r.get_or_create_members()));
+
+            self.room_list
+                .set_rooms(room.and_then(|r| r.session()).map(|s| s.room_list()));
+
+            self.room.set(room);
+        }
+
         /// The parent `GtkTextView` to autocomplete.
         fn view(&self) -> gtk::TextView {
             self.obj().parent().and_downcast::<gtk::TextView>().unwrap()
@@ -168,11 +190,11 @@ impl CompletionPopover {
         glib::Object::new()
     }
 
-    fn current_word(&self) -> Option<(gtk::TextIter, gtk::TextIter, String)> {
+    fn current_word(&self) -> Option<(gtk::TextIter, gtk::TextIter, SearchTerm)> {
         self.imp().current_word.borrow().clone()
     }
 
-    fn set_current_word(&self, word: Option<(gtk::TextIter, gtk::TextIter, String)>) {
+    fn set_current_word(&self, word: Option<(gtk::TextIter, gtk::TextIter, SearchTerm)>) {
         if self.current_word() == word {
             return;
         }
@@ -192,7 +214,7 @@ impl CompletionPopover {
         } else if !self.is_inhibited() {
             if let Some((start, end, term)) = search {
                 self.set_current_word(Some((start, end, term)));
-                self.search_members();
+                self.update_search();
             } else {
                 self.popdown();
                 self.select_row_at_index(None);
@@ -207,7 +229,10 @@ impl CompletionPopover {
     ///
     /// If trigger is `true`, the search term will not look for `@` at the start
     /// of the word.
-    fn find_search_term(&self, trigger: bool) -> Option<(gtk::TextIter, gtk::TextIter, String)> {
+    fn find_search_term(
+        &self,
+        trigger: bool,
+    ) -> Option<(gtk::TextIter, gtk::TextIter, SearchTerm)> {
         // Vocabular used in this method:
         // - `word`: sequence of characters that form a valid ID or display name. This
         //   includes characters that are usually not considered to be in words because
@@ -236,7 +261,8 @@ impl CompletionPopover {
         }
 
         fn is_possible_word_char(c: char) -> bool {
-            c.is_alphanumeric() || matches!(c, '.' | '_' | '=' | '-' | '/' | ':' | '[' | ']' | '@')
+            c.is_alphanumeric()
+                || matches!(c, '.' | '_' | '=' | '-' | '/' | ':' | '[' | ']' | '@' | '#')
         }
 
         let buffer = self.view().buffer();
@@ -333,9 +359,12 @@ impl CompletionPopover {
             return None;
         }
 
-        // Remove the starting `@` for searching.
         let mut term_start = word_start;
-        if term_start.char() == '@' {
+        let term_start_char = term_start.char();
+        let is_room = term_start_char == '#';
+
+        // Remove the starting `@` or '#' for searching.
+        if matches!(term_start_char, '@' | '#') {
             term_start.forward_cursor_position();
         }
 
@@ -343,12 +372,22 @@ impl CompletionPopover {
 
         // If the cursor jumped to another word, abort the completion.
         if let Some((_, _, prev_term)) = self.current_word() {
-            if !term.contains(&prev_term) && !prev_term.contains(term.as_str()) {
+            if !term.contains(&prev_term.term) && !prev_term.term.contains(term.as_str()) {
                 return None;
             }
         }
 
-        Some((word_start, word_end, term.into()))
+        let target = if is_room {
+            SearchTermTarget::Room
+        } else {
+            SearchTermTarget::Member
+        };
+        let term = SearchTerm {
+            target,
+            term: term.into(),
+        };
+
+        Some((word_start, word_end, term))
     }
 
     /// Check if the text is in markdown that would be escaped.
@@ -420,23 +459,38 @@ impl CompletionPopover {
         false
     }
 
-    fn search_members(&self) {
+    /// Update the popover for the current search term.
+    fn update_search(&self) {
         let imp = self.imp();
-        let filtered_members = self.filtered_members();
-        let term = self.current_word().and_then(|(_, _, term)| {
-            (!term.is_empty()).then(|| normalized_lower_lay_string(&term))
-        });
-        filtered_members.set_search_term(term.as_deref());
+        let term = self
+            .current_word()
+            .map(|(_, _, term)| term.into_normalized_parts());
 
-        let list = filtered_members.list();
+        let list = match term {
+            Some((SearchTermTarget::Room, term)) => {
+                let room_list = self.room_list();
+                room_list.set_search_term(term.as_deref());
+                room_list.list()
+            }
+            term => {
+                let member_list = self.member_list();
+                member_list.set_search_term(term.and_then(|(_, t)| t).as_deref());
+                member_list.list()
+            }
+        };
+
         let new_len = list.n_items();
         if new_len == 0 {
             self.popdown();
             self.select_row_at_index(None);
         } else {
             for (idx, row) in imp.rows.iter().enumerate() {
-                if let Some(member) = list.item(idx as u32).and_downcast::<Member>() {
+                let item = list.item(idx as u32);
+                if let Some(member) = item.clone().and_downcast::<Member>() {
                     row.set_member(Some(member));
+                    row.set_visible(true);
+                } else if let Some(room) = item.and_downcast::<Room>() {
+                    row.set_room(Some(room));
                     row.set_visible(true);
                 } else if row.get_visible() {
                     row.set_visible(false);
@@ -554,4 +608,30 @@ impl Default for CompletionPopover {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// A search term.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SearchTerm {
+    /// The target of the search.
+    target: SearchTermTarget,
+    /// The term to search for.
+    term: String,
+}
+
+impl SearchTerm {
+    /// Normalize and return the parts of this search term.
+    fn into_normalized_parts(self) -> (SearchTermTarget, Option<String>) {
+        let term = (!self.term.is_empty()).then(|| normalized_lower_lay_string(&self.term));
+        (self.target, term)
+    }
+}
+
+/// The possible targets of a search term.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SearchTermTarget {
+    /// A room member.
+    Member,
+    /// A room.
+    Room,
 }

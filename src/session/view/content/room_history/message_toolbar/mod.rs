@@ -242,6 +242,9 @@ mod imp {
 
             // Tab auto-completion.
             self.completion.set_parent(&*self.message_entry);
+            obj.bind_property("room", &self.completion, "room")
+                .sync_create()
+                .build();
 
             // Location.
             let location = Location::new();
@@ -290,7 +293,6 @@ mod imp {
 
             self.room.set(room.as_ref());
 
-            obj.update_completion(room.as_ref());
             self.can_send_message_updated();
             self.message_entry.grab_focus();
 
@@ -899,16 +901,6 @@ impl MessageToolbar {
         spawn!(glib::clone!(@weak self as obj => async move {
             obj.read_clipboard().await;
         }));
-    }
-
-    // Update the completion for the current room.
-    fn update_completion(&self, room: Option<&Room>) {
-        // `RoomHistory` should have a strong reference to the list so we can use
-        // `get_or_create_members()`.
-        self.imp()
-            .completion
-            .filtered_members()
-            .set_members(room.map(|r| r.get_or_create_members()));
     }
 
     // Copy the selection in the message entry to the clipboard while replacing

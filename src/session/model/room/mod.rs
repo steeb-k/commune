@@ -40,7 +40,8 @@ use ruma::{
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
         AnySyncTimelineEvent, SyncEphemeralRoomEvent, SyncStateEvent,
     },
-    MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
+    MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedUserId, RoomId,
+    UserId,
 };
 use tracing::{debug, error, warn};
 
@@ -85,6 +86,9 @@ mod imp {
         /// The ID of this room, as a string.
         #[property(get = Self::room_id_string)]
         pub room_id_string: PhantomData<String>,
+        /// The alias of this room, as a string.
+        #[property(get = Self::alias_string)]
+        pub alias_string: PhantomData<Option<String>>,
         /// The version of this room.
         #[property(get = Self::version)]
         pub version: PhantomData<String>,
@@ -187,6 +191,9 @@ mod imp {
         /// The notifications settings for this room.
         #[property(get, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
         pub notifications_setting: Cell<NotificationsRoomSetting>,
+        /// Whether anyone can join this room.
+        #[property(get = Self::anyone_can_join)]
+        pub anyone_can_join: PhantomData<bool>,
         pub typing_drop_guard: OnceCell<EventHandlerDropGuard>,
         pub receipts_drop_guard: OnceCell<EventHandlerDropGuard>,
     }
@@ -239,6 +246,19 @@ mod imp {
         /// The room ID of this room, as a string.
         fn room_id_string(&self) -> String {
             self.matrix_room().room_id().to_string()
+        }
+
+        /// The alias of this room.
+        pub(super) fn alias(&self) -> Option<OwnedRoomAliasId> {
+            let matrix_room = self.matrix_room();
+            matrix_room
+                .canonical_alias()
+                .or_else(|| matrix_room.alt_aliases().into_iter().next())
+        }
+
+        /// The alias of this room, as a string.
+        fn alias_string(&self) -> Option<String> {
+            self.alias().map(Into::into)
         }
 
         /// The version of this room.
@@ -314,6 +334,11 @@ mod imp {
 
             self.notifications_setting.set(setting);
             self.obj().notify_notifications_setting();
+        }
+
+        /// Whether anyone can join this room.
+        fn anyone_can_join(&self) -> bool {
+            self.matrix_room().join_rule() == JoinRule::Public
         }
     }
 }
@@ -438,6 +463,11 @@ impl Room {
     /// The ID of this room.
     pub fn room_id(&self) -> &RoomId {
         self.matrix_room().room_id()
+    }
+
+    /// The alias of this room.
+    pub fn alias(&self) -> Option<OwnedRoomAliasId> {
+        self.imp().alias()
     }
 
     /// The state of the room.
@@ -1237,6 +1267,10 @@ impl Room {
                     }
                     AnySyncStateEvent::RoomJoinRules(_) => {
                         self.emit_by_name::<()>("join-rule-changed", &[]);
+                        self.notify_anyone_can_join();
+                    }
+                    AnySyncStateEvent::RoomCanonicalAlias(_) => {
+                        self.notify_alias_string();
                     }
                     _ => {}
                 }
@@ -1900,11 +1934,6 @@ impl Room {
             }),
             _ => false,
         }
-    }
-
-    /// Whether anyone can join this room.
-    pub fn anyone_can_join(&self) -> bool {
-        self.matrix_room().join_rule() == JoinRule::Public
     }
 
     /// The `matrix.to` URI representation for this room.
