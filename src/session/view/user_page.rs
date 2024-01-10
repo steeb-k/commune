@@ -241,6 +241,17 @@ impl UserPage {
             .build()
     }
 
+    /// Copy the user ID to the clipboard.
+    #[template_callback]
+    fn copy_user_id(&self) {
+        let Some(user) = self.user() else {
+            return;
+        };
+
+        self.clipboard().set_text(user.user_id().as_str());
+        toast!(self, gettext("Matrix user ID copied to clipboard"));
+    }
+
     /// Update the visibility of the direct chat button.
     fn update_direct_chat(&self) {
         let is_visible = self
