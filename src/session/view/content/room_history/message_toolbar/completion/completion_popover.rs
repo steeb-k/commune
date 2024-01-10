@@ -8,7 +8,8 @@ use crate::{
     session::model::{Member, Room},
 };
 
-const MAX_MEMBERS: usize = 32;
+/// The maximum number of rows presented in the popover.
+const MAX_ROWS: usize = 32;
 
 mod imp {
     use std::{
@@ -41,7 +42,7 @@ mod imp {
         #[property(get)]
         pub room_list: CompletionRoomList,
         /// The rows in the popover.
-        pub rows: [CompletionRow; MAX_MEMBERS],
+        pub rows: [CompletionRow; MAX_ROWS],
         /// The selected row in the popover.
         pub selected: Cell<Option<usize>>,
         /// The current autocompleted word.
@@ -117,7 +118,7 @@ mod imp {
                                         0
                                     };
                                     let n_members = imp.member_list.list().n_items() as usize;
-                                    let max = MAX_MEMBERS.min(n_members);
+                                    let max = MAX_ROWS.min(n_members);
                                     if new_idx < max {
                                         obj.select_row_at_index(Some(new_idx));
                                     }
