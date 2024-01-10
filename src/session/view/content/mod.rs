@@ -145,13 +145,10 @@ mod imp {
 
                     self.signal_handler.replace(Some(handler_id));
                 } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                    let handler_id = verification.connect_state_notify(
-                        clone!(@weak obj => move |verification| {
-                            if verification.is_finished() {
-                                obj.set_item(None::<glib::Object>);
-                            }
-                        }),
-                    );
+                    let handler_id = verification.connect_dismiss(clone!(@weak obj => move |_| {
+                        tracing::debug!("Dismiss verification");
+                        obj.set_item(None::<glib::Object>);
+                    }));
                     self.signal_handler.replace(Some(handler_id));
                 }
             }
