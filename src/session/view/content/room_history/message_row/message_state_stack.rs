@@ -4,6 +4,10 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::session::model::MessageState;
 
+/// The number of seconds for which we show the icon acknowledging that the
+/// message was sent.
+const SENT_VISIBLE_SECONDS: u32 = 3;
+
 mod imp {
     use std::cell::Cell;
 
@@ -65,11 +69,11 @@ mod imp {
                         prev_state,
                         MessageState::Sending | MessageState::Error | MessageState::Cancelled
                     ) {
-                        // Show the sent icon for 2 seconds.
+                        // Show the sent icon.
                         stack.set_visible_child_name("sent");
 
                         glib::timeout_add_seconds_local_once(
-                            2,
+                            SENT_VISIBLE_SECONDS,
                             clone!(@weak obj => move || {
                                 obj.set_visible(false);
                             }),
@@ -100,11 +104,11 @@ mod imp {
                         prev_state,
                         MessageState::Sending | MessageState::Error | MessageState::Cancelled
                     ) {
-                        // Show the sent icon for 2 seconds.
+                        // Show the sent icon.
                         stack.set_visible_child_name("sent");
 
                         glib::timeout_add_seconds_local_once(
-                            2,
+                            SENT_VISIBLE_SECONDS,
                             clone!(@weak stack => move || {
                                 stack.set_visible_child_name("edited");
                             }),
