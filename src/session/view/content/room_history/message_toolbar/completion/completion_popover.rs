@@ -1,19 +1,9 @@
-use gtk::{
-    gdk, glib,
-    glib::{clone, closure},
-    prelude::*,
-    subclass::prelude::*,
-    CompositeTemplate,
-};
+use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
 
-use super::CompletionRow;
-use crate::{
-    components::Pill,
-    session::model::{Member, MemberList, Membership},
-    utils::{expression, ExpressionListModel},
-};
+use super::{CompletionMemberList, CompletionRow};
+use crate::{components::Pill, session::model::Member};
 
 const MAX_MEMBERS: usize = 32;
 
@@ -38,14 +28,9 @@ mod imp {
         /// The parent `GtkTextView` to autocomplete.
         #[property(get = Self::view)]
         view: PhantomData<gtk::TextView>,
-        /// The members list with expression watches.
-        pub members_expr: ExpressionListModel,
-        /// The room members used for completion.
-        #[property(get = Self::members, set = Self::set_members, explicit_notify, nullable)]
-        members: PhantomData<Option<MemberList>>,
         /// The sorted and filtered room members.
         #[property(get)]
-        pub filtered_members: gtk::FilterListModel,
+        pub filtered_members: CompletionMemberList,
         /// The rows in the popover.
         pub rows: [CompletionRow; MAX_MEMBERS],
         /// The selected row in the popover.
@@ -78,85 +63,6 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
-
-            // Filter the members, the criteria:
-            // - not our user
-            // - not ignored
-            // - joined
-            let not_own_user = gtk::BoolFilter::builder()
-                .expression(expression::not(Member::this_expression("is-own-user")))
-                .build();
-
-            let ignored_expr = Member::this_expression("is-ignored");
-            let not_ignored = gtk::BoolFilter::builder()
-                .expression(&ignored_expr)
-                .invert(true)
-                .build();
-
-            let joined_expr = Member::this_expression("membership").chain_closure::<bool>(
-                closure!(|_obj: Option<glib::Object>, membership: Membership| {
-                    membership == Membership::Join
-                }),
-            );
-            let joined = gtk::BoolFilter::new(Some(&joined_expr));
-
-            let filter = gtk::EveryFilter::new();
-            filter.append(not_own_user);
-            filter.append(not_ignored);
-            filter.append(joined);
-
-            let first_model = gtk::FilterListModel::builder()
-                .filter(&filter)
-                .model(&self.members_expr)
-                .build();
-
-            // Sort the members list by activity, then display name.
-            let latest_activity_expr = Member::this_expression("latest-activity");
-            let activity = gtk::NumericSorter::builder()
-                .sort_order(gtk::SortType::Descending)
-                .expression(&latest_activity_expr)
-                .build();
-
-            let display_name_expr = Member::this_expression("display-name");
-            let display_name = gtk::StringSorter::builder()
-                .ignore_case(true)
-                .expression(&display_name_expr)
-                .build();
-
-            let sorter = gtk::MultiSorter::new();
-            sorter.append(activity);
-            sorter.append(display_name);
-            let second_model = gtk::SortListModel::builder()
-                .sorter(&sorter)
-                .model(&first_model)
-                .build();
-
-            // Setup the search filter.
-            let member_search_string_expr = gtk::ClosureExpression::new::<String>(
-                &[
-                    Member::this_expression("user-id-string"),
-                    Member::this_expression("display-name"),
-                ],
-                closure!(
-                    |_: Option<glib::Object>, user_id: &str, display_name: &str| {
-                        format!("{display_name} {user_id}")
-                    }
-                ),
-            );
-            let search = gtk::StringFilter::builder()
-                .ignore_case(true)
-                .match_mode(gtk::StringFilterMatchMode::Substring)
-                .expression(expression::normalize_string(member_search_string_expr))
-                .build();
-            self.filtered_members.set_filter(Some(&search));
-            self.filtered_members.set_model(Some(&second_model));
-
-            self.members_expr.set_expressions(vec![
-                ignored_expr.upcast(),
-                joined_expr.upcast(),
-                latest_activity_expr.upcast(),
-                display_name_expr.upcast(),
-            ]);
 
             for row in &self.rows {
                 self.list.append(row);
@@ -201,7 +107,7 @@ mod imp {
                                     } else {
                                         0
                                     };
-                                    let n_members = imp.filtered_members.n_items() as usize;
+                                    let n_members = imp.filtered_members.list().n_items() as usize;
                                     let max = MAX_MEMBERS.min(n_members);
                                     if new_idx < max {
                                         obj.select_row_at_index(Some(new_idx));
@@ -247,21 +153,6 @@ mod imp {
         /// The parent `GtkTextView` to autocomplete.
         fn view(&self) -> gtk::TextView {
             self.obj().parent().and_downcast::<gtk::TextView>().unwrap()
-        }
-
-        /// The room members used for completion.
-        fn members(&self) -> Option<MemberList> {
-            self.members_expr.model().and_downcast()
-        }
-
-        /// Set the room members used for completion.
-        fn set_members(&self, members: Option<MemberList>) {
-            if self.members() == members {
-                return;
-            }
-
-            self.members_expr.set_model(members.and_upcast());
-            self.obj().notify_members();
         }
     }
 }
@@ -532,22 +423,19 @@ impl CompletionPopover {
     fn search_members(&self) {
         let imp = self.imp();
         let filtered_members = self.filtered_members();
-        let filter = filtered_members
-            .filter()
-            .and_downcast::<gtk::StringFilter>()
-            .unwrap();
         let term = self.current_word().and_then(|(_, _, term)| {
             (!term.is_empty()).then(|| normalized_lower_lay_string(&term))
         });
-        filter.set_search(term.as_deref());
+        filtered_members.set_search_term(term.as_deref());
 
-        let new_len = filtered_members.n_items();
+        let list = filtered_members.list();
+        let new_len = list.n_items();
         if new_len == 0 {
             self.popdown();
             self.select_row_at_index(None);
         } else {
             for (idx, row) in imp.rows.iter().enumerate() {
-                if let Some(member) = filtered_members.item(idx as u32).and_downcast::<Member>() {
+                if let Some(member) = list.item(idx as u32).and_downcast::<Member>() {
                     row.set_member(Some(member));
                     row.set_visible(true);
                 } else if row.get_visible() {

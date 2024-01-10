@@ -907,6 +907,7 @@ impl MessageToolbar {
         // `get_or_create_members()`.
         self.imp()
             .completion
+            .filtered_members()
             .set_members(room.map(|r| r.get_or_create_members()));
     }
 
