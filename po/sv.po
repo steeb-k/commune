@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2024-01-06 11:39+0000\n"
-"PO-Revision-Date: 2024-01-06 13:42+0100\n"
+"POT-Creation-Date: 2024-01-09 13:17+0000\n"
+"PO-Revision-Date: 2024-01-09 15:47+0100\n"
 "Last-Translator: Anders Jonsson <anders.jonsson@norsjovallen.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "Language: sv\n"
@@ -161,8 +161,8 @@ msgid "Account Settings"
 msgstr "Kontoinställningar"
 
 #: src/application.rs:198
-msgid "© 2017-2023 The Fractal Team"
-msgstr "© 2017-2023 Fractal-gruppen"
+msgid "© 2017-2024 The Fractal Team"
+msgstr "© 2017-2024 Fractal-gruppen"
 
 #: src/application.rs:212
 msgid "translator-credits"
@@ -203,11 +203,11 @@ msgstr "Autentisera via webbläsare"
 
 #: src/components/auth_dialog.ui:114
 #: src/session/view/account_settings/general_page/mod.rs:304
-#: src/session/view/content/room_details/general_page/mod.rs:383
-#: src/session/view/content/room_history/item_row.rs:687
-#: src/session/view/content/room_history/message_toolbar/mod.ui:77
-#: src/session/view/content/room_history/message_toolbar/mod.ui:79
-#: src/session/view/content/room_history/verification_info_bar.rs:176
+#: src/session/view/content/room_details/general_page/mod.rs:403
+#: src/session/view/content/room_history/item_row.rs:702
+#: src/session/view/content/room_history/message_toolbar/mod.ui:78
+#: src/session/view/content/room_history/message_toolbar/mod.ui:80
+#: src/session/view/content/room_history/verification_info_bar.rs:173
 #: src/utils/message_dialog.rs:52 src/utils/message_dialog.rs:154
 #: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:53
 msgid "Cancel"
@@ -252,6 +252,7 @@ msgid "Select New Avatar"
 msgstr "Välj ny profilbild"
 
 #: src/components/loading_row.ui:26
+#: src/session/view/account_settings/user_sessions_page/mod.ui:89
 msgid "Try again"
 msgstr "Försök igen"
 
@@ -280,6 +281,7 @@ msgid "Unable to connect to Camera"
 msgstr "Kunde inte ansluta till kamera"
 
 #: src/error_page.ui:10
+#: src/session/view/account_settings/user_sessions_page/mod.ui:84
 #: src/session/view/content/room_details/invite_subpage/mod.ui:140
 #: src/session/view/create_dm_dialog/mod.ui:103
 msgid "Error"
@@ -600,7 +602,7 @@ msgstr "Kunde inte erhålla hemlighet i lagrad session"
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal: Matrix-autentiseringsuppgifter för {user_id}"
 
-#: src/session/model/session.rs:447
+#: src/session/model/session.rs:451
 msgid "Failed to logout the session."
 msgstr "Misslyckades med att logga ut sessionen."
 
@@ -617,22 +619,23 @@ msgid "Normal user"
 msgstr "Vanlig användare"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:250
+#: src/session/model/room/mod.rs:272
 msgid "Unknown"
 msgstr "Okänt"
 
-#: src/session/model/room/mod.rs:1012
+#: src/session/model/room/mod.rs:1124
 msgid "Empty Room (was {user})"
 msgstr "Tomt rum (var {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1015
+#: src/session/model/room/mod.rs:1127
 msgid "Empty Room"
 msgstr "Tomt rum"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:402
+#: src/session/model/room_list/mod.rs:407
+#: src/session/view/content/room_history/mod.rs:560
 msgid "Failed to join room {room_name}. Try again later."
 msgstr "Misslyckades med att gå in i rummet {room_name}. Försök igen senare."
 
@@ -641,7 +644,7 @@ msgid "Verifications"
 msgstr "Verifieringar"
 
 #: src/session/model/sidebar_data/category/category_type.rs:30
-#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:256
+#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:261
 msgid "Invited"
 msgstr "Inbjuden"
 
@@ -668,140 +671,6 @@ msgstr "Utforska"
 #: src/session/model/sidebar_data/icon_item.rs:31
 msgid "Forget Room"
 msgstr "Glöm rum"
-
-#: src/session/view/account_settings/devices_page/device_list.rs:80
-msgid "Failed to load connected device."
-msgstr "Misslyckades med att läsa in ansluten enhet."
-
-#: src/session/view/account_settings/devices_page/device_list.rs:154
-msgid "Failed to load the list of connected devices."
-msgstr "Misslyckades med att läsa in listan över anslutna enheter."
-
-#: src/session/view/account_settings/devices_page/device_row.rs:72
-msgid "Disconnect Session"
-msgstr "Koppla från session"
-
-#: src/session/view/account_settings/devices_page/device_row.rs:74
-#: src/session/view/account_settings/general_page/mod.ui:127
-msgid "Log Out"
-msgstr "Logga ut"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/account_settings/devices_page/device_row.rs:171
-msgid "Failed to disconnect device “{device_name}”"
-msgstr "Misslyckades med att koppla från enheten ”{device_name}”"
-
-#. Translators: Time in 24h format, i.e. "23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:217
-msgid "Last seen at %H:%M"
-msgstr "Senast sedd %H:%M"
-
-#. Translators: Time in 12h format, i.e. "11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:222
-msgid "Last seen at %I:%M %p"
-msgstr "Senast sedd %I:%M %p"
-
-#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:232
-#, no-c-format
-msgid "Last seen yesterday at %H:%M"
-msgstr "Senast sedd i går %H:%M"
-
-#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
-#. PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:239
-#, no-c-format
-msgid "Last seen yesterday at %I:%M %p"
-msgstr "Senast sedd i går %I:%M %p"
-
-#. Translators: this is the name of the week day followed by a time in 24h
-#. format, i.e. "Last seen Monday at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:250
-#, no-c-format
-msgid "Last seen %A at %H:%M"
-msgstr "Senast sedd %A %H:%M"
-
-#. Translators: this is the week day name followed by a time in 12h format, i.e.
-#. "Last seen Monday at 11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:257
-#, no-c-format
-msgid "Last seen %A at %I:%M %p"
-msgstr "Senast sedd %A %I:%M %p"
-
-#. Translators: this is the month and day and the time in 24h format, i.e. "Last
-#. seen February 3 at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:266
-#, no-c-format
-msgid "Last seen %B %-e at %H:%M"
-msgstr "Senast sedd %-e %B %H:%M"
-
-#. Translators: this is the month and day and the time in 12h format, i.e. "Last
-#. seen February 3 at 11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:273
-#, no-c-format
-msgid "Last seen %B %-e at %I:%M %p"
-msgstr "Senast sedd %-e %B %I:%M %p"
-
-#. Translators: this is the full date and the time in 24h format, i.e. "Last
-#. seen February 3 2015 at 23:04".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:281
-#, no-c-format
-msgid "Last seen %B %-e %Y at %H:%M"
-msgstr "Senast sedd %-e %B %Y %H:%M"
-
-#. Translators: this is the full date and the time in 12h format, i.e. "Last
-#. seen February 3 2015 at 11:04 PM".
-#. Do not change the time format as it will follow the system settings.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/devices_page/device_row.rs:288
-#, no-c-format
-msgid "Last seen %B %-e %Y at %I:%M %p"
-msgstr "Senast sedd %-e %B %Y %I:%M %p"
-
-#. Translators: As in 'A verified session'.
-#: src/session/view/account_settings/devices_page/device_row.ui:31
-#: src/session/view/account_settings/devices_page/device_row.ui:34
-msgid "Verified"
-msgstr "Verifierad"
-
-#: src/session/view/account_settings/devices_page/device_row.ui:73
-#: src/verification_view/identity_verification_view/choose_method_page.rs:160
-#: src/verification_view/identity_verification_view/sas_page.rs:140
-#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:163
-msgid "Verify Session"
-msgstr "Verifiera session"
-
-#: src/session/view/account_settings/devices_page/mod.ui:5
-msgid "Sessions"
-msgstr "Sessioner"
-
-#: src/session/view/account_settings/devices_page/mod.ui:9
-#: src/session/view/account_settings/devices_page/mod.ui:13
-msgid "Current Session"
-msgstr "Aktuell session"
-
-#: src/session/view/account_settings/devices_page/mod.ui:24
-#: src/session/view/account_settings/devices_page/mod.ui:28
-msgid "Other Active Sessions"
-msgstr "Andra aktiva sessioner"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.rs:146
 msgid "Password must be at least 8 characters long"
@@ -869,7 +738,7 @@ msgstr "Bekräfta nytt lösenord"
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:142
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:73
-#: src/session/view/content/room_history/verification_info_bar.rs:175
+#: src/session/view/content/room_history/verification_info_bar.rs:172
 msgid "Continue"
 msgstr "Fortsätt"
 
@@ -938,32 +807,32 @@ msgid "Session ID copied to clipboard"
 msgstr "Sessions-ID kopierat till urklipp"
 
 #: src/session/view/account_settings/general_page/mod.rs:218
-#: src/session/view/content/room_details/general_page/mod.rs:283
+#: src/session/view/content/room_details/general_page/mod.rs:303
 msgid "Avatar removed successfully"
 msgstr "Profilbilden togs bort"
 
 #: src/session/view/account_settings/general_page/mod.rs:220
-#: src/session/view/content/room_details/general_page/mod.rs:285
+#: src/session/view/content/room_details/general_page/mod.rs:305
 msgid "Avatar changed successfully"
 msgstr "Profilbilden ändrades"
 
 #: src/session/view/account_settings/general_page/mod.rs:237
-#: src/session/view/content/room_details/general_page/mod.rs:308
+#: src/session/view/content/room_details/general_page/mod.rs:328
 msgid "Could not load file"
 msgstr "Kunde inte läsa in fil"
 
 #: src/session/view/account_settings/general_page/mod.rs:252
-#: src/session/view/content/room_details/general_page/mod.rs:332
+#: src/session/view/content/room_details/general_page/mod.rs:352
 msgid "Could not upload avatar"
 msgstr "Kunde inte skicka profilbilden"
 
 #: src/session/view/account_settings/general_page/mod.rs:281
-#: src/session/view/content/room_details/general_page/mod.rs:353
+#: src/session/view/content/room_details/general_page/mod.rs:373
 msgid "Could not change avatar"
 msgstr "Kunde inte ändra profilbilden"
 
 #: src/session/view/account_settings/general_page/mod.rs:300
-#: src/session/view/content/room_details/general_page/mod.rs:377
+#: src/session/view/content/room_details/general_page/mod.rs:397
 msgid "Remove Avatar?"
 msgstr "Ta bort bild?"
 
@@ -972,13 +841,13 @@ msgid "Do you really want to remove your avatar?"
 msgstr "Vill du verkligen ta bort din profilbild?"
 
 #: src/session/view/account_settings/general_page/mod.rs:305
-#: src/session/view/content/room_details/general_page/mod.rs:384
-#: src/session/view/content/room_history/item_row.rs:688
+#: src/session/view/content/room_details/general_page/mod.rs:404
+#: src/session/view/content/room_history/item_row.rs:703
 msgid "Remove"
 msgstr "Ta bort"
 
 #: src/session/view/account_settings/general_page/mod.rs:339
-#: src/session/view/content/room_details/general_page/mod.rs:410
+#: src/session/view/content/room_details/general_page/mod.rs:430
 msgid "Could not remove avatar"
 msgstr "Kunde inte ta bort profilbilden"
 
@@ -1023,6 +892,11 @@ msgstr "Sessions-ID"
 #: src/session/view/account_settings/general_page/mod.ui:109
 msgid "Copy session ID to clipboard"
 msgstr "Kopiera sessions-ID till urklipp"
+
+#: src/session/view/account_settings/general_page/mod.ui:127
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:108
+msgid "Log Out"
+msgstr "Logga ut"
 
 #: src/session/view/account_settings/notifications_page.rs:289
 msgid "Could not enable account notifications"
@@ -1302,6 +1176,131 @@ msgstr "Nyckel för självsignatur"
 msgid "User-signing key"
 msgstr "Nyckel för användarsignatur"
 
+#: src/session/view/account_settings/user_sessions_page/mod.ui:5
+msgid "Sessions"
+msgstr "Sessioner"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:42
+#: src/session/view/account_settings/user_sessions_page/mod.ui:46
+msgid "Current Session"
+msgstr "Aktuell session"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:57
+#: src/session/view/account_settings/user_sessions_page/mod.ui:61
+msgid "Other Active Sessions"
+msgstr "Andra aktiva sessioner"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:85
+msgid "Failed to load the list of connected devices."
+msgstr "Misslyckades med att läsa in listan över anslutna enheter."
+
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
+msgid "Disconnect Session"
+msgstr "Koppla från session"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:160
+msgid "Failed to disconnect device “{device_name}”"
+msgstr "Misslyckades med att koppla från enheten ”{device_name}”"
+
+#. Translators: Time in 24h format, i.e. "23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:207
+msgid "Last seen at %H:%M"
+msgstr "Senast sedd %H:%M"
+
+#. Translators: Time in 12h format, i.e. "11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:212
+msgid "Last seen at %I:%M %p"
+msgstr "Senast sedd %I:%M %p"
+
+#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:222
+#, no-c-format
+msgid "Last seen yesterday at %H:%M"
+msgstr "Senast sedd i går %H:%M"
+
+#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+#. PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:229
+#, no-c-format
+msgid "Last seen yesterday at %I:%M %p"
+msgstr "Senast sedd i går %I:%M %p"
+
+#. Translators: this is the name of the week day followed by a time in 24h
+#. format, i.e. "Last seen Monday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:240
+#, no-c-format
+msgid "Last seen %A at %H:%M"
+msgstr "Senast sedd %A %H:%M"
+
+#. Translators: this is the week day name followed by a time in 12h format, i.e.
+#. "Last seen Monday at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:247
+#, no-c-format
+msgid "Last seen %A at %I:%M %p"
+msgstr "Senast sedd %A %I:%M %p"
+
+#. Translators: this is the month and day and the time in 24h format, i.e. "Last
+#. seen February 3 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:256
+#, no-c-format
+msgid "Last seen %B %-e at %H:%M"
+msgstr "Senast sedd %-e %B %H:%M"
+
+#. Translators: this is the month and day and the time in 12h format, i.e. "Last
+#. seen February 3 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:263
+#, no-c-format
+msgid "Last seen %B %-e at %I:%M %p"
+msgstr "Senast sedd %-e %B %I:%M %p"
+
+#. Translators: this is the full date and the time in 24h format, i.e. "Last
+#. seen February 3 2015 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:271
+#, no-c-format
+msgid "Last seen %B %-e %Y at %H:%M"
+msgstr "Senast sedd %-e %B %Y %H:%M"
+
+#. Translators: this is the full date and the time in 12h format, i.e. "Last
+#. seen February 3 2015 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
+#, no-c-format
+msgid "Last seen %B %-e %Y at %I:%M %p"
+msgstr "Senast sedd %-e %B %Y %I:%M %p"
+
+#. Translators: As in 'A verified session'.
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:31
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:34
+msgid "Verified"
+msgstr "Verifierad"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:75
+#: src/verification_view/identity_verification_view/choose_method_page.rs:160
+#: src/verification_view/identity_verification_view/sas_page.rs:140
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:163
+msgid "Verify Session"
+msgstr "Verifiera session"
+
 #: src/session/view/content/explore/mod.ui:66
 msgid "No rooms matching the search were found"
 msgstr "Inga rum som matchade sökningen hittades"
@@ -1312,14 +1311,14 @@ msgstr "Rumslista"
 
 #. Translators: This is a verb, as in 'View Room'.
 #: src/session/view/content/explore/public_room_row.rs:156
-#: src/session/view/content/room_history/mod.rs:849
+#: src/session/view/content/room_history/mod.rs:918
 #: src/session/view/content/room_history/state_row/tombstone.rs:88
 #: src/session/view/join_room_dialog.rs:174
 msgid "View"
 msgstr "Visa"
 
 #: src/session/view/content/explore/public_room_row.rs:158
-#: src/session/view/content/room_history/mod.rs:852
+#: src/session/view/content/room_history/mod.rs:921
 #: src/session/view/content/room_history/state_row/tombstone.rs:90
 #: src/session/view/join_room_dialog.ui:189
 msgid "Join"
@@ -1378,48 +1377,48 @@ msgstr "Inget rum valt"
 msgid "Join a room to start chatting."
 msgstr "Gå in i ett rum för att börja chatta."
 
-#: src/session/view/content/room_details/general_page/mod.rs:379
+#: src/session/view/content/room_details/general_page/mod.rs:399
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Vill du verkligen ta bort bilden för detta rum?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:488
+#: src/session/view/content/room_details/general_page/mod.rs:508
 msgid "Room name saved successfully"
 msgstr "Rumsnamnet sparades"
 
-#: src/session/view/content/room_details/general_page/mod.rs:513
+#: src/session/view/content/room_details/general_page/mod.rs:533
 msgid "Room topic saved successfully"
 msgstr "Rummets ämne sparades"
 
-#: src/session/view/content/room_details/general_page/mod.rs:591
+#: src/session/view/content/room_details/general_page/mod.rs:611
 msgid "Could not change room name"
 msgstr "Kunde inte ändra rumsnamnet"
 
-#: src/session/view/content/room_details/general_page/mod.rs:615
+#: src/session/view/content/room_details/general_page/mod.rs:635
 msgid "Could not change room topic"
 msgstr "Kunde inte ändra rummets ämne"
 
-#: src/session/view/content/room_details/general_page/mod.rs:628
-#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:253
+#: src/session/view/content/room_details/general_page/mod.rs:648
+#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:258
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Medlem"
 msgstr[1] "Medlemmar"
 
-#: src/session/view/content/room_details/general_page/mod.rs:714
+#: src/session/view/content/room_details/general_page/mod.rs:736
 msgid "Could not change notifications setting"
 msgstr "Kunde inte ändra aviseringsinställning"
 
-#: src/session/view/content/room_details/general_page/mod.rs:729
+#: src/session/view/content/room_details/general_page/mod.rs:751
 msgid "Matrix room ID copied to clipboard"
 msgstr "Rums-ID för Matrix kopierat till urklipp"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:740
+#: src/session/view/content/room_details/general_page/mod.rs:762
 msgid "Federated"
 msgstr "Federerat"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:743
+#: src/session/view/content/room_details/general_page/mod.rs:765
 msgid "Not federated"
 msgstr "Inte federerat"
 
@@ -1515,7 +1514,7 @@ msgstr "Spara fil"
 msgid "Save"
 msgstr "Spara"
 
-#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:254
+#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:259
 msgid "Banned"
 msgstr "Bannlyst"
 
@@ -1702,61 +1701,61 @@ msgstr "Detta är början på den synliga historiken"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:295
+#: src/session/view/content/room_history/item_row.rs:310
 msgid "%A, %B %-e"
 msgstr "%A, %-e %B"
 
 #. Translators: This is a date format in the day divider with the
-#. year. For ex. "Friday, May 5,
-#. 2023". Please use `-` before
-#. specifiers that add spaces on single digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:301
+#. year. For ex. "Friday, May 5, 2023".
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/item_row.rs:316
 msgid "%A, %B %-e, %Y"
 msgstr "%A, %-e %B, %Y"
 
-#: src/session/view/content/room_history/item_row.rs:307
+#: src/session/view/content/room_history/item_row.rs:322
 msgid "New Messages"
 msgstr "Nya meddelanden"
 
-#: src/session/view/content/room_history/item_row.rs:465
-#: src/session/view/content/room_history/mod.rs:527
+#: src/session/view/content/room_history/item_row.rs:480
+#: src/session/view/content/room_history/mod.rs:590
 #: src/session/view/media_viewer.rs:533
 msgid "Permalink copied to clipboard"
 msgstr "Permanent länk kopierad till urklipp"
 
-#: src/session/view/content/room_history/item_row.rs:469
-#: src/session/view/content/room_history/mod.rs:531
+#: src/session/view/content/room_history/item_row.rs:484
+#: src/session/view/content/room_history/mod.rs:594
 #: src/session/view/media_viewer.rs:537
 msgid "Failed to copy the permalink"
 msgstr "Misslyckades med att kopiera den permanenta länken"
 
-#: src/session/view/content/room_history/item_row.rs:536
-#: src/session/view/content/room_history/item_row.rs:571
-#: src/session/view/content/room_history/item_row.rs:596
+#: src/session/view/content/room_history/item_row.rs:551
+#: src/session/view/content/room_history/item_row.rs:586
+#: src/session/view/content/room_history/item_row.rs:611
 msgid "Message copied to clipboard"
 msgstr "Meddelande kopierat till urklipp"
 
-#: src/session/view/content/room_history/item_row.rs:611
+#: src/session/view/content/room_history/item_row.rs:626
 msgid "Thumbnail copied to clipboard"
 msgstr "Miniatyrbild kopierad till urklipp"
 
-#: src/session/view/content/room_history/item_row.rs:681
+#: src/session/view/content/room_history/item_row.rs:696
 msgid "Remove Message?"
 msgstr "Ta bort meddelande?"
 
-#: src/session/view/content/room_history/item_row.rs:683
+#: src/session/view/content/room_history/item_row.rs:698
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Vill du verkligen ta bort det här meddelandet? Detta kan inte ångras."
 
-#: src/session/view/content/room_history/item_row.rs:698
+#: src/session/view/content/room_history/item_row.rs:713
 msgid "Failed to remove message"
 msgstr "Misslyckades med att ta bort meddelande"
 
-#: src/session/view/content/room_history/item_row.rs:718
+#: src/session/view/content/room_history/item_row.rs:733
 msgid "Failed to remove reaction"
 msgstr "Misslyckades med att ta bort reaktion"
 
-#: src/session/view/content/room_history/item_row.rs:725
+#: src/session/view/content/room_history/item_row.rs:740
 msgid "Failed to add reaction"
 msgstr "Misslyckades med att lägga till reaktion"
 
@@ -1769,16 +1768,16 @@ msgstr "Kunde inte erhålla ljudfil"
 msgid "Error reading audio file"
 msgstr "Fel vid läsning av ljudfil"
 
-#: src/session/view/content/room_history/message_row/content.rs:311
+#: src/session/view/content/room_history/message_row/content.rs:316
 msgid "Identity verification was started"
 msgstr "Identitetsverifiering startades"
 
-#: src/session/view/content/room_history/message_row/content.rs:322
-#: src/session/view/content/room_history/message_row/content.rs:365
+#: src/session/view/content/room_history/message_row/content.rs:327
+#: src/session/view/content/room_history/message_row/content.rs:370
 msgid "Unsupported event"
 msgstr "Händelsen stöds inte"
 
-#: src/session/view/content/room_history/message_row/content.rs:344
+#: src/session/view/content/room_history/message_row/content.rs:349
 msgid ""
 "Unable to decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -1786,7 +1785,7 @@ msgstr ""
 "Kunde inte dekryptera detta meddelande, försöker dekryptera igen när "
 "nycklarna är tillgängliga."
 
-#: src/session/view/content/room_history/message_row/content.rs:354
+#: src/session/view/content/room_history/message_row/content.rs:359
 msgid "This message was removed."
 msgstr "Det här meddelandet togs bort."
 
@@ -1833,57 +1832,58 @@ msgstr "Redigerat"
 msgid "_Send"
 msgstr "_Skicka"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:135
-msgid "The location request has been cancelled."
-msgstr "Platsförfrågan har avbrutits."
-
-#: src/session/view/content/room_history/message_toolbar/mod.rs:139
-msgid "Failed to retrieve current location."
-msgstr "Misslyckades med att erhålla aktuell plats."
-
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:381
+#: src/session/view/content/room_history/message_toolbar/mod.rs:366
 msgid "Reply to {user}"
 msgstr "Svara till {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:436
+#: src/session/view/content/room_history/message_toolbar/mod.rs:421
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Redigering"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:649
+#. Show the dialog as loading first.
+#: src/session/view/content/room_history/message_toolbar/mod.rs:613
 msgid "Your Location"
 msgstr "Din plats"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:661
+#: src/session/view/content/room_history/message_toolbar/mod.rs:692
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Användarplats {geo_uri}, tid {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:714
+#: src/session/view/content/room_history/message_toolbar/mod.rs:712
+msgid "The location request has been cancelled."
+msgstr "Platsförfrågan har avbrutits."
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:713
+msgid "Failed to retrieve current location."
+msgstr "Misslyckades med att erhålla aktuell plats."
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:754
 msgid "Select File"
 msgstr "Välj fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:716
+#: src/session/view/content/room_history/message_toolbar/mod.rs:756
 msgid "Select"
 msgstr "Välj"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:731
+#: src/session/view/content/room_history/message_toolbar/mod.rs:771
 msgid "Could not open file"
 msgstr "Kunde inte öppna fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:780
+#: src/session/view/content/room_history/message_toolbar/mod.rs:821
 msgid "Error reading file"
 msgstr "Fel vid läsning av fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:805
+#: src/session/view/content/room_history/message_toolbar/mod.rs:846
 msgid "Error getting image from clipboard"
 msgstr "Fel då bilden skulle erhållas från urklipp"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:822
+#: src/session/view/content/room_history/message_toolbar/mod.rs:863
 msgid "Error getting file from clipboard"
 msgstr "Fel då filen skulle erhållas från urklipp"
 
@@ -1891,37 +1891,37 @@ msgstr "Fel då filen skulle erhållas från urklipp"
 msgid "_Location"
 msgstr "_Plats"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:11
+#: src/session/view/content/room_history/message_toolbar/mod.ui:12
 msgid "_Markdown"
 msgstr "_Markdown"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:95
-#: src/session/view/content/room_history/message_toolbar/mod.ui:97
+#: src/session/view/content/room_history/message_toolbar/mod.ui:96
+#: src/session/view/content/room_history/message_toolbar/mod.ui:98
 msgid "Send a File"
 msgstr "Skicka en fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:106
-#: src/session/view/content/room_history/message_toolbar/mod.ui:108
+#: src/session/view/content/room_history/message_toolbar/mod.ui:107
+#: src/session/view/content/room_history/message_toolbar/mod.ui:109
 msgid "Insert an Emoji"
 msgstr "Infoga en emoji"
 
 #. Translators: This is the name of the input widget where messages
 #. are entered before being sent, for accessibility tools.
-#: src/session/view/content/room_history/message_toolbar/mod.ui:131
+#: src/session/view/content/room_history/message_toolbar/mod.ui:132
 msgid "Message Composer"
 msgstr "Meddelanderedigerare"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:145
-#: src/session/view/content/room_history/message_toolbar/mod.ui:147
+#: src/session/view/content/room_history/message_toolbar/mod.ui:146
+#: src/session/view/content/room_history/message_toolbar/mod.ui:148
 msgid "More Options"
 msgstr "Fler alternativ"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:157
-#: src/session/view/content/room_history/message_toolbar/mod.ui:163
+#: src/session/view/content/room_history/message_toolbar/mod.ui:158
+#: src/session/view/content/room_history/message_toolbar/mod.ui:164
 msgid "Send Message"
 msgstr "Skicka meddelande"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:178
+#: src/session/view/content/room_history/message_toolbar/mod.ui:179
 msgid "You don’t have permission to send messages to this room"
 msgstr "Du har inte tillåtelse att skicka meddelanden till detta rum"
 
@@ -1941,22 +1941,28 @@ msgstr "%-e %B %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e %B %H∶%M"
 
-#: src/session/view/content/room_history/mod.rs:329
+#: src/session/view/content/room_history/mod.rs:346
 msgid "Error getting file from drop"
 msgstr "Fel då släppt fil skulle erhållas"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:513
+#: src/session/view/content/room_history/mod.rs:541
 msgid "Failed to leave {room}"
 msgstr "Misslyckades med att lämna {room}"
 
-#: src/session/view/content/room_history/mod.rs:847
-#: src/session/view/content/room_history/mod.rs:851
+#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+#: src/session/view/content/room_history/mod.rs:577
+#: src/session/view/sidebar/room_row.rs:381 src/session/view/sidebar/row.rs:312
+msgid "Failed to forget {room}."
+msgstr "Misslyckades med att glömma {room}."
+
+#: src/session/view/content/room_history/mod.rs:916
+#: src/session/view/content/room_history/mod.rs:920
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Det finns en nyare version av detta rum"
 
-#: src/session/view/content/room_history/mod.rs:854
+#: src/session/view/content/room_history/mod.rs:923
 msgid "This room was closed"
 msgstr "Det här rummet stängdes"
 
@@ -1977,42 +1983,52 @@ msgstr "_Permanent länk för rum"
 msgid "_Leave Room"
 msgstr "_Lämna rum"
 
-#: src/session/view/content/room_history/mod.ui:58
-#: src/session/view/content/room_history/mod.ui:60
+#: src/session/view/content/room_history/mod.ui:27
+#: src/session/view/sidebar/mod.ui:66
+msgid "Re_join Room"
+msgstr "Gå _in i rum igen"
+
+#: src/session/view/content/room_history/mod.ui:32
+#: src/session/view/sidebar/mod.ui:71
+msgid "_Forget Room"
+msgstr "_Glöm rum"
+
+#: src/session/view/content/room_history/mod.ui:68
+#: src/session/view/content/room_history/mod.ui:70
 msgid "Room Menu"
 msgstr "Rumsmeny"
 
-#: src/session/view/content/room_history/mod.ui:102
+#: src/session/view/content/room_history/mod.ui:112
 msgid "Unable to load room"
 msgstr "Kunde inte läsa in rum"
 
-#: src/session/view/content/room_history/mod.ui:103
+#: src/session/view/content/room_history/mod.ui:113
 msgid "Check your network connection."
 msgstr "Kontrollera din nätverksanslutning."
 
-#: src/session/view/content/room_history/mod.ui:107
+#: src/session/view/content/room_history/mod.ui:117
 msgid "Try Again"
 msgstr "Försök igen"
 
-#: src/session/view/content/room_history/mod.ui:131
+#: src/session/view/content/room_history/mod.ui:141
 msgid "Scroll to Bottom"
 msgstr "Rulla längst ner"
 
-#: src/session/view/content/room_history/mod.ui:133
+#: src/session/view/content/room_history/mod.ui:143
 msgid "Scroll to bottom"
 msgstr "Rulla längst ner"
 
-#: src/session/view/content/room_history/mod.ui:145
+#: src/session/view/content/room_history/mod.ui:155
 msgid "Drop Here to Send"
 msgstr "Släpp här för att skicka"
 
-#: src/session/view/content/room_history/mod.ui:167
+#: src/session/view/content/room_history/mod.ui:177
 msgid "Room History"
 msgstr "Rumshistorik"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:247
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:245
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Sett av 1 medlem"
@@ -2020,7 +2036,7 @@ msgstr[1] "Sett av {n} medlemmar"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:260
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:258
 msgid "Seen by {name}"
 msgstr "Sett av {name}"
 
@@ -2195,23 +2211,23 @@ msgstr "Misslyckades med att neka verifiering"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:164
+#: src/session/view/content/room_history/verification_info_bar.rs:161
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} vill verifieras"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:170
+#: src/session/view/content/room_history/verification_info_bar.rs:167
 #: src/session/view/user_page.ui:183
 #: src/verification_view/identity_verification_view/accept_request_page.ui:53
 msgid "Verify"
 msgstr "Verifiera"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:171
+#: src/session/view/content/room_history/verification_info_bar.rs:168
 #: src/utils/message_dialog.rs:27
 #: src/verification_view/identity_verification_view/accept_request_page.ui:42
 msgid "Decline"
 msgstr "Neka"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:174
+#: src/session/view/content/room_history/verification_info_bar.rs:171
 msgid "Verification in progress"
 msgstr "Verifiering pågår"
 
@@ -2542,14 +2558,6 @@ msgstr "Flytta till _rum"
 msgid "Move to Low _Priority"
 msgstr "Flytta till låg _prioritet"
 
-#: src/session/view/sidebar/mod.ui:66
-msgid "Re_join Room"
-msgstr "Gå _in i rum igen"
-
-#: src/session/view/sidebar/mod.ui:71
-msgid "_Forget Room"
-msgstr "_Glöm rum"
-
 #: src/session/view/sidebar/mod.ui:92 src/session/view/sidebar/mod.ui:94
 msgid "Main Menu"
 msgstr "Huvudmeny"
@@ -2579,21 +2587,16 @@ msgid "Allows to navigate between rooms"
 msgstr "Tillåter navigering mellan rum"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:366 src/session/view/sidebar/row.rs:297
+#: src/session/view/sidebar/room_row.rs:362 src/session/view/sidebar/row.rs:297
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr ""
 "Misslyckades med att flytta {room} från {previous_category} till "
 "{new_category}."
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:385 src/session/view/sidebar/row.rs:312
-msgid "Failed to forget {room}."
-msgstr "Misslyckades med att glömma {room}."
-
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:428
+#: src/session/view/sidebar/room_row.rs:424
 msgid "Direct chat with {name}"
 msgstr "Direktchatt med {name}"
 
@@ -2801,38 +2804,37 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Kunde inte öppna lagringen."
 
-#: src/utils/matrix.rs:114
+#: src/utils/matrix.rs:121
 msgid "{user} sent an audio file."
 msgstr "{user} skickade en ljudfil."
 
-#: src/utils/matrix.rs:117 src/utils/matrix.rs:128 src/utils/matrix.rs:132
-#: src/utils/matrix.rs:136
-msgid "{user}: {message}"
-msgstr "{user}: {message}"
-
-#: src/utils/matrix.rs:120
+#: src/utils/matrix.rs:124
 msgid "{user} sent a file."
 msgstr "{user} skickade en fil."
 
-#: src/utils/matrix.rs:122
+#: src/utils/matrix.rs:126
 msgid "{user} sent an image."
 msgstr "{user} skickade en bild."
 
-#: src/utils/matrix.rs:125
+#: src/utils/matrix.rs:129
 msgid "{user} sent their location."
 msgstr "{user} skickade sin plats."
 
-#: src/utils/matrix.rs:140
+#: src/utils/matrix.rs:141
 msgid "{user} sent a video."
 msgstr "{user} skickade en video."
 
-#: src/utils/matrix.rs:143
+#: src/utils/matrix.rs:144
 msgid "{user} sent a verification request."
 msgstr "{user} skickade en verifieringsförfrågan."
 
-#: src/utils/matrix.rs:151
+#: src/utils/matrix.rs:152
 msgid "{user} sent a sticker."
 msgstr "{user} skickade ett klistermärke."
+
+#: src/utils/matrix.rs:162
+msgid "{user}: {message}"
+msgstr "{user}: {message}"
 
 #. Translators: Default name for image files.
 #: src/utils/media.rs:33
@@ -3441,6 +3443,9 @@ msgid ""
 msgstr ""
 "Om du valde en lösenfras för återställning i stället får du gå tillbaka och "
 "välja det alternativet."
+
+#~ msgid "Failed to load connected device."
+#~ msgstr "Misslyckades med att läsa in ansluten enhet."
 
 #~ msgid "_View Source"
 #~ msgstr "_Visa källa"
