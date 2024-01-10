@@ -38,9 +38,6 @@ mod imp {
         /// The parent `GtkTextView` to autocomplete.
         #[property(get = Self::view)]
         view: PhantomData<gtk::TextView>,
-        /// The user ID of the current session.
-        #[property(get, set = Self::set_user_id, explicit_notify, nullable)]
-        pub user_id: RefCell<Option<String>>,
         /// The members list with expression watches.
         pub members_expr: ExpressionListModel,
         /// The room members used for completion.
@@ -87,17 +84,7 @@ mod imp {
             // - not ignored
             // - joined
             let not_own_user = gtk::BoolFilter::builder()
-                .expression(gtk::ClosureExpression::new::<bool>(
-                    &[
-                        Member::this_expression("user-id-string"),
-                        obj.property_expression("user-id"),
-                    ],
-                    closure!(
-                        |_obj: Option<glib::Object>, user_id: &str, my_user_id: &str| {
-                            user_id != my_user_id
-                        }
-                    ),
-                ))
+                .expression(expression::not(Member::this_expression("is-own-user")))
                 .build();
 
             let ignored_expr = Member::this_expression("is-ignored");
@@ -260,16 +247,6 @@ mod imp {
         /// The parent `GtkTextView` to autocomplete.
         fn view(&self) -> gtk::TextView {
             self.obj().parent().and_downcast::<gtk::TextView>().unwrap()
-        }
-
-        /// Set the ID of the logged-in user.
-        fn set_user_id(&self, user_id: Option<String>) {
-            if *self.user_id.borrow() == user_id {
-                return;
-            }
-
-            self.user_id.replace(user_id);
-            self.obj().notify_user_id();
         }
 
         /// The room members used for completion.

@@ -903,15 +903,11 @@ impl MessageToolbar {
 
     // Update the completion for the current room.
     fn update_completion(&self, room: Option<&Room>) {
-        let completion = &self.imp().completion;
-
-        completion.set_user_id(
-            room.and_then(|r| r.session())
-                .map(|s| s.user_id().to_string()),
-        );
         // `RoomHistory` should have a strong reference to the list so we can use
         // `get_or_create_members()`.
-        completion.set_members(room.map(|r| r.get_or_create_members()));
+        self.imp()
+            .completion
+            .set_members(room.map(|r| r.get_or_create_members()));
     }
 
     // Copy the selection in the message entry to the clipboard while replacing

@@ -173,9 +173,8 @@ impl Member {
             .set_uri(event.avatar_url().map(String::from));
         self.set_membership((&event.content().membership).into());
 
-        let session = self.session();
-        if session.user_id() == self.user_id() {
-            session.update_user_profile();
+        if self.is_own_user() {
+            self.session().update_user_profile();
         }
     }
 }

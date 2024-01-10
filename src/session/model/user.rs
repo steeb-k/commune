@@ -44,6 +44,9 @@ mod imp {
         /// The current session.
         #[property(get, construct_only)]
         pub session: OnceCell<Session>,
+        /// Whether this user is the same as the session's user.
+        #[property(get)]
+        pub is_own_user: Cell<bool>,
         /// The [`AvatarData`] of this user.
         #[property(get)]
         pub avatar_data: OnceCell<AvatarData>,
@@ -104,7 +107,10 @@ mod imp {
                 .sync_create()
                 .build();
 
-            let ignored_users = self.session.get().unwrap().ignored_users();
+            let session = self.session.get().unwrap();
+            self.is_own_user.set(*session.user_id() == user_id);
+
+            let ignored_users = session.ignored_users();
             let ignored_handler = ignored_users.connect_items_changed(
                 clone!(@weak self as imp => move |ignored_users, _, _, _| {
                     let user_id = imp.user_id.get().unwrap();
@@ -291,7 +297,7 @@ pub trait UserExt: IsA<User> {
 
     /// Whether this user is the same as the session's user.
     fn is_own_user(&self) -> bool {
-        self.session().user_id() == self.user_id()
+        self.upcast_ref().is_own_user()
     }
 
     /// The display name of this user.

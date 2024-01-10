@@ -516,21 +516,14 @@ impl Room {
         }
 
         let own_user_id = matrix_room.own_user_id();
-        let mut has_other_member = false;
-
         // Get the other member from the list.
         for member in members {
             let user_id = member.user_id();
 
             if user_id != direct_target_user_id && user_id != own_user_id {
-                has_other_member = true;
-                break;
+                // There is a non-direct member.
+                return None;
             }
-        }
-
-        if has_other_member {
-            // There is a non-direct member.
-            return None;
         }
 
         Some(direct_target_user_id)
