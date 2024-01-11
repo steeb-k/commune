@@ -21,7 +21,7 @@ use self::{
     method_page::LoginMethodPage, sso_page::LoginSsoPage,
 };
 use crate::{
-    prelude::*, session::model::Session, spawn, spawn_tokio, toast,
+    prelude::*, secret::store_session, session::model::Session, spawn, spawn_tokio, toast,
     verification_view::SessionVerificationView, Application, Window, RUNTIME,
 };
 
@@ -461,7 +461,7 @@ impl Login {
         }
 
         let session_info = session.info().clone();
-        let handle = spawn_tokio!(async move { session_info.store().await });
+        let handle = spawn_tokio!(async move { store_session(session_info).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not store session: {error}");

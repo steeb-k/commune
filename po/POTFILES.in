@@ -28,7 +28,7 @@ src/login/method_page.ui
 src/login/mod.rs
 src/login/mod.ui
 src/login/sso_page.ui
-src/secret.rs
+src/secret/linux.rs
 src/session/model/session.rs
 src/session/model/room/member_role.rs
 src/session/model/room/mod.rs

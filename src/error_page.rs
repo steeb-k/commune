@@ -1,18 +1,12 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gtk::{self, glib, CompositeTemplate};
 
+/// The possible error subpages.
+#[derive(Debug, Clone, Copy, strum::AsRefStr)]
+#[strum(serialize_all = "kebab-case")]
 pub enum ErrorSubpage {
-    SecretError,
-    SessionError,
-}
-
-impl ErrorSubpage {
-    fn as_str(&self) -> &str {
-        match self {
-            Self::SecretError => "secret-error",
-            Self::SessionError => "session-error",
-        }
-    }
+    Secret,
+    Session,
 }
 
 mod imp {
@@ -27,6 +21,8 @@ mod imp {
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub secret_error_page: TemplateChild<adw::StatusPage>,
+        #[template_child]
+        pub linux_secret_instructions: TemplateChild<adw::Clamp>,
         #[template_child]
         pub session_error_page: TemplateChild<adw::StatusPage>,
     }
@@ -63,17 +59,26 @@ impl ErrorPage {
         glib::Object::new()
     }
 
+    /// Display the given secret error.
     pub fn display_secret_error(&self, message: &str) {
         let imp = self.imp();
+
+        #[cfg(not(target_os = "linux"))]
+        imp.linux_secret_instructions.set_visible(false);
+
+        #[cfg(target_os = "linux")]
+        imp.linux_secret_instructions.set_visible(true);
+
         imp.secret_error_page.set_description(Some(message));
         imp.stack
-            .set_visible_child_name(ErrorSubpage::SecretError.as_str());
+            .set_visible_child_name(ErrorSubpage::Secret.as_ref());
     }
 
+    /// Display the given session error.
     pub fn display_session_error(&self, message: &str) {
         let imp = self.imp();
         imp.session_error_page.set_description(Some(message));
         imp.stack
-            .set_visible_child_name(ErrorSubpage::SessionError.as_str());
+            .set_visible_child_name(ErrorSubpage::Session.as_ref());
     }
 }

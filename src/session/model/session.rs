@@ -482,7 +482,7 @@ impl Session {
             settings.delete();
         }
 
-        self.info().clone().delete(None, false).await;
+        self.info().clone().delete().await;
 
         self.notifications().clear();
 

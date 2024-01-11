@@ -1,0 +1,480 @@
+//! Linux API to store the data of a session, using the Secret Service or Secret
+//! portal.
+
+use std::{collections::HashMap, fs, path::PathBuf, string::FromUtf8Error};
+
+use gettextrs::gettext;
+use oo7::{Item, Keyring};
+use ruma::{OwnedDeviceId, UserId};
+use serde_json::error::Error as JsonError;
+use thiserror::Error;
+use tracing::{debug, error, info};
+use url::Url;
+
+use super::{Secret, SecretError, StoredSession, DATA_PATH};
+use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
+
+/// The current version of the stored session.
+pub const CURRENT_VERSION: u8 = 5;
+/// The attribute to identify the schema in the Secret Service.
+const SCHEMA_ATTRIBUTE: &str = "xdg:schema";
+
+/// Retrieves all sessions stored to the `SecretService`
+pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
+    let keyring = Keyring::new().await?;
+
+    keyring.unlock().await?;
+
+    let items = keyring
+        .search_items(HashMap::from([(SCHEMA_ATTRIBUTE, APP_ID)]))
+        .await?;
+
+    let mut sessions = Vec::with_capacity(items.len());
+
+    for item in items {
+        item.unlock().await?;
+
+        match StoredSession::try_from_secret_item(item).await {
+            Ok(session) => sessions.push(session),
+            Err(LinuxSecretError::OldVersion {
+                version,
+                item,
+                mut session,
+            }) => {
+                if version == 0 {
+                    info!(
+                        "Found old session for user {} with sled store, removing…",
+                        session.user_id
+                    );
+
+                    // Try to log it out.
+                    log_out_session(session.clone()).await;
+
+                    session.delete().await;
+                    continue;
+                }
+
+                info!(
+                    "Found session {} for user {} with old version {}, applying migrations…",
+                    session.id(),
+                    session.user_id,
+                    version,
+                );
+                session.apply_migrations(version, item).await;
+
+                sessions.push(session);
+            }
+            Err(LinuxSecretError::WrongProfile) => {}
+            Err(error) => {
+                error!("Failed to restore previous session: {error}");
+            }
+        }
+    }
+
+    Ok(sessions)
+}
+
+/// Write the given session to the `SecretService`, overwriting any previously
+/// stored session with the same attributes.
+pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
+    let keyring = Keyring::new().await?;
+
+    let attrs = session.attributes();
+    let attributes = attrs.iter().map(|(k, v)| (*k, v.as_ref())).collect();
+    let secret = serde_json::to_string(&session.secret).unwrap();
+
+    keyring
+        .create_item(
+            &gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "Fractal: Matrix credentials for {user_id}",
+                &[("user_id", session.user_id.as_str())],
+            ),
+            attributes,
+            secret,
+            true,
+        )
+        .await?;
+
+    Ok(())
+}
+
+/// Delete the given session from the secret service.
+pub async fn delete_session(session: StoredSession) {
+    spawn_tokio!(async move {
+        if let Err(error) = session.delete_from_secret_service().await {
+            error!("Failed to delete session data from Secret Service: {error}");
+        }
+    })
+    .await
+    .unwrap();
+}
+
+/// Create a client and log out the given session.
+async fn log_out_session(session: StoredSession) {
+    debug!("Logging out session");
+    spawn_tokio!(async move {
+        match matrix::client_with_stored_session(session).await {
+            Ok(client) => {
+                if let Err(error) = client.matrix_auth().logout().await {
+                    error!("Failed to log out session: {error}");
+                }
+            }
+            Err(error) => {
+                error!("Failed to build client to log out session: {error}")
+            }
+        }
+    })
+    .await
+    .unwrap();
+}
+
+impl StoredSession {
+    /// Build self from a secret.
+    async fn try_from_secret_item(item: Item) -> Result<Self, LinuxSecretError> {
+        let attr = item.attributes().await?;
+
+        let version = match attr.get("version") {
+            Some(string) => match string.parse::<u8>() {
+                Ok(version) => version,
+                Err(error) => {
+                    error!("Could not parse 'version' attribute in stored session: {error}");
+                    return Err(LinuxSecretError::Invalid(gettext(
+                        "Malformed version in stored session",
+                    )));
+                }
+            },
+            None => 0,
+        };
+        if version > CURRENT_VERSION {
+            return Err(LinuxSecretError::UnsupportedVersion {
+                version,
+                item,
+                attributes: attr,
+            });
+        }
+
+        // TODO: Remove this and request profile in Keyring::search_items when we remove
+        // migration.
+        match attr.get("profile") {
+            // Ignore the item if it's for another profile.
+            Some(profile) if *profile != PROFILE.as_str() => {
+                return Err(LinuxSecretError::WrongProfile)
+            }
+            // It's an error if the version is at least 2 but there is no profile.
+            // Versions older than 2 will be migrated.
+            None if version >= 2 => {
+                return Err(LinuxSecretError::Invalid(gettext(
+                    "Could not find profile in stored session",
+                )));
+            }
+            // No issue for other cases.
+            _ => {}
+        };
+
+        let homeserver = match attr.get("homeserver") {
+            Some(string) => match Url::parse(string) {
+                Ok(homeserver) => homeserver,
+                Err(error) => {
+                    error!("Could not parse 'homeserver' attribute in stored session: {error}");
+                    return Err(LinuxSecretError::Invalid(gettext(
+                        "Malformed homeserver in stored session",
+                    )));
+                }
+            },
+            None => {
+                return Err(LinuxSecretError::Invalid(gettext(
+                    "Could not find homeserver in stored session",
+                )));
+            }
+        };
+        let user_id = match attr.get("user") {
+            Some(string) => match UserId::parse(string.as_str()) {
+                Ok(user_id) => user_id,
+                Err(error) => {
+                    error!("Could not parse 'user' attribute in stored session: {error}");
+                    return Err(LinuxSecretError::Invalid(gettext(
+                        "Malformed user ID in stored session",
+                    )));
+                }
+            },
+            None => {
+                return Err(LinuxSecretError::Invalid(gettext(
+                    "Could not find user ID in stored session",
+                )));
+            }
+        };
+        let device_id = match attr.get("device-id") {
+            Some(string) => OwnedDeviceId::from(string.as_str()),
+            None => {
+                return Err(LinuxSecretError::Invalid(gettext(
+                    "Could not find device ID in stored session",
+                )));
+            }
+        };
+        let path = match attr.get("db-path") {
+            Some(string) => PathBuf::from(string),
+            None => {
+                return Err(LinuxSecretError::Invalid(gettext(
+                    "Could not find database path in stored session",
+                )));
+            }
+        };
+        let secret = match item.secret().await {
+            Ok(secret) => {
+                if version <= 4 {
+                    match rmp_serde::from_slice::<Secret>(&secret) {
+                        Ok(secret) => secret,
+                        Err(error) => {
+                            error!("Could not parse secret in stored session: {error}");
+                            return Err(LinuxSecretError::Invalid(gettext(
+                                "Malformed secret in stored session",
+                            )));
+                        }
+                    }
+                } else {
+                    match serde_json::from_slice(&secret) {
+                        Ok(secret) => secret,
+                        Err(error) => {
+                            error!("Could not parse secret in stored session: {error:?}");
+                            return Err(LinuxSecretError::Invalid(gettext(
+                                "Malformed secret in stored session",
+                            )));
+                        }
+                    }
+                }
+            }
+            Err(error) => {
+                error!("Could not get secret in stored session: {error}");
+                return Err(LinuxSecretError::Invalid(gettext(
+                    "Could not get secret in stored session",
+                )));
+            }
+        };
+
+        let session = Self {
+            homeserver,
+            user_id,
+            device_id,
+            path,
+            secret,
+        };
+
+        if version < CURRENT_VERSION {
+            Err(LinuxSecretError::OldVersion {
+                version,
+                item,
+                session,
+            })
+        } else {
+            Ok(session)
+        }
+    }
+
+    /// Get the attributes from `self`.
+    fn attributes(&self) -> HashMap<&str, String> {
+        HashMap::from([
+            ("homeserver", self.homeserver.to_string()),
+            ("user", self.user_id.to_string()),
+            ("device-id", self.device_id.to_string()),
+            ("db-path", self.path.to_str().unwrap().to_owned()),
+            ("version", CURRENT_VERSION.to_string()),
+            ("profile", PROFILE.to_string()),
+            (SCHEMA_ATTRIBUTE, APP_ID.to_owned()),
+        ])
+    }
+
+    /// Remove this session from the `SecretService`
+    async fn delete_from_secret_service(&self) -> Result<(), SecretError> {
+        let keyring = Keyring::new().await?;
+
+        let attrs = self.attributes();
+        let attributes = attrs.iter().map(|(k, v)| (*k, v.as_ref())).collect();
+
+        keyring.delete(attributes).await?;
+
+        Ok(())
+    }
+
+    /// Migrate this session to the current version.
+    async fn apply_migrations(&mut self, current_version: u8, item: Item) {
+        if current_version < 4 {
+            info!("Migrating to version 4…");
+
+            let target_path = DATA_PATH.join(self.id());
+
+            if self.path != target_path {
+                debug!("Moving database to: {}", target_path.to_string_lossy());
+
+                if let Err(error) = fs::create_dir_all(&target_path) {
+                    error!("Failed to create new directory: {error}");
+                }
+
+                if let Err(error) = fs::rename(&self.path, &target_path) {
+                    error!("Failed to move database: {error}");
+                }
+
+                self.path = target_path;
+            }
+        }
+
+        info!("Migrating to version 5…");
+
+        let clone = self.clone();
+        spawn_tokio!(async move {
+            if let Err(error) = item.delete().await {
+                error!("Failed to remove outdated session: {error}");
+            }
+
+            if let Err(error) = store_session(clone).await {
+                error!("Failed to store updated session: {error}");
+            }
+        })
+        .await
+        .unwrap();
+    }
+}
+
+/// Any error that can happen when interacting with the Secret Service on Linux.
+#[derive(Debug, Error)]
+pub enum LinuxSecretError {
+    /// A session with an unsupported version was found.
+    #[error("Session found with unsupported version {version}")]
+    UnsupportedVersion {
+        version: u8,
+        item: Item,
+        attributes: HashMap<String, String>,
+    },
+
+    /// A session with an old version was found.
+    #[error("Session found with old version")]
+    OldVersion {
+        version: u8,
+        item: Item,
+        session: StoredSession,
+    },
+
+    /// An invalid session was found.
+    ///
+    /// This should only happen if for some reason we get an item from a
+    /// different application.
+    #[error("Invalid session: {0}")]
+    Invalid(String),
+
+    /// An error occurred interacting with the secret service.
+    #[error(transparent)]
+    Oo7(#[from] oo7::Error),
+
+    /// Trying to restore a session with the wrong profile.
+    #[error("Session found for wrong profile")]
+    WrongProfile,
+}
+
+/// A possible error value when converting a `Secret` from a UTF-8 byte vector.
+#[derive(Debug)]
+pub enum FromUtf8SecretError {
+    Str(FromUtf8Error),
+    Json(JsonError),
+}
+
+impl From<FromUtf8Error> for FromUtf8SecretError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::Str(err)
+    }
+}
+
+impl From<JsonError> for FromUtf8SecretError {
+    fn from(err: JsonError) -> Self {
+        Self::Json(err)
+    }
+}
+
+impl From<oo7::Error> for SecretError {
+    fn from(value: oo7::Error) -> Self {
+        Self::Service(value.to_user_facing())
+    }
+}
+
+impl UserFacingError for oo7::Error {
+    fn to_user_facing(&self) -> String {
+        match self {
+            oo7::Error::Portal(error) => error.to_user_facing(),
+            oo7::Error::DBus(error) => error.to_user_facing(),
+        }
+    }
+}
+
+impl UserFacingError for oo7::portal::Error {
+    fn to_user_facing(&self) -> String {
+        match self {
+            oo7::portal::Error::FileHeaderMismatch(_) |
+            oo7::portal::Error::VersionMismatch(_) |
+            oo7::portal::Error::NoData |
+            oo7::portal::Error::MacError |
+            oo7::portal::Error::HashedAttributeMac(_) |
+            oo7::portal::Error::GVariantDeserialization(_) |
+            oo7::portal::Error::SaltSizeMismatch(_, _) => gettext(
+                "The secret storage file is corrupted.",
+            ),
+            oo7::portal::Error::NoParentDir(_) |
+            oo7::portal::Error::NoDataDir => gettext(
+                "Could not access the secret storage file location.",
+            ),
+            oo7::portal::Error::Io(_) => gettext(
+                "An unknown error occurred when accessing the secret storage file.",
+            ),
+            oo7::portal::Error::TargetFileChanged(_) => gettext(
+                "The secret storage file has been changed by another process.",
+            ),
+            oo7::portal::Error::PortalBus(_) => gettext(
+                "An unknown error occurred when interacting with the D-Bus Secret Portal backend.",
+            ),
+            oo7::portal::Error::CancelledPortalRequest => gettext(
+                "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
+            ),
+            oo7::portal::Error::PortalNotAvailable => gettext(
+                "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, and it is at least at version 1.5.0.",
+            ),
+            oo7::portal::Error::WeakKey(_) => gettext(
+                "The Flatpak Secret Portal provided a key that is too weak to be secure.",
+            ),
+            // Can only occur when using the `replace_item_index` or `delete_item_index` methods.
+            oo7::portal::Error::InvalidItemIndex(_) => unreachable!(),
+        }
+    }
+}
+
+impl UserFacingError for oo7::dbus::Error {
+    fn to_user_facing(&self) -> String {
+        match self {
+            oo7::dbus::Error::Deleted => gettext(
+                "The item was deleted.",
+            ),
+            oo7::dbus::Error::Service(s) => match s {
+                oo7::dbus::ServiceError::ZBus(_) => gettext(
+                    "An unknown error occurred when interacting with the D-Bus Secret Service.",
+                ),
+                oo7::dbus::ServiceError::IsLocked => gettext(
+                    "The collection or item is locked.",
+                ),
+                oo7::dbus::ServiceError::NoSession => gettext(
+                    "The D-Bus Secret Service session does not exist.",
+                ),
+                oo7::dbus::ServiceError::NoSuchObject => gettext(
+                    "The collection or item does not exist.",
+                ),
+            },
+            oo7::dbus::Error::Dismissed => gettext(
+                "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",
+            ),
+            oo7::dbus::Error::NotFound(_) => gettext(
+                "Could not access the default collection. Make sure a keyring was created and set as default.",
+            ),
+            oo7::dbus::Error::Zbus(_) |
+            oo7::dbus::Error::IO(_) => gettext(
+                "An unknown error occurred when interacting with the D-Bus Secret Service.",
+            ),
+        }
+    }
+}
