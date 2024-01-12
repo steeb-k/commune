@@ -195,7 +195,7 @@ pub async fn client_with_stored_session(
         .sqlite_store(path, Some(&passphrase))
         // force_auth option to solve an issue with some servers configuration to require
         // auth for profiles:
-        // https://gitlab.gnome.org/GNOME/fractal/-/issues/934
+        // https://gitlab.gnome.org/World/fractal/-/issues/934
         .request_config(RequestConfig::new().retry_limit(2).force_auth())
         .build()
         .await?;

@@ -130,7 +130,7 @@ mod imp {
         /// The last IP address used by the user session.
         fn last_seen_ip(&self) -> Option<String> {
             // TODO: Would be nice to also show the location
-            // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/700
+            // See: https://gitlab.gnome.org/World/fractal/-/issues/700
             self.data().api()?.last_seen_ip.clone()
         }
 

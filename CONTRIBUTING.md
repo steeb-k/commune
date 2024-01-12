@@ -2,7 +2,7 @@
 
 ## Newcomers
 
-[Fractal](https://gitlab.gnome.org/GNOME/fractal/) follows the [GNOME Newcomers workflow](https://wiki.gnome.org/Newcomers/BuildProject).
+[Fractal](https://gitlab.gnome.org/World/fractal/) follows the [GNOME Newcomers workflow](https://wiki.gnome.org/Newcomers/BuildProject).
 Follow these pages to learn how to contribute.
 
 Here are also a few links to help you get started with Rust and the GTK Rust bindings:

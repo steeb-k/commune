@@ -1,5 +1,5 @@
 #!/bin/bash
-# Source: https://gitlab.gnome.org/GNOME/fractal/blob/master/hooks/pre-commit.hook
+# Source: https://gitlab.gnome.org/World/fractal/blob/master/hooks/pre-commit.hook
 
 export LC_ALL=C
 

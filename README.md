@@ -1,5 +1,5 @@
 [![Our chat room](https://img.shields.io/matrix/fractal-gtk:matrix.org?color=blue&label=%23fractal%3Agnome.org&logo=matrix)](https://matrix.to/#/#fractal:gnome.org)
-[![Our Gitlab project](https://img.shields.io/badge/gitlab.gnome.org%2F-GNOME%2FFractal-green?logo=gitlab)](https://gitlab.gnome.org/GNOME/fractal/)
+[![Our Gitlab project](https://img.shields.io/badge/gitlab.gnome.org%2F-World%2FFractal-green?logo=gitlab)](https://gitlab.gnome.org/World/fractal/)
 [![Our documentation](https://img.shields.io/badge/%F0%9F%95%AE-Docs-B7410E?logo=rust)](https://gnome.pages.gitlab.gnome.org/fractal/)
 
 # Fractal
@@ -7,7 +7,7 @@
 Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
 collaboration in large groups, such as free software projects, and will fit all screens, big or small.
 
-![screenshot](https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/main.png)
+![screenshot](https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png)
 
 Highlights:
 
@@ -91,7 +91,7 @@ First, set up the GNOME nightlies.
 
 <a href="https://nightly.gnome.org/gnome-nightly.flatpakrepo ">
 <img
-    src="https://gitlab.gnome.org/GNOME/fractal/uploads/c276f92660dcf50067714ac08e193fea/gnome-nightly-badge.svg"
+    src="https://gitlab.gnome.org/World/fractal/uploads/c276f92660dcf50067714ac08e193fea/gnome-nightly-badge.svg"
     alt="Add gnome-nightly repository"
     width="240px"
     height="80px"
@@ -102,7 +102,7 @@ Then install the application.
 
 <a href="https://nightly.gnome.org/repo/appstream/org.gnome.Fractal.Devel.flatpakref">
 <img
-    src="https://gitlab.gnome.org/GNOME/fractal/uploads/5e42d322eaacc7da2a52bfda9f7a4e53/fractal-nightly-badge.svg"
+    src="https://gitlab.gnome.org/World/fractal/uploads/5e42d322eaacc7da2a52bfda9f7a4e53/fractal-nightly-badge.svg"
     alt="Download Fractal Nightly"
     width="240px"
     height="80px"
@@ -178,7 +178,7 @@ They are translated on [Element’s translation platform](https://translate.elem
 * Does Fractal have encryption support?
 
 **Yes**, since Fractal 5, encryption is supported using Cross-Signing. See
-<https://gitlab.gnome.org/GNOME/fractal/-/issues/717> for more info on the state of encryption.
+<https://gitlab.gnome.org/World/fractal/-/issues/717> for more info on the state of encryption.
 
 * Can I run Fractal with the window closed?
 
@@ -192,7 +192,7 @@ The current version is a complete rewrite of Fractal built on top of the
 [matrix-rust-sdk](https://github.com/matrix-org/matrix-rust-sdk) using [GTK4](https://gtk.org/).
 
 The previous version of Fractal was using GTK3 and its own backend to talk to a matrix homeserver,
-the code can be found in the [`legacy` branch](https://gitlab.gnome.org/GNOME/fractal/-/tree/legacy).
+the code can be found in the [`legacy` branch](https://gitlab.gnome.org/World/fractal/-/tree/legacy).
 
 Initial versions were based on Fest <https://github.com/fest-im/fest>, formerly called ruma-gtk.
 In the origins of the project it was called guillotine, based on French revolution, in relation with

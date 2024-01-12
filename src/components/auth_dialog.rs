@@ -244,7 +244,7 @@ impl AuthDialog {
             AuthType::Sso => Some(self.perform_fallback(uiaa_session.clone(), stage).await),
             AuthType::Dummy => Some(self.perform_dummy_stage(uiaa_session.clone())),
             // TODO implement other authentication types
-            // See: https://gitlab.gnome.org/GNOME/fractal/-/issues/835
+            // See: https://gitlab.gnome.org/World/fractal/-/issues/835
             _ => None,
         }
     }

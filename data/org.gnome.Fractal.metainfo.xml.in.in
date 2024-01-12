@@ -29,25 +29,25 @@
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/main.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png</image>
       <caption>Fractal’s main window</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/media-history.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/main/screenshots/media-history.png</image>
       <caption>View the media history of a Matrix room</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/GNOME/fractal/raw/main/screenshots/adaptive.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/main/screenshots/adaptive.png</image>
       <caption>Fractal’s interface adapts to small screens</caption>
     </screenshot>
   </screenshots>
 
-  <url type="homepage">https://gitlab.gnome.org/GNOME/fractal</url>
-  <url type="bugtracker">https://gitlab.gnome.org/GNOME/fractal/issues/</url>
+  <url type="homepage">https://gitlab.gnome.org/World/fractal</url>
+  <url type="bugtracker">https://gitlab.gnome.org/World/fractal/issues/</url>
   <url type="donation">https://www.gnome.org/donate/</url>
   <url type="translate">https://l10n.gnome.org/module/fractal/</url>
   <url type="contact">https://matrix.to/#/#fractal:gnome.org</url>
-  <url type="contribute">https://gitlab.gnome.org/GNOME/fractal/-/blob/main/CONTRIBUTING.md</url>
+  <url type="contribute">https://gitlab.gnome.org/World/fractal/-/blob/main/CONTRIBUTING.md</url>
 
   <requires>
     <display_length compare="ge">360</display_length>

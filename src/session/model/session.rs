@@ -458,7 +458,7 @@ impl Session {
     /// This should only be called if the session has been logged out without
     /// `Session::logout`.
     pub fn handle_logged_out(&self) {
-        // TODO: Show error screen. See: https://gitlab.gnome.org/GNOME/fractal/-/issues/901
+        // TODO: Show error screen. See: https://gitlab.gnome.org/World/fractal/-/issues/901
 
         spawn!(
             glib::Priority::LOW,
