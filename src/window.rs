@@ -25,6 +25,22 @@ use crate::{
     Application, APP_ID, PROFILE,
 };
 
+/// A page of the main window stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
+#[strum(serialize_all = "kebab-case")]
+pub enum WindowPage {
+    /// The loading page.
+    Loading,
+    /// The welcome screen.
+    Greeter,
+    /// The login view.
+    Login,
+    /// The session view.
+    Session,
+    /// The error page.
+    Error,
+}
+
 mod imp {
     use glib::subclass::InitializingObject;
 
@@ -104,10 +120,10 @@ mod imp {
             );
 
             klass.install_action("win.new-session", None, |obj, _, _| {
-                obj.switch_to_greeter_page();
+                obj.set_visible_page(WindowPage::Greeter);
             });
             klass.install_action("win.show-login", None, |obj, _, _| {
-                obj.switch_to_login_page();
+                obj.set_visible_page(WindowPage::Login);
             });
             klass.install_action("win.show-session", None, |obj, _, _| {
                 obj.show_selected_session();
@@ -142,12 +158,21 @@ mod imp {
                 obj.add_css_class("devel");
             }
 
-            obj.load_window_size();
+            self.load_window_size();
 
             self.main_stack.connect_visible_child_notify(
                 clone!(@weak obj => move |_| obj.set_default_by_child()),
             );
             obj.set_default_by_child();
+
+            self.main_stack.connect_transition_running_notify(
+                clone!(@weak self as imp => move |stack|
+                    if !stack.is_transition_running() {
+                        // Focus the default widget when the transition has ended.
+                        imp.grab_focus();
+                    }
+                ),
+            );
 
             self.account_switcher
                 .set_session_selection(Some(self.session_selection.clone()));
@@ -162,7 +187,7 @@ mod imp {
                     obj.action_set_enabled("win.show-session", n_items > 0);
 
                     if removed > 0 && n_items == 0 {
-                        obj.switch_to_greeter_page();
+                        obj.set_visible_page(WindowPage::Greeter);
                         return;
                     }
 
@@ -195,12 +220,12 @@ mod imp {
 
             if session_list.state() == LoadingState::Ready {
                 if session_list.is_empty() {
-                    obj.switch_to_greeter_page();
+                    obj.set_visible_page(WindowPage::Greeter);
                 }
             } else {
                 session_list.connect_state_notify(clone!(@weak obj => move |session_list| {
                     if session_list.state() == LoadingState::Ready && session_list.is_empty() {
-                        obj.switch_to_greeter_page();
+                        obj.set_visible_page(WindowPage::Greeter);
                     }
                 }));
             }
@@ -217,12 +242,10 @@ mod imp {
     impl WindowImpl for Window {
         // save window state on delete event
         fn close_request(&self) -> glib::Propagation {
-            let obj = self.obj();
-
-            if let Err(error) = obj.save_window_size() {
+            if let Err(error) = self.save_window_size() {
                 warn!("Failed to save window state: {error}");
             }
-            if let Err(error) = obj.save_current_visible_session() {
+            if let Err(error) = self.save_current_visible_session() {
                 warn!("Failed to save current session: {error}");
             }
 
@@ -230,7 +253,18 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Window {}
+    impl WidgetImpl for Window {
+        fn grab_focus(&self) -> bool {
+            match self.visible_page() {
+                WindowPage::Loading => false,
+                WindowPage::Greeter => self.greeter.grab_focus(),
+                WindowPage::Login => self.login.grab_focus(),
+                WindowPage::Session => self.session.grab_focus(),
+                WindowPage::Error => self.error_page.grab_focus(),
+            }
+        }
+    }
+
     impl ApplicationWindowImpl for Window {}
     impl AdwApplicationWindowImpl for Window {}
 
@@ -244,13 +278,69 @@ mod imp {
             self.compact.set(compact);
             self.obj().notify_compact();
         }
+
+        /// Load the window size from the settings.
+        fn load_window_size(&self) {
+            let obj = self.obj();
+            let settings = Application::default().settings();
+
+            let width = settings.int("window-width");
+            let height = settings.int("window-height");
+            let is_maximized = settings.boolean("is-maximized");
+
+            obj.set_default_size(width, height);
+            obj.set_maximized(is_maximized);
+        }
+
+        /// Save the current window size to the settings.
+        fn save_window_size(&self) -> Result<(), glib::BoolError> {
+            let obj = self.obj();
+            let settings = Application::default().settings();
+
+            let size = obj.default_size();
+            settings.set_int("window-width", size.0)?;
+            settings.set_int("window-height", size.1)?;
+
+            settings.set_boolean("is-maximized", obj.is_maximized())?;
+
+            Ok(())
+        }
+
+        /// Save the currently visible session to the settings.
+        fn save_current_visible_session(&self) -> Result<(), glib::BoolError> {
+            let settings = Application::default().settings();
+
+            settings.set_string(
+                "current-session",
+                self.current_session_id().unwrap_or_default().as_str(),
+            )?;
+
+            Ok(())
+        }
+
+        /// The visible page of the window.
+        pub(super) fn visible_page(&self) -> WindowPage {
+            self.main_stack
+                .visible_child_name()
+                .and_then(|s| s.as_str().try_into().ok())
+                .unwrap()
+        }
+
+        /// The ID of the currently visible session, if any.
+        pub(super) fn current_session_id(&self) -> Option<String> {
+            self.session_selection
+                .selected_item()
+                .and_downcast::<SessionInfo>()
+                .map(|s| s.session_id())
+        }
     }
 }
 
 glib::wrapper! {
     /// The main window.
     pub struct Window(ObjectSubclass<imp::Window>)
-        @extends gtk::Widget, gtk::Window, gtk::Root, gtk::ApplicationWindow, adw::ApplicationWindow, @implements gtk::Accessible, gio::ActionMap, gio::ActionGroup;
+        @extends gtk::Widget, gtk::Window, gtk::Root, gtk::ApplicationWindow, adw::ApplicationWindow,
+        @implements gtk::Accessible, gio::ActionMap, gio::ActionGroup;
 }
 
 impl Window {
@@ -269,13 +359,7 @@ impl Window {
 
     /// The ID of the currently visible session, if any.
     pub fn current_session_id(&self) -> Option<String> {
-        Some(
-            self.imp()
-                .session_selection
-                .selected_item()
-                .and_downcast::<SessionInfo>()?
-                .session_id(),
-        )
+        self.imp().current_session_id()
     }
 
     /// Set the current session by its ID.
@@ -319,12 +403,12 @@ impl Window {
             imp.session.set_session(Some(session));
 
             if session.state() == SessionState::Ready {
-                imp.main_stack.set_visible_child(&*imp.session);
+                self.set_visible_page(WindowPage::Session);
             } else {
-                session.connect_ready(clone!(@weak imp => move |_| {
-                    imp.main_stack.set_visible_child(&*imp.session);
+                session.connect_ready(clone!(@weak self as obj => move |_| {
+                    obj.set_visible_page(WindowPage::Session);
                 }));
-                self.switch_to_loading_page();
+                self.set_visible_page(WindowPage::Loading);
             }
 
             // We need to grab the focus so that keyboard shortcuts work.
@@ -336,66 +420,33 @@ impl Window {
         if let Some(failed) = session.downcast_ref::<FailedSession>() {
             imp.error_page
                 .display_session_error(&failed.error().to_user_facing());
-            imp.main_stack.set_visible_child(&*imp.error_page);
+            self.set_visible_page(WindowPage::Error);
         } else {
-            self.switch_to_loading_page();
+            self.set_visible_page(WindowPage::Loading);
         }
 
         imp.session.set_session(None::<Session>);
     }
 
-    pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
-        let settings = Application::default().settings();
-
-        let size = self.default_size();
-
-        settings.set_int("window-width", size.0)?;
-        settings.set_int("window-height", size.1)?;
-
-        settings.set_boolean("is-maximized", self.is_maximized())?;
-
-        Ok(())
-    }
-
-    fn load_window_size(&self) {
-        let settings = Application::default().settings();
-
-        let width = settings.int("window-width");
-        let height = settings.int("window-height");
-        let is_maximized = settings.boolean("is-maximized");
-
-        self.set_default_size(width, height);
-        self.set_property("maximized", is_maximized);
-    }
-
     /// Change the default widget of the window based on the visible child.
     ///
     /// These are the default widgets:
-    /// - `Greeter` screen => `Login` button.
+    ///
+    /// - `Greeter` screen => `Log In` button.
     fn set_default_by_child(&self) {
         let imp = self.imp();
 
-        if imp.main_stack.visible_child() == Some(imp.greeter.get().upcast()) {
-            self.set_default_widget(Some(&imp.greeter.default_widget()));
-        } else {
-            self.set_default_widget(gtk::Widget::NONE);
-        }
+        let default_widget = match imp.visible_page() {
+            WindowPage::Greeter => Some(imp.greeter.default_widget()),
+            _ => None,
+        };
+
+        self.set_default_widget(default_widget.as_ref());
     }
 
-    pub fn switch_to_loading_page(&self) {
-        let imp = self.imp();
-        imp.main_stack.set_visible_child(&*imp.loading);
-    }
-
-    pub fn switch_to_login_page(&self) {
-        let imp = self.imp();
-        imp.main_stack.set_visible_child(&*imp.login);
-        imp.login.focus_default();
-    }
-
-    pub fn switch_to_greeter_page(&self) {
-        let imp = self.imp();
-        imp.main_stack.set_visible_child(&*imp.greeter);
+    /// Set the visible page of the window.
+    pub fn set_visible_page(&self, name: WindowPage) {
+        self.imp().main_stack.set_visible_child_name(name.as_ref());
     }
 
     /// This appends a new toast to the list
@@ -403,6 +454,7 @@ impl Window {
         self.imp().toast_overlay.add_toast(toast);
     }
 
+    /// The account switcher popover.
     pub fn account_switcher(&self) -> &AccountSwitcherPopover {
         &self.imp().account_switcher
     }
@@ -441,17 +493,6 @@ impl Window {
         }
     }
 
-    pub fn save_current_visible_session(&self) -> Result<(), glib::BoolError> {
-        let settings = Application::default().settings();
-
-        settings.set_string(
-            "current-session",
-            self.current_session_id().unwrap_or_default().as_str(),
-        )?;
-
-        Ok(())
-    }
-
     /// Open the account settings for the session with the given ID.
     pub fn open_account_settings(&self, session_id: &str) {
         let Some(session) = Application::default()
@@ -469,9 +510,8 @@ impl Window {
 
     /// Open the error page and display the given secret error message.
     pub fn show_secret_error(&self, message: &str) {
-        let imp = self.imp();
-        imp.error_page.display_secret_error(message);
-        imp.main_stack.set_visible_child(&*imp.error_page);
+        self.imp().error_page.display_secret_error(message);
+        self.set_visible_page(WindowPage::Error);
     }
 
     /// Show the verification with the given flow ID for the user with the given

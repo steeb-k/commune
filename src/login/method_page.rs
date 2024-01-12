@@ -55,7 +55,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for LoginMethodPage {}
 
-    impl WidgetImpl for LoginMethodPage {}
+    impl WidgetImpl for LoginMethodPage {
+        fn grab_focus(&self) -> bool {
+            self.username_entry.grab_focus()
+        }
+    }
+
     impl BinImpl for LoginMethodPage {}
 
     impl LoginMethodPage {
@@ -251,10 +256,5 @@ impl LoginMethodPage {
             imp.sso_idp_box.remove(&child.unwrap());
             child = imp.sso_idp_box.first_child();
         }
-    }
-
-    /// Focus the default widget.
-    pub fn focus_default(&self) {
-        self.imp().username_entry.grab_focus();
     }
 }

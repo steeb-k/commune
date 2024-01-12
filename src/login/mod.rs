@@ -6,7 +6,6 @@ use ruma::{
     api::client::session::{get_login_types::v3::LoginType, login},
     OwnedServerName,
 };
-use strum::{AsRefStr, EnumString};
 use tracing::{error, warn};
 use url::Url;
 
@@ -22,7 +21,7 @@ use self::{
 };
 use crate::{
     prelude::*, secret::store_session, session::model::Session, spawn, spawn_tokio, toast,
-    verification_view::SessionVerificationView, Application, Window, RUNTIME,
+    verification_view::SessionVerificationView, Application, Window, WindowPage, RUNTIME,
 };
 
 #[derive(Clone, Debug, Default, glib::Boxed)]
@@ -30,7 +29,7 @@ use crate::{
 pub struct BoxedLoginTypes(Vec<LoginType>);
 
 /// A page of the login stack.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
 #[strum(serialize_all = "kebab-case")]
 enum LoginPage {
     /// The homeserver page.
@@ -137,10 +136,14 @@ mod imp {
                 obj.update_network_state();
             }));
 
-            self.main_stack
-                .connect_visible_child_notify(clone!(@weak obj => move |_|
-                    obj.focus_default();
-                ));
+            self.main_stack.connect_transition_running_notify(
+                clone!(@weak self as imp => move |stack|
+                    if !stack.is_transition_running() {
+                        // Focus the default widget when the transition has ended.
+                        imp.grab_focus();
+                    }
+                ),
+            );
 
             obj.update_network_state();
         }
@@ -153,10 +156,36 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for Login {}
+    impl WidgetImpl for Login {
+        fn grab_focus(&self) -> bool {
+            match self.visible_page() {
+                LoginPage::Homeserver => self.homeserver_page.grab_focus(),
+                LoginPage::Method => self.method_page.grab_focus(),
+                LoginPage::Sso | LoginPage::Loading => false,
+                LoginPage::SessionVerification => {
+                    if let Some(session_verification) = self.session_verification() {
+                        session_verification.grab_focus()
+                    } else {
+                        false
+                    }
+                }
+                LoginPage::Completed => self.done_button.grab_focus(),
+            }
+        }
+    }
+
     impl BinImpl for Login {}
+    impl AccessibleImpl for Login {}
 
     impl Login {
+        /// The visible page of the login stack.
+        pub(super) fn visible_page(&self) -> LoginPage {
+            self.main_stack
+                .visible_child_name()
+                .and_then(|s| s.as_str().try_into().ok())
+                .unwrap()
+        }
+
         /// Set whether auto-discovery is enabled.
         pub fn set_autodiscovery(&self, autodiscovery: bool) {
             if self.autodiscovery.get() == autodiscovery {
@@ -185,6 +214,13 @@ mod imp {
                 .borrow()
                 .as_ref()
                 .map(|url| url.as_ref().trim_end_matches('/').to_owned())
+        }
+
+        /// Get the session verification, if any.
+        pub(super) fn session_verification(&self) -> Option<SessionVerificationView> {
+            self.main_stack
+                .child_by_name(LoginPage::SessionVerification.as_ref())
+                .and_downcast()
         }
     }
 }
@@ -297,17 +333,8 @@ impl Login {
             .any(|t| matches!(t, LoginType::Password(_)))
     }
 
-    /// The visible page of the login stack.
-    fn visible_child(&self) -> LoginPage {
-        self.imp()
-            .main_stack
-            .visible_child_name()
-            .and_then(|s| s.as_str().try_into().ok())
-            .unwrap()
-    }
-
     /// Set the visible page of the login stack.
-    fn set_visible_child(&self, visible_child: LoginPage) {
+    fn set_visible_page(&self, visible_child: LoginPage) {
         self.imp()
             .main_stack
             .set_visible_child_name(visible_child.as_ref());
@@ -315,7 +342,7 @@ impl Login {
 
     /// The page to go back to for the current login stack page.
     fn previous_page(&self) -> Option<LoginPage> {
-        match self.visible_child() {
+        match self.imp().visible_page() {
             LoginPage::Homeserver => None,
             LoginPage::Method => Some(LoginPage::Homeserver),
             LoginPage::Sso | LoginPage::Loading | LoginPage::SessionVerification => {
@@ -333,7 +360,7 @@ impl Login {
     /// Go back to the previous step.
     #[template_callback]
     fn go_previous(&self) {
-        let session_verification = self.session_verification();
+        let session_verification = self.imp().session_verification();
         if let Some(session_verification) = &session_verification {
             if session_verification.go_previous() {
                 // The session verification handled the action.
@@ -342,12 +369,12 @@ impl Login {
         }
 
         let Some(previous_page) = self.previous_page() else {
-            self.parent_window().switch_to_greeter_page();
+            self.parent_window().set_visible_page(WindowPage::Greeter);
             self.clean();
             return;
         };
 
-        self.set_visible_child(previous_page);
+        self.set_visible_page(previous_page);
 
         match previous_page {
             LoginPage::Homeserver => {
@@ -377,7 +404,7 @@ impl Login {
     /// Show the appropriate login screen given the current login types.
     fn show_login_screen(&self) {
         if self.supports_password() {
-            self.set_visible_child(LoginPage::Method);
+            self.set_visible_page(LoginPage::Method);
         } else {
             spawn!(clone!(@weak self as obj => async move {
                 obj.login_with_sso(None).await;
@@ -387,7 +414,7 @@ impl Login {
 
     /// Log in with the SSO login type.
     async fn login_with_sso(&self, idp_id: Option<String>) {
-        self.set_visible_child(LoginPage::Sso);
+        self.set_visible_page(LoginPage::Sso);
         let client = self.client().await.unwrap();
 
         let handle = spawn_tokio!(async move {
@@ -450,7 +477,7 @@ impl Login {
     }
 
     pub async fn init_session(&self, session: Session) {
-        self.set_visible_child(LoginPage::Loading);
+        self.set_visible_page(LoginPage::Loading);
         self.drop_client();
         self.imp().session.replace(Some(session.clone()));
 
@@ -495,15 +522,7 @@ impl Login {
             &verification_view,
             Some(LoginPage::SessionVerification.as_ref()),
         );
-        self.set_visible_child(LoginPage::SessionVerification);
-    }
-
-    /// Get the session verification, if any.
-    fn session_verification(&self) -> Option<SessionVerificationView> {
-        self.imp()
-            .main_stack
-            .child_by_name(LoginPage::SessionVerification.as_ref())
-            .and_downcast()
+        self.set_visible_page(LoginPage::SessionVerification);
     }
 
     /// Show the completed page.
@@ -512,7 +531,7 @@ impl Login {
         let imp = self.imp();
 
         imp.back_button.set_visible(false);
-        self.set_visible_child(LoginPage::Completed);
+        self.set_visible_page(LoginPage::Completed);
         imp.done_button.grab_focus();
     }
 
@@ -532,7 +551,7 @@ impl Login {
         // Clean pages.
         imp.homeserver_page.clean();
         imp.method_page.clean();
-        if let Some(session_verification) = self.session_verification() {
+        if let Some(session_verification) = imp.session_verification() {
             imp.main_stack.remove(&session_verification);
         }
 
@@ -545,7 +564,7 @@ impl Login {
         self.drop_session();
 
         // Reinitialize UI.
-        self.set_visible_child(LoginPage::Homeserver);
+        self.set_visible_page(LoginPage::Homeserver);
         imp.back_button.set_visible(true);
         self.unfreeze();
     }
@@ -558,20 +577,6 @@ impl Login {
     /// Unfreeze the login screen.
     fn unfreeze(&self) {
         self.imp().main_stack.set_sensitive(true);
-    }
-
-    /// Set focus to the proper widget of the current page.
-    pub fn focus_default(&self) {
-        let imp = self.imp();
-        match self.visible_child() {
-            LoginPage::Homeserver => {
-                imp.homeserver_page.focus_default();
-            }
-            LoginPage::Method => {
-                imp.method_page.focus_default();
-            }
-            _ => {}
-        }
     }
 
     fn update_network_state(&self) {

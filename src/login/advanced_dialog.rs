@@ -50,7 +50,8 @@ mod imp {
 
 glib::wrapper! {
     pub struct LoginAdvancedDialog(ObjectSubclass<imp::LoginAdvancedDialog>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow,
+        @implements gtk::Accessible;
 }
 
 impl LoginAdvancedDialog {

@@ -53,7 +53,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for LoginHomeserverPage {}
 
-    impl WidgetImpl for LoginHomeserverPage {}
+    impl WidgetImpl for LoginHomeserverPage {
+        fn grab_focus(&self) -> bool {
+            self.homeserver_entry.grab_focus()
+        }
+    }
+
     impl BinImpl for LoginHomeserverPage {}
 
     impl LoginHomeserverPage {
@@ -114,11 +119,6 @@ impl LoginHomeserverPage {
                 )],
             ));
         }
-    }
-
-    /// Focus the default widget.
-    pub fn focus_default(&self) {
-        self.imp().homeserver_entry.grab_focus();
     }
 
     /// Reset this page.

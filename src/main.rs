@@ -31,7 +31,12 @@ use gtk::{gdk::Display, gio, IconTheme};
 use once_cell::sync::Lazy;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-use self::{application::*, config::*, i18n::*, window::Window};
+use self::{
+    application::*,
+    config::*,
+    i18n::*,
+    window::{Window, WindowPage},
+};
 
 /// The default tokio runtime to be used for async tasks
 pub static RUNTIME: Lazy<tokio::runtime::Runtime> =

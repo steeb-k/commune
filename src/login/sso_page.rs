@@ -26,9 +26,7 @@ mod imp {
     }
 
     impl ObjectImpl for LoginSsoPage {}
-
     impl WidgetImpl for LoginSsoPage {}
-
     impl BinImpl for LoginSsoPage {}
 }
 

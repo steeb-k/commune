@@ -48,11 +48,12 @@ mod imp {
     }
 
     impl WidgetImpl for Greeter {}
-
     impl BinImpl for Greeter {}
+    impl AccessibleImpl for Greeter {}
 }
 
 glib::wrapper! {
+    /// The welcome screen of the app.
     pub struct Greeter(ObjectSubclass<imp::Greeter>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }

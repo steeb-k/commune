@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="LoginSsoPage" parent="AdwBin">
+    <accessibility>
+      <relation name="labelled-by">title</relation>
+      <relation name="described-by">instructions</relation>
+    </accessibility>
     <property name="child">
       <object class="GtkScrolledWindow" id="scrolled_window">
         <property name="hscrollbar-policy">never</property>
@@ -18,18 +22,22 @@
                 <property name="spacing">36</property>
                 <property name="valign">center</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="title">
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
                     <property name="label" translatable="yes">Single Sign-On</property>
+                    <property name="accessible-role">heading</property>
+                    <accessibility>
+                      <property name="level">1</property>
+                    </accessibility>
                     <style>
                       <class name="title-1"/>
                     </style>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="instructions">
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>

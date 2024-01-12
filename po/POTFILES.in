@@ -15,6 +15,7 @@ src/components/editable_avatar.ui
 src/components/loading_row.ui
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
+src/components/spinner.rs
 src/contrib/qr_code_scanner/mod.ui
 src/error_page.ui
 src/greeter.rs

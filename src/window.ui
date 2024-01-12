@@ -13,32 +13,38 @@
             <property name="visible-child">loading</property>
             <property name="transition-type">crossfade</property>
             <child>
-              <object class="GtkWindowHandle" id="loading">
+              <object class="GtkStackPage">
+                <property name="name">loading</property>
+                <property name="title" translatable="yes">Loading</property>
                 <property name="child">
-                  <object class="AdwToolbarView">
-                    <child type="top">
-                      <object class="AdwHeaderBar">
-                        <child type="start">
-                          <object class="AccountSwitcherButton"/>
-                        </child>
-                      </object>
-                    </child>
-                    <property name="content">
-                      <object class="GtkBox">
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <object class="AdwBanner" id="offline_banner"/>
-                        </child>
-                        <child>
-                          <object class="Spinner" id="spinner">
-                            <property name="valign">center</property>
-                            <property name="halign">center</property>
-                            <property name="vexpand">True</property>
-                            <style>
-                              <class name="large"/>
-                            </style>
+                  <object class="GtkWindowHandle" id="loading">
+                    <property name="child">
+                      <object class="AdwToolbarView">
+                        <child type="top">
+                          <object class="AdwHeaderBar">
+                            <child type="start">
+                              <object class="AccountSwitcherButton"/>
+                            </child>
                           </object>
                         </child>
+                        <property name="content">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="AdwBanner" id="offline_banner"/>
+                            </child>
+                            <child>
+                              <object class="Spinner" id="spinner">
+                                <property name="valign">center</property>
+                                <property name="halign">center</property>
+                                <property name="vexpand">True</property>
+                                <style>
+                                  <class name="large"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
                       </object>
                     </property>
                   </object>
@@ -46,17 +52,36 @@
               </object>
             </child>
             <child>
-              <object class="Greeter" id="greeter"/>
-            </child>
-            <child>
-              <object class="Login" id="login"/>
-            </child>
-            <child>
-              <object class="SessionView" id="session"/>
+              <object class="GtkStackPage">
+                <property name="name">greeter</property>
+                <property name="title" translatable="yes">Welcome to Fractal</property>
+                <property name="child">
+                  <object class="Greeter" id="greeter"/>
+                </property>
+              </object>
             </child>
             <child>
               <object class="GtkStackPage">
-                <property name="name">error-page</property>
+                <property name="name">login</property>
+                <property name="title" translatable="yes">Log In</property>
+                <property name="child">
+                  <object class="Login" id="login"/>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">session</property>
+                <property name="title" translatable="yes">Session</property>
+                <property name="child">
+                  <object class="SessionView" id="session"/>
+                </property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkStackPage">
+                <property name="name">error</property>
+                <property name="title" translatable="yes">Error</property>
                 <property name="child">
                   <object class="ErrorPage" id="error_page"/>
                 </property>

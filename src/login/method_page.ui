@@ -17,6 +17,11 @@
                 <property name="orientation">vertical</property>
                 <property name="valign">center</property>
                 <property name="spacing">30</property>
+                <property name="accessible-role">form</property>
+                <accessibility>
+                  <relation name="labelled-by">title</relation>
+                  <relation name="described-by">homeserver_url</relation>
+                </accessibility>
                 <child>
                   <object class="GtkBox">
                     <property name="orientation">vertical</property>
@@ -29,6 +34,10 @@
                         </style>
                         <property name="wrap">true</property>
                         <property name="justify">center</property>
+                        <property name="accessible-role">heading</property>
+                        <accessibility>
+                          <property name="level">1</property>
+                        </accessibility>
                       </object>
                     </child>
                     <child>
@@ -44,10 +53,11 @@
                         <child>
                           <object class="GtkImage">
                             <property name="icon-name">home-symbolic</property>
+                            <property name="accessible-role">presentation</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkLabel">
+                          <object class="GtkLabel" id="homeserver_url">
                             <style>
                               <class name="body"/>
                             </style>
@@ -65,12 +75,14 @@
                 </child>
                 <child>
                   <object class="GtkListBox">
+                    <property name="accessible-role">group</property>
                     <style>
                       <class name="boxed-list"/>
                     </style>
                     <child>
                       <object class="AdwEntryRow" id="username_entry">
                         <property name="title" translatable="yes">Matrix Username</property>
+                        <property name="selectable">false</property>
                         <signal name="changed" handler="update_next_state" swapped="yes"/>
                         <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
                       </object>
@@ -79,12 +91,14 @@
                 </child>
                 <child>
                   <object class="GtkListBox">
+                    <property name="accessible-role">group</property>
                     <style>
                       <class name="boxed-list"/>
                     </style>
                     <child>
                       <object class="AdwPasswordEntryRow" id="password_entry">
                         <property name="title" translatable="yes">Password</property>
+                        <property name="selectable">false</property>
                         <signal name="changed" handler="update_next_state" swapped="yes"/>
                         <signal name="entry-activated" handler="login_with_password" swapped="yes"/>
                       </object>
@@ -98,6 +112,9 @@
                     <property name="homogeneous">true</property>
                     <property name="hexpand">true</property>
                     <property name="vexpand">true</property>
+                    <accessibility>
+                      <property name="label" translatable="yes">Single Sign-On Providers</property>
+                    </accessibility>
                   </object>
                 </child>
                 <child>

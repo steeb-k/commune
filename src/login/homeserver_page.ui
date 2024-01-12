@@ -17,11 +17,19 @@
                 <property name="orientation">vertical</property>
                 <property name="valign">center</property>
                 <property name="spacing">24</property>
+                <property name="accessible-role">form</property>
+                <accessibility>
+                  <relation name="labelled-by">title</relation>
+                </accessibility>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="title">
                     <property name="label" translatable="yes">Homeserver</property>
                     <property name="wrap">true</property>
                     <property name="justify">center</property>
+                    <property name="accessible-role">heading</property>
+                    <accessibility>
+                      <property name="level">1</property>
+                    </accessibility>
                     <style>
                       <class name="title-1"/>
                     </style>
@@ -30,6 +38,7 @@
                 <child>
                   <object class="GtkPicture">
                     <property name="file">resource:///org/gnome/Fractal/assets/homeserver.svg</property>
+                    <property name="accessible-role">presentation</property>
                   </object>
                 </child>
                 <child>
@@ -38,13 +47,18 @@
                     <property name="spacing">6</property>
                     <child>
                       <object class="GtkListBox">
+                        <property name="accessible-role">group</property>
                         <style>
                           <class name="boxed-list"/>
                         </style>
                         <child>
                           <object class="AdwEntryRow" id="homeserver_entry">
+                            <property name="selectable">false</property>
                             <signal name="changed" handler="update_next_state" swapped="yes"/>
-                            <signal name="entry-activated" handler="fetch_homeserver_details"   swapped="yes"/>
+                            <signal name="entry-activated" handler="fetch_homeserver_details" swapped="yes"/>
+                            <accessibility>
+                              <relation name="described-by">homeserver_help</relation>
+                            </accessibility>
                           </object>
                         </child>
                       </object>
