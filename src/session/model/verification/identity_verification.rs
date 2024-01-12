@@ -233,9 +233,14 @@ mod imp {
                 source.remove();
             }
 
-            spawn!(clone!(@strong obj => async move {
-                let _ = obj.cancel().await;
-            }));
+            let request = obj.request().clone();
+            if !request.is_done() && !request.is_passive() && !request.is_cancelled() {
+                spawn_tokio!(async move {
+                    if let Err(error) = request.cancel().await {
+                        error!("Failed to cancel verification request on dispose: {error}");
+                    }
+                });
+            }
         }
     }
 
@@ -555,6 +560,12 @@ impl IdentityVerification {
     /// This can be used to decline the request or cancel it at any time.
     pub async fn cancel(&self) -> Result<(), matrix_sdk::Error> {
         let request = self.request().clone();
+
+        if request.is_done() || request.is_passive() || request.is_cancelled() {
+            return Err(matrix_sdk::Error::UnknownError(
+                "Cannot cancel request that is already finished".into(),
+            ));
+        }
 
         let handle = spawn_tokio!(async move { request.cancel().await });
 
@@ -922,7 +933,6 @@ impl IdentityVerification {
 
     /// Restart this verification with a new one to the same user.
     pub async fn restart(&self) -> Result<Self, ()> {
-        let request = self.request();
         let user = self.user();
         let verification_list = user.session().verification_list();
 
@@ -932,11 +942,7 @@ impl IdentityVerification {
         self.emit_by_name::<()>("replaced", &[&new_verification]);
 
         // If we restart because an unexpected error happened, try to cancel it.
-        if !request.is_done() && !request.is_passive() && !request.is_cancelled() {
-            if self.cancel().await.is_err() {
-                self.dismiss();
-            }
-        } else {
+        if self.cancel().await.is_err() {
             self.dismiss();
         }
 
