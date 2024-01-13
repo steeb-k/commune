@@ -25,6 +25,8 @@ mod imp {
         pub title: TemplateChild<gtk::Label>,
         #[template_child]
         pub message: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub dismiss_btn: TemplateChild<gtk::Button>,
     }
 
     #[glib::object_subclass]
@@ -54,7 +56,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for CompletedPage {}
+    impl WidgetImpl for CompletedPage {
+        fn grab_focus(&self) -> bool {
+            self.dismiss_btn.grab_focus()
+        }
+    }
+
     impl BinImpl for CompletedPage {}
 
     impl CompletedPage {

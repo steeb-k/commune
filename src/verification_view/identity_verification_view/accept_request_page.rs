@@ -60,7 +60,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for AcceptRequestPage {}
+    impl WidgetImpl for AcceptRequestPage {
+        fn grab_focus(&self) -> bool {
+            self.accept_btn.grab_focus()
+        }
+    }
+
     impl BinImpl for AcceptRequestPage {}
 
     impl AcceptRequestPage {

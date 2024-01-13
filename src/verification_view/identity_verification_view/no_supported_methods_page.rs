@@ -59,7 +59,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for NoSupportedMethodsPage {}
+    impl WidgetImpl for NoSupportedMethodsPage {
+        fn grab_focus(&self) -> bool {
+            self.cancel_btn.grab_focus()
+        }
+    }
+
     impl BinImpl for NoSupportedMethodsPage {}
 
     impl NoSupportedMethodsPage {

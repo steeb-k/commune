@@ -17,6 +17,7 @@ src/components/location_viewer.rs
 src/components/media_content_viewer.rs
 src/components/spinner.rs
 src/contrib/qr_code_scanner/mod.ui
+src/contrib/qr_code.rs
 src/error_page.ui
 src/greeter.rs
 src/greeter.ui
@@ -138,6 +139,7 @@ src/verification_view/identity_verification_view/completed_page.rs
 src/verification_view/identity_verification_view/completed_page.ui
 src/verification_view/identity_verification_view/confirm_qr_code_page.rs
 src/verification_view/identity_verification_view/confirm_qr_code_page.ui
+src/verification_view/identity_verification_view/mod.ui
 src/verification_view/identity_verification_view/no_supported_methods_page.rs
 src/verification_view/identity_verification_view/no_supported_methods_page.ui
 src/verification_view/identity_verification_view/qr_code_scanned_page.rs

@@ -15,11 +15,15 @@
                 <property name="spacing">18</property>
                 <property name="valign">center</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="title">
                     <property name="label" translatable="yes">Scan Complete</property>
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
+                    <property name="accessible-role">heading</property>
+                    <accessibility>
+                      <property name="level">1</property>
+                    </accessibility>
                     <style>
                       <class name="title-1"/>
                     </style>
@@ -28,6 +32,7 @@
                 <child>
                   <object class="GtkPicture">
                     <property name="file">resource:///org/gnome/Fractal/assets/setup-complete.svg</property>
+                    <property name="accessible-role">presentation</property>
                   </object>
                 </child>
                 <child>

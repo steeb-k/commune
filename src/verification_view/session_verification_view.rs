@@ -52,6 +52,8 @@ mod imp {
         #[template_child]
         pub send_request_btn: TemplateChild<SpinnerButton>,
         #[template_child]
+        pub choose_bootstrap_btn: TemplateChild<gtk::Button>,
+        #[template_child]
         pub bootstrap_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub bootstrap_setup_btn: TemplateChild<SpinnerButton>,
@@ -92,6 +94,19 @@ mod imp {
             SIGNALS.as_ref()
         }
 
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.main_stack.connect_transition_running_notify(
+                clone!(@weak self as imp => move |stack|
+                    if !stack.is_transition_running() {
+                        // Focus the default widget when the transition has ended.
+                        imp.grab_focus();
+                    }
+                ),
+            );
+        }
+
         fn dispose(&self) {
             if let Some(verification) = self.verification.obj() {
                 spawn!(clone!(@strong verification => async move {
@@ -101,7 +116,27 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for SessionVerificationView {}
+    impl WidgetImpl for SessionVerificationView {
+        fn grab_focus(&self) -> bool {
+            let Some(name) = self.main_stack.visible_child_name() else {
+                return false;
+            };
+
+            match name.as_str() {
+                "choose-method" => {
+                    if self.send_request_btn.is_visible() {
+                        self.send_request_btn.grab_focus()
+                    } else {
+                        self.choose_bootstrap_btn.grab_focus()
+                    }
+                }
+                "verification" => self.verification_page.grab_focus(),
+                "bootstrap" => self.bootstrap_setup_btn.grab_focus(),
+                _ => false,
+            }
+        }
+    }
+
     impl BinImpl for SessionVerificationView {}
 
     impl SessionVerificationView {

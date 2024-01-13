@@ -68,7 +68,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for SasPage {}
+    impl WidgetImpl for SasPage {
+        fn grab_focus(&self) -> bool {
+            self.match_btn.grab_focus()
+        }
+    }
+
     impl BinImpl for SasPage {}
 
     impl SasPage {

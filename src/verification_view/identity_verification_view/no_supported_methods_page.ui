@@ -15,11 +15,15 @@
                 <property name="spacing">18</property>
                 <property name="valign">center</property>
                 <child>
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="title">
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
                     <property name="label" translatable="yes">No Supported Verification Methods</property>
+                    <property name="accessible-role">heading</property>
+                    <accessibility>
+                      <property name="level">1</property>
+                    </accessibility>
                     <style>
                       <class name="title-1"/>
                     </style>

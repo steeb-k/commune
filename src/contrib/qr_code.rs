@@ -1,6 +1,7 @@
 // Taken from https://gitlab.gnome.org/msandova/trinket/-/blob/master/src/qr_code.rs
 // All credit goes to Maximiliano
 
+use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
 pub(crate) mod imp {
@@ -10,7 +11,7 @@ pub(crate) mod imp {
 
     use super::*;
 
-    #[derive(Debug, Default, glib::Properties)]
+    #[derive(Debug, glib::Properties)]
     #[properties(wrapper_type = super::QRCode)]
     pub struct QRCode {
         pub data: RefCell<QRCodeData>,
@@ -21,17 +22,24 @@ pub(crate) mod imp {
         pub block_size: Cell<u32>,
     }
 
+    impl Default for QRCode {
+        fn default() -> Self {
+            Self {
+                data: Default::default(),
+                block_size: Cell::new(6),
+            }
+        }
+    }
+
     #[glib::object_subclass]
     impl ObjectSubclass for QRCode {
         const NAME: &'static str = "TriQRCode";
         type Type = super::QRCode;
         type ParentType = gtk::Widget;
 
-        fn new() -> Self {
-            Self {
-                block_size: Cell::new(6),
-                ..Self::default()
-            }
+        fn class_init(klass: &mut Self::Class) {
+            klass.set_css_name("qrcode");
+            klass.set_accessible_role(gtk::AccessibleRole::Img);
         }
     }
 
@@ -39,7 +47,9 @@ pub(crate) mod imp {
     impl ObjectImpl for QRCode {
         fn constructed(&self) {
             self.parent_constructed();
-            self.obj().add_css_class("qrcode");
+
+            self.obj()
+                .update_property(&[gtk::accessible::Property::Label(&gettext("QR Code"))]);
         }
     }
 
@@ -101,25 +111,22 @@ pub(crate) mod imp {
 glib::wrapper! {
     /// A widget that display a QR Code.
     ///
-    /// The QR code of [`QRCode`] is set with the [QRCodeExt::set_bytes()]
-    /// method. It is recommended for a QR Code to have a quiet zone, i.e. a margin of
-    /// four times the value of [`QRCodeExt::block_size()`], in most contexts, widgets
-    /// already count with such a margin.
+    /// The QR code of [`QRCode`] is set with the [QRCode::set_bytes()]
+    /// method. It is recommended for a QR Code to have a quiet zone, in most
+    /// contexts, widgets already count with such a margin.
     ///
     /// The code can be themed via css, where a recommended quiet-zone
     /// can be as a padding:
     ///
     /// ```css
-    /// .qrcode {
+    /// qrcode {
     ///     color: black;
     ///     background: white;
     ///     padding: 24px;  /* 4 ⨉ block-size */
     /// }
     /// ```
-    ///
-    /// **Implements**: [QRCodeExt].
     pub struct QRCode(ObjectSubclass<imp::QRCode>)
-        @extends gtk::Widget;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 impl QRCode {

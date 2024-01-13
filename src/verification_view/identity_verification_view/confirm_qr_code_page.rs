@@ -58,7 +58,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for ConfirmQrCodePage {}
+    impl WidgetImpl for ConfirmQrCodePage {
+        fn grab_focus(&self) -> bool {
+            self.confirm_btn.grab_focus()
+        }
+    }
+
     impl BinImpl for ConfirmQrCodePage {}
 
     impl ConfirmQrCodePage {

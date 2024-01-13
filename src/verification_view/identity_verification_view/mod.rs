@@ -58,6 +58,8 @@ mod imp {
         #[template_child]
         pub sas_page: TemplateChild<SasPage>,
         #[template_child]
+        pub completed_page: TemplateChild<CompletedPage>,
+        #[template_child]
         pub cancelled_page: TemplateChild<CancelledPage>,
     }
 
@@ -68,8 +70,6 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            CompletedPage::static_type();
-
             Self::bind_template(klass);
         }
 
@@ -79,9 +79,40 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for IdentityVerificationView {}
+    impl ObjectImpl for IdentityVerificationView {
+        fn constructed(&self) {
+            self.parent_constructed();
 
-    impl WidgetImpl for IdentityVerificationView {}
+            self.main_stack.connect_transition_running_notify(
+                clone!(@weak self as imp => move |stack|
+                    if !stack.is_transition_running() {
+                        // Focus the default widget when the transition has ended.
+                        imp.grab_focus();
+                    }
+                ),
+            );
+        }
+    }
+
+    impl WidgetImpl for IdentityVerificationView {
+        fn grab_focus(&self) -> bool {
+            let Some(name) = self.main_stack.visible_child_name() else {
+                return false;
+            };
+
+            match name.as_str() {
+                "accept-request" => self.accept_request_page.grab_focus(),
+                "no-supported-methods" => self.no_supported_methods_page.grab_focus(),
+                "choose-method" => self.choose_method_page.grab_focus(),
+                "confirm-qr-code" => self.confirm_qr_code_page.grab_focus(),
+                "sas" => self.sas_page.grab_focus(),
+                "completed" => self.completed_page.grab_focus(),
+                "cancelled" => self.cancelled_page.grab_focus(),
+                _ => false,
+            }
+        }
+    }
+
     impl BinImpl for IdentityVerificationView {}
 
     impl IdentityVerificationView {

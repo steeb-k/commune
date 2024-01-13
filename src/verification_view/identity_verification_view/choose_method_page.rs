@@ -71,7 +71,18 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for ChooseMethodPage {}
+    impl WidgetImpl for ChooseMethodPage {
+        fn grab_focus(&self) -> bool {
+            if self.scan_qr_code_btn.is_visible() {
+                self.scan_qr_code_btn.grab_focus()
+            } else if self.start_sas_btn.is_visible() {
+                self.start_sas_btn.grab_focus()
+            } else {
+                self.cancel_btn.grab_focus()
+            }
+        }
+    }
+
     impl BinImpl for ChooseMethodPage {}
 
     impl ChooseMethodPage {

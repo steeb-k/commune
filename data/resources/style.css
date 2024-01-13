@@ -177,7 +177,7 @@ login {
   min-width: 250px;
 }
 
-.qrcode {
+qrcode {
   background-color: white;
   padding: 12px;
 }

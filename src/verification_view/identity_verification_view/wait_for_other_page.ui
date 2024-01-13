@@ -20,6 +20,10 @@
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
+                    <property name="accessible-role">heading</property>
+                    <accessibility>
+                      <property name="level">1</property>
+                    </accessibility>
                     <style>
                       <class name="title-1"/>
                     </style>
@@ -35,6 +39,7 @@
                 <child>
                   <object class="GtkPicture">
                     <property name="file">resource:///org/gnome/Fractal/icons/scalable/status/other-device.svg</property>
+                    <property name="accessible-role">presentation</property>
                   </object>
                 </child>
                 <child>

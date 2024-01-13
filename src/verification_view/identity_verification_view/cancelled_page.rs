@@ -60,7 +60,12 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for CancelledPage {}
+    impl WidgetImpl for CancelledPage {
+        fn grab_focus(&self) -> bool {
+            self.try_again_btn.grab_focus()
+        }
+    }
+
     impl BinImpl for CancelledPage {}
 
     impl CancelledPage {

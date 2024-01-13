@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="IdentityVerificationView" parent="AdwBin">
+    <accessibility>
+      <property name="label" translatable="yes">Identity Verification</property>
+    </accessibility>
     <child>
       <object class="GtkStack" id="main_stack">
         <property name="transition-type">crossfade</property>
@@ -8,6 +11,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">accept-request</property>
+            <property name="title" translatable="yes">New Identity Verification Request</property>
             <property name="child">
               <object class="IdentityVerificationAcceptRequestPage" id="accept_request_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -18,6 +22,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">wait-for-other-party</property>
+            <property name="title" translatable="yes">Wait for Other Party</property>
             <property name="child">
               <object class="IdentityVerificationWaitForOtherPage" id="wait_for_other_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -28,6 +33,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">no-supported-methods</property>
+            <property name="title" translatable="yes">No Supported Verification Methods</property>
             <property name="child">
               <object class="IdentityVerificationNoSupportedMethodsPage" id="no_supported_methods_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -38,6 +44,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">choose-method</property>
+            <property name="title" translatable="yes">Verification Request Methods</property>
             <property name="child">
               <object class="IdentityVerificationChooseMethodPage" id="choose_method_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -48,6 +55,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">scan-qr-code</property>
+            <property name="title" translatable="yes">Scan QR Code</property>
             <property name="child">
               <object class="IdentityVerificationScanQrCodePage" id="scan_qr_code_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -58,6 +66,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">qr-code-scanned</property>
+            <property name="title" translatable="yes">Scan Complete</property>
             <property name="child">
               <object class="IdentityVerificationQrCodeScannedPage" id="qr_code_scanned_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -68,6 +77,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">confirm-qr-code</property>
+            <property name="title" translatable="yes">Confirm Scan Result</property>
             <property name="child">
               <object class="IdentityVerificationConfirmQrCodePage" id="confirm_qr_code_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -78,6 +88,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">sas</property>
+            <property name="title" translatable="yes">Short Authentication String Verification</property>
             <property name="child">
               <object class="IdentityVerificationSasPage" id="sas_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -88,6 +99,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">completed</property>
+            <property name="title" translatable="yes">Verification Successful</property>
             <property name="child">
               <object class="IdentityVerificationCompletedPage" id="completed_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>
@@ -98,6 +110,7 @@
         <child>
           <object class="GtkStackPage">
             <property name="name">cancelled</property>
+            <property name="title" translatable="yes">Verification Cancelled</property>
             <property name="child">
               <object class="IdentityVerificationCancelledPage" id="cancelled_page">
                 <property name="verification" bind-source="IdentityVerificationView" bind-property="verification" bind-flags="sync-create"/>

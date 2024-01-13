@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="IdentityVerificationSasEmoji" parent="AdwBin">
+    <accessibility>
+      <relation name="labelled-by">emoji</relation>
+      <relation name="described-by">emoji_name</relation>
+    </accessibility>
     <property name="valign">center</property>
     <child>
       <object class="GtkBox">

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="SpinnerButton" parent="GtkButton">
+    <accessibility>
+      <relation name="labelled-by">child_label</relation>
+    </accessibility>
     <property name="child">
       <object class="LoadingBin" id="loading_bin">
         <property name="child">
