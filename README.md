@@ -53,19 +53,35 @@ It is available as a Flatpak on Flathub Beta.
 
 To get it, first set up the Flathub Beta remote:
 
+<a href="https://flathub.org/beta-repo/flathub-beta.flatpakrepo">
+<img
+    src="https://gitlab.gnome.org/World/fractal/uploads/81944cf92504343a03121a58722345a2/flathub-beta-badge.svg"
+    alt="Add Flathub Beta repository"
+    width="240px"
+    height="80px"
+/>
+</a>
+
+Then install the application.
+
+<a href="https://flathub.org/beta-repo/appstream/org.gnome.Fractal.flatpakref">
+<img
+    src="https://gitlab.gnome.org/World/fractal/uploads/31a40da5d71a30c47f135e78ffef3df5/fractal-beta-badge.svg"
+    alt="Download Fractal Beta"
+    width="240px"
+    height="80px"
+/>
+</a>
+
+Or from the command line:
+
 ```sh
+# Add the Flathub Beta repo
 flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
-```
 
-Or download and install the [Flathub Beta repository file](https://flathub.org/beta-repo/flathub-beta.flatpakrepo).
-
-Then, install the application:
-
-```sh
+# Install Fractal Beta
 flatpak install --user flathub-beta org.gnome.Fractal
 ```
-
-Or download and install the [application file](https://flathub.org/beta-repo/appstream/org.gnome.Fractal.flatpakref).
 
 Finally, run the application:
 
@@ -73,7 +89,9 @@ Finally, run the application:
 flatpak run org.gnome.Fractal//beta
 ```
 
-If you want to run the beta version by default instead of the stable version, use this command:
+If you have both the stable and beta versions installed, your system will only show one icon in the
+apps list and launch the stable version by default. If you want to run the beta version by default,
+use this command:
 
 ```sh
 flatpak make-current org.gnome.Fractal beta
@@ -89,7 +107,7 @@ in [the gnome-nightly repo](https://nightly.gnome.org/).
 
 First, set up the GNOME nightlies.
 
-<a href="https://nightly.gnome.org/gnome-nightly.flatpakrepo ">
+<a href="https://nightly.gnome.org/gnome-nightly.flatpakrepo">
 <img
     src="https://gitlab.gnome.org/World/fractal/uploads/c276f92660dcf50067714ac08e193fea/gnome-nightly-badge.svg"
     alt="Add gnome-nightly repository"
