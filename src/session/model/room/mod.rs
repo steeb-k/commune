@@ -89,6 +89,11 @@ mod imp {
         /// The alias of this room, as a string.
         #[property(get = Self::alias_string)]
         pub alias_string: PhantomData<Option<String>>,
+        /// The unique identifier to display for this room, as a string.
+        ///
+        /// Prefers the alias over the room ID.
+        #[property(get = Self::identifier_string)]
+        pub identifier_string: PhantomData<String>,
         /// The version of this room.
         #[property(get = Self::version)]
         pub version: PhantomData<String>,
@@ -259,6 +264,11 @@ mod imp {
         /// The alias of this room, as a string.
         fn alias_string(&self) -> Option<String> {
             self.alias().map(Into::into)
+        }
+
+        /// The unique identifier to display for this room, as a string.
+        fn identifier_string(&self) -> String {
+            self.alias_string().unwrap_or_else(|| self.room_id_string())
         }
 
         /// The version of this room.

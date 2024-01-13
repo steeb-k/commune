@@ -42,7 +42,7 @@ pub use self::{
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
     overlapping_avatars::OverlappingAvatars,
-    pill::Pill,
+    pill::{Pill, PillSource},
     power_level_badge::PowerLevelBadge,
     reaction_chooser::ReactionChooser,
     room_title::RoomTitle,

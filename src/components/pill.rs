@@ -3,7 +3,7 @@ use gtk::{glib, prelude::*, CompositeTemplate};
 
 use crate::{
     components::Avatar,
-    session::model::{RemoteRoom, Room, User},
+    session::model::{AvatarData, RemoteRoom, Room, User},
 };
 
 /// The source of the pill's data.
@@ -15,6 +15,52 @@ pub enum PillSource {
     Room(Room),
     /// A remote room.
     RemoteRoom(RemoteRoom),
+}
+
+impl PillSource {
+    /// The avatar data of this source.
+    pub fn avatar_data(&self) -> AvatarData {
+        match self {
+            PillSource::User(user) => user.avatar_data(),
+            PillSource::Room(room) => room.avatar_data(),
+            PillSource::RemoteRoom(room) => room.avatar_data(),
+        }
+    }
+
+    /// Bind the `display-name` property of the source to the given target.
+    pub fn bind_display_name<O: glib::ObjectType>(
+        &self,
+        target: &O,
+        target_property: &str,
+    ) -> glib::Binding {
+        let obj: &glib::Object = match self {
+            PillSource::User(user) => user.upcast_ref(),
+            PillSource::Room(room) => room.upcast_ref(),
+            PillSource::RemoteRoom(room) => room.upcast_ref(),
+        };
+
+        obj.bind_property("display-name", target, target_property)
+            .sync_create()
+            .build()
+    }
+
+    /// Bind the property matching the identifier of the source to the given
+    /// target.
+    pub fn bind_identifier<O: glib::ObjectType>(
+        &self,
+        target: &O,
+        target_property: &str,
+    ) -> glib::Binding {
+        let (source_property, obj): (&str, &glib::Object) = match self {
+            PillSource::User(user) => ("user-id-string", user.upcast_ref()),
+            PillSource::Room(room) => ("identifier-string", room.upcast_ref()),
+            PillSource::RemoteRoom(room) => ("identifier-string", room.upcast_ref()),
+        };
+
+        obj.bind_property(source_property, target, target_property)
+            .sync_create()
+            .build()
+    }
 }
 
 mod imp {
@@ -75,7 +121,18 @@ mod imp {
 
     impl Pill {
         /// Set the source of the data displayed by this widget.
-        fn set_source(&self, source: Option<PillSource>) {
+        pub(super) fn set_source(&self, source: Option<PillSource>) {
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
+
+            if let Some(source) = &source {
+                let display_name_binding = source.bind_display_name(&*self.display_name, "label");
+                self.binding.replace(Some(display_name_binding));
+            }
+
+            self.avatar
+                .set_data(source.as_ref().map(|s| s.avatar_data()));
             self.source.replace(source);
 
             let obj = self.obj();
@@ -94,20 +151,6 @@ mod imp {
 
         /// Set the user displayed by this widget.
         fn set_user(&self, user: Option<User>) {
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
-
-            if let Some(user) = &user {
-                let display_name_binding = user
-                    .bind_property("display-name", &*self.display_name, "label")
-                    .sync_create()
-                    .build();
-                self.binding.replace(Some(display_name_binding));
-            }
-
-            self.avatar.set_data(user.as_ref().map(|u| u.avatar_data()));
-
             self.set_source(user.map(PillSource::User));
         }
 
@@ -121,20 +164,6 @@ mod imp {
 
         /// Set the room displayed by this widget.
         fn set_room(&self, room: Option<Room>) {
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
-
-            if let Some(room) = &room {
-                let display_name_binding = room
-                    .bind_property("display-name", &*self.display_name, "label")
-                    .sync_create()
-                    .build();
-                self.binding.replace(Some(display_name_binding));
-            }
-
-            self.avatar.set_data(room.as_ref().map(|r| r.avatar_data()));
-
             self.set_source(room.map(PillSource::Room));
         }
 
@@ -148,20 +177,6 @@ mod imp {
 
         /// Set the remote room displayed by this widget.
         fn set_remote_room(&self, room: Option<RemoteRoom>) {
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
-
-            if let Some(room) = &room {
-                let display_name_binding = room
-                    .bind_property("display-name", &*self.display_name, "label")
-                    .sync_create()
-                    .build();
-                self.binding.replace(Some(display_name_binding));
-            }
-
-            self.avatar.set_data(room.as_ref().map(|r| r.avatar_data()));
-
             self.set_source(room.map(PillSource::RemoteRoom));
         }
     }
@@ -174,6 +189,13 @@ glib::wrapper! {
 }
 
 impl Pill {
+    /// Create a pill with the given source.
+    pub fn new(source: PillSource) -> Self {
+        let obj = glib::Object::new::<Self>();
+        obj.imp().set_source(Some(source));
+        obj
+    }
+
     /// Create a pill for the given user.
     pub fn for_user(user: impl IsA<User>) -> Self {
         glib::Object::builder()

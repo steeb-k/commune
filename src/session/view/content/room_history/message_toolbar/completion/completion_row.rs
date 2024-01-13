@@ -1,13 +1,12 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::{
-    components::Avatar,
-    prelude::*,
+    components::{Avatar, PillSource},
     session::model::{Member, Room},
 };
 
 mod imp {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
 
@@ -25,12 +24,15 @@ mod imp {
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
         pub id: TemplateChild<gtk::Label>,
+        /// The source of the data displayed by this row.
+        pub source: RefCell<Option<PillSource>>,
         /// The room member presented by this row.
-        #[property(get, set = Self::set_member, explicit_notify, nullable)]
-        pub member: RefCell<Option<Member>>,
+        #[property(get = Self::member, set = Self::set_member, explicit_notify, nullable)]
+        pub member: PhantomData<Option<Member>>,
         /// The room presented by this row.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: RefCell<Option<Room>>,
+        #[property(get = Self::room, set = Self::set_room, explicit_notify, nullable)]
+        pub room: PhantomData<Option<Room>>,
+        bindings: RefCell<Option<[glib::Binding; 2]>>,
     }
 
     #[glib::object_subclass]
@@ -49,55 +51,64 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for CompletionRow {}
+    impl ObjectImpl for CompletionRow {
+        fn dispose(&self) {
+            for binding in self.bindings.take().iter().flatten() {
+                binding.unbind();
+            }
+        }
+    }
 
     impl WidgetImpl for CompletionRow {}
     impl ListBoxRowImpl for CompletionRow {}
 
     impl CompletionRow {
-        /// Set the room member displayed by this row.
-        fn set_member(&self, member: Option<Member>) {
-            if *self.member.borrow() == member {
-                return;
+        /// Set the source of the data displayed by this row.
+        pub(super) fn set_source(&self, source: Option<PillSource>) {
+            for binding in self.bindings.take().iter().flatten() {
+                binding.unbind();
             }
 
-            if let Some(member) = &member {
-                self.avatar.set_data(Some(member.avatar_data()));
-                self.display_name.set_label(&member.display_name());
-                self.id.set_label(member.user_id().as_str());
+            if let Some(source) = &source {
+                let display_name_binding = source.bind_display_name(&*self.display_name, "label");
+                let id_binding = source.bind_identifier(&*self.id, "label");
+                self.bindings
+                    .replace(Some([display_name_binding, id_binding]));
             }
 
-            self.member.replace(member);
-            self.room.replace(None);
+            self.avatar
+                .set_data(source.as_ref().map(|s| s.avatar_data()));
+            self.source.replace(source);
 
             let obj = self.obj();
             obj.notify_member();
             obj.notify_room();
         }
 
+        /// The room member displayed by this row.
+        fn member(&self) -> Option<Member> {
+            match self.source.borrow().as_ref()? {
+                PillSource::User(user) => user.clone().downcast().ok(),
+                _ => None,
+            }
+        }
+
+        /// Set the room member displayed by this row.
+        fn set_member(&self, member: Option<Member>) {
+            self.set_source(member.and_upcast().map(PillSource::User))
+        }
+
+        /// The room displayed by this row.
+        fn room(&self) -> Option<Room> {
+            match self.source.borrow().as_ref()? {
+                PillSource::Room(room) => Some(room.clone()),
+                _ => None,
+            }
+        }
+
         /// Set the room displayed by this row.
         fn set_room(&self, room: Option<Room>) {
-            if *self.room.borrow() == room {
-                return;
-            }
-
-            if let Some(room) = &room {
-                self.avatar.set_data(Some(room.avatar_data()));
-                self.display_name.set_label(&room.display_name());
-                self.id.set_label(
-                    room.alias()
-                        .as_ref()
-                        .map(|a| a.as_str())
-                        .unwrap_or_else(|| room.room_id().as_str()),
-                );
-            }
-
-            self.room.replace(room);
-            self.member.replace(None);
-
-            let obj = self.obj();
-            obj.notify_member();
-            obj.notify_room();
+            self.set_source(room.map(PillSource::Room))
         }
     }
 }
@@ -111,6 +122,16 @@ glib::wrapper! {
 impl CompletionRow {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// The source of the data displayed by this row
+    pub fn source(&self) -> Option<PillSource> {
+        self.imp().source.borrow().clone()
+    }
+
+    /// Set the source of the data displayed by this row.
+    pub fn set_source(&self, source: Option<PillSource>) {
+        self.imp().set_source(source);
     }
 }
 

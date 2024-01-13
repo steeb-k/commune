@@ -568,28 +568,32 @@ impl CompletionPopover {
         }
     }
 
+    /// Handle a row being activated.
     fn row_activated(&self, row: &CompletionRow) {
-        if let Some(member) = row.member() {
-            let imp = self.imp();
+        let Some(source) = row.source() else {
+            return;
+        };
+        let imp = self.imp();
 
-            if let Some((mut start, mut end, _)) = imp.current_word.take() {
-                let view = self.view();
-                let buffer = view.buffer();
+        let Some((mut start, mut end, _)) = imp.current_word.take() else {
+            return;
+        };
 
-                buffer.delete(&mut start, &mut end);
+        let view = self.view();
+        let buffer = view.buffer();
 
-                let anchor = match start.child_anchor() {
-                    Some(anchor) => anchor,
-                    None => buffer.create_child_anchor(&mut start),
-                };
-                let pill = Pill::for_user(member);
-                view.add_child_at_anchor(&pill, &anchor);
+        buffer.delete(&mut start, &mut end);
 
-                self.popdown();
-                self.select_row_at_index(None);
-                view.grab_focus();
-            }
-        }
+        let anchor = match start.child_anchor() {
+            Some(anchor) => anchor,
+            None => buffer.create_child_anchor(&mut start),
+        };
+        let pill = Pill::new(source);
+        view.add_child_at_anchor(&pill, &anchor);
+
+        self.popdown();
+        self.select_row_at_index(None);
+        view.grab_focus();
     }
 
     fn is_inhibited(&self) -> bool {
