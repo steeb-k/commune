@@ -158,6 +158,10 @@ mod imp {
         pub highlight: Cell<HighlightFlags>,
         /// The ID of the room that was upgraded and that this one replaces.
         pub predecessor_id: OnceCell<OwnedRoomId>,
+        /// The ID of the room that was upgraded and that this one replaces, as
+        /// a string.
+        #[property(get = Self::predecessor_id_string)]
+        pub predecessor_id_string: PhantomData<Option<String>>,
         /// The ID of the successor of this Room, if this room was upgraded.
         pub successor_id: OnceCell<OwnedRoomId>,
         /// The ID of the successor of this Room, if this room was upgraded, as
@@ -329,6 +333,12 @@ mod imp {
         /// Whether this room was tombstoned.
         fn is_tombstoned(&self) -> bool {
             self.matrix_room().is_tombstoned()
+        }
+
+        /// The ID of the room that was upgraded and that this one replaces, as
+        /// a string.
+        fn predecessor_id_string(&self) -> Option<String> {
+            self.predecessor_id.get().map(ToString::to_string)
         }
 
         /// The ID of the successor of this Room, if this room was upgraded.
@@ -1496,6 +1506,7 @@ impl Room {
         };
 
         self.imp().predecessor_id.set(predecessor.room_id).unwrap();
+        self.notify_predecessor_id_string();
     }
 
     /// The ID of the successor of this Room, if this room was upgraded.
@@ -1521,6 +1532,7 @@ impl Room {
             imp.successor_id
                 .set(room_tombstone.replacement_room)
                 .unwrap();
+            self.notify_successor_id_string();
         };
 
         if !self.update_outdated() {
