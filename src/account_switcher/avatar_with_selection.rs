@@ -50,6 +50,13 @@ mod imp {
     impl WidgetImpl for AvatarWithSelection {}
     impl BinImpl for AvatarWithSelection {}
 
+    impl AccessibleImpl for AvatarWithSelection {
+        fn first_accessible_child(&self) -> Option<gtk::Accessible> {
+            // Hide the children in the a11y tree.
+            None
+        }
+    }
+
     impl AvatarWithSelection {
         /// Whether this avatar is selected.
         fn is_selected(&self) -> bool {

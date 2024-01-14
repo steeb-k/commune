@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="AvatarWithSelection" parent="AdwBin">
+    <property name="accessible-role">presentation</property>
     <property name="child">
       <object class="GtkOverlay">
         <child>

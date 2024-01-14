@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="AccountSwitcherButton" parent="GtkToggleButton">
-    <property name="tooltip-text" translatable="yes">Switch Accounts</property>
+    <binding name="tooltip-text">
+      <lookup name="user-id-string" type="SessionInfo">
+        <lookup name="selected-item" type="GtkSingleSelection">
+          <lookup name="session-selection" type="Window">
+            <lookup name="root">AccountSwitcherButton</lookup>
+          </lookup>
+        </lookup>
+      </lookup>
+    </binding>
     <accessibility>
-      <property name="label" translatable="yes">Switch Accounts</property>
+      <property name="description" translatable="yes">Switch Accounts</property>
+      <property name="has-popup">True</property>
     </accessibility>
     <style>
       <class name="image-button"/>

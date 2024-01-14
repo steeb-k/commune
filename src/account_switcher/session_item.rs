@@ -85,7 +85,10 @@ mod imp {
                 self.display_name.remove_css_class("bold");
             }
 
-            self.obj().notify_selected();
+            let obj = self.obj();
+            obj.update_state(&[gtk::accessible::State::Selected(Some(selected))]);
+
+            obj.notify_selected();
         }
 
         /// Set the session this item represents.
