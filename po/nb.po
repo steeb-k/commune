@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
 "POT-Creation-Date: 2024-01-12 09:52+0000\n"
-"PO-Revision-Date: 2024-01-15 00:12+0100\n"
+"PO-Revision-Date: 2024-01-15 00:16+0100\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -285,12 +285,10 @@ msgid "Error"
 msgstr "Noe gikk galt"
 
 #: src/error_page.ui:25
-#, fuzzy
 msgid "Secret Service Error"
 msgstr "Feil med innloggingstjeneste"
 
 #: src/error_page.ui:39
-#, fuzzy
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -301,20 +299,17 @@ msgstr ""
 "hentes ut eller lagres."
 
 #: src/error_page.ui:51
-#, fuzzy
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr "Her er noen metoder som kan løse problemer med innloggingstjenesten:"
 
 #: src/error_page.ui:68
-#, fuzzy
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr ""
 "Sørg for at du har en innloggingstjeneste installert, som gnome-keyring."
 
 #: src/error_page.ui:87
-#, fuzzy
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Pass på at du har en standard-nøkkelring og at den er opplåst."
 
@@ -2916,7 +2911,7 @@ msgstr "Avslå forespørsel fra {user}?"
 
 #: src/utils/message_dialog.rs:109
 msgid "Are you sure you want to deny access to {user_id}?"
-msgstr "Er du sikker på at du ønsker å avslå forespørselen fra {user}?"
+msgstr "Er du sikker på at du ønsker å avslå forespørselen fra {user_id}?"
 
 #: src/utils/message_dialog.rs:116
 msgid "Kick {user}?"
