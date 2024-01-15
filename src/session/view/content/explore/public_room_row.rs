@@ -6,6 +6,7 @@ use ruma::ServerName;
 use super::PublicRoom;
 use crate::{
     components::{Avatar, Spinner, SpinnerButton},
+    gettext_f, ngettext_f,
     prelude::*,
     spawn, toast,
     utils::BoundObject,
@@ -36,6 +37,8 @@ mod imp {
         pub alias: TemplateChild<gtk::Label>,
         #[template_child]
         pub members_count: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub members_count_box: TemplateChild<gtk::Box>,
         #[template_child]
         pub button: TemplateChild<SpinnerButton>,
         pub original_child: RefCell<Option<gtk::Widget>>,
@@ -84,46 +87,22 @@ mod imp {
                 if let Some(child) = self.original_child.take() {
                     obj.set_child(Some(&child));
                 }
-                if let Some(matrix_public_room) = public_room.matrix_public_room() {
-                    self.avatar
-                        .set_data(Some(public_room.avatar_data().clone()));
 
-                    let display_name = matrix_public_room
-                        .name
-                        .as_deref()
-                        // FIXME: display some other identification for this room
-                        .unwrap_or("Room without name");
-                    self.display_name.set_text(display_name);
-
-                    if let Some(topic) = &matrix_public_room.topic {
-                        self.description.set_text(topic);
-                    }
-                    self.description
-                        .set_visible(matrix_public_room.topic.is_some());
-
-                    if let Some(alias) = &matrix_public_room.canonical_alias {
-                        self.alias.set_text(alias.as_str());
-                    }
-                    self.alias
-                        .set_visible(matrix_public_room.canonical_alias.is_some());
-
-                    self.members_count
-                        .set_text(&matrix_public_room.num_joined_members.to_string());
-
-                    let pending_handler = public_room.connect_pending_notify(
-                        clone!(@weak obj => move |public_room| {
-                                obj.update_button(public_room);
-                        }),
-                    );
-
+                if public_room.matrix_public_room().is_some() {
+                    let pending_handler =
+                        public_room.connect_pending_notify(clone!(@weak self as imp => move |_| {
+                            imp.update_button();
+                        }));
                     let room_handler =
-                        public_room.connect_room_notify(clone!(@weak obj => move |public_room| {
-                            obj.update_button(public_room);
+                        public_room.connect_room_notify(clone!(@weak self as imp => move |_| {
+                            imp.update_button();
                         }));
 
-                    obj.update_button(&public_room);
                     self.public_room
                         .set(public_room, vec![pending_handler, room_handler]);
+
+                    self.update_button();
+                    self.update_row();
                 } else if self.original_child.borrow().is_none() {
                     let spinner = Spinner::default();
                     spinner.set_margin_top(12);
@@ -134,6 +113,74 @@ mod imp {
             }
 
             obj.notify_public_room();
+        }
+
+        /// Update this row for the current state.
+        fn update_row(&self) {
+            let Some(public_room) = self.public_room.obj() else {
+                return;
+            };
+            let Some(matrix_public_room) = public_room.matrix_public_room() else {
+                return;
+            };
+
+            self.avatar.set_data(Some(public_room.avatar_data()));
+
+            self.display_name.set_text(&public_room.display_name());
+
+            if let Some(topic) = &matrix_public_room.topic {
+                self.description.set_text(topic);
+            }
+            self.description
+                .set_visible(matrix_public_room.topic.is_some());
+
+            if let Some(alias) = &matrix_public_room.canonical_alias {
+                self.alias.set_text(alias.as_str());
+            }
+            self.alias
+                .set_visible(matrix_public_room.canonical_alias.is_some());
+
+            let members_count =
+                u32::try_from(matrix_public_room.num_joined_members).unwrap_or(u32::MAX);
+            self.members_count.set_text(&members_count.to_string());
+            let members_count_tooltip = ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "1 member",
+                "{n} members",
+                members_count,
+                &[("n", &members_count.to_string())],
+            );
+            self.members_count_box
+                .set_tooltip_text(Some(&members_count_tooltip));
+        }
+
+        /// Update the join/view button of this row.
+        fn update_button(&self) {
+            let Some(public_room) = self.public_room.obj() else {
+                return;
+            };
+
+            let room_joined = public_room.room().is_some();
+
+            let label = if room_joined {
+                // Translators: This is a verb, as in 'View Room'.
+                gettext("View")
+            } else {
+                gettext("Join")
+            };
+            self.button.set_label(label);
+
+            let room_name = public_room.display_name();
+            let accessible_desc = if room_joined {
+                gettext_f("View {room_name}", &[("room_name", &room_name)])
+            } else {
+                gettext_f("Join {room_name}", &[("room_name", &room_name)])
+            };
+            self.button
+                .update_property(&[gtk::accessible::Property::Description(&accessible_desc)]);
+
+            self.button.set_loading(public_room.pending());
         }
     }
 }
@@ -147,18 +194,6 @@ glib::wrapper! {
 impl PublicRoomRow {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    fn update_button(&self, public_room: &PublicRoom) {
-        let button = &self.imp().button;
-        if public_room.room().is_some() {
-            // Translators: This is a verb, as in 'View Room'.
-            button.set_label(gettext("View"));
-        } else {
-            button.set_label(gettext("Join"));
-        }
-
-        button.set_loading(public_room.pending());
     }
 
     /// Join or view the public room.

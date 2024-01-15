@@ -139,4 +139,22 @@ impl PublicRoom {
     pub fn matrix_public_room(&self) -> Option<&PublicRoomsChunk> {
         self.imp().matrix_public_room.get()
     }
+
+    /// The display name for this room.
+    ///
+    /// Returns an empty string if there is no matrix public room.
+    pub fn display_name(&self) -> String {
+        let Some(matrix_public_room) = self.matrix_public_room() else {
+            return String::new();
+        };
+
+        matrix_public_room
+            .name
+            .clone()
+            .or(matrix_public_room
+                .canonical_alias
+                .as_ref()
+                .map(ToString::to_string))
+            .unwrap_or_else(|| matrix_public_room.room_id.to_string())
+    }
 }

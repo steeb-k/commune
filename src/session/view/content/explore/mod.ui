@@ -16,6 +16,10 @@
                 <property name="hexpand">True</property>
                 <property name="child">
                   <object class="GtkSearchEntry" id="search_entry">
+                    <accessibility>
+                      <property name="label" translatable="yes">Public Rooms Search</property>
+                      <property name="description" translatable="yes">Search for a room in the public directory of the selected server</property>
+                    </accessibility>
                   </object>
                 </property>
               </object>
@@ -24,6 +28,9 @@
               <object class="GtkMenuButton" id="servers_button">
                 <property name="valign">center</property>
                 <property name="direction">down</property>
+                <accessibility>
+                  <property name="description" translatable="yes">Switch servers</property>
+                </accessibility>
                 <property name="popover">
                   <object class="ContentExploreServersPopover" id="servers_popover">
                     <property name="session" bind-source="ContentExplore" bind-property="session" bind-flags="sync-create"/>
@@ -43,6 +50,7 @@
             <child>
               <object class="GtkStackPage">
                 <property name="name">loading</property>
+                <property name="title" translatable="yes">Loading</property>
                 <property name="child">
                   <object class="Spinner" id="spinner">
                     <property name="valign">center</property>
@@ -58,6 +66,7 @@
             <child>
               <object class="GtkStackPage">
                 <property name="name">empty</property>
+                <property name="title" translatable="yes">No Rooms</property>
                 <property name="child">
                   <object class="GtkLabel" id="empty_label">
                     <property name="valign">center</property>
@@ -74,6 +83,7 @@
             <child>
               <object class="GtkStackPage">
                 <property name="name">results</property>
+                <property name="title" translatable="yes">List of Public Rooms</property>
                 <property name="child">
                   <object class="GtkScrolledWindow" id="scrolled_window">
                     <property name="vexpand">True</property>
@@ -100,7 +110,7 @@
     <property name="child">
       <object class="ContentPublicRoomRow">
         <binding name="public-room">
-            <lookup name="item">GtkListItem</lookup>
+          <lookup name="item">GtkListItem</lookup>
         </binding>
       </object>
     </property>
@@ -109,9 +119,9 @@
                                 ]]></property>
                               </object>
                             </property>
-                            <accessibility>
-                              <property name="label" translatable="yes">Room List</property>
-                            </accessibility>
+                            <style>
+                              <class name="public-rooms"/>
+                            </style>
                           </object>
                         </property>
                       </object>

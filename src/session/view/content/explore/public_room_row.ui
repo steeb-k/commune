@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentPublicRoomRow" parent="AdwBin">
+    <accessibility>
+      <relation name="labelled-by">display_name</relation>
+      <relation name="described-by">description</relation>
+    </accessibility>
     <property name="child">
       <object class="GtkBox">
         <property name="spacing">12</property>
-        <property name="margin-top">18</property>
-        <property name="margin-bottom">18</property>
         <child>
           <object class="ComponentsAvatar" id="avatar">
             <property name="size">48</property>
@@ -61,7 +63,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkBox" id="members_count_box">
                     <property name="halign">center</property>
                     <property name="spacing">6</property>
                     <child>

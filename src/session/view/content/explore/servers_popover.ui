@@ -18,6 +18,9 @@
             <property name="spacing">8</property>
             <child>
               <object class="GtkListBox" id="listbox">
+                <accessibility>
+                  <property name="label" translatable="yes">Server List</property>
+                </accessibility>
                 <property name="selection-mode">browse</property>
               </object>
             </child>
@@ -40,9 +43,6 @@
                     <property name="icon-name">add-symbolic</property>
                     <property name="action-name">explore-servers-popover.add-server</property>
                     <property name="tooltip-text" translatable="yes">Add Server</property>
-                    <accessibility>
-                      <property name="label" translatable="yes">Add Server</property>
-                    </accessibility>
                   </object>
                 </child>
               </object>

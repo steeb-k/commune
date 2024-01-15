@@ -668,6 +668,12 @@ roomtitle .subtitle {
   min-width: 24px;
 }
 
+.explore .public-rooms row {
+  border-radius: 6px;
+  margin: 6px 0;
+  padding: 12px;
+}
+
 
 /* Invite */
 
