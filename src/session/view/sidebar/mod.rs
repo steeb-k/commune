@@ -5,6 +5,7 @@ mod row;
 mod verification_row;
 
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
@@ -288,14 +289,18 @@ impl Sidebar {
         self.notify_drop_active_target_category_type();
     }
 
+    /// The shared popover for a room row in the sidebar.
     pub fn room_row_popover(&self) -> &gtk::PopoverMenu {
         let imp = self.imp();
         imp.room_row_popover.get_or_init(|| {
-            gtk::PopoverMenu::builder()
+            let popover = gtk::PopoverMenu::builder()
                 .menu_model(&*imp.room_row_menu)
                 .has_arrow(false)
                 .halign(gtk::Align::Start)
-                .build()
+                .build();
+            popover.update_property(&[gtk::accessible::Property::Label(&gettext("Context Menu"))]);
+
+            popover
         })
     }
 }

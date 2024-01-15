@@ -2,7 +2,7 @@ use adw::subclass::prelude::*;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
 
     use glib::{subclass::InitializingObject, SignalHandlerId};
 
@@ -31,6 +31,11 @@ mod imp {
         pub click_gesture: TemplateChild<gtk::GestureClick>,
         #[template_child]
         pub long_press_gesture: TemplateChild<gtk::GestureLongPress>,
+        /// Whether this widget has a context menu.
+        ///
+        /// If this is set to `false`, all the actions will be disabled.
+        #[property(get, set = Self::set_has_context_menu, explicit_notify)]
+        pub has_context_menu: Cell<bool>,
         /// The popover displaying the context menu.
         #[property(get, set = Self::set_popover, explicit_notify, nullable)]
         pub popover: RefCell<Option<gtk::PopoverMenu>>,
@@ -83,9 +88,11 @@ mod imp {
 
             self.long_press_gesture
                 .connect_pressed(clone!(@weak obj => move |gesture, x, y| {
-                    gesture.set_state(gtk::EventSequenceState::Claimed);
-                    gesture.reset();
-                    obj.open_menu_at(x as i32, y as i32);
+                    if obj.has_context_menu() {
+                        gesture.set_state(gtk::EventSequenceState::Claimed);
+                        gesture.reset();
+                        obj.open_menu_at(x as i32, y as i32);
+                    }
                 }));
 
             self.click_gesture.connect_released(
@@ -94,8 +101,10 @@ mod imp {
                         return;
                     }
 
-                    gesture.set_state(gtk::EventSequenceState::Claimed);
-                    obj.open_menu_at(x as i32, y as i32);
+                    if obj.has_context_menu() {
+                        gesture.set_state(gtk::EventSequenceState::Claimed);
+                        obj.open_menu_at(x as i32, y as i32);
+                    }
                 }),
             );
             self.parent_constructed();
@@ -116,6 +125,22 @@ mod imp {
     impl BinImpl for ContextMenuBin {}
 
     impl ContextMenuBin {
+        /// Set whether this widget has a context menu.
+        fn set_has_context_menu(&self, has_context_menu: bool) {
+            if self.has_context_menu.get() == has_context_menu {
+                return;
+            }
+
+            self.has_context_menu.set(has_context_menu);
+
+            let obj = self.obj();
+            obj.update_property(&[gtk::accessible::Property::HasPopup(has_context_menu)]);
+            obj.action_set_enabled("context-menu.activate", has_context_menu);
+            obj.action_set_enabled("context-menu.close", has_context_menu);
+
+            obj.notify_has_context_menu();
+        }
+
         /// Set the popover displaying the context menu.
         fn set_popover(&self, popover: Option<gtk::PopoverMenu>) {
             if *self.popover.borrow() == popover {
@@ -150,13 +175,17 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A Bin widget that adds a context menu.
+    /// A Bin widget that can have a context menu.
     pub struct ContextMenuBin(ObjectSubclass<imp::ContextMenuBin>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 impl ContextMenuBin {
     fn open_menu_at(&self, x: i32, y: i32) {
+        if !self.has_context_menu() {
+            return;
+        }
+
         self.menu_opened();
 
         if let Some(popover) = self.popover() {
@@ -167,6 +196,12 @@ impl ContextMenuBin {
 }
 
 pub trait ContextMenuBinExt: 'static {
+    /// Whether this widget has a context menu.
+    fn has_context_menu(&self) -> bool;
+
+    /// Set whether this widget has a context menu.
+    fn set_has_context_menu(&self, has_context_menu: bool);
+
     /// Get the `PopoverMenu` used in the context menu.
     fn popover(&self) -> Option<gtk::PopoverMenu>;
 
@@ -178,6 +213,14 @@ pub trait ContextMenuBinExt: 'static {
 }
 
 impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
+    fn has_context_menu(&self) -> bool {
+        self.upcast_ref().has_context_menu()
+    }
+
+    fn set_has_context_menu(&self, has_context_menu: bool) {
+        self.upcast_ref().set_has_context_menu(has_context_menu);
+    }
+
     fn popover(&self) -> Option<gtk::PopoverMenu> {
         self.upcast_ref().popover()
     }

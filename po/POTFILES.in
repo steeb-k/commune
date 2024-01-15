@@ -117,6 +117,7 @@ src/session/view/media_viewer.ui
 src/session/view/room_creation.rs
 src/session/view/room_creation.ui
 src/session/view/sidebar/category_row.rs
+src/session/view/sidebar/mod.rs
 src/session/view/sidebar/mod.ui
 src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs

@@ -57,8 +57,11 @@ mod imp {
     impl ObjectImpl for ItemRow {
         fn constructed(&self) {
             self.parent_constructed();
+            let obj = self.obj();
 
-            self.obj().connect_parent_notify(|obj| {
+            obj.set_has_context_menu(true);
+
+            obj.connect_parent_notify(|obj| {
                 obj.update_highlight();
             });
         }

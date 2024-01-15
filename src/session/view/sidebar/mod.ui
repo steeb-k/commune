@@ -31,51 +31,51 @@
       <item>
         <attribute name="label" translatable="yes">_Accept</attribute>
         <attribute name="action">room-row.accept-invite</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Reject</attribute>
         <attribute name="action">room-row.reject-invite</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
     <section>
       <item>
         <attribute name="label" translatable="yes">Move to _Favorites</attribute>
         <attribute name="action">room-row.set-favorite</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Move to _Rooms</attribute>
         <attribute name="action">room-row.set-normal</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Move to Low _Priority</attribute>
         <attribute name="action">room-row.set-lowpriority</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
     <section>
       <item>
         <attribute name="label" translatable="yes">_Leave Room</attribute>
         <attribute name="action">room-row.leave</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">Re_join Room</attribute>
         <attribute name="action">room-row.join</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
         <attribute name="label" translatable="yes">_Forget Room</attribute>
         <attribute name="action">room-row.forget</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>
   </menu>
   <template class="Sidebar" parent="AdwNavigationPage">
-    <property name="title">Sidebar</property><!-- This is not displayed so no need to make it translatable -->
+    <property name="title" translatable="yes">Sidebar</property>
     <child>
       <object class="AdwToolbarView">
         <child type="top">
@@ -90,9 +90,6 @@
                 <property name="menu-model">primary_menu</property>
                 <property name="primary">True</property>
                 <property name="tooltip-text" translatable="yes">Main Menu</property>
-                <accessibility>
-                  <property name="label" translatable="yes">Main Menu</property>
-                </accessibility>
               </object>
             </child>
             <child type="end">
@@ -101,9 +98,6 @@
                 <property name="active" bind-source="room_search" bind-property="search-mode-enabled" bind-flags="sync-create"/>
                 <property name="action-name">session.toggle-room-search</property>
                 <property name="tooltip-text" translatable="yes">Toggle Room Search</property>
-                <accessibility>
-                  <property name="label" translatable="yes">Toggle Room Search</property>
-                </accessibility>
               </object>
             </child>
           </object>
@@ -142,7 +136,7 @@
                     <property name="single-click-activate">true</property>
                     <property name="tab-behavior">item</property>
                     <accessibility>
-                      <property name="label" translatable="yes">Sidebar</property>
+                      <property name="label" translatable="yes">Room List</property>
                       <property name="description" translatable="yes">Allows to navigate between rooms</property>
                     </accessibility>
                   </object>

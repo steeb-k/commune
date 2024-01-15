@@ -1,9 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{accessible::Relation, gdk, glib, glib::clone};
+use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
 
 use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
 use crate::{
+    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     session::model::{
         Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
         SidebarIconItemType, SidebarItem,
@@ -30,13 +31,14 @@ mod imp {
         #[property(get = Self::item)]
         pub item: PhantomData<Option<SidebarItem>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
+        room_join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for Row {
         const NAME: &'static str = "SidebarRow";
         type Type = super::Row;
-        type ParentType = adw::Bin;
+        type ParentType = ContextMenuBin;
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("sidebar-row");
@@ -68,10 +70,33 @@ mod imp {
             );
             obj.add_controller(drop);
         }
+
+        fn dispose(&self) {
+            if let Some(room) = self.room() {
+                if let Some(handler) = self.room_join_rule_handler.take() {
+                    room.disconnect(handler);
+                }
+            }
+        }
     }
 
     impl WidgetImpl for Row {}
     impl BinImpl for Row {}
+
+    impl ContextMenuBinImpl for Row {
+        fn menu_opened(&self) {
+            if !self.item().is_some_and(|i| i.is::<Room>()) {
+                // No context menu.
+                return;
+            }
+
+            let obj = self.obj();
+            if let Some(sidebar) = obj.sidebar() {
+                let popover = sidebar.room_row_popover();
+                obj.set_popover(Some(popover.clone()));
+            }
+        }
+    }
 
     impl Row {
         /// Set the ancestor sidebar of this row.
@@ -104,8 +129,15 @@ mod imp {
             for binding in self.bindings.take() {
                 binding.unbind();
             }
+            if let Some(room) = self.room() {
+                if let Some(handler) = self.room_join_rule_handler.take() {
+                    room.disconnect(handler);
+                }
+            }
 
             self.list_row.replace(list_row.clone());
+
+            self.update_context_menu();
 
             let mut bindings = vec![];
             if let Some((row, item)) = list_row.zip(self.item()) {
@@ -133,6 +165,13 @@ mod imp {
                         obj.set_child(Some(&child));
                         child
                     };
+
+                    let room_join_rule_handler =
+                        room.connect_join_rule_changed(clone!(@weak self as imp => move |_| {
+                            imp.update_context_menu();
+                        }));
+                    self.room_join_rule_handler
+                        .replace(Some(room_join_rule_handler));
 
                     child.set_room(Some(room.clone()));
                 } else if let Some(icon_item) = item.downcast_ref::<SidebarIconItem>() {
@@ -164,6 +203,7 @@ mod imp {
 
             self.bindings.replace(bindings);
 
+            self.update_context_menu();
             obj.notify_item();
             obj.notify_list_row();
         }
@@ -176,13 +216,159 @@ mod imp {
                 .and_then(|r| r.item())
                 .and_downcast()
         }
+
+        /// Get the `Room` of this item, if this is a room row.
+        pub(super) fn room(&self) -> Option<Room> {
+            self.item().and_downcast()
+        }
+
+        /// Whether this has a room context menu.
+        fn has_room_context_menu(&self) -> bool {
+            self.room().is_some_and(|r| {
+                matches!(
+                    r.category(),
+                    RoomType::Invited
+                        | RoomType::Favorite
+                        | RoomType::Normal
+                        | RoomType::LowPriority
+                        | RoomType::Left
+                )
+            })
+        }
+
+        /// Update the context menu according to the current state.
+        fn update_context_menu(&self) {
+            let obj = self.obj();
+
+            if !self.has_room_context_menu() {
+                obj.insert_action_group("room-row", None::<&gio::ActionGroup>);
+                obj.set_has_context_menu(false);
+                return;
+            }
+
+            obj.insert_action_group("room-row", self.room_actions().as_ref());
+            obj.set_has_context_menu(true);
+        }
+
+        /// An action group with the available room actions.
+        fn room_actions(&self) -> Option<gio::SimpleActionGroup> {
+            let Some(room) = self.room() else {
+                return None;
+            };
+
+            let obj = self.obj();
+            let action_group = gio::SimpleActionGroup::new();
+            let category = room.category();
+
+            match category {
+                RoomType::Invited => {
+                    action_group.add_action_entries([
+                        gio::ActionEntry::builder("accept-invite")
+                            .activate(clone!(@weak obj => move |_, _, _| {
+                                if let Some(room) = obj.room() {
+                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                        obj.set_room_category(&room, RoomType::Normal).await;
+                                    }));
+                                }
+                            }))
+                            .build(),
+                        gio::ActionEntry::builder("reject-invite")
+                            .activate(clone!(@weak obj => move |_, _, _| {
+                                if let Some(room) = obj.room() {
+                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                        obj.set_room_category(&room, RoomType::Left).await;
+                                    }));
+                                }
+                            }))
+                            .build(),
+                    ]);
+                }
+                RoomType::Favorite | RoomType::Normal | RoomType::LowPriority => {
+                    if matches!(category, RoomType::Favorite | RoomType::LowPriority) {
+                        action_group.add_action_entries([gio::ActionEntry::builder("set-normal")
+                            .activate(clone!(@weak obj => move |_, _, _| {
+                                if let Some(room) = obj.room() {
+                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                        obj.set_room_category(&room, RoomType::Normal).await;
+                                    }));
+                                }
+                            }))
+                            .build()]);
+                    }
+
+                    if matches!(category, RoomType::Normal | RoomType::LowPriority) {
+                        action_group.add_action_entries([gio::ActionEntry::builder(
+                            "set-favorite",
+                        )
+                        .activate(clone!(@weak obj => move |_, _, _| {
+                            if let Some(room) = obj.room() {
+                                spawn!(clone!(@weak obj, @weak room => async move {
+                                    obj.set_room_category(&room, RoomType::Favorite).await;
+                                }));
+                            }
+                        }))
+                        .build()]);
+                    }
+
+                    if matches!(category, RoomType::Favorite | RoomType::Normal) {
+                        action_group.add_action_entries([gio::ActionEntry::builder(
+                            "set-lowpriority",
+                        )
+                        .activate(clone!(@weak obj => move |_, _, _| {
+                            if let Some(room) = obj.room() {
+                                spawn!(clone!(@weak obj, @weak room => async move {
+                                    obj.set_room_category(&room, RoomType::LowPriority).await;
+                                }));
+                            }
+                        }))
+                        .build()]);
+                    }
+
+                    action_group.add_action_entries([gio::ActionEntry::builder("leave")
+                        .activate(clone!(@weak obj => move |_, _, _| {
+                            if let Some(room) = obj.room() {
+                                spawn!(clone!(@weak obj, @weak room => async move {
+                                    obj.set_room_category(&room, RoomType::Left).await;
+                                }));
+                            }
+                        }))
+                        .build()]);
+                }
+                RoomType::Left => {
+                    if room.can_join() {
+                        action_group.add_action_entries([gio::ActionEntry::builder("join")
+                            .activate(clone!(@weak obj => move |_, _, _| {
+                                if let Some(room) = obj.room() {
+                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                        obj.set_room_category(&room, RoomType::Normal).await;
+                                    }));
+                                }
+                            }))
+                            .build()]);
+                    }
+
+                    action_group.add_action_entries([gio::ActionEntry::builder("forget")
+                        .activate(clone!(@weak obj => move |_, _, _| {
+                            if let Some(room) = obj.room() {
+                                spawn!(clone!(@weak obj, @weak room => async move {
+                                    obj.forget_room(&room).await;
+                                }));
+                            }
+                        }))
+                        .build()]);
+                }
+                RoomType::Outdated | RoomType::Space | RoomType::Ignored => {}
+            }
+
+            Some(action_group)
+        }
     }
 }
 
 glib::wrapper! {
     /// A row of the sidebar.
     pub struct Row(ObjectSubclass<imp::Row>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
 }
 
 impl Row {
@@ -191,6 +377,11 @@ impl Row {
             .property("sidebar", sidebar)
             .property("focusable", true)
             .build()
+    }
+
+    /// Get the `Room` of this item, if this is a room row.
+    pub fn room(&self) -> Option<Room> {
+        self.imp().room()
     }
 
     /// Get the `RoomType` of this item.

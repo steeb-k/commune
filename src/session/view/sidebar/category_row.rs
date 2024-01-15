@@ -57,7 +57,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for CategoryRow {}
+    impl ObjectImpl for CategoryRow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.obj().connect_parent_notify(|obj| {
+                obj.set_expanded_accessibility_state(obj.expanded());
+            });
+        }
+    }
 
     impl WidgetImpl for CategoryRow {}
     impl BinImpl for CategoryRow {}

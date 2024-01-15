@@ -1,14 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
 use super::Row;
 use crate::{
-    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     i18n::gettext_f,
     session::model::{HighlightFlags, Room, RoomType},
-    toast,
-    utils::{message_dialog, BoundObject},
+    utils::BoundObject,
 };
 
 mod imp {
@@ -39,40 +36,13 @@ mod imp {
     impl ObjectSubclass for RoomRow {
         const NAME: &'static str = "SidebarRoomRow";
         type Type = super::RoomRow;
-        type ParentType = ContextMenuBin;
+        type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             klass.set_css_name("room");
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
-
-            klass.install_action_async("room-row.accept-invite", None, |obj, _, _| async move {
-                obj.set_category(RoomType::Normal).await;
-            });
-            klass.install_action_async("room-row.reject-invite", None, |obj, _, _| async move {
-                obj.set_category(RoomType::Left).await;
-            });
-
-            klass.install_action_async("room-row.set-favorite", None, |obj, _, _| async move {
-                obj.set_category(RoomType::Favorite).await;
-            });
-            klass.install_action_async("room-row.set-normal", None, |obj, _, _| async move {
-                obj.set_category(RoomType::Normal).await;
-            });
-            klass.install_action_async("room-row.set-lowpriority", None, |obj, _, _| async move {
-                obj.set_category(RoomType::LowPriority).await;
-            });
-
-            klass.install_action_async("room-row.leave", None, |obj, _, _| async move {
-                obj.set_category(RoomType::Left).await;
-            });
-            klass.install_action_async("room-row.join", None, |obj, _, _| async move {
-                obj.set_category(RoomType::Normal).await;
-            });
-            klass.install_action_async("room-row.forget", None, |obj, _, _| async move {
-                obj.forget().await;
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -114,21 +84,6 @@ mod imp {
     impl WidgetImpl for RoomRow {}
     impl BinImpl for RoomRow {}
 
-    impl ContextMenuBinImpl for RoomRow {
-        fn menu_opened(&self) {
-            let obj = self.obj();
-
-            if let Some(sidebar) = obj
-                .parent()
-                .and_downcast_ref::<Row>()
-                .and_then(|row| row.sidebar())
-            {
-                let popover = sidebar.room_row_popover();
-                obj.set_popover(Some(popover.clone()));
-            }
-        }
-    }
-
     impl RoomRow {
         /// Set the room represented by this row.
         pub fn set_room(&self, room: Option<Room>) {
@@ -165,31 +120,19 @@ mod imp {
                 let name_handler = room.connect_display_name_notify(clone!(@weak obj => move |_| {
                     obj.update_accessibility_label();
                 }));
-                let join_rule_handler =
-                    room.connect_join_rule_changed(clone!(@weak obj => move |_| {
-                        obj.update_actions()
-                    }));
 
                 if room.category() == RoomType::Left {
                     self.display_name.add_css_class("dim-label");
                 }
 
-                self.room.set(
-                    room,
-                    vec![
-                        highlight_handler,
-                        direct_handler,
-                        name_handler,
-                        join_rule_handler,
-                    ],
-                );
+                self.room
+                    .set(room, vec![highlight_handler, direct_handler, name_handler]);
 
                 obj.update_accessibility_label();
             }
 
             obj.update_highlight();
             obj.update_direct_icon();
-            obj.update_actions();
             obj.notify_room();
         }
     }
@@ -198,7 +141,7 @@ mod imp {
 glib::wrapper! {
     /// A sidebar row representing a room.
     pub struct RoomRow(ObjectSubclass<imp::RoomRow>)
-        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 impl RoomRow {
@@ -226,79 +169,6 @@ impl RoomRow {
             imp.notification_count.remove_css_class("highlight");
             imp.display_name.remove_css_class("bold");
         }
-    }
-
-    /// Enable or disable actions according to the category of the room.
-    fn update_actions(&self) {
-        if let Some(room) = self.room() {
-            match room.category() {
-                RoomType::Invited => {
-                    self.action_set_enabled("room-row.accept-invite", true);
-                    self.action_set_enabled("room-row.reject-invite", true);
-                    self.action_set_enabled("room-row.set-favorite", false);
-                    self.action_set_enabled("room-row.set-normal", false);
-                    self.action_set_enabled("room-row.set-lowpriority", false);
-                    self.action_set_enabled("room-row.leave", false);
-                    self.action_set_enabled("room-row.join", false);
-                    self.action_set_enabled("room-row.forget", false);
-                    return;
-                }
-                RoomType::Favorite => {
-                    self.action_set_enabled("room-row.accept-invite", false);
-                    self.action_set_enabled("room-row.reject-invite", false);
-                    self.action_set_enabled("room-row.set-favorite", false);
-                    self.action_set_enabled("room-row.set-normal", true);
-                    self.action_set_enabled("room-row.set-lowpriority", true);
-                    self.action_set_enabled("room-row.leave", true);
-                    self.action_set_enabled("room-row.join", false);
-                    self.action_set_enabled("room-row.forget", false);
-                    return;
-                }
-                RoomType::Normal => {
-                    self.action_set_enabled("room-row.accept-invite", false);
-                    self.action_set_enabled("room-row.reject-invite", false);
-                    self.action_set_enabled("room-row.set-favorite", true);
-                    self.action_set_enabled("room-row.set-normal", false);
-                    self.action_set_enabled("room-row.set-lowpriority", true);
-                    self.action_set_enabled("room-row.leave", true);
-                    self.action_set_enabled("room-row.join", false);
-                    self.action_set_enabled("room-row.forget", false);
-                    return;
-                }
-                RoomType::LowPriority => {
-                    self.action_set_enabled("room-row.accept-invite", false);
-                    self.action_set_enabled("room-row.reject-invite", false);
-                    self.action_set_enabled("room-row.set-favorite", true);
-                    self.action_set_enabled("room-row.set-normal", true);
-                    self.action_set_enabled("room-row.set-lowpriority", false);
-                    self.action_set_enabled("room-row.leave", true);
-                    self.action_set_enabled("room-row.join", false);
-                    self.action_set_enabled("room-row.forget", false);
-                    return;
-                }
-                RoomType::Left => {
-                    self.action_set_enabled("room-row.accept-invite", false);
-                    self.action_set_enabled("room-row.reject-invite", false);
-                    self.action_set_enabled("room-row.set-favorite", false);
-                    self.action_set_enabled("room-row.set-normal", false);
-                    self.action_set_enabled("room-row.set-lowpriority", false);
-                    self.action_set_enabled("room-row.leave", false);
-                    self.action_set_enabled("room-row.join", room.can_join());
-                    self.action_set_enabled("room-row.forget", true);
-                    return;
-                }
-                RoomType::Outdated | RoomType::Space | RoomType::Ignored => {}
-            }
-        }
-
-        self.action_set_enabled("room-row.accept-invite", false);
-        self.action_set_enabled("room-row.reject-invite", false);
-        self.action_set_enabled("room-row.set-favorite", false);
-        self.action_set_enabled("room-row.set-normal", false);
-        self.action_set_enabled("room-row.set-lowpriority", false);
-        self.action_set_enabled("room-row.leave", false);
-        self.action_set_enabled("room-row.join", false);
-        self.action_set_enabled("room-row.forget", false);
     }
 
     fn drag_prepare(&self, drag: &gtk::DragSource, x: f64, y: f64) -> Option<gdk::ContentProvider> {
@@ -338,50 +208,6 @@ impl RoomRow {
         };
         sidebar.set_drop_source_type(None);
         row.remove_css_class("drag");
-    }
-
-    /// Change the category of this room.
-    async fn set_category(&self, category: RoomType) {
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
-        let Some(room) = self.room() else {
-            return;
-        };
-        let previous_category = room.category();
-
-        if category == RoomType::Left && !message_dialog::confirm_leave_room(&room, &window).await {
-            return;
-        }
-
-        if room.set_category(category).await.is_err() {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Failed to move {room} from {previous_category} to {new_category}.",
-                ),
-                @room,
-                previous_category = previous_category.to_string(),
-                new_category = category.to_string(),
-            );
-        }
-    }
-
-    /// Forget this room.
-    async fn forget(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        if room.forget().await.is_err() {
-            toast!(
-                self,
-                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                gettext("Failed to forget {room}."),
-                @room,
-            );
-        }
     }
 
     fn update_direct_icon(&self) {
