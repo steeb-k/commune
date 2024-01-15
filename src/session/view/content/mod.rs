@@ -16,6 +16,22 @@ use crate::{
     verification_view::IdentityVerificationView,
 };
 
+/// A page of the content stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
+#[strum(serialize_all = "kebab-case")]
+pub enum ContentPage {
+    /// The placeholder page when no content is presented.
+    Empty,
+    /// The history of the selected room.
+    RoomHistory,
+    /// The selected room invite.
+    Invite,
+    /// The explore page.
+    Explore,
+    /// The selected identity verification.
+    Verification,
+}
+
 mod imp {
     use std::cell::{Cell, RefCell};
 
@@ -76,8 +92,8 @@ mod imp {
             self.parent_constructed();
 
             self.stack
-                .connect_visible_child_notify(clone!(@weak self as imp => move |stack| {
-                    if stack.visible_child().as_ref() != Some(imp.verification_page.upcast_ref::<gtk::Widget>()) {
+                .connect_visible_child_notify(clone!(@weak self as imp => move |_| {
+                    if imp.visible_page() != ContentPage::Verification {
                         imp.identity_verification_widget.set_verification(None::<IdentityVerification>);
                     }
                 }));
@@ -97,6 +113,14 @@ mod imp {
     }
 
     impl Content {
+        /// The visible page of the content.
+        pub(super) fn visible_page(&self) -> ContentPage {
+            self.stack
+                .visible_child_name()
+                .and_then(|s| s.as_str().try_into().ok())
+                .unwrap()
+        }
+
         /// Set the current session.
         fn set_session(&self, session: Option<Session>) {
             if session == self.session.upgrade() {
@@ -170,15 +194,15 @@ impl Content {
         glib::Object::builder().property("session", session).build()
     }
 
+    /// Set the visible page of the content.
+    fn set_visible_page(&self, name: ContentPage) {
+        self.imp().stack.set_visible_child_name(name.as_ref());
+    }
+
+    /// Handle a paste action.
     pub fn handle_paste_action(&self) {
         let imp = self.imp();
-        if imp
-            .stack
-            .visible_child()
-            .as_ref()
-            .map(|c| c == imp.room_history.upcast_ref::<gtk::Widget>())
-            .unwrap_or_default()
-        {
+        if imp.visible_page() == ContentPage::RoomHistory {
             imp.room_history.handle_paste_action();
         }
     }
@@ -195,10 +219,10 @@ impl Content {
                 if let Ok(room) = o.downcast::<Room>() {
                     if room.category() == RoomType::Invited {
                         imp.invite.set_room(Some(room));
-                        imp.stack.set_visible_child(&*imp.invite);
+                        self.set_visible_page(ContentPage::Invite);
                     } else {
                         imp.room_history.set_room(Some(room));
-                        imp.stack.set_visible_child(&*imp.room_history);
+                        self.set_visible_page(ContentPage::RoomHistory);
                     }
                 }
             }
@@ -207,13 +231,13 @@ impl Content {
                     .is_some_and(|i| i.item_type() == SidebarIconItemType::Explore) =>
             {
                 imp.explore.init();
-                imp.stack.set_visible_child(&*imp.explore);
+                self.set_visible_page(ContentPage::Explore);
             }
             Some(o) if o.is::<IdentityVerification>() => {
                 if let Ok(verification) = o.downcast::<IdentityVerification>() {
                     imp.identity_verification_widget
                         .set_verification(Some(verification));
-                    imp.stack.set_visible_child(&*imp.verification_page);
+                    self.set_visible_page(ContentPage::Verification);
                 }
             }
             _ => {}
