@@ -20,7 +20,7 @@ use self::{
 };
 use super::ReadReceiptsList;
 use crate::{
-    components::Avatar, prelude::*, session::model::Event, system_settings::ClockFormat,
+    components::Avatar, gettext_f, prelude::*, session::model::Event, system_settings::ClockFormat,
     utils::BoundObject, Application, Window,
 };
 
@@ -226,17 +226,22 @@ impl MessageRow {
         let Some(event) = self.event() else {
             return;
         };
+        let imp = self.imp();
 
         let datetime = event.timestamp();
 
         let clock_format = Application::default().system_settings().clock_format();
-        let label = if clock_format == ClockFormat::TwelveHours {
+        let time = if clock_format == ClockFormat::TwelveHours {
             datetime.format("%I∶%M %p").unwrap()
         } else {
             datetime.format("%R").unwrap()
         };
 
-        self.imp().timestamp.set_label(&label)
+        imp.timestamp.set_label(&time);
+
+        let accessible_label = gettext_f("Sent at {time}", &[("time", &time)]);
+        imp.timestamp
+            .update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
     }
 
     fn update_content(&self) {

@@ -91,7 +91,7 @@ mod imp {
                     .label(reaction_item.key)
                     .action_name("event.toggle-reaction")
                     .action_target(&reaction_item.key.to_variant())
-                    .css_classes(vec!["flat".to_string(), "circular".to_string()])
+                    .css_classes(["flat", "circular"])
                     .build();
                 button.connect_clicked(|button| {
                     button.activate_action("context-menu.close", None).unwrap();

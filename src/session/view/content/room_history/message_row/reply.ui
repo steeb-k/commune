@@ -4,6 +4,10 @@
     <property name="row-spacing">3</property>
     <child>
       <object class="GtkGrid">
+        <property name="accessible-role">group</property>
+        <accessibility>
+          <property name="label" translatable="yes">In Reply To</property>
+        </accessibility>
         <layout>
           <property name="column">0</property>
           <property name="row">0</property>

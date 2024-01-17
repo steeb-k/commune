@@ -11,6 +11,7 @@ use tracing::warn;
 use super::{media::MediaState, ContentFormat};
 use crate::{
     components::{AudioPlayer, Spinner},
+    gettext_f,
     session::model::Session,
     spawn, spawn_tokio,
 };
@@ -53,6 +54,8 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -85,7 +88,15 @@ impl MessageAudio {
             return;
         }
 
+        let accessible_label = if let Some(filename) = &body {
+            gettext_f("Audio: {filename}", &[("filename", filename)])
+        } else {
+            gettext("Audio")
+        };
+        self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
+
         self.imp().body.replace(body);
+
         self.notify_body();
     }
 

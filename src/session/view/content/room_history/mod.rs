@@ -258,12 +258,9 @@ mod imp {
 
             let factory = gtk::SignalListItemFactory::new();
             factory.connect_setup(clone!(@weak obj => move |_, item| {
-                let item = match item.downcast_ref::<gtk::ListItem>() {
-                    Some(item) => item,
-                    None => {
-                        error!("List item factory did not receive a list item: {item:?}");
-                        return;
-                    }
+                let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                    error!("List item factory did not receive a list item: {item:?}");
+                    return;
                 };
                 let row = ItemRow::new(&obj);
                 item.set_child(Some(&row));
@@ -398,7 +395,7 @@ mod imp {
                 let membership_handler =
                     room.own_member()
                         .connect_membership_notify(clone!(@weak obj => move |_| {
-                            obj.update_menu();
+                            obj.update_room_menu();
                         }));
                 self.membership_handler.replace(Some(membership_handler));
 
@@ -419,7 +416,7 @@ mod imp {
 
                 let join_rule_handler =
                     room.connect_join_rule_changed(clone!(@weak obj => move |_| {
-                        obj.update_menu();
+                        obj.update_room_menu();
                     }));
 
                 self.room.set(
@@ -462,7 +459,7 @@ mod imp {
             self.is_loading.set(false);
             obj.update_view();
             obj.start_loading();
-            obj.update_menu();
+            obj.update_room_menu();
             obj.update_tombstoned_banner();
 
             obj.notify_room();
@@ -621,7 +618,7 @@ impl RoomHistory {
         }
     }
 
-    fn update_menu(&self) {
+    fn update_room_menu(&self) {
         let imp = self.imp();
         let Some(room) = self.room() else {
             imp.room_menu.set_visible(false);
@@ -743,10 +740,12 @@ impl RoomHistory {
 
     pub fn item_context_menu(&self) -> &gtk::PopoverMenu {
         self.imp().item_context_menu.get_or_init(|| {
-            gtk::PopoverMenu::builder()
+            let popover = gtk::PopoverMenu::builder()
                 .has_arrow(false)
                 .halign(gtk::Align::Start)
-                .build()
+                .build();
+            popover.update_property(&[gtk::accessible::Property::Label(&gettext("Context Menu"))]);
+            popover
         })
     }
 

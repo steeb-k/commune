@@ -1,3 +1,4 @@
+use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
@@ -183,7 +184,7 @@ mod imp {
 glib::wrapper! {
     /// A popover to autocomplete Matrix IDs for its parent `gtk::TextView`.
     pub struct CompletionPopover(ObjectSubclass<imp::CompletionPopover>)
-        @extends gtk::Widget, gtk::Popover;
+        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
 }
 
 impl CompletionPopover {
@@ -215,6 +216,7 @@ impl CompletionPopover {
         } else if !self.is_inhibited() {
             if let Some((start, end, term)) = search {
                 self.set_current_word(Some((start, end, term)));
+                self.update_accessible_label();
                 self.update_search();
             } else {
                 self.popdown();
@@ -606,6 +608,20 @@ impl CompletionPopover {
             self.popdown();
             self.select_row_at_index(None);
         }
+    }
+
+    /// Update the accessible label of the popover.
+    fn update_accessible_label(&self) {
+        let Some((_, _, term)) = self.current_word() else {
+            return;
+        };
+
+        let label = if matches!(term.target, SearchTermTarget::Room) {
+            gettext("Public Room Mention Auto-completion")
+        } else {
+            gettext("Room Member Mention Auto-completion")
+        };
+        self.update_property(&[gtk::accessible::Property::Label(&label)]);
     }
 }
 

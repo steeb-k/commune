@@ -40,7 +40,9 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
             klass.set_css_name("typing-row");
+            klass.set_accessible_role(gtk::AccessibleRole::Status);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

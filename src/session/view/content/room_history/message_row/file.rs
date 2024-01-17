@@ -1,7 +1,9 @@
 use adw::subclass::prelude::*;
+use gettextrs::gettext;
 use gtk::{glib, prelude::*, CompositeTemplate};
 
 use super::ContentFormat;
+use crate::gettext_f;
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -32,6 +34,8 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -54,8 +58,16 @@ mod imp {
                 return;
             }
 
+            let obj = self.obj();
+            let accessible_label = if let Some(filename) = &filename {
+                gettext_f("File: {filename}", &[("filename", filename)])
+            } else {
+                gettext("File")
+            };
+            obj.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
+
             self.filename.replace(filename);
-            self.obj().notify_filename();
+            obj.notify_filename();
         }
 
         /// Set whether this file should be displayed in a compact format.

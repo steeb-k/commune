@@ -20,6 +20,7 @@ use tracing::warn;
 use super::ContentFormat;
 use crate::{
     components::{ImagePaintable, Spinner, VideoPlayer},
+    gettext_f,
     session::model::Session,
     spawn, spawn_tokio,
     utils::uint_to_i32,
@@ -94,6 +95,8 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
+
+            klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -301,6 +304,21 @@ impl MessageMedia {
     where
         C: MediaEventContent + Send + Sync + Clone + 'static,
     {
+        let accessible_label = if let Some(filename) = &body {
+            match media_type {
+                MediaType::Image => gettext_f("Image: {filename}", &[("filename", filename)]),
+                MediaType::Sticker => gettext_f("Sticker: {filename}", &[("filename", filename)]),
+                MediaType::Video => gettext_f("Video: {filename}", &[("filename", filename)]),
+            }
+        } else {
+            match media_type {
+                MediaType::Image => gettext("Image"),
+                MediaType::Sticker => gettext("Sticker"),
+                MediaType::Video => gettext("Video"),
+            }
+        };
+        self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
+
         self.set_state(MediaState::Loading);
         let scale_factor = self.scale_factor();
 

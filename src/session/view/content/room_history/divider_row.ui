@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentDividerRow" parent="AdwBin">
+    <accessibility>
+      <relation name="labelled-by">inner_label</relation>
+    </accessibility>
     <property name="can-focus">False</property>
     <style>
       <class name="divider-row"/>

@@ -78,7 +78,9 @@ mod imp {
 
         /// Set the title of this `DragOverlay`.
         pub fn set_title(&self, title: &str) {
-            self.status.set_title(title)
+            self.status.set_title(title);
+            self.obj()
+                .update_property(&[gtk::accessible::Property::Label(title)]);
         }
 
         /// The child of this `DragOverlay`.
@@ -122,7 +124,7 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying an overlay when something is dragged onto it.
     pub struct DragOverlay(ObjectSubclass<imp::DragOverlay>)
-        @extends gtk::Widget;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 impl DragOverlay {

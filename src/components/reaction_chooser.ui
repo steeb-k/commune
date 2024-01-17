@@ -3,6 +3,10 @@
   <template class="ComponentsReactionChooser" parent="AdwBin">
     <property name="child">
       <object class="GtkGrid" id="reaction_grid">
+        <accessibility>
+          <property name="label" translatable="yes">Send a Reaction</property>
+        </accessibility>
+        <property name="accessible-role">group</property>
         <property name="row-spacing">4</property>
         <property name="column-spacing">4</property>
         <style>
@@ -10,6 +14,7 @@
         </style>
         <child>
           <object class="GtkButton">
+            <property name="tooltip-text" translatable="yes">More reactions</property>
             <style>
               <class name="circular"/>
             </style>

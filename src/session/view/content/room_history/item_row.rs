@@ -50,6 +50,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             klass.set_css_name("room-history-row");
+            klass.set_accessible_role(gtk::AccessibleRole::ListItem);
         }
     }
 
@@ -58,8 +59,6 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
-
-            obj.set_has_context_menu(true);
 
             obj.connect_parent_notify(|obj| {
                 obj.update_highlight();
@@ -448,6 +447,7 @@ impl ItemRow {
         }) else {
             self.insert_action_group("event", None::<&gio::ActionGroup>);
             self.set_action_group(None);
+            self.set_has_context_menu(false);
             return;
         };
 
@@ -649,6 +649,7 @@ impl ItemRow {
 
         self.insert_action_group("event", Some(&action_group));
         self.set_action_group(Some(action_group));
+        self.set_has_context_menu(true);
     }
 
     /// Save the file in `event`.

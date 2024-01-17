@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentTypingRow" parent="AdwBin">
+    <accessibility>
+      <relation name="labelled-by">label</relation>
+    </accessibility>
     <child>
       <object class="GtkRevealer">
         <property name="transition-type">slide-up</property>

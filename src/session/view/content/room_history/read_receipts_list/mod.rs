@@ -17,6 +17,16 @@ use crate::{
 // UI file.
 const MAX_RECEIPTS_SHOWN: u32 = 10;
 
+/// List of keys that activate the list.
+// Same as GtkButton.
+const ACTIVATE_KEYS: &[gdk::Key] = &[
+    gdk::Key::space,
+    gdk::Key::KP_Space,
+    gdk::Key::Return,
+    gdk::Key::ISO_Enter,
+    gdk::Key::KP_Enter,
+];
+
 mod imp {
     use std::cell::{Cell, RefCell};
 
@@ -77,6 +87,19 @@ mod imp {
 
             klass.set_css_name("read-receipts-list");
             klass.set_accessible_role(gtk::AccessibleRole::ToggleButton);
+
+            klass.install_action("read-receipts-list.activate", None, move |widget, _, _| {
+                widget.show_popover(1, 0.0, 0.0);
+            });
+
+            for key in ACTIVATE_KEYS {
+                klass.add_binding_action(
+                    *key,
+                    gdk::ModifierType::empty(),
+                    "read-receipts-list.activate",
+                    None,
+                );
+            }
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

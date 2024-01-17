@@ -6,8 +6,10 @@ mod reaction_popover;
 
 use self::reaction_popover::ReactionPopover;
 use crate::{
+    gettext_f, ngettext_f,
+    prelude::*,
     session::{
-        model::{MemberList, ReactionGroup},
+        model::{Member, MemberList, ReactionGroup},
         view::content::room_history::member_timestamp::MemberTimestamp,
     },
     utils::{BoundObjectWeakRef, EMOJI_REGEX},
@@ -41,6 +43,8 @@ mod imp {
         pub reaction_key: TemplateChild<gtk::Label>,
         #[template_child]
         pub reaction_count: TemplateChild<gtk::Label>,
+        /// The displayed member if there is only one reaction sendr.
+        pub reaction_member: BoundObjectWeakRef<Member>,
     }
 
     impl Default for MessageReaction {
@@ -52,6 +56,7 @@ mod imp {
                 button: Default::default(),
                 reaction_key: Default::default(),
                 reaction_count: Default::default(),
+                reaction_member: Default::default(),
             }
         }
     }
@@ -162,6 +167,68 @@ impl MessageReaction {
         }
 
         self.list().splice(pos, removed, &new_senders);
+        self.update_tooltip();
+    }
+
+    /// Update the text of the tooltip.
+    fn update_tooltip(&self) {
+        let Some(group) = self.group() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.reaction_member.disconnect_signals();
+        let n_items = self.list().n_items();
+
+        if n_items == 1 {
+            if let Some(member) = self
+                .list()
+                .item(0)
+                .and_downcast::<MemberTimestamp>()
+                .and_then(|r| r.member())
+            {
+                // Listen to changes of the display name.
+                let handler_id =
+                    member.connect_display_name_notify(clone!(@weak self as obj => move |member| {
+                        obj.update_member_tooltip(member);
+                    }));
+
+                imp.reaction_member.set(&member, vec![handler_id]);
+                self.update_member_tooltip(&member);
+                return;
+            }
+        }
+
+        let text = (n_items > 0).then(|| {
+            ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "1 member reacted with {reaction_key}",
+                "{n} members reacted with {reaction_key}",
+                n_items,
+                &[("n", &n_items.to_string()), ("reaction_key", &group.key())],
+            )
+        });
+
+        imp.button.set_tooltip_text(text.as_deref())
+    }
+
+    fn update_member_tooltip(&self, member: &Member) {
+        let Some(group) = self.group() else {
+            return;
+        };
+
+        // Translators: Do NOT translate the content between '{' and '}', this is a
+        // variable name.
+        let text = gettext_f(
+            "{user} reacted with {reaction_key}",
+            &[
+                ("user", &member.display_name()),
+                ("reaction_key", &group.key()),
+            ],
+        );
+
+        self.imp().button.set_tooltip_text(Some(&text));
     }
 
     /// Handle a right click/long press on the reaction button.

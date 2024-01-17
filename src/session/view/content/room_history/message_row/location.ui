@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentMessageLocation" parent="GtkWidget">
+    <accessibility>
+      <property name="label" translatable="yes">User Location</property>
+    </accessibility>
     <style>
       <class name="content-thumbnail"/>
     </style>

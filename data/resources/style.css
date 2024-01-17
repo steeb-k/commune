@@ -95,6 +95,10 @@ levelbar.discrete.error block.filled {
   border-spacing: 24px;
 }
 
+button.overlaid {
+  margin: 3px; /* Make sure the outline is fully visible */
+}
+
 /* Components */
 
 .inline-pill {
@@ -494,6 +498,17 @@ read-receipts-list {
   min-width: 16px;
   padding: 5px 10px;
   border-radius: 6px;
+  transition-property: outline, outline-width, outline-offset, outline-color;
+  transition-duration: 300ms;
+  animation-timing-function: ease-in-out;
+  outline: 0 solid transparent;
+  outline-offset: 2px;
+}
+
+read-receipts-list:focus {  
+  outline-color: alpha(@accent_color, 0.5);
+  outline-width: 2px;
+  outline-offset: -2px;
 }
 
 read-receipts-list:hover {
@@ -544,18 +559,35 @@ read-receipts-list .cutout {
   background-color: transparent;
 }
 
-.list-popover .list-popover-row {
+.list-popover row {
   border-radius: 6px;
   margin: 3px 0px;
   padding: 6px;
+  outline-width: 0;
 }
 
-.list-popover .list-popover-row:first-child {
+.list-popover row:first-child {
   margin-top: 0px;
 }
 
-.list-popover .list-popover-row:last-child {
+.list-popover row:last-child {
   margin-bottom: 0px;
+}
+
+.list-popover row:focus {
+  background-color: alpha(currentColor, .07);
+}
+
+.list-popover row:hover {
+  background-color: alpha(currentColor, .07);
+}
+
+.list-popover row:active {
+  background-color: alpha(currentColor, .16);
+}
+
+.list-popover row:checked {
+  background-color: alpha(currentColor, .1);
 }
 
 .related-event-toolbar {

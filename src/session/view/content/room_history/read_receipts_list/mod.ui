@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentReadReceiptsList" parent="AdwBin">
+    <property name="focusable">True</property>
     <property name="halign">end</property>
     <child>
       <object class="GtkBox">
