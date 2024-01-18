@@ -10,9 +10,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
-"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2023-11-16 11:55+0000\n"
-"PO-Revision-Date: 2023-11-17 18:08+0300\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
+"POT-Creation-Date: 2024-01-13 16:55+0000\n"
+"PO-Revision-Date: 2024-01-17 04:16+0300\n"
 "Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
@@ -20,7 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.4.1\n"
+"X-Generator: Poedit 3.4.2\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
@@ -84,31 +84,90 @@ msgstr "Matrix küme mesajlaşma uygulaması"
 msgid ""
 "Fractal is a Matrix messaging app for GNOME written in Rust. Its interface "
 "is optimized for collaboration in large groups, such as free software "
-"projects."
+"projects, and will fit all screens, big or small."
 msgstr ""
 "Fractal, GNOME için Rust’la yazılmış Matrix mesajlaşma uygulamasıdır. "
 "Arayüzü özgür yazılım projeleri gibi büyük kümelerde iş birliği için "
-"iyileştirilmiştir."
+"iyileştirilmiştir, ve büyük ya da küçük tüm ekranlara uyacaktır."
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:17 src/application.rs:169
+#: data/org.gnome.Fractal.metainfo.xml.in.in:14
+msgid "Highlights:"
+msgstr "Öne çıkanlar:"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:16
+msgid ""
+"Find rooms to discuss your favorite topics, or talk privately to people, "
+"securely thanks to end-to-end encryption"
+msgstr ""
+"Gözde konuları tartışmak için odalar bulun ya da uçtan uca şifreleme ile "
+"güvenle insanlarla konuşun"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:17
+msgid "Send rich formatted messages, files, or your current location"
+msgstr "Zengin formatlı iletiler, dosyalar ya da konumunuzu gönderin"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:18
+msgid "Reply to specific messages, react with emoji, edit or remove messages"
+msgstr ""
+"Belirli iletileri yanıtlayın, emoji ile tepki verin, iletileri düzenleyin ya "
+"da kaldırın"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:19
+msgid "View images, and play audio and video directly in the conversation"
+msgstr "Görüntüleri görüntüleyin ve doğrudan iliti içinde ses ve video oynatın"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:20
+msgid "See who has read messages, and who is typing"
+msgstr "Kimin iletileri okuduğunu ve kimin yazdığını görün"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:21
+msgid "Log into multiple accounts at once (with Single-Sign On support)"
+msgstr "Aynı anda birden çok hesapta oturum açın (Single-Sign On desteği ile)"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:191
 msgid "The Fractal Team"
 msgstr "Fractal Takımı"
 
-#: src/account_switcher/mod.ui:37
+#: data/org.gnome.Fractal.metainfo.xml.in.in:33
+msgid "Fractal’s main window"
+msgstr "Fraktal ana penceresi"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:37
+msgid "View the media history of a Matrix room"
+msgstr "Matrix odasının ortam geçmişini görüntüsü"
+
+#: data/org.gnome.Fractal.metainfo.xml.in.in:41
+msgid "Fractal’s interface adapts to small screens"
+msgstr "Fractal arayüzü küçük ekranlara uyum sağlarken"
+
+#: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:34
+msgid "Select an Account"
+msgstr "Hesap Seç"
+
+#: src/account_chooser_dialog/mod.ui:63
+msgid "Select the account you want to open the URI with."
+msgstr "URI'yi açmak istediğiniz hesabı seçin."
+
+#: src/account_switcher/account_switcher_button.ui:4
+#: src/account_switcher/account_switcher_button.ui:6
+msgid "Switch Accounts"
+msgstr "Hesap Değiştir"
+
+#: src/account_switcher/account_switcher_popover.ui:38
 msgid "_Add Account"
 msgstr "_Hesap Ekle"
 
-#: src/account_switcher/session_item.ui:64
-#: src/account_switcher/session_item.ui:66
+#: src/account_switcher/session_item.ui:56
+#: src/account_switcher/session_item.ui:58
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "Hesap Ayarları"
 
-#: src/application.rs:177
-msgid "© 2017-2023 The Fractal Team"
-msgstr "© 2017-2023 Fractal Takımı"
+#: src/application.rs:198
+msgid "© 2017-2024 The Fractal Team"
+msgstr "© 2017-2024 Fractal Takımı"
 
-#: src/application.rs:191
+#: src/application.rs:212
 msgid "translator-credits"
 msgstr ""
 "Çağatay Yiğit Şahin <cyigitsahin@outlook.com>\n"
@@ -117,9 +176,13 @@ msgstr ""
 "Emin Tufan Çetin <etcetin@gmail.com>"
 
 #. This can't be added via the builder
-#: src/application.rs:195
+#: src/application.rs:218
 msgid "Name by"
 msgstr "Adını veren"
+
+#: src/application.rs:304
+msgid "Session not found"
+msgstr "Oturum bulunamadı"
 
 #: src/components/auth_dialog.ui:20
 msgid "Authentication"
@@ -141,44 +204,44 @@ msgid "Authenticate via Browser"
 msgstr "Tarayıcıyla Kimlik Doğrula"
 
 #: src/components/auth_dialog.ui:114
-#: src/session/view/account_settings/user_page/mod.rs:299
-#: src/session/view/content/room_details/general_page/mod.rs:349
-#: src/session/view/content/room_history/item_row.rs:743
-#: src/session/view/content/room_history/message_toolbar/mod.ui:69
-#: src/session/view/content/room_history/message_toolbar/mod.ui:71
-#: src/session/view/content/room_history/verification_info_bar.rs:181
-#: src/session/view/content/verification/identity_verification_widget.ui:445
-#: src/utils/message_dialog.rs:47
+#: src/session/view/account_settings/general_page/mod.rs:304
+#: src/session/view/content/room_details/general_page/mod.rs:403
+#: src/session/view/content/room_history/item_row.rs:692
+#: src/session/view/content/room_history/message_toolbar/mod.ui:78
+#: src/session/view/content/room_history/message_toolbar/mod.ui:80
+#: src/session/view/content/room_history/verification_info_bar.rs:173
+#: src/utils/message_dialog.rs:52 src/utils/message_dialog.rs:154
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:53
 msgid "Cancel"
 msgstr "İptal"
 
 #: src/components/auth_dialog.ui:119
-#: src/session/view/content/verification/identity_verification_widget.ui:435
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:42
 msgid "Confirm"
 msgstr "Doğrula"
 
-#: src/components/editable_avatar.rs:392
+#: src/components/editable_avatar.rs:351
 msgid "Images"
 msgstr "Görüntüler"
 
-#: src/components/editable_avatar.rs:397
+#: src/components/editable_avatar.rs:356
 msgid "Choose Avatar"
 msgstr "Avatar Seç"
 
-#: src/components/editable_avatar.rs:399
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:250
+#: src/components/editable_avatar.rs:358
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:215
 msgid "Choose"
 msgstr "Seç"
 
-#: src/components/editable_avatar.rs:413
+#: src/components/editable_avatar.rs:372
 msgid "Could not open avatar file"
 msgstr "Avatar dosyası açılamadı"
 
-#: src/components/editable_avatar.rs:434
+#: src/components/editable_avatar.rs:393
 msgid "The chosen file is not an image"
 msgstr "Seçilen dosya görüntü değil"
 
-#: src/components/editable_avatar.rs:440
+#: src/components/editable_avatar.rs:399
 msgid "Could not determine the type of the chosen file"
 msgstr "Seçilen dosyanın türü belirlenemedi"
 
@@ -190,27 +253,28 @@ msgstr "Avatar Kaldır"
 msgid "Select New Avatar"
 msgstr "Yeni Avatar Seç"
 
-#: src/components/loading_row.ui:32
+#: src/components/loading_row.ui:26
+#: src/session/view/account_settings/user_sessions_page/mod.ui:89
 msgid "Try again"
 msgstr "Yeniden dene"
 
-#: src/components/location_viewer.rs:137
+#: src/components/location_viewer.rs:113
 msgid "Location at latitude {latitude} and longitude {longitude}"
 msgstr "{latitude} enlem ve {longitude} boylamındaki konum"
 
-#: src/components/media_content_viewer.rs:169
+#: src/components/media_content_viewer.rs:132
 msgid "Image not Viewable"
 msgstr "Görüntü Görüntülenemiyor"
 
-#: src/components/media_content_viewer.rs:170
+#: src/components/media_content_viewer.rs:133
 msgid "Audio Clip not Playable"
 msgstr "Ses Klibi Oynatılamaz"
 
-#: src/components/media_content_viewer.rs:171
+#: src/components/media_content_viewer.rs:134
 msgid "Video not Playable"
 msgstr "Video Oynatılamaz"
 
-#: src/components/media_content_viewer.rs:172
+#: src/components/media_content_viewer.rs:135
 msgid "File not Viewable"
 msgstr "Dosya Görüntülenemiyor"
 
@@ -218,54 +282,18 @@ msgstr "Dosya Görüntülenemiyor"
 msgid "Unable to connect to Camera"
 msgstr "Kameraya bağlanamadı"
 
-#: src/error_page.rs:110
-msgid "Session removed successfully."
-msgstr "Oturum kaldırıldı."
-
-#: src/error_page.rs:118
-msgid "Could not remove session from secret storage"
-msgstr "Oturum giz deposundan kaldırılamadı"
-
 #: src/error_page.ui:10
-#: src/session/view/content/room_details/invite_subpage/mod.ui:139
+#: src/session/view/account_settings/user_sessions_page/mod.ui:84
+#: src/session/view/content/room_details/invite_subpage/mod.ui:140
 #: src/session/view/create_dm_dialog/mod.ui:103
 msgid "Error"
 msgstr "Hata"
 
-#: src/error_page.ui:17
+#: src/error_page.ui:25
 msgid "Secret Service Error"
 msgstr "Giz Hizmet Hatası"
 
 #: src/error_page.ui:39
-msgid ""
-"It seems like one of the Fractal sessions stored in the Secret Service is "
-"corrupted. If you know how to fix it you should do so."
-msgstr ""
-"Giz Hizmeti’nde saklanan Fractal oturumlarından biri bozulmuş görünüyor. "
-"Eğer nasıl yapacağınızı biliyorsanız onarmalısınız."
-
-#: src/error_page.ui:50
-msgid ""
-"Alternatively, we could disconnect this session for you. This means you will "
-"have to login again and you will lose access to your encrypted messages, "
-"unless you have a session open in another client or you have already backed "
-"up your encryption keys."
-msgstr ""
-"Bir başka seçenek olarak, sizin için bu oturumun bağını koparabiliriz. Bu, "
-"yeniden oturum açmanız gerektiği ve eğer başka istemcide açık oturumunuz "
-"yoksa ya da şifreleme anahtarlarınızı yedeklememişseniz, şifrelenmiş "
-"iletilere erişimi yitireceğiniz anlamına gelir."
-
-#: src/error_page.ui:73
-msgid "Clicking this button might disconnect more than one session!"
-msgstr "Bu düğmeye tıklamak birden çok oturumun bağını koparabilir!"
-
-#: src/error_page.ui:86
-#: src/session/view/account_settings/devices_page/device_row.rs:103
-msgid "Disconnect Session"
-msgstr "Oturumu Sonlandır"
-
-#: src/error_page.ui:109
 msgid ""
 "Fractal relies on a Secret Service Provider to manage your sensitive session "
 "information and an error occurred while we were trying to store or get your "
@@ -275,24 +303,24 @@ msgstr ""
 "saklamaya çalışırken oluşacak hatalar için Giz Hizmet Sağlayıcı’ya "
 "gereksinir."
 
-#: src/error_page.ui:124
+#: src/error_page.ui:51
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr ""
 "Giz Hizmeti ile ilgili sorunları çözmede işinize yarayabilecek bazı şeyler "
 "şunlardır:"
 
-#: src/error_page.ui:147
+#: src/error_page.ui:68
 msgid ""
 "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr "Giz Hizmet Sağlayıcı kurduğunuza emin olun, örneğin: gnome-keyring."
 
-#: src/error_page.ui:172
+#: src/error_page.ui:87
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr ""
 "Öntanımlı anahtarlığınızın olduğuna ve kilidinin kaldırıldığına emin olun."
 
-#: src/error_page.ui:187
+#: src/error_page.ui:99
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -300,16 +328,21 @@ msgstr ""
 "Daha çok ayrıntı için uygulama günlüklerini ve dağıtımınızın "
 "belgelendirmesini gözden geçirin."
 
-#: src/greeter.rs:75 src/login/mod.rs:626 src/window.rs:497
+#: src/error_page.ui:115
+msgid "Failed to Initialize the Session"
+msgstr "Oturum Başlatılamadı"
+
+#: src/greeter.rs:75 src/login/mod.rs:583 src/window.rs:424
 msgid "No network connection"
 msgstr "Ağ bağlantısı yok"
 
-#: src/greeter.rs:79 src/login/mod.rs:631 src/window.rs:501
+#: src/greeter.rs:79 src/login/mod.rs:588 src/window.rs:428
 msgid "No Internet connection"
 msgstr "İnternet bağlantısı yok"
 
 #: src/greeter.ui:13 src/greeter.ui:15 src/login/mod.ui:13 src/login/mod.ui:15
-#: src/session/view/media_viewer.ui:56 src/session/view/media_viewer.ui:58
+#: src/session/view/join_room_dialog.ui:18 src/session/view/media_viewer.ui:56
+#: src/session/view/media_viewer.ui:58
 msgid "Back"
 msgstr "Geri"
 
@@ -350,68 +383,72 @@ msgstr ""
 msgid "_Auto-discovery"
 msgstr "_Kendiliğinden Keşfet"
 
-#: src/login/homeserver_page.rs:130
+#: src/login/homeserver_page.rs:101
 msgid "Domain Name"
 msgstr "Alan Adı"
 
-#: src/login/homeserver_page.rs:132
+#: src/login/homeserver_page.rs:103
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Matrix ev sunucunuzun alan adı, örneğin gnome.org"
 
-#: src/login/homeserver_page.rs:135 src/login/method_page.ui:43
+#: src/login/homeserver_page.rs:106 src/login/method_page.ui:43
 msgid "Homeserver URL"
 msgstr "Ev Sunucusu URL’si"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/homeserver_page.rs:139
+#: src/login/homeserver_page.rs:110
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Matrix ev sunucunuzun URLʼsi, örneğin {address}"
 
 #: src/login/homeserver_page.ui:22
-#: src/session/view/account_settings/user_page/mod.ui:63
+#: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver"
 msgstr "Ev Sunucusu"
 
-#: src/login/homeserver_page.ui:66 src/login/method_page.ui:124
-#: src/session/view/content/verification/session_verification.ui:281
-#: src/session/view/content/verification/session_verification.ui:347
+#: src/login/homeserver_page.ui:70 src/login/method_page.ui:118
+#: src/verification_view/session_verification_view.ui:293
+#: src/verification_view/session_verification_view.ui:365
 msgid "Next"
 msgstr "Sonraki"
 
 #. Translators: As in 'Advanced Settings'.
-#: src/login/homeserver_page.ui:81
+#: src/login/homeserver_page.ui:85
 msgid "Advanced…"
 msgstr "Gelişmiş…"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:151
+#. This is the tooltip text on buttons to log in via Single Sign-On.
+#. The brand is something like Facebook, Apple, GitHub…
+#: src/login/idp_button.rs:121
+msgid "Log in with {brand}"
+msgstr "{brand} ile giriş yap"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/login/method_page.rs:121
 msgid "Log in to {domain_name}"
 msgstr "{domain_name} giriş yap"
 
 # Düğme. in burada preposition olduğu için küçük yazılmış.
-#: src/login/method_page.rs:158
+#: src/login/method_page.rs:128
 msgid "Log in"
 msgstr "Giriş Yap"
 
-#: src/login/method_page.ui:71
+#: src/login/method_page.ui:73
 msgid "Matrix Username"
 msgstr "Matrix Kullanıcı Adı"
 
-#: src/login/method_page.ui:85
+#: src/login/method_page.ui:87
 msgid "Password"
 msgstr "Parola"
 
-#: src/login/method_page.ui:93
-msgid "_Forgot Password?"
-msgstr "_Parolanızı Mı Unuttunuz?"
-
-#: src/login/method_page.ui:117
+#: src/login/method_page.ui:111
 msgid "More SSO Providers"
 msgstr "Daha çok SSO Sağlayıcı"
 
-#: src/login/mod.rs:514
+#: src/login/mod.rs:468
 msgid "Unable to store session"
 msgstr "Oturum depolanamadı"
 
@@ -420,7 +457,6 @@ msgid "Login Complete"
 msgstr "Giriş Tamamlandı"
 
 #: src/login/mod.ui:109
-#: src/session/view/content/verification/identity_verification_widget.rs:520
 msgid "This session is ready to send and receive secure messages."
 msgstr "Bu oturum, güvenli ileti göndermeye ve almaya hazır."
 
@@ -438,34 +474,74 @@ msgstr "Lütfen tarayıcıdaki adımları izleyin."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret.rs:62
-msgid "Found stored session with unsupported version {version_nb}"
-msgstr "Desteklenmeyen {version_nb} sürümüne ait depolanan oturum bulundu"
+#: src/secret/linux.rs:91
+msgid "Fractal: Matrix credentials for {user_id}"
+msgstr "Fractal: {user_id} için Matrix kimlik bilgileri"
 
-#: src/secret.rs:93
+#: src/secret/linux.rs:144
+msgid "Malformed version in stored session"
+msgstr "Depolanan oturumda kusurlu sürüm"
+
+#: src/secret/linux.rs:169
+msgid "Could not find profile in stored session"
+msgstr "Depolanan oturumda profil bulunamadı"
+
+#: src/secret/linux.rs:182
+msgid "Malformed homeserver in stored session"
+msgstr "Depolanan oturumda kusurlu ev sunucusu"
+
+#: src/secret/linux.rs:188
+msgid "Could not find homeserver in stored session"
+msgstr "Depolanan oturumda ev sunucusu bulunamadı"
+
+#: src/secret/linux.rs:198
+msgid "Malformed user ID in stored session"
+msgstr "Depolanan oturumda kusurlu kullanıcı kimliği"
+
+#: src/secret/linux.rs:204
+msgid "Could not find user ID in stored session"
+msgstr "Depolanan oturumda kullanıcı kimliği bulunamadı"
+
+#: src/secret/linux.rs:212
+msgid "Could not find device ID in stored session"
+msgstr "Depolanan oturumda aygıt kimliği bulunamadı"
+
+#: src/secret/linux.rs:220
+msgid "Could not find database path in stored session"
+msgstr "Depolanan oturumda veri tabanı yolu bulunamadı"
+
+#: src/secret/linux.rs:232 src/secret/linux.rs:242
+msgid "Malformed secret in stored session"
+msgstr "Depolanan oturumda kusurlu giz"
+
+#: src/secret/linux.rs:251
+msgid "Could not get secret in stored session"
+msgstr "Depolanan oturumda giz alınamadı"
+
+#: src/secret/linux.rs:418
 msgid "The secret storage file is corrupted."
 msgstr "Giz depolama dosyası bozuk."
 
-#: src/secret.rs:97
+#: src/secret/linux.rs:422
 msgid "Could not access the secret storage file location."
 msgstr "Giz depolama dosyası konumuna erişilemedi."
 
-#: src/secret.rs:100
+#: src/secret/linux.rs:425
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr "Giz depolama dosyasına erişilirken bilinmeyen hata oluştu."
 
-#: src/secret.rs:103
+#: src/secret/linux.rs:428
 msgid "The secret storage file has been changed by another process."
 msgstr "Giz depolama dosyası başka süreççe değiştirildi."
 
-#: src/secret.rs:106
+#: src/secret/linux.rs:431
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 "D-Bus Giz Portal arka ucuyla etkileşim kurulurken bilinmeyen hata oluştu."
 
-#: src/secret.rs:109
+#: src/secret/linux.rs:434
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -473,7 +549,7 @@ msgstr ""
 "Flatpak Giz Portalına yapılan istek iptal edildi. Erişmek isteyen herhangi "
 "bir istemi kabul ettiğinizden emin olun."
 
-#: src/secret.rs:112
+#: src/secret/linux.rs:437
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -481,32 +557,32 @@ msgstr ""
 "Flatpak Giz Portalı yok. xdg-desktop-portalʼın kurulu olduğundan ve en az "
 "1.5.0 sürümünün olduğundan emin olun."
 
-#: src/secret.rs:115
+#: src/secret/linux.rs:440
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr "Flatpak Giz Portalı, güvenli olamayacak dek zayıf bir anahtar sağladı."
 
-#: src/secret.rs:127
+#: src/secret/linux.rs:452
 msgid "The item was deleted."
 msgstr "Öge silinmiş."
 
-#: src/secret.rs:131 src/secret.rs:151
+#: src/secret/linux.rs:456 src/secret/linux.rs:476
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr "D-Bus Giz Hizmeti ile etkileşim kurulurken bilinmeyen hata oluştu."
 
-#: src/secret.rs:134
+#: src/secret/linux.rs:459
 msgid "The collection or item is locked."
 msgstr "Derleme ya da öge kilitli."
 
-#: src/secret.rs:137
+#: src/secret/linux.rs:462
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "D-Bus Giz Hizmeti oturumu yok."
 
-#: src/secret.rs:140
+#: src/secret/linux.rs:465
 msgid "The collection or item does not exist."
 msgstr "Derleme ya da öge yok."
 
-#: src/secret.rs:144
+#: src/secret/linux.rs:469
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -514,7 +590,7 @@ msgstr ""
 "D-Bus Giz Hizmeti’ne yapılan istek iptal edildi. Erişmek için sorulan istemi "
 "kabul ettiğinizden emin olun."
 
-#: src/secret.rs:147
+#: src/secret/linux.rs:472
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -522,53 +598,7 @@ msgstr ""
 "Öntanımlı derlemeye erişilemedi. Anahtarlık oluşturulduğundan ve öntanımlı "
 "olarak ayarlandığından emin olun."
 
-#: src/secret.rs:190
-msgid "Malformed version in stored session"
-msgstr "Depolanan oturumda kusurlu sürüm"
-
-#: src/secret.rs:214
-msgid "Could not find profile in stored session"
-msgstr "Depolanan oturumda profil bulunamadı"
-
-#: src/secret.rs:228
-msgid "Malformed homeserver in stored session"
-msgstr "Depolanan oturumda kusurlu ev sunucusu"
-
-#: src/secret.rs:235
-msgid "Could not find homeserver in stored session"
-msgstr "Depolanan oturumda ev sunucusu bulunamadı"
-
-#: src/secret.rs:246
-msgid "Malformed user ID in stored session"
-msgstr "Depolanan oturumda kusurlu kullanıcı kimliği"
-
-#: src/secret.rs:253
-msgid "Could not find user ID in stored session"
-msgstr "Depolanan oturumda kullanıcı kimliği bulunamadı"
-
-#: src/secret.rs:262
-msgid "Could not find device ID in stored session"
-msgstr "Depolanan oturumda aygıt kimliği bulunamadı"
-
-#: src/secret.rs:271
-msgid "Could not find database path in stored session"
-msgstr "Depolanan oturumda veri tabanı yolu bulunamadı"
-
-#: src/secret.rs:284 src/secret.rs:295
-msgid "Malformed secret in stored session"
-msgstr "Depolanan oturumda kusurlu giz"
-
-#: src/secret.rs:305
-msgid "Could not get secret in stored session"
-msgstr "Depolanan oturumda giz alınamadı"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/secret.rs:420
-msgid "Fractal: Matrix credentials for {user_id}"
-msgstr "Fractal: {user_id} için Matrix kimlik bilgileri"
-
-#: src/session/model/session.rs:487
+#: src/session/model/session.rs:451
 msgid "Failed to logout the session."
 msgstr "Oturum kapatılamadı."
 
@@ -585,405 +615,105 @@ msgid "Normal user"
 msgstr "Sıradan kullanıcı"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:904
+#: src/session/model/room/mod.rs:306
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#. Translators: This is the name of a room that is empty but had another user before.
-#. Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/model/room/mod.rs:932
+#: src/session/model/room/mod.rs:1167
 msgid "Empty Room (was {user})"
 msgstr "Oda Boş ({user} vardı)"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:934
+#: src/session/model/room/mod.rs:1170
 msgid "Empty Room"
 msgstr "Boş Oda"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:375
+#: src/session/model/room_list/mod.rs:407
+#: src/session/view/content/room_history/mod.rs:560
 msgid "Failed to join room {room_name}. Try again later."
 msgstr "{room_name} odasına katılamadı. Sonra yeniden deneyin."
 
-#: src/session/model/sidebar/category/category_type.rs:28
+#: src/session/model/sidebar_data/category/category_type.rs:29
 msgid "Verifications"
 msgstr "Doğrulamalar"
 
-#. Translators: As in 'Invited Room Members'.
-#: src/session/model/sidebar/category/category_type.rs:29
-#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:293
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:156
+#: src/session/model/sidebar_data/category/category_type.rs:30
+#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:261
 msgid "Invited"
 msgstr "Davet Edildi"
 
-#: src/session/model/sidebar/category/category_type.rs:30
+#: src/session/model/sidebar_data/category/category_type.rs:31
 msgid "Favorites"
 msgstr "Gözdeler"
 
-#: src/session/model/sidebar/category/category_type.rs:31
+#: src/session/model/sidebar_data/category/category_type.rs:32
 msgid "Rooms"
 msgstr "Odalar"
 
-#: src/session/model/sidebar/category/category_type.rs:32
+#: src/session/model/sidebar_data/category/category_type.rs:33
 msgid "Low Priority"
 msgstr "Düşük Öncelik"
 
-#: src/session/model/sidebar/category/category_type.rs:33
+#: src/session/model/sidebar_data/category/category_type.rs:34
 msgid "Historical"
 msgstr "Tarihsel"
 
-#: src/session/model/sidebar/entry/entry_type.rs:18
+#: src/session/model/sidebar_data/icon_item.rs:30
 msgid "Explore"
 msgstr "Keşfet"
 
-#: src/session/model/sidebar/entry/entry_type.rs:19
+#: src/session/model/sidebar_data/icon_item.rs:31
 msgid "Forget Room"
 msgstr "Odayı Unut"
 
-#: src/session/view/account_settings/devices_page/device_list.rs:134
-msgid "Failed to load connected device."
-msgstr "Bağlı aygıtlar yüklenemedi."
-
-#: src/session/view/account_settings/devices_page/device_list.rs:180
-msgid "Failed to load the list of connected devices."
-msgstr "Bağlı aygıtların listesi yüklenemedi."
-
-#: src/session/view/account_settings/devices_page/device_row.rs:105
-#: src/session/view/account_settings/user_page/mod.ui:112
-msgid "Log Out"
-msgstr "Çıkış Yap"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/account_settings/devices_page/device_row.rs:216
-msgid "Failed to disconnect device “{device_name}”"
-msgstr "“{device_name}” aygıtının bağlantısı kesilemedi."
-
-#. Translators: Time in 24h format
-#: src/session/view/account_settings/devices_page/device_row.rs:257
-msgid "Last seen at %H:%M"
-msgstr "Son görülme: %H:%M"
-
-#. Translators: Time in 12h format
-#: src/session/view/account_settings/devices_page/device_row.rs:260
-msgid "Last seen at %l:%M %p"
-msgstr "Son görülme: %l:%M %p"
-
-#. Translators: this is the word Yesterday followed by
-#. a time in 24h format. i.e. "Last seen Yesterday at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:269
-#, no-c-format
-msgid "Last seen Yesterday at %H:%M"
-msgstr "Son görülme: Dün, %H:%M"
-
-#. Translators: this is the word Yesterday followed by
-#. a time in 12h format. i.e. "Last seen Yesterday at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:274
-#, no-c-format
-msgid "Last seen Yesterday at %l:%M %p"
-msgstr "Son görülme: Dün, %l:%M %p"
-
-#. Translators: this is the name of the week day followed by
-#. a time in 24h format. i.e. "Last seen Monday at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:283
-#, no-c-format
-msgid "Last seen %A at %H:%M"
-msgstr "Son görülme: %A, %H:%M"
-
-#. Translators: this is the week day name followed by
-#. a time in 12h format. i.e. "Last seen Monday at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:288
-#, no-c-format
-msgid "Last seen %A at %l:%M %p"
-msgstr "Son görülme: %A, %l:%M %p"
-
-#. Translators: this is the day of the month followed
-#. by the abbreviated month name followed by a time in
-#. 24h format i.e. "Last seen February 3 at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:296
-#, no-c-format
-msgid "Last seen %B %-e at %H:%M"
-msgstr "Son görülme: %-e %B, %H:%M"
-
-#. Translators: this is the day of the month followed
-#. by the abbreviated month name followed by a time in
-#. 12h format i.e. "Last seen February 3 at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:302
-#, no-c-format
-msgid "Last seen %B %-e at %l:%M %p"
-msgstr "Son görülme: %-e %B, %l:%M %p"
-
-#. Translators: this is the day number followed
-#. by the abbreviated month name followed by the year followed
-#. by a time in 24h format i.e. "Last seen February 3 2015 at 23:04"
-#: src/session/view/account_settings/devices_page/device_row.rs:309
-#, no-c-format
-msgid "Last seen %B %-e %Y at %H:%M"
-msgstr "Son görülme: %-e %B %Y, %H:%M"
-
-#. Translators: this is the day number followed
-#. by the abbreviated month name followed by the year followed
-#. by a time in 12h format i.e. "Last seen February 3 2015 at 9:04 PM"
-#: src/session/view/account_settings/devices_page/device_row.rs:315
-#, no-c-format
-msgid "Last seen %B %-e %Y at %l:%M %p"
-msgstr "Son görülme: %-e %B %Y, %l:%M %p"
-
-#. Translators: As in 'A verified session'.
-#. Translators: As in "Verified room member".
-#: src/session/view/account_settings/devices_page/device_row.ui:31
-#: src/session/view/account_settings/devices_page/device_row.ui:34
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:52
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:55
-msgid "Verified"
-msgstr "Doğrulanmış"
-
-#: src/session/view/account_settings/devices_page/device_row.ui:70
-#: src/session/view/content/verification/identity_verification_widget.rs:506
-#: src/session/view/content/verification/identity_verification_widget.rs:511
-#: src/session/view/content/verification/identity_verification_widget.rs:514
-#: src/session/view/content/verification/identity_verification_widget.rs:530
-#: src/session/view/content/verification/identity_verification_widget.rs:534
-#: src/session/view/content/verification/identity_verification_widget.rs:538
-msgid "Verify Session"
-msgstr "Oturumu Doğrula"
-
-#: src/session/view/account_settings/devices_page/mod.ui:5
-msgid "Sessions"
-msgstr "Oturumlar"
-
-#: src/session/view/account_settings/devices_page/mod.ui:9
-#: src/session/view/account_settings/devices_page/mod.ui:13
-msgid "Current Session"
-msgstr "Geçerli Oturum"
-
-#: src/session/view/account_settings/devices_page/mod.ui:24
-#: src/session/view/account_settings/devices_page/mod.ui:28
-msgid "Other Active Sessions"
-msgstr "Diğer Etkin Oturumlar"
-
-#: src/session/view/account_settings/notifications_page.rs:177
-#: src/session/view/account_settings/notifications_page.rs:190
-msgid "Could not load notifications settings. Try again later."
-msgstr "Bildirim ayarları yüklenemedi. Sonra yeniden deneyin."
-
-#: src/session/view/account_settings/notifications_page.rs:291
-msgid "Could not enable account notifications"
-msgstr "Hesap bildirimleri etkinleştirilemedi"
-
-#: src/session/view/account_settings/notifications_page.rs:293
-msgid "Could not disable account notifications"
-msgstr "Hesap bildirimleri devre dışı bırakılamadı"
-
-#: src/session/view/account_settings/notifications_page.ui:5
-msgid "Notifications"
-msgstr "Bildirimler"
-
-#: src/session/view/account_settings/notifications_page.ui:11
-msgid "Enable for this account"
-msgstr "Bu hesap için etkinleştir"
-
-#: src/session/view/account_settings/notifications_page.ui:34
-msgid "Enable for this session"
-msgstr "Bu oturum için etkinleştir"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:211
-#: src/session/view/account_settings/security_page/mod.ui:14
-msgid "Export Room Encryption Keys"
-msgstr "Oda Şifreleme Anahtarlarını Dışa Aktar"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:214
-msgid ""
-"Exporting your room encryption keys allows you to make a backup to be able "
-"to decrypt your messages in end-to-end encrypted rooms on another device or "
-"with another Matrix client."
-msgstr ""
-"Oda şifreleme anahtarlarınızı dışa aktarmak, uçtan uca şifrelenmiş "
-"odalardaki iletilerinizin şifresini başka aygıtta ya da başka bir Matrix "
-"istemcisinde çözebilmek için yedeklemenizi sağlar."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:217
-msgid ""
-"The backup must be stored in a safe place and must be protected with a "
-"strong passphrase that will be used to encrypt the data."
-msgstr ""
-"Yedek, güvenli bir yerde saklanmalı ve verileri şifrelemek için kullanılacak "
-"güçlü bir parola metniyle korunmalıdır."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:220
-msgid "Export Keys"
-msgstr "Anahtarları Dışa Aktar"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:223
-#: src/session/view/account_settings/security_page/mod.ui:22
-msgid "Import Room Encryption Keys"
-msgstr "Oda Şifreleme Anahtarlarını İçe Aktar"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:226
-msgid ""
-"Importing your room encryption keys allows you to decrypt your messages in "
-"end-to-end encrypted rooms with a previous backup from a Matrix client."
-msgstr ""
-"Oda şifreleme anahtarlarınızı içe aktarmak, Matrix istemcisinde önceki "
-"yedeklemeyle uçtan uca şifrelenmiş odalardaki iletilerinizin şifresini "
-"çözmenizi sağlar."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:229
-msgid "Enter the passphrase provided when the backup file was created."
-msgstr "Yedekleme dosyası oluşturulurken belirlenen parola metnini girin."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:232
-msgid "Import Keys"
-msgstr "Anahtarları İçe Aktar"
-
-#. Translators: Do no translate "fractal" as it is the application
-#. name.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:258
-msgid "fractal-encryption-keys"
-msgstr "fractal-şifreleme-anahtarları"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:263
-msgid "Save Encryption Keys To…"
-msgstr "Şifreleme Anahtarını Şuraya Kaydet…"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:266
-msgid "Import Encryption Keys From…"
-msgstr "Şifreleme Anahtarlarını Şuradan İçe Aktar…"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:279
-#: src/utils/media.rs:218
-msgid "Could not access file"
-msgstr "Dosyaya erişilemedi"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:305
-msgid "Passphrases do not match"
-msgstr "Parola metinleri eşleşmiyor"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:379
-msgid "Room encryption keys exported successfully"
-msgstr "Oda şifreleme anahtarları dışa aktarıldı"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:384
-msgid "Imported 1 room encryption key"
-msgid_plural "Imported {n} room encryption keys"
-msgstr[0] "{n} odanın şifreleme anahtarları içe aktarıldı"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:397
-msgid "Could not export the keys"
-msgstr "Anahtarlar dışa aktarılamadı"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:407
-msgid "The passphrase doesn't match the one used to export the keys."
-msgstr "Parola metni, anahtarları dışa aktarmak için kullanılanla eşleşmiyor."
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:411
-msgid "Could not import the keys"
-msgstr "Anahtarlar içe aktarılamadı"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:64
-#: src/session/view/content/verification/session_verification.ui:275
-msgid "Passphrase"
-msgstr "Parola Metni"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
-msgid "Confirm Passphrase"
-msgstr "Parola Metnini Doğrula"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:112
-#: src/session/view/content/room_details/general_page/mod.ui:157
-#: src/session/view/content/room_details/history_viewer/file.ui:4
-msgid "File"
-msgstr "Dosya"
-
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:116
-msgid "Choose…"
-msgstr "Seç…"
-
-#. Translators: As in "The signing key is available".
-#: src/session/view/account_settings/security_page/mod.rs:171
-msgid "Available"
-msgstr "Kullanılabilir"
-
-#. Translators: As in "The signing key is not available".
-#: src/session/view/account_settings/security_page/mod.rs:176
-msgid "Not available"
-msgstr "Kullanılamaz"
-
-#: src/session/view/account_settings/security_page/mod.ui:5
-msgid "Security"
-msgstr "Güvenlik"
-
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/mod.ui:10
-msgid "Room Encryption Keys"
-msgstr "Oda Şifreleme Anahtarları"
-
-#: src/session/view/account_settings/security_page/mod.ui:31
-msgid "Cross-Signing"
-msgstr "Çapraz İmzalama"
-
-#: src/session/view/account_settings/security_page/mod.ui:34
-msgid "Master key"
-msgstr "Ana anahtar"
-
-#: src/session/view/account_settings/security_page/mod.ui:44
-msgid "Self-signing key"
-msgstr "Kendi kendini imzalayan anahtar"
-
-#: src/session/view/account_settings/security_page/mod.ui:54
-msgid "User-signing key"
-msgstr "Kullanıcı imzalama anahtarı"
-
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:174
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:146
 msgid "Password must be at least 8 characters long"
 msgstr "Parola en azından 8 karakter uzunluğunda olmalı"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:177
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:149
 msgid "Password must have at least one lower-case letter"
 msgstr "Parola en azından 1 küçük harf içermeli"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:181
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:153
 msgid "Password must have at least one upper-case letter"
 msgstr "Parola en azından 1 büyük harf içermeli"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:184
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:156
 msgid "Password must have at least one digit"
 msgstr "Parola en azından 1 sayı içermeli"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:186
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:158
 msgid "Password must have at least one symbol"
 msgstr "Parola en azından 1 sembol içermeli"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:216
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:188
 msgid "Passwords do not match"
 msgstr "Parolalar eşleşmiyor"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:269
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:244
 msgid "Password changed successfully"
 msgstr "Parola değiştirildi"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:280
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:255
 msgid "Password rejected for being too weak"
 msgstr "Parola çok zayıf olduğundan reddedildi"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.rs:284
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:259
 msgid "Could not change password"
 msgstr "Parola değiştirilemedi"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:51
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:51
 msgid "Change Password"
 msgstr "Parola Değiştir"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:44
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:41
 msgid "Changing your password will log you out of your other sessions."
 msgstr "Parolanızı değiştirmek, diğer oturumlarınızdan çıkmanıza neden olur."
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:55
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:49
 msgid ""
 "Fractal’s support for encryption is unstable so you might lose access to "
 "your encrypted message history. It is recommended to backup your encryption "
@@ -993,35 +723,35 @@ msgstr ""
 "geçmişinize erişiminizi yitirebilirsiniz. Sürdürmeden önce şifreleme "
 "anahtarlarınızı yedeklemeniz önerilir."
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:78
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:72
 msgid "New Password"
 msgstr "Yeni Parola"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:118
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:112
 msgid "Confirm New Password"
 msgstr "Yeni Parolayı Doğrula"
 
-#: src/session/view/account_settings/user_page/change_password_subpage.ui:148
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:76
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:79
-#: src/session/view/content/room_history/verification_info_bar.rs:180
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:142
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:73
+#: src/session/view/content/room_history/verification_info_bar.rs:172
 msgid "Continue"
 msgstr "Sürdür"
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:175
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:147
 msgid "Account successfully deactivated"
 msgstr "Hesap pasifleştirildi"
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.rs:184
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:156
 msgid "Could not deactivate account"
 msgstr "Hesap pasifleştirilemedi"
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:7
-#: src/session/view/account_settings/user_page/mod.ui:126
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:141
 msgid "Deactivate Account"
 msgstr "Hesabı Devre Dışı Bırak"
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:44
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:41
 msgid ""
 "Deactivating your account means you will lose access to all your messages, "
 "contacts, files, and more, forever."
@@ -1030,7 +760,7 @@ msgstr ""
 "dosyalarınıza ve daha çoğuna erişiminizi sonsuza dek yitireceğiniz anlamına "
 "gelir."
 
-#: src/session/view/account_settings/user_page/deactivate_account_subpage.ui:55
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:49
 msgid ""
 "To confirm that you really want to deactivate this account, type in your "
 "Matrix user ID:"
@@ -1038,11 +768,11 @@ msgstr ""
 "Bu hesabı gerçekten devre dışı bırakmak istediğinizi onaylamak için Matrix "
 "kullanıcı kimliğinizi yazın:"
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:7
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 msgid "Log Out of this Session"
 msgstr "Bu Oturumdan Çıkış Yap"
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:44
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:41
 msgid ""
 "Fractal doesn’t support online backup of room encryption keys so you might "
 "lose access to your encrypted message history."
@@ -1050,106 +780,537 @@ msgstr ""
 "Fractal, oda şifreleme anahtarlarını çevrim içi yedeklemeyi desteklemiyor. "
 "Bu nedenle şifrelenmiş ileti geçmişinize erişimi yitirebilirsiniz."
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:55
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:49
 msgid "It is recommended to backup your encryption keys before proceeding."
 msgstr "Sürdürmeden önce şifreleme anahtarlarınızı yedeklemeniz önerilir."
 
-#: src/session/view/account_settings/user_page/log_out_subpage.ui:70
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:64
 msgid "Backup Encryption Keys"
 msgstr "Şifreleme Anahtarlarını Yedekle"
 
-#: src/session/view/account_settings/user_page/mod.rs:220
-#: src/session/view/content/room_details/general_page/mod.rs:253
+#: src/session/view/account_settings/general_page/mod.rs:85
+msgid "Homeserver address copied to clipboard"
+msgstr "Ev sunucusu adresi panoya kopyalandı"
+
+#: src/session/view/account_settings/general_page/mod.rs:91
+#: src/session/view/user_page.rs:252
+msgid "Matrix user ID copied to clipboard"
+msgstr "Matris kullanıcı kimliği panoya kopyalandı"
+
+#: src/session/view/account_settings/general_page/mod.rs:97
+msgid "Session ID copied to clipboard"
+msgstr "Oturum kimliği panoya kopyalandı"
+
+#: src/session/view/account_settings/general_page/mod.rs:218
+#: src/session/view/content/room_details/general_page/mod.rs:303
 msgid "Avatar removed successfully"
 msgstr "Avatar silindi"
 
-#: src/session/view/account_settings/user_page/mod.rs:222
-#: src/session/view/content/room_details/general_page/mod.rs:255
+#: src/session/view/account_settings/general_page/mod.rs:220
+#: src/session/view/content/room_details/general_page/mod.rs:305
 msgid "Avatar changed successfully"
 msgstr "Avatar değişitirildi"
 
-#: src/session/view/account_settings/user_page/mod.rs:235
-#: src/session/view/content/room_details/general_page/mod.rs:278
+#: src/session/view/account_settings/general_page/mod.rs:237
+#: src/session/view/content/room_details/general_page/mod.rs:328
 msgid "Could not load file"
 msgstr "Dosya yüklenemedi"
 
-#: src/session/view/account_settings/user_page/mod.rs:250
-#: src/session/view/content/room_details/general_page/mod.rs:299
+#: src/session/view/account_settings/general_page/mod.rs:252
+#: src/session/view/content/room_details/general_page/mod.rs:352
 msgid "Could not upload avatar"
 msgstr "Avatar yüklenemedi"
 
-#: src/session/view/account_settings/user_page/mod.rs:279
-#: src/session/view/content/room_details/general_page/mod.rs:319
+#: src/session/view/account_settings/general_page/mod.rs:281
+#: src/session/view/content/room_details/general_page/mod.rs:373
 msgid "Could not change avatar"
 msgstr "Avatar değiştirilemedi"
 
-#: src/session/view/account_settings/user_page/mod.rs:295
-#: src/session/view/content/room_details/general_page/mod.rs:343
+#: src/session/view/account_settings/general_page/mod.rs:300
+#: src/session/view/content/room_details/general_page/mod.rs:397
 msgid "Remove Avatar?"
 msgstr "Avatar Kaldırılsın Mı?"
 
-#: src/session/view/account_settings/user_page/mod.rs:296
+#: src/session/view/account_settings/general_page/mod.rs:301
 msgid "Do you really want to remove your avatar?"
 msgstr "Avatar gerçekten kaldırılsın mı?"
 
-#: src/session/view/account_settings/user_page/mod.rs:300
-#: src/session/view/content/room_details/general_page/mod.rs:350
-#: src/session/view/content/room_history/item_row.rs:744
+#: src/session/view/account_settings/general_page/mod.rs:305
+#: src/session/view/content/room_details/general_page/mod.rs:404
+#: src/session/view/content/room_history/item_row.rs:693
 msgid "Remove"
 msgstr "Kaldır"
 
-#: src/session/view/account_settings/user_page/mod.rs:334
-#: src/session/view/content/room_details/general_page/mod.rs:375
+#: src/session/view/account_settings/general_page/mod.rs:339
+#: src/session/view/content/room_details/general_page/mod.rs:430
 msgid "Could not remove avatar"
 msgstr "Avatar kaldırılamadı"
 
-#: src/session/view/account_settings/user_page/mod.rs:373
+#: src/session/view/account_settings/general_page/mod.rs:382
 msgid "Name changed successfully"
 msgstr "Ad değiştirildi"
 
-#: src/session/view/account_settings/user_page/mod.rs:414
+#: src/session/view/account_settings/general_page/mod.rs:427
 msgid "Could not change display name"
 msgstr "Görünen ad değiştirilemedi"
 
-#: src/session/view/account_settings/user_page/mod.ui:5
+#: src/session/view/account_settings/general_page/mod.ui:5
 msgid "General"
 msgstr "Genel"
 
-#: src/session/view/account_settings/user_page/mod.ui:27
-#: src/session/view/room_creation.ui:56
+#: src/session/view/account_settings/general_page/mod.ui:27
+#: src/session/view/room_creation.ui:54
 msgid "Name"
 msgstr "Ad"
 
-#: src/session/view/account_settings/user_page/mod.ui:60
+#: src/session/view/account_settings/general_page/mod.ui:60
+#: src/session/view/content/room_details/general_page/mod.ui:279
 msgid "Advanced Information"
 msgstr "Gelişmiş Bilgiler"
 
-#: src/session/view/account_settings/user_page/mod.ui:77
+#: src/session/view/account_settings/general_page/mod.ui:63
 msgid "Matrix User ID"
 msgstr "Matrix Kullanıcı Kimliği"
 
-#: src/session/view/account_settings/user_page/mod.ui:91
+#: src/session/view/account_settings/general_page/mod.ui:71
+#: src/session/view/user_page.ui:67
+msgid "Copy Matrix user ID to clipboard"
+msgstr "Matrix kullanıcı kimliğini panoya kopyala"
+
+#: src/session/view/account_settings/general_page/mod.ui:90
+msgid "Copy homeserver address to clipboard"
+msgstr "Ana sunucu adresini panoya kopyala"
+
+#: src/session/view/account_settings/general_page/mod.ui:101
 msgid "Session ID"
 msgstr "Oturum Kimliği"
 
-#: src/session/view/content/explore/mod.ui:58
+#: src/session/view/account_settings/general_page/mod.ui:109
+msgid "Copy session ID to clipboard"
+msgstr "Oturum kimliğini panoya kopyala"
+
+#: src/session/view/account_settings/general_page/mod.ui:127
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:108
+msgid "Log Out"
+msgstr "Çıkış Yap"
+
+#: src/session/view/account_settings/notifications_page.rs:289
+msgid "Could not enable account notifications"
+msgstr "Hesap bildirimleri etkinleştirilemedi"
+
+#: src/session/view/account_settings/notifications_page.rs:291
+msgid "Could not disable account notifications"
+msgstr "Hesap bildirimleri devre dışı bırakılamadı"
+
+#: src/session/view/account_settings/notifications_page.rs:345
+msgid "Could not change global notifications setting"
+msgstr "Genel bildirim ayarları değiştirilemedi"
+
+#: src/session/view/account_settings/notifications_page.rs:368
+msgid "Remove “{keyword}”"
+msgstr "“{keyword}” kaldır"
+
+#: src/session/view/account_settings/notifications_page.rs:403
+msgid "Could not remove notification keyword"
+msgstr "Bildirim anahtar sözcüğü kaldırılamadı"
+
+#: src/session/view/account_settings/notifications_page.rs:482
+msgid "Could not add notification keyword"
+msgstr "Bildirim anahtar sözcüğü eklenemedi"
+
+#: src/session/view/account_settings/notifications_page.ui:5
+#: src/session/view/content/room_details/general_page/mod.ui:205
+msgid "Notifications"
+msgstr "Bildirimler"
+
+#: src/session/view/account_settings/notifications_page.ui:11
+msgid "Enable for this account"
+msgstr "Bu hesap için etkinleştir"
+
+#: src/session/view/account_settings/notifications_page.ui:33
+msgid "Enable for this session"
+msgstr "Bu oturum için etkinleştir"
+
+#: src/session/view/account_settings/notifications_page.ui:41
+msgid "Global"
+msgstr "Genel"
+
+#: src/session/view/account_settings/notifications_page.ui:42
+msgid ""
+"Which messages trigger notifications in rooms that do not have more specific "
+"rules."
+msgstr ""
+"Daha özel kuralları olmayan odalarda hangi iletilerin bildirimleri "
+"tetiklediği."
+
+#: src/session/view/account_settings/notifications_page.ui:46
+msgid "All messages in all rooms"
+msgstr "Tüm odalardaki tüm iletiler"
+
+#: src/session/view/account_settings/notifications_page.ui:63
+msgid "All messages in direct chats, and mentions and keywords in all rooms"
+msgstr ""
+"Doğrudan sohbetteki tüm iletiler ve tüm odalardaki bahsetmeler ve anahtar "
+"sözcükler"
+
+#: src/session/view/account_settings/notifications_page.ui:80
+msgid "Only mentions and keywords in all rooms"
+msgstr "Tüm odalarda yalnızca bahsetmeler ve anahtar sözcükler"
+
+#: src/session/view/account_settings/notifications_page.ui:98
+msgid "Keywords"
+msgstr "Anahtar Sözcükler"
+
+#: src/session/view/account_settings/notifications_page.ui:99
+msgid ""
+"Messages that contain one of these keywords trigger notifications. Matching "
+"on these keywords is case-insensitive."
+msgstr ""
+"Bu anahtar sözcüklerden birini içeren iletiler bildirimleri tetikler. "
+"Anahtar sözcüklerle eşleştirme büyük/küçük duyarsızdır."
+
+#: src/session/view/account_settings/notifications_page.ui:111
+msgid "Add Keyword…"
+msgstr "Anahtar Sözcük Ekle…"
+
+#: src/session/view/account_settings/notifications_page.ui:120
+msgid "Add Keyword"
+msgstr "Anahtar Sözcük Ekle"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
+#: src/session/view/user_page.rs:643
+msgid "Failed to stop ignoring user"
+msgstr "Kullanıcı yoksayılması durdurulamadı"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:27
+#: src/session/view/user_page.rs:621
+msgid "Stop Ignoring"
+msgstr "Yoksaymayı Durdur"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:4
+#: src/session/view/account_settings/security_page/mod.ui:11
+msgid "Ignored Users"
+msgstr "Yoksayılan Kullanıcılar"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:18
+msgid "Toggle Ignored Users Search"
+msgstr "Yoksayılan Kullanıcı Aramasını Aç/Kapat"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:33
+msgid "Search for ignored users"
+msgstr "Yoksayılan kullanıcıları ara"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:74
+msgid "No Ignored Users"
+msgstr "Yoksayılan Kullanıcı Yok"
+
+#: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
+msgid "You can add users to this list from their room member profile."
+msgstr "Kullanıcıları oda üye profillerinden bu listeye ekleyebilirsiniz."
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:176
+#: src/session/view/account_settings/security_page/mod.ui:41
+msgid "Export Room Encryption Keys"
+msgstr "Oda Şifreleme Anahtarlarını Dışa Aktar"
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:179
+msgid ""
+"Exporting your room encryption keys allows you to make a backup to be able "
+"to decrypt your messages in end-to-end encrypted rooms on another device or "
+"with another Matrix client."
+msgstr ""
+"Oda şifreleme anahtarlarınızı dışa aktarmak, uçtan uca şifrelenmiş "
+"odalardaki iletilerinizin şifresini başka aygıtta ya da başka bir Matrix "
+"istemcisinde çözebilmek için yedeklemenizi sağlar."
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:182
+msgid ""
+"The backup must be stored in a safe place and must be protected with a "
+"strong passphrase that will be used to encrypt the data."
+msgstr ""
+"Yedek, güvenli bir yerde saklanmalı ve verileri şifrelemek için kullanılacak "
+"güçlü bir parola metniyle korunmalıdır."
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:185
+msgid "Export Keys"
+msgstr "Anahtarları Dışa Aktar"
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:188
+#: src/session/view/account_settings/security_page/mod.ui:49
+msgid "Import Room Encryption Keys"
+msgstr "Oda Şifreleme Anahtarlarını İçe Aktar"
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:191
+msgid ""
+"Importing your room encryption keys allows you to decrypt your messages in "
+"end-to-end encrypted rooms with a previous backup from a Matrix client."
+msgstr ""
+"Oda şifreleme anahtarlarınızı içe aktarmak, Matrix istemcisinde önceki "
+"yedeklemeyle uçtan uca şifrelenmiş odalardaki iletilerinizin şifresini "
+"çözmenizi sağlar."
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:194
+msgid "Enter the passphrase provided when the backup file was created."
+msgstr "Yedekleme dosyası oluşturulurken belirlenen parola metnini girin."
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:197
+msgid "Import Keys"
+msgstr "Anahtarları İçe Aktar"
+
+#. Translators: Do no translate "fractal" as it is the application
+#. name.
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:223
+msgid "fractal-encryption-keys"
+msgstr "fractal-şifreleme-anahtarları"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:228
+msgid "Save Encryption Keys To…"
+msgstr "Şifreleme Anahtarını Şuraya Kaydet…"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:231
+msgid "Import Encryption Keys From…"
+msgstr "Şifreleme Anahtarlarını Şuradan İçe Aktar…"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:244
+#: src/utils/media.rs:218
+msgid "Could not access file"
+msgstr "Dosyaya erişilemedi"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:270
+msgid "Passphrases do not match"
+msgstr "Parola metinleri eşleşmiyor"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:344
+msgid "Room encryption keys exported successfully"
+msgstr "Oda şifreleme anahtarları dışa aktarıldı"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:349
+msgid "Imported 1 room encryption key"
+msgid_plural "Imported {n} room encryption keys"
+msgstr[0] "{n} odanın şifreleme anahtarları içe aktarıldı"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:362
+msgid "Could not export the keys"
+msgstr "Anahtarlar dışa aktarılamadı"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:372
+msgid "The passphrase doesn't match the one used to export the keys."
+msgstr "Parola metni, anahtarları dışa aktarmak için kullanılanla eşleşmiyor."
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:376
+msgid "Could not import the keys"
+msgstr "Anahtarlar içe aktarılamadı"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:58
+#: src/verification_view/session_verification_view.ui:287
+msgid "Passphrase"
+msgstr "Parola Metni"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:75
+msgid "Confirm Passphrase"
+msgstr "Parola Metnini Doğrula"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:106
+#: src/session/view/content/room_details/general_page/mod.ui:170
+#: src/session/view/content/room_details/history_viewer/file.ui:4
+msgid "File"
+msgstr "Dosya"
+
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:110
+msgid "Choose…"
+msgstr "Seç…"
+
+#. Translators: As in "The signing key is available".
+#: src/session/view/account_settings/security_page/mod.rs:198
+msgid "Available"
+msgstr "Kullanılabilir"
+
+#. Translators: As in "The signing key is not available".
+#: src/session/view/account_settings/security_page/mod.rs:203
+msgid "Not available"
+msgstr "Kullanılamaz"
+
+#: src/session/view/account_settings/security_page/mod.ui:5
+#: src/session/view/user_page.ui:171
+msgid "Security"
+msgstr "Güvenlik"
+
+#: src/session/view/account_settings/security_page/mod.ui:12
+msgid ""
+"All messages or invitations sent by these users will be ignored. You will "
+"still see some of their activity, like when they join or leave a room."
+msgstr ""
+
+#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/security_page/mod.ui:37
+msgid "Room Encryption Keys"
+msgstr "Oda Şifreleme Anahtarları"
+
+#: src/session/view/account_settings/security_page/mod.ui:58
+msgid "Cross-Signing"
+msgstr "Çapraz İmzalama"
+
+#: src/session/view/account_settings/security_page/mod.ui:61
+msgid "Master key"
+msgstr "Ana anahtar"
+
+#: src/session/view/account_settings/security_page/mod.ui:71
+msgid "Self-signing key"
+msgstr "Kendi kendini imzalayan anahtar"
+
+#: src/session/view/account_settings/security_page/mod.ui:81
+msgid "User-signing key"
+msgstr "Kullanıcı imzalama anahtarı"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:5
+msgid "Sessions"
+msgstr "Oturumlar"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:42
+#: src/session/view/account_settings/user_sessions_page/mod.ui:46
+msgid "Current Session"
+msgstr "Geçerli Oturum"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:57
+#: src/session/view/account_settings/user_sessions_page/mod.ui:61
+msgid "Other Active Sessions"
+msgstr "Diğer Etkin Oturumlar"
+
+#: src/session/view/account_settings/user_sessions_page/mod.ui:85
+msgid "Failed to load the list of connected devices."
+msgstr "Bağlı aygıtların listesi yüklenemedi."
+
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
+msgid "Disconnect Session"
+msgstr "Oturumu Sonlandır"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:160
+msgid "Failed to disconnect device “{device_name}”"
+msgstr "“{device_name}” aygıtının bağlantısı kesilemedi."
+
+#. Translators: Time in 24h format, i.e. "23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:207
+msgid "Last seen at %H:%M"
+msgstr "Son görülme: %H:%M"
+
+#. Translators: Time in 12h format, i.e. "11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:212
+msgid "Last seen at %I:%M %p"
+msgstr "Son görülme: %I:%M %p"
+
+#. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:222
+#, no-c-format
+msgid "Last seen yesterday at %H:%M"
+msgstr "Son görülme: Dün, %H:%M"
+
+#. Translators: this is a time in 12h format, i.e. "Last seen Yesterday at 11:04
+#. PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:229
+#, no-c-format
+msgid "Last seen yesterday at %I:%M %p"
+msgstr "Son görülme: Dün, %I:%M %p"
+
+#. Translators: this is the name of the week day followed by a time in 24h
+#. format, i.e. "Last seen Monday at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:240
+#, no-c-format
+msgid "Last seen %A at %H:%M"
+msgstr "Son görülme: %A, %H:%M"
+
+#. Translators: this is the week day name followed by a time in 12h format, i.e.
+#. "Last seen Monday at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:247
+#, no-c-format
+msgid "Last seen %A at %I:%M %p"
+msgstr "Son görülme: %A, %l:%M %p"
+
+#. Translators: this is the month and day and the time in 24h format, i.e. "Last
+#. seen February 3 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:256
+#, no-c-format
+msgid "Last seen %B %-e at %H:%M"
+msgstr "Son görülme: %-e %B, %H:%M"
+
+#. Translators: this is the month and day and the time in 12h format, i.e. "Last
+#. seen February 3 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:263
+#, no-c-format
+msgid "Last seen %B %-e at %I:%M %p"
+msgstr "Son görülme: %-e %B, %l:%M %p"
+
+#. Translators: this is the full date and the time in 24h format, i.e. "Last
+#. seen February 3 2015 at 23:04".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:271
+#, no-c-format
+msgid "Last seen %B %-e %Y at %H:%M"
+msgstr "Son görülme: %-e %B %Y, %H:%M"
+
+#. Translators: this is the full date and the time in 12h format, i.e. "Last
+#. seen February 3 2015 at 11:04 PM".
+#. Do not change the time format as it will follow the system settings.
+#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
+#, no-c-format
+msgid "Last seen %B %-e %Y at %I:%M %p"
+msgstr "Son görülme: %-e %B %Y, %l:%M %p"
+
+#. Translators: As in 'A verified session'.
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:31
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:34
+msgid "Verified"
+msgstr "Doğrulanmış"
+
+#: src/session/view/account_settings/user_sessions_page/user_session_row.ui:75
+#: src/verification_view/identity_verification_view/choose_method_page.rs:160
+#: src/verification_view/identity_verification_view/sas_page.rs:140
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:163
+msgid "Verify Session"
+msgstr "Oturumu Doğrula"
+
+#: src/session/view/content/explore/mod.ui:66
 msgid "No rooms matching the search were found"
 msgstr "Aramayla eşleşen oda bulunamadı"
 
-#: src/session/view/content/explore/mod.ui:99
+#: src/session/view/content/explore/mod.ui:113
 msgid "Room List"
 msgstr "Oda Listesi"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/session/view/content/explore/public_room_row.rs:210
-#: src/session/view/content/room_history/mod.rs:915
-#: src/session/view/content/room_history/state_row/tombstone.rs:124
+#: src/session/view/content/explore/public_room_row.rs:156
+#: src/session/view/content/room_history/mod.rs:911
+#: src/session/view/content/room_history/state_row/tombstone.rs:88
+#: src/session/view/join_room_dialog.rs:197
 msgid "View"
 msgstr "Görünüm"
 
-#: src/session/view/content/explore/public_room_row.rs:212
-#: src/session/view/content/room_history/mod.rs:918
-#: src/session/view/content/room_history/state_row/tombstone.rs:126
+#: src/session/view/content/explore/public_room_row.rs:158
+#: src/session/view/content/room_history/mod.rs:914
+#: src/session/view/content/room_history/state_row/tombstone.rs:90
+#: src/session/view/join_room_dialog.ui:189
 msgid "Join"
 msgstr "Katıl"
 
@@ -1167,25 +1328,25 @@ msgstr "Sunucu Ekle"
 msgid "Remove Server"
 msgstr "Sunucuyu Kaldır"
 
-#: src/session/view/content/invite.rs:107
+#: src/session/view/content/invite.rs:81
 msgid "{user} invited you"
 msgstr "{user} sizi davet etti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:227
+#: src/session/view/content/invite.rs:207
 msgid "Failed to accept invitation for {room}. Try again later."
 msgstr "{room} için davetiye kabul edilemedi. Sonra yeniden deneyin."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:263
+#: src/session/view/content/invite.rs:243
 msgid "Failed to decline invitation for {room}. Try again later."
 msgstr "{room} için davetiye reddedilemedi. Sonra yeniden deneyin."
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
-#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:101
+#: src/session/view/content/room_details/members_page/members_list_view/mod.ui:99
 msgid "Invite"
 msgstr "Davet Et"
 
@@ -1205,59 +1366,115 @@ msgstr "Oda Seçilmedi"
 msgid "Join a room to start chatting."
 msgstr "Sohbet etmek için odaya katıl."
 
-#: src/session/view/content/room_details/general_page/mod.rs:345
+#: src/session/view/content/room_details/general_page/mod.rs:399
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Bu odanın avatarını gerçekten kaldırmak istiyor musunuz?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:469
+#: src/session/view/content/room_details/general_page/mod.rs:508
 msgid "Room name saved successfully"
 msgstr "Oda adı kaydedildi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:494
+#: src/session/view/content/room_details/general_page/mod.rs:533
 msgid "Room topic saved successfully"
 msgstr "Oda konusu kaydedildi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:572
+#: src/session/view/content/room_details/general_page/mod.rs:611
 msgid "Could not change room name"
 msgstr "Oda adı değiştirilemedi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:596
+#: src/session/view/content/room_details/general_page/mod.rs:635
 msgid "Could not change room topic"
 msgstr "Oda konusu değiştirilemedi"
+
+#: src/session/view/content/room_details/general_page/mod.rs:648
+#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:258
+msgid "Member"
+msgid_plural "Members"
+msgstr[0] "Üyeler"
+
+#: src/session/view/content/room_details/general_page/mod.rs:736
+msgid "Could not change notifications setting"
+msgstr "Bildirim ayarları değiştirilemedi"
+
+#: src/session/view/content/room_details/general_page/mod.rs:751
+msgid "Matrix room ID copied to clipboard"
+msgstr "Matrix oda kimliği panoya kopyalandı"
+
+#. Translators: As in, 'Room federated'.
+#: src/session/view/content/room_details/general_page/mod.rs:762
+msgid "Federated"
+msgstr "Federasyon"
+
+#. Translators: As in, 'Room not federated'.
+#: src/session/view/content/room_details/general_page/mod.rs:765
+msgid "Not federated"
+msgstr "Federasyon değil"
 
 #: src/session/view/content/room_details/general_page/mod.ui:4
 #: src/session/view/content/room_details/mod.ui:4
 msgid "Room Details"
 msgstr "Oda Ayrıntıları"
 
-#: src/session/view/content/room_details/general_page/mod.ui:46
+#: src/session/view/content/room_details/general_page/mod.ui:60
 msgid "Description"
 msgstr "Açıklama"
 
-#: src/session/view/content/room_details/general_page/mod.ui:87
+#: src/session/view/content/room_details/general_page/mod.ui:101
 msgid "Edit Details"
 msgstr "Ayrıntıları Düzenle"
 
-#: src/session/view/content/room_details/general_page/mod.ui:98
+#: src/session/view/content/room_details/general_page/mod.ui:112
 msgid "Save Details"
 msgstr "Ayrıntıları Kaydet"
 
-#: src/session/view/content/room_details/general_page/mod.ui:113
-msgid "Members"
-msgstr "Üyeler"
-
-#: src/session/view/content/room_details/general_page/mod.ui:141
+#: src/session/view/content/room_details/general_page/mod.ui:154
 #: src/session/view/content/room_details/history_viewer/media.ui:4
 msgid "Media"
 msgstr "Ortam"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:174
+#: src/session/view/content/room_details/general_page/mod.ui:187
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 msgid "Audio"
 msgstr "Ses"
 
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:121
+#: src/session/view/content/room_details/general_page/mod.ui:206
+msgid "Which messages trigger notifications in this room."
+msgstr "Bu odada hangi iletilerin bildirimleri tetiklediği."
+
+#: src/session/view/content/room_details/general_page/mod.ui:210
+msgid "Use the global setting"
+msgstr "Genel ayarı kullan"
+
+#: src/session/view/content/room_details/general_page/mod.ui:227
+msgid "All messages"
+msgstr "Tüm iletiler"
+
+#: src/session/view/content/room_details/general_page/mod.ui:244
+msgid "Only mentions and keywords"
+msgstr "Yalnızca bahsetmeler ve anahtar sözcükler"
+
+#: src/session/view/content/room_details/general_page/mod.ui:261
+msgid "Disable notifications"
+msgstr "Bildirimleri devre dışı bırak"
+
+#: src/session/view/content/room_details/general_page/mod.ui:282
+msgid "Matrix Room ID"
+msgstr "Matrix Oda Kimliği"
+
+#: src/session/view/content/room_details/general_page/mod.ui:294
+msgid "Copy Matrix room ID to clipboard"
+msgstr "Matrix oda kimliğini panoya kopyala"
+
+#: src/session/view/content/room_details/general_page/mod.ui:306
+msgid "Room Version"
+msgstr "Oda Sürümü"
+
+#: src/session/view/content/room_details/general_page/mod.ui:319
+msgid "Federation"
+msgstr "Federasyon"
+
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:87
 msgid "Unknown duration"
 msgstr "Bilinmeyen süre"
 
@@ -1267,7 +1484,11 @@ msgstr "Bilinmeyen süre"
 msgid "Play"
 msgstr "Oynat"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:110
+#: src/session/view/content/room_details/history_viewer/file_row.rs:82
+msgid "Unknown size"
+msgstr "Bilinmeyen boyut"
+
+#: src/session/view/content/room_details/history_viewer/file_row.rs:113
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_details/history_viewer/file_row.ui:14
 #: src/session/view/content/room_history/message_row/file.ui:25
@@ -1276,28 +1497,18 @@ msgstr "Oynat"
 msgid "Save File"
 msgstr "Dosyayı Kaydet"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:111
+#: src/session/view/content/room_details/history_viewer/file_row.rs:114
 #: src/utils/media.rs:193
 msgid "Save"
 msgstr "Kaydet"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:160
-msgid "Unknown size"
-msgstr "Bilinmeyen boyut"
-
-#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:290
-msgid "Member"
-msgstr "Üye"
-
-#. Translators: As in 'Banned Room Members'.
-#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:291
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:158
+#: src/session/view/content/room_details/invite_subpage/invitee_list.rs:259
 msgid "Banned"
 msgstr "Yasaklanmış"
 
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
-#: src/session/view/content/room_details/invite_subpage/mod.rs:339
+#: src/session/view/content/room_details/invite_subpage/mod.rs:321
 msgid "Failed to invite {user} to {room}. Try again later."
 msgid_plural "Failed to invite {n} users to {room}. Try again later."
 msgstr[0] ""
@@ -1309,7 +1520,6 @@ msgstr "Yeni Üye Davet Et"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:16
-#: src/session/view/join_room_dialog.ui:9
 msgid "_Cancel"
 msgstr "İ_ptal"
 
@@ -1327,39 +1537,56 @@ msgstr "Ara"
 msgid "Search for users to invite them to this room."
 msgstr "Odaya davet edecek kullanıcıları ara."
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:132
+#: src/session/view/content/room_details/invite_subpage/mod.ui:133
 #: src/session/view/create_dm_dialog/mod.ui:91
 msgid "No Users Found"
 msgstr "Kullanıcı Bulunamadı"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:133
+#: src/session/view/content/room_details/invite_subpage/mod.ui:134
 msgid "No users matching the search were found."
 msgstr "Aramayla eşleşen kullanıcı bulunamadı."
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:140
+#: src/session/view/content/room_details/invite_subpage/mod.ui:141
 msgid "An error occurred while searching for matches."
 msgstr "Eşleşmeler aranırken hata oluştu."
 
-#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:203
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:161
 msgid "Could not load the full list of room members"
 msgstr "Oda üyelerinin tam listesi yüklenemedi"
 
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:96
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:98
-msgid "Member Menu"
-msgstr "Üye Menüsü"
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
+#: src/session/view/user_page.rs:571
+msgid "Identity verified"
+msgstr "Kimlik doğrulandı"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:145
-msgid "Invited Room Members"
-msgstr "Davet Edilen Oda Üyeleri"
+#. Translators: As in 'Invited Room Member(s)'.
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:117
+msgctxt "members"
+msgid "Invited"
+msgid_plural "Invited"
+msgstr[0] "Davet Edildi"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:146
-msgid "Banned Room Members"
-msgstr "Yasaklanmış Oda Üyeleri"
+#. Translators: As in 'Banned Room Member(s)'.
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
+msgctxt "members"
+msgid "Banned"
+msgid_plural "Banned"
+msgstr[0] "Yasaklanmış"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:147
-msgid "Room Members"
-msgstr "Oda Üyeleri"
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:214
+msgid "Invited Room Member"
+msgid_plural "Invited Room Members"
+msgstr[0] "Davet Edilen Oda Üyeleri"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:215
+msgid "Banned Room Member"
+msgid_plural "Banned Room Members"
+msgstr[0] "Yasaklanmış Oda Üyeleri"
+
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:216
+msgid "Room Member"
+msgid_plural "Room Members"
+msgstr[0] "Oda Üyeleri"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -1371,170 +1598,164 @@ msgstr "Oda Üyeleri Aramayı Aç/Kapat"
 msgid "Search for room members"
 msgstr "Oda üyeleri ara"
 
-#: src/session/view/content/room_details/members_page/member_menu.ui:6
-msgid "_Verify"
-msgstr "_Doğrula"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:14
-msgid "Make _Mod"
-msgstr "_Mod Yap"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:20
-msgid "Make _Admin"
-msgstr "_Yönetici Yap"
-
-#: src/session/view/content/room_details/members_page/member_menu.ui:26
-msgid "_Kick"
-msgstr "_At"
+#: src/session/view/content/room_details/members_page/mod.rs:83
+msgid "The user is not in the room members list anymore"
+msgstr "Kullanıcı artık oda üyeleri listesinde değil"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
+#: src/session/view/content/room_history/event_actions.ui:87
 msgid "_Reply"
 msgstr "_Yanıtla"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:18
+#: src/session/view/content/room_history/event_actions.ui:93
 msgid "_Edit"
 msgstr "D_üzenle"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
 #: src/session/view/content/room_history/event_actions.ui:25
+#: src/session/view/content/room_history/event_actions.ui:100
 msgid "_Forward"
 msgstr "_İleri"
 
 #: src/session/view/content/room_history/event_actions.ui:32
-#: src/session/view/content/room_history/event_actions.ui:86
+#: src/session/view/content/room_history/event_actions.ui:107
+#: src/session/view/content/room_history/event_actions.ui:161
 msgid "_Select"
 msgstr "_Seç"
 
 #: src/session/view/content/room_history/event_actions.ui:39
+#: src/session/view/content/room_history/event_actions.ui:114
 msgid "_Copy Text"
 msgstr "Metni _Kopyala"
 
 #: src/session/view/content/room_history/event_actions.ui:45
+#: src/session/view/content/room_history/event_actions.ui:120
 msgid "_Copy Thumbnail"
 msgstr "Küçük Resmi _Kopyala"
 
 #: src/session/view/content/room_history/event_actions.ui:50
+#: src/session/view/content/room_history/event_actions.ui:125
 #: src/session/view/media_viewer.ui:11
 msgid "S_ave Image"
 msgstr "Görüntüyü K_aydet"
 
 #: src/session/view/content/room_history/event_actions.ui:55
+#: src/session/view/content/room_history/event_actions.ui:130
 #: src/session/view/media_viewer.ui:16
 msgid "S_ave Video"
 msgstr "_Videoyu Kaydet"
 
 #: src/session/view/content/room_history/event_actions.ui:60
+#: src/session/view/content/room_history/event_actions.ui:135
 #: src/session/view/media_viewer.ui:21
 msgid "S_ave Audio"
 msgstr "_Sesi Kaydet"
 
 #: src/session/view/content/room_history/event_actions.ui:65
-#: src/session/view/content/room_history/event_actions.ui:93
+#: src/session/view/content/room_history/event_actions.ui:140
+#: src/session/view/content/room_history/event_actions.ui:168
 #: src/session/view/media_viewer.ui:26
 msgid "_Permalink"
 msgstr "_Kalıcı Bağlantı"
 
 #: src/session/view/content/room_history/event_actions.ui:70
-#: src/session/view/content/room_history/event_actions.ui:98
-msgid "_View Source"
-msgstr "Kaynağı _Göster"
+#: src/session/view/content/room_history/event_actions.ui:145
+#: src/session/view/content/room_history/event_actions.ui:173
+msgid "_View Details"
+msgstr "_Ayrıntıları Göster"
 
 #: src/session/view/content/room_history/event_actions.ui:77
-#: src/session/view/content/room_history/event_actions.ui:105
+#: src/session/view/content/room_history/event_actions.ui:152
+#: src/session/view/content/room_history/event_actions.ui:180
 msgid "Re_move"
 msgstr "_Kaldır"
 
-#: src/session/view/content/room_history/item_row.rs:304
+#: src/session/view/content/room_history/item_row.rs:270
 msgid "This is the start of the visible history"
 msgstr "Bu, görünür geçmişin başlangıcıdır"
 
 # 1 Mart pazartesi gibi
 #. Translators: This is a date format in the day divider without the
 #. year. For example, "Friday, May 5".
-#. Please use `-` before specifiers that add spaces on single digits.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:327
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/item_row.rs:310
 msgid "%A, %B %-e"
 msgstr "%-e %B %A"
 
 # 1 Kasım 2023, Pazartesi gibi
-#. Translators: This is a date format in the day divider with the year.
-#. For ex. "Friday, May 5, 2023".
-#. Please use `-` before specifiers that add spaces on single digits.
-#. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:333
+#. Translators: This is a date format in the day divider with the
+#. year. For ex. "Friday, May 5, 2023".
+#. Please use `-` before specifiers that add spaces on single
+#. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
+#: src/session/view/content/room_history/item_row.rs:316
 msgid "%A, %B %-e, %Y"
 msgstr "%-e %B %Y, %A"
 
-#: src/session/view/content/room_history/item_row.rs:339
+#: src/session/view/content/room_history/item_row.rs:322
 msgid "New Messages"
 msgstr "Yeni İletiler"
 
-#: src/session/view/content/room_history/item_row.rs:466
-#: src/session/view/content/room_history/mod.rs:563
-#: src/session/view/media_viewer.rs:573
+#: src/session/view/content/room_history/item_row.rs:476
+#: src/session/view/content/room_history/mod.rs:590
+#: src/session/view/media_viewer.rs:528
 msgid "Permalink copied to clipboard"
 msgstr "Kalıcı bağlantı panoya kopyalandı"
 
-#: src/session/view/content/room_history/item_row.rs:470
-#: src/session/view/content/room_history/mod.rs:567
-#: src/session/view/media_viewer.rs:577
-msgid "Failed to copy the permalink"
-msgstr "Kalıcı bağlantı kopyalanamadı"
-
-#: src/session/view/content/room_history/item_row.rs:565
-#: src/session/view/content/room_history/item_row.rs:602
-#: src/session/view/content/room_history/item_row.rs:629
+#: src/session/view/content/room_history/item_row.rs:541
+#: src/session/view/content/room_history/item_row.rs:576
+#: src/session/view/content/room_history/item_row.rs:601
 msgid "Message copied to clipboard"
 msgstr "İleti panoya kopyalandı"
 
-#: src/session/view/content/room_history/item_row.rs:644
+#: src/session/view/content/room_history/item_row.rs:616
 msgid "Thumbnail copied to clipboard"
 msgstr "Küçük resim panoya kopyalandı"
 
-#: src/session/view/content/room_history/item_row.rs:737
+#: src/session/view/content/room_history/item_row.rs:686
 msgid "Remove Message?"
 msgstr "İleti Kaldırılsın Mı?"
 
-#: src/session/view/content/room_history/item_row.rs:739
+#: src/session/view/content/room_history/item_row.rs:688
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Bu iletiyi gerçekten kaldırmak istiyor musunuz? Bu işlem geri alınamaz."
 
-#: src/session/view/content/room_history/item_row.rs:754
+#: src/session/view/content/room_history/item_row.rs:703
 msgid "Failed to remove message"
 msgstr "İleti kaldırılamadı"
 
-#: src/session/view/content/room_history/item_row.rs:775
+#: src/session/view/content/room_history/item_row.rs:723
 msgid "Failed to remove reaction"
 msgstr "İfade kaldırılamadı"
 
-#: src/session/view/content/room_history/item_row.rs:782
+#: src/session/view/content/room_history/item_row.rs:730
 msgid "Failed to add reaction"
 msgstr "İfade eklenemedi"
 
-#: src/session/view/content/room_history/message_row/audio.rs:224
-#: src/session/view/content/room_history/message_row/audio.rs:228
+#: src/session/view/content/room_history/message_row/audio.rs:178
+#: src/session/view/content/room_history/message_row/audio.rs:182
 msgid "Could not retrieve audio file"
 msgstr "Ses dosyası alınamadı"
 
-#: src/session/view/content/room_history/message_row/audio.rs:241
+#: src/session/view/content/room_history/message_row/audio.rs:195
 msgid "Error reading audio file"
 msgstr "Ses dosyası okunamadı"
 
-#: src/session/view/content/room_history/message_row/content.rs:331
+#: src/session/view/content/room_history/message_row/content.rs:316
 msgid "Identity verification was started"
 msgstr "Kimlik doğrulama başlatıldı"
 
-#: src/session/view/content/room_history/message_row/content.rs:342
-#: src/session/view/content/room_history/message_row/content.rs:385
+#: src/session/view/content/room_history/message_row/content.rs:327
+#: src/session/view/content/room_history/message_row/content.rs:370
 msgid "Unsupported event"
 msgstr "Desteklenmeyen olay"
 
-#: src/session/view/content/room_history/message_row/content.rs:364
+#: src/session/view/content/room_history/message_row/content.rs:349
 msgid ""
 "Unable to decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -1542,7 +1763,7 @@ msgstr ""
 "Bu iletinin şifresi çözülemiyor, anahtarlar kullanılabildiğinde şifre çözme "
 "yeniden denenecek."
 
-#: src/session/view/content/room_history/message_row/content.rs:374
+#: src/session/view/content/room_history/message_row/content.rs:359
 msgid "This message was removed."
 msgstr "Bu ileti kaldırıldı."
 
@@ -1550,20 +1771,20 @@ msgstr "Bu ileti kaldırıldı."
 msgid "Location is invalid and cannot be displayed"
 msgstr "Konum geçersiz ve görüntülenemiyor"
 
-#: src/session/view/content/room_history/message_row/media.rs:436
+#: src/session/view/content/room_history/message_row/media.rs:369
 msgid "Image file not supported"
 msgstr "Görüntü dosyası desteklenmiyor"
 
-#: src/session/view/content/room_history/message_row/media.rs:473
-#: src/session/view/content/room_history/message_row/media.rs:478
+#: src/session/view/content/room_history/message_row/media.rs:406
+#: src/session/view/content/room_history/message_row/media.rs:411
 msgid "Could not retrieve media"
 msgstr "Ortam alınamadı"
 
-#: src/session/view/content/room_history/message_row/message_state_stack.rs:130
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:91
 msgid "Could not send the message"
 msgstr "İleti gönderilemedi"
 
-#: src/session/view/content/room_history/message_row/message_state_stack.rs:136
+#: src/session/view/content/room_history/message_row/message_state_stack.rs:97
 msgid "An error occurred with the sending queue"
 msgstr "Gönderim kuyruğunda hata oluştu"
 
@@ -1589,57 +1810,58 @@ msgstr "Düzenlendi"
 msgid "_Send"
 msgstr "_Gönder"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:130
-msgid "The location request has been cancelled."
-msgstr "Konum isteği iptal edildi."
-
-#: src/session/view/content/room_history/message_toolbar/mod.rs:134
-msgid "Failed to retrieve current location."
-msgstr "Geçerli konum alınamadı."
-
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:422
+#: src/session/view/content/room_history/message_toolbar/mod.rs:383
 msgid "Reply to {user}"
 msgstr "Şunu yanıtla: {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:473
+#: src/session/view/content/room_history/message_toolbar/mod.rs:438
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Düzenle"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:685
+#. Show the dialog as loading first.
+#: src/session/view/content/room_history/message_toolbar/mod.rs:631
 msgid "Your Location"
 msgstr "Konumunuz"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:697
+#: src/session/view/content/room_history/message_toolbar/mod.rs:710
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Kullanıcı konumu {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:750
+#: src/session/view/content/room_history/message_toolbar/mod.rs:730
+msgid "The location request has been cancelled."
+msgstr "Konum isteği iptal edildi."
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:731
+msgid "Failed to retrieve current location."
+msgstr "Geçerli konum alınamadı."
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:772
 msgid "Select File"
 msgstr "Dosya Seç"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:752
+#: src/session/view/content/room_history/message_toolbar/mod.rs:774
 msgid "Select"
 msgstr "Seç"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:767
+#: src/session/view/content/room_history/message_toolbar/mod.rs:789
 msgid "Could not open file"
 msgstr "Dosya açılamadı"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:812
+#: src/session/view/content/room_history/message_toolbar/mod.rs:839
 msgid "Error reading file"
 msgstr "Dosya okunamadı"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:837
+#: src/session/view/content/room_history/message_toolbar/mod.rs:864
 msgid "Error getting image from clipboard"
 msgstr "Panodan görüntü alınamadı"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:854
+#: src/session/view/content/room_history/message_toolbar/mod.rs:881
 msgid "Error getting file from clipboard"
 msgstr "Panodan dosya alınamadı"
 
@@ -1647,72 +1869,80 @@ msgstr "Panodan dosya alınamadı"
 msgid "_Location"
 msgstr "_Konum"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:11
+#: src/session/view/content/room_history/message_toolbar/mod.ui:12
 msgid "_Markdown"
 msgstr "_Markdown"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:87
-#: src/session/view/content/room_history/message_toolbar/mod.ui:89
+#: src/session/view/content/room_history/message_toolbar/mod.ui:96
+#: src/session/view/content/room_history/message_toolbar/mod.ui:98
 msgid "Send a File"
 msgstr "Dosya Gönder"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:98
-#: src/session/view/content/room_history/message_toolbar/mod.ui:100
+#: src/session/view/content/room_history/message_toolbar/mod.ui:107
+#: src/session/view/content/room_history/message_toolbar/mod.ui:109
 msgid "Insert an Emoji"
 msgstr "Emoji Ekle"
 
 #. Translators: This is the name of the input widget where messages
 #. are entered before being sent, for accessibility tools.
-#: src/session/view/content/room_history/message_toolbar/mod.ui:123
+#: src/session/view/content/room_history/message_toolbar/mod.ui:132
 msgid "Message Composer"
 msgstr "İleti Oluşturucu"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:137
-#: src/session/view/content/room_history/message_toolbar/mod.ui:139
+#: src/session/view/content/room_history/message_toolbar/mod.ui:146
+#: src/session/view/content/room_history/message_toolbar/mod.ui:148
 msgid "More Options"
 msgstr "Daha Çok Seçenek"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:149
-#: src/session/view/content/room_history/message_toolbar/mod.ui:155
+#: src/session/view/content/room_history/message_toolbar/mod.ui:158
+#: src/session/view/content/room_history/message_toolbar/mod.ui:164
 msgid "Send Message"
 msgstr "İleti Gönder"
 
+#: src/session/view/content/room_history/message_toolbar/mod.ui:179
+msgid "You don’t have permission to send messages to this room"
+msgstr "Bu odaya ileti gönderme izniniz yok"
+
 # 1 Mart, 1:30 öö gibi
 #. Translators: this is a date and a time in 12h format.
-#. For example, "May 5 at 1:20 PM".
+#. For example, "May 5 at 01:20 PM".
 #. Do not change the time format as it will follow the system settings.
-#. Please use `-` before specifiers that add spaces on single digits.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/mod.rs:146
-msgid "%B %-e at %-l∶%M %p"
+#: src/session/view/content/room_history/member_timestamp/row.rs:117
+msgid "%B %-e at %I∶%M %p"
 msgstr "%-e %B, %p %-l∶%M"
 
 # 1 Mart, 1:30 gibi
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
-#. Please use `-` before specifiers that add spaces on single digits.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/mod.rs:153
-msgid "%B %-e at %-k∶%M"
+#: src/session/view/content/room_history/member_timestamp/row.rs:123
+msgid "%B %-e at %H∶%M"
 msgstr "%-e %B, %-k∶%M"
 
-#: src/session/view/content/room_history/mod.rs:366
+#: src/session/view/content/room_history/mod.rs:346
 msgid "Error getting file from drop"
 msgstr "Sürükle bıraktan dosya alınırken hata oluştu"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:549
+#: src/session/view/content/room_history/mod.rs:541
 msgid "Failed to leave {room}"
 msgstr "{room} odası terk edilemedi."
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+#: src/session/view/content/room_history/mod.rs:577
+#: src/session/view/sidebar/room_row.rs:381 src/session/view/sidebar/row.rs:312
+msgid "Failed to forget {room}."
+msgstr "{room} odası unutulamadı."
+
+#: src/session/view/content/room_history/mod.rs:909
 #: src/session/view/content/room_history/mod.rs:913
-#: src/session/view/content/room_history/mod.rs:917
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Bu odanın daha yeni bir sürümü var"
 
-#: src/session/view/content/room_history/mod.rs:920
+#: src/session/view/content/room_history/mod.rs:916
 msgid "This room was closed"
 msgstr "Bu oda kapatıldı"
 
@@ -1733,57 +1963,67 @@ msgstr "Oda _Kalıcı Bağlantısı"
 msgid "_Leave Room"
 msgstr "Odayı _Terk Et"
 
-#: src/session/view/content/room_history/mod.ui:57
-#: src/session/view/content/room_history/mod.ui:59
+#: src/session/view/content/room_history/mod.ui:27
+#: src/session/view/sidebar/mod.ui:66
+msgid "Re_join Room"
+msgstr "Odaya _Yeniden Katıl"
+
+#: src/session/view/content/room_history/mod.ui:32
+#: src/session/view/sidebar/mod.ui:71
+msgid "_Forget Room"
+msgstr "Odayı _Unut"
+
+#: src/session/view/content/room_history/mod.ui:68
+#: src/session/view/content/room_history/mod.ui:70
 msgid "Room Menu"
 msgstr "Oda Menüsü"
 
-#: src/session/view/content/room_history/mod.ui:101
+#: src/session/view/content/room_history/mod.ui:112
 msgid "Unable to load room"
 msgstr "Oda yüklenemedi"
 
-#: src/session/view/content/room_history/mod.ui:102
+#: src/session/view/content/room_history/mod.ui:113
 msgid "Check your network connection."
 msgstr "Ağ bağlantınızı denetleyin."
 
-#: src/session/view/content/room_history/mod.ui:106
+#: src/session/view/content/room_history/mod.ui:117
 msgid "Try Again"
 msgstr "Yeniden Dene"
 
-#: src/session/view/content/room_history/mod.ui:130
+#: src/session/view/content/room_history/mod.ui:141
 msgid "Scroll to Bottom"
 msgstr "En Alta Kaydır"
 
-#: src/session/view/content/room_history/mod.ui:132
+#: src/session/view/content/room_history/mod.ui:143
 msgid "Scroll to bottom"
 msgstr "En alta kaydır"
 
-#: src/session/view/content/room_history/mod.ui:144
+#: src/session/view/content/room_history/mod.ui:155
 msgid "Drop Here to Send"
 msgstr "Göndermek İçin Buraya Bırak"
 
-#: src/session/view/content/room_history/mod.ui:165
+#: src/session/view/content/room_history/mod.ui:177
 msgid "Room History"
 msgstr "Oda Geçmişi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:299
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:245
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "{n} üye gördü"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:312
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:258
 msgid "Seen by {name}"
 msgstr "{name} gördü"
 
-#: src/session/view/content/room_history/state_row/creation.rs:68
+#: src/session/view/content/room_history/state_row/creation.rs:69
 msgid "This is the continuation of an upgraded room."
 msgstr "Bu, güncellenmiş bir odanın devamıdır."
 
-#: src/session/view/content/room_history/state_row/creation.rs:73
+#: src/session/view/content/room_history/state_row/creation.rs:74
 msgid "This is the beginning of this room."
 msgstr "Bu, bu odanın başlangıcıdır."
 
@@ -1791,7 +2031,7 @@ msgstr "Bu, bu odanın başlangıcıdır."
 msgid "Previous room"
 msgstr "Önceki oda"
 
-#: src/session/view/content/room_history/state_row/mod.rs:135
+#: src/session/view/content/room_history/state_row/mod.rs:111
 msgid "This room is encrypted from this point on."
 msgstr "Bu oda şu andan itibaren şifrelenmiştir."
 
@@ -1799,12 +2039,12 @@ msgstr "Bu oda şu andan itibaren şifrelenmiştir."
 #. variable name.
 #. Translators: Do NOT translate the content between '{' and '}', this is
 #. a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:150
-#: src/session/view/content/room_history/state_row/mod.rs:266
+#: src/session/view/content/room_history/state_row/mod.rs:126
+#: src/session/view/content/room_history/state_row/mod.rs:242
 msgid "{user} was invited to this room."
 msgstr "{user} bu odaya davet edildi."
 
-#: src/session/view/content/room_history/state_row/mod.rs:162
+#: src/session/view/content/room_history/state_row/mod.rs:138
 msgid "An unsupported state event was received."
 msgstr "Desteklenmeyen durum olayı alındı."
 
@@ -1813,481 +2053,176 @@ msgstr "Desteklenmeyen durum olayı alındı."
 #. We don't know what changed so fall back to the membership.
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:238
-#: src/session/view/content/room_history/state_row/mod.rs:395
+#: src/session/view/content/room_history/state_row/mod.rs:214
+#: src/session/view/content/room_history/state_row/mod.rs:371
 msgid "{user} joined this room."
 msgstr "{user} odaya katıldı."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:243
+#: src/session/view/content/room_history/state_row/mod.rs:219
 msgid "{user} left the room."
 msgstr "{user} odayı terk etti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:248
+#: src/session/view/content/room_history/state_row/mod.rs:224
 msgid "{user} was banned."
 msgstr "{user} yasaklandı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:254
+#: src/session/view/content/room_history/state_row/mod.rs:230
 msgid "{user} was unbanned."
 msgstr "{user} yasağı kaldırıldı."
 
 #. Translators: Do NOT translate the content between '{' and
 #. '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:260
+#: src/session/view/content/room_history/state_row/mod.rs:236
 msgid "{user} was kicked out of the room."
 msgstr "{user} odadan uzaklaştırıldı."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is
 #. a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:272
+#: src/session/view/content/room_history/state_row/mod.rs:248
 msgid "{user} was kicked out of the room and banned."
 msgstr "{user} odadan uzaklaştırıldı ve yasaklandı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:278
+#: src/session/view/content/room_history/state_row/mod.rs:254
 msgid "{user} accepted the invite."
 msgstr "{user} daveti kabul etti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:284
+#: src/session/view/content/room_history/state_row/mod.rs:260
 msgid "{user} rejected the invite."
 msgstr "{user} daveti reddetti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:290
+#: src/session/view/content/room_history/state_row/mod.rs:266
 msgid "The invitation for {user} has been revoked."
-msgstr "{user} için davetiye iptal edildi."
+msgstr "{user} için davetiye geri alındı."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:299
+#: src/session/view/content/room_history/state_row/mod.rs:275
 msgid "{user} requested to be invited to this room."
 msgstr "{user} odaya davet edilmeyi istedi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:306
+#: src/session/view/content/room_history/state_row/mod.rs:282
 msgid "{user} retracted their request to be invited to this room."
 msgstr "{user} odaya davet edilme isteğini geri çekti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:312
+#: src/session/view/content/room_history/state_row/mod.rs:288
 msgid "{user}’s request to be invited to this room was denied."
 msgstr "{user} kullanıcısının bu odaya davet edilme isteği reddedildi."
 
-#: src/session/view/content/room_history/state_row/mod.rs:320
+#: src/session/view/content/room_history/state_row/mod.rs:296
 msgid "An unsupported room member event was received."
 msgstr "Desteklenmeyen oda üyesi etkinliği alındı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:339
+#: src/session/view/content/room_history/state_row/mod.rs:315
 msgid "{previous_user_name} changed their display name to {new_user_name}."
 msgstr "{previous_user_name} görünen adını {new_user_name} olarak değiştirdi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:349
+#: src/session/view/content/room_history/state_row/mod.rs:325
 msgid "{previous_user_name} removed their display name."
 msgstr "{previous_user_name} görünen adını kaldırdı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:361
+#: src/session/view/content/room_history/state_row/mod.rs:337
 msgid "{user_id} set their display name to {new_user_name}."
 msgstr "{user_id} görünen adını {new_user_name} olarak belirledi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:373
+#: src/session/view/content/room_history/state_row/mod.rs:349
 msgid "{user} set their avatar."
 msgstr "{user} avatar belirledi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:380
+#: src/session/view/content/room_history/state_row/mod.rs:356
 msgid "{user} removed their avatar."
 msgstr "{user} avatarını kaldırdı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:387
+#: src/session/view/content/room_history/state_row/mod.rs:363
 msgid "{user} changed their avatar."
 msgstr "{user} avatarını değiştirdi."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:170
+#: src/session/view/content/room_history/typing_row.rs:135
 msgid "<b>{user}</b> is typing…"
 msgstr "<b>{user}</b> yazıyor…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:177
+#: src/session/view/content/room_history/typing_row.rs:142
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} üye yazıyor…"
 
+#: src/session/view/content/room_history/verification_info_bar.rs:65
+msgid "Failed to accept verification"
+msgstr "Doğrulama kabul edilemedi"
+
+#: src/session/view/content/room_history/verification_info_bar.rs:81
+msgid "Failed to decline verification"
+msgstr "Doğrulama reddedilemedi"
+
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:169
+#: src/session/view/content/room_history/verification_info_bar.rs:161
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} doğrulanmak istiyor"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:175
-#: src/session/view/content/verification/identity_verification_widget.ui:57
+#: src/session/view/content/room_history/verification_info_bar.rs:167
+#: src/session/view/user_page.ui:199
+#: src/verification_view/identity_verification_view/accept_request_page.ui:53
 msgid "Verify"
 msgstr "Doğrula"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:176
-#: src/session/view/content/verification/identity_verification_widget.ui:47
-#: src/utils/message_dialog.rs:22
+#: src/session/view/content/room_history/verification_info_bar.rs:168
+#: src/utils/message_dialog.rs:27
+#: src/verification_view/identity_verification_view/accept_request_page.ui:42
 msgid "Decline"
 msgstr "Reddet"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:179
+#: src/session/view/content/room_history/verification_info_bar.rs:171
 msgid "Verification in progress"
 msgstr "Doğrulama sürüyor"
 
-#: src/session/view/content/verification/identity_verification_widget.rs:505
-#: src/session/view/content/verification/identity_verification_widget.rs:529
-msgid "Verify the new session from the current session."
-msgstr "Geçerli oturumdan yeni oturumu doğrula."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:508
-msgid "Scan the QR code from another session logged into this account."
-msgstr "Bu hesapta oturum açmış diğer oturumdan QR kodunu tarayın."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:510
-#: src/session/view/content/verification/identity_verification_widget.rs:533
-msgid ""
-"You scanned the QR code successfully. You may need to confirm the "
-"verification from the other session."
-msgstr ""
-"QR kodunu taradınız. Doğrulamayı diğer oturumdan onaylamanız gerekebilir."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:513
-msgid "Scan this QR code from the other session."
-msgstr "Bu QR kodunu diğer oturumdan tarayın."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:516
-#: src/session/view/content/verification/identity_verification_widget.rs:540
-msgid "Check if the same emoji appear in the same order on the other device."
-msgstr ""
-"Aynı emojinin diğer aygıtta da aynı sırada görünüp görünmediğini denetleyin."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:518
-#: src/session/view/content/verification/identity_verification_widget.rs:542
-msgid "Request Complete"
-msgstr "İstek Tamamlandı"
-
-#: src/session/view/content/verification/identity_verification_widget.rs:523
-#: src/session/view/content/verification/identity_verification_widget.rs:552
-msgid "Does the other session show a confirmation?"
-msgstr "Diğer oturum onay gösteriyor mu?"
-
-#: src/session/view/content/verification/identity_verification_widget.rs:527
-msgid "Login Request From Another Session"
-msgstr "Başka Oturumdan Giriş İsteği"
-
-#: src/session/view/content/verification/identity_verification_widget.rs:532
-msgid "Scan the QR code displayed by the other session."
-msgstr "Diğer oturumca görüntülenen QR kodunu tarayın."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:536
-msgid "Scan this QR code from the newly logged in session."
-msgstr "Yeni giriş yaptığınız oturumdan bu QR kodunu tarayın."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:544
-msgid "The new session is now ready to send and receive secure messages."
-msgstr "Yeni oturum artık güvenli ileti göndermeye ve almaya hazır."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:547
-#: src/session/view/content/verification/session_verification.ui:28
-msgid "Get Another Device"
-msgstr "Başka Aygıt Getir"
-
-#: src/session/view/content/verification/identity_verification_widget.rs:549
-#: src/session/view/content/verification/session_verification.ui:39
-msgid "Accept the verification request from another session or device."
-msgstr "Başka oturumdan ya da aygıttan gelen doğrulama isteğini kabul et."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:557
-#: src/session/view/content/verification/identity_verification_widget.rs:564
-#: src/session/view/content/verification/identity_verification_widget.rs:575
-#: src/session/view/content/verification/identity_verification_widget.rs:582
-msgid "Verification Request"
-msgstr "Doğrulama İsteği"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:562
-msgid ""
-"{user} asked to be verified. Verifying a user increases the security of the "
-"conversation."
-msgstr ""
-"{user} doğrulanmak istedi. Kullanıcının doğrulanması konuşma güvenliğini "
-"artırır."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:568
-msgid "Scan the QR code shown on the device of {user}."
-msgstr "{user} aygıtında gösterilen QR kodunu tarayın."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:573
-msgid ""
-"You scanned the QR code successfully. {user} may need to confirm the "
-"verification."
-msgstr "QR kodunu taradınız. {user} doğrulamayı onaylaması gerekebilir."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:579
-msgid "Ask {user} to scan this QR code from their session."
-msgstr "{user} kullanıcısına QR kodunu oturumundan taramasını sor."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:586
-msgid ""
-"Ask {user} if they see the following emoji appear in the same order on their "
-"screen."
-msgstr ""
-"{user} kullanıcısına aşağıdaki emojilerin ekranlarında aynı sırada görünüp "
-"görünmediğini sorun."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:590
-msgid "Verification Complete"
-msgstr "Doğrulama Tamamlandı"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:593
-msgid ""
-"{user} is verified and you can now be sure that your communication will be "
-"private."
-msgstr ""
-"{user} doğrulandı ve artık iletişiminizin gizli olacağından emin "
-"olabilirsiniz."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:597
-msgid "Waiting for {user}"
-msgstr "{user} bekleniyor"
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:603
-msgid "Ask {user} to accept the verification request."
-msgstr "{user} kullanıcısına doğrulama isteğini kabul etmesini sor."
-
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/verification/identity_verification_widget.rs:609
-msgid "Does {user} see a confirmation on their session?"
-msgstr "{user} oturumunda onay görüyor mu?"
-
-#: src/session/view/content/verification/identity_verification_widget.rs:650
-msgid "You cancelled the verification process."
-msgstr "Doğrulama işlemini iptal ettiniz."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:652
-msgid "The verification process failed because it reached a timeout."
-msgstr "Doğrulama işlemi, zaman aşımına uğradığı için başarısız oldu."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:655
-msgid "You accepted the request from an other session."
-msgstr "İsteği başka oturumdan kabul ettiniz."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:658
-msgid "The emoji did not match."
-msgstr "Emoji eşleşmiyor."
-
-#: src/session/view/content/verification/identity_verification_widget.rs:667
-msgid "An unknown error occurred during the verification process."
-msgstr "Doğrulama işlemi sırasında bilinmeyen hata oluştu."
-
-#: src/session/view/content/verification/identity_verification_widget.ui:110
-#: src/session/view/content/verification/identity_verification_widget.ui:214
-msgid "Can’t scan QR code?"
-msgstr "QR kod taranmıyor mu?"
-
-#: src/session/view/content/verification/identity_verification_widget.ui:118
-#: src/session/view/content/verification/identity_verification_widget.ui:231
-msgid "Compare Emoji"
-msgstr "Emoji Karşılaştır"
-
-#: src/session/view/content/verification/identity_verification_widget.ui:145
-msgid "Scan Complete"
-msgstr "Tarama Tamamlandı"
-
-#: src/session/view/content/verification/identity_verification_widget.ui:223
-msgid "Scan QR code with this session"
-msgstr "Bu oturumla QR kodunu tara"
-
-#. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
-#: src/session/view/content/verification/identity_verification_widget.ui:292
-msgid "Do Not Match"
-msgstr "Eşleşmiyor"
-
-# Burada eşleşme durumunu göstermek için kullanılmış. Verb değil Noun.
-#. Translators: During emoji comparison, this is the label of the button to click when the emojis match.
-#: src/session/view/content/verification/identity_verification_widget.ui:303
-msgid "Match"
-msgstr "Eşleşiyor"
-
-#: src/session/view/content/verification/identity_verification_widget.ui:412
-msgid "Confirm Scan"
-msgstr "Taramayı Doğrula"
-
-#: src/session/view/content/verification/session_verification.rs:271
-msgid ""
-"You need to set up an encryption identity, since this is the first time you "
-"logged into your account."
-msgstr ""
-"Hesabınıza ilk kez giriş yaptığınız için şifreleme kimliği oluşturmanız "
-"gerekiyor."
-
-#: src/session/view/content/verification/session_verification.rs:274
-msgid "Set Up"
-msgstr "Ayarla"
-
-#: src/session/view/content/verification/session_verification.rs:279
-msgid ""
-"No other devices are available to verify this session. You can either "
-"restore cross-signing from another device and restart this process or reset "
-"the encryption identity."
-msgstr ""
-"Bu oturumu doğrulamak için başka aygıt yok. Çapraz imzalamayı başka aygıttan "
-"geri yükleyebilir ve bu işlemi yeniden başlatabilir ya da şifreleme "
-"kimliğini sıfırlayabilirsiniz."
-
-#: src/session/view/content/verification/session_verification.rs:282
-#: src/session/view/content/verification/session_verification.rs:290
-#: src/session/view/content/verification/session_verification.ui:72
-msgid "Reset"
-msgstr "Sıfırla"
-
-#: src/session/view/content/verification/session_verification.rs:287
-msgid ""
-"If you lost access to all other sessions, you can create a new encryption "
-"identity. Be careful because this will cancel the verifications of all users "
-"and sessions."
-msgstr ""
-"Diğer tüm oturumlara erişiminizi yitirdiyseniz, yeni şifreleme kimliği "
-"oluşturabilirsiniz. Bu işlem tüm kullanıcıların ve oturumların "
-"doğrulamalarını iptal edeceğinden dikkatli olun."
-
-#: src/session/view/content/verification/session_verification.rs:435
-msgid ""
-"You cancelled the authentication needed to create the encryption identity."
-msgstr ""
-"Şifreleme kimliğini oluşturmak için gereken kimlik doğrulamasını iptal "
-"ettiniz."
-
-#: src/session/view/content/verification/session_verification.rs:441
-msgid "An error occurred during the creation of the encryption identity."
-msgstr "Şifreleme kimliğinin oluşturulması sırasında hata oluştu."
-
-#: src/session/view/content/verification/session_verification.ui:52
-msgid "No other devices logged into this account?"
-msgstr "Bu hesaba başka aygıt giriş yapmadı mı?"
-
-# Düğme olduğu için Kurtar çevirisi kullanıldı
-#: src/session/view/content/verification/session_verification.ui:61
-#: src/session/view/content/verification/session_verification.ui:168
-msgid "Recovery"
-msgstr "Kurtar"
-
-#: src/session/view/content/verification/session_verification.ui:111
-msgid "Set Up Encryption Identity"
-msgstr "Şifreleme Kimliğini Ayarla"
-
-#: src/session/view/content/verification/session_verification.ui:139
-msgid "Restart verification"
-msgstr "Doğrulamamayı yeniden başlat"
-
-#: src/session/view/content/verification/session_verification.ui:179
-msgid ""
-"Without another device you need a recovery passphrase or key to access your "
-"messages"
-msgstr ""
-"Başka aygıt olmadan iletilerinize erişmek için kurtarma parola metnine ya da "
-"anahtarına gereksinirsiniz"
-
-#: src/session/view/content/verification/session_verification.ui:188
-#: src/session/view/content/verification/session_verification.ui:245
-msgid "Recovery Passphrase"
-msgstr "Kurtarma Parola Metni"
-
-#: src/session/view/content/verification/session_verification.ui:198
-#: src/session/view/content/verification/session_verification.ui:310
-msgid "Recovery Key"
-msgstr "Kurtarma Anahtarı"
-
-#: src/session/view/content/verification/session_verification.ui:207
-msgid ""
-"If you don’t have any of these you can reset your identity, but be aware "
-"this makes your old messages inaccessible forever."
-msgstr ""
-"Bunlardan herhangi biri elinizde yoksa kimliğinizi sıfırlayabilirsiniz, "
-"ancak bunun eski iletilerinizi erişilemez yapacağını unutmayın."
-
-#: src/session/view/content/verification/session_verification.ui:217
-msgid "Reset Identity"
-msgstr "Kimliği Sıfırla"
-
-#: src/session/view/content/verification/session_verification.ui:256
-msgid ""
-"Your Recovery Passphrase was set up when you first created this account."
-msgstr "Kurtarma Parola Metniniz bu hesabı ilk oluşturduğunuzda ayarlanmıştır."
-
-#: src/session/view/content/verification/session_verification.ui:264
-msgid "If you opted for a Recovery Key instead go back and choose that option."
-msgstr ""
-"Bunun yerine bir Kurtarma Anahtarı seçtiyseniz geri dönün ve bu seçeneği "
-"seçin."
-
-#: src/session/view/content/verification/session_verification.ui:321
-msgid "Your Recovery Key was set up when you first created this account."
-msgstr "Kurtarma Anahtarınız bu hesabı ilk oluşturduğunuzda ayarlanmıştır."
-
-#: src/session/view/content/verification/session_verification.ui:329
-msgid ""
-"If you opted for a Recovery Passphrase instead go back and choose that "
-"option."
-msgstr ""
-"Bunun yerine bir Kurtarma Parola Metnini seçtiyseniz geri dönün ve bu "
-"seçeneği seçin."
-
-#: src/session/view/create_dm_dialog/mod.rs:162
+#: src/session/view/create_dm_dialog/mod.rs:135
 msgid "An error occurred while searching for users"
 msgstr "Kullanıcı aranırken hata oluştu"
 
-#: src/session/view/create_dm_dialog/mod.rs:204
+#: src/session/view/create_dm_dialog/mod.rs:177
+#: src/session/view/user_page.rs:300
 msgid "Failed to create a new Direct Chat"
-msgstr "Yeni Doğrudan İleti oluşturulamadı"
+msgstr "Yeni Doğrudan Sohbet oluşturulamadı"
 
 #: src/session/view/create_dm_dialog/mod.ui:4
 msgid "Direct Chat"
-msgstr "Doğrudan İleti"
+msgstr "Doğrudan Sohbet"
 
 #: src/session/view/create_dm_dialog/mod.ui:31
 msgid "New Direct Chat"
-msgstr "Yeni Doğrudan İleti"
+msgstr "Yeni Doğrudan Sohbet"
 
 #: src/session/view/create_dm_dialog/mod.ui:56
 msgid "Search for people to start a new chat with"
@@ -2301,34 +2236,117 @@ msgstr "Arama deseniyle eşleşen kullanıcı bulunamadı."
 msgid "An error occurred while searching for matches"
 msgstr "Eşleşmeler aranırken hata oluştu"
 
-#: src/session/view/event_source_dialog.ui:5
-msgid "Event Source"
-msgstr "Olay Kaynağı"
+#: src/session/view/event_details_dialog.rs:60
+#: src/session/view/event_details_dialog.rs:116
+msgid "Event ID copied to clipboard"
+msgstr "Olay kimliği panoya kopyalandı"
 
-#: src/session/view/event_source_dialog.ui:18
-#: src/session/view/event_source_dialog.ui:20
-msgid "Copy to Clipboard"
-msgstr "Panoya Kopyala"
+#: src/session/view/event_details_dialog.rs:71
+msgid "Room ID copied to clipboard"
+msgstr "Oda kimliği panoya kopyalandı"
 
-#. Translators: This is a verb, as in 'View Room'.
-#: src/session/view/join_room_dialog.rs:144
-msgid "_View"
-msgstr "_Görünüm"
+#: src/session/view/event_details_dialog.rs:82
+msgid "Sender ID copied to clipboard"
+msgstr "Gönderen kimliği panoya kopyalandı"
 
-#: src/session/view/join_room_dialog.rs:146
-#: src/session/view/join_room_dialog.ui:10
-msgid "_Join"
-msgstr "_Katıl"
+#: src/session/view/event_details_dialog.rs:93
+#: src/session/view/event_details_dialog.rs:127
+msgid "Timestamp copied to clipboard"
+msgstr "Zaman damgası panoya kopyalandı"
+
+#: src/session/view/event_details_dialog.rs:105
+#: src/session/view/event_details_dialog.rs:139
+msgid "Source copied to clipboard"
+msgstr "Kaynak panoya kopyalandı"
+
+#: src/session/view/event_details_dialog.ui:5
+msgid "Event Details"
+msgstr "Olay Ayrıntıları"
+
+#: src/session/view/event_details_dialog.ui:43
+msgid "Original Event"
+msgstr "Özgün Olay"
+
+#: src/session/view/event_details_dialog.ui:58
+#: src/session/view/event_details_dialog.ui:236
+msgid "Event ID"
+msgstr "Olay Kimliği"
+
+#: src/session/view/event_details_dialog.ui:72
+#: src/session/view/event_details_dialog.ui:250
+msgid "Copy event ID to clipboard"
+msgstr "Olay kimliğini panoya kopyala"
+
+#: src/session/view/event_details_dialog.ui:83
+msgid "Room ID"
+msgstr "Oda Kimliği"
+
+#: src/session/view/event_details_dialog.ui:99
+msgid "Copy room ID to clipboard"
+msgstr "Oda kimliğini panoya kopyala"
+
+#: src/session/view/event_details_dialog.ui:110
+msgid "Sender ID"
+msgstr "Gönderen Kimliği"
+
+#: src/session/view/event_details_dialog.ui:124
+msgid "Copy sender ID to clipboard"
+msgstr "Gönderen kimliğini panoya kopyala"
+
+#: src/session/view/event_details_dialog.ui:135
+#: src/session/view/event_details_dialog.ui:261
+msgid "Timestamp"
+msgstr "Zaman damgası"
+
+#: src/session/view/event_details_dialog.ui:149
+#: src/session/view/event_details_dialog.ui:275
+msgid "Copy timestamp to clipboard"
+msgstr "Zaman damgasını panoya kopyala"
+
+#: src/session/view/event_details_dialog.ui:160
+#: src/session/view/event_details_dialog.ui:286
+msgid "Source"
+msgstr "Kaynak"
+
+#: src/session/view/event_details_dialog.ui:170
+#: src/session/view/event_details_dialog.ui:296
+msgid "Copy source to clipboard"
+msgstr "Kaynağı panoya kopyala"
+
+#: src/session/view/event_details_dialog.ui:221
+msgid "Latest Edit"
+msgstr "En Son Düzenleme"
+
+#. Translators: This is a verb, as in 'Look up Room'.
+#: src/session/view/join_room_dialog.rs:200
+#: src/session/view/join_room_dialog.ui:89
+msgid "Look Up"
+msgstr "Ara"
+
+#: src/session/view/join_room_dialog.rs:263
+msgid ""
+"The room details cannot be previewed. It can be because the room is not "
+"known by the homeserver or because its details are private. You can still "
+"try to join it."
+msgstr ""
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/view/join_room_dialog.rs:285
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "{n} üye"
 
 #: src/session/view/join_room_dialog.ui:4
+#: src/session/view/join_room_dialog.ui:39
 msgid "Join a Room"
 msgstr "Odaya Katıl"
 
-#: src/session/view/join_room_dialog.ui:5
-msgid "Enter a room ID, room alias, or permalink."
-msgstr "Oda kimliği, oda takma adı ya da kalıcı bağlantı gir."
+#: src/session/view/join_room_dialog.ui:73
+msgid "Enter a room ID, room alias, or permalink to look up a room."
+msgstr "Oda aramak için, oda kimliği, oda takma adı ya da kalıcı bağlantı gir."
 
-#: src/session/view/media_viewer.rs:531
+#: src/session/view/media_viewer.rs:488
 msgid "Image copied to clipboard"
 msgstr "Görüntü panoya kopyalandı"
 
@@ -2348,59 +2366,59 @@ msgstr "Tam Ekran"
 msgid "Exit Fullscreen"
 msgstr "Tam Ekrandan Çık"
 
-#: src/session/view/room_creation.rs:232
+#: src/session/view/room_creation.rs:205
 msgid "The address is already taken."
 msgstr "Adres zaten alınmış."
 
-#: src/session/view/room_creation.rs:265
+#: src/session/view/room_creation.rs:237
 msgid "Can’t contain “:”"
 msgstr "“:” içeremez"
 
-#: src/session/view/room_creation.rs:270
+#: src/session/view/room_creation.rs:242
 msgid "Can’t contain “#”"
 msgstr "“#” içeremez"
 
-#: src/session/view/room_creation.rs:275
+#: src/session/view/room_creation.rs:247
 msgid "Too long. Use a shorter address."
 msgstr "Çok uzun. Daha kısa bir adres kullanın."
 
-#: src/session/view/room_creation.ui:39
+#: src/session/view/room_creation.ui:37
 msgid "New Room"
 msgstr "Yeni Oda"
 
-#: src/session/view/room_creation.ui:63
+#: src/session/view/room_creation.ui:61
 msgid "Topic (Optional)"
 msgstr "Konu (İsteğe Bağlı)"
 
-#: src/session/view/room_creation.ui:71
+#: src/session/view/room_creation.ui:69
 msgid "Room Visibility"
 msgstr "Oda Görünürlüğü"
 
-#: src/session/view/room_creation.ui:74
+#: src/session/view/room_creation.ui:72
 msgid "Private"
 msgstr "Özel"
 
-#: src/session/view/room_creation.ui:75
+#: src/session/view/room_creation.ui:73
 msgid "Only invited people can join this room"
 msgstr "Yalnızca davet edilmiş kişiler bu odaya katılabilir"
 
-#: src/session/view/room_creation.ui:88
+#: src/session/view/room_creation.ui:86
 msgid "Public"
 msgstr "Genel"
 
-#: src/session/view/room_creation.ui:89
+#: src/session/view/room_creation.ui:87
 msgid "Anyone can find and join this room"
 msgstr "Herkes bu odayı bulabilir ve katılabilir"
 
-#: src/session/view/room_creation.ui:107
+#: src/session/view/room_creation.ui:105
 msgid "End-to-End Encryption"
 msgstr "Uçtan Uca Şifreleme"
 
-#: src/session/view/room_creation.ui:108
+#: src/session/view/room_creation.ui:106
 msgid "Cannot be disabled later"
 msgstr "Sonra devre dışı bırakılamaz"
 
-#: src/session/view/room_creation.ui:120
+#: src/session/view/room_creation.ui:118
 msgid ""
 "Fractal does not support online backup for encryption keys yet, so you will "
 "need to back them up manually or your message history will be lost if you "
@@ -2410,74 +2428,74 @@ msgstr ""
 "desteklemiyor. Bu nedenle bunları elle yedeklemeniz gerekecek ya da tüm "
 "oturumlarınıza erişimi yitirirseniz ileti geçmişiniz yitecektir."
 
-#: src/session/view/room_creation.ui:134
+#: src/session/view/room_creation.ui:132
 msgid "Room Address"
 msgstr "Oda Adresi"
 
-#: src/session/view/room_creation.ui:184
+#: src/session/view/room_creation.ui:182
 msgid "_Create Room"
 msgstr "Oda _Oluştur"
 
 #. Translators: This is an action to join a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/category_row.rs:156
+#: src/session/view/sidebar/category_row.rs:88
 msgid "Join Room as Favorite"
 msgstr "Odaya Gözde Olarak Katıl"
 
-#: src/session/view/sidebar/category_row.rs:157
+#: src/session/view/sidebar/category_row.rs:89
 msgid "Join Room"
 msgstr "Odaya Katıl"
 
-#. Translators: This is an action to join a room and put it in the "Low Priority"
-#. section.
-#: src/session/view/sidebar/category_row.rs:160
+#. Translators: This is an action to join a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/category_row.rs:92
 msgid "Join Room as Low Priority"
 msgstr "Odaya Düşük Öncelikli Olarak Katıl"
 
-#: src/session/view/sidebar/category_row.rs:161
+#: src/session/view/sidebar/category_row.rs:93
 msgid "Reject Invite"
 msgstr "Daveti Reddet"
 
-#: src/session/view/sidebar/category_row.rs:165
-#: src/session/view/sidebar/category_row.rs:178
+#: src/session/view/sidebar/category_row.rs:97
+#: src/session/view/sidebar/category_row.rs:110
 msgid "Move to Rooms"
 msgstr "Odalarʼa Taşı"
 
-#: src/session/view/sidebar/category_row.rs:166
-#: src/session/view/sidebar/category_row.rs:172
+#: src/session/view/sidebar/category_row.rs:98
+#: src/session/view/sidebar/category_row.rs:104
 msgid "Move to Low Priority"
 msgstr "Düşük Önceliklilere Taşı"
 
-#: src/session/view/sidebar/category_row.rs:167
-#: src/session/view/sidebar/category_row.rs:173
-#: src/session/view/sidebar/category_row.rs:179
+#: src/session/view/sidebar/category_row.rs:99
+#: src/session/view/sidebar/category_row.rs:105
+#: src/session/view/sidebar/category_row.rs:111
 msgid "Leave Room"
 msgstr "Odayı Terk Et"
 
-#: src/session/view/sidebar/category_row.rs:171
-#: src/session/view/sidebar/category_row.rs:177
+#: src/session/view/sidebar/category_row.rs:103
+#: src/session/view/sidebar/category_row.rs:109
 msgid "Move to Favorites"
 msgstr "Gözdelerʼe Taşı"
 
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/category_row.rs:185
+#: src/session/view/sidebar/category_row.rs:117
 msgid "Rejoin Room as Favorite"
 msgstr "Odaya Yeniden Katıl ve Gözdelere Ekle"
 
-#: src/session/view/sidebar/category_row.rs:186
+#: src/session/view/sidebar/category_row.rs:118
 msgid "Rejoin Room"
 msgstr "Odaya Yeniden Katıl"
 
-#. Translators: This is an action to rejoin a room and put it in the "Low Priority"
-#. section.
-#: src/session/view/sidebar/category_row.rs:189
+#. Translators: This is an action to rejoin a room and put it in the "Low
+#. Priority" section.
+#: src/session/view/sidebar/category_row.rs:121
 msgid "Rejoin Room as Low Priority"
 msgstr "Odaya Yeniden Katıl ve Düşük Önceliklilere Ekle"
 
 #: src/session/view/sidebar/mod.ui:6
 msgid "New _Direct Chat"
-msgstr "Yeni _Doğrudan İleti"
+msgstr "Yeni _Doğrudan Sohbet"
 
 #: src/session/view/sidebar/mod.ui:10
 msgid "_New Room"
@@ -2511,57 +2529,170 @@ msgstr "_Odalarʼa Taşı"
 msgid "Move to Low _Priority"
 msgstr "_Düşük Önceliklilere Taşı"
 
-#: src/session/view/sidebar/mod.ui:66
-msgid "Re_join Room"
-msgstr "Odaya _Yeniden Katıl"
-
-#: src/session/view/sidebar/mod.ui:71
-msgid "_Forget Room"
-msgstr "Odayı _Unut"
-
-#: src/session/view/sidebar/mod.ui:86 src/session/view/sidebar/mod.ui:88
-msgid "Switch Accounts"
-msgstr "Hesap Değiştir"
-
-#: src/session/view/sidebar/mod.ui:111 src/session/view/sidebar/mod.ui:113
+#: src/session/view/sidebar/mod.ui:92 src/session/view/sidebar/mod.ui:94
 msgid "Main Menu"
 msgstr "Ana Menü"
 
-#: src/session/view/sidebar/mod.ui:122 src/session/view/sidebar/mod.ui:124
+#: src/session/view/sidebar/mod.ui:103 src/session/view/sidebar/mod.ui:105
 msgid "Toggle Room Search"
 msgstr "Oda Aramayı Aç/Kapat"
 
-#: src/session/view/sidebar/mod.ui:138
+#: src/session/view/sidebar/mod.ui:119
 msgid "Room Search"
 msgstr "Oda Arama"
 
-#: src/session/view/sidebar/mod.ui:139
+#: src/session/view/sidebar/mod.ui:120
 msgid "Search for a room"
 msgstr "Oda ara"
 
-#: src/session/view/sidebar/mod.ui:148
+#: src/session/view/sidebar/mod.ui:129
 msgid "Offline"
 msgstr "Çevrim Dışı"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:145
 msgid "Sidebar"
 msgstr "Kenar Çubuğu"
 
-#: src/session/view/sidebar/mod.ui:164
+#: src/session/view/sidebar/mod.ui:146
 msgid "Allows to navigate between rooms"
 msgstr "Odalar arasında gezinmeye izin verir"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:374 src/session/view/sidebar/row.rs:342
+#: src/session/view/sidebar/room_row.rs:362 src/session/view/sidebar/row.rs:297
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr ""
 "{room} odası {previous_category} kategorisinden {new_category} kategorisine "
 "taşınamadı."
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/room_row.rs:393 src/session/view/sidebar/row.rs:357
-msgid "Failed to forget {room}."
-msgstr "{room} odası unutulamadı."
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name. Presented to screen readers when a
+#. room is a direct chat with another user.
+#: src/session/view/sidebar/room_row.rs:424
+msgid "Direct chat with {name}"
+msgstr "{name} ile doğrudan sohbet"
+
+#: src/session/view/user_page.rs:274
+msgid "Open Direct Chat"
+msgstr "Doğrudan Sohbeti Aç"
+
+#: src/session/view/user_page.rs:276
+msgid "Create Direct Chat"
+msgstr "Doğrudan İleti Oluştur"
+
+#: src/session/view/user_page.rs:336
+msgid "In {room_name}"
+msgstr "{room_name} odasında"
+
+#. Translators: As in, 'The room member was invited'.
+#: src/session/view/user_page.rs:350
+msgctxt "member"
+msgid "Invited"
+msgstr "Davet Edildi"
+
+#. Translators: As in, 'The room member was banned'.
+#: src/session/view/user_page.rs:354
+msgctxt "member"
+msgid "Banned"
+msgstr "Yasaklanmış"
+
+#. Translators: As in, 'The room member knocked to request access to the room'.
+#: src/session/view/user_page.rs:358
+msgctxt "member"
+msgid "Knocked"
+msgstr "Çaldı"
+
+#. Translators: As in, 'The room member has an unknown role'.
+#: src/session/view/user_page.rs:362
+msgctxt "member"
+msgid "Unknown"
+msgstr "Bilinmeyen"
+
+#: src/session/view/user_page.rs:379
+msgid "Allow Access"
+msgstr "Erişime İzin Ver"
+
+#: src/session/view/user_page.rs:391 src/utils/message_dialog.rs:100
+msgid "Revoke Invite"
+msgstr "Daveti Geri Al"
+
+#: src/session/view/user_page.rs:392 src/utils/message_dialog.rs:112
+msgid "Deny Access"
+msgstr "Erişimi Reddet"
+
+#. Translators: As in, 'Kick room member'.
+#: src/session/view/user_page.rs:394 src/utils/message_dialog.rs:128
+msgid "Kick"
+msgstr "At"
+
+#: src/session/view/user_page.rs:451
+msgid "Failed to invite user"
+msgstr "Kullanıcı davet edilemedi"
+
+#: src/session/view/user_page.rs:488
+msgid "Failed to revoke invite of user"
+msgstr "Kullanıcı davetiyesi geri alınamadı"
+
+#: src/session/view/user_page.rs:489
+msgid "Failed to deny access to user"
+msgstr "Kullanıcıya erişim reddedilemedi"
+
+#: src/session/view/user_page.rs:490
+msgid "Failed to kick user"
+msgstr "Kullanıcı atılamadı"
+
+#: src/session/view/user_page.rs:529
+msgid "Failed to ban user"
+msgstr "Kullanıcı yasaklanamadı"
+
+#: src/session/view/user_page.rs:556
+msgid "Failed to unban user"
+msgstr "Kullanıcı yasağı kaldırılamadı"
+
+#: src/session/view/user_page.rs:578
+msgid "Identity not verified"
+msgstr "Kimlik doğrulanmadı"
+
+#: src/session/view/user_page.rs:594
+msgid "Failed to start user verification"
+msgstr "Kullanıcı doğrulama başlatılamadı"
+
+#: src/session/view/user_page.rs:620
+msgid "Ignored"
+msgstr "Yoksayılmış"
+
+#: src/session/view/user_page.rs:624
+msgid "Not Ignored"
+msgstr "Yoksayılmamış"
+
+#: src/session/view/user_page.rs:625
+msgid "Ignore"
+msgstr "Yoksay"
+
+#: src/session/view/user_page.rs:646
+msgid "Failed to ignore user"
+msgstr "Kullanıcı yoksayılamadı"
+
+#: src/session/view/user_page.ui:112
+msgid "Role"
+msgstr "Rol"
+
+#. Translators: As in, 'Ban room member'.
+#: src/session/view/user_page.ui:149 src/utils/message_dialog.rs:77
+msgid "Ban"
+msgstr "Yasakla"
+
+#. Translators: As in, 'Unban room member'.
+#: src/session/view/user_page.ui:159
+msgid "Unban"
+msgstr "Yasak Kaldır"
+
+#: src/session/view/user_profile_dialog.ui:4
+msgid "User Profile"
+msgstr "Kullanıcı Profili"
+
+#: src/session_list/mod.rs:254
+msgid "Failed to restore previous sessions"
+msgstr "Önceki oturumlar geri yüklenemedi"
 
 #: src/shortcuts.ui:11
 msgctxt "shortcut window"
@@ -2643,38 +2774,37 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Depo açılamadı."
 
-#: src/utils/matrix.rs:109
+#: src/utils/matrix.rs:120
 msgid "{user} sent an audio file."
 msgstr "{user} ses dosyası gönderdi."
 
-#: src/utils/matrix.rs:112 src/utils/matrix.rs:123 src/utils/matrix.rs:127
-#: src/utils/matrix.rs:131
-msgid "{user}: {message}"
-msgstr "{user}: {message}"
-
-#: src/utils/matrix.rs:115
+#: src/utils/matrix.rs:123
 msgid "{user} sent a file."
 msgstr "{user} dosya gönderdi."
 
-#: src/utils/matrix.rs:117
+#: src/utils/matrix.rs:125
 msgid "{user} sent an image."
 msgstr "{user} görüntü gönderdi."
 
-#: src/utils/matrix.rs:120
+#: src/utils/matrix.rs:128
 msgid "{user} sent their location."
 msgstr "{user} kendi konumunu gönderdi."
 
-#: src/utils/matrix.rs:135
+#: src/utils/matrix.rs:140
 msgid "{user} sent a video."
 msgstr "{user} video gönderdi."
 
-#: src/utils/matrix.rs:138
+#: src/utils/matrix.rs:143
 msgid "{user} sent a verification request."
 msgstr "{user} doğrulama isteği gönderdi."
 
-#: src/utils/matrix.rs:146
+#: src/utils/matrix.rs:151
 msgid "{user} sent a sticker."
 msgstr "{user} yapışkan gönderdi."
+
+#: src/utils/matrix.rs:161
+msgid "{user}: {message}"
+msgstr "{user}: {message}"
 
 #. Translators: Default name for image files.
 #: src/utils/media.rs:33
@@ -2701,11 +2831,11 @@ msgid "Could not save file"
 msgstr "Dosya kaydedilemedi"
 
 #. We are rejecting an invite.
-#: src/utils/message_dialog.rs:14
+#: src/utils/message_dialog.rs:19
 msgid "Decline Invite?"
 msgstr "Daveti Reddet?"
 
-#: src/utils/message_dialog.rs:16
+#: src/utils/message_dialog.rs:21
 msgid ""
 "Do you really want to decline this invite? You can join this room on your "
 "own later."
@@ -2713,7 +2843,7 @@ msgstr ""
 "Bu daveti gerçekten reddetmek istiyor musunuz? Bu odaya daha sonra kendiniz "
 "katılabilirsiniz."
 
-#: src/utils/message_dialog.rs:19
+#: src/utils/message_dialog.rs:24
 msgid ""
 "Do you really want to decline this invite? You won’t be able to join this "
 "room without it."
@@ -2722,15 +2852,15 @@ msgstr ""
 "katılamazsınız."
 
 #. We are leaving a room that was joined.
-#: src/utils/message_dialog.rs:27
+#: src/utils/message_dialog.rs:32
 msgid "Leave Room?"
 msgstr "Odayı Terk Et?"
 
-#: src/utils/message_dialog.rs:29
+#: src/utils/message_dialog.rs:34
 msgid "Do you really want to leave this room? You can come back later."
 msgstr "Gerçekten bu odadan çıkmak istiyor musunuz? Daha sonra gelebilirsiniz."
 
-#: src/utils/message_dialog.rs:32
+#: src/utils/message_dialog.rs:37
 msgid ""
 "Do you really want to leave this room? You won’t be able to come back "
 "without an invitation."
@@ -2738,10 +2868,623 @@ msgstr ""
 "Gerçekten bu odadan çıkmak istiyor musunuz? Davetiye olmadan geri "
 "gelemezsiniz."
 
-#: src/utils/message_dialog.rs:35
+#: src/utils/message_dialog.rs:40
 msgid "Leave"
 msgstr "Terk Et"
 
-#: src/window.rs:360
-msgid "Failed to restore previous sessions"
-msgstr "Önceki oturumlar geri yüklenemedi"
+#: src/utils/message_dialog.rs:72
+msgid "Ban {user}?"
+msgstr "{user} yasaklansın mı?"
+
+#: src/utils/message_dialog.rs:74
+msgid ""
+"Are you sure you want to ban {user_id}? They will not be able to join the "
+"room again until someone unbans them."
+msgstr ""
+"{user_id} kullanıcısını yasaklamak istediğinizden emin misiniz? Birisi "
+"yasağını kaldırana kadar odaya tekrar katılamayacak."
+
+#: src/utils/message_dialog.rs:86
+msgid "Revoke Invite for {user}?"
+msgstr "{user} için davet geri alınsın mı?"
+
+#: src/utils/message_dialog.rs:91
+msgid ""
+"Are you sure you want to revoke the invite for {user_id}? They will still be "
+"able to join the room on their own."
+msgstr ""
+"{user_id} için daveti geri almak istediğinizden emin misiniz? Yine de odaya "
+"kendileri katılabilecekler."
+
+#: src/utils/message_dialog.rs:96
+msgid ""
+"Are you sure you want to revoke the invite for {user_id}? They will not be "
+"able to join the room again until someone reinvites them."
+msgstr ""
+"{user_id} için daveti geri almak istediğinizden emin misiniz? Birisi "
+"kendilerini yeniden davet edene kadar odaya katılamayacaklar."
+
+#: src/utils/message_dialog.rs:105
+msgid "Deny Access to {user}?"
+msgstr "{user} Kullanıcısına Erişim Reddedilsin Mi?"
+
+#: src/utils/message_dialog.rs:109
+msgid "Are you sure you want to deny access to {user_id}?"
+msgstr "{user_id} kullanıcı erişimi reddetmek istediğinizden emin misiniz?"
+
+#: src/utils/message_dialog.rs:116
+msgid "Kick {user}?"
+msgstr "{user} atılsın mı?"
+
+#: src/utils/message_dialog.rs:119
+msgid ""
+"Are you sure you want to kick {user_id}? They will still be able to join the "
+"room again on their own."
+msgstr ""
+"{user_id} kullanıcısını atmak istediğinizden emin misiniz? Yine de odaya "
+"kendileri katılabilecekler."
+
+#: src/utils/message_dialog.rs:124
+msgid ""
+"Are you sure you want to kick {user_id}? They will not be able to join the "
+"room again until someone invites them."
+msgstr ""
+"{user_id} kullanıcısını atmak istediğinizden emin misiniz? Birisi "
+"kendilerini davet edene kadar odaya tekrar katılamayacaklar."
+
+#: src/utils/message_dialog.rs:138
+msgid "Reason (optional)"
+msgstr "Sebep (İsteğe Bağlı)"
+
+#: src/verification_view/identity_verification_view/accept_request_page.rs:123
+msgid "Login Request From Another Session"
+msgstr "Başka Oturumdan Giriş İsteği"
+
+#: src/verification_view/identity_verification_view/accept_request_page.rs:125
+msgid "Verify the new session from the current session."
+msgstr "Geçerli oturumdan yeni oturumu doğrula."
+
+#: src/verification_view/identity_verification_view/accept_request_page.rs:128
+#: src/verification_view/identity_verification_view/choose_method_page.rs:168
+#: src/verification_view/identity_verification_view/sas_page.rs:152
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:168
+msgid "Verification Request"
+msgstr "Doğrulama İsteği"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/accept_request_page.rs:132
+msgid ""
+"{user} asked to be verified. Verifying a user increases the security of the "
+"conversation."
+msgstr ""
+"{user} doğrulanmak istedi. Kullanıcının doğrulanması konuşma güvenliğini "
+"artırır."
+
+#: src/verification_view/identity_verification_view/accept_request_page.rs:155
+msgid "Failed to decline verification request"
+msgstr "Doğrulama isteği reddedilemedi"
+
+#: src/verification_view/identity_verification_view/accept_request_page.rs:172
+msgid "Failed to accept verification request"
+msgstr "Doğrulama isteği kabul edilemedi"
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:131
+msgid "The verification was cancelled from the other session."
+msgstr "Doğrulama diğer oturumdan iptal edildi."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/cancelled_page.rs:137
+msgid "The verification was cancelled by {user}."
+msgstr "Doğrulama {user} tarafından iptal edildi."
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:143
+msgid "The verification process failed because it reached a timeout."
+msgstr "Doğrulama işlemi, zaman aşımına uğradığı için başarısız oldu."
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:145
+msgid "You accepted the request from another session."
+msgstr "Başka oturumdan gelen isteği kabul ettiniz."
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:148
+msgid "The emoji did not match."
+msgstr "Emoji eşleşmiyor."
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:150
+msgid "The numbers did not match."
+msgstr "Sayılar eşleşmedi."
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:153
+msgid "An unexpected error happened during the verification process."
+msgstr "Doğrulama süreci sırasında beklenmedik hata oluştu."
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:158
+msgid "Verification Cancelled"
+msgstr "Doğrulama İptal Edildi"
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:160
+msgid "Verification Error"
+msgstr "Doğrulama Hatası"
+
+#: src/verification_view/identity_verification_view/cancelled_page.rs:183
+#: src/verification_view/session_verification_view.rs:430
+msgid "Failed to send a new verification request"
+msgstr "Yeni doğrulama isteği gönderilemedi"
+
+#: src/verification_view/identity_verification_view/cancelled_page.ui:37
+msgid "Send New Request"
+msgstr "Yeni İstek Gönder"
+
+#: src/verification_view/identity_verification_view/cancelled_page.ui:48
+#: src/verification_view/identity_verification_view/completed_page.ui:42
+msgid "Dismiss"
+msgstr "Kapat"
+
+#: src/verification_view/identity_verification_view/choose_method_page.rs:164
+msgid "Scan this QR code from the other session."
+msgstr "Bu QR kodunu diğer oturumdan tarayın."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/choose_method_page.rs:174
+msgid "Ask {user} to scan this QR code from their session."
+msgstr "{user} kullanıcısına QR kodunu oturumundan taramasını sor."
+
+#: src/verification_view/identity_verification_view/choose_method_page.rs:183
+msgid "Select a verification method to proceed."
+msgstr "Devam etmek için doğrulama yöntemi seçin."
+
+#: src/verification_view/identity_verification_view/choose_method_page.rs:186
+msgid "Click on the verification method to proceed."
+msgstr "Devam etmek için doğrulama yöntemine tıklayın."
+
+#: src/verification_view/identity_verification_view/choose_method_page.rs:219
+msgid "Failed to access camera"
+msgstr "Kameraya erişilemedi"
+
+#: src/verification_view/identity_verification_view/choose_method_page.rs:238
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:241
+msgid "Failed to start emoji verification"
+msgstr "Emoji doğrulaması başlatılamadı"
+
+#: src/verification_view/identity_verification_view/choose_method_page.rs:256
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.rs:173
+#: src/verification_view/identity_verification_view/qr_code_scanned_page.rs:144
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:259
+#: src/verification_view/identity_verification_view/wait_for_other_page.rs:159
+msgid "Failed to cancel the verification"
+msgstr "Doğrulama iptal edilemedi"
+
+#: src/verification_view/identity_verification_view/choose_method_page.ui:47
+#: src/verification_view/identity_verification_view/scan_qr_code_page.ui:44
+msgid "Can’t scan QR code?"
+msgstr "QR kod taranmıyor mu?"
+
+#: src/verification_view/identity_verification_view/choose_method_page.ui:56
+msgid "Scan QR code with this session"
+msgstr "Bu oturumla QR kodunu tara"
+
+#: src/verification_view/identity_verification_view/choose_method_page.ui:65
+#: src/verification_view/identity_verification_view/scan_qr_code_page.ui:62
+msgid "Compare Emoji"
+msgstr "Emoji Karşılaştır"
+
+#: src/verification_view/identity_verification_view/choose_method_page.ui:76
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:158
+#: src/verification_view/identity_verification_view/qr_code_scanned_page.ui:43
+#: src/verification_view/identity_verification_view/scan_qr_code_page.ui:73
+msgid "Cancel Verification"
+msgstr "Doğrulamayı İptal Et"
+
+#: src/verification_view/identity_verification_view/completed_page.rs:115
+msgid "Request Complete"
+msgstr "İstek Tamamlandı"
+
+#: src/verification_view/identity_verification_view/completed_page.rs:117
+msgid "The new session is now ready to send and receive secure messages."
+msgstr "Yeni oturum artık güvenli ileti göndermeye ve almaya hazır."
+
+#: src/verification_view/identity_verification_view/completed_page.rs:121
+msgid "Verification Complete"
+msgstr "Doğrulama Tamamlandı"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/completed_page.rs:124
+msgid ""
+"{user} is verified and you can now be sure that your communication will be "
+"private."
+msgstr ""
+"{user} doğrulandı ve artık iletişiminizin gizli olacağından emin "
+"olabilirsiniz."
+
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.rs:122
+msgid "Does the other session show a confirmation?"
+msgstr "Diğer oturum onay gösteriyor mu?"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.rs:128
+msgid "Does {user} see a confirmation on their session?"
+msgstr "{user} oturumunda onay görüyor mu?"
+
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.rs:155
+msgid "Failed to confirm the scan of the QR Code"
+msgstr "QR Kodunun taranması doğrulanamadı"
+
+#: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:19
+msgid "Confirm Scan"
+msgstr "Taramayı Doğrula"
+
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:129
+msgid ""
+"None of the methods offered by the other client are supported by Fractal."
+msgstr ""
+"Diğer istemci tarafından sunulan yöntemlerin hiçbiri Fractal tarafından "
+"desteklenmiyor."
+
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:132
+msgid ""
+"A login request was received, but none of the methods offered by the other "
+"client are supported by Fractal."
+msgstr ""
+"Giriş isteği alındı, ancak diğer istemci tarafından sunulan yöntemlerin "
+"hiçbiri Fractal tarafından desteklenmiyor."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:141
+msgid ""
+"None of the methods offered by {user}’s client are supported by Fractal."
+msgstr ""
+"{user} istemcisi tarafından sunulan yöntemlerin hiçbiri Fractal tarafından "
+"desteklenmiyor."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:148
+msgid ""
+"{user} sent a verification request, but none of the methods offered by the "
+"other client are supported by Fractal."
+msgstr ""
+"{user} doğrulama isteği gönderdi, ancak diğer istemci tarafından sunulan "
+"yöntemlerin hiçbiri Fractal tarafından desteklenmiyor."
+
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:160
+msgid "Decline Verification"
+msgstr "Doğrulamayı Reddet"
+
+#: src/verification_view/identity_verification_view/no_supported_methods_page.rs:183
+msgid "Failed to decline the verification"
+msgstr "Doğrulama reddedilemedi"
+
+#: src/verification_view/identity_verification_view/no_supported_methods_page.ui:22
+msgid "No Supported Verification Methods"
+msgstr "Desteklenen Doğrulama Yöntemi Yok"
+
+#: src/verification_view/identity_verification_view/no_supported_methods_page.ui:40
+msgid ""
+"You can accept this verification from another session or decline it for all "
+"your sessions."
+msgstr ""
+"Bu doğrulamayı başka oturumdan kabul edebilir ya da tüm oturumlarınız için "
+"reddedebilirsiniz."
+
+#: src/verification_view/identity_verification_view/qr_code_scanned_page.rs:117
+msgid ""
+"You scanned the QR code successfully. You may need to confirm the "
+"verification from the other session."
+msgstr ""
+"QR kodunu taradınız. Doğrulamayı diğer oturumdan onaylamanız gerekebilir."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/qr_code_scanned_page.rs:122
+msgid ""
+"You scanned the QR code successfully. {user} may need to confirm the "
+"verification."
+msgstr "QR kodunu taradınız. {user} doğrulamayı onaylaması gerekebilir."
+
+#: src/verification_view/identity_verification_view/qr_code_scanned_page.ui:19
+msgid "Scan Complete"
+msgstr "Tarama Tamamlandı"
+
+#: src/verification_view/identity_verification_view/sas_page.rs:143
+msgid "Check if the same emoji appear in the same order on the other client."
+msgstr ""
+"Aynı emojinin diğer istemcide de aynı sırada görünüp görünmediğini "
+"denetleyin."
+
+#: src/verification_view/identity_verification_view/sas_page.rs:147
+msgid "Check if the same numbers appear in the same order on the other client."
+msgstr ""
+"Aynı sayıların diğer istemcide da aynı sırada görünüp görünmediğini "
+"denetleyin."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/sas_page.rs:157
+msgid ""
+"Ask {user} if they see the following emoji appear in the same order on their "
+"screen."
+msgstr ""
+"{user} kullanıcısına aşağıdaki emojilerin ekranlarında aynı sırada görünüp "
+"görünmediğini sorun."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/sas_page.rs:164
+msgid ""
+"Ask {user} if they see the following numbers appear in the same order on "
+"their screen."
+msgstr ""
+"{user} kullanıcısına aşağıdaki sayıların ekranlarında aynı sırada görünüp "
+"görünmediğini sorun."
+
+#: src/verification_view/identity_verification_view/sas_page.rs:247
+msgid "Failed to send that the data does not match"
+msgstr "Veriler eşleşmediği için gönderilemedi"
+
+#: src/verification_view/identity_verification_view/sas_page.rs:264
+msgid "Failed to send confirmation that the data matches"
+msgstr "Verilerin eşleştiği onayı gönderilemedi"
+
+#. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
+#: src/verification_view/identity_verification_view/sas_page.ui:53
+msgid "Do Not Match"
+msgstr "Eşleşmiyor"
+
+# Burada eşleşme durumunu göstermek için kullanılmış. Verb değil Noun.
+#. Translators: During emoji comparison, this is the label of the button to click when the emojis match.
+#: src/verification_view/identity_verification_view/sas_page.ui:65
+msgid "Match"
+msgstr "Eşleşiyor"
+
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:165
+msgid "Scan the QR code displayed by the other session."
+msgstr "Diğer oturumca görüntülenen QR kodunu tarayın."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:172
+msgid "Scan the QR code shown on the device of {user}."
+msgstr "{user} aygıtında gösterilen QR kodunu tarayın."
+
+#: src/verification_view/identity_verification_view/scan_qr_code_page.rs:213
+msgid "Failed to validate scanned QR Code"
+msgstr "Taranan QR Kodu doğrulanamadı"
+
+#: src/verification_view/identity_verification_view/scan_qr_code_page.ui:53
+msgid "Show a QR code to scan with another device"
+msgstr "Başka aygıtta taramak için QR kodu göster"
+
+#: src/verification_view/identity_verification_view/wait_for_other_page.rs:120
+msgid "Get Another Device"
+msgstr "Başka Aygıt Getir"
+
+#: src/verification_view/identity_verification_view/wait_for_other_page.rs:122
+msgid "Accept the verification request from another session or device."
+msgstr "Başka oturumdan ya da aygıttan gelen doğrulama isteğini kabul et."
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/wait_for_other_page.rs:129
+msgid "Waiting for {user}"
+msgstr "{user} bekleniyor"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/verification_view/identity_verification_view/wait_for_other_page.rs:135
+msgid "Ask {user} to accept the verification request."
+msgstr "{user} kullanıcısına doğrulama isteğini kabul etmesini sor."
+
+#: src/verification_view/identity_verification_view/wait_for_other_page.ui:42
+msgid "The request is not showing up on the other device?"
+msgstr "İstek diğer aygıtta görünmüyor mu?"
+
+#: src/verification_view/identity_verification_view/wait_for_other_page.ui:51
+msgid "Cancel Verification Request"
+msgstr "Doğrulama İsteğini İptal Et"
+
+#: src/verification_view/session_verification_view.rs:320
+msgid ""
+"You need to set up an encryption identity, since it has never been created."
+msgstr "Hiç oluşturulmadığı bir şifreleme kimliği ayarlamanız gerekir."
+
+#: src/verification_view/session_verification_view.rs:324
+msgid "Set Up"
+msgstr "Ayarla"
+
+#: src/verification_view/session_verification_view.rs:327
+msgid ""
+"No other sessions are available to verify this session. You can either "
+"restore cross-signing from another session and restart this process, or "
+"reset the encryption identity."
+msgstr ""
+"Bu oturumu doğrulamak için başka oturum yok. Çapraz imzalamayı başka "
+"oturumdan geri yükleyebilir ve bu işlemi yeniden başlatabilirsiniz, ya da "
+"şifreleme kimliğini sıfırlayabilirsiniz."
+
+#: src/verification_view/session_verification_view.rs:330
+#: src/verification_view/session_verification_view.rs:336
+#: src/verification_view/session_verification_view.ui:78
+msgid "Reset"
+msgstr "Sıfırla"
+
+#: src/verification_view/session_verification_view.rs:333
+msgid ""
+"If you lost access to all other sessions, you can create a new encryption "
+"identity. Be careful because this will cancel the verifications of all users "
+"and sessions."
+msgstr ""
+"Diğer tüm oturumlara erişiminizi yitirdiyseniz, yeni şifreleme kimliği "
+"oluşturabilirsiniz. Bu işlem tüm kullanıcıların ve oturumların "
+"doğrulamalarını iptal edeceğinden dikkatli olun."
+
+#: src/verification_view/session_verification_view.rs:395
+msgid ""
+"You cancelled the authentication needed to create the encryption identity."
+msgstr ""
+"Şifreleme kimliğini oluşturmak için gereken kimlik doğrulamasını iptal "
+"ettiniz."
+
+#: src/verification_view/session_verification_view.rs:401
+msgid "An error occurred during the creation of the encryption identity."
+msgstr "Şifreleme kimliğinin oluşturulması sırasında hata oluştu."
+
+#: src/verification_view/session_verification_view.ui:27
+msgid "Verify Your New Session"
+msgstr "Yeni Oturumunuzu Doğrulayın"
+
+#: src/verification_view/session_verification_view.ui:38
+msgid ""
+"Verifying your session allows you and the people you chat with to be sure "
+"that no one is trying to impersonate you or intercept your conversations."
+msgstr ""
+"Oturumunuzu doğrulamak, kimsenin, sizi veya sohbet ettiğiniz kişileri taklit "
+"etmeye, ya da konuşmalarınızı ele geçirimeye çalışmadığından emin olmanızı "
+"sağlar."
+
+#: src/verification_view/session_verification_view.ui:47
+msgid "Verify With Another Session"
+msgstr "Başka Oturumla Doğrula"
+
+#: src/verification_view/session_verification_view.ui:57
+msgid "No other devices logged into this account?"
+msgstr "Bu hesaba başka aygıt giriş yapmadı mı?"
+
+# Düğme olduğu için Kurtar çevirisi kullanıldı
+#: src/verification_view/session_verification_view.ui:67
+#: src/verification_view/session_verification_view.ui:174
+msgid "Recovery"
+msgstr "Kurtar"
+
+#: src/verification_view/session_verification_view.ui:121
+msgid "Set Up Encryption Identity"
+msgstr "Şifreleme Kimliğini Ayarla"
+
+#: src/verification_view/session_verification_view.ui:185
+msgid ""
+"Without another device you need a recovery passphrase or key to access your "
+"messages"
+msgstr ""
+"Başka aygıt olmadan iletilerinize erişmek için kurtarma parola metnine ya da "
+"anahtarına gereksinirsiniz"
+
+#: src/verification_view/session_verification_view.ui:194
+#: src/verification_view/session_verification_view.ui:257
+msgid "Recovery Passphrase"
+msgstr "Kurtarma Parola Metni"
+
+#: src/verification_view/session_verification_view.ui:204
+#: src/verification_view/session_verification_view.ui:328
+msgid "Recovery Key"
+msgstr "Kurtarma Anahtarı"
+
+#: src/verification_view/session_verification_view.ui:213
+msgid ""
+"If you don’t have any of these you can reset your identity, but be aware "
+"this makes your old messages inaccessible forever."
+msgstr ""
+"Bunlardan herhangi biri elinizde yoksa kimliğinizi sıfırlayabilirsiniz, "
+"ancak bunun eski iletilerinizi erişilemez yapacağını unutmayın."
+
+#: src/verification_view/session_verification_view.ui:223
+msgid "Reset Identity"
+msgstr "Kimliği Sıfırla"
+
+#: src/verification_view/session_verification_view.ui:268
+msgid ""
+"Your Recovery Passphrase was set up when you first created this account."
+msgstr "Kurtarma Parola Metniniz bu hesabı ilk oluşturduğunuzda ayarlanmıştır."
+
+#: src/verification_view/session_verification_view.ui:276
+msgid "If you opted for a Recovery Key instead go back and choose that option."
+msgstr ""
+"Bunun yerine bir Kurtarma Anahtarı seçtiyseniz geri dönün ve bu seçeneği "
+"seçin."
+
+#: src/verification_view/session_verification_view.ui:339
+msgid "Your Recovery Key was set up when you first created this account."
+msgstr "Kurtarma Anahtarınız bu hesabı ilk oluşturduğunuzda ayarlanmıştır."
+
+#: src/verification_view/session_verification_view.ui:347
+msgid ""
+"If you opted for a Recovery Passphrase instead go back and choose that "
+"option."
+msgstr ""
+"Bunun yerine bir Kurtarma Parola Metnini seçtiyseniz geri dönün ve bu "
+"seçeneği seçin."
+
+#~ msgid "Found stored session with unsupported version {version_nb}"
+#~ msgstr "Desteklenmeyen {version_nb} sürümüne ait depolanan oturum bulundu"
+
+#~ msgid "Failed to load connected device."
+#~ msgstr "Bağlı aygıtlar yüklenemedi."
+
+#~ msgid "_View Source"
+#~ msgstr "Kaynağı _Göster"
+
+#~ msgid "Failed to copy the permalink"
+#~ msgstr "Kalıcı bağlantı kopyalanamadı"
+
+#~ msgid "Members"
+#~ msgstr "Üyeler"
+
+#~ msgid "_View"
+#~ msgstr "_Görünüm"
+
+#~ msgid "_Join"
+#~ msgstr "_Katıl"
+
+#~ msgid "Scan the QR code from another session logged into this account."
+#~ msgstr "Bu hesapta oturum açmış diğer oturumdan QR kodunu tarayın."
+
+#~ msgid "Scan this QR code from the newly logged in session."
+#~ msgstr "Yeni giriş yaptığınız oturumdan bu QR kodunu tarayın."
+
+#~ msgid "Restart verification"
+#~ msgstr "Doğrulamamayı yeniden başlat"
+
+#~ msgid "_Forgot Password?"
+#~ msgstr "_Parolanızı Mı Unuttunuz?"
+
+#~ msgid "Member Menu"
+#~ msgstr "Üye Menüsü"
+
+#~ msgid "_Verify"
+#~ msgstr "_Doğrula"
+
+#~ msgid "Make _Mod"
+#~ msgstr "_Mod Yap"
+
+#~ msgid "Make _Admin"
+#~ msgstr "_Yönetici Yap"
+
+#~ msgid "Session removed successfully."
+#~ msgstr "Oturum kaldırıldı."
+
+#~ msgid "Could not remove session from secret storage"
+#~ msgstr "Oturum giz deposundan kaldırılamadı"
+
+#~ msgid ""
+#~ "It seems like one of the Fractal sessions stored in the Secret Service is "
+#~ "corrupted. If you know how to fix it you should do so."
+#~ msgstr ""
+#~ "Giz Hizmeti’nde saklanan Fractal oturumlarından biri bozulmuş görünüyor. "
+#~ "Eğer nasıl yapacağınızı biliyorsanız onarmalısınız."
+
+#~ msgid ""
+#~ "Alternatively, we could disconnect this session for you. This means you "
+#~ "will have to login again and you will lose access to your encrypted "
+#~ "messages, unless you have a session open in another client or you have "
+#~ "already backed up your encryption keys."
+#~ msgstr ""
+#~ "Bir başka seçenek olarak, sizin için bu oturumun bağını koparabiliriz. "
+#~ "Bu, yeniden oturum açmanız gerektiği ve eğer başka istemcide açık "
+#~ "oturumunuz yoksa ya da şifreleme anahtarlarınızı yedeklememişseniz, "
+#~ "şifrelenmiş iletilere erişimi yitireceğiniz anlamına gelir."
+
+#~ msgid "Clicking this button might disconnect more than one session!"
+#~ msgstr "Bu düğmeye tıklamak birden çok oturumun bağını koparabilir!"
