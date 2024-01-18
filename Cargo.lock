@@ -1495,7 +1495,7 @@ dependencies = [
 
 [[package]]
 name = "fractal"
-version = "6.0.0-rc"
+version = "6.0.0"
 dependencies = [
  "ashpd",
  "djb_hash",

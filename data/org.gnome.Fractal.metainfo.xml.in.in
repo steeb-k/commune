@@ -15,7 +15,7 @@
     <ul>
       <li>Find rooms to discuss your favorite topics, or talk privately to people, securely thanks to end-to-end encryption</li>
       <li>Send rich formatted messages, files, or your current location</li>
-      <li>Reply to specific messages, react with emoji, edit or remove messages</li>
+      <li>Reply to specific messages, react with emoji, mention users or rooms, edit or remove messages</li>
       <li>View images, and play audio and video directly in the conversation</li>
       <li>See who has read messages, and who is typing</li>
       <li>Log into multiple accounts at once (with Single-Sign On support)</li>
@@ -65,69 +65,44 @@
   </content_rating>
 
   <releases>@development-release@
-    <release version="6~rc" type="development" date="2024-01-04">
+    <release version="6" type="stable" date="2024-01-18">
       <description>
         <p>
-          It is a new year 🎆️, and what better to way to celebrate this than to release Fractal
-          6.rc? It has been only 2 weeks since our latest beta release, but we have been hard at
-          work during the holidays.
+          Barely 2 months after Fractal 5, we feel there have been enough improvements to grant a
+          new stable release. You have probably noticed that we have adopted a version scheme
+          similar to GNOME and will bump the major version with each new release.
         </p>
         <p>
-          Here is an excerpt:
+          The list of goodies:
         </p>
         <ul>
           <li>
-            Matrix URIs can be opened with Fractal, it is even registered as a handler for the
-            matrix scheme
+            Fractal can open Matrix URIs, it is even registered as a handler for the “matrix”
+            scheme
           </li>
           <li>
-            Our Join Room dialog now shows some room details as a preview upon entering an
-            identifier or URI
+            The verification flow was rewritten, hopefully solving most verification issues
           </li>
           <li>
-            The verification flow was rewritten to rely more on the Matrix Rust SDK, hopefully
-            solving most issues that occurred before
+            Room members can be kicked, banned or ignored from their profile
           </li>
           <li>
-            Room members now have a profile page that allows, among other things, to kick, ban or
-            ignore them
+            More notifications settings, global or per-room, were added
           </li>
-          <li>Speaking of ignoring users, the list can be managed from the account settings</li>
           <li>
-            The dialog to view an event’s source was reworked to show more details about the
-            event
+            Times follow the format (12h or 24h) from the system settings
+          </li>
+          <li>
+            Tab auto-completion also works for mentioning public rooms, just start your query with
+            “#”
           </li>
         </ul>
         <p>
-          … and a lot of other improvements, fixes and new translations thanks to all our
-          contributors, and our upstream projects. As the version implies, it should be mostly
-          stable and we expect to only include minor improvements until the release of Fractal 6.
-        </p>
-      </description>
-    </release>
-    <release version="6~beta" type="development" date="2023-12-21">
-      <description>
-        <p>
-          Even though Fractal 5 was released only 1 month ago, development has been going at a
-          steady pace with a few new contributors, so we want our users to benefit from our
-          progress.
+          This version is fully translated into 6 languages 🙌️ and we hope to get even more 📈 for
+          the next one! Head over to Damned Lies if you want to give a hand.
         </p>
         <p>
-          The staff’s picks:
-        </p>
-        <ul>
-          <li>Restoring sessions from Secret Services other than GNOME Keyring has been fixed</li>
-          <li>Times follow the format (12h or 24h) from the system settings</li>
-          <li>Media history works in encrypted rooms</li>
-          <li>The accessibility of the sidebar was improved</li>
-          <li>More notifications settings were added, you can now set global and per-room behavior and even manage your keywords</li>
-          <li>A bunch of refactoring, notably the port to the <code>glib::Properties</code> macro from gtk-rs that helped us removed almost <em>3000</em> lines of code!</li>
-        </ul>
-        <p>
-          As usual, this release includes other improvements, fixes and new translations thanks to
-          all our contributors, and our upstream projects. As the version implies, there might be a
-          slight risk of regressions, but it should be mostly stable. If all goes well the next
-          step is the release candidate!
+          We would also like to thank our new and returning contributors and our upstream projects.
         </p>
       </description>
     </release>
