@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="SwitchLoadingRow" parent="AdwActionRow">
+    <property name="selectable">False</property>
+    <property name="activatable-widget">switch</property>
+    <child type="suffix">
+      <object class="GtkBox">
+        <property name="valign">center</property>
+        <property name="spacing">6</property>
+        <child>
+          <object class="Spinner" id="spinner">
+            <property name="accessible-role">status</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkSwitch" id="switch">
+            <property name="focusable">False</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -9,6 +9,7 @@ src/account_switcher/account_switcher_button.ui
 src/account_switcher/account_switcher_popover.ui
 src/account_switcher/session_item.ui
 src/application.rs
+src/components/action_button.ui
 src/components/auth_dialog.ui
 src/components/editable_avatar.rs
 src/components/editable_avatar.ui

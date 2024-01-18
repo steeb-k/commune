@@ -88,7 +88,8 @@ mod imp {
         fn set_user_session(&self, user_session: UserSession) {
             let obj = self.obj();
 
-            self.display_name.set_label(&user_session.display_name());
+            let session_name = user_session.display_name();
+            self.display_name.set_label(&session_name);
             obj.set_tooltip_text(Some(user_session.device_id().as_str()));
 
             self.verified_icon.set_visible(user_session.verified());

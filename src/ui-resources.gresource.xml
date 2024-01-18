@@ -12,6 +12,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/auth_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/avatar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/button_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/check_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/editable_avatar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading_bin.ui</file>
@@ -22,6 +23,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/room_title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/spinner_button.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/switch_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/toastable_window.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/video_player.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">contrib/qr_code_scanner/mod.ui</file>

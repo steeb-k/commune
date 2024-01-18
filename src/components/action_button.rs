@@ -32,7 +32,10 @@ impl AsRef<str> for ActionState {
 }
 
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
 
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
@@ -57,6 +60,9 @@ mod imp {
         /// The state of the button.
         #[property(get, set = Self::set_state, explicit_notify, builder(ActionState::default()))]
         pub state: Cell<ActionState>,
+        /// The tooltip text of the button of the default state.
+        #[property(set = Self::set_default_state_tooltip_text)]
+        pub default_state_tooltip_text: PhantomData<Option<String>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -139,6 +145,11 @@ mod imp {
         /// Set the target value of the action of the button.
         fn set_action_target(&self, value: Option<glib::Variant>) {
             self.action_target.replace(value);
+        }
+
+        /// Set the tooltip text of the button of the default state.
+        fn set_default_state_tooltip_text(&self, text: Option<String>) {
+            self.button_default.set_tooltip_text(text.as_deref());
         }
     }
 }

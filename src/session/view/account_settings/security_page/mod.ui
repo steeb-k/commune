@@ -8,6 +8,8 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="AdwActionRow">
+            <property name="selectable">False</property>
+            <property name="accessible-role">button</property>
             <property name="title" translatable="yes">Ignored Users</property>
             <property name="subtitle" translatable="yes">All messages or invitations sent by these users will be ignored. You will still see some of their activity, like when they join or leave a room.</property>
             <property name="activatable">True</property>
@@ -58,6 +60,10 @@
         <property name="title" translatable="yes">Cross-Signing</property>
         <child>
           <object class="AdwActionRow">
+            <property name="selectable">False</property>
+            <accessibility>
+              <relation name="described-by">master_key_status</relation>
+            </accessibility>
             <property name="title" translatable="yes">Master key</property>
             <child>
               <object class="GtkLabel" id="master_key_status">
@@ -68,6 +74,10 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="selectable">False</property>
+            <accessibility>
+              <relation name="described-by">self_signing_key_status</relation>
+            </accessibility>
             <property name="title" translatable="yes">Self-signing key</property>
             <child>
               <object class="GtkLabel" id="self_signing_key_status">
@@ -78,6 +88,10 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="selectable">False</property>
+            <accessibility>
+              <relation name="described-by">user_signing_key_status</relation>
+            </accessibility>
             <property name="title" translatable="yes">User-signing key</property>
             <child>
               <object class="GtkLabel" id="user_signing_key_status">

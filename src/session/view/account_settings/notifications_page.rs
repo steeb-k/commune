@@ -4,7 +4,7 @@ use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
 use crate::{
-    components::{LoadingBin, Spinner},
+    components::{CheckLoadingRow, LoadingBin, Spinner, SwitchLoadingRow},
     i18n::gettext_f,
     session::model::{NotificationsGlobalSetting, NotificationsSettings},
     spawn, toast,
@@ -29,23 +29,17 @@ mod imp {
     #[properties(wrapper_type = super::NotificationsPage)]
     pub struct NotificationsPage {
         #[template_child]
-        pub account_switch: TemplateChild<gtk::Switch>,
+        pub account_row: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         pub session_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         pub global: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub global_all_bin: TemplateChild<LoadingBin>,
+        pub global_all_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
-        pub global_all_radio: TemplateChild<gtk::CheckButton>,
+        pub global_direct_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
-        pub global_direct_bin: TemplateChild<LoadingBin>,
-        #[template_child]
-        pub global_direct_radio: TemplateChild<gtk::CheckButton>,
-        #[template_child]
-        pub global_mentions_bin: TemplateChild<LoadingBin>,
-        #[template_child]
-        pub global_mentions_radio: TemplateChild<gtk::CheckButton>,
+        pub global_mentions_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
         pub keywords: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -207,8 +201,9 @@ impl NotificationsPage {
         };
         let imp = self.imp();
 
-        imp.account_switch.set_active(settings.account_enabled());
-        imp.account_switch.set_sensitive(!self.account_loading());
+        let checked = settings.account_enabled();
+        imp.account_row.set_is_active(checked);
+        imp.account_row.set_sensitive(!self.account_loading());
 
         // Other sections will be disabled or not.
         self.update_session();
@@ -274,13 +269,13 @@ impl NotificationsPage {
         };
         let imp = self.imp();
 
-        let enabled = imp.account_switch.is_active();
+        let enabled = imp.account_row.is_active();
         if enabled == settings.account_enabled() {
             // Nothing to do.
             return;
         }
 
-        imp.account_switch.set_sensitive(false);
+        imp.account_row.set_sensitive(false);
         self.set_account_loading(true);
 
         spawn!(clone!(@weak self as obj, @weak settings => async move {
@@ -312,11 +307,11 @@ impl NotificationsPage {
         let imp = self.imp();
 
         // Only show the spinner on the selected one.
-        imp.global_all_bin
+        imp.global_all_row
             .set_is_loading(loading && setting == NotificationsGlobalSetting::All);
-        imp.global_direct_bin
+        imp.global_direct_row
             .set_is_loading(loading && setting == NotificationsGlobalSetting::DirectAndMentions);
-        imp.global_mentions_bin
+        imp.global_mentions_row
             .set_is_loading(loading && setting == NotificationsGlobalSetting::MentionsOnly);
 
         self.imp().global_loading.set(loading);
@@ -357,7 +352,10 @@ impl NotificationsPage {
 
         if let Some(string_obj) = item.downcast_ref::<gtk::StringObject>() {
             let keyword = string_obj.string();
-            let row = adw::ActionRow::builder().title(keyword.clone()).build();
+            let row = adw::ActionRow::builder()
+                .title(keyword.clone())
+                .selectable(false)
+                .build();
 
             let suffix = LoadingBin::new();
             let remove_button = gtk::Button::builder()

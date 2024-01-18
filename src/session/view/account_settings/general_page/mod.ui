@@ -8,6 +8,9 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="ComponentsEditableAvatar" id="avatar">
+            <accessibility>
+              <property name="label" translatable="yes">Account Avatar</property>
+            </accessibility>
             <binding name="data">
               <lookup name="avatar-data">
                 <lookup name="user">
@@ -25,6 +28,7 @@
         <child>
           <object class="AdwEntryRow" id="display_name">
             <property name="title" translatable="yes">Name</property>
+            <property name="selectable">False</property>
             <binding name="text">
               <lookup name="display-name">
                 <lookup name="user">
@@ -60,6 +64,7 @@
         <property name="title" translatable="yes">Advanced Information</property>
         <child>
           <object class="AdwActionRow" id="user_id">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Matrix User ID</property>
             <style>
               <class name="property"/>
@@ -79,6 +84,7 @@
         </child>
         <child>
           <object class="AdwActionRow" id="homeserver">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Homeserver</property>
             <style>
               <class name="property"/>
@@ -98,6 +104,7 @@
         </child>
         <child>
           <object class="AdwActionRow" id="session_id">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Session ID</property>
             <style>
               <class name="property"/>

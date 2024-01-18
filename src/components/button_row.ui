@@ -3,6 +3,7 @@
   <template class="ComponentsButtonRow" parent="AdwPreferencesRow">
     <property name="activatable">true</property>
     <property name="selectable">false</property>
+    <property name="accessible-role">button</property>
     <child>
       <object class="GtkBox">
         <style>

@@ -3,6 +3,9 @@
   <template class="AccountSettingsUserSessionRow">
     <property name="activatable">False</property>
     <property name="selectable">False</property>
+    <accessibility>
+      <relation name="labelled-by">header</relation>
+    </accessibility>
     <property name="child">
       <object class="GtkBox">
         <property name="orientation">vertical</property>
@@ -13,8 +16,8 @@
         <property name="margin-start">12</property>
         <property name="margin-end">12</property>
         <child>
-          <object class="GtkBox">
-            <property name="spacing">3</property>
+          <object class="GtkBox" id="header">
+            <property name="spacing">6</property>
             <child>
               <object class="GtkLabel" id="display_name">
                 <property name="xalign">0.0</property>
@@ -29,10 +32,6 @@
                 <property name="icon-name">verified-symbolic</property>
                 <!-- Translators: As in 'A verified session'. -->
                 <property name="tooltip-text" translatable="yes">Verified</property>
-                <accessibility>
-                  <!-- Translators: As in 'A verified session'. -->
-                  <property name="label" translatable="yes">Verified</property>
-                </accessibility>
                 <style>
                   <class name="success"/>
                 </style>

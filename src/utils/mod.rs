@@ -488,3 +488,12 @@ pub enum LoadingState {
     /// An error occurred while loading it.
     Error,
 }
+
+/// Convert the given checked `bool` to a `GtkAccessibleTristate`.
+pub fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTristate {
+    if checked {
+        gtk::AccessibleTristate::True
+    } else {
+        gtk::AccessibleTristate::False
+    }
+}

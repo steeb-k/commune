@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ComponentsEditableAvatar" parent="AdwBin">
+    <property name="accessible-role">group</property>
     <child>
       <object class="GtkOverlay">
         <property name="halign">center</property>
@@ -50,10 +51,7 @@
               <object class="ComponentsActionButton" id="button_remove">
                 <property name="icon-name">remove-symbolic</property>
                 <property name="action-name">editable-avatar.remove-avatar</property>
-                <property name="tooltip-text" translatable="yes">Remove Avatar</property>
-                <accessibility>
-                  <property name="label" translatable="yes">Remove Avatar</property>
-                </accessibility>
+                <property name="default-state-tooltip-text" translatable="yes">Remove Avatar</property>
               </object>
             </child>
           </object>
@@ -70,10 +68,7 @@
               <object class="ComponentsActionButton" id="button_edit">
                 <property name="icon-name">edit-symbolic</property>
                 <property name="action-name">editable-avatar.edit-avatar</property>
-                <property name="tooltip-text" translatable="yes">Select New Avatar</property>
-                <accessibility>
-                  <property name="label" translatable="yes">Select New Avatar</property>
-                </accessibility>
+                <property name="default-state-tooltip-text" translatable="yes">Select New Avatar</property>
               </object>
             </child>
           </object>
