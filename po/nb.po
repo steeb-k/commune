@@ -6,9 +6,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
-"Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/fractal/issues\n"
-"POT-Creation-Date: 2024-01-12 09:52+0000\n"
-"PO-Revision-Date: 2024-01-15 00:16+0100\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
+"POT-Creation-Date: 2024-01-18 11:28+0000\n"
+"PO-Revision-Date: 2024-01-19 08:09+0100\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -85,7 +85,7 @@ msgid ""
 "projects, and will fit all screens, big or small."
 msgstr ""
 "Fractal er en Matrix-meldingsapp for GNOME. Den er laget spesielt for "
-"samarbeid i store grupper, og vil passe alle skjermer, uansett størrelse.."
+"samarbeid i store grupper, og vil passe alle skjermer, uansett størrelse."
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
@@ -96,7 +96,7 @@ msgid ""
 "Find rooms to discuss your favorite topics, or talk privately to people, "
 "securely thanks to end-to-end encryption"
 msgstr ""
-"Finn åpne samtaler for å diskutere favorittemaene dine, eller snakk privat "
+"Finne åpne samtaler for å diskutere favorittemaene dine, eller snakke privat "
 "under fire øyne med ende-til-ende-kryptering"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:17
@@ -105,10 +105,12 @@ msgstr ""
 "Sende meldinger med formatert tekst, legge ved filer og dele posisjonen din"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:18
-msgid "Reply to specific messages, react with emoji, edit or remove messages"
+msgid ""
+"Reply to specific messages, react with emoji, mention users or rooms, edit "
+"or remove messages"
 msgstr ""
-"Svare på spesifikke meldinger, reagere med emojier, redigere meldinger og "
-"slette ting du har sendt"
+"Svare på spesifikke meldinger, reagere med emojier, nevne andre brukere og "
+"samtaler, redigere meldinger og slette ting du har sendt"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:19
 msgid "View images, and play audio and video directly in the conversation"
@@ -606,16 +608,16 @@ msgid "Normal user"
 msgstr "Vanlig bruker"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:292
+#: src/session/model/room/mod.rs:306
 msgid "Unknown"
 msgstr "Ukjent"
 
-#: src/session/model/room/mod.rs:1147
+#: src/session/model/room/mod.rs:1167
 msgid "Empty Room (was {user})"
 msgstr "Tom samtale (tidligere {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1150
+#: src/session/model/room/mod.rs:1170
 msgid "Empty Room"
 msgstr "Tom samtale"
 
@@ -1298,7 +1300,7 @@ msgstr "Samtaleliste"
 #: src/session/view/content/room_history/state_row/tombstone.rs:88
 #: src/session/view/join_room_dialog.rs:197
 msgid "View"
-msgstr "Vis"
+msgstr "Åpne"
 
 #: src/session/view/content/explore/public_room_row.rs:158
 #: src/session/view/content/room_history/mod.rs:914
@@ -1434,7 +1436,7 @@ msgstr "Lyd"
 
 #: src/session/view/content/room_details/general_page/mod.ui:206
 msgid "Which messages trigger notifications in this room."
-msgstr "Hvilke meldinger som utløser varslinger i denne samtalen."
+msgstr "Hvilke meldinger i denne samtalen som utløser varslinger."
 
 #: src/session/view/content/room_details/general_page/mod.ui:210
 msgid "Use the global setting"
@@ -2260,7 +2262,7 @@ msgstr "Rådata kopiert til utklippstavlen"
 
 #: src/session/view/event_details_dialog.ui:5
 msgid "Event Details"
-msgstr "Handlingsdetaljer"
+msgstr "Handlingsinformasjon"
 
 #: src/session/view/event_details_dialog.ui:43
 msgid "Original Event"
