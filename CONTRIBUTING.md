@@ -23,7 +23,11 @@ and ask us any questions you might have.
 
 Fractal is written in Rust, so you will need to have at least Rust 1.75 and Cargo available on your
 system. You will also need to install the Rust nightly toolchain to be able to run our
-[pre-commit hook](#pre-commit).
+[pre-commit hook](#pre-commit) which can be done with:
+
+```sh
+rustup toolchain install nightly
+```
 
 If you're building Fractal with Flatpak (via GNOME Builder or the command line), you will need to
 manually add the necessary remotes and install the required FreeDesktop extensions:
