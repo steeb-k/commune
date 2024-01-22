@@ -75,6 +75,14 @@ mod imp {
                     widget.show_subpage(subpage, false);
                 },
             );
+
+            klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
+                if obj.is_fullscreened() {
+                    obj.unfullscreen();
+                } else {
+                    obj.fullscreen();
+                }
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

@@ -11,7 +11,6 @@ use crate::{
     session::model::Room,
     spawn, toast,
     utils::{matrix::get_media_content, media::save_to_file},
-    Window,
 };
 
 const ANIMATION_DURATION: u32 = 250;
@@ -171,7 +170,7 @@ mod imp {
 
             // Bind `fullscreened` to the window property of the same name.
             obj.connect_root_notify(|obj| {
-                if let Some(window) = obj.root().and_downcast::<Window>() {
+                if let Some(window) = obj.root().and_downcast::<gtk::Window>() {
                     window
                         .bind_property("fullscreened", obj, "fullscreened")
                         .sync_create()
