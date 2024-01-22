@@ -65,7 +65,7 @@
                             <property name="valign">center</property>
                             <property name="spacing">24</property>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkLabel" id="look_up_instructions">
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -79,6 +79,9 @@
                             </child>
                             <child>
                               <object class="GtkSearchEntry" id="search_entry">
+                                <accessibility>
+                                  <relation name="described-by">look_up_instructions</relation>
+                                </accessibility>
                                 <signal name="search-changed" handler="update_entry_page" swapped="yes"/>
                                 <signal name="activate" handler="look_up_room" swapped="yes"/>
                               </object>
