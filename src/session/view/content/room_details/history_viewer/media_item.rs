@@ -1,3 +1,4 @@
+use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use matrix_sdk::{
     media::{MediaEventContent, MediaThumbnailSize},
@@ -10,7 +11,7 @@ use matrix_sdk::{
 use tracing::warn;
 
 use super::{HistoryViewerEvent, MediaHistoryViewer};
-use crate::{session::model::Session, spawn, spawn_tokio};
+use crate::{session::model::Session, spawn, spawn_tokio, utils::add_activate_binding_action};
 
 mod imp {
     use std::cell::RefCell;
@@ -45,7 +46,13 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.set_css_name("media-history-vieweritem");
+            klass.set_css_name("media-history-viewer-item");
+
+            klass.install_action("media-item.activate", None, move |widget, _, _| {
+                widget.activate();
+            });
+
+            add_activate_binding_action(klass, "media-item.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -111,7 +118,7 @@ mod imp {
 glib::wrapper! {
     /// A row presenting a media (image or video) event.
     pub struct MediaItem(ObjectSubclass<imp::MediaItem>)
-        @extends gtk::Widget;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
@@ -122,6 +129,12 @@ impl MediaItem {
         if let Some(icon) = imp.overlay_icon.take() {
             imp.overlay.remove_overlay(&icon);
         }
+
+        let filename = Some(image.body.clone())
+            .filter(|b| !b.is_empty())
+            .unwrap_or_else(|| gettext("Unnamed image"));
+
+        self.set_tooltip_text(Some(&filename));
 
         self.load_thumbnail(image, session);
     }
@@ -135,11 +148,18 @@ impl MediaItem {
                 .css_classes(vec!["osd".to_string()])
                 .halign(gtk::Align::Center)
                 .valign(gtk::Align::Center)
+                .accessible_role(gtk::AccessibleRole::Presentation)
                 .build();
 
             imp.overlay.add_overlay(&icon);
             imp.overlay_icon.replace(Some(icon));
         }
+
+        let filename = Some(video.body.clone())
+            .filter(|b| !b.is_empty())
+            .unwrap_or_else(|| gettext("Unnamed video"));
+
+        self.set_tooltip_text(Some(&filename));
 
         self.load_thumbnail(video, session);
     }
@@ -203,7 +223,7 @@ impl MediaItem {
     }
 
     #[template_callback]
-    fn handle_release(&self) {
+    fn activate(&self) {
         let media_history_viewer = self
             .ancestor(MediaHistoryViewer::static_type())
             .and_downcast::<MediaHistoryViewer>()

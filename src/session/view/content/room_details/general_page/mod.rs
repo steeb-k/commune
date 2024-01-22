@@ -12,7 +12,7 @@ use ruma::{assign, events::room::avatar::ImageInfo};
 use tracing::error;
 
 use crate::{
-    components::{CustomEntry, EditableAvatar, LoadingBin, SpinnerButton},
+    components::{CheckLoadingRow, CustomEntry, EditableAvatar, SpinnerButton},
     session::model::{AvatarData, AvatarImage, MemberList, NotificationsRoomSetting, Room},
     spawn, spawn_tokio, toast,
     utils::{
@@ -64,21 +64,13 @@ mod imp {
         #[template_child]
         pub notifications: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub notifications_global_bin: TemplateChild<LoadingBin>,
+        pub notifications_global_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
-        pub notifications_global_radio: TemplateChild<gtk::CheckButton>,
+        pub notifications_all_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
-        pub notifications_all_bin: TemplateChild<LoadingBin>,
+        pub notifications_mentions_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
-        pub notifications_all_radio: TemplateChild<gtk::CheckButton>,
-        #[template_child]
-        pub notifications_mentions_bin: TemplateChild<LoadingBin>,
-        #[template_child]
-        pub notifications_mentions_radio: TemplateChild<gtk::CheckButton>,
-        #[template_child]
-        pub notifications_mute_bin: TemplateChild<LoadingBin>,
-        #[template_child]
-        pub notifications_mute_radio: TemplateChild<gtk::CheckButton>,
+        pub notifications_mute_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
         pub room_id: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -696,13 +688,13 @@ impl GeneralPage {
         let imp = self.imp();
 
         // Only show the spinner on the selected one.
-        imp.notifications_global_bin
+        imp.notifications_global_row
             .set_is_loading(loading && setting == NotificationsRoomSetting::Global);
-        imp.notifications_all_bin
+        imp.notifications_all_row
             .set_is_loading(loading && setting == NotificationsRoomSetting::All);
-        imp.notifications_mentions_bin
+        imp.notifications_mentions_row
             .set_is_loading(loading && setting == NotificationsRoomSetting::MentionsOnly);
-        imp.notifications_mute_bin
+        imp.notifications_mute_row
             .set_is_loading(loading && setting == NotificationsRoomSetting::Mute);
 
         self.imp().notifications_loading.set(loading);

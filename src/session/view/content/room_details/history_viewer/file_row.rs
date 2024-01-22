@@ -5,7 +5,7 @@ use matrix_sdk::ruma::events::room::message::MessageType;
 use tracing::error;
 
 use super::HistoryViewerEvent;
-use crate::{prelude::*, toast};
+use crate::{gettext_f, prelude::*, toast};
 
 mod imp {
     use std::cell::RefCell;
@@ -73,7 +73,18 @@ mod imp {
 
             if let Some(event) = &event {
                 if let MessageType::File(file) = event.message_content() {
-                    self.title_label.set_label(&file.body);
+                    let filename = Some(file.body)
+                        .filter(|b| !b.is_empty())
+                        .unwrap_or_else(|| gettext("Unnamed file"));
+
+                    self.title_label.set_label(&filename);
+                    self.button
+                        .update_property(&[gtk::accessible::Property::Label(&gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "Save {filename}",
+                            &[("filename", &filename)],
+                        ))]);
 
                     if let Some(size) = file.info.and_then(|i| i.size) {
                         let size = glib::format_size(size.into());

@@ -23,6 +23,7 @@
                     <child>
                       <object class="ComponentsAvatar" id="avatar">
                         <property name="size">128</property>
+                        <property name="accessible-role">presentation</property>
                       </object>
                     </child>
                     <child>
@@ -110,13 +111,23 @@
                               <object class="AdwActionRow" id="role_row">
                                 <property name="selectable">False</property>
                                 <property name="title" translatable="yes">Role</property>
+                                <accessibility>
+                                  <relation name="described-by">role_group</relation>
+                                </accessibility>
                                 <child>
-                                  <object class="GtkLabel" id="role_label">
-                                    <property name="ellipsize">end</property>
+                                  <object class="GtkBox" id="role_group">
+                                    <property name="accessible-role">group</property>
+                                    <property name="focusable">True</property>
+                                    <property name="spacing">6</property>
+                                    <child>
+                                      <object class="GtkLabel" id="role_label">
+                                        <property name="ellipsize">end</property>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkLabel" id="power_level_label"/>
+                                    </child>
                                   </object>
-                                </child>
-                                <child>
-                                  <object class="GtkLabel" id="power_level_label"/>
                                 </child>
                               </object>
                             </child>
@@ -185,7 +196,6 @@
                             <child>
                               <object class="AdwActionRow" id="verified_row">
                                 <property name="selectable">False</property>
-                                <property name="activatable-widget">verify_button</property>
                                 <child>
                                   <object class="GtkStack" id="verified_stack">
                                     <property name="transition-type">crossfade</property>
@@ -225,7 +235,6 @@
                             <child>
                               <object class="AdwActionRow" id="ignored_row">
                                 <property name="selectable">False</property>
-                                <property name="activatable-widget">ignored_button</property>
                                 <child>
                                   <object class="SpinnerButton" id="ignored_button">
                                     <property name="valign">center</property>

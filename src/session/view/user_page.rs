@@ -46,6 +46,8 @@ mod imp {
         #[template_child]
         pub role_row: TemplateChild<adw::ActionRow>,
         #[template_child]
+        pub role_group: TemplateChild<gtk::Box>,
+        #[template_child]
         pub role_label: TemplateChild<gtk::Label>,
         #[template_child]
         pub power_level_label: TemplateChild<gtk::Label>,
@@ -340,10 +342,14 @@ impl UserPage {
             Membership::Leave => unreachable!(),
             Membership::Join => {
                 let power_level = member.power_level();
-                let role = MemberRole::from(power_level);
+                let role = MemberRole::from(power_level).to_string();
 
-                imp.role_label.set_label(&role.to_string());
+                imp.role_label.set_label(&role);
                 imp.power_level_label.set_label(&power_level.to_string());
+                imp.role_group
+                    .update_property(&[gtk::accessible::Property::Label(&format!(
+                        "{role} {power_level}"
+                    ))]);
             }
             Membership::Invite => {
                 // Translators: As in, 'The room member was invited'.

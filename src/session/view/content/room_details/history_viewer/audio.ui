@@ -26,6 +26,7 @@
 <interface>
   <template class="GtkListItem">
     <property name="activatable">False</property>
+    <property name="selectable">False</property>
     <property name="child">
       <object class="ContentAudioHistoryViewerRow">
         <property name="margin-top">6</property>

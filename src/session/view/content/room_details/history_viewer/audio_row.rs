@@ -6,7 +6,7 @@ use matrix_sdk::ruma::events::room::message::{AudioMessageEventContent, MessageT
 use tracing::warn;
 
 use super::HistoryViewerEvent;
-use crate::{session::model::Session, spawn, spawn_tokio};
+use crate::{gettext_f, session::model::Session, spawn, spawn_tokio};
 
 mod imp {
     use std::cell::RefCell;
@@ -68,7 +68,19 @@ mod imp {
 
             if let Some(event) = &event {
                 if let MessageType::Audio(audio) = event.message_content() {
-                    self.title_label.set_label(&audio.body);
+                    let filename = Some(audio.body.clone())
+                        .filter(|b| !b.is_empty())
+                        .unwrap_or_else(|| gettext("Unnamed audio"));
+
+                    self.title_label.set_label(&filename);
+                    self.play_button
+                        .update_property(&[gtk::accessible::Property::Label(&gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name. In this case, the file to play is an
+                            // audio file.
+                            "Play {filename}",
+                            &[("filename", &filename)],
+                        ))]);
 
                     if let Some(duration) = audio.info.as_ref().and_then(|i| i.duration) {
                         let duration_secs = duration.as_secs();

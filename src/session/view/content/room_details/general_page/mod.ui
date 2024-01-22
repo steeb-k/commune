@@ -9,6 +9,9 @@
         </style>
         <child>
           <object class="ComponentsEditableAvatar" id="avatar">
+            <accessibility>
+              <property name="label" translatable="yes">Room Avatar</property>
+            </accessibility>
             <binding name="editable">
               <lookup name="can-change-avatar">
                 <lookup name="permissions">
@@ -124,10 +127,12 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="AdwActionRow" id="members_row">
+            <property name="accessible-role">button</property>
             <property name="icon-name">users-symbolic</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'members'</property>
             <property name="activatable">True</property>
+            <property name="selectable">False</property>
             <child type="suffix">
               <object class="GtkLabel" id="members_count">
                 <property name="valign">center</property>
@@ -151,10 +156,12 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="AdwActionRow">
+            <property name="accessible-role">button</property>
             <property name="title" translatable="yes">Media</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'media-history'</property>
             <property name="activatable">True</property>
+            <property name="selectable">False</property>
             <child type="suffix">
               <object class="GtkImage">
                 <property name="valign">center</property>
@@ -167,10 +174,12 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="accessible-role">button</property>
             <property name="title" translatable="yes">Files</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'file-history'</property>
             <property name="activatable">True</property>
+            <property name="selectable">False</property>
             <child type="suffix">
               <object class="GtkImage">
                 <property name="valign">center</property>
@@ -183,11 +192,13 @@
         </child>
         <child>
           <object class="AdwActionRow">
+            <property name="accessible-role">button</property>
             <!-- Translators: As in 'Audio file'. -->
             <property name="title" translatable="yes">Audio</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'audio-history'</property>
             <property name="activatable">True</property>
+            <property name="selectable">False</property>
             <child type="suffix">
               <object class="GtkImage">
                 <property name="valign">center</property>
@@ -205,71 +216,31 @@
         <property name="title" translatable="yes">Notifications</property>
         <property name="description" translatable="yes">Which messages trigger notifications in this room.</property>
         <child>
-          <object class="AdwActionRow">
-            <property name="activatable-widget">notifications_global_radio</property>
+          <object class="CheckLoadingRow" id="notifications_global_row">
             <property name="title" translatable="yes">Use the global setting</property>
-            <child type="prefix">
-              <object class="LoadingBin" id="notifications_global_bin">
-                <property name="child">
-                  <object class="GtkCheckButton" id="notifications_global_radio">
-                    <property name="valign">center</property>
-                    <property name="action-name">room.set-notifications-setting</property>
-                    <property name="action-target">'global'</property>
-                  </object>
-                </property>
-              </object>
-            </child>
+            <property name="action-name">room.set-notifications-setting</property>
+            <property name="action-target">'global'</property>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
-            <property name="activatable-widget">notifications_all_radio</property>
+          <object class="CheckLoadingRow" id="notifications_all_row">
             <property name="title" translatable="yes">All messages</property>
-            <child type="prefix">
-              <object class="LoadingBin" id="notifications_all_bin">
-                <property name="child">
-                  <object class="GtkCheckButton" id="notifications_all_radio">
-                    <property name="valign">center</property>
-                    <property name="action-name">room.set-notifications-setting</property>
-                    <property name="action-target">'all'</property>
-                  </object>
-                </property>
-              </object>
-            </child>
+            <property name="action-name">room.set-notifications-setting</property>
+            <property name="action-target">'all'</property>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
-            <property name="activatable-widget">notifications_mentions_radio</property>
+          <object class="CheckLoadingRow" id="notifications_mentions_row">
             <property name="title" translatable="yes">Only mentions and keywords</property>
-            <child type="prefix">
-              <object class="LoadingBin" id="notifications_mentions_bin">
-                <property name="child">
-                  <object class="GtkCheckButton" id="notifications_mentions_radio">
-                    <property name="valign">center</property>
-                    <property name="action-name">room.set-notifications-setting</property>
-                    <property name="action-target">'mentions-only'</property>
-                  </object>
-                </property>
-              </object>
-            </child>
+            <property name="action-name">room.set-notifications-setting</property>
+            <property name="action-target">'mentions-only'</property>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
-            <property name="activatable-widget">notifications_mute_radio</property>
+          <object class="CheckLoadingRow" id="notifications_mute_row">
             <property name="title" translatable="yes">Disable notifications</property>
-            <child type="prefix">
-              <object class="LoadingBin" id="notifications_mute_bin">
-                <property name="child">
-                  <object class="GtkCheckButton" id="notifications_mute_radio">
-                    <property name="valign">center</property>
-                    <property name="action-name">room.set-notifications-setting</property>
-                    <property name="action-target">'mute'</property>
-                  </object>
-                </property>
-              </object>
-            </child>
+            <property name="action-name">room.set-notifications-setting</property>
+            <property name="action-target">'mute'</property>
           </object>
         </child>
       </object>
@@ -279,6 +250,7 @@
         <property name="title" translatable="yes">Advanced Information</property>
         <child>
           <object class="AdwActionRow" id="room_id">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Matrix Room ID</property>
             <binding name="subtitle">
               <lookup name="room-id-string">
@@ -303,6 +275,7 @@
         </child>
         <child>
           <object class="AdwActionRow" id="room_version">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Room Version</property>
             <binding name="subtitle">
               <lookup name="version">
@@ -316,6 +289,7 @@
         </child>
         <child>
           <object class="AdwActionRow" id="room_federated">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Federation</property>
             <style>
               <class name="property"/>

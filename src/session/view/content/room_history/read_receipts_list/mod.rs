@@ -10,22 +10,12 @@ use crate::{
     i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{Member, MemberList, UserReadReceipt},
-    utils::BoundObjectWeakRef,
+    utils::{add_activate_binding_action, BoundObjectWeakRef},
 };
 
 // Keep in sync with the `max-avatars` property of the `avatar_list` in the
 // UI file.
 const MAX_RECEIPTS_SHOWN: u32 = 10;
-
-/// List of keys that activate the list.
-// Same as GtkButton.
-const ACTIVATE_KEYS: &[gdk::Key] = &[
-    gdk::Key::space,
-    gdk::Key::KP_Space,
-    gdk::Key::Return,
-    gdk::Key::ISO_Enter,
-    gdk::Key::KP_Enter,
-];
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -92,14 +82,7 @@ mod imp {
                 widget.show_popover(1, 0.0, 0.0);
             });
 
-            for key in ACTIVATE_KEYS {
-                klass.add_binding_action(
-                    *key,
-                    gdk::ModifierType::empty(),
-                    "read-receipts-list.activate",
-                    None,
-                );
-            }
+            add_activate_binding_action(klass, "read_receipts-list.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

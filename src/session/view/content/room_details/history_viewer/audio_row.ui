@@ -11,10 +11,6 @@
             <property name="valign">center</property>
             <!-- Translators: As in "Play audio file". -->
             <property name="tooltip-text" translatable="yes">Play</property>
-            <accessibility>
-              <!-- Translators: As in "Play audio file". -->
-              <property name="label" translatable="yes">Play</property>
-            </accessibility>
             <style>
               <class name="circular"/>
               <class name="suggested-action"/>

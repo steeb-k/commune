@@ -21,7 +21,7 @@ use futures_util::{
     future::{self, Either, Future},
     pin_mut,
 };
-use gtk::{gio, glib, prelude::*};
+use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::UInt;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -495,5 +495,23 @@ pub fn bool_to_accessible_tristate(checked: bool) -> gtk::AccessibleTristate {
         gtk::AccessibleTristate::True
     } else {
         gtk::AccessibleTristate::False
+    }
+}
+
+/// List of keys that activate a widget.
+// Copied from GtkButton's source code.
+pub const ACTIVATE_KEYS: &[gdk::Key] = &[
+    gdk::Key::space,
+    gdk::Key::KP_Space,
+    gdk::Key::Return,
+    gdk::Key::ISO_Enter,
+    gdk::Key::KP_Enter,
+];
+
+/// Activate the given action when one of the [`ACTIVATE_KEYS`] binding is
+/// triggered.
+pub fn add_activate_binding_action<T: WidgetClassExt>(klass: &mut T, action: &str) {
+    for key in ACTIVATE_KEYS {
+        klass.add_binding_action(*key, gdk::ModifierType::empty(), action, None);
     }
 }
