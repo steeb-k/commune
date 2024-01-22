@@ -297,14 +297,14 @@ impl Session {
         let client = self.client();
         spawn_tokio!(async move {
             client
-                .register_notification_handler(move |notification, _, _| {
+                .register_notification_handler(move |notification, room, _| {
                     let obj_weak = obj_weak.clone();
                     async move {
                         let ctx = glib::MainContext::default();
                         ctx.spawn(async move {
                             spawn!(async move {
                                 if let Some(obj) = obj_weak.upgrade() {
-                                    obj.notifications().show(notification);
+                                    obj.notifications().show(notification, room).await;
                                 }
                             });
                         });

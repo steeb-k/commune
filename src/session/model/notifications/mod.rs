@@ -1,13 +1,6 @@
-use gtk::{
-    gio,
-    glib::{self, clone},
-    prelude::*,
-    subclass::prelude::*,
-};
-use ruma::{
-    api::client::push::get_notifications::v3::Notification, EventId, OwnedEventId, OwnedRoomId,
-    RoomId,
-};
+use gtk::{gio, glib, prelude::*, subclass::prelude::*};
+use matrix_sdk::{sync::Notification, Room as MatrixRoom};
+use ruma::{EventId, OwnedRoomId, RoomId};
 use tracing::{debug, error, warn};
 
 mod notifications_settings;
@@ -17,7 +10,11 @@ pub use self::notifications_settings::{
 };
 use super::{Room, Session};
 use crate::{
-    intent, prelude::*, spawn, spawn_tokio, utils::matrix::get_event_body, Application, Window,
+    intent,
+    prelude::*,
+    spawn_tokio,
+    utils::matrix::{get_event_body, AnySyncOrStrippedTimelineEvent},
+    Application, Window,
 };
 
 mod imp {
@@ -31,9 +28,8 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         pub session: glib::WeakRef<Session>,
-        /// A map of room ID to list of event IDs for which a notification was
-        /// sent to the system.
-        pub list: RefCell<HashMap<OwnedRoomId, Vec<OwnedEventId>>>,
+        /// A map of room ID to list of notification IDs.
+        pub list: RefCell<HashMap<OwnedRoomId, Vec<String>>>,
         /// The notifications settings for this session.
         #[property(get)]
         pub settings: NotificationsSettings,
@@ -77,13 +73,7 @@ impl Notifications {
     ///
     /// The notification won't be shown if the application is active and this
     /// session is displayed.
-    pub fn show(&self, matrix_notification: Notification) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.show_inner(matrix_notification).await;
-        }));
-    }
-
-    async fn show_inner(&self, matrix_notification: Notification) {
+    pub async fn show(&self, matrix_notification: Notification, matrix_room: MatrixRoom) {
         let Some(session) = self.session() else {
             return;
         };
@@ -96,6 +86,7 @@ impl Notifications {
         let app = Application::default();
         let window = app.active_window().and_downcast::<Window>();
         let session_id = session.session_id();
+        let room_id = matrix_room.room_id();
 
         // Don't show notifications for the current room in the current session if the
         // window is active.
@@ -104,32 +95,27 @@ impl Notifications {
                 && w.current_session_id().as_deref() == Some(session_id)
                 && w.session_view()
                     .selected_room()
-                    .is_some_and(|r| r.room_id() == matrix_notification.room_id)
+                    .is_some_and(|r| r.room_id() == room_id)
         }) {
             return;
         }
 
-        let Some(room) = session.room_list().get(&matrix_notification.room_id) else {
-            warn!(
-                "Could not display notification for missing room {}",
-                matrix_notification.room_id
-            );
+        let Some(room) = session.room_list().get(room_id) else {
+            warn!("Could not display notification for missing room {room_id}",);
             return;
         };
 
-        let event = match matrix_notification.event.deserialize() {
+        let event = match AnySyncOrStrippedTimelineEvent::from_raw(&matrix_notification.event) {
             Ok(event) => event,
             Err(error) => {
                 warn!(
-                    "Could not display notification for unrecognized event in room {}: {error}",
-                    matrix_notification.room_id
+                    "Could not display notification for unrecognized event in room {room_id}: {error}",
                 );
                 return;
             }
         };
 
         let is_direct = room.direct_member().is_some();
-        let matrix_room = room.matrix_room().clone();
         let sender_id = event.sender();
         let owned_sender_id = sender_id.to_owned();
         let handle =
@@ -148,7 +134,7 @@ impl Notifications {
             .and_then(|m| m.display_name())
             .unwrap_or_else(|| sender_id.localpart());
 
-        let body = match get_event_body(&event, sender_name, !is_direct) {
+        let body = match get_event_body(&event, sender_name, session.user_id(), !is_direct) {
             Some(body) => body,
             None => {
                 debug!("Received notification for event of unexpected type {event:?}",);
@@ -183,7 +169,7 @@ impl Notifications {
             .borrow_mut()
             .entry(room_id)
             .or_default()
-            .push(event_id.to_owned());
+            .push(id);
     }
 
     /// Ask the system to remove the known notifications for the given room.
@@ -191,16 +177,11 @@ impl Notifications {
     /// Only the notifications that were shown since the application's startup
     /// are known, older ones might still be present.
     pub fn withdraw_all_for_room(&self, room: &Room) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
         let room_id = room.room_id();
         if let Some(notifications) = self.imp().list.borrow_mut().remove(room_id) {
             let app = Application::default();
 
-            for event_id in notifications {
-                let id = notification_id(session.session_id(), room_id, &event_id);
+            for id in notifications {
                 app.withdraw_notification(&id);
             }
         }
@@ -211,17 +192,10 @@ impl Notifications {
     /// Only the notifications that were shown since the application's startup
     /// are known, older ones might still be present.
     pub fn clear(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
         let app = Application::default();
 
-        for (room_id, notifications) in self.imp().list.take() {
-            for event_id in notifications {
-                let id = notification_id(session.session_id(), &room_id, &event_id);
-                app.withdraw_notification(&id);
-            }
+        for id in self.imp().list.take().values().flatten() {
+            app.withdraw_notification(id);
         }
     }
 }
@@ -232,6 +206,11 @@ impl Default for Notifications {
     }
 }
 
-fn notification_id(session_id: &str, room_id: &RoomId, event_id: &EventId) -> String {
-    format!("{session_id}//{room_id}//{event_id}")
+fn notification_id(session_id: &str, room_id: &RoomId, event_id: Option<&EventId>) -> String {
+    if let Some(event_id) = event_id {
+        format!("{session_id}//{room_id}//{event_id}")
+    } else {
+        let random_id = glib::uuid_string_random();
+        format!("{session_id}//{room_id}//{random_id}")
+    }
 }

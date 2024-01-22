@@ -83,7 +83,10 @@ impl LinuxSystemSettings {
 
         let clock_format_changed_stream = match spawn_tokio!(async move {
             proxy
-                .receive_setting_changed_with_args(GNOME_DESKTOP_NAMESPACE, CLOCK_FORMAT_KEY)
+                .receive_setting_changed_with_args::<ClockFormat>(
+                    GNOME_DESKTOP_NAMESPACE,
+                    CLOCK_FORMAT_KEY,
+                )
                 .await
         })
         .await
@@ -97,10 +100,10 @@ impl LinuxSystemSettings {
         };
 
         let obj_weak = self.downgrade();
-        clock_format_changed_stream.for_each(move |setting| {
+        clock_format_changed_stream.for_each(move |value| {
             let obj_weak = obj_weak.clone();
             async move {
-                let clock_format = match ClockFormat::try_from(setting.value()) {
+                let clock_format = match value {
                     Ok(clock_format) => clock_format,
                     Err(error) => {
                         error!("Could not update clock format setting: {error}");

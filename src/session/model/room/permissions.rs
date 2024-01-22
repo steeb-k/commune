@@ -318,37 +318,9 @@ mod imp {
             self.obj().notify_can_send_reaction();
         }
 
-        /// Whether our own member can redact an event.
-        // TODO: use Ruma's method when it is fixed.
-        fn can_redact(&self, is_own: bool) -> bool {
-            if !self.is_joined.get() {
-                // We cannot do anything if the member is not joined.
-                return false;
-            }
-
-            let Some(own_member) = self.own_member() else {
-                return false;
-            };
-
-            let power_levels = self.power_levels.borrow();
-            let own_user_id = own_member.user_id();
-
-            if !power_levels.user_can_send_message(own_user_id, MessageLikeEventType::RoomRedaction)
-            {
-                return false;
-            }
-
-            if is_own {
-                // No more checks needed.
-                return true;
-            }
-
-            power_levels.user_can_redact(own_user_id)
-        }
-
         /// Update whether our own member can redact their own event.
         fn update_can_redact_own(&self) {
-            let can_redact_own = self.can_redact(true);
+            let can_redact_own = self.is_allowed_to(PowerLevelAction::RedactOwn);
 
             if self.can_redact_own.get() == can_redact_own {
                 return;
@@ -360,7 +332,7 @@ mod imp {
 
         /// Whether our own member can redact the event of another user.
         fn update_can_redact_other(&self) {
-            let can_redact_other = self.can_redact(false);
+            let can_redact_other = self.is_allowed_to(PowerLevelAction::RedactOther);
 
             if self.can_redact_other.get() == can_redact_other {
                 return;

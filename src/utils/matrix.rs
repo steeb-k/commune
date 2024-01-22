@@ -7,14 +7,21 @@ use std::{
 
 use html2pango::html_escape;
 use html5gum::{HtmlString, Token, Tokenizer};
-use matrix_sdk::{config::RequestConfig, Client, ClientBuildError};
+use matrix_sdk::{
+    config::RequestConfig, deserialized_responses::RawAnySyncOrStrippedTimelineEvent, Client,
+    ClientBuildError,
+};
 use ruma::{
-    events::{room::message::MessageType, AnyMessageLikeEventContent, AnySyncTimelineEvent},
+    events::{
+        room::{member::MembershipState, message::MessageType},
+        AnyMessageLikeEventContent, AnyStrippedStateEvent, AnySyncMessageLikeEvent,
+        AnySyncTimelineEvent,
+    },
     html::{HtmlSanitizerMode, RemoveReplyFallback},
     matrix_uri::MatrixId,
     serde::Raw,
-    IdParseError, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId,
-    OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomOrAliasId,
+    EventId, IdParseError, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId,
+    OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomOrAliasId, UserId,
 };
 use thiserror::Error;
 
@@ -97,20 +104,76 @@ pub fn validate_password(password: &str) -> PasswordValidity {
     validity
 }
 
+/// An deserialized event received in a sync response.
+#[derive(Debug, Clone)]
+pub enum AnySyncOrStrippedTimelineEvent {
+    /// An event from a joined or left room.
+    Sync(AnySyncTimelineEvent),
+    /// An event from an invited room.
+    Stripped(AnyStrippedStateEvent),
+}
+
+impl AnySyncOrStrippedTimelineEvent {
+    /// Deserialize the given raw event.
+    pub fn from_raw(raw: &RawAnySyncOrStrippedTimelineEvent) -> Result<Self, serde_json::Error> {
+        let ev = match raw {
+            RawAnySyncOrStrippedTimelineEvent::Sync(ev) => Self::Sync(ev.deserialize()?),
+            RawAnySyncOrStrippedTimelineEvent::Stripped(ev) => Self::Stripped(ev.deserialize()?),
+        };
+
+        Ok(ev)
+    }
+
+    /// The sender of the event.
+    pub fn sender(&self) -> &UserId {
+        match self {
+            AnySyncOrStrippedTimelineEvent::Sync(ev) => ev.sender(),
+            AnySyncOrStrippedTimelineEvent::Stripped(ev) => ev.sender(),
+        }
+    }
+
+    /// The ID of the event, if it's not a stripped state event.
+    pub fn event_id(&self) -> Option<&EventId> {
+        match self {
+            AnySyncOrStrippedTimelineEvent::Sync(ev) => Some(ev.event_id()),
+            AnySyncOrStrippedTimelineEvent::Stripped(_) => None,
+        }
+    }
+}
+
 /// Extract the body from the given event.
 ///
-/// Only returns the body for messages.
+/// If the event does not have a body but is supported, this will return a
+/// localized string.
+///
+/// Returns `None` if the event type is not supported.
+pub fn get_event_body(
+    event: &AnySyncOrStrippedTimelineEvent,
+    sender_name: &str,
+    own_user: &UserId,
+    show_sender: bool,
+) -> Option<String> {
+    match event {
+        AnySyncOrStrippedTimelineEvent::Sync(AnySyncTimelineEvent::MessageLike(message)) => {
+            get_message_event_body(message, sender_name, show_sender)
+        }
+        AnySyncOrStrippedTimelineEvent::Stripped(state) => {
+            get_stripped_state_event_body(state, sender_name, own_user)
+        }
+        _ => None,
+    }
+}
+
+/// Extract the body from the given message event.
 ///
 /// If it's a media message, this will return a localized body.
-pub fn get_event_body(
-    event: &AnySyncTimelineEvent,
+///
+/// Returns `None` if the message type is not supported.
+pub fn get_message_event_body(
+    event: &AnySyncMessageLikeEvent,
     sender_name: &str,
     show_sender: bool,
 ) -> Option<String> {
-    let AnySyncTimelineEvent::MessageLike(event) = event else {
-        return None;
-    };
-
     match event.original_content()? {
         AnyMessageLikeEventContent::RoomMessage(mut message) => {
             message.sanitize(HtmlSanitizerMode::Compat, RemoveReplyFallback::Yes);
@@ -164,6 +227,29 @@ fn text_event_body(message: String, sender_name: &str, show_sender: bool) -> Str
     } else {
         message
     }
+}
+
+/// Extract the body from the given state event.
+///
+/// This will return a localized body.
+///
+/// Returns `None` if the state event type is not supported.
+pub fn get_stripped_state_event_body(
+    event: &AnyStrippedStateEvent,
+    sender_name: &str,
+    own_user: &UserId,
+) -> Option<String> {
+    if let AnyStrippedStateEvent::RoomMember(member_event) = event {
+        if member_event.content.membership == MembershipState::Invite
+            && member_event.state_key == own_user
+        {
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            return Some(gettext_f("{user} invited you", &[("user", sender_name)]));
+        }
+    }
+
+    None
 }
 
 /// All errors that can occur when setting up the Matrix client.
