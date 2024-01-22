@@ -5,15 +5,15 @@
 # Çağatay Yiğit Şahin <cyigitsahin@outlook.com>, 2018.
 # Serdar Sağlam <teknomobil@yandex.com>, 2019.
 # Sabri Ünal <libreajans@gmail.com>, 2019, 2022, 2023.
-# Emin Tufan Çetin <etcetin@gmail.com>, 2019, 2021, 2023.
+# Emin Tufan Çetin <etcetin@gmail.com>, 2019, 2021, 2023, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-01-13 16:55+0000\n"
-"PO-Revision-Date: 2024-01-17 04:16+0300\n"
-"Last-Translator: Sabri Ünal <libreajans@gmail.com>\n"
+"POT-Creation-Date: 2024-01-18 11:28+0000\n"
+"PO-Revision-Date: 2024-01-22 08:00+0300\n"
+"Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
@@ -107,10 +107,12 @@ msgid "Send rich formatted messages, files, or your current location"
 msgstr "Zengin formatlı iletiler, dosyalar ya da konumunuzu gönderin"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:18
-msgid "Reply to specific messages, react with emoji, edit or remove messages"
+msgid ""
+"Reply to specific messages, react with emoji, mention users or rooms, edit "
+"or remove messages"
 msgstr ""
-"Belirli iletileri yanıtlayın, emoji ile tepki verin, iletileri düzenleyin ya "
-"da kaldırın"
+"Belirli iletileri yanıtlayın, emoji ile tepki verin, kullanıcıları ya da odaları "
+"etiketleyin, iletileri düzenleyin ya da kaldırın"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:19
 msgid "View images, and play audio and video directly in the conversation"
@@ -374,8 +376,8 @@ msgid ""
 "if your homeserver doesn’t support auto-discovery or if you want to provide "
 "the URL yourself."
 msgstr ""
-"“well-known lookup” olarak da bilinen kendiliğinden keşfet, Matrix ana "
-"sunucu URL’sini alan adından keşfetmeyi sağlar. Yalnızca ana sunucunuz "
+"“well-known lookup” olarak da bilinen kendiliğinden keşfet, Matrix ev "
+"sunucu URL’sini alan adından keşfetmeyi sağlar. Yalnızca ev sunucunuz "
 "kendiliğinden keşfetmeyi desteklemiyorsa ya da URL’yi kendiniz belirlemek "
 "istiyorsanız devre dışı bırakın."
 
@@ -879,7 +881,7 @@ msgstr "Matrix kullanıcı kimliğini panoya kopyala"
 
 #: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Copy homeserver address to clipboard"
-msgstr "Ana sunucu adresini panoya kopyala"
+msgstr "Ev sunucusu adresini panoya kopyala"
 
 #: src/session/view/account_settings/general_page/mod.ui:101
 msgid "Session ID"
@@ -980,29 +982,29 @@ msgstr "Anahtar Sözcük Ekle"
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
 #: src/session/view/user_page.rs:643
 msgid "Failed to stop ignoring user"
-msgstr "Kullanıcı yoksayılması durdurulamadı"
+msgstr "Kullanıcı yok sayılması durdurulamadı"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:27
 #: src/session/view/user_page.rs:621
 msgid "Stop Ignoring"
-msgstr "Yoksaymayı Durdur"
+msgstr "Yok Saymayı Durdur"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:4
 #: src/session/view/account_settings/security_page/mod.ui:11
 msgid "Ignored Users"
-msgstr "Yoksayılan Kullanıcılar"
+msgstr "Yok Sayılan Kullanıcılar"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:18
 msgid "Toggle Ignored Users Search"
-msgstr "Yoksayılan Kullanıcı Aramasını Aç/Kapat"
+msgstr "Yok Sayılan Kullanıcı Aramasını Aç/Kapat"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:33
 msgid "Search for ignored users"
-msgstr "Yoksayılan kullanıcıları ara"
+msgstr "Yok Sayılan kullanıcıları ara"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:74
 msgid "No Ignored Users"
-msgstr "Yoksayılan Kullanıcı Yok"
+msgstr "Yok Sayılan Kullanıcı Yok"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
 msgid "You can add users to this list from their room member profile."
@@ -1144,6 +1146,8 @@ msgid ""
 "All messages or invitations sent by these users will be ignored. You will "
 "still see some of their activity, like when they join or leave a room."
 msgstr ""
+"Bu kullanıcılarca gönderilen tüm iletiler ya da davetler yok sayılacak. "
+"Yine de odaya katılıp çıkmaları gibi bazı etkinliklerini görebilirsiniz."
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/mod.ui:37
@@ -2021,7 +2025,7 @@ msgstr "{name} gördü"
 
 #: src/session/view/content/room_history/state_row/creation.rs:69
 msgid "This is the continuation of an upgraded room."
-msgstr "Bu, güncellenmiş bir odanın devamıdır."
+msgstr "Bu, güncellenmiş bir odanın süreğidir."
 
 #: src/session/view/content/room_history/state_row/creation.rs:74
 msgid "This is the beginning of this room."
@@ -2329,6 +2333,8 @@ msgid ""
 "known by the homeserver or because its details are private. You can still "
 "try to join it."
 msgstr ""
+"Oda ayrıntıları ön izlenemez. Bu, odanın ev sunucusunca tanınmamasından ya da "
+"ayrıntıların gizli olmasından kaynaklanabilir. Yine de katılmayı deneyebilirsiniz."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -2658,19 +2664,19 @@ msgstr "Kullanıcı doğrulama başlatılamadı"
 
 #: src/session/view/user_page.rs:620
 msgid "Ignored"
-msgstr "Yoksayılmış"
+msgstr "Yok Sayılmış"
 
 #: src/session/view/user_page.rs:624
 msgid "Not Ignored"
-msgstr "Yoksayılmamış"
+msgstr "Yok Sayılmamış"
 
 #: src/session/view/user_page.rs:625
 msgid "Ignore"
-msgstr "Yoksay"
+msgstr "Yok Say"
 
 #: src/session/view/user_page.rs:646
 msgid "Failed to ignore user"
-msgstr "Kullanıcı yoksayılamadı"
+msgstr "Kullanıcı yok sayılamadı"
 
 #: src/session/view/user_page.ui:112
 msgid "Role"
@@ -2742,11 +2748,11 @@ msgstr "Hesap pasifleştirildi."
 msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
 msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
 msgstr[0] ""
-"Ana sunucunun hız sınırını aştınız. {n} saniye sonra yeniden deneyin."
+"Ev sunucusunun hız sınırını aştınız. {n} saniye sonra yeniden deneyin."
 
 #: src/user_facing_error.rs:51
 msgid "You exceeded the homeserver’s rate limit, try again later."
-msgstr "Ana sunucunun hız sınırını aştınız. Sonra yeniden deneyin."
+msgstr "Ev sunucusunun hız sınırını aştınız. Sonra yeniden deneyin."
 
 #: src/user_facing_error.rs:61
 msgid "An unknown connection error occurred."
@@ -2882,7 +2888,7 @@ msgid ""
 "room again until someone unbans them."
 msgstr ""
 "{user_id} kullanıcısını yasaklamak istediğinizden emin misiniz? Birisi "
-"yasağını kaldırana kadar odaya tekrar katılamayacak."
+"yasağını kaldırana dek odaya yeniden katılamayacak."
 
 #: src/utils/message_dialog.rs:86
 msgid "Revoke Invite for {user}?"
@@ -2894,7 +2900,7 @@ msgid ""
 "able to join the room on their own."
 msgstr ""
 "{user_id} için daveti geri almak istediğinizden emin misiniz? Yine de odaya "
-"kendileri katılabilecekler."
+"katılabilecekler."
 
 #: src/utils/message_dialog.rs:96
 msgid ""
@@ -2902,7 +2908,7 @@ msgid ""
 "able to join the room again until someone reinvites them."
 msgstr ""
 "{user_id} için daveti geri almak istediğinizden emin misiniz? Birisi "
-"kendilerini yeniden davet edene kadar odaya katılamayacaklar."
+"yeniden davet edene dek odaya katılamayacaklar."
 
 #: src/utils/message_dialog.rs:105
 msgid "Deny Access to {user}?"
@@ -2910,7 +2916,7 @@ msgstr "{user} Kullanıcısına Erişim Reddedilsin Mi?"
 
 #: src/utils/message_dialog.rs:109
 msgid "Are you sure you want to deny access to {user_id}?"
-msgstr "{user_id} kullanıcı erişimi reddetmek istediğinizden emin misiniz?"
+msgstr "{user_id} kullanıcısına erişimi reddetmek istediğinizden emin misiniz?"
 
 #: src/utils/message_dialog.rs:116
 msgid "Kick {user}?"
@@ -2922,7 +2928,7 @@ msgid ""
 "room again on their own."
 msgstr ""
 "{user_id} kullanıcısını atmak istediğinizden emin misiniz? Yine de odaya "
-"kendileri katılabilecekler."
+"katılabilecekler."
 
 #: src/utils/message_dialog.rs:124
 msgid ""
@@ -2930,7 +2936,7 @@ msgid ""
 "room again until someone invites them."
 msgstr ""
 "{user_id} kullanıcısını atmak istediğinizden emin misiniz? Birisi "
-"kendilerini davet edene kadar odaya tekrar katılamayacaklar."
+"davet edene dek odaya yeniden katılamayacaklar."
 
 #: src/utils/message_dialog.rs:138
 msgid "Reason (optional)"
@@ -3033,11 +3039,11 @@ msgstr "{user} kullanıcısına QR kodunu oturumundan taramasını sor."
 
 #: src/verification_view/identity_verification_view/choose_method_page.rs:183
 msgid "Select a verification method to proceed."
-msgstr "Devam etmek için doğrulama yöntemi seçin."
+msgstr "Sürdürmek için doğrulama yöntemi seç."
 
 #: src/verification_view/identity_verification_view/choose_method_page.rs:186
 msgid "Click on the verification method to proceed."
-msgstr "Devam etmek için doğrulama yöntemine tıklayın."
+msgstr "Sürdürmek için doğrulama yöntemine tıkla."
 
 #: src/verification_view/identity_verification_view/choose_method_page.rs:219
 msgid "Failed to access camera"
