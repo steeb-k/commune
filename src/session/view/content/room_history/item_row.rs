@@ -11,7 +11,7 @@ use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser, Spinner},
     prelude::*,
     session::{
-        model::{Event, EventKey, TimelineItem, VirtualItem, VirtualItemKind},
+        model::{Event, TimelineItem, VirtualItem, VirtualItemKind},
         view::EventDetailsDialog,
     },
     spawn, toast,
@@ -716,23 +716,9 @@ impl ItemRow {
         let Some(event_id) = event.event_id() else {
             return;
         };
-        let reaction_group = event.reactions().reaction_group_by_key(&key);
 
-        if let Some(reaction_key) = reaction_group.and_then(|group| group.user_reaction_event_key())
-        {
-            // The user already sent that reaction, redact it if it has been sent.
-            if let EventKey::EventId(reaction_id) = reaction_key {
-                if let Err(error) = event.room().redact(reaction_id, None).await {
-                    error!("Failed to remove reaction: {error}");
-                    toast!(self, gettext("Failed to remove reaction"));
-                }
-            }
-        } else {
-            // The user didn't send that reaction, send it.
-            if let Err(error) = event.room().send_reaction(key, event_id).await {
-                error!("Failed to add reaction: {error}");
-                toast!(self, gettext("Failed to add reaction"));
-            }
+        if event.room().toggle_reaction(key, event_id).await.is_err() {
+            toast!(self, gettext("Failed to toggle reaction"));
         }
     }
 }

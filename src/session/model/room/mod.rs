@@ -28,7 +28,6 @@ use matrix_sdk::{
 };
 use ruma::{
     events::{
-        reaction::ReactionEventContent,
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
         room::{
@@ -1323,17 +1322,17 @@ impl Room {
         );
     }
 
-    /// Send a `key` reaction for the `relates_to` event ID in this room.
-    pub async fn send_reaction(&self, key: String, relates_to: OwnedEventId) -> MatrixResult<()> {
-        let matrix_room = self.matrix_room().clone();
+    /// Toggle a `key` reaction for the `relates_to` event ID in this room.
+    pub async fn toggle_reaction(&self, key: String, relates_to: OwnedEventId) -> Result<(), ()> {
+        let timeline = self.timeline().matrix_timeline();
+        let annotation = Annotation::new(relates_to, key);
 
-        spawn_tokio!(async move {
-            matrix_room
-                .send(ReactionEventContent::new(Annotation::new(relates_to, key)))
-                .await
-        })
-        .await
-        .unwrap()?;
+        let handle = spawn_tokio!(async move { timeline.toggle_reaction(&annotation).await });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Failed to toggle reaction: {error}");
+            return Err(());
+        }
 
         Ok(())
     }
