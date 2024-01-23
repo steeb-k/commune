@@ -18,3 +18,10 @@ pages:
   artifacts:
     paths:
       - 'public'
+  rules:
+    - changes:
+        - src/**/*
+        - Cargo.lock
+        - Cargo.toml
+      when: always
+    - when: manual
