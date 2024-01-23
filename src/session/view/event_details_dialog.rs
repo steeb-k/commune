@@ -4,7 +4,7 @@ use gtk::{gdk, glib, CompositeTemplate};
 use sourceview::prelude::*;
 
 use crate::{
-    components::{ToastableWindow, ToastableWindowImpl},
+    components::{ButtonRow, ToastableWindow, ToastableWindowImpl},
     session::model::Event,
     toast, utils,
 };
@@ -24,6 +24,8 @@ mod imp {
         #[property(get, construct_only)]
         pub event: RefCell<Option<Event>>,
         #[template_child]
+        pub navigation_view: TemplateChild<adw::NavigationView>,
+        #[template_child]
         pub original_event_id_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub room_id_row: TemplateChild<adw::ActionRow>,
@@ -32,13 +34,13 @@ mod imp {
         #[template_child]
         pub original_timestamp_row: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub original_source_view: TemplateChild<sourceview::View>,
-        #[template_child]
         pub edit_event_id_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub edit_timestamp_row: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub edit_source_view: TemplateChild<sourceview::View>,
+        pub source_page: TemplateChild<adw::NavigationPage>,
+        #[template_child]
+        pub source_view: TemplateChild<sourceview::View>,
     }
 
     #[glib::object_subclass]
@@ -48,7 +50,10 @@ mod imp {
         type ParentType = ToastableWindow;
 
         fn class_init(klass: &mut Self::Class) {
+            ButtonRow::static_type();
+
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
 
             klass.install_action(
                 "event-details-dialog.copy-original-event-id",
@@ -95,18 +100,6 @@ mod imp {
             );
 
             klass.install_action(
-                "event-details-dialog.copy-original-source",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let buffer = obj.imp().original_source_view.buffer();
-                    let (start_iter, end_iter) = buffer.bounds();
-                    clipboard.set_text(&buffer.text(&start_iter, &end_iter, true));
-                    toast!(obj, gettext("Source copied to clipboard"))
-                },
-            );
-
-            klass.install_action(
                 "event-details-dialog.copy-edit-event-id",
                 None,
                 move |obj, _, _| {
@@ -129,11 +122,11 @@ mod imp {
             );
 
             klass.install_action(
-                "event-details-dialog.copy-edit-source",
+                "event-details-dialog.copy-source",
                 None,
                 move |obj, _, _| {
                     let clipboard = obj.clipboard();
-                    let buffer = obj.imp().edit_source_view.buffer();
+                    let buffer = obj.imp().source_view.buffer();
                     let (start_iter, end_iter) = buffer.bounds();
                     clipboard.set_text(&buffer.text(&start_iter, &end_iter, true));
                     toast!(obj, gettext("Source copied to clipboard"))
@@ -161,15 +154,7 @@ mod imp {
             let json_lang = sourceview::LanguageManager::default().language("json");
 
             let buffer = self
-                .original_source_view
-                .buffer()
-                .downcast::<sourceview::Buffer>()
-                .unwrap();
-            buffer.set_language(json_lang.as_ref());
-            utils::sourceview::setup_style_scheme(&buffer);
-
-            let buffer = self
-                .edit_source_view
+                .source_view
                 .buffer()
                 .downcast::<sourceview::Buffer>()
                 .unwrap();
@@ -189,11 +174,50 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl EventDetailsDialog {
     pub fn new(window: &gtk::Window, event: &Event) -> Self {
         glib::Object::builder()
             .property("transient-for", window)
             .property("event", event)
             .build()
+    }
+
+    /// View the given source.
+    fn show_source(&self, title: &str, source: &str) {
+        let imp = self.imp();
+
+        imp.source_view.buffer().set_text(source);
+        imp.source_page.set_title(title);
+        imp.navigation_view.push_by_tag("source");
+    }
+
+    /// View the original source.
+    #[template_callback]
+    fn show_original_source(&self) {
+        let Some(event) = self.event() else {
+            return;
+        };
+
+        if let Some(source) = event.source() {
+            let title = if event.is_edited() {
+                gettext("Original Event Source")
+            } else {
+                gettext("Event Source")
+            };
+            self.show_source(&title, &source);
+        }
+    }
+
+    /// View the source of the latest edit.
+    #[template_callback]
+    fn show_edit_source(&self) {
+        let Some(event) = self.event() else {
+            return;
+        };
+
+        let source = event.latest_edit_source();
+        let title = gettext("Latest Edit Source");
+        self.show_source(&title, &source);
     }
 }

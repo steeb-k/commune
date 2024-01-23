@@ -6,339 +6,309 @@
     <property name="destroy-with-parent">True</property>
     <property name="default-width">500</property>
     <property name="default-height">400</property>
+    <style>
+      <class name="event-details-dialog"/>
+    </style>
     <property name="child-content">
-      <object class="AdwToolbarView">
-        <child type="top">
-          <object class="GtkHeaderBar"/>
-        </child>
-        <property name="content">
-          <object class="GtkScrolledWindow">
-            <property name="hscrollbar-policy">never</property>
-            <property name="vexpand">true</property>
-            <style>
-              <class name="event-details-dialog"/>
-            </style>
+      <object class="AdwNavigationView" id="navigation_view">
+        <child>
+          <object class="AdwNavigationPage">
+            <property name="title" translatable="yes">Event Details</property>
+            <property name="tag">details</property>
             <property name="child">
-              <object class="AdwClamp">
-                <property name="vexpand">True</property>
-                <property name="margin-top">12</property>
-                <property name="margin-bottom">12</property>
-                <property name="margin-start">12</property>
-                <property name="margin-end">12</property>
-                <property name="child">
-                  <object class="GtkBox">
-                    <property name="orientation">vertical</property>
-                    <property name="spacing">24</property>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">12</property>
-                        <child>
-                          <object class="GtkLabel">
-                            <binding name="visible">
-                              <lookup name="is-edited">
-                                <lookup name="event">EventDetailsDialog</lookup>
-                              </lookup>
-                            </binding>
-                            <property name="label" translatable="yes">Original Event</property>
-                            <property name="ellipsize">end</property>
-                            <property name="xalign">0</property>
-                            <style>
-                              <class name="heading"/>
-                            </style>        
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBox">
-                            <style>
-                              <class name="boxed-list"/>
-                            </style>
+              <object class="AdwToolbarView">
+                <child type="top">
+                  <object class="AdwHeaderBar"/>
+                </child>
+                <property name="content">
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="vexpand">true</property>
+                    <property name="child">
+                      <object class="AdwClamp">
+                        <property name="vexpand">True</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                        <property name="child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">24</property>
                             <child>
-                              <object class="AdwActionRow" id="original_event_id_row">
-                                <property name="title" translatable="yes">Event ID</property>
-                                <binding name="subtitle">
-                                  <lookup name="event-id-string">
-                                    <lookup name="event">EventDetailsDialog</lookup>
-                                  </lookup>
-                                </binding>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="property"/>
-                                </style>
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">12</property>
                                 <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="action-name">event-details-dialog.copy-original-event-id</property>
-                                    <property name="tooltip-text" translatable="yes">Copy event ID to clipboard</property>
-                                    <property name="valign">center</property>
+                                  <object class="GtkLabel">
+                                    <binding name="visible">
+                                      <lookup name="is-edited">
+                                        <lookup name="event">EventDetailsDialog</lookup>
+                                      </lookup>
+                                    </binding>
+                                    <property name="label" translatable="yes">Original Event</property>
+                                    <property name="ellipsize">end</property>
+                                    <property name="xalign">0</property>
                                     <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwActionRow" id="room_id_row">
-                                <property name="title" translatable="yes">Room ID</property>
-                                <binding name="subtitle">
-                                  <lookup name="room-id-string">
-                                    <lookup name="room">
-                                      <lookup name="event">EventDetailsDialog</lookup>
-                                    </lookup>
-                                  </lookup>
-                                </binding>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="property"/>
-                                </style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="action-name">event-details-dialog.copy-room-id</property>
-                                    <property name="tooltip-text" translatable="yes">Copy room ID to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwActionRow" id="sender_id_row">
-                                <property name="title" translatable="yes">Sender ID</property>
-                                <binding name="subtitle">
-                                  <lookup name="sender-id-string">
-                                    <lookup name="event">EventDetailsDialog</lookup>
-                                  </lookup>
-                                </binding>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="property"/>
-                                </style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="action-name">event-details-dialog.copy-sender-id</property>
-                                    <property name="tooltip-text" translatable="yes">Copy sender ID to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwActionRow" id="original_timestamp_row">
-                                <property name="title" translatable="yes">Timestamp</property>
-                                <binding name="subtitle">
-                                  <lookup name="timestamp-full">
-                                    <lookup name="event">EventDetailsDialog</lookup>
-                                  </lookup>
-                                </binding>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="property"/>
-                                </style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="action-name">event-details-dialog.copy-original-timestamp</property>
-                                    <property name="tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwExpanderRow">
-                                <property name="title" translatable="yes">Source</property>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="sourceview-expander-row"/>
-                                </style>
-                                <child type="suffix">
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="focus-on-click">False</property>
-                                    <property name="action-name">event-details-dialog.copy-original-source</property>
-                                    <property name="tooltip-text" translatable="yes">Copy source to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
+                                      <class name="heading"/>
+                                    </style>        
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkScrolledWindow">
-                                    <property name="min-content-height">200</property>
-                                    <property name="child">
-                                      <object class="GtkSourceView" id="original_source_view">
-                                        <property name="can_focus">False</property>
-                                        <property name="editable">False</property>
-                                        <property name="hexpand">True</property>
-                                        <property name="vexpand">True</property>
-                                        <property name="wrap_mode">word-char</property>
-                                        <property name="left-margin">12</property>
-                                        <property name="right-margin">12</property>
-                                        <property name="top-margin">12</property>
-                                        <property name="bottom-margin">12</property>
-                                        <property name="buffer">
-                                          <object class="GtkSourceBuffer">
-                                            <binding name="text">
-                                              <lookup name="source">
-                                                <lookup name="event">EventDetailsDialog</lookup>
-                                              </lookup>
-                                            </binding>
+                                  <object class="GtkListBox">
+                                    <style>
+                                      <class name="boxed-list"/>
+                                    </style>
+                                    <child>
+                                      <object class="AdwActionRow" id="original_event_id_row">
+                                        <property name="title" translatable="yes">Event ID</property>
+                                        <binding name="subtitle">
+                                          <lookup name="event-id-string">
+                                            <lookup name="event">EventDetailsDialog</lookup>
+                                          </lookup>
+                                        </binding>
+                                        <property name="selectable">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">copy-symbolic</property>
+                                            <property name="action-name">event-details-dialog.copy-original-event-id</property>
+                                            <property name="tooltip-text" translatable="yes">Copy event ID to clipboard</property>
+                                            <property name="valign">center</property>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
                                           </object>
-                                        </property>
+                                        </child>
                                       </object>
-                                    </property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkBox">
-                        <binding name="visible">
-                          <lookup name="is-edited">
-                            <lookup name="event">EventDetailsDialog</lookup>
-                          </lookup>
-                        </binding>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">12</property>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="yes">Latest Edit</property>
-                            <property name="ellipsize">end</property>
-                            <property name="xalign">0</property>
-                            <style>
-                              <class name="heading"/>
-                            </style>        
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBox">
-                            <style>
-                              <class name="boxed-list"/>
-                            </style>
-                            <child>
-                              <object class="AdwActionRow" id="edit_event_id_row">
-                                <property name="title" translatable="yes">Event ID</property>
-                                <binding name="subtitle">
-                                  <lookup name="latest-edit-event-id-string">
-                                    <lookup name="event">EventDetailsDialog</lookup>
-                                  </lookup>
-                                </binding>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="property"/>
-                                </style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="action-name">event-details-dialog.copy-edit-event-id</property>
-                                    <property name="tooltip-text" translatable="yes">Copy event ID to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwActionRow" id="edit_timestamp_row">
-                                <property name="title" translatable="yes">Timestamp</property>
-                                <binding name="subtitle">
-                                  <lookup name="latest-edit-timestamp-full">
-                                    <lookup name="event">EventDetailsDialog</lookup>
-                                  </lookup>
-                                </binding>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="property"/>
-                                </style>
-                                <child>
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="action-name">event-details-dialog.copy-edit-timestamp</property>
-                                    <property name="tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                            <child>
-                              <object class="AdwExpanderRow">
-                                <property name="title" translatable="yes">Source</property>
-                                <property name="selectable">False</property>
-                                <style>
-                                  <class name="sourceview-expander-row"/>
-                                </style>
-                                <child type="suffix">
-                                  <object class="GtkButton">
-                                    <property name="icon-name">copy-symbolic</property>
-                                    <property name="focus-on-click">False</property>
-                                    <property name="action-name">event-details-dialog.copy-edit-source</property>
-                                    <property name="tooltip-text" translatable="yes">Copy source to clipboard</property>
-                                    <property name="valign">center</property>
-                                    <style>
-                                      <class name="flat"/>
-                                    </style>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkScrolledWindow">
-                                    <property name="min-content-height">200</property>
-                                    <property name="child">
-                                      <object class="GtkSourceView" id="edit_source_view">
-                                        <property name="can_focus">False</property>
-                                        <property name="editable">False</property>
-                                        <property name="hexpand">True</property>
-                                        <property name="vexpand">True</property>
-                                        <property name="wrap_mode">word-char</property>
-                                        <property name="left-margin">12</property>
-                                        <property name="right-margin">12</property>
-                                        <property name="top-margin">12</property>
-                                        <property name="bottom-margin">12</property>
-                                        <property name="buffer">
-                                          <object class="GtkSourceBuffer">
-                                            <binding name="text">
-                                              <lookup name="latest-edit-source">
-                                                <lookup name="event">EventDetailsDialog</lookup>
-                                              </lookup>
-                                            </binding>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="room_id_row">
+                                        <property name="title" translatable="yes">Room ID</property>
+                                        <binding name="subtitle">
+                                          <lookup name="room-id-string">
+                                            <lookup name="room">
+                                              <lookup name="event">EventDetailsDialog</lookup>
+                                            </lookup>
+                                          </lookup>
+                                        </binding>
+                                        <property name="selectable">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">copy-symbolic</property>
+                                            <property name="action-name">event-details-dialog.copy-room-id</property>
+                                            <property name="tooltip-text" translatable="yes">Copy room ID to clipboard</property>
+                                            <property name="valign">center</property>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
                                           </object>
-                                        </property>
+                                        </child>
                                       </object>
-                                    </property>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="sender_id_row">
+                                        <property name="title" translatable="yes">Sender ID</property>
+                                        <binding name="subtitle">
+                                          <lookup name="sender-id-string">
+                                            <lookup name="event">EventDetailsDialog</lookup>
+                                          </lookup>
+                                        </binding>
+                                        <property name="selectable">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">copy-symbolic</property>
+                                            <property name="action-name">event-details-dialog.copy-sender-id</property>
+                                            <property name="tooltip-text" translatable="yes">Copy sender ID to clipboard</property>
+                                            <property name="valign">center</property>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="original_timestamp_row">
+                                        <property name="title" translatable="yes">Timestamp</property>
+                                        <binding name="subtitle">
+                                          <lookup name="timestamp-full">
+                                            <lookup name="event">EventDetailsDialog</lookup>
+                                          </lookup>
+                                        </binding>
+                                        <property name="selectable">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">copy-symbolic</property>
+                                            <property name="action-name">event-details-dialog.copy-original-timestamp</property>
+                                            <property name="tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
+                                            <property name="valign">center</property>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="ComponentsButtonRow">
+                                        <property name="title" translatable="yes">View Source</property>
+                                        <property name="to-subpage">True</property>
+                                        <signal name="activated" handler="show_original_source" swapped="yes"/>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkBox">
+                                <binding name="visible">
+                                  <lookup name="is-edited">
+                                    <lookup name="event">EventDetailsDialog</lookup>
+                                  </lookup>
+                                </binding>
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">12</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="label" translatable="yes">Latest Edit</property>
+                                    <property name="ellipsize">end</property>
+                                    <property name="xalign">0</property>
+                                    <style>
+                                      <class name="heading"/>
+                                    </style>        
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkListBox">
+                                    <style>
+                                      <class name="boxed-list"/>
+                                    </style>
+                                    <child>
+                                      <object class="AdwActionRow" id="edit_event_id_row">
+                                        <property name="title" translatable="yes">Event ID</property>
+                                        <binding name="subtitle">
+                                          <lookup name="latest-edit-event-id-string">
+                                            <lookup name="event">EventDetailsDialog</lookup>
+                                          </lookup>
+                                        </binding>
+                                        <property name="selectable">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">copy-symbolic</property>
+                                            <property name="action-name">event-details-dialog.copy-edit-event-id</property>
+                                            <property name="tooltip-text" translatable="yes">Copy event ID to clipboard</property>
+                                            <property name="valign">center</property>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwActionRow" id="edit_timestamp_row">
+                                        <property name="title" translatable="yes">Timestamp</property>
+                                        <binding name="subtitle">
+                                          <lookup name="latest-edit-timestamp-full">
+                                            <lookup name="event">EventDetailsDialog</lookup>
+                                          </lookup>
+                                        </binding>
+                                        <property name="selectable">False</property>
+                                        <style>
+                                          <class name="property"/>
+                                        </style>
+                                        <child>
+                                          <object class="GtkButton">
+                                            <property name="icon-name">copy-symbolic</property>
+                                            <property name="action-name">event-details-dialog.copy-edit-timestamp</property>
+                                            <property name="tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
+                                            <property name="valign">center</property>
+                                            <style>
+                                              <class name="flat"/>
+                                            </style>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="ComponentsButtonRow">
+                                        <property name="title" translatable="yes">View Source</property>
+                                        <property name="to-subpage">True</property>
+                                        <signal name="activated" handler="show_edit_source" swapped="yes"/>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
                               </object>
                             </child>
                           </object>
-                        </child>
+                        </property>
                       </object>
-                    </child>
+                    </property>
                   </object>
                 </property>
               </object>
             </property>
           </object>
-        </property>
+        </child>
+        <child>
+          <object class="AdwNavigationPage" id="source_page">
+            <property name="tag">source</property>
+            <property name="child">
+              <object class="AdwToolbarView">
+                <child type="top">
+                  <object class="AdwHeaderBar">
+                    <child type="end">
+                      <object class="GtkButton">
+                        <property name="icon-name">copy-symbolic</property>
+                        <property name="focus-on-click">False</property>
+                        <property name="action-name">event-details-dialog.copy-source</property>
+                        <property name="tooltip-text" translatable="yes">Copy source to clipboard</property>
+                        <property name="valign">center</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <property name="content">
+                  <object class="GtkScrolledWindow">
+                    <property name="child">
+                      <object class="GtkSourceView" id="source_view">
+                        <property name="can_focus">False</property>
+                        <property name="editable">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="vexpand">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="left-margin">12</property>
+                        <property name="right-margin">12</property>
+                        <property name="top-margin">12</property>
+                        <property name="bottom-margin">12</property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
       </object>
     </property>
   </template>
