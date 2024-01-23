@@ -1,6 +1,8 @@
-//! Default implementation of the secret API for unsuppoted platforms.
+//! Default implementation of the secret API for unsupported platforms.
 
-/// Retrieves all sessions stored to the `SecretService`
+use super::{SecretError, StoredSession};
+
+/// Retrieves all sessions stored to the `SecretService`.
 pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
     unimplemented!()
 }
