@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-01-23 15:03+0000\n"
-"PO-Revision-Date: 2024-01-23 16:48+0100\n"
+"POT-Creation-Date: 2024-01-23 15:52+0000\n"
+"PO-Revision-Date: 2024-01-23 17:52+0100\n"
 "Last-Translator: Daniel Rusek <mail@asciiwolf.com>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -93,7 +93,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
-msgstr "Podstatné vlastnosti:"
+msgstr "Hlavní přednosti:"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:16
 msgid ""
@@ -166,7 +166,6 @@ msgid "Account Settings"
 msgstr "Nastavení účtu"
 
 #: src/application.rs:199
-#| msgid "© 2017-2023 The Fractal Team"
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Tým Fractal"
 
@@ -1437,12 +1436,10 @@ msgid "Join"
 msgstr "Vstoupit"
 
 #: src/session/view/content/explore/public_room_row.rs:176
-#| msgid "Leave {room_name}?"
 msgid "View {room_name}"
 msgstr "Zobrazit {room_name}"
 
 #: src/session/view/content/explore/public_room_row.rs:178
-#| msgid "Join room"
 msgid "Join {room_name}"
 msgstr "Vstoupit do {room_name}"
 
@@ -1515,7 +1512,6 @@ msgid "Room History"
 msgstr "Historie místností"
 
 #: src/session/view/content/mod.ui:50
-#| msgid "Invite"
 msgid "Room Invite"
 msgstr "Pozvání do místnosti"
 
@@ -1691,7 +1687,6 @@ msgstr "Nepojmenovaný soubor"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/view/content/room_details/history_viewer/file_row.rs:85
-#| msgid "Save File"
 msgid "Save {filename}"
 msgstr "Uložit {filename}"
 
