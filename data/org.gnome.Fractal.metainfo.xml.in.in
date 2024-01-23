@@ -5,7 +5,7 @@
   <id>@app-id@</id>
   <launchable type="desktop-id">@app-id@.desktop</launchable>
   <name>Fractal</name>
-  <summary>Matrix group messaging app</summary>
+  <summary>Chat on Matrix</summary>
   <description>
     <p>
       Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
