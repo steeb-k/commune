@@ -28,7 +28,7 @@ mod imp {
         #[template_child]
         pub sso_idp_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub more_sso_option: TemplateChild<gtk::Button>,
+        pub more_sso_btn: TemplateChild<gtk::Button>,
         #[template_child]
         pub next_button: TemplateChild<SpinnerButton>,
         /// The parent `Login` object.
@@ -149,7 +149,7 @@ impl LoginMethodPage {
             Some(sso) => sso,
             None => {
                 imp.sso_idp_box.set_visible(false);
-                imp.more_sso_option.set_visible(false);
+                imp.more_sso_btn.set_visible(false);
                 return;
             }
         };
@@ -171,7 +171,14 @@ impl LoginMethodPage {
         }
 
         imp.sso_idp_box.set_visible(has_known_methods);
-        imp.more_sso_option.set_visible(has_unknown_methods);
+
+        if has_known_methods {
+            imp.more_sso_btn.set_label(&gettext("More SSO Providers"));
+            imp.more_sso_btn.set_visible(has_unknown_methods);
+        } else {
+            imp.more_sso_btn.set_label(&gettext("Login via SSO"));
+            imp.more_sso_btn.set_visible(true);
+        }
     }
 
     /// Whether the current state allows to login with a password.

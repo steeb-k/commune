@@ -118,14 +118,13 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkButton" id="more_sso_option">
+                  <object class="GtkButton" id="more_sso_btn">
                     <style>
                       <class name="standalone-button"/>
                       <class name="pill"/>
                     </style>
                     <property name="can-shrink">true</property>
                     <property name="halign">center</property>
-                    <property name="label" translatable="yes">More SSO Providers</property>
                     <property name="action-name">login.sso</property>
                     <property name="action-target">@ms nothing</property>
                   </object>
