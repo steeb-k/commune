@@ -221,8 +221,8 @@ impl User {
     ///
     /// A direct chat is a joined room marked as direct, with only our own user
     /// and the other user in it.
-    pub async fn direct_chat(&self) -> Option<Room> {
-        self.session().room_list().direct_chat(self.user_id()).await
+    pub fn direct_chat(&self) -> Option<Room> {
+        self.session().room_list().direct_chat(self.user_id())
     }
 
     /// Create an encrypted direct chat with this user.
@@ -264,7 +264,7 @@ impl User {
     pub async fn get_or_create_direct_chat(&self) -> Result<Room, ()> {
         let user_id = self.user_id();
 
-        if let Some(room) = self.direct_chat().await {
+        if let Some(room) = self.direct_chat() {
             debug!("Using existing direct chat with {user_id}…");
             return Ok(room);
         }
@@ -379,10 +379,16 @@ pub trait UserExt: IsA<User> {
         self.upcast_ref().is_ignored()
     }
 
-    /// Conntect to the signal emitted when the display name changes.
+    /// Connect to the signal emitted when the display name changes.
     fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.upcast_ref()
             .connect_display_name_notify(move |user| f(user.downcast_ref().unwrap()))
+    }
+
+    /// Connect to the signal emitted when the `is-ignored` property changes.
+    fn connect_is_ignored_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.upcast_ref()
+            .connect_is_ignored_notify(move |user| f(user.downcast_ref().unwrap()))
     }
 }
 

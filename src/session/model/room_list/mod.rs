@@ -13,7 +13,6 @@ use indexmap::map::IndexMap;
 use matrix_sdk::{
     ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId},
     sync::Rooms as ResponseRooms,
-    RoomMemberships,
 };
 use ruma::UserId;
 use tracing::{error, warn};
@@ -442,59 +441,17 @@ impl RoomList {
     /// ID.
     ///
     /// If several rooms are found, returns the room with the latest activity.
-    pub async fn direct_chat(&self, user_id: &UserId) -> Option<Room> {
-        let Some(session) = self.session() else {
-            return None;
-        };
-        let direct_rooms = self
-            .imp()
+    pub fn direct_chat(&self, user_id: &UserId) -> Option<Room> {
+        self.imp()
             .list
             .borrow()
             .values()
             .filter(|r| {
+                // A joined room where the direct member is the given user.
                 r.is_joined() && r.direct_member().as_ref().map(|m| &**m.user_id()) == Some(user_id)
             })
-            .cloned()
-            .collect::<Vec<_>>();
-
-        if direct_rooms.is_empty() {
-            return None;
-        }
-
-        let own_user_id = session.user_id();
-
-        let mut final_rooms = vec![];
-        for room in direct_rooms {
-            let matrix_room = room.matrix_room().clone();
-            let handle =
-                spawn_tokio!(async move { matrix_room.members(RoomMemberships::ACTIVE).await });
-
-            let members = match handle.await.unwrap() {
-                Ok(members) => members,
-                Err(error) => {
-                    error!("Failed to load members: {error}");
-                    continue;
-                }
-            };
-
-            if members.is_empty() {
-                continue;
-            }
-
-            if members
-                .iter()
-                .any(|m| m.user_id() != own_user_id && m.user_id() != user_id)
-            {
-                // We found other members in this room, let's ignore
-                // the room.
-                continue;
-            }
-
-            final_rooms.push(room);
-        }
-
-        final_rooms
-            .into_iter()
+            // Take the room with the latest activity.
             .max_by(|x, y| x.latest_activity().cmp(&y.latest_activity()))
+            .cloned()
     }
 }

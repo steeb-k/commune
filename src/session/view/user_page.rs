@@ -67,7 +67,7 @@ mod imp {
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: BoundObject<User>,
         /// The room, if the user is a room member.
-        #[property(get, set = Self::set_room, construct_only)]
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: BoundObject<Room>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -185,9 +185,7 @@ mod imp {
                 self.user.set(user, handlers);
             }
 
-            spawn!(clone!(@weak obj => async move {
-                obj.load_direct_chat().await;
-            }));
+            obj.load_direct_chat();
             obj.update_direct_chat();
             obj.update_room();
             obj.update_verified();
@@ -263,14 +261,14 @@ impl UserPage {
     }
 
     /// Load whether the current user has a direct chat or not.
-    async fn load_direct_chat(&self) {
+    fn load_direct_chat(&self) {
         self.set_direct_chat_loading(true);
 
         let Some(user) = self.user() else {
             return;
         };
 
-        let direct_chat = user.direct_chat().await;
+        let direct_chat = user.direct_chat();
 
         let label = if direct_chat.is_some() {
             gettext("Open Direct Chat")
