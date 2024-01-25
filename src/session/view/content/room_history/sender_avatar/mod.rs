@@ -1,0 +1,634 @@
+use adw::subclass::prelude::*;
+use gettextrs::gettext;
+use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
+use ruma::events::room::power_levels::PowerLevelAction;
+
+use crate::{
+    components::Avatar,
+    gettext_f,
+    prelude::*,
+    session::{
+        model::{Member, Membership, PowerLevelUserAction, Room, User},
+        view::{content::RoomHistory, user_profile_dialog::UserProfileDialog},
+    },
+    toast,
+    utils::{
+        add_activate_binding_action, message_dialog::confirm_room_member_destructive_action,
+        BoundObject,
+    },
+    Window,
+};
+
+mod imp {
+    use std::cell::{Cell, RefCell};
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/sender_avatar/mod.ui"
+    )]
+    #[properties(wrapper_type = super::SenderAvatar)]
+    pub struct SenderAvatar {
+        #[template_child]
+        pub user_id_btn: TemplateChild<gtk::Button>,
+        /// Whether this avatar is active.
+        ///
+        /// This avatar is active when the popover is displayed.
+        #[property(get)]
+        pub active: Cell<bool>,
+        /// The room of the member.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        pub room: RefCell<Option<Room>>,
+        pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The displayed member.
+        #[property(get, set = Self::set_sender, explicit_notify, nullable)]
+        pub sender: BoundObject<Member>,
+        /// The popover of this avatar.
+        pub(super) popover: BoundObject<gtk::PopoverMenu>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for SenderAvatar {
+        const NAME: &'static str = "ContentSenderAvatar";
+        type Type = super::SenderAvatar;
+        type ParentType = adw::Bin;
+
+        fn class_init(klass: &mut Self::Class) {
+            Avatar::static_type();
+
+            Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+
+            klass.set_css_name("sender-avatar");
+            klass.set_accessible_role(gtk::AccessibleRole::ToggleButton);
+
+            klass.install_action("sender-avatar.copy-user-id", None, |widget, _, _| {
+                if let Some(popover) = widget.imp().popover.obj() {
+                    popover.popdown();
+                }
+
+                let Some(sender) = widget.sender() else {
+                    return;
+                };
+
+                widget.clipboard().set_text(sender.user_id().as_str());
+                toast!(widget, gettext("Matrix user ID copied to clipboard"));
+            });
+
+            klass.install_action("sender-avatar.mention", None, |widget, _, _| {
+                widget.mention();
+            });
+
+            klass.install_action_async(
+                "sender-avatar.open-direct-chat",
+                None,
+                |widget, _, _| async move {
+                    widget.open_direct_chat().await;
+                },
+            );
+
+            klass.install_action("sender-avatar.permalink", None, |widget, _, _| {
+                let Some(sender) = widget.sender() else {
+                    return;
+                };
+
+                widget
+                    .clipboard()
+                    .set_text(&sender.matrix_to_uri().to_string());
+                toast!(widget, gettext("Permalink copied to clipboard"));
+            });
+
+            klass.install_action_async("sender-avatar.invite", None, |widget, _, _| async move {
+                widget.invite().await;
+            });
+
+            klass.install_action_async(
+                "sender-avatar.revoke-invite",
+                None,
+                |widget, _, _| async move {
+                    widget.kick().await;
+                },
+            );
+
+            klass.install_action_async("sender-avatar.kick", None, |widget, _, _| async move {
+                widget.kick().await;
+            });
+
+            klass.install_action_async(
+                "sender-avatar.deny-access",
+                None,
+                |widget, _, _| async move {
+                    widget.kick().await;
+                },
+            );
+
+            klass.install_action_async("sender-avatar.ban", None, |widget, _, _| async move {
+                widget.ban().await;
+            });
+
+            klass.install_action_async("sender-avatar.unban", None, |widget, _, _| async move {
+                widget.unban().await;
+            });
+
+            klass.install_action_async("sender-avatar.ignore", None, |widget, _, _| async move {
+                widget.toggle_ignored().await;
+            });
+
+            klass.install_action_async(
+                "sender-avatar.stop-ignoring",
+                None,
+                |widget, _, _| async move {
+                    widget.toggle_ignored().await;
+                },
+            );
+
+            klass.install_action("sender-avatar.view-details", None, |widget, _, _| {
+                widget.view_details();
+            });
+
+            klass.install_action("sender-avatar.activate", None, |widget, _, _| {
+                widget.show_popover(1, 0.0, 0.0);
+            });
+
+            add_activate_binding_action(klass, "sender-avatar.activate");
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for SenderAvatar {
+        fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+
+            obj.set_pressed_state(false);
+        }
+
+        fn dispose(&self) {
+            if let Some(popover) = self.popover.obj() {
+                popover.unparent();
+                popover.remove_child(&*self.user_id_btn);
+            }
+        }
+    }
+
+    impl WidgetImpl for SenderAvatar {}
+    impl BinImpl for SenderAvatar {}
+
+    impl AccessibleImpl for SenderAvatar {
+        fn first_accessible_child(&self) -> Option<gtk::Accessible> {
+            // Hide the children in the a11y tree.
+            None
+        }
+    }
+
+    impl SenderAvatar {
+        /// Set the room of the member.
+        fn set_room(&self, room: Option<Room>) {
+            if *self.room.borrow() == room {
+                return;
+            }
+
+            if let Some(room) = self.room.take() {
+                if let Some(handler) = self.permissions_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+            }
+
+            if let Some(room) = room {
+                let permissions_handler =
+                    room.permissions()
+                        .connect_changed(clone!(@weak self as imp => move |_| {
+                            imp.update_actions();
+                        }));
+                self.permissions_handler.replace(Some(permissions_handler));
+
+                self.room.replace(Some(room));
+                self.update_actions();
+            }
+
+            self.obj().notify_room();
+        }
+
+        /// Set the list of room members.
+        fn set_sender(&self, sender: Option<Member>) {
+            let prev_sender = self.sender.obj();
+
+            if prev_sender == sender {
+                return;
+            }
+
+            self.sender.disconnect_signals();
+
+            if let Some(sender) = sender {
+                let display_name_handler =
+                    sender.connect_display_name_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_accessible_label();
+                    }));
+
+                let membership_handler =
+                    sender.connect_membership_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_actions();
+                    }));
+
+                let power_level_handler =
+                    sender.connect_power_level_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_actions();
+                    }));
+
+                let is_ignored_handler =
+                    sender.connect_is_ignored_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_actions();
+                    }));
+
+                self.sender.set(
+                    sender,
+                    vec![
+                        display_name_handler,
+                        membership_handler,
+                        power_level_handler,
+                        is_ignored_handler,
+                    ],
+                );
+                self.update_accessible_label();
+                self.update_actions();
+            }
+
+            self.obj().notify_sender();
+        }
+
+        /// Update the accessible label for the current sender.
+        fn update_accessible_label(&self) {
+            let Some(sender) = self.sender.obj() else {
+                return;
+            };
+
+            let label = gettext_f("{user}’s avatar", &[("user", &sender.display_name())]);
+            self.obj()
+                .update_property(&[gtk::accessible::Property::Label(&label)]);
+        }
+
+        /// Update the actions for the current state.
+        fn update_actions(&self) {
+            let Some(room) = self.room.borrow().clone() else {
+                return;
+            };
+            let Some(sender) = self.sender.obj() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let permissions = room.permissions();
+            let membership = sender.membership();
+            let sender_id = sender.user_id();
+            let is_own_user = sender.is_own_user();
+
+            obj.action_set_enabled(
+                "sender-avatar.mention",
+                !is_own_user && membership == Membership::Join && permissions.can_send_message(),
+            );
+
+            obj.action_set_enabled("sender-avatar.open-direct-chat", !is_own_user);
+
+            obj.action_set_enabled(
+                "sender-avatar.invite",
+                !is_own_user
+                    && matches!(membership, Membership::Leave | Membership::Knock)
+                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Kick),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.revoke-invite",
+                !is_own_user
+                    && membership == Membership::Invite
+                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Kick),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.kick",
+                !is_own_user
+                    && membership == Membership::Join
+                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Kick),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.deny-access",
+                !is_own_user
+                    && membership == Membership::Knock
+                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Kick),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.ban",
+                !is_own_user
+                    && matches!(
+                        membership,
+                        Membership::Join | Membership::Invite | Membership::Knock
+                    )
+                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Ban),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.unban",
+                !is_own_user
+                    && membership == Membership::Ban
+                    && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Unban),
+            );
+
+            obj.action_set_enabled("sender-avatar.ignore", !is_own_user && !sender.is_ignored());
+
+            obj.action_set_enabled(
+                "sender-avatar.stop-ignoring",
+                !is_own_user && sender.is_ignored(),
+            );
+        }
+
+        pub(super) fn set_popover(&self, popover: Option<gtk::PopoverMenu>) {
+            let old_popover = self.popover.obj();
+
+            if old_popover == popover {
+                return;
+            }
+            let obj = self.obj();
+
+            // Reset the state.
+            if let Some(popover) = old_popover {
+                popover.unparent();
+                popover.remove_child(&*self.user_id_btn);
+            }
+            self.popover.disconnect_signals();
+            obj.set_active(false);
+
+            if let Some(popover) = popover {
+                // We need to remove the popover from the previous button, if any.
+                if popover.parent().is_some() {
+                    popover.unparent();
+                }
+
+                let parent_handler =
+                    popover.connect_parent_notify(clone!(@weak obj => move |popover| {
+                        if !popover.parent().is_some_and(|w| w == obj) {
+                            obj.imp().popover.disconnect_signals();
+                        }
+                    }));
+                let closed_handler = popover.connect_closed(clone!(@weak obj => move |_| {
+                    obj.set_active(false);
+                }));
+
+                popover.add_child(&*self.user_id_btn, "user-id");
+                popover.set_parent(&*obj);
+
+                self.popover
+                    .set(popover, vec![parent_handler, closed_handler]);
+            }
+        }
+    }
+}
+
+glib::wrapper! {
+    /// An avatar with a popover menu for room members.
+    pub struct SenderAvatar(ObjectSubclass<imp::SenderAvatar>)
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+}
+
+#[gtk::template_callbacks]
+impl SenderAvatar {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// Set whether this active is active.
+    fn set_active(&self, active: bool) {
+        if self.active() == active {
+            return;
+        }
+
+        self.imp().active.set(active);
+        self.notify_active();
+        self.set_pressed_state(active);
+    }
+
+    /// Set the CSS and a11 states.
+    fn set_pressed_state(&self, pressed: bool) {
+        if pressed {
+            self.set_state_flags(gtk::StateFlags::CHECKED, false);
+        } else {
+            self.unset_state_flags(gtk::StateFlags::CHECKED);
+        }
+
+        let tristate = if pressed {
+            gtk::AccessibleTristate::True
+        } else {
+            gtk::AccessibleTristate::False
+        };
+        self.update_state(&[gtk::accessible::State::Pressed(tristate)]);
+    }
+
+    /// Handle a click on the container.
+    ///
+    /// Shows a popover with the room member menu.
+    #[template_callback]
+    fn show_popover(&self, _n_press: i32, x: f64, y: f64) {
+        let Some(room_history) = self
+            .ancestor(RoomHistory::static_type())
+            .and_downcast::<RoomHistory>()
+        else {
+            return;
+        };
+
+        self.set_active(true);
+
+        let popover = room_history.sender_context_menu();
+        self.imp().set_popover(Some(popover.clone()));
+
+        popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 0, 0)));
+        popover.popup();
+    }
+
+    /// Add a mention of the sender to the message composer.
+    fn mention(&self) {
+        let Some(sender) = self.sender() else {
+            return;
+        };
+        let Some(room_history) = self
+            .ancestor(RoomHistory::static_type())
+            .and_downcast::<RoomHistory>()
+        else {
+            return;
+        };
+
+        room_history.message_toolbar().mention_member(&sender);
+    }
+
+    /// View the sender details.
+    fn view_details(&self) {
+        let Some(sender) = self.sender() else {
+            return;
+        };
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let dialog = UserProfileDialog::new(self.root().and_downcast_ref::<gtk::Window>());
+        dialog.set_room_member(room, sender);
+        dialog.present();
+    }
+
+    /// Open a direct chat with the current sender.
+    ///
+    /// If one doesn't exist already, it is created.
+    async fn open_direct_chat(&self) {
+        let Some(sender) = self.sender().and_upcast::<User>() else {
+            return;
+        };
+
+        let room = if let Some(room) = sender.direct_chat() {
+            room
+        } else {
+            toast!(self, &gettext("Creating a new Direct Chat…"));
+
+            match sender.get_or_create_direct_chat().await {
+                Ok(room) => room,
+                Err(_) => {
+                    toast!(self, &gettext("Failed to create a new Direct Chat"));
+                    return;
+                }
+            }
+        };
+
+        let Some(main_window) = self.root().and_downcast::<Window>() else {
+            return;
+        };
+
+        main_window.show_room(sender.session().session_id(), room.room_id());
+    }
+
+    /// Invite the sender to the room.
+    async fn invite(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(sender) = self.sender() else {
+            return;
+        };
+
+        toast!(self, gettext("Inviting user…"));
+
+        let user_id = sender.user_id().clone();
+        if room.invite(&[user_id]).await.is_err() {
+            toast!(self, gettext("Failed to invite user"));
+        }
+    }
+
+    /// Kick the user from the room.
+    async fn kick(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(sender) = self.sender() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        let (confirmed, reason) =
+            confirm_room_member_destructive_action(&room, &sender, PowerLevelAction::Kick, &window)
+                .await;
+        if !confirmed {
+            return;
+        }
+
+        let membership = sender.membership();
+
+        let label = match membership {
+            Membership::Invite => gettext("Revoking invite…"),
+            Membership::Knock => gettext("Denying access…"),
+            _ => gettext("Kicking user…"),
+        };
+        toast!(self, label);
+
+        let user_id = sender.user_id().clone();
+        if room.kick(&[(user_id, reason)]).await.is_err() {
+            let error = match membership {
+                Membership::Invite => gettext("Failed to revoke invite of user"),
+                Membership::Knock => gettext("Failed to deny access to user"),
+                _ => gettext("Failed to kick user"),
+            };
+            toast!(self, error);
+        }
+    }
+
+    /// Ban the room member.
+    async fn ban(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(sender) = self.sender() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        let (confirmed, reason) =
+            confirm_room_member_destructive_action(&room, &sender, PowerLevelAction::Ban, &window)
+                .await;
+        if !confirmed {
+            return;
+        }
+
+        toast!(self, gettext("Banning user…"));
+
+        let user_id = sender.user_id().clone();
+        if room.ban(&[(user_id, reason)]).await.is_err() {
+            toast!(self, gettext("Failed to ban user"));
+        }
+    }
+
+    /// Unban the room member.
+    async fn unban(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(sender) = self.sender() else {
+            return;
+        };
+
+        toast!(self, gettext("Unbanning user…"));
+
+        let user_id = sender.user_id().clone();
+        if room.unban(&[(user_id, None)]).await.is_err() {
+            toast!(self, gettext("Failed to unban user"));
+        }
+    }
+
+    /// Toggle whether the user is ignored or not.
+    async fn toggle_ignored(&self) {
+        let Some(sender) = self.sender().and_upcast::<User>() else {
+            return;
+        };
+        let is_ignored = sender.is_ignored();
+
+        let label = if is_ignored {
+            gettext("Stop ignoring user…")
+        } else {
+            gettext("Ignoring user…")
+        };
+        toast!(self, label);
+
+        if is_ignored {
+            if sender.stop_ignoring().await.is_err() {
+                toast!(self, gettext("Failed to stop ignoring user"));
+            }
+        } else if sender.ignore().await.is_err() {
+            toast!(self, gettext("Failed to ignore user"));
+        }
+    }
+}

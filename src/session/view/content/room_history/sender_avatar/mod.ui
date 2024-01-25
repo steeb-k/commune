@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="ContentSenderAvatar" parent="AdwBin">
+    <accessibility>
+      <property name="description" translatable="yes">Open Sender Context Menu</property>
+    </accessibility>
+    <property name="valign">start</property>
+    <child>
+      <object class="ComponentsAvatar" id="avatar">
+        <property name="size">36</property>
+        <property name="accessible-role">presentation</property>
+        <binding name="data">
+          <lookup name="avatar-data">
+            <lookup name="sender">ContentSenderAvatar</lookup>
+          </lookup>
+        </binding>
+      </object>
+    </child>
+    <child>
+      <object class="GtkGestureClick">
+        <signal name="released" handler="show_popover" swapped="true"/>
+      </object>
+    </child>
+  </template>
+  <object class="GtkButton" id="user_id_btn">
+    <binding name="label">
+      <lookup name="user-id-string">
+        <lookup name="sender">ContentSenderAvatar</lookup>
+      </lookup>
+    </binding>
+    <property name="tooltip-text" translatable="yes">Copy Matrix user ID to clipboard</property>
+    <property name="action-name">sender-avatar.copy-user-id</property>
+    <property name="can-shrink">True</property>
+    <style>
+      <class name="flat"/>
+    </style>
+  </object>
+</interface>

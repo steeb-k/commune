@@ -408,19 +408,22 @@ impl ItemRow {
     }
 
     fn show_emoji_chooser(&self, popover: &gtk::PopoverMenu) {
-        let emoji_chooser = gtk::EmojiChooser::builder().has_arrow(false).build();
+        let (_, rectangle) = popover.pointing_to();
+
+        let emoji_chooser = gtk::EmojiChooser::builder()
+            .has_arrow(false)
+            .pointing_to(&rectangle)
+            .build();
+
         emoji_chooser.connect_emoji_picked(clone!(@weak self as obj => move |_, emoji| {
             obj
                 .activate_action("event.toggle-reaction", Some(&emoji.to_variant()))
                 .unwrap();
         }));
-        emoji_chooser.set_parent(self);
         emoji_chooser.connect_closed(|emoji_chooser| {
             emoji_chooser.unparent();
         });
-
-        let (_, rectangle) = popover.pointing_to();
-        emoji_chooser.set_pointing_to(Some(&rectangle));
+        emoji_chooser.set_parent(self);
 
         popover.popdown();
         emoji_chooser.popup();

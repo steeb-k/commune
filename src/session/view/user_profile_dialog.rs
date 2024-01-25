@@ -6,7 +6,7 @@ use super::UserPage;
 use crate::{
     components::{Spinner, ToastableWindow},
     prelude::*,
-    session::model::{RemoteUser, Session},
+    session::model::{Member, RemoteUser, Room, Session, User},
     spawn,
 };
 
@@ -54,19 +54,6 @@ mod imp {
     impl WindowImpl for UserProfileDialog {}
     impl AdwWindowImpl for UserProfileDialog {}
     impl ToastableWindowImpl for UserProfileDialog {}
-
-    impl UserProfileDialog {
-        /// Load the user with the given session and user ID.
-        pub fn load_user(&self, session: &Session, user_id: OwnedUserId) {
-            let user = RemoteUser::new(session, user_id);
-            self.user_page.set_user(Some(user.clone()));
-
-            spawn!(clone!(@weak self as imp, @weak user => async move {
-                user.load_profile().await;
-                imp.stack.set_visible_child_name("details");
-            }));
-        }
-    }
 }
 
 glib::wrapper! {
@@ -77,16 +64,32 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl UserProfileDialog {
-    pub fn new(
-        parent_window: Option<&impl IsA<gtk::Window>>,
-        session: &Session,
-        user_id: OwnedUserId,
-    ) -> Self {
-        let obj = glib::Object::builder::<Self>()
+    /// Create a new `UserProfileDialog`.
+    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>) -> Self {
+        glib::Object::builder::<Self>()
             .property("transient-for", parent_window)
-            .build();
+            .build()
+    }
 
-        obj.imp().load_user(session, user_id);
-        obj
+    /// Load the user with the given session and user ID.
+    pub fn load_user(&self, session: &Session, user_id: OwnedUserId) {
+        let imp = self.imp();
+
+        let user = RemoteUser::new(session, user_id);
+        imp.user_page.set_user(Some(user.clone()));
+
+        spawn!(clone!(@weak imp, @weak user => async move {
+            user.load_profile().await;
+            imp.stack.set_visible_child_name("details");
+        }));
+    }
+
+    /// Set the member to present.
+    pub fn set_room_member(&self, room: Room, member: Member) {
+        let imp = self.imp();
+
+        imp.user_page.set_room(Some(room));
+        imp.user_page.set_user(Some(member.upcast::<User>()));
+        imp.stack.set_visible_child_name("details");
     }
 }

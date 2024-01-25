@@ -18,10 +18,10 @@ pub use self::content::{ContentFormat, MessageContent};
 use self::{
     media::MessageMedia, message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
 };
-use super::ReadReceiptsList;
+use super::{ReadReceiptsList, SenderAvatar};
 use crate::{
-    components::Avatar, gettext_f, prelude::*, session::model::Event, system_settings::ClockFormat,
-    utils::BoundObject, Application, Window,
+    gettext_f, session::model::Event, system_settings::ClockFormat, utils::BoundObject,
+    Application, Window,
 };
 
 mod imp {
@@ -38,7 +38,7 @@ mod imp {
     #[properties(wrapper_type = super::MessageRow)]
     pub struct MessageRow {
         #[template_child]
-        pub avatar: TemplateChild<Avatar>,
+        pub avatar: TemplateChild<SenderAvatar>,
         #[template_child]
         pub header: TemplateChild<gtk::Box>,
         #[template_child]
@@ -157,8 +157,8 @@ mod imp {
                 binding.unbind();
             }
 
-            self.avatar
-                .set_data(Some(event.sender().avatar_data().clone()));
+            self.avatar.set_room(Some(event.room()));
+            self.avatar.set_sender(Some(event.sender()));
 
             let display_name_binding = event
                 .sender()

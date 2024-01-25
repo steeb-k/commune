@@ -1,10 +1,9 @@
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
 
 use crate::{
     prelude::*,
     session::model::{Room, Session, User},
-    spawn,
 };
 
 mod imp {
@@ -31,10 +30,8 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            spawn!(clone!(@weak obj => async move {
-                let direct_chat = obj.upcast_ref::<User>().direct_chat().await;
-                obj.set_direct_chat(direct_chat);
-            }));
+            let direct_chat = obj.upcast_ref::<User>().direct_chat();
+            obj.set_direct_chat(direct_chat);
         }
     }
 

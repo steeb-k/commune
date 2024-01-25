@@ -35,6 +35,82 @@
       </item>
     </section>
   </menu>
+  <menu id="sender_menu_model">
+    <section>
+      <item>
+        <attribute name="custom">user-id</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <!-- Translators: In this string, 'Mention' is a verb. -->
+        <attribute name="label" translatable="yes">_Mention</attribute>
+        <attribute name="action">sender-avatar.mention</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <!-- Translators: In this string, 'Open' is a verb. -->
+        <attribute name="label" translatable="yes">_Open Direct Chat</attribute>
+        <attribute name="action">sender-avatar.open-direct-chat</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Permalink</attribute>
+        <attribute name="action">sender-avatar.permalink</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <!-- Translators: In this string, 'Invite' is a verb. -->
+        <attribute name="label" translatable="yes">_Invite</attribute>
+        <attribute name="action">sender-avatar.invite</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Revoke _Invite</attribute>
+        <attribute name="action">sender-avatar.revoke-invite</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <!-- Translators: In this string, 'Kick' is a verb. -->
+        <attribute name="label" translatable="yes">_Kick</attribute>
+        <attribute name="action">sender-avatar.kick</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Deny Access</attribute>
+        <attribute name="action">sender-avatar.deny-access</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <!-- Translators: In this string, 'Ban' is a verb. -->
+        <attribute name="label" translatable="yes">_Ban</attribute>
+        <attribute name="action">sender-avatar.ban</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Un_ban</attribute>
+        <attribute name="action">sender-avatar.unban</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">I_gnore</attribute>
+        <attribute name="action">sender-avatar.ignore</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Stop I_gnoring</attribute>
+        <attribute name="action">sender-avatar.stop-ignoring</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_View Details</attribute>
+        <attribute name="action">sender-avatar.view-details</attribute>
+      </item>
+    </section>
+  </menu>
   <template class="ContentRoomHistory" parent="AdwBin">
     <property name="vexpand">True</property>
     <property name="hexpand">True</property>

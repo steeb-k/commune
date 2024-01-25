@@ -4,6 +4,7 @@ mod member_timestamp;
 mod message_row;
 mod message_toolbar;
 mod read_receipts_list;
+mod sender_avatar;
 mod state_row;
 mod typing_row;
 mod verification_info_bar;
@@ -26,8 +27,9 @@ use tracing::{error, warn};
 
 use self::{
     divider_row::DividerRow, item_row::ItemRow, message_row::MessageRow,
-    message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList, state_row::StateRow,
-    typing_row::TypingRow, verification_info_bar::VerificationInfoBar,
+    message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList,
+    sender_avatar::SenderAvatar, state_row::StateRow, typing_row::TypingRow,
+    verification_info_bar::VerificationInfoBar,
 };
 use super::{room_details, RoomDetails};
 use crate::{
@@ -80,6 +82,9 @@ mod imp {
         pub sticky: Cell<bool>,
         pub item_context_menu: OnceCell<gtk::PopoverMenu>,
         pub item_reaction_chooser: ReactionChooser,
+        pub sender_context_menu: OnceCell<gtk::PopoverMenu>,
+        #[template_child]
+        pub sender_menu_model: TemplateChild<gio::Menu>,
         #[template_child]
         pub room_title: TemplateChild<RoomTitle>,
         #[template_child]
@@ -609,13 +614,15 @@ impl RoomHistory {
     /// If `subpage_name` is set, the room details will be opened on the given
     /// subpage.
     pub fn open_room_details(&self, subpage_name: Option<room_details::SubpageName>) {
-        if let Some(room) = self.room() {
-            let window = RoomDetails::new(&self.parent_window(), &room);
-            if let Some(subpage_name) = subpage_name {
-                window.show_initial_subpage(subpage_name);
-            }
-            window.present();
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let window = RoomDetails::new(self.root().and_downcast_ref(), &room);
+        if let Some(subpage_name) = subpage_name {
+            window.show_initial_subpage(subpage_name);
         }
+        window.present();
     }
 
     fn update_room_menu(&self) {
@@ -707,11 +714,6 @@ impl RoomHistory {
         });
     }
 
-    /// Returns the parent GtkWindow containing this widget.
-    fn parent_window(&self) -> Option<gtk::Window> {
-        self.root().and_downcast()
-    }
-
     /// Scroll to the newest message in the timeline
     pub fn scroll_down(&self) {
         let imp = self.imp();
@@ -738,6 +740,7 @@ impl RoomHistory {
         self.message_toolbar().handle_paste_action();
     }
 
+    /// The context menu for the item rows.
     pub fn item_context_menu(&self) -> &gtk::PopoverMenu {
         self.imp().item_context_menu.get_or_init(|| {
             let popover = gtk::PopoverMenu::builder()
@@ -749,8 +752,25 @@ impl RoomHistory {
         })
     }
 
+    /// The reaction chooser for the item rows.
     pub fn item_reaction_chooser(&self) -> &ReactionChooser {
         &self.imp().item_reaction_chooser
+    }
+
+    /// The context menu for the sender avatars.
+    pub fn sender_context_menu(&self) -> &gtk::PopoverMenu {
+        let imp = self.imp();
+        imp.sender_context_menu.get_or_init(|| {
+            let popover = gtk::PopoverMenu::builder()
+                .has_arrow(false)
+                .halign(gtk::Align::Start)
+                .menu_model(&*imp.sender_menu_model)
+                .build();
+            popover.update_property(&[gtk::accessible::Property::Label(&gettext(
+                "Sender Context Menu",
+            ))]);
+            popover
+        })
     }
 
     fn scroll_to_event(&self, key: &EventKey) {

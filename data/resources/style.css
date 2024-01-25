@@ -665,6 +665,40 @@ roomtitle .subtitle {
   padding-right: 12px;
 }
 
+sender-avatar {
+  padding: 3px;
+  border-radius: 100%;
+  transition-property: outline, outline-width, outline-offset, outline-color;
+  transition-duration: 300ms;
+  animation-timing-function: ease-in-out;
+  outline: 0 solid transparent;
+  outline-offset: 2px;
+}
+
+sender-avatar:focus {
+  outline-color: alpha(@accent_color, 0.5);
+  outline-width: 2px;
+  outline-offset: -2px;
+}
+
+sender-avatar:hover {
+  background-color: alpha(currentColor, .07);
+}
+
+sender-avatar:active {
+  background-color: alpha(currentColor, .16);
+}
+
+sender-avatar:checked {
+  background-color: alpha(currentColor, .1);
+}
+
+sender-avatar popover button.text-button {
+  padding-left: 10px;
+  padding-right: 10px;
+  font-weight: 400;
+}
+
 
 /* Event Source Dialog */
 

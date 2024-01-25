@@ -341,7 +341,8 @@ impl SessionView {
             return;
         };
 
-        let dialog = UserProfileDialog::new(self.parent_window().as_ref(), &session, user_id);
+        let dialog = UserProfileDialog::new(self.parent_window().as_ref());
+        dialog.load_user(&session, user_id);
         dialog.present();
     }
 }

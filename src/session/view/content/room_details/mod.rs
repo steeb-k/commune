@@ -120,7 +120,7 @@ glib::wrapper! {
 }
 
 impl RoomDetails {
-    pub fn new(parent_window: &Option<gtk::Window>, room: &Room) -> Self {
+    pub fn new(parent_window: Option<&gtk::Window>, room: &Room) -> Self {
         glib::Object::builder()
             .property("transient-for", parent_window)
             .property("room", room)

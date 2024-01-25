@@ -36,7 +36,7 @@ use crate::{
     components::{CustomEntry, LabelWithWidgets, Pill},
     gettext_f,
     prelude::*,
-    session::model::{Event, EventKey, Room},
+    session::model::{Event, EventKey, Member, Room},
     spawn, toast,
     utils::{
         matrix::extract_mentions,
@@ -328,6 +328,23 @@ glib::wrapper! {
 impl MessageToolbar {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// Add a mention of the given member to the message composer.
+    pub fn mention_member(&self, member: &Member) {
+        let view = &*self.imp().message_entry;
+        let buffer = view.buffer();
+
+        let mut insert = buffer.iter_at_mark(&buffer.get_insert());
+        let anchor = match insert.child_anchor() {
+            Some(anchor) => anchor,
+            None => buffer.create_child_anchor(&mut insert),
+        };
+
+        let pill = member.to_pill();
+        view.add_child_at_anchor(&pill, &anchor);
+
+        view.grab_focus();
     }
 
     /// Set the type of related event of the composer.
