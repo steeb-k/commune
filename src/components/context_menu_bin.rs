@@ -1,10 +1,12 @@
 use adw::subclass::prelude::*;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 
-mod imp {
-    use std::cell::{Cell, RefCell};
+use crate::utils::BoundObject;
 
-    use glib::{subclass::InitializingObject, SignalHandlerId};
+mod imp {
+    use std::cell::Cell;
+
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
@@ -38,8 +40,7 @@ mod imp {
         pub has_context_menu: Cell<bool>,
         /// The popover displaying the context menu.
         #[property(get, set = Self::set_popover, explicit_notify, nullable)]
-        pub popover: RefCell<Option<gtk::PopoverMenu>>,
-        pub signal_handler: RefCell<Option<SignalHandlerId>>,
+        pub popover: BoundObject<gtk::PopoverMenu>,
     }
 
     #[glib::object_subclass]
@@ -111,11 +112,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(popover) = self.popover.take() {
-                if let Some(handler) = self.signal_handler.take() {
-                    popover.disconnect(handler);
-                }
-
+            if let Some(popover) = self.popover.obj() {
                 popover.unparent();
             }
         }
@@ -143,32 +140,37 @@ mod imp {
 
         /// Set the popover displaying the context menu.
         fn set_popover(&self, popover: Option<gtk::PopoverMenu>) {
-            if *self.popover.borrow() == popover {
+            let prev_popover = self.popover.obj();
+
+            if prev_popover == popover {
                 return;
             }
-
             let obj = self.obj();
 
-            if let Some(popover) = &popover {
+            if let Some(popover) = prev_popover {
+                if popover
+                    .parent()
+                    .is_some_and(|w| &w == obj.upcast_ref::<gtk::Widget>())
+                {
+                    popover.unparent();
+                }
+            }
+            self.popover.disconnect_signals();
+
+            if let Some(popover) = popover {
                 popover.unparent();
                 popover.set_parent(&*obj);
 
-                self.signal_handler
-                    .replace(Some(popover.connect_parent_notify(
-                        clone!(@weak obj => move |popover| {
-                            if popover.parent().as_ref() != Some(obj.upcast_ref()) {
-                                let imp = obj.imp();
-                                if let Some(popover) = imp.popover.take() {
-                                    if let Some(signal_handler) = imp.signal_handler.take() {
-                                        popover.disconnect(signal_handler)
-                                    }
-                                }
-                            }
-                        }),
-                    )));
+                let parent_handler =
+                    popover.connect_parent_notify(clone!(@weak obj => move |popover| {
+                        if !popover.parent().is_some_and(|w| &w == obj.upcast_ref::<gtk::Widget>()) {
+                            obj.imp().popover.disconnect_signals();
+                        }
+                    }));
+
+                self.popover.set(popover, vec![parent_handler]);
             }
 
-            self.popover.replace(popover);
             obj.notify_popover();
         }
     }
