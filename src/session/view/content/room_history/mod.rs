@@ -897,6 +897,15 @@ impl RoomHistory {
         let Some(room) = self.room() else {
             return;
         };
+        let Some(session) = room.session() else {
+            return;
+        };
+        let send_public_receipt = session.settings().public_read_receipts_enabled();
+
+        let receipt_type = match receipt_type {
+            ReceiptType::Read if !send_public_receipt => ReceiptType::ReadPrivate,
+            t => t,
+        };
 
         let matrix_timeline = room.timeline().matrix_timeline();
         let handle = spawn_tokio!(async move {

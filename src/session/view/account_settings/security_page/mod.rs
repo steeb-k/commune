@@ -25,6 +25,8 @@ mod imp {
     #[properties(wrapper_type = super::SecurityPage)]
     pub struct SecurityPage {
         #[template_child]
+        pub public_read_receipts_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         pub ignored_users_subpage: TemplateChild<IgnoredUsersSubpage>,
         #[template_child]
         pub ignored_users_count: TemplateChild<gtk::Label>,
@@ -40,6 +42,7 @@ mod imp {
         #[property(get, set = Self::set_session, nullable)]
         pub session: glib::WeakRef<Session>,
         pub ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
+        binding: RefCell<Option<glib::Binding>>,
     }
 
     #[glib::object_subclass]
@@ -68,6 +71,10 @@ mod imp {
                     session.ignored_users().disconnect(handler);
                 }
             }
+
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
         }
     }
 
@@ -89,6 +96,9 @@ mod imp {
                     session.ignored_users().disconnect(handler);
                 }
             }
+            if let Some(binding) = self.binding.take() {
+                binding.unbind();
+            }
 
             if let Some(session) = &session {
                 let ignored_users = session.ignored_users();
@@ -102,6 +112,18 @@ mod imp {
 
                 self.ignored_users_count_handler
                     .replace(Some(ignored_users_count_handler));
+
+                let public_read_receipts_binding = session
+                    .settings()
+                    .bind_property(
+                        "public-read-receipts-enabled",
+                        &*self.public_read_receipts_row,
+                        "active",
+                    )
+                    .bidirectional()
+                    .sync_create()
+                    .build();
+                self.binding.replace(Some(public_read_receipts_binding));
             }
 
             self.session.set(session.as_ref());

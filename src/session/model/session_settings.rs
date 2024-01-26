@@ -16,6 +16,13 @@ pub struct StoredSessionSettings {
         skip_serializing_if = "ruma::serde::is_true"
     )]
     notifications_enabled: bool,
+
+    /// Whether public read receipts are enabled for this session.
+    #[serde(
+        default = "ruma::serde::default_true",
+        skip_serializing_if = "ruma::serde::is_true"
+    )]
+    public_read_receipts_enabled: bool,
 }
 
 impl Default for StoredSessionSettings {
@@ -23,6 +30,7 @@ impl Default for StoredSessionSettings {
         Self {
             explore_custom_servers: Default::default(),
             notifications_enabled: true,
+            public_read_receipts_enabled: true,
         }
     }
 }
@@ -47,6 +55,9 @@ mod imp {
         /// Whether notifications are enabled for this session.
         #[property(get = Self::notifications_enabled, set = Self::set_notifications_enabled, explicit_notify, default = true)]
         pub notifications_enabled: PhantomData<bool>,
+        /// Whether public read receipts are enabled for this session.
+        #[property(get = Self::public_read_receipts_enabled, set = Self::set_public_read_receipts_enabled, explicit_notify, default = true)]
+        pub public_read_receipts_enabled: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -74,6 +85,25 @@ mod imp {
             self.stored_settings.borrow_mut().notifications_enabled = enabled;
             obj.save();
             obj.notify_notifications_enabled();
+        }
+
+        /// Whether public read receipts are enabled for this session.
+        fn public_read_receipts_enabled(&self) -> bool {
+            self.stored_settings.borrow().public_read_receipts_enabled
+        }
+
+        /// Set whether public read receipts are enabled for this session.
+        fn set_public_read_receipts_enabled(&self, enabled: bool) {
+            if self.public_read_receipts_enabled() == enabled {
+                return;
+            }
+            let obj = self.obj();
+
+            self.stored_settings
+                .borrow_mut()
+                .public_read_receipts_enabled = enabled;
+            obj.save();
+            obj.notify_public_read_receipts_enabled();
         }
     }
 }
