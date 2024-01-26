@@ -27,6 +27,8 @@ mod imp {
         #[template_child]
         pub public_read_receipts_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        pub typing_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         pub ignored_users_subpage: TemplateChild<IgnoredUsersSubpage>,
         #[template_child]
         pub ignored_users_count: TemplateChild<gtk::Label>,
@@ -42,7 +44,7 @@ mod imp {
         #[property(get, set = Self::set_session, nullable)]
         pub session: glib::WeakRef<Session>,
         pub ignored_users_count_handler: RefCell<Option<glib::SignalHandlerId>>,
-        binding: RefCell<Option<glib::Binding>>,
+        bindings: RefCell<Vec<glib::Binding>>,
     }
 
     #[glib::object_subclass]
@@ -72,7 +74,7 @@ mod imp {
                 }
             }
 
-            if let Some(binding) = self.binding.take() {
+            for binding in self.bindings.take() {
                 binding.unbind();
             }
         }
@@ -96,7 +98,7 @@ mod imp {
                     session.ignored_users().disconnect(handler);
                 }
             }
-            if let Some(binding) = self.binding.take() {
+            for binding in self.bindings.take() {
                 binding.unbind();
             }
 
@@ -113,8 +115,9 @@ mod imp {
                 self.ignored_users_count_handler
                     .replace(Some(ignored_users_count_handler));
 
-                let public_read_receipts_binding = session
-                    .settings()
+                let session_settings = session.settings();
+
+                let public_read_receipts_binding = session_settings
                     .bind_property(
                         "public-read-receipts-enabled",
                         &*self.public_read_receipts_row,
@@ -123,7 +126,14 @@ mod imp {
                     .bidirectional()
                     .sync_create()
                     .build();
-                self.binding.replace(Some(public_read_receipts_binding));
+                let typing_binding = session_settings
+                    .bind_property("typing-enabled", &*self.typing_row, "active")
+                    .bidirectional()
+                    .sync_create()
+                    .build();
+
+                self.bindings
+                    .replace(vec![public_read_receipts_binding, typing_binding]);
             }
 
             self.session.set(session.as_ref());

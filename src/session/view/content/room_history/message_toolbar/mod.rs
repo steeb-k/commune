@@ -947,9 +947,18 @@ impl MessageToolbar {
     }
 
     fn send_typing_notification(&self, typing: bool) {
-        if let Some(room) = self.room() {
-            room.send_typing_notification(typing);
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(session) = room.session() else {
+            return;
+        };
+
+        if !session.settings().typing_enabled() {
+            return;
         }
+
+        room.send_typing_notification(typing);
     }
 }
 

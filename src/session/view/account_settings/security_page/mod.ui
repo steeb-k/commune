@@ -15,6 +15,13 @@
           </object>
         </child>
         <child>
+          <object class="AdwSwitchRow" id="typing_row">
+            <property name="selectable">False</property>
+            <property name="title" translatable="yes">Send Typing Notifications</property>
+            <property name="subtitle" translatable="yes">When this is enabled, other members of the rooms you participate in can see when you are typing a message.</property>
+          </object>
+        </child>
+        <child>
           <object class="AdwActionRow">
             <property name="selectable">False</property>
             <property name="accessible-role">button</property>

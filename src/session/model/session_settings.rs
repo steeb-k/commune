@@ -23,6 +23,13 @@ pub struct StoredSessionSettings {
         skip_serializing_if = "ruma::serde::is_true"
     )]
     public_read_receipts_enabled: bool,
+
+    /// Whether typing notifications are enabled for this session.
+    #[serde(
+        default = "ruma::serde::default_true",
+        skip_serializing_if = "ruma::serde::is_true"
+    )]
+    typing_enabled: bool,
 }
 
 impl Default for StoredSessionSettings {
@@ -31,6 +38,7 @@ impl Default for StoredSessionSettings {
             explore_custom_servers: Default::default(),
             notifications_enabled: true,
             public_read_receipts_enabled: true,
+            typing_enabled: true,
         }
     }
 }
@@ -58,6 +66,9 @@ mod imp {
         /// Whether public read receipts are enabled for this session.
         #[property(get = Self::public_read_receipts_enabled, set = Self::set_public_read_receipts_enabled, explicit_notify, default = true)]
         pub public_read_receipts_enabled: PhantomData<bool>,
+        /// Whether typing notifications are enabled for this session.
+        #[property(get = Self::typing_enabled, set = Self::set_typing_enabled, explicit_notify, default = true)]
+        pub typing_enabled: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -104,6 +115,23 @@ mod imp {
                 .public_read_receipts_enabled = enabled;
             obj.save();
             obj.notify_public_read_receipts_enabled();
+        }
+
+        /// Whether typing notifications are enabled for this session.
+        fn typing_enabled(&self) -> bool {
+            self.stored_settings.borrow().typing_enabled
+        }
+
+        /// Set whether typing notifications are enabled for this session.
+        fn set_typing_enabled(&self, enabled: bool) {
+            if self.typing_enabled() == enabled {
+                return;
+            }
+            let obj = self.obj();
+
+            self.stored_settings.borrow_mut().typing_enabled = enabled;
+            obj.save();
+            obj.notify_typing_enabled();
         }
     }
 }
