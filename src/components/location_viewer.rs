@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use geo_uri::GeoUri;
-use gtk::{glib, CompositeTemplate};
+use gtk::{gdk_pixbuf, gio, glib, CompositeTemplate};
 use shumate::prelude::*;
 
 use crate::i18n::gettext_f;
@@ -48,8 +48,30 @@ mod imp {
         fn constructed(&self) {
             self.marker.set_child(Some(&*self.marker_img));
 
-            let registry = shumate::MapSourceRegistry::with_defaults();
-            let source = registry.by_id(shumate::MAP_SOURCE_OSM_MAPNIK).unwrap();
+            let style = gio::resources_lookup_data(
+                "/org/gnome/Fractal/mapstyle/osm-liberty/style.json",
+                gio::ResourceLookupFlags::NONE,
+            )
+            .expect("Failed to load map style");
+            let source =
+                shumate::VectorRenderer::new("vector-tiles", &String::from_utf8_lossy(&style))
+                    .expect("Failed to read map style");
+            source.set_license("© OpenMapTiles © OpenStreetMap contributors");
+            source.set_license_uri("https://www.openstreetmap.org/copyright");
+
+            let spritepixbuf = gdk_pixbuf::Pixbuf::from_resource(
+                "/org/gnome/Fractal/mapstyle/osm-liberty/sprites.png",
+            )
+            .expect("Failed to load map sprites");
+            let spritejson = gio::resources_lookup_data(
+                "/org/gnome/Fractal/mapstyle/osm-liberty/sprites.json",
+                gio::ResourceLookupFlags::NONE,
+            )
+            .expect("Failed to load map sprite sheet");
+            source
+                .set_sprite_sheet_data(&spritepixbuf, &String::from_utf8_lossy(&spritejson))
+                .expect("Failed to set map sprite sheet");
+
             self.map.set_map_source(Some(&source));
 
             let viewport = self.map.viewport().unwrap();

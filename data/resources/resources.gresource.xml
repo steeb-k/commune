@@ -60,6 +60,11 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/video-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/warning-symbolic.svg</file>
+    <file preprocess="json-stripblanks">mapstyle/osm-liberty/sprites.json</file>
+    <file>mapstyle/osm-liberty/sprites.png</file>
+    <file preprocess="json-stripblanks">mapstyle/osm-liberty/sprites@2x.json</file>
+    <file>mapstyle/osm-liberty/sprites@2x.png</file>
+    <file>mapstyle/osm-liberty/style.json</file>
     <file compressed="true">sas-emoji/ar.json</file>
     <file compressed="true">sas-emoji/bg.json</file>
     <file compressed="true">sas-emoji/ca.json</file>
