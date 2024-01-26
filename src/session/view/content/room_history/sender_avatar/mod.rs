@@ -374,7 +374,10 @@ mod imp {
                 let parent_handler =
                     popover.connect_parent_notify(clone!(@weak obj => move |popover| {
                         if !popover.parent().is_some_and(|w| w == obj) {
-                            obj.imp().popover.disconnect_signals();
+                            let imp = obj.imp();
+
+                            imp.popover.disconnect_signals();
+                            popover.remove_child(&*imp.user_id_btn);
                         }
                     }));
                 let closed_handler = popover.connect_closed(clone!(@weak obj => move |_| {
