@@ -5,7 +5,6 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::ruma::api::client::discovery::get_capabilities;
 use tracing::error;
 
 mod change_password_subpage;
@@ -444,11 +443,11 @@ impl GeneralPage {
             clone!(@weak self as obj => async move {
                 // Check whether the user can change their password.
                 let handle = spawn_tokio!(async move {
-                    client.send(get_capabilities::v3::Request::new(), None).await
+                    client.get_capabilities().await
                 });
                 match handle.await.unwrap() {
-                    Ok(res) => {
-                        obj.imp().change_password_group.set_visible(res.capabilities.change_password.enabled);
+                    Ok(capabilities) => {
+                        obj.imp().change_password_group.set_visible(capabilities.change_password.enabled);
                     }
                     Err(error) => error!("Could not get server capabilities: {error}"),
                 }
