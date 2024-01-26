@@ -285,6 +285,17 @@
             <style>
               <class name="property"/>
             </style>
+            <child>
+              <object class="SpinnerButton" id="upgrade_button">
+                <!-- Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'. -->
+                <property name="label" translatable="yes">Upgrade</property>
+                <property name="valign">center</property>
+                <signal name="clicked" handler="upgrade" swapped="yes"/>
+                <style>
+                  <class name="destructive-action"/>
+                </style>
+              </object>
+            </child>
           </object>
         </child>
         <child>

@@ -8,9 +8,17 @@ use gtk::{
     CompositeTemplate,
 };
 use matrix_sdk::RoomState;
-use ruma::{assign, events::room::avatar::ImageInfo};
+use ruma::{
+    api::client::{discovery::get_capabilities::Capabilities, room::upgrade_room},
+    assign,
+    events::{
+        room::{avatar::ImageInfo, power_levels::PowerLevelAction},
+        StateEventType,
+    },
+};
 use tracing::error;
 
+use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{CheckLoadingRow, CustomEntry, EditableAvatar, SpinnerButton},
     session::model::{AvatarData, AvatarImage, MemberList, NotificationsRoomSetting, Room},
@@ -74,6 +82,8 @@ mod imp {
         #[template_child]
         pub room_id: TemplateChild<adw::ActionRow>,
         #[template_child]
+        pub upgrade_button: TemplateChild<SpinnerButton>,
+        #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
         /// Whether edit mode is enabled.
         #[property(get, set = Self::set_edit_mode_enabled, explicit_notify)]
@@ -90,6 +100,8 @@ mod imp {
         pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
         pub notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub capabilities: RefCell<Capabilities>,
     }
 
     #[glib::object_subclass]
@@ -151,6 +163,13 @@ mod imp {
                     }));
             self.membership_handler.replace(Some(membership_handler));
 
+            let permissions_handler =
+                room.permissions()
+                    .connect_changed(clone!(@weak obj => move |_| {
+                        obj.update_upgrade_button();
+                    }));
+            self.permissions_handler.replace(Some(permissions_handler));
+
             let room_handler_ids = vec![
                 room.connect_name_notify(clone!(@weak obj => move |room| {
                     obj.name_changed(room.name());
@@ -163,6 +182,9 @@ mod imp {
                 })),
                 room.connect_notifications_setting_notify(clone!(@weak obj => move |_| {
                     obj.update_notifications();
+                })),
+                room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
+                    obj.update_upgrade_button();
                 })),
             ];
 
@@ -195,6 +217,8 @@ mod imp {
             obj.update_notifications();
             obj.update_federated();
             obj.update_sections();
+            obj.update_upgrade_button();
+            self.load_capabilities();
         }
 
         /// Set whether edit mode is enabled.
@@ -224,6 +248,32 @@ mod imp {
             }
 
             self.obj().notifications_setting_changed(setting);
+        }
+
+        /// Fetch the capabilities of the homeserver.
+        fn load_capabilities(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+            let client = room.matrix_room().client();
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(@weak self as imp => async move {
+                    let handle = spawn_tokio!(async move {
+                        client.get_capabilities().await
+                    });
+                    match handle.await.unwrap() {
+                        Ok(capabilities) => {
+                            imp.capabilities.replace(capabilities);
+                        }
+                        Err(error) => {
+                            error!("Could not get server capabilities: {error}");
+                            imp.capabilities.take();
+                        }
+                    }
+                })
+            );
         }
     }
 }
@@ -654,6 +704,10 @@ impl GeneralPage {
             if let Some(handler) = imp.membership_handler.take() {
                 room.own_member().disconnect(handler);
             }
+
+            if let Some(handler) = imp.permissions_handler.take() {
+                room.permissions().disconnect(handler);
+            }
         }
 
         imp.room.disconnect_signals();
@@ -743,6 +797,19 @@ impl GeneralPage {
         toast!(self, gettext("Matrix room ID copied to clipboard"));
     }
 
+    /// Update the room upgrade button.
+    fn update_upgrade_button(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let can_upgrade = !room.is_tombstoned()
+            && room
+                .permissions()
+                .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomTombstone));
+        self.imp().upgrade_button.set_visible(can_upgrade);
+    }
+
     /// Update the room federation row.
     fn update_federated(&self) {
         let Some(room) = self.room() else {
@@ -758,5 +825,49 @@ impl GeneralPage {
         };
 
         self.imp().room_federated.set_subtitle(&subtitle);
+    }
+
+    /// Upgrade the room to a new version.
+    #[template_callback]
+    fn upgrade(&self) {
+        spawn!(clone!(@weak self as obj => async move {
+            obj.upgrade_inner().await;
+        }));
+    }
+
+    async fn upgrade_inner(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+        let imp = self.imp();
+
+        // TODO: Hide upgrade button if room already upgraded?
+        imp.upgrade_button.set_loading(true);
+        let room_versions_capability = imp.capabilities.borrow().room_versions.clone();
+
+        let Some(new_version) = confirm_room_upgrade(room_versions_capability, &window).await
+        else {
+            imp.upgrade_button.set_loading(false);
+            return;
+        };
+
+        let client = room.matrix_room().client();
+        let request = upgrade_room::v3::Request::new(room.room_id().to_owned(), new_version);
+
+        let handle = spawn_tokio!(async move { client.send(request, None).await });
+
+        match handle.await.unwrap() {
+            Ok(_) => {
+                toast!(self, gettext("Room upgraded successfully"));
+            }
+            Err(error) => {
+                error!("Could not upgrade room: {error}");
+                toast!(self, gettext("Failed to upgrade room"));
+                imp.upgrade_button.set_loading(false);
+            }
+        }
     }
 }

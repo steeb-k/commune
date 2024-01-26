@@ -222,8 +222,7 @@ mod imp {
             self.obj().emit_by_name::<()>("changed", &[]);
         }
 
-        /// Returns whether our own member is allowed to do the
-        /// given action.
+        /// Whether our own member is allowed to do the given action.
         pub(super) fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
             if !self.is_joined.get() {
                 // We cannot do anything if the member is not joined.
@@ -361,6 +360,11 @@ impl Permissions {
         imp.room.set(Some(room));
         imp.init_own_member(room.own_member());
         imp.init_power_levels().await;
+    }
+
+    /// Whether our own member is allowed to do the given action.
+    pub fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
+        self.imp().is_allowed_to(room_action)
     }
 
     /// Whether our own user can do the given action on the user with the given

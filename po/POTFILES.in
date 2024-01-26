@@ -86,6 +86,7 @@ src/session/view/content/room_details/members_page/members_list_view/mod.rs
 src/session/view/content/room_details/members_page/members_list_view/mod.ui
 src/session/view/content/room_details/members_page/mod.rs
 src/session/view/content/room_details/mod.ui
+src/session/view/content/room_details/room_upgrade_dialog.rs
 src/session/view/content/room_history/event_actions.ui
 src/session/view/content/room_history/item_row.rs
 src/session/view/content/room_history/message_row/audio.rs

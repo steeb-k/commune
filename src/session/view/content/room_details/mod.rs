@@ -2,6 +2,7 @@ mod general_page;
 mod history_viewer;
 mod invite_subpage;
 mod members_page;
+mod room_upgrade_dialog;
 
 use std::convert::From;
 
