@@ -82,7 +82,7 @@ mod imp {
                 widget.show_popover(1, 0.0, 0.0);
             });
 
-            add_activate_binding_action(klass, "read_receipts-list.activate");
+            add_activate_binding_action(klass, "read-receipts-list.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
