@@ -6,7 +6,7 @@ use secular::normalized_lower_lay_string;
 use super::{CompletionMemberList, CompletionRoomList};
 use crate::{
     components::{Pill, PillSourceRow},
-    session::model::{Member, Room},
+    session::model::{Room, User},
 };
 
 /// The maximum number of rows presented in the popover.
@@ -489,8 +489,8 @@ impl CompletionPopover {
         } else {
             for (idx, row) in imp.rows.iter().enumerate() {
                 let item = list.item(idx as u32);
-                if let Some(member) = item.clone().and_downcast::<Member>() {
-                    row.set_member(Some(member));
+                if let Some(member) = item.clone().and_downcast::<User>() {
+                    row.set_user(Some(member));
                     row.set_visible(true);
                 } else if let Some(room) = item.and_downcast::<Room>() {
                     row.set_room(Some(room));

@@ -2,7 +2,7 @@
 <interface>
   <template class="ContentReadReceiptsPopover" parent="GtkPopover">
     <style>
-      <class name="list-popover"/>
+      <class name="avatar-row-list"/>
     </style>
     <property name="autohide">true</property>
     <property name="width-request">220</property>

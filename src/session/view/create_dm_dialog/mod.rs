@@ -3,14 +3,13 @@ use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 
 mod dm_user;
 mod dm_user_list;
-mod dm_user_row;
 
 use self::{
     dm_user::DmUser,
     dm_user_list::{DmUserList, DmUserListState},
-    dm_user_row::DmUserRow,
 };
 use crate::{
+    components::PillSourceRow,
     gettext,
     session::model::{Session, User},
     spawn, Window,
@@ -45,7 +44,7 @@ mod imp {
         type ParentType = adw::Window;
 
         fn class_init(klass: &mut Self::Class) {
-            DmUserRow::static_type();
+            PillSourceRow::static_type();
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
@@ -92,11 +91,13 @@ mod imp {
                     .build();
 
                 self.list_box.bind_model(Some(&user_list), |user| {
-                    DmUserRow::new(
-                        user.downcast_ref::<DmUser>()
-                            .expect("DmUserList must contain only `DmUser`"),
-                    )
-                    .upcast()
+                    let user = user
+                        .downcast_ref::<User>()
+                        .expect("DmUserList must contain only `DmUser`");
+                    let row = PillSourceRow::new();
+                    row.set_user(Some(user.clone()));
+
+                    row.upcast()
                 });
 
                 obj.update_view(&user_list);
@@ -147,7 +148,7 @@ impl CreateDmDialog {
 
     #[template_callback]
     fn row_activated_cb(&self, row: gtk::ListBoxRow) {
-        let Some(user) = row.downcast_ref::<DmUserRow>().and_then(|r| r.user()) else {
+        let Some(user) = row.downcast_ref::<PillSourceRow>().and_then(|r| r.user()) else {
             return;
         };
 
@@ -163,8 +164,8 @@ impl CreateDmDialog {
         }));
     }
 
-    async fn start_direct_chat(&self, user: &DmUser) {
-        match user.upcast_ref::<User>().get_or_create_direct_chat().await {
+    async fn start_direct_chat(&self, user: &User) {
+        match user.get_or_create_direct_chat().await {
             Ok(room) => {
                 let Some(window) = self.transient_for().and_downcast::<Window>() else {
                     return;

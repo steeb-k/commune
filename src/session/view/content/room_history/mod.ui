@@ -258,6 +258,7 @@
                                       <object class="GtkListView" id="listview">
                                         <style>
                                           <class name="navigation-sidebar"/>
+                                          <class name="room-history-list"/>
                                         </style>
                                         <property name="tab-behavior">item</property>
                                         <property name="accessible-role">log</property>

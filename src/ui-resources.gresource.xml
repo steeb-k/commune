@@ -93,7 +93,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/tombstone.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/dm_user_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/join_room_dialog.ui</file>

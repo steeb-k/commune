@@ -99,6 +99,50 @@ button.overlaid {
   margin: 3px; /* Make sure the outline is fully visible */
 }
 
+.avatar-row-list contents {
+  padding: 0;
+}
+
+.avatar-row-list viewport, .avatar-row-list listview {
+  padding: 8px;
+}
+
+.avatar-row-list list, .avatar-row-list listview {
+  background-color: transparent;
+}
+
+.avatar-row-list row {
+  border-radius: 6px;
+  margin: 3px 0px;
+  padding: 6px;
+  outline-width: 0;
+}
+
+.avatar-row-list row:first-child {
+  margin-top: 0px;
+}
+
+.avatar-row-list row:last-child {
+  margin-bottom: 0px;
+}
+
+.avatar-row-list row:focus {
+  background-color: alpha(currentColor, .07);
+}
+
+.avatar-row-list row:hover {
+  background-color: alpha(currentColor, .07);
+}
+
+.avatar-row-list row:active {
+  background-color: alpha(currentColor, .16);
+}
+
+.avatar-row-list row:checked {
+  background-color: alpha(currentColor, .1);
+}
+
+
 /* Components */
 
 .inline-pill {
@@ -364,11 +408,11 @@ sidebar-row.drop-active.drop-empty .dim-label {
 
 /* Room History */
 
-.room-history listview {
+.room-history .room-history-list {
   padding-bottom: 0;
 }
 
-.room-history row {
+.room-history .room-history-list > row {
   min-height: 0;
   padding: 0;
   border-radius: 0;
@@ -545,49 +589,6 @@ read-receipts-list .cutout {
   font-family: monospace;
   background-color: @text_view_bg;
   color: @view_fg_color;
-}
-
-.list-popover contents {
-  padding: 0;
-}
-
-.list-popover viewport, .list-popover listview {
-  padding: 8px;
-}
-
-.list-popover list, .list-popover listview {
-  background-color: transparent;
-}
-
-.list-popover row {
-  border-radius: 6px;
-  margin: 3px 0px;
-  padding: 6px;
-  outline-width: 0;
-}
-
-.list-popover row:first-child {
-  margin-top: 0px;
-}
-
-.list-popover row:last-child {
-  margin-bottom: 0px;
-}
-
-.list-popover row:focus {
-  background-color: alpha(currentColor, .07);
-}
-
-.list-popover row:hover {
-  background-color: alpha(currentColor, .07);
-}
-
-.list-popover row:active {
-  background-color: alpha(currentColor, .16);
-}
-
-.list-popover row:checked {
-  background-color: alpha(currentColor, .1);
 }
 
 .related-event-toolbar {

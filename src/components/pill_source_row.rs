@@ -1,7 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use super::{Avatar, PillSource};
-use crate::session::model::{Member, Room};
+use crate::session::model::{Room, User};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -22,9 +22,9 @@ mod imp {
         pub id: TemplateChild<gtk::Label>,
         /// The source of the data displayed by this row.
         pub source: RefCell<Option<PillSource>>,
-        /// The room member presented by this row.
-        #[property(get = Self::member, set = Self::set_member, explicit_notify, nullable)]
-        pub member: PhantomData<Option<Member>>,
+        /// The user presented by this row.
+        #[property(get = Self::user, set = Self::set_user, explicit_notify, nullable)]
+        pub user: PhantomData<Option<User>>,
         /// The room presented by this row.
         #[property(get = Self::room, set = Self::set_room, explicit_notify, nullable)]
         pub room: PhantomData<Option<Room>>,
@@ -77,21 +77,21 @@ mod imp {
             self.source.replace(source);
 
             let obj = self.obj();
-            obj.notify_member();
+            obj.notify_user();
             obj.notify_room();
         }
 
-        /// The room member displayed by this row.
-        fn member(&self) -> Option<Member> {
+        /// The user displayed by this row.
+        fn user(&self) -> Option<User> {
             match self.source.borrow().as_ref()? {
-                PillSource::User(user) => user.clone().downcast().ok(),
+                PillSource::User(user) => Some(user.clone()),
                 _ => None,
             }
         }
 
-        /// Set the room member displayed by this row.
-        fn set_member(&self, member: Option<Member>) {
-            self.set_source(member.and_upcast().map(PillSource::User))
+        /// Set the user displayed by this row.
+        fn set_user(&self, user: Option<User>) {
+            self.set_source(user.map(PillSource::User))
         }
 
         /// The room displayed by this row.

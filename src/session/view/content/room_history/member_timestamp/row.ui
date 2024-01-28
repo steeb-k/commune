@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="ContentMemberTimestampRow" parent="AdwBin">
-    <style>
-      <class name="list-popover-row"/>
-    </style>
     <child>
       <object class="GtkBox">
         <property name="spacing">10</property>

@@ -35,8 +35,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkSearchEntry" id="search_entry">
-              </object>
+                  <object class="GtkSearchEntry" id="search_entry"/>
                 </child>
               </object>
             </child>
@@ -63,6 +62,9 @@
                 <property name="name">matching-page</property>
                 <property name="child">
                   <object class="GtkScrolledWindow" id="matching_page">
+                    <style>
+                      <class name="avatar-row-list"/>
+                    </style>
                     <property name="child">
                       <object class="AdwClamp">
                         <property name="child">
