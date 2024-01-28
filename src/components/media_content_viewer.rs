@@ -152,7 +152,10 @@ impl MediaContentViewer {
         let picture = if let Some(picture) = imp.viewer.child().and_downcast::<gtk::Picture>() {
             picture
         } else {
-            let picture = gtk::Picture::new();
+            let picture = gtk::Picture::builder()
+                .valign(gtk::Align::Center)
+                .halign(gtk::Align::Center)
+                .build();
             imp.viewer.set_child(Some(&picture));
             picture
         };
@@ -207,6 +210,8 @@ impl MediaContentViewer {
                     audio.add_css_class("toolbar");
                     audio.add_css_class("osd");
                     audio.set_autoplay(self.autoplay());
+                    audio.set_valign(gtk::Align::Center);
+                    audio.set_halign(gtk::Align::Center);
                     imp.viewer.set_child(Some(&audio));
                     audio
                 };
@@ -219,8 +224,11 @@ impl MediaContentViewer {
                 let video = if let Some(video) = imp.viewer.child().and_downcast::<gtk::Video>() {
                     video
                 } else {
-                    let video = gtk::Video::new();
-                    video.set_autoplay(self.autoplay());
+                    let video = gtk::Video::builder()
+                        .autoplay(self.autoplay())
+                        .valign(gtk::Align::Center)
+                        .halign(gtk::Align::Center)
+                        .build();
                     imp.viewer.set_child(Some(&video));
                     video
                 };
