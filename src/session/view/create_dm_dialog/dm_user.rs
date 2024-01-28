@@ -25,15 +25,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for DmUser {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            let direct_chat = obj.upcast_ref::<User>().direct_chat();
-            obj.set_direct_chat(direct_chat);
-        }
-    }
+    impl ObjectImpl for DmUser {}
 
     impl DmUser {
         /// Set the direct chat with this user.
@@ -65,8 +57,11 @@ impl DmUser {
             .property("display-name", display_name)
             .build();
 
-        obj.set_avatar_url(avatar_url);
-        obj.upcast_ref::<User>().imp().set_user_id(user_id);
+        let user = obj.upcast_ref::<User>();
+        user.set_avatar_url(avatar_url);
+        user.imp().set_user_id(user_id);
+        obj.set_direct_chat(user.direct_chat());
+
         obj
     }
 }
