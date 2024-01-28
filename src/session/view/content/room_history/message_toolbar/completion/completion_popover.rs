@@ -3,9 +3,9 @@ use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTem
 use pulldown_cmark::{Event, Parser, Tag};
 use secular::normalized_lower_lay_string;
 
-use super::{CompletionMemberList, CompletionRoomList, CompletionRow};
+use super::{CompletionMemberList, CompletionRoomList};
 use crate::{
-    components::Pill,
+    components::{Pill, PillSourceRow},
     session::model::{Member, Room},
 };
 
@@ -43,7 +43,7 @@ mod imp {
         #[property(get)]
         pub room_list: CompletionRoomList,
         /// The rows in the popover.
-        pub rows: [CompletionRow; MAX_ROWS],
+        pub rows: [PillSourceRow; MAX_ROWS],
         /// The selected row in the popover.
         pub selected: Cell<Option<usize>>,
         /// The current autocompleted word.
@@ -150,7 +150,7 @@ mod imp {
 
             self.list
                 .connect_row_activated(clone!(@weak obj => move |_, row| {
-                    if let Some(row) = row.downcast_ref::<CompletionRow>() {
+                    if let Some(row) = row.downcast_ref::<PillSourceRow>() {
                         obj.row_activated(row);
                     }
                 }));
@@ -571,7 +571,7 @@ impl CompletionPopover {
     }
 
     /// Handle a row being activated.
-    fn row_activated(&self, row: &CompletionRow) {
+    fn row_activated(&self, row: &PillSourceRow) {
         let Some(source) = row.source() else {
             return;
         };

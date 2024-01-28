@@ -1,9 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::{
-    components::{Avatar, PillSource},
-    session::model::{Member, Room},
-};
+use super::{Avatar, PillSource};
+use crate::session::model::{Member, Room};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -13,11 +11,9 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_toolbar/completion/completion_row.ui"
-    )]
-    #[properties(wrapper_type = super::CompletionRow)]
-    pub struct CompletionRow {
+    #[template(resource = "/org/gnome/Fractal/ui/components/pill_source_row.ui")]
+    #[properties(wrapper_type = super::PillSourceRow)]
+    pub struct PillSourceRow {
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
         #[template_child]
@@ -36,9 +32,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for CompletionRow {
-        const NAME: &'static str = "ContentCompletionRow";
-        type Type = super::CompletionRow;
+    impl ObjectSubclass for PillSourceRow {
+        const NAME: &'static str = "PillSourceRow";
+        type Type = super::PillSourceRow;
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
@@ -51,7 +47,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for CompletionRow {
+    impl ObjectImpl for PillSourceRow {
         fn dispose(&self) {
             for binding in self.bindings.take().iter().flatten() {
                 binding.unbind();
@@ -59,10 +55,10 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for CompletionRow {}
-    impl ListBoxRowImpl for CompletionRow {}
+    impl WidgetImpl for PillSourceRow {}
+    impl ListBoxRowImpl for PillSourceRow {}
 
-    impl CompletionRow {
+    impl PillSourceRow {
         /// Set the source of the data displayed by this row.
         pub(super) fn set_source(&self, source: Option<PillSource>) {
             for binding in self.bindings.take().iter().flatten() {
@@ -114,12 +110,12 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A popover to allow completion for a given text buffer.
-    pub struct CompletionRow(ObjectSubclass<imp::CompletionRow>)
+    /// A list row to display a [`PillSource`].
+    pub struct PillSourceRow(ObjectSubclass<imp::PillSourceRow>)
         @extends gtk::Widget, gtk::ListBoxRow;
 }
 
-impl CompletionRow {
+impl PillSourceRow {
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -135,7 +131,7 @@ impl CompletionRow {
     }
 }
 
-impl Default for CompletionRow {
+impl Default for PillSourceRow {
     fn default() -> Self {
         Self::new()
     }

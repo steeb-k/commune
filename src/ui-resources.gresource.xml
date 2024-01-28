@@ -20,6 +20,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/location_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/media_content_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/pill.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/pill_source_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/room_title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/spinner_button.ui</file>
@@ -82,7 +83,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_row/reply.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/attachment_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_popover.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/completion/completion_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/message_toolbar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/read_receipts_list/mod.ui</file>

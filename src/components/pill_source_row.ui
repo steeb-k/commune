@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentCompletionRow" parent="GtkListBoxRow">
+  <template class="PillSourceRow" parent="GtkListBoxRow">
     <style>
       <class name="list-popover-row"/>
     </style>
