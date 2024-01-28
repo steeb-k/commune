@@ -3,7 +3,7 @@ use futures_channel::oneshot;
 use gtk::{gdk, gio, glib, prelude::*, CompositeTemplate};
 use tracing::error;
 
-use crate::components::{LoadingBin, MediaContentViewer};
+use crate::components::MediaContentViewer;
 
 mod imp {
     use std::cell::RefCell;
@@ -19,8 +19,6 @@ mod imp {
         pub cancel_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub send_button: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
         #[template_child]
         pub media: TemplateChild<MediaContentViewer>,
         pub sender: RefCell<Option<oneshot::Sender<gtk::ResponseType>>>,
@@ -72,7 +70,6 @@ mod imp {
     impl AttachmentDialog {
         /// Set whether this dialog is loading.
         pub(super) fn set_loading(&self, loading: bool) {
-            self.loading_bin.set_is_loading(loading);
             self.send_button.set_sensitive(!loading);
 
             if loading {

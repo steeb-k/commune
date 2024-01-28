@@ -31,11 +31,7 @@
           </object>
         </child>
         <property name="content">
-          <object class="LoadingBin" id="loading_bin">
-            <property name="child">
-              <object class="ComponentsMediaContentViewer" id="media"/>
-            </property>
-          </object>
+          <object class="ComponentsMediaContentViewer" id="media"/>
         </property>
       </object>
     </property>
