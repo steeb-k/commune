@@ -10,7 +10,6 @@
     <property name="overflow">hidden</property>
     <child>
       <object class="GtkOverlay" id="overlay">
-        <property name="valign">center</property>
         <child>
           <object class="ComponentsLocationViewer" id="location"/>
         </child>
