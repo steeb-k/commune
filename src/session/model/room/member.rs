@@ -51,13 +51,16 @@ impl From<MembershipState> for Membership {
 }
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Member)]
     pub struct Member {
+        /// The room of the member.
+        #[property(get, construct_only)]
+        pub room: OnceCell<Room>,
         /// The power level of the member.
         #[property(get, minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
         pub power_level: Cell<PowerLevel>,
@@ -108,6 +111,7 @@ impl Member {
         let session = room.session();
         let obj = glib::Object::builder::<Self>()
             .property("session", &session)
+            .property("room", room)
             .build();
 
         obj.upcast_ref::<User>().imp().set_user_id(user_id);

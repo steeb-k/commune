@@ -15,6 +15,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/check_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/editable_avatar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/join_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/location_viewer.ui</file>
@@ -26,6 +27,8 @@
     <file compressed="true" preprocess="xml-stripblanks">components/spinner_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/switch_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/toastable_window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/user_page.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/user_profile_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/video_player.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">contrib/qr_code_scanner/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">error_page.ui</file>
@@ -95,7 +98,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/event_details_dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/join_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/media_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/room_creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/session_view.ui</file>
@@ -104,8 +106,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/verification_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/user_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/user_profile_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/accept_request_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">verification_view/identity_verification_view/cancelled_page.ui</file>

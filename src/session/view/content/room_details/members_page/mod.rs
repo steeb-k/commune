@@ -11,10 +11,8 @@ mod members_list_view;
 
 use self::members_list_view::{ExtraLists, MembersListView, MembershipSubpageItem};
 use crate::{
-    session::{
-        model::{Member, Membership, Room},
-        view::UserPage,
-    },
+    components::UserPage,
+    session::model::{Member, Membership, Room},
     toast,
 };
 
@@ -77,7 +75,7 @@ mod imp {
                 };
 
                 let member = room.get_or_create_members().get_or_create(user_id);
-                let user_page = UserPage::with_room_member(&room, &member);
+                let user_page = UserPage::new(&member);
                 user_page.connect_close(clone!(@weak widget => move |_| {
                     let _ = widget.activate_action("navigation.pop", None);
                     toast!(widget, gettext("The user is not in the room members list anymore"));

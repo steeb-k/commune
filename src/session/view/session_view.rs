@@ -7,10 +7,9 @@ use gtk::{
 use ruma::{OwnedUserId, RoomId};
 use tracing::{error, warn};
 
-use super::{
-    Content, CreateDmDialog, JoinRoomDialog, MediaViewer, RoomCreation, Sidebar, UserProfileDialog,
-};
+use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
+    components::{JoinRoomDialog, UserProfileDialog},
     session::model::{Event, IdentityVerification, Room, Selection, Session, SidebarListModel},
     spawn, toast,
     utils::matrix::{MatrixRoomId, MatrixRoomIdUri},

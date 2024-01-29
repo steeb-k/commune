@@ -2,8 +2,8 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
+use super::{Avatar, Spinner, SpinnerButton, ToastableWindow};
 use crate::{
-    components::{Avatar, Spinner, SpinnerButton, ToastableWindow},
     i18n::ngettext_f,
     prelude::*,
     session::model::{RemoteRoom, Session},
@@ -20,7 +20,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/session/view/join_room_dialog.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/join_room_dialog.ui")]
     #[properties(wrapper_type = super::JoinRoomDialog)]
     pub struct JoinRoomDialog {
         #[template_child]
@@ -171,6 +171,14 @@ impl JoinRoomDialog {
         self.look_up_room_inner(uri);
     }
 
+    /// Set the remote room.
+    pub fn set_room(&self, room: RemoteRoom) {
+        let imp = self.imp();
+
+        imp.disable_go_back.set(true);
+        imp.set_room(Some(room));
+    }
+
     /// Update the state of the entry page.
     #[template_callback]
     fn update_entry_page(&self) {
@@ -302,16 +310,17 @@ impl JoinRoomDialog {
         };
         let imp = self.imp();
 
-        let Some(uri) = imp.uri.borrow().clone() else {
+        let Some(room) = imp.room.borrow().clone() else {
             return;
         };
+        let uri = room.uri().clone();
 
         imp.go_back_btn.set_sensitive(false);
         imp.join_btn.set_loading(true);
 
         // Join the room with the given identifier.
         let room_list = session.room_list();
-        spawn!(clone!(@weak self as obj, @weak room_list => async move {
+        spawn!(clone!(@weak self as obj => async move {
             match room_list.join_by_id_or_alias(uri.id.into(), uri.via).await {
                 Ok(room_id) => {
                     if let Some(room) = room_list.get_wait(&room_id).await {

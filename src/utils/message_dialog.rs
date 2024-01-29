@@ -62,7 +62,6 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
 ///
 /// Panics if the action is something else than `Kick` or `Ban`.
 pub async fn confirm_room_member_destructive_action(
-    room: &Room,
     member: &Member,
     action: PowerLevelAction,
     transient_for: &gtk::Window,
@@ -78,7 +77,7 @@ pub async fn confirm_room_member_destructive_action(
             (heading, body, response)
         }
         PowerLevelAction::Kick => {
-            let can_rejoin = room.anyone_can_join();
+            let can_rejoin = member.room().anyone_can_join();
 
             match member.membership() {
                 Membership::Invite => {

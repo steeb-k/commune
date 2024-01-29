@@ -2,11 +2,10 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::OwnedUserId;
 
-use super::UserPage;
+use super::{Spinner, ToastableWindow, UserPage};
 use crate::{
-    components::{Spinner, ToastableWindow},
     prelude::*,
-    session::model::{Member, RemoteUser, Room, Session, User},
+    session::model::{Member, RemoteUser, Session, User},
     spawn,
 };
 
@@ -16,7 +15,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/Fractal/ui/session/view/user_profile_dialog.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/user_profile_dialog.ui")]
     pub struct UserProfileDialog {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
@@ -85,10 +84,9 @@ impl UserProfileDialog {
     }
 
     /// Set the member to present.
-    pub fn set_room_member(&self, room: Room, member: Member) {
+    pub fn set_room_member(&self, member: Member) {
         let imp = self.imp();
 
-        imp.user_page.set_room(Some(room));
         imp.user_page.set_user(Some(member.upcast::<User>()));
         imp.stack.set_visible_child_name("details");
     }

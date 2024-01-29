@@ -4,12 +4,12 @@ use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 use ruma::events::room::power_levels::PowerLevelAction;
 
 use crate::{
-    components::Avatar,
+    components::{Avatar, UserProfileDialog},
     gettext_f,
     prelude::*,
     session::{
-        model::{Member, Membership, PowerLevelUserAction, Room, User},
-        view::{content::RoomHistory, user_profile_dialog::UserProfileDialog},
+        model::{Member, Membership, PowerLevelUserAction, User},
+        view::content::RoomHistory,
     },
     toast,
     utils::{
@@ -39,9 +39,6 @@ mod imp {
         /// This avatar is active when the popover is displayed.
         #[property(get)]
         pub active: Cell<bool>,
-        /// The room of the member.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: RefCell<Option<Room>>,
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The displayed member.
         #[property(get, set = Self::set_sender, explicit_notify, nullable)]
@@ -189,33 +186,6 @@ mod imp {
     }
 
     impl SenderAvatar {
-        /// Set the room of the member.
-        fn set_room(&self, room: Option<Room>) {
-            if *self.room.borrow() == room {
-                return;
-            }
-
-            if let Some(room) = self.room.take() {
-                if let Some(handler) = self.permissions_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
-            }
-
-            if let Some(room) = room {
-                let permissions_handler =
-                    room.permissions()
-                        .connect_changed(clone!(@weak self as imp => move |_| {
-                            imp.update_actions();
-                        }));
-                self.permissions_handler.replace(Some(permissions_handler));
-
-                self.room.replace(Some(room));
-                self.update_actions();
-            }
-
-            self.obj().notify_room();
-        }
-
         /// Set the list of room members.
         fn set_sender(&self, sender: Option<Member>) {
             let prev_sender = self.sender.obj();
@@ -227,6 +197,13 @@ mod imp {
             self.sender.disconnect_signals();
 
             if let Some(sender) = sender {
+                let permissions_handler = sender.room().permissions().connect_changed(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_actions();
+                    }),
+                );
+                self.permissions_handler.replace(Some(permissions_handler));
+
                 let display_name_handler =
                     sender.connect_display_name_notify(clone!(@weak self as imp => move |_| {
                         imp.update_accessible_label();
@@ -276,15 +253,12 @@ mod imp {
 
         /// Update the actions for the current state.
         fn update_actions(&self) {
-            let Some(room) = self.room.borrow().clone() else {
-                return;
-            };
             let Some(sender) = self.sender.obj() else {
                 return;
             };
             let obj = self.obj();
 
-            let permissions = room.permissions();
+            let permissions = sender.room().permissions();
             let membership = sender.membership();
             let sender_id = sender.user_id();
             let is_own_user = sender.is_own_user();
@@ -474,12 +448,9 @@ impl SenderAvatar {
         let Some(sender) = self.sender() else {
             return;
         };
-        let Some(room) = self.room() else {
-            return;
-        };
 
         let dialog = UserProfileDialog::new(self.root().and_downcast_ref::<gtk::Window>());
-        dialog.set_room_member(room, sender);
+        dialog.set_room_member(sender);
         dialog.present();
     }
 
@@ -514,15 +485,13 @@ impl SenderAvatar {
 
     /// Invite the sender to the room.
     async fn invite(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(sender) = self.sender() else {
             return;
         };
 
         toast!(self, gettext("Inviting user…"));
 
+        let room = sender.room();
         let user_id = sender.user_id().clone();
         if room.invite(&[user_id]).await.is_err() {
             toast!(self, gettext("Failed to invite user"));
@@ -531,9 +500,6 @@ impl SenderAvatar {
 
     /// Kick the user from the room.
     async fn kick(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(sender) = self.sender() else {
             return;
         };
@@ -542,8 +508,7 @@ impl SenderAvatar {
         };
 
         let (confirmed, reason) =
-            confirm_room_member_destructive_action(&room, &sender, PowerLevelAction::Kick, &window)
-                .await;
+            confirm_room_member_destructive_action(&sender, PowerLevelAction::Kick, &window).await;
         if !confirmed {
             return;
         }
@@ -557,6 +522,7 @@ impl SenderAvatar {
         };
         toast!(self, label);
 
+        let room = sender.room();
         let user_id = sender.user_id().clone();
         if room.kick(&[(user_id, reason)]).await.is_err() {
             let error = match membership {
@@ -570,9 +536,6 @@ impl SenderAvatar {
 
     /// Ban the room member.
     async fn ban(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(sender) = self.sender() else {
             return;
         };
@@ -581,14 +544,14 @@ impl SenderAvatar {
         };
 
         let (confirmed, reason) =
-            confirm_room_member_destructive_action(&room, &sender, PowerLevelAction::Ban, &window)
-                .await;
+            confirm_room_member_destructive_action(&sender, PowerLevelAction::Ban, &window).await;
         if !confirmed {
             return;
         }
 
         toast!(self, gettext("Banning user…"));
 
+        let room = sender.room();
         let user_id = sender.user_id().clone();
         if room.ban(&[(user_id, reason)]).await.is_err() {
             toast!(self, gettext("Failed to ban user"));
@@ -597,15 +560,13 @@ impl SenderAvatar {
 
     /// Unban the room member.
     async fn unban(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(sender) = self.sender() else {
             return;
         };
 
         toast!(self, gettext("Unbanning user…"));
 
+        let room = sender.room();
         let user_id = sender.user_id().clone();
         if room.unban(&[(user_id, None)]).await.is_err() {
             toast!(self, gettext("Failed to unban user"));

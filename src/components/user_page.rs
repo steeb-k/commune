@@ -7,11 +7,11 @@ use gtk::{
 };
 use ruma::events::room::power_levels::PowerLevelAction;
 
+use super::{Avatar, SpinnerButton};
 use crate::{
-    components::{Avatar, SpinnerButton},
     i18n::gettext_f,
     prelude::*,
-    session::model::{Member, MemberRole, Membership, PowerLevelUserAction, Room, User},
+    session::model::{Member, MemberRole, Membership, PowerLevelUserAction, User},
     spawn, toast,
     utils::{message_dialog::confirm_room_member_destructive_action, BoundObject},
     Window,
@@ -26,7 +26,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/session/view/user_page.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/user_page.ui")]
     #[properties(wrapper_type = super::UserPage)]
     pub struct UserPage {
         #[template_child]
@@ -66,11 +66,9 @@ mod imp {
         /// The current user.
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: BoundObject<User>,
-        /// The room, if the user is a room member.
-        #[property(get, set = Self::set_room, explicit_notify, nullable)]
-        pub room: BoundObject<Room>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub room_display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -114,9 +112,14 @@ mod imp {
                 binding.unbind();
             }
 
-            if let Some(room) = self.room.obj() {
+            if let Some(member) = self.user.obj().and_downcast::<Member>() {
+                let room = member.room();
+
                 if let Some(handler) = self.permissions_handler.take() {
                     room.permissions().disconnect(handler);
+                }
+                if let Some(handler) = self.room_display_name_handler.take() {
+                    room.disconnect(handler);
                 }
             }
         }
@@ -128,11 +131,23 @@ mod imp {
     impl UserPage {
         /// Set the current user.
         fn set_user(&self, user: Option<User>) {
-            if self.user.obj() == user {
+            let prev_user = self.user.obj();
+
+            if prev_user == user {
                 return;
             }
             let obj = self.obj();
 
+            if let Some(member) = prev_user.and_downcast::<Member>() {
+                let room = member.room();
+
+                if let Some(handler) = self.permissions_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+                if let Some(handler) = self.room_display_name_handler.take() {
+                    room.disconnect(handler);
+                }
+            }
             for binding in self.bindings.take() {
                 binding.unbind();
             }
@@ -161,6 +176,22 @@ mod imp {
                 );
 
                 if let Some(member) = user.downcast_ref::<Member>() {
+                    let room = member.room();
+
+                    let permissions_handler =
+                        room.permissions()
+                            .connect_changed(clone!(@weak obj => move |_| {
+                                obj.update_room();
+                            }));
+                    self.permissions_handler.replace(Some(permissions_handler));
+
+                    let room_display_name_handler =
+                        room.connect_display_name_notify(clone!(@weak obj => move |_| {
+                            obj.update_room();
+                        }));
+                    self.room_display_name_handler
+                        .replace(Some(room_display_name_handler));
+
                     handlers.push(member.connect_membership_notify(
                         clone!(@weak obj => move |member| {
                             if member.membership() == Membership::Leave {
@@ -192,31 +223,6 @@ mod imp {
             obj.update_ignored();
             obj.notify_user();
         }
-
-        /// Set the room, if the user is a room member.
-        fn set_room(&self, room: Option<Room>) {
-            let Some(room) = room else {
-                // Nothing to do when there is no room.
-                return;
-            };
-            let obj = self.obj();
-
-            let permissions_handler =
-                room.permissions()
-                    .connect_changed(clone!(@weak obj => move |_| {
-                        obj.update_room();
-                    }));
-            self.permissions_handler.replace(Some(permissions_handler));
-
-            let display_name_handler =
-                room.connect_display_name_notify(clone!(@weak obj => move |_| {
-                    obj.update_room();
-                }));
-
-            self.room.set(room, vec![display_name_handler]);
-
-            obj.update_room();
-        }
     }
 }
 
@@ -231,14 +237,6 @@ impl UserPage {
     /// Construct a new `UserPage` for the given user.
     pub fn new(user: &impl IsA<User>) -> Self {
         glib::Object::builder().property("user", user).build()
-    }
-
-    /// Construct a new `UserPage` for the given room member.
-    pub fn with_room_member(room: &Room, user: &Member) -> Self {
-        glib::Object::builder()
-            .property("room", room)
-            .property("user", user)
-            .build()
     }
 
     /// Copy the user ID to the clipboard.
@@ -318,10 +316,6 @@ impl UserPage {
     fn update_room(&self) {
         let imp = self.imp();
 
-        let Some(room) = self.room() else {
-            imp.room_box.set_visible(false);
-            return;
-        };
         let Some(member) = self.user().and_downcast::<Member>() else {
             imp.room_box.set_visible(false);
             return;
@@ -333,6 +327,7 @@ impl UserPage {
             return;
         }
 
+        let room = member.room();
         let room_title = gettext_f("In {room_name}", &[("room_name", &room.display_name())]);
         imp.room_title.set_label(&room_title);
 
@@ -436,10 +431,7 @@ impl UserPage {
     /// Invite the user to the room.
     #[template_callback]
     fn invite_user(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let Some(user) = self.user() else {
+        let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
 
@@ -449,8 +441,10 @@ impl UserPage {
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
-        let user_id = user.user_id().clone();
-        spawn!(clone!(@weak self as obj, @weak room => async move {
+        spawn!(clone!(@weak self as obj => async move {
+            let room = member.room();
+            let user_id = member.user_id().clone();
+
             if room.invite(&[user_id]).await.is_err() {
                 toast!(obj, gettext("Failed to invite user"));
             }
@@ -462,9 +456,6 @@ impl UserPage {
     /// Kick the user from the room.
     #[template_callback]
     fn kick_user(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -478,35 +469,31 @@ impl UserPage {
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
-        spawn!(
-            clone!(@weak self as obj, @weak room, @weak member, @weak window => async move {
-                let (confirmed, reason) = confirm_room_member_destructive_action(&room, &member, PowerLevelAction::Kick, &window).await;
-                if !confirmed {
-                    obj.reset_room();
-                    return;
-                }
+        spawn!(clone!(@weak self as obj => async move {
+            let (confirmed, reason) = confirm_room_member_destructive_action(&member, PowerLevelAction::Kick, &window).await;
+            if !confirmed {
+                obj.reset_room();
+                return;
+            }
 
-                let user_id = member.user_id().clone();
-                if room.kick(&[(user_id, reason)]).await.is_err() {
-                    let error = match member.membership() {
-                        Membership::Invite => gettext("Failed to revoke invite of user"),
-                        Membership::Knock => gettext("Failed to deny access to user"),
-                        _ => gettext("Failed to kick user"),
-                    };
-                    toast!(obj, error);
+            let room = member.room();
+            let user_id = member.user_id().clone();
+            if room.kick(&[(user_id, reason)]).await.is_err() {
+                let error = match member.membership() {
+                    Membership::Invite => gettext("Failed to revoke invite of user"),
+                    Membership::Knock => gettext("Failed to deny access to user"),
+                    _ => gettext("Failed to kick user"),
+                };
+                toast!(obj, error);
 
-                    obj.reset_room();
-                }
-            })
-        );
+                obj.reset_room();
+            }
+        }));
     }
 
     /// Ban the room member.
     #[template_callback]
     fn ban_user(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -520,30 +507,26 @@ impl UserPage {
         imp.kick_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
-        spawn!(
-            clone!(@weak self as obj, @weak room, @weak member, @weak window => async move {
-                let (confirmed, reason) = confirm_room_member_destructive_action(&room, &member, PowerLevelAction::Ban, &window).await;
-                if !confirmed {
-                    obj.reset_room();
-                    return;
-                }
-
-                let user_id = member.user_id().clone();
-                if room.ban(&[(user_id, reason)]).await.is_err() {
-                    toast!(obj, gettext("Failed to ban user"));
-                }
-
+        spawn!(clone!(@weak self as obj => async move {
+            let (confirmed, reason) = confirm_room_member_destructive_action(&member, PowerLevelAction::Ban, &window).await;
+            if !confirmed {
                 obj.reset_room();
-            })
-        );
+                return;
+            }
+
+            let room = member.room();
+            let user_id = member.user_id().clone();
+            if room.ban(&[(user_id, reason)]).await.is_err() {
+                toast!(obj, gettext("Failed to ban user"));
+            }
+
+            obj.reset_room();
+        }));
     }
 
     /// Unban the room member.
     #[template_callback]
     fn unban_user(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -554,8 +537,10 @@ impl UserPage {
         imp.kick_button.set_sensitive(false);
         imp.ban_button.set_sensitive(false);
 
-        let user_id = member.user_id().clone();
-        spawn!(clone!(@weak self as obj, @weak room => async move {
+        spawn!(clone!(@weak self as obj => async move {
+            let room = member.room();
+            let user_id = member.user_id().clone();
+
             if room.unban(&[(user_id, None)]).await.is_err() {
                 toast!(obj, gettext("Failed to unban user"));
             }

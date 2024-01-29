@@ -239,7 +239,14 @@ impl MessageText {
             child.set_use_markup(use_markup || linkified);
             child.set_label(label);
         } else {
-            let widgets = widgets.into_iter().map(|(w, _)| w).collect();
+            let widgets = widgets
+                .into_iter()
+                .map(|(p, _)| {
+                    // Show the profile on click.
+                    p.set_activatable(true);
+                    p
+                })
+                .collect();
             let child = if let Some(child) = self.child().and_downcast::<LabelWithWidgets>() {
                 child
             } else {
@@ -511,7 +518,14 @@ fn create_label_for_html(label: &str, room: &Room, ellipsize: bool, cut_text: bo
         });
         w.upcast()
     } else {
-        let widgets = widgets.into_iter().map(|(w, _)| w).collect();
+        let widgets = widgets
+            .into_iter()
+            .map(|(p, _)| {
+                // Show the profile on click.
+                p.set_activatable(true);
+                p
+            })
+            .collect();
         let w = LabelWithWidgets::with_label_and_widgets(&label, widgets);
         w.set_use_markup(true);
         w.set_ellipsize(ellipsize);

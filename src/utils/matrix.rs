@@ -693,6 +693,15 @@ impl From<MatrixRoomId> for MatrixRoomIdUri {
     }
 }
 
+impl From<&MatrixRoomIdUri> for MatrixUri {
+    fn from(value: &MatrixRoomIdUri) -> Self {
+        match &value.id {
+            MatrixRoomId::Id(room_id) => room_id.matrix_uri_via(value.via.clone(), false),
+            MatrixRoomId::Alias(alias) => alias.matrix_uri(false),
+        }
+    }
+}
+
 /// A URI for a Matrix event ID.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MatrixEventIdUri {

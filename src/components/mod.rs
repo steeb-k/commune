@@ -9,6 +9,7 @@ mod custom_entry;
 mod drag_overlay;
 mod editable_avatar;
 mod image_paintable;
+mod join_room_dialog;
 mod label_with_widgets;
 mod loading_bin;
 mod loading_row;
@@ -24,6 +25,8 @@ mod spinner;
 mod spinner_button;
 mod switch_loading_row;
 mod toastable_window;
+mod user_page;
+mod user_profile_dialog;
 mod video_player;
 mod video_player_renderer;
 
@@ -39,6 +42,7 @@ pub use self::{
     drag_overlay::DragOverlay,
     editable_avatar::EditableAvatar,
     image_paintable::ImagePaintable,
+    join_room_dialog::JoinRoomDialog,
     label_with_widgets::{LabelWithWidgets, DEFAULT_PLACEHOLDER},
     loading_bin::LoadingBin,
     loading_row::LoadingRow,
@@ -54,6 +58,8 @@ pub use self::{
     spinner_button::SpinnerButton,
     switch_loading_row::SwitchLoadingRow,
     toastable_window::{ToastableWindow, ToastableWindowExt, ToastableWindowImpl},
+    user_page::UserPage,
+    user_profile_dialog::UserProfileDialog,
     video_player::VideoPlayer,
     video_player_renderer::VideoPlayerRenderer,
 };

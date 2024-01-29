@@ -157,7 +157,6 @@ mod imp {
                 binding.unbind();
             }
 
-            self.avatar.set_room(Some(event.room()));
             self.avatar.set_sender(Some(event.sender()));
 
             let display_name_binding = event
