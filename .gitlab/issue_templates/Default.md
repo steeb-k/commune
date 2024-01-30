@@ -20,8 +20,13 @@ or videos showing the issue.
 * **Installation Source**: <!-- Where you installed Fractal from, e.g. Flathub, GNOME Apps Nightly, AUR, or distro repositories -->
 * **Homeserver**: <!-- The homeserver for your matrix account, e.g. matrix.org, gnome.org, … You can mention several of them if this is reproducible on multiple ones. -->
 
-<!-- If you have a crash report, use the "Attach A File" button in the issue editor to attach it, or paste it in a code block below. -->
-<!-- To create a code block, you surround the code with two lines with three "`" characters like so:
+<!-- If you have error logs or a crash report, use the "Attach A File" button in the issue editor to attach it, or paste it in a code block below.
+
+To access the logs, you can run `journalctl -e -o cat _COMM=fractal`
+
+To generate a stack trace in case of a crash, you can follow this guide: https://handbook.gnome.org/issues/stack-traces.html
+
+To create a code block, surround the code with two lines with three "`" characters like so:
 
 ```
 code goes here
