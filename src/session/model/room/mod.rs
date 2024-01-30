@@ -59,7 +59,7 @@ pub use self::{
 };
 use super::{
     notifications::NotificationsRoomSetting, room_list::RoomMetainfo, AvatarData, AvatarImage,
-    AvatarUriSource, IdentityVerification, Session, SidebarItem, SidebarItemImpl, User,
+    AvatarUriSource, IdentityVerification, Session, User,
 };
 use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
 
@@ -210,7 +210,6 @@ mod imp {
     impl ObjectSubclass for Room {
         const NAME: &'static str = "Room";
         type Type = super::Room;
-        type ParentType = SidebarItem;
     }
 
     #[glib::derived_properties]
@@ -234,8 +233,6 @@ mod imp {
                 .build();
         }
     }
-
-    impl SidebarItemImpl for Room {}
 
     impl Room {
         /// Set the current session
@@ -366,7 +363,7 @@ glib::wrapper! {
     /// GObject representation of a Matrix room.
     ///
     /// Handles populating the Timeline.
-    pub struct Room(ObjectSubclass<imp::Room>) @extends SidebarItem;
+    pub struct Room(ObjectSubclass<imp::Room>);
 }
 
 impl Room {

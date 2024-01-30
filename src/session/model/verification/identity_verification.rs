@@ -21,7 +21,7 @@ use super::{load_supported_verification_methods, VerificationKey};
 use crate::{
     contrib::Camera,
     prelude::*,
-    session::model::{Member, Room, Session, SidebarItem, SidebarItemImpl, User},
+    session::model::{Member, Room, Session, User},
     spawn, spawn_tokio,
     utils::BoundConstructOnlyObject,
 };
@@ -182,7 +182,6 @@ mod imp {
     impl ObjectSubclass for IdentityVerification {
         const NAME: &'static str = "IdentityVerification";
         type Type = super::IdentityVerification;
-        type ParentType = SidebarItem;
     }
 
     #[glib::derived_properties]
@@ -243,8 +242,6 @@ mod imp {
             }
         }
     }
-
-    impl SidebarItemImpl for IdentityVerification {}
 
     impl IdentityVerification {
         /// Set the SDK's verification request.
@@ -362,8 +359,7 @@ mod imp {
 
 glib::wrapper! {
     /// An identity verification request.
-    pub struct IdentityVerification(ObjectSubclass<imp::IdentityVerification>)
-        @extends SidebarItem;
+    pub struct IdentityVerification(ObjectSubclass<imp::IdentityVerification>);
 }
 
 impl IdentityVerification {

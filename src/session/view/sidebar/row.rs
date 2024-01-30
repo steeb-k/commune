@@ -7,7 +7,7 @@ use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     session::model::{
         Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
-        SidebarIconItemType, SidebarItem,
+        SidebarIconItemType,
     },
     spawn, toast,
     utils::{message_dialog, BoundObjectWeakRef},
@@ -27,9 +27,9 @@ mod imp {
         /// The list row to track for expander state.
         #[property(get, set = Self::set_list_row, explicit_notify, nullable)]
         pub list_row: RefCell<Option<gtk::TreeListRow>>,
-        /// The sidebar item of this row.
+        /// The item of this row.
         #[property(get = Self::item)]
-        pub item: PhantomData<Option<SidebarItem>>,
+        pub item: PhantomData<Option<glib::Object>>,
         pub bindings: RefCell<Vec<glib::Binding>>,
         room_join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
@@ -209,12 +209,8 @@ mod imp {
         }
 
         /// The sidebar item of this row.
-        fn item(&self) -> Option<SidebarItem> {
-            self.list_row
-                .borrow()
-                .as_ref()
-                .and_then(|r| r.item())
-                .and_downcast()
+        fn item(&self) -> Option<glib::Object> {
+            self.list_row.borrow().as_ref().and_then(|r| r.item())
         }
 
         /// Get the `Room` of this item, if this is a room row.

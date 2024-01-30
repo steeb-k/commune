@@ -31,7 +31,7 @@ pub use self::{
     session_settings::{SessionSettings, StoredSessionSettings},
     sidebar_data::{
         Category, CategoryType, ItemList, Selection, SidebarIconItem, SidebarIconItemType,
-        SidebarItem, SidebarItemImpl, SidebarListModel,
+        SidebarListModel,
     },
     user::{User, UserExt},
     user_sessions_list::{UserSession, UserSessionsList},

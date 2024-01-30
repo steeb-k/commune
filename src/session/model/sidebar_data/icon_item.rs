@@ -3,7 +3,7 @@ use std::fmt;
 use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use super::{CategoryType, SidebarItem, SidebarItemExt, SidebarItemImpl};
+use super::CategoryType;
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -58,22 +58,10 @@ mod imp {
     impl ObjectSubclass for SidebarIconItem {
         const NAME: &'static str = "SidebarIconItem";
         type Type = super::SidebarIconItem;
-        type ParentType = SidebarItem;
     }
 
     #[glib::derived_properties]
     impl ObjectImpl for SidebarIconItem {}
-
-    impl SidebarItemImpl for SidebarIconItem {
-        fn update_visibility(&self, for_category: CategoryType) {
-            let obj = self.obj();
-
-            match self.item_type.get() {
-                SidebarIconItemType::Explore => obj.set_visible(true),
-                SidebarIconItemType::Forget => obj.set_visible(for_category == CategoryType::Left),
-            }
-        }
-    }
 
     impl SidebarIconItem {
         /// The display name of this item.
@@ -90,7 +78,7 @@ mod imp {
 
 glib::wrapper! {
     /// A top-level row in the sidebar with an icon.
-    pub struct SidebarIconItem(ObjectSubclass<imp::SidebarIconItem>) @extends SidebarItem;
+    pub struct SidebarIconItem(ObjectSubclass<imp::SidebarIconItem>);
 }
 
 impl SidebarIconItem {
@@ -98,5 +86,14 @@ impl SidebarIconItem {
         glib::Object::builder()
             .property("item-type", item_type)
             .build()
+    }
+
+    /// Whether this item should be shown for a drag-n-drop from the given
+    /// category.
+    pub fn visible_for_category(&self, for_category: CategoryType) -> bool {
+        match self.item_type() {
+            SidebarIconItemType::Explore => true,
+            SidebarIconItemType::Forget => for_category == CategoryType::Left,
+        }
     }
 }

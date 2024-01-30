@@ -10,7 +10,6 @@ mod category_type;
 
 use self::category_filter::CategoryFilter;
 pub use self::category_type::CategoryType;
-use super::{SidebarItem, SidebarItemExt, SidebarItemImpl};
 use crate::{
     session::model::{Room, RoomList, RoomType},
     utils::ExpressionListModel,
@@ -47,7 +46,6 @@ mod imp {
     impl ObjectSubclass for Category {
         const NAME: &'static str = "Category";
         type Type = super::Category;
-        type ParentType = SidebarItem;
         type Interfaces = (gio::ListModel,);
     }
 
@@ -56,7 +54,7 @@ mod imp {
 
     impl ListModelImpl for Category {
         fn item_type(&self) -> glib::Type {
-            SidebarItem::static_type()
+            glib::Object::static_type()
         }
 
         fn n_items(&self) -> u32 {
@@ -65,31 +63,6 @@ mod imp {
 
         fn item(&self, position: u32) -> Option<glib::Object> {
             self.model.get().unwrap().item(position)
-        }
-    }
-
-    impl SidebarItemImpl for Category {
-        fn update_visibility(&self, for_category: CategoryType) {
-            let obj = self.obj();
-
-            let visible = if !obj.empty() {
-                true
-            } else {
-                let room_types =
-                    RoomType::try_from(for_category)
-                        .ok()
-                        .and_then(|source_room_type| {
-                            RoomType::try_from(obj.category_type())
-                                .ok()
-                                .map(|target_room_type| (source_room_type, target_room_type))
-                        });
-
-                room_types.is_some_and(|(source_room_type, target_room_type)| {
-                    source_room_type.can_change_to(target_room_type)
-                })
-            };
-
-            obj.set_visible(visible)
         }
     }
 
@@ -176,7 +149,6 @@ glib::wrapper! {
     ///
     /// This struct is used in ItemList for the sidebar.
     pub struct Category(ObjectSubclass<imp::Category>)
-        @extends SidebarItem,
         @implements gio::ListModel;
 }
 
@@ -186,5 +158,21 @@ impl Category {
             .property("category-type", category_type)
             .property("model", model)
             .build()
+    }
+
+    /// Whether this category should be shown for a drag-n-drop from the given
+    /// category.
+    pub fn visible_for_category(&self, for_category: CategoryType) -> bool {
+        if !self.empty() {
+            return true;
+        }
+
+        let room_types = RoomType::try_from(for_category)
+            .ok()
+            .zip(RoomType::try_from(self.category_type()).ok());
+
+        room_types.is_some_and(|(source_room_type, target_room_type)| {
+            source_room_type.can_change_to(target_room_type)
+        })
     }
 }
