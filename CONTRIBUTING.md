@@ -151,7 +151,7 @@ submissions and is once again checked by our CI.
 
 ## Commit
 
-Please follow the [GNOME commit message guidelines](https://wiki.gnome.org/Git/CommitMessages).
+Please follow the [GNOME commit message guidelines](https://handbook.gnome.org/development/commit-messages.html).
 
 ## Merge Request
 
