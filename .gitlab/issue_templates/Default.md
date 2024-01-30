@@ -1,8 +1,5 @@
 <!-- This is a template to report bugs, select the corresponding template to request a new feature. -->
 
-<!-- Please note that Fractal was rewritten from scratch and our current focus is on the main branch
-or the latest nightly build, so issues with the stable release are unlikely to be fixed. -->
-
 Detailed description of the issue. Provide as much information as you can, potentially with images
 or videos showing the issue.
 

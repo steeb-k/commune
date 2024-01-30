@@ -1,7 +1,7 @@
-<!-- Please note that Fractal was rewritten from scratch and our current focus is on the main branch
-or the latest nightly build. Some features missing in the stable release are already available
-in the development version. To avoid duplicates and unnecessary issues, please check that your
-request is for something that is not yet implemented and doesn’t have an existing issue open. -->
+<!-- Please note that some features missing in the stable release are already available in the
+development version. To avoid duplicates and unnecessary issues, please check that your request is
+for something that is not yet implemented, and doesn’t have an existing issue that is open or that
+was closed as out of scope. -->
 
 Detailed description of the feature. Provide as much information as you can.
 
