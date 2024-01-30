@@ -393,7 +393,7 @@ impl MessageToolbar {
         }
 
         imp.related_event_header
-            .set_widgets(vec![Pill::for_user(event.sender())]);
+            .set_widgets(vec![Pill::new(&event.sender())]);
         imp.related_event_header
             // Translators: Do NOT translate the content between '{' and '}',
             // this is a variable name. In this string, 'Reply' is a noun.
@@ -998,9 +998,9 @@ impl SplitMentions {
             .and_then(|widget| widget.downcast_ref::<Pill>())
         {
             // This chunk is a mention.
-            let (name, uri) = if let Some(user) = pill.user() {
+            let (name, uri) = if let Some(user) = pill.source().and_downcast_ref::<Member>() {
                 (user.display_name(), user.matrix_to_uri().to_string())
-            } else if let Some(room) = pill.room() {
+            } else if let Some(room) = pill.source().and_downcast_ref::<Room>() {
                 let matrix_to_uri = room.matrix_to_uri().await;
                 let string_repr = match matrix_to_uri.id() {
                     MatrixId::Room(room_id) => room_id.to_string(),

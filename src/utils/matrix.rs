@@ -466,13 +466,13 @@ fn parse_pill(s: &str, room: &Room, session: &Session) -> Option<Pill> {
             .room_list()
             .get_by_identifier(&room_uri.id)
             .as_ref()
-            .map(Pill::for_room)
-            .or_else(|| Some(Pill::for_remote_room(&RemoteRoom::new(session, room_uri)))),
+            .map(Pill::new)
+            .or_else(|| Some(Pill::new(&RemoteRoom::new(session, room_uri)))),
         MatrixIdUri::User(user_id) => {
             // We should have a strong reference to the list wherever we show a user pill,
             // so we can use `get_or_create_members()`.
             let user = room.get_or_create_members().get_or_create(user_id);
-            Some(Pill::for_user(user))
+            Some(Pill::new(&user))
         }
         _ => None,
     }

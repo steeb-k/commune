@@ -23,10 +23,11 @@ use tracing::{debug, error};
 use url::Url;
 
 use super::{
-    AvatarData, IgnoredUsers, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel,
-    User, UserSessionsList, VerificationList,
+    IgnoredUsers, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel, User,
+    UserSessionsList, VerificationList,
 };
 use crate::{
+    components::AvatarData,
     prelude::*,
     secret::StoredSession,
     session_list::{SessionInfo, SessionInfoImpl},
@@ -338,7 +339,7 @@ impl Session {
         spawn!(glib::Priority::LOW, async move {
             match handle.await.unwrap() {
                 Ok(res) => {
-                    user.set_display_name(res.displayname);
+                    user.set_name(res.displayname);
                     user.set_avatar_url(res.avatar_url);
                 }
                 Err(error) => error!("Couldn’t fetch account metadata: {error}"),

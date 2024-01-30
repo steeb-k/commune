@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, CompositeTemplate};
 
-use crate::{components::Avatar, session::model::AvatarData};
+use crate::components::{Avatar, AvatarData};
 
 mod imp {
     use std::marker::PhantomData;

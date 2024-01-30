@@ -6,8 +6,8 @@ use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 
 use super::sas_emoji::SasEmoji;
 use crate::{
-    components::SpinnerButton, gettext_f, session::model::IdentityVerification, spawn, toast,
-    utils::BoundObjectWeakRef,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
+    toast, utils::BoundObjectWeakRef,
 };
 
 mod imp {

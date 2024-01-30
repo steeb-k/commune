@@ -81,7 +81,7 @@
                         <property name="halign">center</property>
                         <child>
                           <object class="Pill">
-                            <binding name="user">
+                            <binding name="source">
                               <lookup name="inviter">
                                 <lookup name="room">ContentInvite</lookup>
                               </lookup>

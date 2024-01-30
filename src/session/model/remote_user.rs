@@ -3,7 +3,7 @@ use matrix_sdk::ruma::OwnedUserId;
 use tracing::error;
 
 use super::{Session, User};
-use crate::{prelude::*, spawn_tokio};
+use crate::{components::PillSource, prelude::*, spawn_tokio};
 
 mod imp {
     use super::*;
@@ -19,11 +19,17 @@ mod imp {
     }
 
     impl ObjectImpl for RemoteUser {}
+
+    impl PillSourceImpl for RemoteUser {
+        fn identifier(&self) -> String {
+            self.obj().upcast_ref::<User>().user_id_string()
+        }
+    }
 }
 
 glib::wrapper! {
     /// A User that can only be updated by making remote calls, i.e. it won't be updated via sync.
-    pub struct RemoteUser(ObjectSubclass<imp::RemoteUser>) @extends User;
+    pub struct RemoteUser(ObjectSubclass<imp::RemoteUser>) @extends PillSource, User;
 }
 
 impl RemoteUser {
@@ -52,7 +58,7 @@ impl RemoteUser {
             }
         };
 
-        self.set_display_name(profile.displayname);
+        self.set_name(profile.displayname);
         self.set_avatar_url(profile.avatar_url);
     }
 }

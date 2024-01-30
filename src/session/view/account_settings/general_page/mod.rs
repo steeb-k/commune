@@ -414,7 +414,7 @@ impl GeneralPage {
                 // Because this action can finish in display_name_changed, we must only act if
                 // this is still the current action.
                 if weak_action.is_ongoing() {
-                    session.user().set_display_name(Some(display_name));
+                    session.user().set_name(Some(display_name));
                 }
             }
             Err(error) => {

@@ -2,6 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
 
 use crate::{
+    components::PillSource,
     prelude::*,
     session::model::{Room, Session, User},
 };
@@ -27,6 +28,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for DmUser {}
 
+    impl PillSourceImpl for DmUser {
+        fn identifier(&self) -> String {
+            self.obj().upcast_ref::<User>().user_id_string()
+        }
+    }
+
     impl DmUser {
         /// Set the direct chat with this user.
         fn set_direct_chat(&self, direct_chat: Option<Room>) {
@@ -42,7 +49,7 @@ mod imp {
 
 glib::wrapper! {
     /// A User in the context of creating a direct chat.
-    pub struct DmUser(ObjectSubclass<imp::DmUser>) @extends User;
+    pub struct DmUser(ObjectSubclass<imp::DmUser>) @extends PillSource, User;
 }
 
 impl DmUser {

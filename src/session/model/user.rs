@@ -8,8 +8,12 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use super::{AvatarData, AvatarImage, AvatarUriSource, IdentityVerification, Room, Session};
-use crate::{components::Pill, prelude::*, spawn, spawn_tokio};
+use super::{IdentityVerification, Room, Session};
+use crate::{
+    components::{AvatarImage, AvatarUriSource, Pill, PillSource},
+    prelude::*,
+    spawn, spawn_tokio,
+};
 
 #[glib::flags(name = "UserActions")]
 pub enum UserActions {
@@ -38,18 +42,12 @@ mod imp {
         /// The ID of this user, as a string.
         #[property(get = Self::user_id_string)]
         pub user_id_string: PhantomData<String>,
-        /// The display name of this user.
-        #[property(get = Self::display_name, set = Self::set_display_name, explicit_notify, nullable)]
-        pub display_name: RefCell<String>,
         /// The current session.
         #[property(get, construct_only)]
         pub session: OnceCell<Session>,
         /// Whether this user is the same as the session's user.
         #[property(get)]
         pub is_own_user: Cell<bool>,
-        /// The [`AvatarData`] of this user.
-        #[property(get)]
-        pub avatar_data: OnceCell<AvatarData>,
         /// Whether this user has been verified.
         #[property(get)]
         pub verified: Cell<bool>,
@@ -67,6 +65,7 @@ mod imp {
     impl ObjectSubclass for User {
         const NAME: &'static str = "User";
         type Type = super::User;
+        type ParentType = PillSource;
     }
 
     #[glib::derived_properties]
@@ -75,12 +74,8 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            let avatar_data = AvatarData::with_image(AvatarImage::new(
-                &obj.session(),
-                None,
-                AvatarUriSource::User,
-            ));
-            self.avatar_data.set(avatar_data).unwrap();
+            let avatar_image = AvatarImage::new(&obj.session(), None, AvatarUriSource::User);
+            obj.avatar_data().set_image(Some(avatar_image));
         }
 
         fn dispose(&self) {
@@ -89,6 +84,12 @@ mod imp {
                     session.ignored_users().disconnect(handler);
                 }
             }
+        }
+    }
+
+    impl PillSourceImpl for User {
+        fn identifier(&self) -> String {
+            self.user_id_string()
         }
     }
 
@@ -128,26 +129,6 @@ mod imp {
             obj.init_is_verified();
         }
 
-        /// The display name of this user.
-        fn display_name(&self) -> String {
-            let display_name = self.display_name.borrow().clone();
-
-            if !display_name.is_empty() {
-                display_name
-            } else {
-                self.user_id.get().unwrap().localpart().to_owned()
-            }
-        }
-
-        /// Set the display name of this user.
-        fn set_display_name(&self, display_name: Option<String>) {
-            if Some(&*self.display_name.borrow()) == display_name.as_ref() {
-                return;
-            }
-            self.display_name.replace(display_name.unwrap_or_default());
-            self.obj().notify_display_name();
-        }
-
         /// The actions the currently logged-in user is allowed to perform on
         /// this user.
         fn allowed_actions(&self) -> UserActions {
@@ -164,7 +145,7 @@ mod imp {
 
 glib::wrapper! {
     /// `glib::Object` representation of a Matrix user.
-    pub struct User(ObjectSubclass<imp::User>);
+    pub struct User(ObjectSubclass<imp::User>) @extends PillSource;
 }
 
 impl User {
@@ -300,24 +281,23 @@ pub trait UserExt: IsA<User> {
         self.upcast_ref().is_own_user()
     }
 
-    /// The display name of this user.
-    fn display_name(&self) -> String {
-        self.upcast_ref().display_name()
-    }
+    /// Set the name of this user.
+    fn set_name(&self, name: Option<String>) {
+        let user = self.upcast_ref();
 
-    /// Set the display name of this user.
-    fn set_display_name(&self, display_name: Option<String>) {
-        self.upcast_ref().set_display_name(display_name);
-    }
+        let display_name = if let Some(name) = name.filter(|n| !n.is_empty()) {
+            name
+        } else {
+            user.user_id_string()
+        };
 
-    /// The [`AvatarData`] of this user.
-    fn avatar_data(&self) -> AvatarData {
-        self.upcast_ref().avatar_data()
+        user.set_display_name(display_name);
     }
 
     /// Set the avatar URL of this user.
     fn set_avatar_url(&self, uri: Option<OwnedMxcUri>) {
-        self.avatar_data()
+        self.upcast_ref()
+            .avatar_data()
             .image()
             .unwrap()
             .set_uri(uri.map(String::from));
@@ -331,8 +311,7 @@ pub trait UserExt: IsA<User> {
 
     /// Get a `Pill` representing this `User`.
     fn to_pill(&self) -> Pill {
-        let user = self.upcast_ref().clone();
-        Pill::for_user(user)
+        Pill::new(self.upcast_ref())
     }
 
     /// Get the `matrix.to` URI representation for this `User`.
@@ -348,7 +327,7 @@ pub trait UserExt: IsA<User> {
     /// Get the HTML mention representation for this `User`.
     fn html_mention(&self) -> String {
         let uri = self.matrix_to_uri();
-        format!("<a href=\"{uri}\">{}</a>", self.display_name())
+        format!("<a href=\"{uri}\">{}</a>", self.upcast_ref().display_name())
     }
 
     /// Load the user profile from the homeserver.
@@ -364,7 +343,7 @@ pub trait UserExt: IsA<User> {
         spawn!(clone!(@weak user => async move {
             match handle.await.unwrap() {
                 Ok(response) => {
-                    user.set_display_name(response.displayname);
+                    user.set_name(response.displayname);
                     user.set_avatar_url(response.avatar_url);
                 },
                 Err(error) => {
@@ -379,12 +358,6 @@ pub trait UserExt: IsA<User> {
         self.upcast_ref().is_ignored()
     }
 
-    /// Connect to the signal emitted when the display name changes.
-    fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.upcast_ref()
-            .connect_display_name_notify(move |user| f(user.downcast_ref().unwrap()))
-    }
-
     /// Connect to the signal emitted when the `is-ignored` property changes.
     fn connect_is_ignored_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.upcast_ref()
@@ -392,9 +365,13 @@ pub trait UserExt: IsA<User> {
     }
 }
 
-impl<T: IsA<User>> UserExt for T {}
+impl<T: IsA<PillSource> + IsA<User>> UserExt for T {}
 
-unsafe impl<T: ObjectImpl + 'static> IsSubclassable<T> for User {
+unsafe impl<T> IsSubclassable<T> for User
+where
+    T: PillSourceImpl,
+    T::Type: IsA<PillSource>,
+{
     fn class_init(class: &mut glib::Class<Self>) {
         <glib::Object as IsSubclassable<T>>::class_init(class.upcast_ref_mut());
     }

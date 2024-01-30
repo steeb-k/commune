@@ -10,12 +10,8 @@ use gtk::{
 };
 use tracing::{debug, error};
 
-use super::{ActionButton, ActionState, ImagePaintable};
-use crate::{
-    session::model::{AvatarData, AvatarImage},
-    spawn, toast,
-    utils::expression,
-};
+use super::{ActionButton, ActionState, AvatarData, AvatarImage, ImagePaintable};
+use crate::{spawn, toast, utils::expression};
 
 /// The state of the editable avatar.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]

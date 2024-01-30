@@ -1,7 +1,7 @@
 use gtk::{glib, subclass::prelude::*};
 
 use super::{SessionInfo, SessionInfoImpl};
-use crate::{prelude::*, secret::StoredSession, session::model::AvatarData};
+use crate::{components::AvatarData, prelude::*, secret::StoredSession};
 
 mod imp {
     use std::cell::OnceCell;
@@ -28,7 +28,7 @@ mod imp {
             self.avatar_data
                 .get_or_init(|| {
                     let avatar_data = AvatarData::new();
-                    avatar_data.set_display_name(Some(self.obj().user_id().to_string()));
+                    avatar_data.set_display_name(self.obj().user_id().to_string());
                     avatar_data
                 })
                 .clone()

@@ -13,11 +13,22 @@
           <object class="ComponentsAvatar" id="avatar">
             <property name="size">24</property>
             <property name="accessible-role">presentation</property>
+            <binding name="data">
+              <lookup name="avatar-data">
+                <lookup name="source">Pill</lookup>
+              </lookup>
+            </binding>
           </object>
         </child>
         <child>
           <object class="GtkLabel" id="display_name">
             <property name="max-width-chars">30</property>
+            <property name="ellipsize">end</property>
+            <binding name="label">
+              <lookup name="display-name">
+                <lookup name="source">Pill</lookup>
+              </lookup>
+            </binding>
           </object>
         </child>
       </object>

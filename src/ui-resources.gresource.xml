@@ -10,7 +10,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/action_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/audio_player.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/auth_dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/avatar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/avatar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/button_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/check_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
@@ -19,8 +19,8 @@
     <file compressed="true" preprocess="xml-stripblanks">components/loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/location_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/media_content_viewer.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/pill.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/pill_source_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/pill/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/pill/source_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/room_title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/spinner_button.ui</file>

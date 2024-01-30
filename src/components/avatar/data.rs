@@ -1,9 +1,7 @@
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use tracing::warn;
 
-mod avatar_image;
-
-pub use self::avatar_image::{AvatarImage, AvatarUriSource};
+use super::AvatarImage;
 use crate::{
     application::Application,
     utils::notifications::{paintable_as_notification_icon, string_as_notification_icon},
@@ -21,8 +19,8 @@ mod imp {
         #[property(get, set = Self::set_image, explicit_notify, nullable)]
         pub image: RefCell<Option<AvatarImage>>,
         /// The display name used as a fallback for this avatar.
-        #[property(get, set = Self::set_display_name, explicit_notify, nullable)]
-        pub display_name: RefCell<Option<String>>,
+        #[property(get, set = Self::set_display_name, explicit_notify)]
+        pub display_name: RefCell<String>,
     }
 
     #[glib::object_subclass]
@@ -46,7 +44,7 @@ mod imp {
         }
 
         /// Set the display name used as a fallback for this avatar.
-        fn set_display_name(&self, display_name: Option<String>) {
+        fn set_display_name(&self, display_name: String) {
             if *self.display_name.borrow() == display_name {
                 return;
             }
@@ -82,7 +80,7 @@ impl AvatarData {
         let icon = if let Some(paintable) = self.image().and_then(|i| i.paintable()) {
             paintable_as_notification_icon(paintable.upcast_ref(), &window)
         } else {
-            string_as_notification_icon(&self.display_name().unwrap_or_default(), &window)
+            string_as_notification_icon(&self.display_name(), &window)
         };
 
         match icon {

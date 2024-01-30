@@ -1,7 +1,13 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, CompositeTemplate};
 
-use crate::session::model::{AvatarData, AvatarImage};
+mod data;
+mod image;
+
+pub use self::{
+    data::AvatarData,
+    image::{AvatarImage, AvatarUriSource},
+};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -11,7 +17,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/avatar.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/avatar/mod.ui")]
     #[properties(wrapper_type = super::Avatar)]
     pub struct Avatar {
         /// The [`AvatarData`] displayed by this widget.

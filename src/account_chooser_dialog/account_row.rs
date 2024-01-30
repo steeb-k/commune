@@ -1,9 +1,9 @@
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{Avatar, Spinner},
+    components::{Avatar, AvatarData, Spinner},
     prelude::*,
-    session::model::{AvatarData, Session},
+    session::model::Session,
     session_list::{FailedSession, SessionInfo},
 };
 
@@ -98,7 +98,7 @@ mod imp {
                     let user_id = session.user_id().to_string();
 
                     let avatar_data = AvatarData::new();
-                    avatar_data.set_display_name(Some(user_id.clone()));
+                    avatar_data.set_display_name(user_id.clone());
                     self.avatar.set_data(Some(avatar_data));
 
                     self.display_name.set_label(&user_id);

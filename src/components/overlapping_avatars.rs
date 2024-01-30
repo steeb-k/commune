@@ -1,8 +1,8 @@
 use adw::prelude::*;
 use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*};
 
-use super::Avatar;
-use crate::{session::model::AvatarData, utils::BoundObject};
+use super::{Avatar, AvatarData};
+use crate::utils::BoundObject;
 
 /// Compute the overlap according to the child's size.
 fn overlap(for_size: i32) -> i32 {

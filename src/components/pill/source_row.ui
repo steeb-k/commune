@@ -8,6 +8,11 @@
           <object class="ComponentsAvatar" id="avatar">
             <property name="size">36</property>
             <property name="accessible-role">presentation</property>
+            <binding name="data">
+              <lookup name="avatar-data">
+                <lookup name="source">PillSourceRow</lookup>
+              </lookup>
+            </binding>
           </object>
         </child>
         <child>
@@ -19,6 +24,11 @@
                 <property name="xalign">0.0</property>
                 <property name="hexpand">True</property>
                 <property name="ellipsize">end</property>
+                <binding name="label">
+                  <lookup name="display-name">
+                    <lookup name="source">PillSourceRow</lookup>
+                  </lookup>
+                </binding>
               </object>
             </child>
             <child>
@@ -26,6 +36,11 @@
                 <property name="xalign">0.0</property>
                 <property name="hexpand">True</property>
                 <property name="ellipsize">end</property>
+                <binding name="label">
+                  <lookup name="identifier">
+                    <lookup name="source">PillSourceRow</lookup>
+                  </lookup>
+                </binding>
                 <style>
                   <class name="dim-label"/>
                   <class name="caption"/>

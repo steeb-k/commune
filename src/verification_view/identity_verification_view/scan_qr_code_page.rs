@@ -7,6 +7,7 @@ use crate::{
     components::SpinnerButton,
     contrib::QrCodeScanner,
     gettext_f,
+    prelude::*,
     session::model::{IdentityVerification, VerificationSupportedMethods},
     spawn, toast,
     utils::BoundObjectWeakRef,

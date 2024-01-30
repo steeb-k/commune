@@ -4,7 +4,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 
 use super::{SessionInfo, SessionInfoImpl};
 use crate::{
-    prelude::*, secret::StoredSession, session::model::AvatarData, utils::matrix::ClientSetupError,
+    components::AvatarData, prelude::*, secret::StoredSession, utils::matrix::ClientSetupError,
 };
 
 #[derive(Clone, Debug, glib::Boxed)]
@@ -49,7 +49,7 @@ mod imp {
             self.avatar_data
                 .get_or_init(|| {
                     let avatar_data = AvatarData::new();
-                    avatar_data.set_display_name(Some(self.obj().user_id().to_string()));
+                    avatar_data.set_display_name(self.obj().user_id().to_string());
                     avatar_data
                 })
                 .clone()

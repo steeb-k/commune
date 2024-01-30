@@ -1,0 +1,77 @@
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+
+use super::{Avatar, PillSource};
+
+mod imp {
+    use std::cell::RefCell;
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/components/pill/source_row.ui")]
+    #[properties(wrapper_type = super::PillSourceRow)]
+    pub struct PillSourceRow {
+        #[template_child]
+        pub avatar: TemplateChild<Avatar>,
+        #[template_child]
+        pub display_name: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub id: TemplateChild<gtk::Label>,
+        /// The source of the data displayed by this row.
+        #[property(get, set = Self::set_source, explicit_notify, nullable)]
+        pub source: RefCell<Option<PillSource>>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for PillSourceRow {
+        const NAME: &'static str = "PillSourceRow";
+        type Type = super::PillSourceRow;
+        type ParentType = gtk::ListBoxRow;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for PillSourceRow {}
+
+    impl WidgetImpl for PillSourceRow {}
+    impl ListBoxRowImpl for PillSourceRow {}
+
+    impl PillSourceRow {
+        /// Set the source of the data displayed by this row.
+        fn set_source(&self, source: Option<PillSource>) {
+            if *self.source.borrow() == source {
+                return;
+            }
+
+            self.source.replace(source);
+            self.obj().notify_source();
+        }
+    }
+}
+
+glib::wrapper! {
+    /// A list row to display a [`PillSource`].
+    pub struct PillSourceRow(ObjectSubclass<imp::PillSourceRow>)
+        @extends gtk::Widget, gtk::ListBoxRow;
+}
+
+impl PillSourceRow {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+}
+
+impl Default for PillSourceRow {
+    fn default() -> Self {
+        Self::new()
+    }
+}

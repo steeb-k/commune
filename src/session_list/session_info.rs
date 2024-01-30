@@ -2,7 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use ruma::{OwnedDeviceId, OwnedUserId};
 use url::Url;
 
-use crate::{secret::StoredSession, session::model::AvatarData};
+use crate::{components::AvatarData, secret::StoredSession};
 
 mod imp {
     use std::{cell::OnceCell, marker::PhantomData};

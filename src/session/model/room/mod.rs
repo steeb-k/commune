@@ -58,10 +58,15 @@ pub use self::{
     typing_list::TypingList,
 };
 use super::{
-    notifications::NotificationsRoomSetting, room_list::RoomMetainfo, AvatarData, AvatarImage,
-    AvatarUriSource, IdentityVerification, Session, User,
+    notifications::NotificationsRoomSetting, room_list::RoomMetainfo, IdentityVerification,
+    Session, User,
 };
-use crate::{components::Pill, gettext_f, prelude::*, spawn, spawn_tokio};
+use crate::{
+    components::{AvatarImage, AvatarUriSource, Pill, PillSource},
+    gettext_f,
+    prelude::*,
+    spawn, spawn_tokio,
+};
 
 mod imp {
     use std::{
@@ -88,11 +93,6 @@ mod imp {
         /// The alias of this room, as a string.
         #[property(get = Self::alias_string)]
         pub alias_string: PhantomData<Option<String>>,
-        /// The unique identifier to display for this room, as a string.
-        ///
-        /// Prefers the alias over the room ID.
-        #[property(get = Self::identifier_string)]
-        pub identifier_string: PhantomData<String>,
         /// The version of this room.
         #[property(get = Self::version)]
         pub version: PhantomData<String>,
@@ -105,18 +105,12 @@ mod imp {
         /// interface.
         #[property(get = Self::name)]
         pub name: PhantomData<Option<String>>,
-        /// The display name of this room.
-        #[property(get = Self::display_name, type = String)]
-        pub display_name: RefCell<Option<String>>,
         /// Whether this room has an avatar explicitly set.
         ///
         /// This is `false` if there is no avatar or if the avatar is the one
         /// from the other member.
         #[property(get)]
         pub has_avatar: Cell<bool>,
-        /// The Avatar data of this room.
-        #[property(get)]
-        pub avatar_data: AvatarData,
         /// The category of this room.
         #[property(get, builder(RoomType::default()))]
         pub category: Cell<RoomType>,
@@ -210,6 +204,7 @@ mod imp {
     impl ObjectSubclass for Room {
         const NAME: &'static str = "Room";
         type Type = super::Room;
+        type ParentType = PillSource;
     }
 
     #[glib::derived_properties]
@@ -223,14 +218,11 @@ mod imp {
             });
             SIGNALS.as_ref()
         }
+    }
 
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.obj()
-                .bind_property("display-name", &self.avatar_data, "display-name")
-                .sync_create()
-                .build();
+    impl PillSourceImpl for Room {
+        fn identifier(&self) -> String {
+            self.alias_string().unwrap_or_else(|| self.room_id_string())
         }
     }
 
@@ -266,11 +258,6 @@ mod imp {
             self.alias().map(Into::into)
         }
 
-        /// The unique identifier to display for this room, as a string.
-        fn identifier_string(&self) -> String {
-            self.alias_string().unwrap_or_else(|| self.room_id_string())
-        }
-
         /// The version of this room.
         fn version(&self) -> String {
             self.matrix_room()
@@ -293,13 +280,6 @@ mod imp {
         /// interface.
         fn name(&self) -> Option<String> {
             self.matrix_room().name()
-        }
-
-        /// The display name of this room.
-        fn display_name(&self) -> String {
-            let display_name = self.display_name.borrow().clone();
-            // Translators: This is displayed when the room name is unknown yet.
-            display_name.unwrap_or_else(|| gettext("Unknown"))
         }
 
         /// Set whether this room has an avatar explicitly set.
@@ -363,7 +343,7 @@ glib::wrapper! {
     /// GObject representation of a Matrix room.
     ///
     /// Handles populating the Timeline.
-    pub struct Room(ObjectSubclass<imp::Room>);
+    pub struct Room(ObjectSubclass<imp::Room>) @extends PillSource;
 }
 
 impl Room {
@@ -1134,16 +1114,6 @@ impl Room {
         self.notify_is_read();
     }
 
-    /// Set the display name of this room.
-    fn set_display_name(&self, display_name: Option<String>) {
-        if Some(self.display_name()) == display_name {
-            return;
-        }
-
-        self.imp().display_name.replace(display_name);
-        self.notify_display_name();
-    }
-
     /// Load the display name from the SDK.
     async fn load_display_name(&self) {
         let matrix_room = self.matrix_room().clone();
@@ -1165,10 +1135,16 @@ impl Room {
                     // Translators: This is the name of a room without other users.
                     DisplayName::Empty => gettext("Empty Room"),
                 };
-                self.set_display_name(Some(name))
+
+                self.set_display_name(name);
             }
             Err(error) => error!("Couldn’t fetch display name: {error}"),
         };
+
+        if self.display_name().is_empty() {
+            // Translators: This is displayed when the room name is unknown yet.
+            self.set_display_name(gettext("Unknown"));
+        }
     }
 
     /// Load the member that invited us to this room, when applicable.
@@ -1871,7 +1847,7 @@ impl Room {
 
     /// Get a `Pill` representing this `Room`.
     pub fn to_pill(&self) -> Pill {
-        Pill::for_room(self)
+        Pill::new(self)
     }
 
     /// Get a human-readable ID for this `Room`.
@@ -1887,12 +1863,12 @@ impl Room {
             return;
         };
         let imp = self.imp();
+        let avatar_data = self.avatar_data();
 
         if let Some(avatar_url) = self.matrix_room().avatar_url() {
             imp.set_has_avatar(true);
 
-            let avatar_image = if let Some(avatar_image) = imp
-                .avatar_data
+            let avatar_image = if let Some(avatar_image) = avatar_data
                 .image()
                 .filter(|i| i.uri_source() == AvatarUriSource::Room)
             {
@@ -1900,7 +1876,7 @@ impl Room {
             } else {
                 let avatar_image =
                     AvatarImage::new(&session, Some(&avatar_url), AvatarUriSource::Room);
-                imp.avatar_data.set_image(Some(avatar_image.clone()));
+                avatar_data.set_image(Some(avatar_image.clone()));
                 avatar_image
             };
             avatar_image.set_uri(Some(avatar_url.to_string()));
@@ -1911,12 +1887,11 @@ impl Room {
         imp.set_has_avatar(false);
 
         if let Some(direct_member) = self.direct_member() {
-            imp.avatar_data
-                .set_image(direct_member.avatar_data().image());
+            avatar_data.set_image(direct_member.avatar_data().image());
         }
 
-        if imp.avatar_data.image().is_none() {
-            imp.avatar_data.set_image(Some(AvatarImage::new(
+        if avatar_data.image().is_none() {
+            avatar_data.set_image(Some(AvatarImage::new(
                 &session,
                 None,
                 AvatarUriSource::Room,

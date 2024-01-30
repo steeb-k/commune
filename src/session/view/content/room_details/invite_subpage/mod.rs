@@ -100,7 +100,7 @@ mod imp {
                         let user = anchor.widgets()[0]
                             .downcast_ref::<Pill>()
                             .unwrap()
-                            .user()
+                            .source()
                             .and_downcast::<Invitee>()
                             .unwrap();
                         user.take_anchor();
@@ -222,7 +222,7 @@ impl InviteSubpage {
     fn add_user_pill(&self, user: &Invitee) {
         let imp = self.imp();
 
-        let pill = Pill::for_user(user.clone());
+        let pill = Pill::new(user);
         pill.set_margin_start(3);
         pill.set_margin_end(3);
 

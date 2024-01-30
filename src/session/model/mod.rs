@@ -1,4 +1,3 @@
-mod avatar_data;
 mod ignored_users;
 mod notifications;
 mod remote_room;
@@ -13,7 +12,6 @@ mod user_sessions_list;
 mod verification;
 
 pub use self::{
-    avatar_data::{AvatarData, AvatarImage, AvatarUriSource},
     ignored_users::IgnoredUsers,
     notifications::{
         Notifications, NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,

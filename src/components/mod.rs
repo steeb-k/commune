@@ -16,7 +16,6 @@ mod location_viewer;
 mod media_content_viewer;
 mod overlapping_avatars;
 mod pill;
-mod pill_source_row;
 mod power_level_badge;
 mod reaction_chooser;
 mod room_title;
@@ -32,7 +31,7 @@ pub use self::{
     action_button::{ActionButton, ActionState},
     audio_player::AudioPlayer,
     auth_dialog::{AuthDialog, AuthError},
-    avatar::Avatar,
+    avatar::{Avatar, AvatarData, AvatarImage, AvatarUriSource},
     button_row::ButtonRow,
     check_loading_row::CheckLoadingRow,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
@@ -46,8 +45,7 @@ pub use self::{
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
     overlapping_avatars::OverlappingAvatars,
-    pill::{Pill, PillSource},
-    pill_source_row::PillSourceRow,
+    pill::{Pill, PillSource, PillSourceExt, PillSourceImpl, PillSourceRow},
     power_level_badge::PowerLevelBadge,
     reaction_chooser::ReactionChooser,
     room_title::RoomTitle,

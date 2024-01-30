@@ -201,7 +201,7 @@ impl InviteeList {
                             Some(user) => {
                                 // The avatar or the display name may have changed in the meantime
                                 user.set_avatar_url(item.avatar_url);
-                                user.set_display_name(item.display_name);
+                                user.set_name(item.display_name);
 
                                 user
                             }
@@ -242,7 +242,7 @@ impl InviteeList {
                                         };
                                         // If the display name and or the avatar were returned, the Invitee gets updated.
                                         if display_name.is_some() {
-                                            user.set_display_name(display_name);
+                                            user.set_name(display_name);
                                         }
                                         if avatar_url.is_some() {
                                             user.set_avatar_url(avatar_url);

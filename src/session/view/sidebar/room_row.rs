@@ -4,6 +4,7 @@ use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use super::Row;
 use crate::{
     i18n::gettext_f,
+    prelude::*,
     session::model::{HighlightFlags, Room, RoomType},
     utils::BoundObject,
 };

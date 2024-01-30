@@ -1,7 +1,10 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::directory::PublicRoomsChunk;
 
-use crate::session::model::{AvatarData, AvatarImage, AvatarUriSource, Room, RoomList};
+use crate::{
+    components::{AvatarData, AvatarImage, AvatarUriSource},
+    session::model::{Room, RoomList},
+};
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
@@ -106,8 +109,9 @@ impl PublicRoom {
     pub fn set_matrix_public_room(&self, room: PublicRoomsChunk) {
         let imp = self.imp();
 
-        let display_name = room.name.clone();
-        self.avatar_data().set_display_name(display_name);
+        if let Some(display_name) = room.name.clone() {
+            self.avatar_data().set_display_name(display_name);
+        }
         self.avatar_data()
             .image()
             .unwrap()

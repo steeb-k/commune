@@ -20,8 +20,11 @@ use tracing::error;
 
 use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
-    components::{CheckLoadingRow, CustomEntry, EditableAvatar, SpinnerButton},
-    session::model::{AvatarData, AvatarImage, MemberList, NotificationsRoomSetting, Room},
+    components::{
+        AvatarData, AvatarImage, CheckLoadingRow, CustomEntry, EditableAvatar, SpinnerButton,
+    },
+    prelude::*,
+    session::model::{MemberList, NotificationsRoomSetting, Room},
     spawn, spawn_tokio, toast,
     utils::{
         expression,

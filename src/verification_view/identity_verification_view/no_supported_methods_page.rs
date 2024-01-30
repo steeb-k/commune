@@ -3,8 +3,8 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton, gettext_f, session::model::IdentityVerification, spawn, toast,
-    utils::BoundObjectWeakRef,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
+    toast, utils::BoundObjectWeakRef,
 };
 
 mod imp {

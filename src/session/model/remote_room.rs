@@ -7,8 +7,10 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use super::{AvatarData, AvatarImage, AvatarUriSource, Session};
+use super::Session;
 use crate::{
+    components::{AvatarImage, AvatarUriSource, PillSource},
+    prelude::*,
     spawn, spawn_tokio,
     utils::{
         matrix::{MatrixRoomId, MatrixRoomIdUri},
@@ -17,10 +19,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell},
-        marker::PhantomData,
-    };
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
@@ -32,9 +31,6 @@ mod imp {
         pub session: glib::WeakRef<Session>,
         /// The Matrix URI of this room.
         pub uri: OnceCell<MatrixRoomIdUri>,
-        /// The identifier of this room, as a string.
-        #[property(get = Self::identifier_string)]
-        pub identifier_string: PhantomData<String>,
         /// The Matrix ID of this room.
         pub room_id: RefCell<Option<OwnedRoomId>>,
         /// The canonical alias of this room.
@@ -45,15 +41,9 @@ mod imp {
         /// interface.
         #[property(get)]
         pub name: RefCell<Option<String>>,
-        /// The display name of this room.
-        #[property(get = Self::display_name)]
-        pub display_name: RefCell<String>,
         /// The topic of this room.
         #[property(get)]
         pub topic: RefCell<Option<String>>,
-        /// The Avatar data of this room.
-        #[property(get)]
-        pub avatar_data: AvatarData,
         /// The number of joined members in the room.
         #[property(get)]
         pub joined_members_count: Cell<u32>,
@@ -66,26 +56,28 @@ mod imp {
     impl ObjectSubclass for RemoteRoom {
         const NAME: &'static str = "RemoteRoom";
         type Type = super::RemoteRoom;
+        type ParentType = PillSource;
     }
 
     #[glib::derived_properties]
     impl ObjectImpl for RemoteRoom {}
+
+    impl PillSourceImpl for RemoteRoom {
+        fn identifier(&self) -> String {
+            self.uri.get().unwrap().id.to_string()
+        }
+    }
 
     impl RemoteRoom {
         /// Set the current session.
         fn set_session(&self, session: Session) {
             self.session.set(Some(&session));
 
-            self.avatar_data.set_image(Some(AvatarImage::new(
+            self.obj().avatar_data().set_image(Some(AvatarImage::new(
                 &session,
                 None,
                 AvatarUriSource::Room,
             )));
-        }
-
-        /// The identifier of this room, as a string.
-        fn identifier_string(&self) -> String {
-            self.uri.get().unwrap().id.to_string()
         }
 
         /// Set the Matrix ID of this room.
@@ -104,7 +96,7 @@ mod imp {
             }
 
             self.alias.replace(alias);
-            self.obj().notify_display_name();
+            self.update_display_name();
         }
 
         /// Set the name of this room.
@@ -115,18 +107,20 @@ mod imp {
 
             self.name.replace(name);
 
-            let obj = self.obj();
-            obj.notify_name();
-            obj.notify_display_name();
+            self.obj().notify_name();
+            self.update_display_name();
         }
 
         /// The display name of this room.
-        fn display_name(&self) -> String {
-            self.name
+        pub(super) fn update_display_name(&self) {
+            let display_name = self
+                .name
                 .borrow()
                 .clone()
                 .or_else(|| self.alias.borrow().as_ref().map(ToString::to_string))
-                .unwrap_or_else(|| self.identifier_string())
+                .unwrap_or_else(|| self.identifier());
+
+            self.obj().set_display_name(display_name);
         }
 
         /// Set the topic of this room.
@@ -170,7 +164,7 @@ mod imp {
             self.set_topic(data.topic);
             self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
 
-            if let Some(image) = self.avatar_data.image() {
+            if let Some(image) = self.obj().avatar_data().image() {
                 image.set_uri(data.avatar_url.map(String::from));
             }
 
@@ -181,7 +175,7 @@ mod imp {
 
 glib::wrapper! {
     /// A Room that can only be updated by making remote calls, i.e. it won't be updated via sync.
-    pub struct RemoteRoom(ObjectSubclass<imp::RemoteRoom>);
+    pub struct RemoteRoom(ObjectSubclass<imp::RemoteRoom>) @extends PillSource;
 }
 
 impl RemoteRoom {
@@ -192,9 +186,7 @@ impl RemoteRoom {
 
         let imp = obj.imp();
         imp.uri.set(uri).unwrap();
-        obj.bind_property("display-name", &imp.avatar_data, "display-name")
-            .sync_create()
-            .build();
+        imp.update_display_name();
 
         spawn!(clone!(@weak obj => async move {
             obj.load().await;

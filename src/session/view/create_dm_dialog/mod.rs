@@ -9,7 +9,7 @@ use self::{
     dm_user_list::{DmUserList, DmUserListState},
 };
 use crate::{
-    components::PillSourceRow,
+    components::{PillSource, PillSourceRow},
     gettext,
     session::model::{Session, User},
     spawn, Window,
@@ -91,11 +91,11 @@ mod imp {
                     .build();
 
                 self.list_box.bind_model(Some(&user_list), |user| {
-                    let user = user
-                        .downcast_ref::<User>()
+                    let source = user
+                        .downcast_ref::<PillSource>()
                         .expect("DmUserList must contain only `DmUser`");
                     let row = PillSourceRow::new();
-                    row.set_user(Some(user.clone()));
+                    row.set_source(Some(source.clone()));
 
                     row.upcast()
                 });
@@ -148,7 +148,11 @@ impl CreateDmDialog {
 
     #[template_callback]
     fn row_activated_cb(&self, row: gtk::ListBoxRow) {
-        let Some(user) = row.downcast_ref::<PillSourceRow>().and_then(|r| r.user()) else {
+        let Some(user) = row
+            .downcast_ref::<PillSourceRow>()
+            .and_then(|r| r.source())
+            .and_downcast::<User>()
+        else {
             return;
         };
 
@@ -159,7 +163,7 @@ impl CreateDmDialog {
         imp.stack.set_visible_child_name("loading-page");
         imp.search_entry.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak user => async move {
+        spawn!(clone!(@weak self as obj => async move {
             obj.start_direct_chat(&user).await;
         }));
     }

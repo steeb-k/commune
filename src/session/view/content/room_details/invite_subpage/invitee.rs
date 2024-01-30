@@ -2,6 +2,7 @@ use gtk::{glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::{OwnedMxcUri, OwnedUserId};
 
 use crate::{
+    components::PillSource,
     prelude::*,
     session::model::{Session, User},
 };
@@ -34,6 +35,12 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Invitee {}
+
+    impl PillSourceImpl for Invitee {
+        fn identifier(&self) -> String {
+            self.obj().upcast_ref::<User>().user_id_string()
+        }
+    }
 
     impl Invitee {
         /// Set whether this user is invited.
@@ -70,7 +77,7 @@ mod imp {
 
 glib::wrapper! {
     /// A possible invitee.
-    pub struct Invitee(ObjectSubclass<imp::Invitee>) @extends User;
+    pub struct Invitee(ObjectSubclass<imp::Invitee>) @extends PillSource, User;
 }
 
 impl Invitee {

@@ -15,7 +15,7 @@ use super::{
     permissions::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
     MemberRole, Room,
 };
-use crate::{prelude::*, session::model::User};
+use crate::{components::PillSource, prelude::*, session::model::User};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, glib::Variant)]
 #[variant_enum(repr)]
@@ -79,6 +79,12 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Member {}
 
+    impl PillSourceImpl for Member {
+        fn identifier(&self) -> String {
+            self.obj().upcast_ref::<User>().user_id_string()
+        }
+    }
+
     impl Member {
         /// Set the timestamp of the latest activity of this member.
         fn set_latest_activity(&self, activity: u64) {
@@ -94,7 +100,7 @@ mod imp {
 
 glib::wrapper! {
     /// A User in the context of a given room.
-    pub struct Member(ObjectSubclass<imp::Member>) @extends User;
+    pub struct Member(ObjectSubclass<imp::Member>) @extends PillSource, User;
 }
 
 impl Member {
@@ -150,7 +156,7 @@ impl Member {
             return;
         };
 
-        self.set_display_name(member.display_name().map(String::from));
+        self.set_name(member.display_name().map(String::from));
         self.avatar_data()
             .image()
             .unwrap()
@@ -166,7 +172,7 @@ impl Member {
             return;
         };
 
-        self.set_display_name(event.display_name());
+        self.set_name(event.display_name());
         self.avatar_data()
             .image()
             .unwrap()
