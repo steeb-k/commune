@@ -104,6 +104,7 @@ mod imp {
             self.user_id.set(user_id.clone()).unwrap();
 
             let obj = self.obj();
+            obj.set_name(None);
             obj.bind_property("display-name", &obj.avatar_data(), "display-name")
                 .sync_create()
                 .build();
