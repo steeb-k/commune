@@ -5,14 +5,14 @@ use gtk::{
     glib::{clone, closure_local},
     CompositeTemplate,
 };
-use ruma::events::room::power_levels::PowerLevelUserAction;
+use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
 use super::{Avatar, SpinnerButton};
 use crate::{
     i18n::gettext_f,
     ngettext_f,
     prelude::*,
-    session::model::{Member, MemberRole, Membership, User},
+    session::model::{Member, MemberRole, Membership, Room, User},
     spawn, toast,
     utils::{
         message_dialog::{confirm_room_member_destructive_action, RoomMemberDestructiveAction},
@@ -480,15 +480,20 @@ impl UserPage {
         imp.unban_button.set_sensitive(false);
 
         spawn!(clone!(@weak self as obj => async move {
-            let (confirmed, reason) = confirm_room_member_destructive_action(&member, RoomMemberDestructiveAction::Kick, &window).await;
-            if !confirmed {
+            let Some(response) = confirm_room_member_destructive_action(
+                &member,
+                RoomMemberDestructiveAction::Kick,
+                &window,
+            )
+            .await
+            else {
                 obj.reset_room();
                 return;
-            }
+            };
 
             let room = member.room();
             let user_id = member.user_id().clone();
-            if room.kick(&[(user_id, reason)]).await.is_err() {
+            if room.kick(&[(user_id, response.reason)]).await.is_err() {
                 let error = match member.membership() {
                     Membership::Invite => gettext("Failed to revoke invite of user"),
                     Membership::Knock => gettext("Failed to deny access to user"),
@@ -517,17 +522,38 @@ impl UserPage {
         imp.kick_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
+        let permissions = member.room().permissions();
+        let redactable_events = if permissions.can_redact_other() {
+            member.redactable_events()
+        } else {
+            vec![]
+        };
+
         spawn!(clone!(@weak self as obj => async move {
-            let (confirmed, reason) = confirm_room_member_destructive_action(&member, RoomMemberDestructiveAction::Ban, &window).await;
-            if !confirmed {
+            let Some(response) = confirm_room_member_destructive_action(
+                &member,
+                RoomMemberDestructiveAction::Ban(redactable_events.len()),
+                &window,
+            )
+            .await
+            else {
                 obj.reset_room();
                 return;
-            }
+            };
 
             let room = member.room();
             let user_id = member.user_id().clone();
-            if room.ban(&[(user_id, reason)]).await.is_err() {
+            if room
+                .ban(&[(user_id, response.reason.clone())])
+                .await
+                .is_err()
+            {
                 toast!(obj, gettext("Failed to ban user"));
+            }
+
+            if response.remove_events {
+                obj.remove_known_messages_inner(&member.room(), redactable_events, response.reason)
+                    .await;
             }
 
             obj.reset_room();
@@ -573,39 +599,46 @@ impl UserPage {
         imp.remove_messages_button.set_loading(true);
 
         let redactable_events = member.redactable_events();
-        let count = redactable_events.len();
 
         spawn!(clone!(@weak self as obj => async move {
-            let (confirmed, reason) = confirm_room_member_destructive_action(
+            let Some(response) = confirm_room_member_destructive_action(
                 &member,
-                RoomMemberDestructiveAction::RemoveMessages(count),
+                RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
                 &window,
             )
-            .await;
-            if !confirmed {
+            .await
+            else {
                 obj.reset_room();
                 return;
-            }
+            };
 
-            let room = member.room();
-
-            if let Err(events) = room.redact(&redactable_events, reason).await {
-                let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
-                toast!(
-                    obj,
-                    ngettext_f(
-                        // Translators: Do NOT translate the content between '{' and '}',
-                        // this is a variable name.
-                        "Failed to remove 1 message sent by the user",
-                        "Failed to remove {n} messages sent by the user",
-                        n,
-                        &[("n", &n.to_string())]
-                    )
-                );
-            }
+            obj.remove_known_messages_inner(&member.room(), redactable_events, response.reason)
+                .await;
 
             obj.reset_room();
         }));
+    }
+
+    async fn remove_known_messages_inner(
+        &self,
+        room: &Room,
+        events: Vec<OwnedEventId>,
+        reason: Option<String>,
+    ) {
+        if let Err(events) = room.redact(&events, reason).await {
+            let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
+            toast!(
+                self,
+                ngettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    "Failed to remove 1 message sent by the user",
+                    "Failed to remove {n} messages sent by the user",
+                    n,
+                    &[("n", &n.to_string())]
+                )
+            );
+        }
     }
 
     /// Update the verified row.

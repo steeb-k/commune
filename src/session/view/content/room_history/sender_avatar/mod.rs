@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
-use ruma::events::room::power_levels::PowerLevelUserAction;
+use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
 use crate::{
     components::{Avatar, UserProfileDialog},
@@ -518,15 +518,15 @@ impl SenderAvatar {
             return;
         };
 
-        let (confirmed, reason) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action(
             &sender,
             RoomMemberDestructiveAction::Kick,
             &window,
         )
-        .await;
-        if !confirmed {
+        .await
+        else {
             return;
-        }
+        };
 
         let membership = sender.membership();
 
@@ -539,7 +539,7 @@ impl SenderAvatar {
 
         let room = sender.room();
         let user_id = sender.user_id().clone();
-        if room.kick(&[(user_id, reason)]).await.is_err() {
+        if room.kick(&[(user_id, response.reason)]).await.is_err() {
             let error = match membership {
                 Membership::Invite => gettext("Failed to revoke invite of user"),
                 Membership::Knock => gettext("Failed to deny access to user"),
@@ -558,22 +558,38 @@ impl SenderAvatar {
             return;
         };
 
-        let (confirmed, reason) = confirm_room_member_destructive_action(
+        let permissions = sender.room().permissions();
+        let redactable_events = if permissions.can_redact_other() {
+            sender.redactable_events()
+        } else {
+            vec![]
+        };
+
+        let Some(response) = confirm_room_member_destructive_action(
             &sender,
-            RoomMemberDestructiveAction::Ban,
+            RoomMemberDestructiveAction::Ban(redactable_events.len()),
             &window,
         )
-        .await;
-        if !confirmed {
+        .await
+        else {
             return;
-        }
+        };
 
         toast!(self, gettext("Banning user…"));
 
         let room = sender.room();
         let user_id = sender.user_id().clone();
-        if room.ban(&[(user_id, reason)]).await.is_err() {
+        if room
+            .ban(&[(user_id, response.reason.clone())])
+            .await
+            .is_err()
+        {
             toast!(self, gettext("Failed to ban user"));
+        }
+
+        if response.remove_events {
+            self.remove_known_messages_inner(&sender, redactable_events, response.reason)
+                .await;
         }
     }
 
@@ -602,19 +618,28 @@ impl SenderAvatar {
         };
 
         let redactable_events = sender.redactable_events();
-        let count = redactable_events.len();
 
-        let (confirmed, reason) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action(
             &sender,
-            RoomMemberDestructiveAction::RemoveMessages(count),
+            RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
             &window,
         )
-        .await;
-        if !confirmed {
+        .await
+        else {
             return;
-        }
+        };
 
-        let n = u32::try_from(count).unwrap_or(u32::MAX);
+        self.remove_known_messages_inner(&sender, redactable_events, response.reason)
+            .await;
+    }
+
+    async fn remove_known_messages_inner(
+        &self,
+        sender: &Member,
+        events: Vec<OwnedEventId>,
+        reason: Option<String>,
+    ) {
+        let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
         toast!(
             self,
             ngettext_f(
@@ -629,8 +654,8 @@ impl SenderAvatar {
 
         let room = sender.room();
 
-        if let Err(events) = room.redact(&redactable_events, reason).await {
-            let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
+        if let Err(failed_events) = room.redact(&events, reason).await {
+            let n = u32::try_from(failed_events.len()).unwrap_or(u32::MAX);
             toast!(
                 self,
                 ngettext_f(

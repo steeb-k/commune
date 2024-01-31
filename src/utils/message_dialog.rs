@@ -59,7 +59,9 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RoomMemberDestructiveAction {
     /// Ban the member.
-    Ban,
+    ///
+    /// The value is the number of events that can be redacted for the member.
+    Ban(usize),
     /// Kick the member.
     Kick,
     /// Remove the member's messages.
@@ -71,14 +73,14 @@ pub enum RoomMemberDestructiveAction {
 /// Show a dialog to confirm the given "destructive" action on the given room
 /// member.
 ///
-/// Returns a tuple `(confirm, reason)`.
+/// Returns `None` if the user did not confirm.
 pub async fn confirm_room_member_destructive_action(
     member: &Member,
     action: RoomMemberDestructiveAction,
     transient_for: &gtk::Window,
-) -> (bool, Option<String>) {
+) -> Option<ConfirmRoomMemberDestructiveActionResponse> {
     let (heading, body, response) = match action {
-        RoomMemberDestructiveAction::Ban => {
+        RoomMemberDestructiveAction::Ban(_) => {
             // Translators: Do NOT translate the content between '{' and '}',
             // this is a variable name.
             let heading = gettext_f("Ban {user}?", &[("user", &member.display_name())]);
@@ -197,6 +199,11 @@ pub async fn confirm_room_member_destructive_action(
         }
     };
 
+    let child = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(12)
+        .build();
+
     // Add an entry for the optional reason.
     let reason_entry = adw::EntryRow::builder()
         .title(gettext("Reason (optional)"))
@@ -204,8 +211,44 @@ pub async fn confirm_room_member_destructive_action(
     let list_box = gtk::ListBox::builder()
         .css_classes(["boxed-list"])
         .margin_top(6)
+        .accessible_role(gtk::AccessibleRole::Group)
         .build();
     list_box.append(&reason_entry);
+    child.append(&list_box);
+
+    // Add a switch to ask the whether they want to also remove the latest events of
+    // the user.
+    let removable_events_count = if let RoomMemberDestructiveAction::Ban(count) = action {
+        count
+    } else {
+        0
+    };
+
+    let remove_events_switch = if removable_events_count > 0 {
+        let n = u32::try_from(removable_events_count).unwrap_or(u32::MAX);
+        let switch = adw::SwitchRow::builder()
+            .title(ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "Remove the latest message sent by the user",
+                "Remove the {n} latest messages sent by the user",
+                n,
+                &[("n", &n.to_string())],
+            ))
+            .build();
+
+        let list_box = gtk::ListBox::builder()
+            .css_classes(["boxed-list"])
+            .margin_top(6)
+            .accessible_role(gtk::AccessibleRole::Group)
+            .build();
+        list_box.append(&switch);
+        child.append(&list_box);
+
+        Some(switch)
+    } else {
+        None
+    };
 
     // Ask for confirmation.
     let confirm_dialog = adw::MessageDialog::builder()
@@ -213,7 +256,7 @@ pub async fn confirm_room_member_destructive_action(
         .default_response("cancel")
         .heading(heading)
         .body(body)
-        .extra_child(&list_box)
+        .extra_child(&child)
         .build();
     confirm_dialog.add_responses(&[("cancel", &gettext("Cancel"))]);
 
@@ -222,13 +265,31 @@ pub async fn confirm_room_member_destructive_action(
         confirm_dialog.set_response_appearance("confirm", adw::ResponseAppearance::Destructive);
     }
 
-    let confirmed = confirm_dialog.choose_future().await == "confirm";
+    if confirm_dialog.choose_future().await != "confirm" {
+        return None;
+    }
 
-    // Only get the reason when the user confirmed, and filter out if the reason is
-    // empty.
-    let reason = confirmed
-        .then(|| reason_entry.text().trim().to_owned())
-        .filter(|s| !s.is_empty());
+    // Get the reason, and filter out if it is empty.
+    let reason = Some(reason_entry.text().trim().to_owned()).filter(|s| !s.is_empty());
 
-    (confirmed, reason)
+    let mut response = ConfirmRoomMemberDestructiveActionResponse {
+        reason,
+        ..Default::default()
+    };
+
+    if let Some(switch) = remove_events_switch {
+        response.remove_events = switch.is_active();
+    }
+
+    Some(response)
+}
+
+/// A response to the dialog to confirm a "destructive" action on a room
+/// member.
+#[derive(Debug, Default, Clone)]
+pub struct ConfirmRoomMemberDestructiveActionResponse {
+    /// The reason of the action.
+    pub reason: Option<String>,
+    /// Whether we can remove the events.
+    pub remove_events: bool,
 }
