@@ -50,9 +50,7 @@ pub use self::{
     member::{Member, Membership},
     member_list::MemberList,
     member_role::MemberRole,
-    permissions::{
-        Permissions, PowerLevel, PowerLevelUserAction, POWER_LEVEL_MAX, POWER_LEVEL_MIN,
-    },
+    permissions::{Permissions, PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
     room_type::RoomType,
     timeline::*,
     typing_list::TypingList,

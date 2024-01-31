@@ -1,14 +1,14 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
-use ruma::events::room::power_levels::PowerLevelAction;
+use ruma::events::room::power_levels::{PowerLevelAction, PowerLevelUserAction};
 
 use crate::{
     components::{Avatar, UserProfileDialog},
     gettext_f,
     prelude::*,
     session::{
-        model::{Member, Membership, PowerLevelUserAction, User},
+        model::{Member, Membership, User},
         view::content::RoomHistory,
     },
     toast,

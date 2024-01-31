@@ -9,7 +9,9 @@ use matrix_sdk::{
 };
 use ruma::{
     events::{
-        room::power_levels::{PowerLevelAction, RoomPowerLevels, RoomPowerLevelsEventContent},
+        room::power_levels::{
+            PowerLevelAction, PowerLevelUserAction, RoomPowerLevels, RoomPowerLevelsEventContent,
+        },
         MessageLikeEventType, StateEventType, SyncStateEvent,
     },
     UserId,
@@ -371,6 +373,12 @@ impl Permissions {
     /// ID.
     pub fn can_do_to_user(&self, user_id: &UserId, action: PowerLevelUserAction) -> bool {
         let imp = self.imp();
+
+        if !imp.is_joined.get() {
+            // We cannot do anything if the member is not joined.
+            return false;
+        }
+
         let Some(own_member) = imp.own_member() else {
             return false;
         };
@@ -384,29 +392,7 @@ impl Permissions {
                 && power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels);
         }
 
-        let own_pl = power_levels.for_user(own_user_id);
-        let other_pl = power_levels.for_user(user_id);
-
-        // TODO: Use Ruma's type and RoomPowerLevels methods when we use a recent enough
-        // version.
-        match action {
-            PowerLevelUserAction::Ban => {
-                power_levels.user_can_ban(own_user_id) && own_pl > other_pl
-            }
-            PowerLevelUserAction::Unban => {
-                power_levels.user_can_ban(own_user_id)
-                    && power_levels.user_can_kick(own_user_id)
-                    && own_pl > other_pl
-            }
-            PowerLevelUserAction::Invite => power_levels.user_can_invite(own_user_id),
-            PowerLevelUserAction::Kick => {
-                power_levels.user_can_kick(own_user_id) && own_pl > other_pl
-            }
-            PowerLevelUserAction::ChangePowerLevel => {
-                power_levels.user_can_send_state(own_user_id, StateEventType::RoomPowerLevels)
-                    && own_pl > other_pl
-            }
-        }
+        power_levels.user_can_do_to_user(own_user_id, user_id, action)
     }
 
     /// Connect to the signal emitted when the permissions changed.
@@ -425,24 +411,4 @@ impl Default for Permissions {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// The actions to other users that can be limited by power levels.
-// TODO: Use Ruma's type and RoomPowerLevels methods when we use a recent enough version.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum PowerLevelUserAction {
-    /// Ban a user.
-    Ban,
-
-    /// Unban a user.
-    Unban,
-
-    /// Invite a user.
-    Invite,
-
-    /// Kick a user.
-    Kick,
-
-    /// Change a user's power level.
-    ChangePowerLevel,
 }

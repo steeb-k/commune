@@ -5,13 +5,13 @@ use gtk::{
     glib::{clone, closure_local},
     CompositeTemplate,
 };
-use ruma::events::room::power_levels::PowerLevelAction;
+use ruma::events::room::power_levels::{PowerLevelAction, PowerLevelUserAction};
 
 use super::{Avatar, SpinnerButton};
 use crate::{
     i18n::gettext_f,
     prelude::*,
-    session::model::{Member, MemberRole, Membership, PowerLevelUserAction, User},
+    session::model::{Member, MemberRole, Membership, User},
     spawn, toast,
     utils::{message_dialog::confirm_room_member_destructive_action, BoundObject},
     Window,
