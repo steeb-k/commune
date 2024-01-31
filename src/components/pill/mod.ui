@@ -21,15 +21,7 @@
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="display_name">
-            <property name="max-width-chars">30</property>
-            <property name="ellipsize">end</property>
-            <binding name="label">
-              <lookup name="display-name">
-                <lookup name="source">Pill</lookup>
-              </lookup>
-            </binding>
-          </object>
+          <object class="GtkLabel" id="display_name"/>
         </child>
       </object>
     </child>

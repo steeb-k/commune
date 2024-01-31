@@ -38,6 +38,7 @@ mod imp {
         /// Whether the pill can be activated.
         #[property(get, set = Self::set_activatable, explicit_notify)]
         pub activatable: Cell<bool>,
+        display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
         gesture_click: RefCell<Option<gtk::GestureClick>>,
     }
 
@@ -63,7 +64,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Pill {}
+    impl ObjectImpl for Pill {
+        fn dispose(&self) {
+            if let Some(source) = &*self.source.borrow() {
+                if let Some(handler) = self.display_name_handler.take() {
+                    source.avatar_data().disconnect(handler);
+                }
+            }
+        }
+    }
 
     impl WidgetImpl for Pill {}
     impl BinImpl for Pill {}
@@ -71,8 +80,29 @@ mod imp {
     impl Pill {
         /// Set the source of the data displayed by this widget.
         fn set_source(&self, source: Option<PillSource>) {
-            if *self.source.borrow() == source {
+            let prev_source = self.source.borrow().clone();
+
+            if prev_source == source {
                 return;
+            }
+
+            if let Some(source) = prev_source {
+                if let Some(handler) = self.display_name_handler.take() {
+                    source.avatar_data().disconnect(handler);
+                }
+            }
+
+            if let Some(source) = &source {
+                let avatar_data = source.avatar_data();
+
+                let display_name_handler = avatar_data.connect_display_name_notify(
+                    clone!(@weak self as imp => move |avatar_data| {
+                        imp.set_display_name(&avatar_data.display_name());
+                    }),
+                );
+                self.display_name_handler
+                    .replace(Some(display_name_handler));
+                self.set_display_name(&avatar_data.display_name());
             }
 
             self.source.replace(source);
@@ -106,6 +136,20 @@ mod imp {
             obj.action_set_enabled("pill.activate", activatable);
             obj.set_focusable(activatable);
             obj.notify_activatable();
+        }
+
+        /// Set the display name of this pill.
+        fn set_display_name(&self, label: &str) {
+            // We ellipsize the string manually because GtkTextView uses the minimum width.
+            // Show 30 characters max.
+            let mut maybe_ellipsized = label.chars().take(30).collect::<String>();
+
+            let is_ellipsized = maybe_ellipsized.len() < label.len();
+            if is_ellipsized {
+                maybe_ellipsized.push('…');
+            }
+
+            self.display_name.set_label(&maybe_ellipsized);
         }
     }
 }
