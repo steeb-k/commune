@@ -5,7 +5,7 @@ use ruma::events::room::power_levels::PowerLevelUserAction;
 
 use crate::{
     components::{Avatar, UserProfileDialog},
-    gettext_f,
+    gettext_f, ngettext_f,
     prelude::*,
     session::{
         model::{Member, Membership, User},
@@ -130,6 +130,14 @@ mod imp {
             klass.install_action_async("sender-avatar.unban", None, |widget, _, _| async move {
                 widget.unban().await;
             });
+
+            klass.install_action_async(
+                "sender-avatar.remove-messages",
+                None,
+                |widget, _, _| async move {
+                    widget.remove_messages().await;
+                },
+            );
 
             klass.install_action_async("sender-avatar.ignore", None, |widget, _, _| async move {
                 widget.toggle_ignored().await;
@@ -311,6 +319,11 @@ mod imp {
                 !is_own_user
                     && membership == Membership::Ban
                     && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Unban),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.remove-messages",
+                !is_own_user && permissions.can_redact_other(),
             );
 
             obj.action_set_enabled("sender-avatar.ignore", !is_own_user && !sender.is_ignored());
@@ -576,6 +589,59 @@ impl SenderAvatar {
         let user_id = sender.user_id().clone();
         if room.unban(&[(user_id, None)]).await.is_err() {
             toast!(self, gettext("Failed to unban user"));
+        }
+    }
+
+    /// Remove the known events of the room member.
+    async fn remove_messages(&self) {
+        let Some(sender) = self.sender() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        let redactable_events = sender.redactable_events();
+        let count = redactable_events.len();
+
+        let (confirmed, reason) = confirm_room_member_destructive_action(
+            &sender,
+            RoomMemberDestructiveAction::RemoveMessages(count),
+            &window,
+        )
+        .await;
+        if !confirmed {
+            return;
+        }
+
+        let n = u32::try_from(count).unwrap_or(u32::MAX);
+        toast!(
+            self,
+            ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name.
+                "Removing 1 message sent by the user…",
+                "Removing {n} messages sent by the user…",
+                n,
+                &[("n", &n.to_string())]
+            )
+        );
+
+        let room = sender.room();
+
+        if let Err(events) = room.redact(&redactable_events, reason).await {
+            let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
+            toast!(
+                self,
+                ngettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}',
+                    // this is a variable name.
+                    "Failed to remove 1 message sent by the user",
+                    "Failed to remove {n} messages sent by the user",
+                    n,
+                    &[("n", &n.to_string())]
+                )
+            );
         }
     }
 

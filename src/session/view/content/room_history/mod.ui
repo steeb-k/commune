@@ -94,6 +94,11 @@
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
       <item>
+        <attribute name="label" translatable="yes">_Remove Messages</attribute>
+        <attribute name="action">sender-avatar.remove-messages</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
         <attribute name="label" translatable="yes">I_gnore</attribute>
         <attribute name="action">sender-avatar.ignore</attribute>
         <attribute name="hidden-when">action-disabled</attribute>
