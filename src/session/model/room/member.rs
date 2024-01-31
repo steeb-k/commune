@@ -1,13 +1,11 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::{
-    room::RoomMember,
-    ruma::{
-        events::{
-            room::member::{MembershipState, RoomMemberEventContent},
-            OriginalSyncStateEvent, StrippedStateEvent,
-        },
-        OwnedMxcUri, OwnedUserId,
+use matrix_sdk::room::RoomMember;
+use ruma::{
+    events::{
+        room::member::{MembershipState, RoomMemberEventContent},
+        OriginalSyncStateEvent, StrippedStateEvent,
     },
+    OwnedEventId, OwnedMxcUri, OwnedUserId,
 };
 use tracing::error;
 
@@ -186,6 +184,11 @@ impl Member {
         if self.is_own_user() {
             self.session().update_user_profile();
         }
+    }
+
+    /// The IDs of the events sent by this member that can be redacted.
+    pub fn redactable_events(&self) -> Vec<OwnedEventId> {
+        self.room().timeline().redactable_events_for(self.user_id())
     }
 }
 

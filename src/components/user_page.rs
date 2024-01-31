@@ -5,15 +5,19 @@ use gtk::{
     glib::{clone, closure_local},
     CompositeTemplate,
 };
-use ruma::events::room::power_levels::{PowerLevelAction, PowerLevelUserAction};
+use ruma::events::room::power_levels::PowerLevelUserAction;
 
 use super::{Avatar, SpinnerButton};
 use crate::{
     i18n::gettext_f,
+    ngettext_f,
     prelude::*,
     session::model::{Member, MemberRole, Membership, User},
     spawn, toast,
-    utils::{message_dialog::confirm_room_member_destructive_action, BoundObject},
+    utils::{
+        message_dialog::{confirm_room_member_destructive_action, RoomMemberDestructiveAction},
+        BoundObject,
+    },
     Window,
 };
 
@@ -59,6 +63,8 @@ mod imp {
         pub ban_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub unban_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub remove_messages_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub ignored_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -406,6 +412,9 @@ impl UserPage {
             && permissions.can_do_to_user(user_id, PowerLevelUserAction::Unban);
         imp.unban_button.set_visible(can_unban);
 
+        let can_redact = !member.is_own_user() && permissions.can_redact_other();
+        imp.remove_messages_button.set_visible(can_redact);
+
         imp.room_box.set_visible(true);
     }
 
@@ -424,6 +433,9 @@ impl UserPage {
 
         imp.unban_button.set_loading(false);
         imp.unban_button.set_sensitive(true);
+
+        imp.remove_messages_button.set_loading(false);
+        imp.remove_messages_button.set_sensitive(true);
     }
 
     /// Invite the user to the room.
@@ -468,7 +480,7 @@ impl UserPage {
         imp.unban_button.set_sensitive(false);
 
         spawn!(clone!(@weak self as obj => async move {
-            let (confirmed, reason) = confirm_room_member_destructive_action(&member, PowerLevelAction::Kick, &window).await;
+            let (confirmed, reason) = confirm_room_member_destructive_action(&member, RoomMemberDestructiveAction::Kick, &window).await;
             if !confirmed {
                 obj.reset_room();
                 return;
@@ -506,7 +518,7 @@ impl UserPage {
         imp.unban_button.set_sensitive(false);
 
         spawn!(clone!(@weak self as obj => async move {
-            let (confirmed, reason) = confirm_room_member_destructive_action(&member, PowerLevelAction::Ban, &window).await;
+            let (confirmed, reason) = confirm_room_member_destructive_action(&member, RoomMemberDestructiveAction::Ban, &window).await;
             if !confirmed {
                 obj.reset_room();
                 return;
@@ -541,6 +553,55 @@ impl UserPage {
 
             if room.unban(&[(user_id, None)]).await.is_err() {
                 toast!(obj, gettext("Failed to unban user"));
+            }
+
+            obj.reset_room();
+        }));
+    }
+
+    /// Remove the known events of the room member.
+    #[template_callback]
+    fn remove_messages(&self) {
+        let Some(member) = self.user().and_downcast::<Member>() else {
+            return;
+        };
+        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.remove_messages_button.set_loading(true);
+
+        let redactable_events = member.redactable_events();
+        let count = redactable_events.len();
+
+        spawn!(clone!(@weak self as obj => async move {
+            let (confirmed, reason) = confirm_room_member_destructive_action(
+                &member,
+                RoomMemberDestructiveAction::RemoveMessages(count),
+                &window,
+            )
+            .await;
+            if !confirmed {
+                obj.reset_room();
+                return;
+            }
+
+            let room = member.room();
+
+            if let Err(events) = room.redact(&redactable_events, reason).await {
+                let n = u32::try_from(events.len()).unwrap_or(u32::MAX);
+                toast!(
+                    obj,
+                    ngettext_f(
+                        // Translators: Do NOT translate the content between '{' and '}',
+                        // this is a variable name.
+                        "Failed to remove 1 message sent by the user",
+                        "Failed to remove {n} messages sent by the user",
+                        n,
+                        &[("n", &n.to_string())]
+                    )
+                );
             }
 
             obj.reset_room();

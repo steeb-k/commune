@@ -171,6 +171,16 @@
                             <signal name="clicked" handler="unban_user" swapped="yes"/>
                           </object>
                         </child>
+                        <child>
+                          <object class="SpinnerButton" id="remove_messages_button">
+                            <style>
+                              <class name="row"/>
+                              <class name="destructive-action"/>
+                            </style>
+                            <property name="label" translatable="yes">Remove Messages</property>
+                            <signal name="clicked" handler="remove_messages" swapped="yes"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                     <child>

@@ -24,7 +24,7 @@ use matrix_sdk::{
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
     sync::{JoinedRoom, LeftRoom},
-    DisplayName, HttpError, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
+    DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
     events::{
@@ -1308,28 +1308,49 @@ impl Room {
         Ok(())
     }
 
-    /// Redact `redacted_event_id` in this room because of `reason`.
-    pub async fn redact(
+    /// Redact the given events in this room because of the given reason.
+    ///
+    /// Returns `Ok(())` if all the redactions are successful, otherwise
+    /// returns the list of events that could not be redacted.
+    pub async fn redact<'a>(
         &self,
-        redacted_event_id: OwnedEventId,
+        events: &'a [OwnedEventId],
         reason: Option<String>,
-    ) -> Result<(), HttpError> {
+    ) -> Result<(), Vec<&'a EventId>> {
         let matrix_room = self.matrix_room();
         if matrix_room.state() != RoomState::Joined {
             return Ok(());
         };
 
+        let events_clone = events.to_owned();
         let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move {
-            matrix_room
-                .redact(&redacted_event_id, reason.as_deref(), None)
-                .await
+            let mut failed_redactions = Vec::new();
+
+            for (i, event_id) in events_clone.iter().enumerate() {
+                match matrix_room.redact(event_id, reason.as_deref(), None).await {
+                    Ok(_) => {}
+                    Err(error) => {
+                        error!("Failed to redact event with ID {event_id}: {error}");
+                        failed_redactions.push(i);
+                    }
+                }
+            }
+
+            failed_redactions
         });
 
-        // FIXME: We should retry the request if it fails
-        handle.await.unwrap()?;
+        let failed_redactions = handle.await.unwrap();
+        let failed_redactions = failed_redactions
+            .into_iter()
+            .map(|i| &*events[i])
+            .collect::<Vec<_>>();
 
-        Ok(())
+        if failed_redactions.is_empty() {
+            Ok(())
+        } else {
+            Err(failed_redactions)
+        }
     }
 
     pub fn send_typing_notification(&self, is_typing: bool) {

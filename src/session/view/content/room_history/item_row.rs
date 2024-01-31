@@ -718,8 +718,7 @@ impl ItemRow {
             return;
         }
 
-        if let Err(error) = event.room().redact(event_id, None).await {
-            error!("Failed to redact event: {error}");
+        if event.room().redact(&[event_id], None).await.is_err() {
             toast!(self, gettext("Failed to remove message"));
         }
     }

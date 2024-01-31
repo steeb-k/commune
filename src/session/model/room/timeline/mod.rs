@@ -14,12 +14,13 @@ use matrix_sdk_ui::timeline::{
 use ruma::{
     events::{
         room::message::MessageType, AnySyncMessageLikeEvent, AnySyncStateEvent,
-        AnySyncTimelineEvent, SyncMessageLikeEvent,
+        AnySyncTimelineEvent, SyncMessageLikeEvent, TimelineEventType,
     },
-    OwnedEventId,
+    OwnedEventId, UserId,
 };
+use serde::{de::IgnoredAny, Deserialize};
 use tokio::task::AbortHandle;
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
 
 pub use self::{
     timeline_item::{TimelineItem, TimelineItemExt, TimelineItemImpl},
@@ -27,6 +28,13 @@ pub use self::{
 };
 use super::{Event, EventKey, Room};
 use crate::{prelude::*, spawn, spawn_tokio};
+
+/// List of events that should not be redacted to avoid bricking a room.
+const NON_REDACTABLE_EVENTS: &[TimelineEventType] = &[
+    TimelineEventType::RoomCreate,
+    TimelineEventType::RoomEncryption,
+    TimelineEventType::RoomServerAcl,
+];
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -746,6 +754,33 @@ impl Timeline {
         // are unread messages.
         None
     }
+
+    /// The IDs of redactable events sent by the given user in this timeline.
+    pub fn redactable_events_for(&self, user_id: &UserId) -> Vec<OwnedEventId> {
+        let mut events = vec![];
+
+        for item in self.imp().sdk_items.iter::<glib::Object>() {
+            let Ok(item) = item else {
+                // The iterator is broken.
+                break;
+            };
+            let Ok(event) = item.downcast::<Event>() else {
+                continue;
+            };
+
+            if event.sender_id() != user_id {
+                continue;
+            }
+
+            if is_event_redactable(&event) {
+                if let Some(event_id) = event.event_id() {
+                    events.push(event_id);
+                }
+            }
+        }
+
+        events
+    }
 }
 
 /// Whether the given event is an `m.room.create` event.
@@ -757,4 +792,46 @@ fn is_room_create_event(event: &Event) -> bool {
         ),
         _ => false,
     }
+}
+
+/// Whether the given event can be redacted.
+fn is_event_redactable(event: &Event) -> bool {
+    let Some(raw) = event.raw() else {
+        // Events without raw JSON are already redacted events, and events that are not
+        // sent yet, we can ignore them.
+        return false;
+    };
+
+    let is_redacted = match raw.get_field::<UnsignedDeHelper>("unsigned") {
+        Ok(Some(unsigned)) => unsigned.redacted_because.is_some(),
+        Ok(None) => {
+            debug!("Missing unsigned field in event");
+            false
+        }
+        Err(error) => {
+            error!("Failed to deserialize unsigned field in event: {error}");
+            false
+        }
+    };
+    if is_redacted {
+        // There is no point in redacting it twice.
+        return false;
+    }
+
+    match raw.get_field::<TimelineEventType>("type") {
+        Ok(Some(t)) => !NON_REDACTABLE_EVENTS.contains(&t),
+        Ok(None) => {
+            debug!("Missing type field in event");
+            true
+        }
+        Err(error) => {
+            error!("Failed to deserialize type field in event: {error}");
+            true
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct UnsignedDeHelper {
+    redacted_because: Option<IgnoredAny>,
 }

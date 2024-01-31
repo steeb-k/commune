@@ -1,7 +1,7 @@
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
-use ruma::events::room::power_levels::{PowerLevelAction, PowerLevelUserAction};
+use ruma::events::room::power_levels::PowerLevelUserAction;
 
 use crate::{
     components::{Avatar, UserProfileDialog},
@@ -13,7 +13,8 @@ use crate::{
     },
     toast,
     utils::{
-        add_activate_binding_action, message_dialog::confirm_room_member_destructive_action,
+        add_activate_binding_action,
+        message_dialog::{confirm_room_member_destructive_action, RoomMemberDestructiveAction},
         BoundObject,
     },
     Window,
@@ -504,8 +505,12 @@ impl SenderAvatar {
             return;
         };
 
-        let (confirmed, reason) =
-            confirm_room_member_destructive_action(&sender, PowerLevelAction::Kick, &window).await;
+        let (confirmed, reason) = confirm_room_member_destructive_action(
+            &sender,
+            RoomMemberDestructiveAction::Kick,
+            &window,
+        )
+        .await;
         if !confirmed {
             return;
         }
@@ -540,8 +545,12 @@ impl SenderAvatar {
             return;
         };
 
-        let (confirmed, reason) =
-            confirm_room_member_destructive_action(&sender, PowerLevelAction::Ban, &window).await;
+        let (confirmed, reason) = confirm_room_member_destructive_action(
+            &sender,
+            RoomMemberDestructiveAction::Ban,
+            &window,
+        )
+        .await;
         if !confirmed {
             return;
         }
