@@ -398,10 +398,8 @@ impl UserPage {
             imp.kick_button.set_visible(false);
         }
 
-        let can_ban = matches!(
-            membership,
-            Membership::Join | Membership::Invite | Membership::Knock
-        ) && permissions.can_do_to_user(user_id, PowerLevelUserAction::Ban);
+        let can_ban = membership != Membership::Ban
+            && permissions.can_do_to_user(user_id, PowerLevelUserAction::Ban);
         imp.ban_button.set_visible(can_ban);
 
         let can_unban = matches!(membership, Membership::Ban)

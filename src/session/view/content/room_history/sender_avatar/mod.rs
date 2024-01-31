@@ -301,10 +301,7 @@ mod imp {
             obj.action_set_enabled(
                 "sender-avatar.ban",
                 !is_own_user
-                    && matches!(
-                        membership,
-                        Membership::Join | Membership::Invite | Membership::Knock
-                    )
+                    && membership != Membership::Ban
                     && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Ban),
             );
 
