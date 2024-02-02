@@ -5,6 +5,7 @@ mod avatar;
 mod button_row;
 mod check_loading_row;
 mod context_menu_bin;
+mod copyable_row;
 mod custom_entry;
 mod drag_overlay;
 mod editable_avatar;
@@ -38,6 +39,7 @@ pub use self::{
     button_row::ButtonRow,
     check_loading_row::CheckLoadingRow,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    copyable_row::CopyableRow,
     custom_entry::CustomEntry,
     drag_overlay::DragOverlay,
     editable_avatar::EditableAvatar,

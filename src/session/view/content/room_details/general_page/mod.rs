@@ -21,7 +21,8 @@ use tracing::error;
 use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{
-        AvatarData, AvatarImage, CheckLoadingRow, CustomEntry, EditableAvatar, SpinnerButton,
+        AvatarData, AvatarImage, CheckLoadingRow, CopyableRow, CustomEntry, EditableAvatar,
+        SpinnerButton,
     },
     prelude::*,
     session::model::{MemberList, NotificationsRoomSetting, Room},
@@ -83,8 +84,6 @@ mod imp {
         #[template_child]
         pub notifications_mute_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
-        pub room_id: TemplateChild<adw::ActionRow>,
-        #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
@@ -114,6 +113,8 @@ mod imp {
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
+            CopyableRow::static_type();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
@@ -790,14 +791,6 @@ impl GeneralPage {
                 obj.update_notifications();
             })
         );
-    }
-
-    /// Copy the room ID to the clipboard.
-    #[template_callback]
-    fn copy_room_id(&self) {
-        let text = self.imp().room_id.subtitle().unwrap_or_default();
-        self.clipboard().set_text(&text);
-        toast!(self, gettext("Matrix room ID copied to clipboard"));
     }
 
     /// Update the room upgrade button.

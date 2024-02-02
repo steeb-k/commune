@@ -249,28 +249,16 @@
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Advanced Information</property>
         <child>
-          <object class="AdwActionRow" id="room_id">
-            <property name="selectable">False</property>
+          <object class="CopyableRow" id="room_id">
             <property name="title" translatable="yes">Matrix Room ID</property>
             <binding name="subtitle">
               <lookup name="room-id-string">
                 <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
               </lookup>
             </binding>
-            <style>
-              <class name="property"/>
-            </style>
-            <child>
-              <object class="GtkButton">
-                <property name="icon-name">copy-symbolic</property>
-                <property name="tooltip-text" translatable="yes">Copy Matrix room ID to clipboard</property>
-                <property name="valign">center</property>
-                <signal name="clicked" handler="copy_room_id" swapped="yes"/>
-                <style>
-                  <class name="flat"/>
-                </style>
-              </object>
-            </child>
+            <property name="main-title">subtitle</property>
+            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix room ID to clipboard</property>
+            <property name="toast-text" translatable="yes">Matrix room ID copied to clipboard</property>
           </object>
         </child>
         <child>

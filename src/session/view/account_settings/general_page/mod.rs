@@ -16,7 +16,7 @@ pub use self::{
     deactivate_account_subpage::DeactivateAccountSubpage, log_out_subpage::LogOutSubpage,
 };
 use crate::{
-    components::{ActionButton, ActionState, ButtonRow, EditableAvatar},
+    components::{ActionButton, ActionState, ButtonRow, CopyableRow, EditableAvatar},
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
@@ -48,11 +48,11 @@ mod imp {
         #[template_child]
         pub change_password_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub homeserver: TemplateChild<adw::ActionRow>,
+        pub homeserver: TemplateChild<CopyableRow>,
         #[template_child]
-        pub user_id: TemplateChild<adw::ActionRow>,
+        pub user_id: TemplateChild<CopyableRow>,
         #[template_child]
-        pub session_id: TemplateChild<adw::ActionRow>,
+        pub session_id: TemplateChild<CopyableRow>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -71,24 +71,6 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);
-
-            klass.install_action("account-user.copy-homeserver", None, |obj, _, _| {
-                let text = obj.imp().homeserver.subtitle().unwrap_or_default();
-                obj.clipboard().set_text(&text);
-                toast!(obj, gettext("Homeserver address copied to clipboard"));
-            });
-
-            klass.install_action("account-user.copy-user-id", None, |obj, _, _| {
-                let text = obj.imp().user_id.subtitle().unwrap_or_default();
-                obj.clipboard().set_text(&text);
-                toast!(obj, gettext("Matrix user ID copied to clipboard"));
-            });
-
-            klass.install_action("account-user.copy-session-id", None, |obj, _, _| {
-                let text = obj.imp().session_id.subtitle().unwrap_or_default();
-                obj.clipboard().set_text(&text);
-                toast!(obj, gettext("Session ID copied to clipboard"));
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
