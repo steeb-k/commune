@@ -4,7 +4,9 @@ use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
 use crate::{
-    components::{CheckLoadingRow, EntryAddRow, LoadingBin, Spinner, SwitchLoadingRow},
+    components::{
+        CheckLoadingRow, EntryAddRow, LoadingBin, RemovableRow, Spinner, SwitchLoadingRow,
+    },
     i18n::gettext_f,
     session::model::{NotificationsGlobalSetting, NotificationsSettings},
     spawn, toast,
@@ -351,27 +353,16 @@ impl NotificationsPage {
 
         if let Some(string_obj) = item.downcast_ref::<gtk::StringObject>() {
             let keyword = string_obj.string();
-            let row = adw::ActionRow::builder()
-                .title(keyword.clone())
-                .selectable(false)
-                .build();
+            let row = RemovableRow::new();
+            row.set_title(&keyword);
+            row.set_remove_button_tooltip_text(Some(gettext_f(
+                "Remove “{keyword}”",
+                &[("keyword", &keyword)],
+            )));
 
-            let suffix = LoadingBin::new();
-            let remove_button = gtk::Button::builder()
-                .icon_name("close-symbolic")
-                .valign(gtk::Align::Center)
-                .halign(gtk::Align::Center)
-                .css_classes(["flat"])
-                .tooltip_text(gettext_f("Remove “{keyword}”", &[("keyword", &keyword)]))
-                .build();
-            remove_button.connect_clicked(clone!(@weak self as obj, @weak row => move |_| {
-                obj.remove_keyword(row.title());
+            row.connect_remove(clone!(@weak self as obj => move |row| {
+                obj.remove_keyword(row);
             }));
-            suffix.set_child(Some(remove_button));
-
-            row.add_suffix(&suffix);
-            // We need to keep track of suffixes to change their loading state.
-            imp.keywords_suffixes.borrow_mut().insert(keyword, suffix);
 
             row.upcast()
         } else {
@@ -380,31 +371,24 @@ impl NotificationsPage {
         }
     }
 
-    /// Remove the given keyword.
-    fn remove_keyword(&self, keyword: glib::GString) {
+    /// Remove the keyword from the given row.
+    fn remove_keyword(&self, row: &RemovableRow) {
         let Some(settings) = self.notifications_settings() else {
             return;
         };
 
-        let Some(suffix) = self.imp().keywords_suffixes.borrow().get(&keyword).cloned() else {
-            return;
-        };
-
-        suffix.set_is_loading(true);
+        row.set_is_loading(true);
 
         spawn!(
-            clone!(@weak self as obj, @weak settings, @weak suffix => async move {
-                if settings.remove_keyword(keyword.to_string()).await.is_err() {
+            clone!(@weak self as obj, @weak settings, @weak row => async move {
+                if settings.remove_keyword(row.title().into()).await.is_err() {
                     toast!(
                         obj,
                         gettext("Could not remove notification keyword")
                     );
-                } else {
-                    // The row should be removed.
-                    obj.imp().keywords_suffixes.borrow_mut().remove(&keyword);
                 }
 
-                suffix.set_is_loading(false);
+                row.set_is_loading(false);
             })
         );
     }

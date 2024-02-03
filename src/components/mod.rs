@@ -21,6 +21,7 @@ mod overlapping_avatars;
 mod pill;
 mod power_level_badge;
 mod reaction_chooser;
+mod removable_row;
 mod room_title;
 mod scale_revealer;
 mod spinner;
@@ -56,6 +57,7 @@ pub use self::{
     pill::{Pill, PillSource, PillSourceExt, PillSourceImpl, PillSourceRow},
     power_level_badge::PowerLevelBadge,
     reaction_chooser::ReactionChooser,
+    removable_row::RemovableRow,
     room_title::RoomTitle,
     scale_revealer::ScaleRevealer,
     spinner::Spinner,
