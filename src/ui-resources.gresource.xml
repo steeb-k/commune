@@ -16,6 +16,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/copyable_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/editable_avatar.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/entry_add_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/join_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading_bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading_row.ui</file>

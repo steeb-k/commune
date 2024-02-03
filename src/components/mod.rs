@@ -9,6 +9,7 @@ mod copyable_row;
 mod custom_entry;
 mod drag_overlay;
 mod editable_avatar;
+mod entry_add_row;
 mod image_paintable;
 mod join_room_dialog;
 mod label_with_widgets;
@@ -43,6 +44,7 @@ pub use self::{
     custom_entry::CustomEntry,
     drag_overlay::DragOverlay,
     editable_avatar::EditableAvatar,
+    entry_add_row::EntryAddRow,
     image_paintable::ImagePaintable,
     join_room_dialog::JoinRoomDialog,
     label_with_widgets::{LabelWithWidgets, DEFAULT_PLACEHOLDER},

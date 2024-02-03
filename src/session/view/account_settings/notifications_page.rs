@@ -4,7 +4,7 @@ use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
 use crate::{
-    components::{CheckLoadingRow, LoadingBin, Spinner, SwitchLoadingRow},
+    components::{CheckLoadingRow, EntryAddRow, LoadingBin, Spinner, SwitchLoadingRow},
     i18n::gettext_f,
     session::model::{NotificationsGlobalSetting, NotificationsSettings},
     spawn, toast,
@@ -43,9 +43,7 @@ mod imp {
         #[template_child]
         pub keywords: TemplateChild<gtk::ListBox>,
         #[template_child]
-        pub keywords_add_entry: TemplateChild<adw::EntryRow>,
-        #[template_child]
-        pub keywords_add_bin: TemplateChild<LoadingBin>,
+        pub keywords_add_row: TemplateChild<EntryAddRow>,
         pub keywords_suffixes: RefCell<HashMap<glib::GString, LoadingBin>>,
         /// The notifications settings of the current session.
         #[property(get, set = Self::set_notifications_settings, explicit_notify)]
@@ -87,7 +85,7 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.keywords_add_entry
+            self.keywords_add_row
                 .connect_changed(clone!(@weak obj => move |_| {
                     obj.update_keywords();
                 }));
@@ -254,7 +252,8 @@ impl NotificationsPage {
             return;
         }
 
-        imp.keywords_add_bin.set_sensitive(self.can_add_keyword());
+        imp.keywords_add_row
+            .set_inhibit_add(!self.can_add_keyword());
     }
 
     fn set_account_loading(&self, loading: bool) {
@@ -377,7 +376,7 @@ impl NotificationsPage {
             row.upcast()
         } else {
             // It can only be the dummy item to add a new keyword.
-            imp.keywords_add_entry.clone().upcast()
+            imp.keywords_add_row.clone().upcast()
         }
     }
 
@@ -414,17 +413,17 @@ impl NotificationsPage {
     fn can_add_keyword(&self) -> bool {
         let imp = self.imp();
 
-        // Cannot add a keyword is section is disabled.
+        // Cannot add a keyword if section is disabled.
         if !imp.keywords.is_sensitive() {
             return false;
         }
 
         // Cannot add a keyword if a keyword is already being added.
-        if imp.keywords_add_bin.is_loading() {
+        if imp.keywords_add_row.is_loading() {
             return false;
         }
 
-        let text = imp.keywords_add_entry.text().to_lowercase();
+        let text = imp.keywords_add_row.text().to_lowercase();
 
         // Cannot add an empty keyword.
         if text.is_empty() {
@@ -467,12 +466,11 @@ impl NotificationsPage {
         }
         let imp = self.imp();
 
-        imp.keywords_add_entry.set_sensitive(false);
-        imp.keywords_add_bin.set_is_loading(true);
+        imp.keywords_add_row.set_is_loading(true);
 
         spawn!(clone!(@weak self as obj, @weak settings => async move {
             let imp = obj.imp();
-            let keyword = imp.keywords_add_entry.text().into();
+            let keyword = imp.keywords_add_row.text().into();
 
             if settings.add_keyword(keyword).await.is_err() {
                 toast!(
@@ -481,11 +479,10 @@ impl NotificationsPage {
                 );
             } else {
                 // Adding the keyword was successful, reset the entry.
-                imp.keywords_add_entry.set_text("");
+                imp.keywords_add_row.set_text("");
             }
 
-            imp.keywords_add_bin.set_is_loading(false);
-            imp.keywords_add_entry.set_sensitive(true);
+            imp.keywords_add_row.set_is_loading(false);
             obj.update_keywords();
         }));
     }
