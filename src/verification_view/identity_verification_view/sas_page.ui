@@ -54,7 +54,7 @@
                 <child>
                   <object class="SpinnerButton" id="mismatch_btn">
                     <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis do not match. -->
-                    <property name="label" translatable="yes">Do Not Match</property>
+                    <property name="content-label" translatable="yes">Do Not Match</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="data_mismatch" swapped="yes"/>
                     <style>
@@ -66,7 +66,7 @@
                 <child>
                   <object class="SpinnerButton" id="match_btn">
                     <!-- Translators: During emoji comparison, this is the label of the button to click when the emojis match. -->
-                    <property name="label" translatable="yes">Match</property>
+                    <property name="content-label" translatable="yes">Match</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="data_match" swapped="yes"/>
                     <style>

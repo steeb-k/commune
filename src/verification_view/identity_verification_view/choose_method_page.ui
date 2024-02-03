@@ -57,7 +57,7 @@
                 <child>
                   <object class="SpinnerButton" id="scan_qr_code_btn">
                     <property name="halign">center</property>
-                    <property name="label" translatable="yes">Scan QR code with this session</property>
+                    <property name="content-label" translatable="yes">Scan QR code with this session</property>
                     <signal name="clicked" handler="start_qr_code_scan" swapped="yes"/>
                     <style>
                       <class name="pill"/>
@@ -66,7 +66,7 @@
                 </child>
                 <child>
                   <object class="SpinnerButton" id="start_sas_btn">
-                    <property name="label" translatable="yes">Compare Emoji</property>
+                    <property name="content-label" translatable="yes">Compare Emoji</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="start_sas" swapped="yes"/>
                     <style>
@@ -77,7 +77,7 @@
                 <child>
                   <object class="SpinnerButton" id="cancel_btn">
                     <property name="halign">center</property>
-                    <property name="label" translatable="yes">Cancel Verification</property>
+                    <property name="content-label" translatable="yes">Cancel Verification</property>
                     <signal name="clicked" handler="cancel" swapped="yes"/>
                     <style>
                       <class name="destructive-action"/>

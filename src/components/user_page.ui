@@ -84,7 +84,7 @@
                         </style>
                         <property name="visible">false</property>
                         <property name="loading">true</property>
-                        <property name="action-name">user-page.open-direct-chat</property>
+                        <property name="content-action-name">user-page.open-direct-chat</property>
                       </object>
                     </child>
                     <child>
@@ -157,7 +157,7 @@
                               <class name="destructive-action"/>
                             </style>
                             <!-- Translators: As in, 'Ban room member'. -->
-                            <property name="label" translatable="yes">Ban</property>
+                            <property name="content-label" translatable="yes">Ban</property>
                             <signal name="clicked" handler="ban_user" swapped="yes"/>
                           </object>
                         </child>
@@ -167,7 +167,7 @@
                               <class name="row"/>
                             </style>
                             <!-- Translators: As in, 'Unban room member'. -->
-                            <property name="label" translatable="yes">Unban</property>
+                            <property name="content-label" translatable="yes">Unban</property>
                             <signal name="clicked" handler="unban_user" swapped="yes"/>
                           </object>
                         </child>
@@ -177,7 +177,7 @@
                               <class name="row"/>
                               <class name="destructive-action"/>
                             </style>
-                            <property name="label" translatable="yes">Remove Messages</property>
+                            <property name="content-label" translatable="yes">Remove Messages</property>
                             <signal name="clicked" handler="remove_messages" swapped="yes"/>
                           </object>
                         </child>
@@ -216,7 +216,7 @@
                                         <property name="child">
                                           <object class="SpinnerButton" id="verify_button">
                                             <property name="sensitive">False</property>
-                                            <property name="label" translatable="yes">Verify</property>
+                                            <property name="content-label" translatable="yes">Verify</property>
                                             <property name="action-name">user-page.verify-user</property>
                                           </object>
                                         </property>

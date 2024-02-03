@@ -44,7 +44,7 @@
                 <child>
                   <object class="SpinnerButton" id="decline_btn">
                     <property name="can-shrink">true</property>
-                    <property name="label" translatable="yes">Decline</property>
+                    <property name="content-label" translatable="yes">Decline</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="decline" swapped="yes"/>
                     <style>
@@ -55,7 +55,7 @@
                 </child>
                 <child>
                   <object class="SpinnerButton" id="accept_btn">
-                    <property name="label" translatable="yes">Verify</property>
+                    <property name="content-label" translatable="yes">Verify</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="accept" swapped="yes"/>
                     <style>

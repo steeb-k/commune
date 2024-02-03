@@ -16,7 +16,7 @@
             </child>
             <child type="end">
               <object class="SpinnerButton" id="invite_button">
-                <property name="label" translatable="yes">I_nvite</property>
+                <property name="content-label" translatable="yes">I_nvite</property>
                 <property name="use_underline">True</property>
                 <property name="sensitive">False</property>
                 <style>

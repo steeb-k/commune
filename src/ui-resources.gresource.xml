@@ -25,7 +25,6 @@
     <file compressed="true" preprocess="xml-stripblanks">components/pill/source_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/room_title.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/spinner_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/switch_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/toastable_window.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/user_page.ui</file>

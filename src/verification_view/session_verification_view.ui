@@ -48,7 +48,7 @@
                         <child>
                           <object class="SpinnerButton" id="send_request_btn">
                             <property name="can-shrink">true</property>
-                            <property name="label" translatable="yes">Verify With Another Session</property>
+                            <property name="content-label" translatable="yes">Verify With Another Session</property>
                             <property name="halign">center</property>
                             <signal name="clicked" handler="send_request" swapped="yes"/>
                             <style>

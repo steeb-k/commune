@@ -1,29 +1,30 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{glib, pango, prelude::*};
 
 use super::LoadingBin;
 
 mod imp {
     use std::marker::PhantomData;
 
-    use glib::subclass::InitializingObject;
-
     use super::*;
 
-    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/spinner_button.ui")]
+    #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::SpinnerButton)]
     pub struct SpinnerButton {
-        #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
-        #[template_child]
-        pub child_label: TemplateChild<gtk::Label>,
-        /// The label of the button.
-        #[property(get = Self::label, set = Self::set_label, override_class = gtk::Button)]
-        pub label: PhantomData<glib::GString>,
+        pub loading_bin: LoadingBin,
+        /// The label of the content of the button.
+        ///
+        /// If an icon was set, it is removed.
+        #[property(get = Self::content_label, set = Self::set_content_label, explicit_notify)]
+        pub content_label: PhantomData<Option<glib::GString>>,
+        /// The name of the icon of the content of the button.
+        ///
+        /// If a label was set, it is removed.
+        #[property(get = Self::content_icon_name, set = Self::set_content_icon_name, explicit_notify)]
+        pub content_icon_name: PhantomData<Option<glib::GString>>,
         /// Whether to display the loading spinner.
         ///
-        /// If this is `false`, the text will be displayed.
+        /// If this is `false`, the text or icon will be displayed.
         #[property(get = Self::is_loading, set = Self::set_loading, explicit_notify)]
         pub loading: PhantomData<bool>,
     }
@@ -33,36 +34,95 @@ mod imp {
         const NAME: &'static str = "SpinnerButton";
         type Type = super::SpinnerButton;
         type ParentType = gtk::Button;
-
-        fn class_init(klass: &mut Self::Class) {
-            Self::bind_template(klass);
-        }
-
-        fn instance_init(obj: &InitializingObject<Self>) {
-            obj.init_template();
-        }
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for SpinnerButton {}
+    impl ObjectImpl for SpinnerButton {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.obj().set_child(Some(&self.loading_bin));
+        }
+    }
 
     impl WidgetImpl for SpinnerButton {}
     impl ButtonImpl for SpinnerButton {}
 
     impl SpinnerButton {
-        /// The label of the button.
-        fn label(&self) -> glib::GString {
-            self.child_label.label()
+        /// The label of the content of the button.
+        fn content_label(&self) -> Option<glib::GString> {
+            self.loading_bin
+                .child()
+                .and_downcast::<gtk::Label>()
+                .map(|l| l.label())
+                .filter(|s| !s.is_empty())
         }
 
-        /// Set the label of the button.
-        fn set_label(&self, label: &str) {
-            if self.child_label.label().as_str() == label {
+        /// Set the label of the content of the button.
+        fn set_content_label(&self, label: &str) {
+            if self.content_label().as_deref() == Some(label) {
                 return;
             }
+            let obj = self.obj();
 
-            self.child_label.set_label(label);
-            self.obj().notify("label");
+            let child_label =
+                if let Some(child_label) = self.loading_bin.child().and_downcast::<gtk::Label>() {
+                    child_label
+                } else {
+                    let child_label = gtk::Label::builder()
+                        .ellipsize(pango::EllipsizeMode::End)
+                        .use_underline(true)
+                        .mnemonic_widget(&*obj)
+                        .css_classes(["text-button"])
+                        .build();
+
+                    self.loading_bin.set_child(Some(child_label.clone()));
+                    // In case it was an image before.
+                    obj.remove_css_class("image-button");
+                    obj.update_relation(&[gtk::accessible::Relation::LabelledBy(&[
+                        child_label.upcast_ref()
+                    ])]);
+
+                    child_label
+                };
+
+            child_label.set_label(label);
+
+            obj.notify_content_label();
+        }
+
+        /// The name of the icon of the content of the button.
+        fn content_icon_name(&self) -> Option<glib::GString> {
+            self.loading_bin
+                .child()
+                .and_downcast::<gtk::Image>()
+                .and_then(|i| i.icon_name())
+        }
+
+        /// Set the name of the icon of the content of the button.
+        fn set_content_icon_name(&self, icon_name: &str) {
+            if self.content_icon_name().as_deref() == Some(icon_name) {
+                return;
+            }
+            let obj = self.obj();
+
+            let child_image =
+                if let Some(child_image) = self.loading_bin.child().and_downcast::<gtk::Image>() {
+                    child_image
+                } else {
+                    let child_image = gtk::Image::builder()
+                        .accessible_role(gtk::AccessibleRole::Presentation)
+                        .build();
+
+                    self.loading_bin.set_child(Some(child_image.clone()));
+                    obj.add_css_class("image-button");
+
+                    child_image
+                };
+
+            child_image.set_icon_name(Some(icon_name));
+
+            obj.notify_content_icon_name();
         }
 
         /// Whether to display the loading spinner.
@@ -94,6 +154,8 @@ mod imp {
 
 glib::wrapper! {
     /// Button showing either a spinner or a label.
+    ///
+    /// Use the `content-label` and `content-icon-name` properties instead of `label` and `icon-name` respectively, otherwise the spinner will not appear.
     pub struct SpinnerButton(ObjectSubclass<imp::SpinnerButton>)
         @extends gtk::Widget, gtk::Button, @implements gtk::Accessible, gtk::Actionable;
 }

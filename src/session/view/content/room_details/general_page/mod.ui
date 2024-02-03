@@ -112,7 +112,7 @@
               <object class="SpinnerButton" id="save_details_btn">
                 <property name="visible" bind-source="ContentRoomDetailsGeneralPage" bind-property="edit-mode-enabled" bind-flags="sync-create"/>
                 <property name="halign">center</property>
-                <property name="label" translatable="yes">Save Details</property>
+                <property name="content-label" translatable="yes">Save Details</property>
                 <signal name="clicked" handler="save_details_clicked" swapped="yes"/>
                 <style>
                   <class name="pill" />
@@ -276,7 +276,7 @@
             <child>
               <object class="SpinnerButton" id="upgrade_button">
                 <!-- Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'. -->
-                <property name="label" translatable="yes">Upgrade</property>
+                <property name="content-label" translatable="yes">Upgrade</property>
                 <property name="valign">center</property>
                 <signal name="clicked" handler="upgrade" swapped="yes"/>
                 <style>

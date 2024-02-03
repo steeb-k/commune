@@ -27,7 +27,7 @@
       <object class="SpinnerButton" id="stop_ignoring_button">
         <property name="halign">end</property>
         <property name="valign">center</property>
-        <property name="label" translatable="yes">Stop Ignoring</property>
+        <property name="content-label" translatable="yes">Stop Ignoring</property>
         <signal name="clicked" handler="stop_ignoring_user" swapped="yes"/>
       </object>
     </child>

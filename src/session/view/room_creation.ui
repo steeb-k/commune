@@ -179,7 +179,7 @@
                     </child>
                     <child>
                       <object class="SpinnerButton" id="create_button">
-                        <property name="label" translatable="yes">_Create Room</property>
+                        <property name="content-label" translatable="yes">_Create Room</property>
                         <property name="use_underline">True</property>
                         <property name="sensitive">False</property>
                         <property name="halign">center</property>

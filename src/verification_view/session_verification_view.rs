@@ -356,19 +356,19 @@ impl SessionVerificationView {
                 ));
                 setup_btn.add_css_class("suggested-action");
                 setup_btn.remove_css_class("destructive-action");
-                setup_btn.set_label(&gettext("Set Up"));
+                setup_btn.set_content_label(gettext("Set Up"));
             }
             IdentityState::NoSessions => {
                 label.set_label(&gettext("No other sessions are available to verify this session. You can either restore cross-signing from another session and restart this process, or reset the encryption identity."));
                 setup_btn.remove_css_class("suggested-action");
                 setup_btn.add_css_class("destructive-action");
-                setup_btn.set_label(&gettext("Reset"));
+                setup_btn.set_content_label(gettext("Reset"));
             }
             IdentityState::CanVerify => {
                 label.set_label(&gettext("If you lost access to all other sessions, you can create a new encryption identity. Be careful because this will cancel the verifications of all users and sessions."));
                 setup_btn.remove_css_class("suggested-action");
                 setup_btn.add_css_class("destructive-action");
-                setup_btn.set_label(&gettext("Reset"));
+                setup_btn.set_content_label(gettext("Reset"));
             }
         }
     }

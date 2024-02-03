@@ -67,7 +67,7 @@
                           <class name="row"/>
                           <class name="destructive-action"/>
                         </style>
-                        <property name="label" translatable="yes">Continue</property>
+                        <property name="content-label" translatable="yes">Continue</property>
                         <property name="sensitive">false</property>
                       </object>
                     </child>
