@@ -15,8 +15,8 @@
         </child>
         <child>
           <object class="GtkBox" id="header">
-            <property name="spacing">10</property>
-            <property name="margin-bottom">10</property>
+            <property name="spacing">5</property>
+            <property name="margin-bottom">3</property>
             <layout>
               <property name="column">1</property>
               <property name="row">0</property>
