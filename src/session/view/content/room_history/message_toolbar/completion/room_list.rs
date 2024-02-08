@@ -1,7 +1,7 @@
 use gtk::{glib, glib::closure, prelude::*, subclass::prelude::*};
 
 use crate::{
-    session::model::{Member, Membership, Room, RoomList, RoomType},
+    session::model::{Member, Membership, Room, RoomAliases, RoomList, RoomType},
     utils::{expression, ExpressionListModel},
 };
 
@@ -85,7 +85,8 @@ mod imp {
                 .build();
 
             // Setup the search filter.
-            let alias_expr = Room::this_expression("alias-string");
+            let alias_expr =
+                Room::this_expression("aliases").chain_property::<RoomAliases>("alias-string");
             let room_search_string_expr = gtk::ClosureExpression::new::<String>(
                 &[alias_expr.clone(), display_name_expr.clone()],
                 closure!(

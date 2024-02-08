@@ -4,7 +4,7 @@ use gtk::{glib, glib::closure_local, CompositeTemplate};
 use super::SpinnerButton;
 
 mod imp {
-    use std::marker::PhantomData;
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
@@ -17,12 +17,22 @@ mod imp {
     pub struct RemovableRow {
         #[template_child]
         pub remove_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub extra_suffix_bin: TemplateChild<adw::Bin>,
         /// The tooltip text of the remove button.
         #[property(get = Self::remove_button_tooltip_text, set = Self::set_remove_button_tooltip_text, explicit_notify, nullable)]
         pub remove_button_tooltip_text: PhantomData<Option<glib::GString>>,
+        /// The accessible label of the remove button.
+        #[property(get, set = Self::set_remove_button_accessible_label, explicit_notify, nullable)]
+        pub remove_button_accessible_label: RefCell<Option<String>>,
         /// Whether this row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
         pub is_loading: PhantomData<bool>,
+        /// The extra suffix widget of this row.
+        ///
+        /// The widget is placed before the remove button.
+        #[property(get = Self::extra_suffix, set = Self::set_extra_suffix, explicit_notify, nullable)]
+        pub extra_suffix: PhantomData<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -71,6 +81,24 @@ mod imp {
             self.obj().notify_remove_button_tooltip_text();
         }
 
+        /// Set the accessible label of the remove button.
+        fn set_remove_button_accessible_label(&self, label: Option<String>) {
+            if *self.remove_button_accessible_label.borrow() == label {
+                return;
+            }
+
+            if let Some(label) = &label {
+                self.remove_button
+                    .update_property(&[gtk::accessible::Property::Label(label)]);
+            } else {
+                self.remove_button
+                    .reset_property(gtk::AccessibleProperty::Label);
+            }
+
+            self.remove_button_accessible_label.replace(label);
+            self.obj().notify_remove_button_accessible_label();
+        }
+
         /// Whether this row is loading.
         fn is_loading(&self) -> bool {
             self.remove_button.loading()
@@ -87,6 +115,21 @@ mod imp {
             let obj = self.obj();
             obj.set_sensitive(!is_loading);
             obj.notify_is_loading();
+        }
+
+        /// The extra suffix widget of this row.
+        fn extra_suffix(&self) -> Option<gtk::Widget> {
+            self.extra_suffix_bin.child()
+        }
+
+        /// Set the extra suffix widget of this row.
+        fn set_extra_suffix(&self, widget: Option<&gtk::Widget>) {
+            if self.extra_suffix().as_ref() == widget {
+                return;
+            }
+
+            self.extra_suffix_bin.set_child(widget);
+            self.obj().notify_extra_suffix();
         }
     }
 }

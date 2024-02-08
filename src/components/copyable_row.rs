@@ -31,6 +31,8 @@ mod imp {
     pub struct CopyableRow {
         #[template_child]
         pub copy_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub extra_suffix_bin: TemplateChild<adw::Bin>,
         /// The tooltip text of the copy button.
         #[property(get = Self::copy_button_tooltip_text, set = Self::set_copy_button_tooltip_text, explicit_notify, nullable)]
         pub copy_button_tooltip_text: PhantomData<Option<glib::GString>>,
@@ -46,6 +48,11 @@ mod imp {
         /// CSS class is added.
         #[property(get, set = Self::set_main_title, explicit_notify, builder(ActionRowMainTitle::default()))]
         pub main_title: Cell<ActionRowMainTitle>,
+        /// The extra suffix widget of this row.
+        ///
+        /// The widget is placed before the remove button.
+        #[property(get = Self::extra_suffix, set = Self::set_extra_suffix, explicit_notify, nullable)]
+        pub extra_suffix: PhantomData<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -127,6 +134,21 @@ mod imp {
 
             self.main_title.set(main_title);
             obj.notify_main_title();
+        }
+
+        /// The extra suffix widget of this row.
+        fn extra_suffix(&self) -> Option<gtk::Widget> {
+            self.extra_suffix_bin.child()
+        }
+
+        /// Set the extra suffix widget of this row.
+        fn set_extra_suffix(&self, widget: Option<&gtk::Widget>) {
+            if self.extra_suffix().as_ref() == widget {
+                return;
+            }
+
+            self.extra_suffix_bin.set_child(widget);
+            self.obj().notify_extra_suffix();
         }
     }
 }

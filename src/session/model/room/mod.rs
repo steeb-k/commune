@@ -1,3 +1,4 @@
+mod aliases;
 mod event;
 mod highlight_flags;
 mod member;
@@ -45,6 +46,7 @@ use ruma::{
 use tracing::{debug, error, warn};
 
 pub use self::{
+    aliases::{AddAltAliasError, RegisterLocalAliasError, RoomAliases},
     event::*,
     highlight_flags::HighlightFlags,
     member::{Member, Membership},
@@ -88,9 +90,9 @@ mod imp {
         /// The ID of this room, as a string.
         #[property(get = Self::room_id_string)]
         pub room_id_string: PhantomData<String>,
-        /// The alias of this room, as a string.
-        #[property(get = Self::alias_string)]
-        pub alias_string: PhantomData<Option<String>>,
+        /// The aliases of this room.
+        #[property(get)]
+        pub aliases: RoomAliases,
         /// The version of this room.
         #[property(get = Self::version)]
         pub version: PhantomData<String>,
@@ -387,6 +389,7 @@ impl Room {
         self.set_up_typing();
         self.init_timeline();
         self.set_up_is_encrypted();
+        self.aliases().init(self);
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
@@ -1258,9 +1261,6 @@ impl Room {
                     AnySyncStateEvent::RoomJoinRules(_) => {
                         self.emit_by_name::<()>("join-rule-changed", &[]);
                         self.notify_anyone_can_join();
-                    }
-                    AnySyncStateEvent::RoomCanonicalAlias(_) => {
-                        self.notify_alias_string();
                     }
                     _ => {}
                 }

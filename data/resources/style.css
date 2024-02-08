@@ -99,15 +99,15 @@ button.overlaid {
   margin: 3px; /* Make sure the outline is fully visible */
 }
 
-.avatar-row-list contents {
+.avatar-row-list contents, .string-row-list contents {
   padding: 0;
 }
 
-.avatar-row-list viewport, .avatar-row-list listview {
+.avatar-row-list viewport, .avatar-row-list listview, .string-row-list viewport, .string-row-list listview {
   padding: 8px;
 }
 
-.avatar-row-list list, .avatar-row-list listview {
+.avatar-row-list list, .avatar-row-list listview, .string-row-list list, .string-row-list listview {
   background-color: transparent;
 }
 
@@ -126,20 +126,31 @@ button.overlaid {
   margin-bottom: 0px;
 }
 
-.avatar-row-list row:focus {
+.string-row-list row {
+  border-radius: 6px;
+  margin: 0px;
+  padding: 6px;
+  outline-width: 0;
+}
+
+.avatar-row-list row:focus, .string-row-list row:focus {
   background-color: alpha(currentColor, .07);
 }
 
-.avatar-row-list row:hover {
+.avatar-row-list row:hover, .string-row-list row:hover {
   background-color: alpha(currentColor, .07);
 }
 
-.avatar-row-list row:active {
+.avatar-row-list row:active, .string-row-list row:active {
   background-color: alpha(currentColor, .16);
 }
 
-.avatar-row-list row:checked {
+.avatar-row-list row:checked, .string-row-list row:checked {
   background-color: alpha(currentColor, .1);
+}
+
+.entry-row-error-revealer {
+  margin-top: 6px;
 }
 
 
@@ -216,6 +227,15 @@ editable-avatar .cutout {
 spinner-wrapper.large spinner {
   min-width: 32px;
   min-height: 32px;
+}
+
+.substring-entry-row .header .subtitle {
+  margin-top: 4px;
+  margin-bottom: -4px;
+}
+
+.substring-entry-row .header text placeholder {
+  opacity: 0.55;
 }
 
 
@@ -862,6 +882,14 @@ members-list row .icon:dir(rtl) {
 dragoverlay statuspage {
   background-color: alpha(@accent_bg_color, 0.5);
   color: @accent_fg_color;
+}
+
+.public-address-tag {
+  color: @accent_fg_color;
+  background-color: @accent_bg_color;
+  border-radius: 0.4em;
+  padding: 0.3em 0.5em;
+  margin-left: 0.5em;
 }
 
 

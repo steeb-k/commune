@@ -1,3 +1,4 @@
+mod addresses_subpage;
 mod general_page;
 mod history_viewer;
 mod invite_subpage;
@@ -9,7 +10,8 @@ use std::convert::From;
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, CompositeTemplate};
 
-pub use self::{
+use self::{
+    addresses_subpage::AddressesSubpage,
     general_page::GeneralPage,
     history_viewer::{
         AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, MediaHistoryViewer,
@@ -26,6 +28,7 @@ pub enum SubpageName {
     MediaHistory,
     FileHistory,
     AudioHistory,
+    Addresses,
 }
 
 mod imp {
@@ -142,6 +145,7 @@ impl RoomDetails {
             SubpageName::MediaHistory => MediaHistoryViewer::new(&self.timeline()).upcast(),
             SubpageName::FileHistory => FileHistoryViewer::new(&self.timeline()).upcast(),
             SubpageName::AudioHistory => AudioHistoryViewer::new(&self.timeline()).upcast(),
+            SubpageName::Addresses => AddressesSubpage::new(&room).upcast(),
         });
 
         if is_initial {

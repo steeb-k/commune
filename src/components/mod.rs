@@ -26,6 +26,7 @@ mod room_title;
 mod scale_revealer;
 mod spinner;
 mod spinner_button;
+mod substring_entry_row;
 mod switch_loading_row;
 mod toastable_window;
 mod user_page;
@@ -62,6 +63,7 @@ pub use self::{
     scale_revealer::ScaleRevealer,
     spinner::Spinner,
     spinner_button::SpinnerButton,
+    substring_entry_row::SubstringEntryRow,
     switch_loading_row::SwitchLoadingRow,
     toastable_window::{ToastableWindow, ToastableWindowExt, ToastableWindowImpl},
     user_page::UserPage,

@@ -5,7 +5,7 @@ use gettextrs::{gettext, ngettext};
 use gtk::{
     gio,
     glib::{self, clone},
-    CompositeTemplate,
+    pango, CompositeTemplate,
 };
 use matrix_sdk::RoomState;
 use ruma::{
@@ -84,6 +84,14 @@ mod imp {
         #[template_child]
         pub notifications_mute_row: TemplateChild<CheckLoadingRow>,
         #[template_child]
+        pub addresses_group: TemplateChild<adw::PreferencesGroup>,
+        #[template_child]
+        pub edit_addresses_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub no_addresses_label: TemplateChild<gtk::Label>,
+        pub canonical_alias_row: RefCell<Option<CopyableRow>>,
+        pub alt_aliases_rows: RefCell<Vec<CopyableRow>>,
+        #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
@@ -103,6 +111,8 @@ mod imp {
         pub notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub canonical_alias_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub alt_aliases_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub capabilities: RefCell<Capabilities>,
     }
 
@@ -171,8 +181,24 @@ mod imp {
                 room.permissions()
                     .connect_changed(clone!(@weak obj => move |_| {
                         obj.update_upgrade_button();
+                        obj.update_edit_addresses_button();
                     }));
             self.permissions_handler.replace(Some(permissions_handler));
+
+            let aliases = room.aliases();
+            let canonical_alias_handler =
+                aliases.connect_canonical_alias_string_notify(clone!(@weak obj => move |_| {
+                    obj.update_addresses();
+                }));
+            self.canonical_alias_handler
+                .replace(Some(canonical_alias_handler));
+
+            let alt_aliases_handler = aliases.alt_aliases_model().connect_items_changed(
+                clone!(@weak obj => move |_,_,_,_| {
+                    obj.update_addresses();
+                }),
+            );
+            self.alt_aliases_handler.replace(Some(alt_aliases_handler));
 
             let room_handler_ids = vec![
                 room.connect_name_notify(clone!(@weak obj => move |room| {
@@ -219,6 +245,8 @@ mod imp {
             }
 
             obj.update_notifications();
+            obj.update_edit_addresses_button();
+            obj.update_addresses();
             obj.update_federated();
             obj.update_sections();
             obj.update_upgrade_button();
@@ -712,6 +740,14 @@ impl GeneralPage {
             if let Some(handler) = imp.permissions_handler.take() {
                 room.permissions().disconnect(handler);
             }
+
+            let aliases = room.aliases();
+            if let Some(handler) = imp.canonical_alias_handler.take() {
+                aliases.disconnect(handler);
+            }
+            if let Some(handler) = imp.alt_aliases_handler.take() {
+                aliases.alt_aliases_model().disconnect(handler);
+            }
         }
 
         imp.room.disconnect_signals();
@@ -791,6 +827,111 @@ impl GeneralPage {
                 obj.update_notifications();
             })
         );
+    }
+
+    /// Update the button to edit addresses.
+    fn update_edit_addresses_button(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let can_edit = room.is_joined()
+            && room
+                .permissions()
+                .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomPowerLevels));
+        self.imp().edit_addresses_button.set_visible(can_edit);
+    }
+
+    /// Update the addresses group.
+    fn update_addresses(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let imp = self.imp();
+        let aliases = room.aliases();
+
+        let canonical_alias_string = aliases.canonical_alias_string();
+        let has_canonical_alias = canonical_alias_string.is_some();
+
+        if let Some(canonical_alias_string) = canonical_alias_string {
+            let mut row_borrow = imp.canonical_alias_row.borrow_mut();
+            let row = row_borrow.get_or_insert_with(|| {
+                // We want the main alias always at the top but cannot add a row at the top so
+                // we have to remove the other rows first.
+                self.remove_alt_aliases_rows();
+
+                let row = CopyableRow::new();
+                row.set_copy_button_tooltip_text(Some(gettext("Copy address")));
+                row.set_toast_text(Some(gettext("Address copied to clipboard")));
+
+                // Mark the main alias with a tag.
+                let label = gtk::Label::builder()
+                    .label(gettext("Main Address"))
+                    .ellipsize(pango::EllipsizeMode::End)
+                    .css_classes(["public-address-tag"])
+                    .valign(gtk::Align::Center)
+                    .build();
+                row.update_relation(&[gtk::accessible::Relation::DescribedBy(&[
+                    label.upcast_ref()
+                ])]);
+                row.set_extra_suffix(Some(label));
+
+                imp.addresses_group.add(&row);
+
+                row
+            });
+
+            row.set_title(&canonical_alias_string);
+        } else if let Some(row) = imp.canonical_alias_row.take() {
+            imp.addresses_group.remove(&row);
+        }
+
+        let alt_aliases = aliases.alt_aliases_model();
+        let alt_aliases_count = alt_aliases.n_items() as usize;
+        if alt_aliases_count == 0 {
+            self.remove_alt_aliases_rows();
+        } else {
+            let mut rows = imp.alt_aliases_rows.borrow_mut();
+
+            for (pos, alt_alias) in alt_aliases.iter::<glib::Object>().enumerate() {
+                let Some(alt_alias) = alt_alias.ok().and_downcast::<gtk::StringObject>() else {
+                    break;
+                };
+
+                let row = rows.get(pos).cloned().unwrap_or_else(|| {
+                    let row = CopyableRow::new();
+                    row.set_copy_button_tooltip_text(Some(gettext("Copy address")));
+                    row.set_toast_text(Some(gettext("Address copied to clipboard")));
+
+                    imp.addresses_group.add(&row);
+                    rows.push(row.clone());
+
+                    row
+                });
+
+                row.set_title(&alt_alias.string());
+            }
+
+            let rows_count = rows.len();
+            if alt_aliases_count < rows_count {
+                for _ in alt_aliases_count..rows_count {
+                    if let Some(row) = rows.pop() {
+                        imp.addresses_group.remove(&row);
+                    }
+                }
+            }
+        }
+
+        imp.no_addresses_label
+            .set_visible(!has_canonical_alias && alt_aliases_count == 0);
+    }
+
+    fn remove_alt_aliases_rows(&self) {
+        let imp = self.imp();
+
+        for row in imp.alt_aliases_rows.take() {
+            imp.addresses_group.remove(&row);
+        }
     }
 
     /// Update the room upgrade button.
