@@ -235,5 +235,5 @@ fn render_widget_to_texture(widget: &impl IsA<gtk::Widget>) -> Option<gdk::Textu
     let node = snapshot.to_node()?;
     let native = widget.native()?;
 
-    Some(native.renderer().render_texture(node, None))
+    Some(native.renderer()?.render_texture(node, None))
 }

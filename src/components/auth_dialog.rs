@@ -90,13 +90,11 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-            let response = [false].to_variant();
-            klass.add_binding_signal(
-                gdk::Key::Escape,
-                gdk::ModifierType::empty(),
-                "response",
-                Some(&response),
-            );
+
+            klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {
+                obj.emit_by_name::<()>("response", &[&false]);
+                glib::Propagation::Stop
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

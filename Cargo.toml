@@ -52,16 +52,16 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
 
 # gtk-rs project and dependents. These usually need to be updated together.
-adw = { package = "libadwaita", version = "0.5", features = ["v1_4"] }
-gst = { version = "0.21", package = "gstreamer" }
-gst_base = { version = "0.21", package = "gstreamer-base" }
-gst_gtk = { version = "0.11", package = "gst-plugin-gtk4" }
-gst_pbutils = { version = "0.21", package = "gstreamer-pbutils" }
-gst_play = { version = "0.21", package = "gstreamer-play" }
-gst_video = { version = "0.21", package = "gstreamer-video" }
-gtk = { package = "gtk4", version = "0.7", features = ["v4_10"] }
-shumate = { package = "libshumate", version = "0.4" }
-sourceview = { package = "sourceview5", version = "0.7" }
+adw = { package = "libadwaita", version = "0.6", features = ["v1_4"] }
+gst = { version = "0.22", package = "gstreamer" }
+gst_base = { version = "0.22", package = "gstreamer-base" }
+gst_gtk = { version = "0.12", package = "gst-plugin-gtk4" }
+gst_pbutils = { version = "0.22", package = "gstreamer-pbutils" }
+gst_play = { version = "0.22", package = "gstreamer-play" }
+gst_video = { version = "0.22", package = "gstreamer-video" }
+gtk = { package = "gtk4", version = "0.8", features = ["v4_10"] }
+shumate = { package = "libshumate", version = "0.5" }
+sourceview = { package = "sourceview5", version = "0.8" }
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
@@ -99,7 +99,7 @@ features = [
 
 # Linux-only dependencies.
 [target.'cfg(target_os = "linux")'.dependencies]
-ashpd = { version = "0.6", default-features = false, features = [
+ashpd = { version = "0.7", default-features = false, features = [
     "pipewire",
     "tracing",
     "tokio",

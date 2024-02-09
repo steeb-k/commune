@@ -70,15 +70,10 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.add_binding(
-                gdk::Key::Escape,
-                gdk::ModifierType::empty(),
-                |obj, _| {
-                    obj.go_back();
-                    true
-                },
-                None,
-            );
+            klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {
+                obj.go_back();
+                glib::Propagation::Stop
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -202,10 +197,10 @@ impl JoinRoomDialog {
 
         if session.room_list().joined_room(&id).is_some() {
             // Translators: This is a verb, as in 'View Room'.
-            imp.look_up_btn.set_label(gettext("View"));
+            imp.look_up_btn.set_label(&gettext("View"));
         } else {
             // Translators: This is a verb, as in 'Look up Room'.
-            imp.look_up_btn.set_label(gettext("Look Up"));
+            imp.look_up_btn.set_label(&gettext("Look Up"));
         }
     }
 

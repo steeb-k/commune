@@ -279,7 +279,7 @@ impl UserPage {
         } else {
             gettext("Create Direct Chat")
         };
-        self.imp().direct_chat_button.set_label(label);
+        self.imp().direct_chat_button.set_label(&label);
 
         self.set_direct_chat_loading(false);
     }
@@ -381,7 +381,7 @@ impl UserPage {
 
         let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
         if can_invite {
-            imp.invite_button.set_label(gettext("Allow Access"));
+            imp.invite_button.set_label(&gettext("Allow Access"));
             imp.invite_button.set_visible(true);
         } else {
             imp.invite_button.set_visible(false);
@@ -398,7 +398,7 @@ impl UserPage {
                 // Translators: As in, 'Kick room member'.
                 _ => gettext("Kick"),
             };
-            imp.kick_button.set_label(label);
+            imp.kick_button.set_label(&label);
             imp.kick_button.set_visible(true);
         } else {
             imp.kick_button.set_visible(false);
@@ -699,11 +699,11 @@ impl UserPage {
 
         if user.is_ignored() {
             imp.ignored_row.set_title(&gettext("Ignored"));
-            imp.ignored_button.set_label(gettext("Stop Ignoring"));
+            imp.ignored_button.set_label(&gettext("Stop Ignoring"));
             imp.ignored_button.remove_css_class("destructive-action");
         } else {
             imp.ignored_row.set_title(&gettext("Not Ignored"));
-            imp.ignored_button.set_label(gettext("Ignore"));
+            imp.ignored_button.set_label(&gettext("Ignore"));
             imp.ignored_button.add_css_class("destructive-action");
         }
     }

@@ -1,7 +1,7 @@
 use std::convert::AsRef;
 
-use glib::Sender;
-use gst_video::{video_frame::VideoFrameRef, VideoInfo};
+use futures_channel::mpsc;
+use gst_video::{prelude::*, video_frame::VideoFrameRef, VideoInfo};
 use image::{GenericImage, GenericImageView, Luma};
 use matrix_sdk::encryption::verification::{DecodingError, QrVerificationData};
 use thiserror::Error;
@@ -24,7 +24,7 @@ mod imp {
     #[derive(Default)]
     pub struct QrCodeDetector {
         pub info: Mutex<Option<VideoInfo>>,
-        pub sender: Mutex<Option<Sender<Action>>>,
+        pub sender: Mutex<Option<mpsc::Sender<Action>>>,
         pub code: Mutex<Option<QrVerificationData>>,
     }
 
@@ -104,11 +104,11 @@ mod imp {
                     let mut previous_code = self.code.lock().unwrap();
                     if previous_code.as_ref() != Some(&code) {
                         previous_code.replace(code.clone());
-                        let sender = self.sender.lock().unwrap();
+                        let mut sender = self.sender.lock().unwrap();
                         sender
-                            .as_ref()
+                            .as_mut()
                             .unwrap()
-                            .send(Action::QrCodeDetected(code))
+                            .try_send(Action::QrCodeDetected(code))
                             .unwrap();
                     }
                 }
@@ -128,7 +128,7 @@ unsafe impl Send for QrCodeDetector {}
 unsafe impl Sync for QrCodeDetector {}
 
 impl QrCodeDetector {
-    pub fn new(sender: Sender<Action>) -> Self {
+    pub fn new(sender: mpsc::Sender<Action>) -> Self {
         let sink = glib::Object::new::<Self>();
         sink.imp().sender.lock().unwrap().replace(sender);
         sink

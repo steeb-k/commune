@@ -61,13 +61,11 @@ mod imp {
                 gdk::Key::F10,
                 gdk::ModifierType::SHIFT_MASK,
                 "context-menu.activate",
-                None,
             );
             klass.add_binding_action(
                 gdk::Key::Menu,
                 gdk::ModifierType::empty(),
                 "context-menu.activate",
-                None,
             );
 
             klass.install_action("context-menu.close", None, move |widget, _, _| {

@@ -58,15 +58,19 @@ mod imp {
                 obj.select_room(None);
             });
 
-            klass.install_action("session.show-room", Some("s"), move |obj, _, parameter| {
-                if let Ok(room_id) =
-                    <&RoomId>::try_from(&*parameter.unwrap().get::<String>().unwrap())
-                {
-                    obj.select_room_by_id(room_id);
-                } else {
-                    error!("Cannot show room with invalid ID");
-                }
-            });
+            klass.install_action(
+                "session.show-room",
+                Some(&String::static_variant_type()),
+                move |obj, _, parameter| {
+                    if let Ok(room_id) =
+                        <&RoomId>::try_from(&*parameter.unwrap().get::<String>().unwrap())
+                    {
+                        obj.select_room_by_id(room_id);
+                    } else {
+                        error!("Cannot show room with invalid ID");
+                    }
+                },
+            );
 
             klass.install_action("session.logout", None, move |obj, _, _| {
                 if let Some(session) = obj.session() {
@@ -98,7 +102,6 @@ mod imp {
                 gdk::Key::Escape,
                 gdk::ModifierType::empty(),
                 "session.close-room",
-                None,
             );
 
             klass.install_action("session.toggle-room-search", None, move |obj, _, _| {
@@ -109,7 +112,6 @@ mod imp {
                 gdk::Key::k,
                 gdk::ModifierType::CONTROL_MASK,
                 "session.toggle-room-search",
-                None,
             );
         }
 

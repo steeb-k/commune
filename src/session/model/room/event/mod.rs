@@ -47,19 +47,19 @@ impl fmt::Display for EventKey {
     }
 }
 
-impl glib::StaticVariantType for EventKey {
+impl StaticVariantType for EventKey {
     fn static_variant_type() -> Cow<'static, glib::VariantTy> {
         Cow::Borrowed(glib::VariantTy::STRING)
     }
 }
 
-impl glib::ToVariant for EventKey {
+impl ToVariant for EventKey {
     fn to_variant(&self) -> glib::Variant {
         self.to_string().to_variant()
     }
 }
 
-impl glib::FromVariant for EventKey {
+impl FromVariant for EventKey {
     fn from_variant(variant: &glib::Variant) -> Option<Self> {
         let s = variant.str()?;
 

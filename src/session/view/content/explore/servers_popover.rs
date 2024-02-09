@@ -1,10 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{
-    glib,
-    glib::{clone, FromVariant},
-    prelude::*,
-    CompositeTemplate,
-};
+use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use ruma::ServerName;
 
 use super::{ExploreServerRow, Server, ServerList};
@@ -51,7 +46,7 @@ mod imp {
             );
             klass.install_action(
                 "explore-servers-popover.remove-server",
-                Some("s"),
+                Some(&String::static_variant_type()),
                 move |obj, _, variant| {
                     if let Some(variant) = variant.and_then(String::from_variant) {
                         obj.remove_server(&variant);

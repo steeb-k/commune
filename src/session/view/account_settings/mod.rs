@@ -1,9 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{
-    glib,
-    glib::{clone, FromVariant},
-    CompositeTemplate,
-};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
 mod general_page;
 mod notifications_page;
@@ -63,12 +59,16 @@ mod imp {
                 obj.imp().security_page.show_export_keys_page();
             });
 
-            klass.install_action("win.add-toast", Some("s"), |obj, _, message| {
-                if let Some(message) = message.and_then(String::from_variant) {
-                    let toast = adw::Toast::new(&message);
-                    obj.add_toast(toast);
-                }
-            });
+            klass.install_action(
+                "win.add-toast",
+                Some(&String::static_variant_type()),
+                |obj, _, message| {
+                    if let Some(message) = message.and_then(String::from_variant) {
+                        let toast = adw::Toast::new(&message);
+                        obj.add_toast(toast);
+                    }
+                },
+            );
 
             klass.install_action("win.close-subpage", None, |obj, _, _| {
                 obj.pop_subpage();

@@ -16,6 +16,8 @@ use std::{
 };
 
 use ashpd::desktop::camera;
+use futures_channel::mpsc;
+use futures_util::StreamExt;
 use gst::{bus::BusWatchGuard, prelude::*};
 use gtk::{
     gdk, glib,
@@ -27,7 +29,10 @@ use gtk::{
 use tracing::{debug, error};
 
 use super::{Action, CameraPaintable, CameraPaintableImpl};
-use crate::contrib::qr_code_scanner::{qr_code_detector::QrCodeDetector, QrVerificationDataBoxed};
+use crate::{
+    contrib::qr_code_scanner::{qr_code_detector::QrCodeDetector, QrVerificationDataBoxed},
+    spawn,
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -247,21 +252,34 @@ impl LinuxCameraPaintable {
         imp.pipeline.replace(pipeline);
     }
 
-    fn create_sender(&self) -> glib::Sender<Action> {
-        #[allow(deprecated)]
-        let (sender, receiver) = glib::MainContext::channel(glib::Priority::DEFAULT);
+    fn create_sender(&self) -> mpsc::Sender<Action> {
+        let (sender, receiver) = mpsc::channel::<Action>(8);
 
-        receiver.attach(
-            None,
-            glib::clone!(@weak self as obj => @default-return glib::ControlFlow::Break, move |action| {
-                match action {
-                    Action::QrCodeDetected(code) => {
-                        obj.emit_by_name::<()>("code-detected", &[&QrVerificationDataBoxed(code)]);
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
+        spawn!(async move {
+            receiver
+                .for_each(move |action| {
+                    let obj_weak = obj_weak.clone();
+                    async move {
+                        let ctx = glib::MainContext::default();
+                        ctx.spawn(async move {
+                            spawn!(async move {
+                                if let Some(obj) = obj_weak.upgrade() {
+                                    match action {
+                                        Action::QrCodeDetected(code) => {
+                                            obj.emit_by_name::<()>(
+                                                "code-detected",
+                                                &[&QrVerificationDataBoxed(code)],
+                                            );
+                                        }
+                                    }
+                                }
+                            });
+                        });
                     }
-                }
-                glib::ControlFlow::Continue
-            }),
-        );
+                })
+                .await;
+        });
 
         sender
     }

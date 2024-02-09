@@ -80,7 +80,6 @@ mod imp {
                 gdk::Key::Escape,
                 gdk::ModifierType::empty(),
                 "media-viewer.close",
-                None,
             );
 
             // Menu actions

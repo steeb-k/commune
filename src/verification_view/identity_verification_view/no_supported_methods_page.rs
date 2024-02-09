@@ -164,7 +164,7 @@ impl NoSupportedMethodsPage {
         } else {
             gettext("Decline Verification")
         };
-        imp.cancel_btn.set_label(cancel_label);
+        imp.cancel_btn.set_label(&cancel_label);
     }
 
     /// Reset the UI to its initial state.

@@ -105,12 +105,16 @@ mod imp {
             klass.set_css_name("login");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
-            klass.install_action("login.sso", Some("ms"), move |widget, _, variant| {
-                let idp_id = variant.and_then(|v| v.get::<Option<String>>()).flatten();
-                spawn!(clone!(@weak widget => async move {
-                    widget.login_with_sso(idp_id).await;
-                }));
-            });
+            klass.install_action(
+                "login.sso",
+                Some(&Option::<String>::static_variant_type()),
+                move |widget, _, variant| {
+                    let idp_id = variant.and_then(|v| v.get::<Option<String>>()).flatten();
+                    spawn!(clone!(@weak widget => async move {
+                        widget.login_with_sso(idp_id).await;
+                    }));
+                },
+            );
             klass.install_action("login.open-advanced", None, move |widget, _, _| {
                 spawn!(clone!(@weak widget => async move {
                     widget.open_advanced_dialog().await;

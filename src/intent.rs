@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use gtk::glib;
+use gtk::{glib, prelude::*};
 use ruma::{OwnedRoomId, OwnedUserId, RoomId};
 
 use crate::utils::matrix::{MatrixIdUri, MatrixRoomIdUri};
@@ -80,19 +80,19 @@ pub struct ShowRoomPayload {
     pub room_id: OwnedRoomId,
 }
 
-impl glib::StaticVariantType for ShowRoomPayload {
+impl StaticVariantType for ShowRoomPayload {
     fn static_variant_type() -> Cow<'static, glib::VariantTy> {
         <(String, String)>::static_variant_type()
     }
 }
 
-impl glib::ToVariant for ShowRoomPayload {
+impl ToVariant for ShowRoomPayload {
     fn to_variant(&self) -> glib::Variant {
         (&self.session_id, self.room_id.as_str()).to_variant()
     }
 }
 
-impl glib::FromVariant for ShowRoomPayload {
+impl FromVariant for ShowRoomPayload {
     fn from_variant(variant: &glib::Variant) -> Option<Self> {
         let (session_id, room_id) = variant.get::<(String, String)>()?;
         let room_id = RoomId::parse(room_id).ok()?;

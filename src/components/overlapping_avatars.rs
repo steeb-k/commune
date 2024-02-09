@@ -188,7 +188,7 @@ impl OverlappingAvatars {
     /// Bind a `ListModel` to this list.
     pub fn bind_model<P: Fn(&glib::Object) -> AvatarData + 'static>(
         &self,
-        model: Option<impl glib::IsA<gio::ListModel>>,
+        model: Option<impl IsA<gio::ListModel>>,
         extract_avatar_data_fn: P,
     ) {
         let imp = self.imp();
@@ -220,7 +220,7 @@ impl OverlappingAvatars {
 
     fn handle_items_changed(
         &self,
-        model: &impl glib::IsA<gio::ListModel>,
+        model: &impl IsA<gio::ListModel>,
         position: u32,
         mut removed: u32,
         added: u32,

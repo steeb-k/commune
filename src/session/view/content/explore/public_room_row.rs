@@ -169,7 +169,7 @@ mod imp {
             } else {
                 gettext("Join")
             };
-            self.button.set_label(label);
+            self.button.set_label(&label);
 
             let room_name = public_room.display_name();
             let accessible_desc = if room_joined {

@@ -67,7 +67,7 @@ mod imp {
 
             klass.install_action(
                 "details.show-subpage",
-                Some("s"),
+                Some(&String::static_variant_type()),
                 move |widget, _, param| {
                     let subpage = param
                         .and_then(|variant| variant.get::<SubpageName>())

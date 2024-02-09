@@ -88,7 +88,7 @@ pub async fn load_file(file: &gio::File) -> Result<(Vec<u8>, FileInfo), glib::Er
     let (data, _) = file.load_contents_future().await?;
 
     Ok((
-        data,
+        data.into(),
         FileInfo {
             mime,
             filename,

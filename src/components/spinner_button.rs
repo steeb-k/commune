@@ -62,7 +62,7 @@ mod imp {
             }
 
             self.child_label.set_label(label);
-            self.obj().notify_label();
+            self.obj().notify("label");
         }
 
         /// Whether to display the loading spinner.

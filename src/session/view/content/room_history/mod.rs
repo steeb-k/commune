@@ -13,11 +13,7 @@ use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    gdk, gio,
-    glib::{self, clone, FromVariant},
-    CompositeTemplate,
-};
+use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::ruma::EventId;
 use ruma::{
     api::client::receipt::create_receipt::v3::ReceiptType, events::receipt::ReceiptThread,
@@ -176,7 +172,7 @@ mod imp {
             });
             klass.install_action(
                 "room-history.scroll-to-event",
-                Some(EventKey::static_variant_type().as_str()),
+                Some(&EventKey::static_variant_type()),
                 move |widget, _, v| {
                     if let Some(event_key) = v.and_then(EventKey::from_variant) {
                         widget.scroll_to_event(&event_key);
@@ -184,35 +180,47 @@ mod imp {
                 },
             );
 
-            klass.install_action("room-history.reply", Some("s"), move |widget, _, v| {
-                if let Some(event_id) = v
-                    .and_then(String::from_variant)
-                    .and_then(|s| EventId::parse(s).ok())
-                {
-                    if let Some(event) = widget
-                        .room()
-                        .and_then(|room| room.timeline().event_by_key(&EventKey::EventId(event_id)))
-                        .and_downcast()
+            klass.install_action(
+                "room-history.reply",
+                Some(&String::static_variant_type()),
+                move |widget, _, v| {
+                    if let Some(event_id) = v
+                        .and_then(String::from_variant)
+                        .and_then(|s| EventId::parse(s).ok())
                     {
-                        widget.message_toolbar().set_reply_to(event);
+                        if let Some(event) = widget
+                            .room()
+                            .and_then(|room| {
+                                room.timeline().event_by_key(&EventKey::EventId(event_id))
+                            })
+                            .and_downcast()
+                        {
+                            widget.message_toolbar().set_reply_to(event);
+                        }
                     }
-                }
-            });
+                },
+            );
 
-            klass.install_action("room-history.edit", Some("s"), move |widget, _, v| {
-                if let Some(event_id) = v
-                    .and_then(String::from_variant)
-                    .and_then(|s| EventId::parse(s).ok())
-                {
-                    if let Some(event) = widget
-                        .room()
-                        .and_then(|room| room.timeline().event_by_key(&EventKey::EventId(event_id)))
-                        .and_downcast()
+            klass.install_action(
+                "room-history.edit",
+                Some(&String::static_variant_type()),
+                move |widget, _, v| {
+                    if let Some(event_id) = v
+                        .and_then(String::from_variant)
+                        .and_then(|s| EventId::parse(s).ok())
                     {
-                        widget.message_toolbar().set_edit(event);
+                        if let Some(event) = widget
+                            .room()
+                            .and_then(|room| {
+                                room.timeline().event_by_key(&EventKey::EventId(event_id))
+                            })
+                            .and_downcast()
+                        {
+                            widget.message_toolbar().set_edit(event);
+                        }
                     }
-                }
-            });
+                },
+            );
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

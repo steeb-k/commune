@@ -66,15 +66,10 @@ mod imp {
             InviteeRow::static_type();
             Self::bind_template(klass);
 
-            klass.add_binding(
-                gdk::Key::Escape,
-                gdk::ModifierType::empty(),
-                |obj, _| {
-                    obj.close();
-                    true
-                },
-                None,
-            );
+            klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {
+                obj.close();
+                glib::Propagation::Stop
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

@@ -110,7 +110,7 @@ mod imp {
             } else {
                 gettext("Disconnect Session")
             };
-            self.disconnect_button.set_label(disconnect_label);
+            self.disconnect_button.set_label(&disconnect_label);
 
             self.user_session.replace(Some(user_session));
 

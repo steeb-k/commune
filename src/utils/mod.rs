@@ -115,7 +115,7 @@ pub static EMOJI_REGEX: Lazy<Regex> = Lazy::new(|| {
 
 /// Inner to manage a bound object.
 #[derive(Debug)]
-pub struct BoundObjectInner<T: glib::ObjectType> {
+pub struct BoundObjectInner<T: ObjectType> {
     obj: T,
     signal_handler_ids: Vec<glib::SignalHandlerId>,
 }
@@ -124,11 +124,11 @@ pub struct BoundObjectInner<T: glib::ObjectType> {
 ///
 /// This keeps a strong reference to the object.
 #[derive(Debug)]
-pub struct BoundObject<T: glib::ObjectType> {
+pub struct BoundObject<T: ObjectType> {
     inner: RefCell<Option<BoundObjectInner<T>>>,
 }
 
-impl<T: glib::ObjectType> BoundObject<T> {
+impl<T: ObjectType> BoundObject<T> {
     /// Creates a new empty `BoundObject`.
     pub fn new() -> Self {
         Self::default()
@@ -164,7 +164,7 @@ impl<T: glib::ObjectType> BoundObject<T> {
     }
 }
 
-impl<T: glib::ObjectType> Default for BoundObject<T> {
+impl<T: ObjectType> Default for BoundObject<T> {
     fn default() -> Self {
         Self {
             inner: Default::default(),
@@ -172,17 +172,17 @@ impl<T: glib::ObjectType> Default for BoundObject<T> {
     }
 }
 
-impl<T: glib::ObjectType> Drop for BoundObject<T> {
+impl<T: ObjectType> Drop for BoundObject<T> {
     fn drop(&mut self) {
         self.disconnect_signals();
     }
 }
 
-impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::Property for BoundObject<T> {
+impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::property::Property for BoundObject<T> {
     type Value = Option<T>;
 }
 
-impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObject<T> {
+impl<T: IsA<glib::Object>> glib::property::PropertyGet for BoundObject<T> {
     type Value = Option<T>;
 
     fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
@@ -194,12 +194,12 @@ impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObject<T> {
 ///
 /// This keeps a weak reference to the object.
 #[derive(Debug)]
-pub struct BoundObjectWeakRef<T: glib::ObjectType> {
+pub struct BoundObjectWeakRef<T: ObjectType> {
     weak_obj: glib::WeakRef<T>,
     signal_handler_ids: RefCell<Vec<glib::SignalHandlerId>>,
 }
 
-impl<T: glib::ObjectType> BoundObjectWeakRef<T> {
+impl<T: ObjectType> BoundObjectWeakRef<T> {
     /// Creates a new empty `BoundObjectWeakRef`.
     pub fn new() -> Self {
         Self::default()
@@ -235,7 +235,7 @@ impl<T: glib::ObjectType> BoundObjectWeakRef<T> {
     }
 }
 
-impl<T: glib::ObjectType> Default for BoundObjectWeakRef<T> {
+impl<T: ObjectType> Default for BoundObjectWeakRef<T> {
     fn default() -> Self {
         Self {
             weak_obj: Default::default(),
@@ -244,17 +244,17 @@ impl<T: glib::ObjectType> Default for BoundObjectWeakRef<T> {
     }
 }
 
-impl<T: glib::ObjectType> Drop for BoundObjectWeakRef<T> {
+impl<T: ObjectType> Drop for BoundObjectWeakRef<T> {
     fn drop(&mut self) {
         self.disconnect_signals();
     }
 }
 
-impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::Property for BoundObjectWeakRef<T> {
+impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::property::Property for BoundObjectWeakRef<T> {
     type Value = Option<T>;
 }
 
-impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObjectWeakRef<T> {
+impl<T: IsA<glib::Object>> glib::property::PropertyGet for BoundObjectWeakRef<T> {
     type Value = Option<T>;
 
     fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
@@ -266,12 +266,12 @@ impl<T: IsA<glib::Object>> glib::PropertyGet for BoundObjectWeakRef<T> {
 ///
 /// This keeps a strong reference to the object.
 #[derive(Debug)]
-pub struct BoundConstructOnlyObject<T: glib::ObjectType> {
+pub struct BoundConstructOnlyObject<T: ObjectType> {
     obj: OnceCell<T>,
     signal_handler_ids: RefCell<Vec<glib::SignalHandlerId>>,
 }
 
-impl<T: glib::ObjectType> BoundConstructOnlyObject<T> {
+impl<T: ObjectType> BoundConstructOnlyObject<T> {
     /// Creates a new empty `BoundConstructOnlyObject`.
     pub fn new() -> Self {
         Self::default()
@@ -293,7 +293,7 @@ impl<T: glib::ObjectType> BoundConstructOnlyObject<T> {
     }
 }
 
-impl<T: glib::ObjectType> Default for BoundConstructOnlyObject<T> {
+impl<T: ObjectType> Default for BoundConstructOnlyObject<T> {
     fn default() -> Self {
         Self {
             obj: Default::default(),
@@ -302,7 +302,7 @@ impl<T: glib::ObjectType> Default for BoundConstructOnlyObject<T> {
     }
 }
 
-impl<T: glib::ObjectType> Drop for BoundConstructOnlyObject<T> {
+impl<T: ObjectType> Drop for BoundConstructOnlyObject<T> {
     fn drop(&mut self) {
         let signal_handler_ids = self.signal_handler_ids.take();
 
@@ -314,11 +314,13 @@ impl<T: glib::ObjectType> Drop for BoundConstructOnlyObject<T> {
     }
 }
 
-impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::Property for BoundConstructOnlyObject<T> {
+impl<T: IsA<glib::Object> + glib::HasParamSpec> glib::property::Property
+    for BoundConstructOnlyObject<T>
+{
     type Value = T;
 }
 
-impl<T: IsA<glib::Object>> glib::PropertyGet for BoundConstructOnlyObject<T> {
+impl<T: IsA<glib::Object>> glib::property::PropertyGet for BoundConstructOnlyObject<T> {
     type Value = T;
 
     fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
@@ -452,11 +454,11 @@ impl<T> Drop for TokioDrop<T> {
     }
 }
 
-impl<T: glib::Property> glib::Property for TokioDrop<T> {
+impl<T: glib::property::Property> glib::property::Property for TokioDrop<T> {
     type Value = T::Value;
 }
 
-impl<T> glib::PropertyGet for TokioDrop<T> {
+impl<T> glib::property::PropertyGet for TokioDrop<T> {
     type Value = T;
 
     fn get<R, F: Fn(&Self::Value) -> R>(&self, f: F) -> R {
@@ -464,7 +466,7 @@ impl<T> glib::PropertyGet for TokioDrop<T> {
     }
 }
 
-impl<T> glib::PropertySet for TokioDrop<T> {
+impl<T> glib::property::PropertySet for TokioDrop<T> {
     type SetValue = T;
 
     fn set(&self, v: Self::SetValue) {
@@ -512,6 +514,6 @@ pub const ACTIVATE_KEYS: &[gdk::Key] = &[
 /// triggered.
 pub fn add_activate_binding_action<T: WidgetClassExt>(klass: &mut T, action: &str) {
     for key in ACTIVATE_KEYS {
-        klass.add_binding_action(*key, gdk::ModifierType::empty(), action, None);
+        klass.add_binding_action(*key, gdk::ModifierType::empty(), action);
     }
 }
