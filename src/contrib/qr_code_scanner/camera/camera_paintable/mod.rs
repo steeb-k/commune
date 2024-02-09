@@ -1,5 +1,5 @@
 /// Subclassable camera paintable.
-use gtk::{gdk, glib, glib::closure_local, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::encryption::verification::QrVerificationData;
 
 #[cfg(target_os = "linux")]
@@ -62,35 +62,8 @@ glib::wrapper! {
         @implements gdk::Paintable;
 }
 
-pub trait CameraPaintableExt: 'static {
-    /// Connect to the signal emitted when a code is detected.
-    fn connect_code_detected<F: Fn(&Self, QrVerificationData) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId;
-}
-
-impl<O: IsA<CameraPaintable>> CameraPaintableExt for O {
-    fn connect_code_detected<F: Fn(&Self, QrVerificationData) + 'static>(
-        &self,
-        f: F,
-    ) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "activated",
-            true,
-            closure_local!(move |obj: Self, data: QrVerificationDataBoxed| {
-                f(&obj, data.0);
-            }),
-        )
-    }
-}
-
 /// Public trait that must be implemented for everything that derives from
 /// `CameraPaintable`.
-///
-/// Overriding a method from this Trait overrides also its behavior in
-/// `CameraPaintableExt`.
-#[allow(async_fn_in_trait)]
 pub trait CameraPaintableImpl: ObjectImpl + PaintableImpl {}
 
 unsafe impl<T> IsSubclassable<T> for CameraPaintable

@@ -60,7 +60,7 @@ use super::{
     Session, User,
 };
 use crate::{
-    components::{AvatarImage, AvatarUriSource, Pill, PillSource},
+    components::{AvatarImage, AvatarUriSource, PillSource},
     gettext_f,
     prelude::*,
     spawn, spawn_tokio,
@@ -1862,11 +1862,6 @@ impl Room {
 
         self.imp().encrypted.set(true);
         self.notify_encrypted();
-    }
-
-    /// Get a `Pill` representing this `Room`.
-    pub fn to_pill(&self) -> Pill {
-        Pill::new(self)
     }
 
     /// Get a human-readable ID for this `Room`.

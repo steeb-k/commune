@@ -4,13 +4,13 @@ use ruma::{
     api::client::room::create_room,
     assign,
     events::{room::encryption::RoomEncryptionEventContent, InitialStateEvent},
-    MatrixToUri, MatrixUri, OwnedMxcUri, OwnedUserId,
+    MatrixToUri, OwnedMxcUri, OwnedUserId,
 };
 use tracing::{debug, error};
 
 use super::{IdentityVerification, Room, Session};
 use crate::{
-    components::{AvatarImage, AvatarUriSource, Pill, PillSource},
+    components::{AvatarImage, AvatarUriSource, PillSource},
     prelude::*,
     spawn, spawn_tokio,
 };
@@ -51,11 +51,7 @@ mod imp {
         /// Whether this user has been verified.
         #[property(get)]
         pub verified: Cell<bool>,
-        /// The actions the currently logged-in user is allowed to perform on
-        /// this user.
-        #[property(get = Self::allowed_actions)]
-        pub allowed_actions: PhantomData<UserActions>,
-        /// Whether this user is currently ignored..
+        /// Whether this user is currently ignored.
         #[property(get)]
         pub is_ignored: Cell<bool>,
         ignored_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -129,18 +125,6 @@ mod imp {
 
             obj.init_is_verified();
         }
-
-        /// The actions the currently logged-in user is allowed to perform on
-        /// this user.
-        fn allowed_actions(&self) -> UserActions {
-            let is_other = self.session.get().unwrap().user_id() != self.user_id.get().unwrap();
-
-            if !self.verified.get() && is_other {
-                UserActions::VERIFY
-            } else {
-                UserActions::empty()
-            }
-        }
     }
 }
 
@@ -195,7 +179,6 @@ impl User {
 
             obj.imp().verified.set(verified);
             obj.notify_verified();
-            obj.notify_allowed_actions();
         }));
     }
 
@@ -304,31 +287,9 @@ pub trait UserExt: IsA<User> {
             .set_uri(uri.map(String::from));
     }
 
-    /// The actions the currently logged-in user is allowed to perform on this
-    /// user.
-    fn allowed_actions(&self) -> UserActions {
-        self.upcast_ref().allowed_actions()
-    }
-
-    /// Get a `Pill` representing this `User`.
-    fn to_pill(&self) -> Pill {
-        Pill::new(self.upcast_ref())
-    }
-
     /// Get the `matrix.to` URI representation for this `User`.
     fn matrix_to_uri(&self) -> MatrixToUri {
         self.user_id().matrix_to_uri()
-    }
-
-    /// Get the `matrix:` URI representation for this `User`.
-    fn matrix_uri(&self) -> MatrixUri {
-        self.user_id().matrix_uri(false)
-    }
-
-    /// Get the HTML mention representation for this `User`.
-    fn html_mention(&self) -> String {
-        let uri = self.matrix_to_uri();
-        format!("<a href=\"{uri}\">{}</a>", self.upcast_ref().display_name())
     }
 
     /// Load the user profile from the homeserver.

@@ -982,7 +982,6 @@ struct SplitMentions {
 }
 
 impl SplitMentions {
-    //
     async fn next(&mut self) -> Option<MentionChunk> {
         if self.iter == self.end {
             // We reached the end.

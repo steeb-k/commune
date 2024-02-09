@@ -197,12 +197,14 @@ impl ContextMenuBin {
 
 pub trait ContextMenuBinExt: 'static {
     /// Whether this widget has a context menu.
+    #[allow(dead_code)]
     fn has_context_menu(&self) -> bool;
 
     /// Set whether this widget has a context menu.
     fn set_has_context_menu(&self, has_context_menu: bool);
 
     /// Get the `PopoverMenu` used in the context menu.
+    #[allow(dead_code)]
     fn popover(&self) -> Option<gtk::PopoverMenu>;
 
     /// Set the `PopoverMenu` used in the context menu.

@@ -128,6 +128,7 @@ pub trait SessionInfoExt: 'static {
     }
 
     /// The avatar data to represent this session.
+    #[allow(dead_code)]
     fn avatar_data(&self) -> AvatarData;
 }
 

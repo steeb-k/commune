@@ -98,23 +98,8 @@ impl Default for SystemSettings {
     }
 }
 
-pub trait SystemSettingsExt: 'static {
-    /// The clock format setting.
-    fn clock_format(&self) -> ClockFormat;
-}
-
-impl<O: IsA<SystemSettings>> SystemSettingsExt for O {
-    fn clock_format(&self) -> ClockFormat {
-        self.upcast_ref().clock_format()
-    }
-}
-
 /// Public trait that must be implemented for everything that derives from
 /// `SystemSettings`.
-///
-/// Overriding a method from this Trait overrides also its behavior in
-/// `SystemSettingsExt`.
-#[allow(async_fn_in_trait)]
 pub trait SystemSettingsImpl: ObjectImpl {}
 
 unsafe impl<T> IsSubclassable<T> for SystemSettings

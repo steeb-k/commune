@@ -1,5 +1,6 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
+use super::Pill;
 use crate::components::AvatarData;
 
 mod imp {
@@ -82,6 +83,7 @@ glib::wrapper! {
 /// of `PillSourceImpl`.
 pub trait PillSourceExt: 'static {
     /// A unique identifier for this source.
+    #[allow(dead_code)]
     fn identifier(&self) -> String;
 
     /// The display name of this source.
@@ -95,6 +97,9 @@ pub trait PillSourceExt: 'static {
 
     /// Connect to the signal emitted when the display name changes.
     fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId;
+
+    /// Get a `Pill` representing this source.
+    fn to_pill(&self) -> Pill;
 }
 
 impl<O: IsA<PillSource>> PillSourceExt for O {
@@ -122,6 +127,11 @@ impl<O: IsA<PillSource>> PillSourceExt for O {
     fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.upcast_ref()
             .connect_display_name_notify(move |source| f(source.downcast_ref().unwrap()))
+    }
+
+    /// Get a `Pill` representing this source.
+    fn to_pill(&self) -> Pill {
+        Pill::new(self)
     }
 }
 

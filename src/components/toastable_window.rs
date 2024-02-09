@@ -60,12 +60,14 @@ glib::wrapper! {
 
 pub trait ToastableWindowExt: 'static {
     /// Get the content of this window.
+    #[allow(dead_code)]
     fn child_content(&self) -> Option<gtk::Widget>;
 
     /// Set content of this window.
     ///
     /// Use this instead of `set_child` or `set_content`, otherwise it will
     /// panic.
+    #[allow(dead_code)]
     fn set_child_content(&self, content: Option<&gtk::Widget>);
 
     /// Add a toast.

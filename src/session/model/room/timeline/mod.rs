@@ -714,12 +714,8 @@ impl Timeline {
     /// Returns `None` if it is not possible to know, for example if there are
     /// no events in the Timeline.
     pub async fn has_unread_messages(&self) -> Option<bool> {
-        let Some(room) = self.room() else {
-            return None;
-        };
-        let Some(session) = room.session() else {
-            return None;
-        };
+        let room = self.room()?;
+        let session = room.session()?;
         let own_user_id = session.user_id().clone();
         let matrix_timeline = self.matrix_timeline();
 

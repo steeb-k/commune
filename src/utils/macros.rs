@@ -155,12 +155,14 @@ macro_rules! _toast_accum {
     };
     ([$($string_vars:tt)*], [$($pill_vars:tt)*], @$var:ident, $($tail:tt)*) => {
         {
+            use $crate::components::PillSourceExt;
             let pill: $crate::components::Pill = $var.to_pill();
             $crate::_toast_accum!([$($string_vars)*], [$($pill_vars)* (stringify!($var), pill),], $($tail)*)
         }
     };
     ([$($string_vars:tt)*], [$($pill_vars:tt)*], @$var:ident = $val:expr, $($tail:tt)*) => {
         {
+            use $crate::components::PillSourceExt;
             let pill: $crate::components::Pill = $val.to_pill();
             $crate::_toast_accum!([$($string_vars)*], [$($pill_vars)* (stringify!($var), pill),], $($tail)*)
         }

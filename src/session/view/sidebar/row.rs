@@ -248,9 +248,7 @@ mod imp {
 
         /// An action group with the available room actions.
         fn room_actions(&self) -> Option<gio::SimpleActionGroup> {
-            let Some(room) = self.room() else {
-                return None;
-            };
+            let room = self.room()?;
 
             let obj = self.obj();
             let action_group = gio::SimpleActionGroup::new();

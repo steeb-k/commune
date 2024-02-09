@@ -350,18 +350,18 @@ mod imp {
         /// The JSON source for the latest edit of this `Event`, if any.
         fn latest_edit_raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {
             let borrowed_item = self.item.borrow();
-            let Some(item) = borrowed_item.as_ref() else {
-                return None;
-            };
+            let item = borrowed_item.as_ref()?;
 
             if let Some(raw) = item.latest_edit_json() {
                 return Some(raw.clone());
             }
 
-            item.original_json()
-                .and_then(|r| r.get_field::<RawUnsigned>("unsigned").ok().flatten())
-                .and_then(|u| u.relations)
-                .and_then(|r| r.replace)
+            item.original_json()?
+                .get_field::<RawUnsigned>("unsigned")
+                .ok()
+                .flatten()?
+                .relations?
+                .replace
         }
 
         /// The pretty-formatted JSON source for the latest edit of this

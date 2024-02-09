@@ -170,29 +170,35 @@ pub trait TimelineItemExt: 'static {
     /// A unique ID for this `TimelineItem`.
     ///
     /// For debugging purposes.
+    #[allow(dead_code)]
     fn id(&self) -> String;
 
     /// Whether this `TimelineItem` is selectable.
     ///
     /// Defaults to `false`.
+    #[allow(dead_code)]
     fn selectable(&self) -> bool;
 
     /// Whether this `TimelineItem` should show its header.
     ///
     /// Defaults to `false`.
+    #[allow(dead_code)]
     fn show_header(&self) -> bool;
 
     /// Set whether this `TimelineItem` should show its header.
+    #[allow(dead_code)]
     fn set_show_header(&self, show: bool);
 
     /// Whether this `TimelineItem` is allowed to hide its header.
     ///
     /// Defaults to `false`.
+    #[allow(dead_code)]
     fn can_hide_header(&self) -> bool;
 
     /// If this is a Matrix event, the sender of the event.
     ///
     /// Defaults to `None`.
+    #[allow(dead_code)]
     fn event_sender_id(&self) -> Option<OwnedUserId>;
 }
 
