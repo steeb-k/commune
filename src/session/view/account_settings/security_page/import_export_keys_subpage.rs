@@ -14,8 +14,8 @@ use crate::{
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[enum_type(name = "KeysSubpageMode")]
-pub enum KeysSubpageMode {
+#[enum_type(name = "ImportExportKeysSubpageMode")]
+pub enum ImportExportKeysSubpageMode {
     #[default]
     Export = 0,
     Import = 1,
@@ -67,8 +67,8 @@ mod imp {
         #[property(get = Self::file_path_string)]
         pub file_path_string: PhantomData<Option<String>>,
         /// The export/import mode of the subpage.
-        #[property(get, set = Self::set_mode, explicit_notify, builder(KeysSubpageMode::default()))]
-        pub mode: Cell<KeysSubpageMode>,
+        #[property(get, set = Self::set_mode, explicit_notify, builder(ImportExportKeysSubpageMode::default()))]
+        pub mode: Cell<ImportExportKeysSubpageMode>,
     }
 
     #[glib::object_subclass]
@@ -112,7 +112,7 @@ mod imp {
 
     impl ImportExportKeysSubpage {
         /// Set the export/import mode of the subpage.
-        fn set_mode(&self, mode: KeysSubpageMode) {
+        fn set_mode(&self, mode: ImportExportKeysSubpageMode) {
             if self.mode.get() == mode {
                 return;
             }
@@ -143,8 +143,11 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl ImportExportKeysSubpage {
-    pub fn new(session: &Session) -> Self {
-        glib::Object::builder().property("session", session).build()
+    pub fn new(session: &Session, mode: ImportExportKeysSubpageMode) -> Self {
+        glib::Object::builder()
+            .property("session", session)
+            .property("mode", mode)
+            .build()
     }
 
     /// Set the path to export the keys to.
@@ -171,7 +174,7 @@ impl ImportExportKeysSubpage {
     fn update_for_mode(&self) {
         let imp = self.imp();
 
-        if self.mode() == KeysSubpageMode::Export {
+        if self.mode() == ImportExportKeysSubpageMode::Export {
             // Translators: 'Room encryption keys' are encryption keys for all rooms.
             self.set_title(&gettext("Export Room Encryption Keys"));
             imp.description.set_label(&gettext(
@@ -208,7 +211,7 @@ impl ImportExportKeysSubpage {
     }
 
     async fn choose_file(&self) {
-        let is_export = self.mode() == KeysSubpageMode::Export;
+        let is_export = self.mode() == ImportExportKeysSubpageMode::Export;
 
         let dialog = gtk::FileDialog::builder()
             .modal(true)
@@ -290,7 +293,7 @@ impl ImportExportKeysSubpage {
             .is_some()
             && !passphrase.is_empty();
 
-        if self.mode() == KeysSubpageMode::Export {
+        if self.mode() == ImportExportKeysSubpageMode::Export {
             let confirmation = imp.confirm_passphrase.text();
             res = res && passphrase == confirmation;
         }
@@ -313,7 +316,7 @@ impl ImportExportKeysSubpage {
         let imp = self.imp();
         let file_path = self.file_path().and_then(|file| file.path()).unwrap();
         let passphrase = imp.passphrase.text();
-        let is_export = self.mode() == KeysSubpageMode::Export;
+        let is_export = self.mode() == ImportExportKeysSubpageMode::Export;
 
         imp.proceed_button.set_loading(true);
         imp.file_button.set_sensitive(false);
@@ -354,7 +357,8 @@ impl ImportExportKeysSubpage {
                     );
                 }
                 self.clear();
-                self.activate_action("win.close-subpage", None).unwrap();
+                self.activate_action("account-settings.close-subpage", None)
+                    .unwrap();
             }
             Err(err) => {
                 if is_export {

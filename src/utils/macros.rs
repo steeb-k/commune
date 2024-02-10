@@ -175,11 +175,14 @@ macro_rules! _toast_accum {
 macro_rules! _add_toast {
     ($widget:expr, $toast:expr) => {{
         use gtk::prelude::WidgetExt;
-        if let Some(root) = $widget.root() {
+        if let Some(dialog) = $widget
+            .ancestor(adw::PreferencesDialog::static_type())
+            .and_downcast::<adw::PreferencesDialog>()
+        {
+            use adw::prelude::PreferencesDialogExt;
+            dialog.add_toast($toast);
+        } else if let Some(root) = $widget.root() {
             if let Some(window) = root.downcast_ref::<$crate::Window>() {
-                window.add_toast($toast);
-            } else if let Some(window) = root.downcast_ref::<adw::PreferencesWindow>() {
-                use adw::prelude::PreferencesWindowExt;
                 window.add_toast($toast);
             } else if let Some(window) = root.downcast_ref::<$crate::components::ToastableWindow>()
             {

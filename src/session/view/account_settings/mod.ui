@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="AccountSettings" parent="AdwPreferencesWindow">
+  <template class="AccountSettings" parent="AdwPreferencesDialog">
     <property name="title" translatable="yes">Account Settings</property>
-    <property name="search-enabled">false</property>
-    <property name="default-height">780</property>
+    <property name="content-height">780</property>
     <style>
       <class name="account-settings"/>
     </style>

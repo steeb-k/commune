@@ -11,10 +11,10 @@ mod change_password_subpage;
 mod deactivate_account_subpage;
 mod log_out_subpage;
 
-use change_password_subpage::ChangePasswordSubpage;
-use deactivate_account_subpage::DeactivateAccountSubpage;
-use log_out_subpage::LogOutSubpage;
-
+pub use self::{
+    change_password_subpage::ChangePasswordSubpage,
+    deactivate_account_subpage::DeactivateAccountSubpage, log_out_subpage::LogOutSubpage,
+};
 use crate::{
     components::{ActionButton, ActionState, ButtonRow, EditableAvatar},
     prelude::*,
@@ -48,17 +48,11 @@ mod imp {
         #[template_child]
         pub change_password_group: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
-        pub change_password_subpage: TemplateChild<ChangePasswordSubpage>,
-        #[template_child]
         pub homeserver: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub user_id: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub session_id: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub deactivate_account_subpage: TemplateChild<DeactivateAccountSubpage>,
-        #[template_child]
-        pub log_out_subpage: TemplateChild<LogOutSubpage>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -288,13 +282,9 @@ impl GeneralPage {
         let Some(session) = self.session() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         // Ask for confirmation.
-        let confirm_dialog = adw::MessageDialog::builder()
-            .transient_for(&window)
+        let confirm_dialog = adw::AlertDialog::builder()
             .default_response("cancel")
             .heading(gettext("Remove Avatar?"))
             .body(gettext("Do you really want to remove your avatar?"))
@@ -305,7 +295,7 @@ impl GeneralPage {
         ]);
         confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
 
-        if confirm_dialog.choose_future().await != "remove" {
+        if confirm_dialog.choose_future(self).await != "remove" {
             return;
         }
 
@@ -381,7 +371,14 @@ impl GeneralPage {
         toast!(self, gettext("Name changed successfully"));
     }
 
-    async fn change_display_name(&self) {
+    #[template_callback]
+    fn change_display_name(&self) {
+        spawn!(clone!(@weak self as obj => async move {
+            obj.change_display_name_inner().await;
+        }));
+    }
+
+    async fn change_display_name_inner(&self) {
         let Some(session) = self.session() else {
             return;
         };
@@ -453,36 +450,5 @@ impl GeneralPage {
                 }
             })
         );
-    }
-
-    #[template_callback]
-    fn handle_change_display_name(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.change_display_name().await;
-        }));
-    }
-
-    #[template_callback]
-    fn show_change_password(&self) {
-        self.root()
-            .and_downcast_ref::<adw::PreferencesWindow>()
-            .unwrap()
-            .push_subpage(&*self.imp().change_password_subpage);
-    }
-
-    #[template_callback]
-    fn show_deactivate_account(&self) {
-        self.root()
-            .and_downcast_ref::<adw::PreferencesWindow>()
-            .unwrap()
-            .push_subpage(&*self.imp().deactivate_account_subpage);
-    }
-
-    #[template_callback]
-    pub fn show_log_out_page(&self) {
-        self.root()
-            .and_downcast_ref::<adw::PreferencesWindow>()
-            .unwrap()
-            .push_subpage(&*self.imp().log_out_subpage);
     }
 }

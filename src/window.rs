@@ -1,8 +1,8 @@
 use std::cell::Cell;
 
-use adw::subclass::prelude::AdwApplicationWindowImpl;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, gdk, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, gdk, gio, glib, glib::clone, CompositeTemplate};
 use ruma::RoomId;
 use tracing::{error, warn};
 
@@ -494,8 +494,8 @@ impl Window {
             return;
         };
 
-        let window = AccountSettings::new(Some(self), &session);
-        window.present();
+        let dialog = AccountSettings::new(&session);
+        dialog.present(self);
     }
 
     /// Open the error page and display the given secret error message.

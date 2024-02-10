@@ -36,12 +36,12 @@
                 </lookup>
               </lookup>
             </binding>
-            <signal name="entry-activated" handler="handle_change_display_name" swapped="yes"/>
+            <signal name="entry-activated" handler="change_display_name" swapped="yes"/>
             <child type="suffix">
               <object class="ComponentsActionButton" id="display_name_button">
                 <property name="visible">False</property>
                 <property name="state">confirm</property>
-                <signal name="clicked" handler="handle_change_display_name" swapped="yes"/>
+                <signal name="clicked" handler="change_display_name" swapped="yes"/>
               </object>
             </child>
           </object>
@@ -54,7 +54,8 @@
           <object class="ComponentsButtonRow">
             <property name="title" translatable="yes">Change Password</property>
             <property name="to-subpage">true</property>
-            <signal name="activated" handler="show_change_password" swapped="yes"/>
+            <property name="action-name">account-settings.show-subpage</property>
+            <property name="action-target">'change-password'</property>
           </object>
         </child>
       </object>
@@ -133,7 +134,8 @@
             </style>
             <property name="title" translatable="yes">Log Out</property>
             <property name="to-subpage">true</property>
-            <signal name="activated" handler="show_log_out_page" swapped="yes"/>
+            <property name="action-name">account-settings.show-subpage</property>
+            <property name="action-target">'log-out'</property>
           </object>
         </child>
       </object>
@@ -147,19 +149,11 @@
             </style>
             <property name="title" translatable="yes">Deactivate Account</property>
             <property name="to-subpage">true</property>
-            <signal name="activated" handler="show_deactivate_account" swapped="yes"/>
+            <property name="action-name">account-settings.show-subpage</property>
+            <property name="action-target">'deactivate-account'</property>
           </object>
         </child>
       </object>
     </child>
   </template>
-  <object class="ChangePasswordSubpage" id="change_password_subpage">
-    <property name="session" bind-source="AccountSettingsGeneralPage" bind-property="session" bind-flags="sync-create"/>
-  </object>
-  <object class="DeactivateAccountSubpage" id="deactivate_account_subpage">
-    <property name="session" bind-source="AccountSettingsGeneralPage" bind-property="session" bind-flags="sync-create"/>
-  </object>
-  <object class="LogOutSubpage" id="log_out_subpage">
-    <property name="session" bind-source="AccountSettingsGeneralPage" bind-property="session" bind-flags="sync-create"/>
-  </object>
 </interface>

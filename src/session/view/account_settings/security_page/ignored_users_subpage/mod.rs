@@ -160,7 +160,7 @@ glib::wrapper! {
 }
 
 impl IgnoredUsersSubpage {
-    pub fn new() -> Self {
-        glib::Object::new()
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 }

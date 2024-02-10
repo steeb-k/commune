@@ -60,7 +60,8 @@
                           <class name="row"/>
                         </style>
                         <property name="can-shrink">true</property>
-                        <property name="action-name">account-settings.export_keys</property>
+                        <property name="action-name">account-settings.show-subpage</property>
+                        <property name="action-target">'export-keys'</property>
                         <property name="label" translatable="yes">Backup Encryption Keys</property>
                       </object>
                     </child>

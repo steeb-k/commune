@@ -5,7 +5,7 @@ use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 use crate::{
     components::{AuthError, SpinnerButton},
     gettext_f,
-    session::model::UserSession,
+    session::{model::UserSession, view::account_settings::AccountSettingsSubpage},
     spawn,
     system_settings::ClockFormat,
     toast, Application,
@@ -142,8 +142,11 @@ impl UserSessionRow {
         };
 
         if user_session.is_current() {
-            self.activate_action("account-settings.logout", None)
-                .unwrap();
+            self.activate_action(
+                "account-settings.show-subpage",
+                Some(&AccountSettingsSubpage::LogOut.to_variant()),
+            )
+            .unwrap();
             return;
         }
 

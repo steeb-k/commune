@@ -139,11 +139,7 @@ impl DeactivateAccountSubpage {
         match result {
             Ok(_) => {
                 if let Some(session) = self.session() {
-                    if let Some(window) = self
-                        .root()
-                        .and_downcast_ref::<gtk::Window>()
-                        .and_then(|w| w.transient_for())
-                    {
+                    if let Some(window) = self.root().and_downcast_ref::<gtk::Window>() {
                         toast!(window, gettext("Account successfully deactivated"));
                     }
                     session.handle_logged_out();

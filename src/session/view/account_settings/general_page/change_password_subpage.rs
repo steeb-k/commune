@@ -84,6 +84,7 @@ mod imp {
 
             self.password.connect_changed(clone!(@weak obj => move|_| {
                 obj.validate_password();
+                obj.validate_password_confirmation();
             }));
 
             self.confirm_password
@@ -204,13 +205,13 @@ impl ChangePasswordSubpage {
     }
 
     #[template_callback]
-    fn handle_proceed(&self) {
+    fn change_password(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            obj.change_password().await;
+            obj.change_password_inner().await;
         }));
     }
 
-    async fn change_password(&self) {
+    async fn change_password_inner(&self) {
         let Some(session) = self.session() else {
             return;
         };
@@ -244,7 +245,8 @@ impl ChangePasswordSubpage {
                 toast!(self, gettext("Password changed successfully"));
                 imp.password.set_text("");
                 imp.confirm_password.set_text("");
-                self.activate_action("win.close-subpage", None).unwrap();
+                self.activate_action("account-settings.close-subpage", None)
+                    .unwrap();
             }
             Err(error) => match error {
                 AuthError::UserCancelled => {}

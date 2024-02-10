@@ -5,9 +5,9 @@ use gtk::{glib, glib::clone, CompositeTemplate};
 mod ignored_users_subpage;
 mod import_export_keys_subpage;
 
-use self::{
+pub use self::{
     ignored_users_subpage::IgnoredUsersSubpage,
-    import_export_keys_subpage::{ImportExportKeysSubpage, KeysSubpageMode},
+    import_export_keys_subpage::{ImportExportKeysSubpage, ImportExportKeysSubpageMode},
 };
 use crate::{components::ButtonRow, session::model::Session, spawn, spawn_tokio};
 
@@ -29,11 +29,7 @@ mod imp {
         #[template_child]
         pub typing_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub ignored_users_subpage: TemplateChild<IgnoredUsersSubpage>,
-        #[template_child]
         pub ignored_users_count: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub import_export_keys_subpage: TemplateChild<ImportExportKeysSubpage>,
         #[template_child]
         pub master_key_status: TemplateChild<gtk::Label>,
         #[template_child]
@@ -57,7 +53,6 @@ mod imp {
             ButtonRow::static_type();
 
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -152,38 +147,9 @@ glib::wrapper! {
         @extends gtk::Widget, adw::PreferencesPage, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl SecurityPage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
-    }
-
-    fn push_subpage(&self, subpage: &impl IsA<adw::NavigationPage>) {
-        let Some(window) = self.root().and_downcast::<adw::PreferencesWindow>() else {
-            return;
-        };
-
-        window.push_subpage(subpage)
-    }
-
-    #[template_callback]
-    pub fn show_ignored_users_page(&self) {
-        let subpage = &*self.imp().ignored_users_subpage;
-        self.push_subpage(subpage);
-    }
-
-    #[template_callback]
-    pub fn show_export_keys_page(&self) {
-        let subpage = &*self.imp().import_export_keys_subpage;
-        subpage.set_mode(KeysSubpageMode::Export);
-        self.push_subpage(subpage);
-    }
-
-    #[template_callback]
-    fn handle_import_keys(&self) {
-        let subpage = &*self.imp().import_export_keys_subpage;
-        subpage.set_mode(KeysSubpageMode::Import);
-        self.push_subpage(subpage);
     }
 
     async fn load_cross_signing_status(&self) {
