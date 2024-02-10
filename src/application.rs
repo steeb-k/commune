@@ -1,8 +1,8 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, prelude::*};
+use gtk::{gio, glib, glib::clone};
 use tracing::{debug, error, info, warn};
 
 use crate::{
@@ -186,7 +186,7 @@ impl Application {
     }
 
     fn show_about_dialog(&self) {
-        let dialog = adw::AboutWindow::builder()
+        let dialog = adw::AboutDialog::builder()
             .application_name("Fractal")
             .application_icon(config::APP_ID)
             .developer_name(gettext("The Fractal Team"))
@@ -195,7 +195,6 @@ impl Application {
             .issue_url("https://gitlab.gnome.org/World/fractal/-/issues")
             .support_url("https://matrix.to/#/#fractal:gnome.org")
             .version(config::VERSION)
-            .modal(true)
             .copyright(gettext("© 2017-2024 The Fractal Team"))
             .developers(vec![
                 "Alejandro Domínguez".to_string(),
@@ -213,12 +212,10 @@ impl Application {
             .translator_credits(gettext("translator-credits"))
             .build();
 
-        dialog.set_transient_for(self.active_window().as_ref());
-
         // This can't be added via the builder
         dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
 
-        dialog.present();
+        dialog.present(&self.present_main_window());
     }
 
     /// Process the given URI.
