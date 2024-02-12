@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{gdk, glib, CompositeTemplate};
+use gtk::{glib, CompositeTemplate};
 use tracing::error;
 
 mod account_row;
@@ -31,13 +31,11 @@ mod imp {
     impl ObjectSubclass for AccountChooserDialog {
         const NAME: &'static str = "AccountChooserDialog";
         type Type = super::AccountChooserDialog;
-        type ParentType = adw::Window;
+        type ParentType = adw::Dialog;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -50,19 +48,15 @@ mod imp {
 
     impl WidgetImpl for AccountChooserDialog {}
 
-    impl WindowImpl for AccountChooserDialog {
-        fn close_request(&self) -> glib::Propagation {
+    impl AdwDialogImpl for AccountChooserDialog {
+        fn closed(&self) {
             if let Some(sender) = self.sender.take() {
                 if sender.send(None).is_err() {
                     error!("Failed to send selected session");
                 }
             }
-
-            glib::Propagation::Proceed
         }
     }
-
-    impl AdwWindowImpl for AccountChooserDialog {}
 
     impl AccountChooserDialog {
         /// Set the list of logged-in sessions.
@@ -82,24 +76,23 @@ glib::wrapper! {
     ///
     /// Should be used by calling [`Self::choose_account()`].
     pub struct AccountChooserDialog(ObjectSubclass<imp::AccountChooserDialog>)
-        @extends gtk::Widget, gtk::Root, gtk::Window, adw::Window, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl AccountChooserDialog {
-    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>, session_list: &SessionList) -> Self {
+    pub fn new(session_list: &SessionList) -> Self {
         glib::Object::builder()
-            .property("transient-for", parent_window)
             .property("session-list", session_list)
             .build()
     }
 
     /// Open this dialog to choose an account.
-    pub async fn choose_account(&self) -> Option<String> {
+    pub async fn choose_account(&self, parent: &impl IsA<gtk::Widget>) -> Option<String> {
         let (sender, receiver) = oneshot::channel();
         self.imp().sender.replace(Some(sender));
 
-        self.present();
+        self.present(parent);
 
         receiver.await.ok().flatten()
     }

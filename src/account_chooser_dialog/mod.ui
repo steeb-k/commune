@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="AccountChooserDialog" parent="AdwWindow">
+  <template class="AccountChooserDialog" parent="AdwDialog">
     <property name="title" translatable="yes">Select an Account</property>
-    <property name="modal">True</property>
-    <property name="default-width">360</property>
-    <property name="default-height">360</property>
+    <property name="content-width">360</property>
+    <property name="content-height">360</property>
     <style>
       <class name="account-chooser"/>
     </style>
-    <property name="content">
+    <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">

@@ -520,8 +520,8 @@ impl Window {
     ///
     /// Returns the ID of the selected session, if any.
     pub async fn choose_session_for_uri(&self) -> Option<String> {
-        let dialog = AccountChooserDialog::new(Some(self), Application::default().session_list());
-        dialog.choose_account().await
+        let dialog = AccountChooserDialog::new(Application::default().session_list());
+        dialog.choose_account(self).await
     }
 
     /// Process the given session intent.
