@@ -1,10 +1,9 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use futures_util::{future, pin_mut, StreamExt};
 use gettextrs::{gettext, pgettext};
 use gtk::{
     gdk, gio,
     glib::{self, clone},
-    prelude::*,
     CompositeTemplate,
 };
 use matrix_sdk::{
@@ -635,9 +634,6 @@ impl MessageToolbar {
         let Some(room) = self.room() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let location = Location::new();
         if !location.is_available() {
@@ -645,8 +641,8 @@ impl MessageToolbar {
         }
 
         // Show the dialog as loading first.
-        let dialog = AttachmentDialog::new(&window, &gettext("Your Location"));
-        let response_fut = dialog.response_future();
+        let dialog = AttachmentDialog::new(&gettext("Your Location"));
+        let response_fut = dialog.response_future(self);
         pin_mut!(response_fut);
 
         // Listen whether the user cancels before the location API is initialized.
@@ -756,12 +752,11 @@ impl MessageToolbar {
             return;
         }
 
-        let window = self.root().and_downcast::<gtk::Window>().unwrap();
         let filename = filename_for_mime(Some(mime::IMAGE_PNG.as_ref()), None);
-        let dialog = AttachmentDialog::new(&window, &filename);
+        let dialog = AttachmentDialog::new(&filename);
         dialog.set_image(&image);
 
-        if dialog.response_future().await != gtk::ResponseType::Ok {
+        if dialog.response_future(self).await != gtk::ResponseType::Ok {
             return;
         }
 
@@ -816,11 +811,10 @@ impl MessageToolbar {
 
         match load_file(&file).await {
             Ok((bytes, file_info)) => {
-                let window = self.root().and_downcast::<gtk::Window>().unwrap();
-                let dialog = AttachmentDialog::new(&window, &file_info.filename);
+                let dialog = AttachmentDialog::new(&file_info.filename);
                 dialog.set_file(&file);
 
-                if dialog.response_future().await != gtk::ResponseType::Ok {
+                if dialog.response_future(self).await != gtk::ResponseType::Ok {
                     return;
                 }
 

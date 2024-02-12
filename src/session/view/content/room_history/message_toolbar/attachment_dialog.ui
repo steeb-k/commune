@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="AttachmentDialog" parent="AdwWindow">
-    <property name="modal">True</property>
-    <property name="title"></property>
-    <property name="default-width">400</property>
-    <property name="default-height">400</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="content">
+  <template class="AttachmentDialog" parent="AdwDialog">
+    <property name="content-width">400</property>
+    <property name="content-height">400</property>
+    <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="GtkHeaderBar">
-            <property name="show-title-buttons">False</property>
+          <object class="AdwHeaderBar">
+            <property name="show-start-title-buttons">False</property>
+            <property name="show-end-title-buttons">False</property>
             <child>
               <object class="GtkButton" id="cancel_button">
                 <property name="label" translatable="yes">_Cancel</property>

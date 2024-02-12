@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use futures_channel::oneshot;
-use gtk::{gdk, gio, glib, prelude::*, CompositeTemplate};
+use gtk::{gdk, gio, glib, CompositeTemplate};
 use tracing::error;
 
 use crate::components::MediaContentViewer;
@@ -28,13 +28,11 @@ mod imp {
     impl ObjectSubclass for AttachmentDialog {
         const NAME: &'static str = "AttachmentDialog";
         type Type = super::AttachmentDialog;
-        type ParentType = adw::Window;
+        type ParentType = adw::Dialog;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &glib::subclass::InitializingObject<Self>) {
@@ -52,15 +50,11 @@ mod imp {
 
     impl WidgetImpl for AttachmentDialog {}
 
-    impl WindowImpl for AttachmentDialog {
-        fn close_request(&self) -> glib::Propagation {
+    impl AdwDialogImpl for AttachmentDialog {
+        fn closed(&self) {
             self.send_response(gtk::ResponseType::Cancel);
-
-            glib::Propagation::Proceed
         }
     }
-
-    impl AdwWindowImpl for AttachmentDialog {}
 
     impl AttachmentDialog {
         /// Set whether this dialog is loading.
@@ -88,7 +82,7 @@ mod imp {
 glib::wrapper! {
     /// A dialog to preview an attachment before sending it.
     pub struct AttachmentDialog(ObjectSubclass<imp::AttachmentDialog>)
-        @extends gtk::Widget, gtk::Window, gtk::Root, adw::Window;
+        @extends gtk::Widget, adw::Dialog;
 }
 
 #[gtk::template_callbacks]
@@ -96,11 +90,8 @@ impl AttachmentDialog {
     /// Create an attachment dialog with the given title.
     ///
     /// Its initial state is loading.
-    pub fn new(transient_for: &gtk::Window, title: &str) -> Self {
-        glib::Object::builder()
-            .property("transient-for", transient_for)
-            .property("title", title)
-            .build()
+    pub fn new(title: &str) -> Self {
+        glib::Object::builder().property("title", title).build()
     }
 
     /// Set the image to preview.
@@ -135,11 +126,11 @@ impl AttachmentDialog {
     ///
     /// The response is [`gtk::ResponseType::Ok`] if the user clicked on send,
     /// otherwise it is [`gtk::ResponseType::Cancel`].
-    pub async fn response_future(&self) -> gtk::ResponseType {
+    pub async fn response_future(&self, parent: &impl IsA<gtk::Widget>) -> gtk::ResponseType {
         let (sender, receiver) = oneshot::channel();
         self.imp().sender.replace(Some(sender));
 
-        self.present();
+        self.present(parent);
 
         receiver.await.unwrap_or(gtk::ResponseType::Cancel)
     }
