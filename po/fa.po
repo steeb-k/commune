@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-01-18 11:28+0000\n"
-"PO-Revision-Date: 2024-01-20 17:43+0330\n"
+"PO-Revision-Date: 2024-01-20 18:06+0330\n"
 "Last-Translator: Danial Behzadi <dani.behzi@ubuntu.com>\n"
 "Language-Team: Persian\n"
 "Language: fa\n"
@@ -20,8 +20,8 @@ msgstr ""
 "X-DL-State: Translating\n"
 "X-Loco-Parser: loco_parse_po\n"
 
-#: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
+#: data/org.gnome.Fractal.desktop.in.in:3 data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: src/window.ui:8
 msgid "Fractal"
 msgstr "برخال"
 
@@ -39,8 +39,8 @@ msgstr "پیام‌رسانی گروهی برخال"
 #: data/org.gnome.Fractal.desktop.in.in:14
 msgid "Matrix;matrix.org;chat;irc;communications;talk;riot;element;"
 msgstr ""
-"Matrix;matrix.org;chat;irc;communications;talk;riot;element;fractal;ماتریکس;"
-"ماتریس;گفت‌وگو;گفتگو;المنت;گپ;پیام‌رسان;پیامرسان;"
+"Matrix;matrix.org;chat;irc;communications;talk;riot;element;fractal;ماتریکس;ماتریس;"
+"گفت‌وگو;گفتگو;المنت;گپ;پیام‌رسان;پیامرسان;"
 
 #: data/org.gnome.Fractal.gschema.xml.in:6
 msgid "Window width"
@@ -82,12 +82,12 @@ msgstr "کارهٔ پیام‌رسانی گروهی برای ماتریکس"
 #: data/org.gnome.Fractal.metainfo.xml.in.in:10
 msgid ""
 "Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is "
-"optimized for collaboration in large groups, such as free software projects, "
-"and will fit all screens, big or small."
+"optimized for collaboration in large groups, such as free software projects, and "
+"will fit all screens, big or small."
 msgstr ""
-"برخال کارهٔ پیام‌رسانی ماتریکسی برای گنوم است که با زبان راست نوشته شده است. "
-"میانایش برای همکاری در گروه‌های بزرگ، مانند پروژه‌های نرم‌افزار آزاد، بهینه شده و "
-"روی همهٔ صفحه‌ها جا می‌شود."
+"برخال کارهٔ پیام‌رسانی ماتریکسی برای گنوم است که با زبان راست نوشته شده است. میانایش "
+"برای همکاری در گروه‌های بزرگ، مانند پروژه‌های نرم‌افزار آزاد، بهینه شده و روی همهٔ "
+"صفحه‌ها جا می‌شود."
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
@@ -95,8 +95,8 @@ msgstr "موارد مهم:"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:16
 msgid ""
-"Find rooms to discuss your favorite topics, or talk privately to people, "
-"securely thanks to end-to-end encryption"
+"Find rooms to discuss your favorite topics, or talk privately to people, securely "
+"thanks to end-to-end encryption"
 msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:17
@@ -189,8 +189,7 @@ msgstr "لطفاً فرایند را با گذرواژه‌تان احراز ه�
 
 #: src/components/auth_dialog.ui:70
 msgid ""
-"Please authenticate the operation via the browser and once completed press "
-"confirm."
+"Please authenticate the operation via the browser and once completed press confirm."
 msgstr "لطفاً فرایند را با مرورگر احراز هویت کنید و سپس روی تأیید بزنید."
 
 #: src/components/auth_dialog.ui:81
@@ -295,13 +294,11 @@ msgid ""
 msgstr ""
 
 #: src/error_page.ui:51
-msgid ""
-"Here are a few things that might help you fix issues with the Secret Service:"
+msgid "Here are a few things that might help you fix issues with the Secret Service:"
 msgstr ""
 
 #: src/error_page.ui:68
-msgid ""
-"Make sure you have a Secret Service Provider installed, like gnome-keyring."
+msgid "Make sure you have a Secret Service Provider installed, like gnome-keyring."
 msgstr ""
 
 #: src/error_page.ui:87
@@ -310,8 +307,7 @@ msgstr ""
 
 #: src/error_page.ui:99
 msgid ""
-"Check the application logs and your distribution’s documentation for more "
-"details."
+"Check the application logs and your distribution’s documentation for more details."
 msgstr ""
 
 #: src/error_page.ui:115
@@ -355,8 +351,8 @@ msgstr "کشف کارساز خانگی"
 
 #: src/login/advanced_dialog.ui:14
 msgid ""
-"Auto-discovery, also known as “well-known lookup”, allows to discover the URL "
-"of a Matrix homeserver from a domain name. This should only be disabled if your "
+"Auto-discovery, also known as “well-known lookup”, allows to discover the URL of a "
+"Matrix homeserver from a domain name. This should only be disabled if your "
 "homeserver doesn’t support auto-discovery or if you want to provide the URL "
 "yourself."
 msgstr ""
@@ -564,8 +560,8 @@ msgstr ""
 
 #: src/secret/linux.rs:472
 msgid ""
-"Could not access the default collection. Make sure a keyring was created and "
-"set as default."
+"Could not access the default collection. Make sure a keyring was created and set "
+"as default."
 msgstr ""
 
 #: src/session/model/session.rs:451
@@ -686,8 +682,8 @@ msgstr ""
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:49
 msgid ""
 "Fractal’s support for encryption is unstable so you might lose access to your "
-"encrypted message history. It is recommended to backup your encryption keys "
-"before proceeding."
+"encrypted message history. It is recommended to backup your encryption keys before "
+"proceeding."
 msgstr ""
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:72
@@ -723,16 +719,16 @@ msgid ""
 "Deactivating your account means you will lose access to all your messages, "
 "contacts, files, and more, forever."
 msgstr ""
-"غیرفعّال کردن حسابتان بدین معناست که دسترسیتان به همهٔ پیام‌ها، آشنایان، پرونده‌ها "
-"و چیزهای دیگر را برای همیشه از دست خواهید داد."
+"غیرفعّال کردن حسابتان بدین معناست که دسترسیتان به همهٔ پیام‌ها، آشنایان، پرونده‌ها و "
+"چیزهای دیگر را برای همیشه از دست خواهید داد."
 
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:49
 msgid ""
 "To confirm that you really want to deactivate this account, type in your Matrix "
 "user ID:"
 msgstr ""
-"ورود شناسهٔ کاربری ماتریکستان برای تأیید این که واقعاً می‌خواهید این حساب را "
-"غیرفعّال کنید:"
+"ورود شناسهٔ کاربری ماتریکستان برای تأیید این که واقعاً می‌خواهید این حساب را غیرفعّال "
+"کنید:"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 msgid "Log Out of this Session"
@@ -901,8 +897,7 @@ msgstr "سراسری"
 
 #: src/session/view/account_settings/notifications_page.ui:42
 msgid ""
-"Which messages trigger notifications in rooms that do not have more specific "
-"rules."
+"Which messages trigger notifications in rooms that do not have more specific rules."
 msgstr "کدام پیام‌ها آگاهی‌ها را دراتاق‌هایی که قواعد مشخّص‌تر ندارد فعّال می‌کنند."
 
 #: src/session/view/account_settings/notifications_page.ui:46
@@ -926,6 +921,8 @@ msgid ""
 "Messages that contain one of these keywords trigger notifications. Matching on "
 "these keywords is case-insensitive."
 msgstr ""
+"پیام‌هایی که یکی از این کلیدواژه‌ها را داشته باشند، آگاهی‌ها را فعّال می‌کنند. تطبیق با "
+"این کلیدواژه‌ها به بزرگی و کوچکی حروف حسّاس نیست."
 
 #: src/session/view/account_settings/notifications_page.ui:111
 msgid "Add Keyword…"
@@ -999,8 +996,8 @@ msgstr "درون ریزی کلیدهای رمزنگاری اتاق"
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:191
 msgid ""
-"Importing your room encryption keys allows you to decrypt your messages in end-"
-"to-end encrypted rooms with a previous backup from a Matrix client."
+"Importing your room encryption keys allows you to decrypt your messages in end-to-"
+"end encrypted rooms with a previous backup from a Matrix client."
 msgstr ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:194
@@ -1095,6 +1092,8 @@ msgid ""
 "All messages or invitations sent by these users will be ignored. You will still "
 "see some of their activity, like when they join or leave a room."
 msgstr ""
+"همه پیام‌ها یا دعوت‌ها از این کاربران چشم‌پوشیده خواهد شد. همچنین برهی از "
+"فعّالیت‌هایشان چون زمان پیوستن یا ترک گروه‌هایشان را خواهید دید."
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/mod.ui:37
@@ -1133,7 +1132,7 @@ msgstr "نشست‌های فعّال دیگر"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:85
 msgid "Failed to load the list of connected devices."
-msgstr ""
+msgstr "شکست رد بار کردن سیاههٔ افزاره‌های وصل شده."
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
 msgid "Disconnect Session"
@@ -1287,7 +1286,7 @@ msgstr "{user} شما را دعوت کرده است"
 #. is a variable name.
 #: src/session/view/content/invite.rs:207
 msgid "Failed to accept invitation for {room}. Try again later."
-msgstr ""
+msgstr "شکست در پذیرش دعوت برای {room}. بعداً دوباره تلاش کنید."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
@@ -1319,7 +1318,7 @@ msgstr "برای شروع گفت‌وگو به یک اتاق بپیوندید."
 
 #: src/session/view/content/room_details/general_page/mod.rs:399
 msgid "Do you really want to remove the avatar for this room?"
-msgstr ""
+msgstr "واقعاً می‌خواهید چهرک این اتاق را بردارید؟"
 
 #: src/session/view/content/room_details/general_page/mod.rs:508
 msgid "Room name saved successfully"
@@ -1342,7 +1341,7 @@ msgstr "نتوانست موضوع اتاق را عوض کند"
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "عضو"
-msgstr[1] "عضو"
+msgstr[1] "اعضا"
 
 #: src/session/view/content/room_details/general_page/mod.rs:736
 msgid "Could not change notifications setting"
@@ -1392,11 +1391,11 @@ msgstr "صدا"
 
 #: src/session/view/content/room_details/general_page/mod.ui:206
 msgid "Which messages trigger notifications in this room."
-msgstr ""
+msgstr "کدام پیام‌ها آگاهی‌ها را در این اتاق فعّال می‌کنند."
 
 #: src/session/view/content/room_details/general_page/mod.ui:210
 msgid "Use the global setting"
-msgstr ""
+msgstr "استفاده از تنظیمات سراسری"
 
 #: src/session/view/content/room_details/general_page/mod.ui:227
 msgid "All messages"
@@ -1665,11 +1664,11 @@ msgstr "پایاپیوند در تخته‌گیره رونوشت شد"
 #: src/session/view/content/room_history/item_row.rs:576
 #: src/session/view/content/room_history/item_row.rs:601
 msgid "Message copied to clipboard"
-msgstr ""
+msgstr "پیام در تخته‌گیره رونوشت شد"
 
 #: src/session/view/content/room_history/item_row.rs:616
 msgid "Thumbnail copied to clipboard"
-msgstr ""
+msgstr "بندانگشتی در تخته‌گیره رونوشت شد"
 
 #: src/session/view/content/room_history/item_row.rs:686
 msgid "Remove Message?"
@@ -1725,7 +1724,7 @@ msgstr ""
 
 #: src/session/view/content/room_history/message_row/media.rs:369
 msgid "Image file not supported"
-msgstr ""
+msgstr "پروندهٔ تصویری پشتیبانی نمی‌شود"
 
 #: src/session/view/content/room_history/message_row/media.rs:406
 #: src/session/view/content/room_history/message_row/media.rs:411
@@ -1908,18 +1907,15 @@ msgstr "_دعوت عضو جدید"
 msgid "Room _Permalink"
 msgstr "_پایاپیوند اتاق"
 
-#: src/session/view/content/room_history/mod.ui:22
-#: src/session/view/sidebar/mod.ui:61
+#: src/session/view/content/room_history/mod.ui:22 src/session/view/sidebar/mod.ui:61
 msgid "_Leave Room"
 msgstr "_ترک اتاق"
 
-#: src/session/view/content/room_history/mod.ui:27
-#: src/session/view/sidebar/mod.ui:66
+#: src/session/view/content/room_history/mod.ui:27 src/session/view/sidebar/mod.ui:66
 msgid "Re_join Room"
 msgstr "_پیوستن دوباره به اتاق"
 
-#: src/session/view/content/room_history/mod.ui:32
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/content/room_history/mod.ui:32 src/session/view/sidebar/mod.ui:71
 msgid "_Forget Room"
 msgstr "_فراموشی اتاق"
 
@@ -2157,7 +2153,7 @@ msgstr "رد کردن"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:171
 msgid "Verification in progress"
-msgstr ""
+msgstr "اعتبارسنجی در جریان"
 
 #: src/session/view/create_dm_dialog/mod.rs:135
 msgid "An error occurred while searching for users"
@@ -2177,7 +2173,7 @@ msgstr "گپ مستقیم جدید"
 
 #: src/session/view/create_dm_dialog/mod.ui:56
 msgid "Search for people to start a new chat with"
-msgstr ""
+msgstr "جست‌وجوی افراد برای آغاز گپ مستقیم با آن‌ها"
 
 #: src/session/view/create_dm_dialog/mod.ui:92
 msgid "No users matching the search pattern were found"
@@ -2216,7 +2212,7 @@ msgstr "جزییات رویداد"
 
 #: src/session/view/event_details_dialog.ui:43
 msgid "Original Event"
-msgstr ""
+msgstr "رویداد اصلی"
 
 #: src/session/view/event_details_dialog.ui:58
 #: src/session/view/event_details_dialog.ui:236
@@ -2238,7 +2234,7 @@ msgstr "رونوشت از شناسهٔ اتاق در تخته‌گیره"
 
 #: src/session/view/event_details_dialog.ui:110
 msgid "Sender ID"
-msgstr ""
+msgstr "شناسهٔ فرستنده"
 
 #: src/session/view/event_details_dialog.ui:124
 msgid "Copy sender ID to clipboard"
@@ -2247,7 +2243,7 @@ msgstr "رونوشت از شناسهٔ فرستنده در تخته‌گیره"
 #: src/session/view/event_details_dialog.ui:135
 #: src/session/view/event_details_dialog.ui:261
 msgid "Timestamp"
-msgstr ""
+msgstr "برچسب زمانی"
 
 #: src/session/view/event_details_dialog.ui:149
 #: src/session/view/event_details_dialog.ui:275
@@ -2269,16 +2265,14 @@ msgid "Latest Edit"
 msgstr "جدیدترین ویرایش"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/session/view/join_room_dialog.rs:200
-#: src/session/view/join_room_dialog.ui:89
+#: src/session/view/join_room_dialog.rs:200 src/session/view/join_room_dialog.ui:89
 msgid "Look Up"
-msgstr ""
+msgstr "گشتن"
 
 #: src/session/view/join_room_dialog.rs:263
 msgid ""
-"The room details cannot be previewed. It can be because the room is not known "
-"by the homeserver or because its details are private. You can still try to join "
-"it."
+"The room details cannot be previewed. It can be because the room is not known by "
+"the homeserver or because its details are private. You can still try to join it."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
@@ -2351,7 +2345,7 @@ msgstr "خصوصی"
 
 #: src/session/view/room_creation.ui:73
 msgid "Only invited people can join this room"
-msgstr ""
+msgstr "فقط افراد دعوت شپه می‌توانند به این اتاق بپیوندند"
 
 #: src/session/view/room_creation.ui:86
 msgid "Public"
@@ -2359,7 +2353,7 @@ msgstr "همگانی"
 
 #: src/session/view/room_creation.ui:87
 msgid "Anyone can find and join this room"
-msgstr ""
+msgstr "هرکسی می‌تواند این اتاق را یافته و به آن بپیوندد"
 
 #: src/session/view/room_creation.ui:105
 msgid "End-to-End Encryption"
@@ -2367,13 +2361,13 @@ msgstr "رمزنگاری سرتاسری"
 
 #: src/session/view/room_creation.ui:106
 msgid "Cannot be disabled later"
-msgstr ""
+msgstr "بعدتر قابل تغییر نیست"
 
 #: src/session/view/room_creation.ui:118
 msgid ""
-"Fractal does not support online backup for encryption keys yet, so you will "
-"need to back them up manually or your message history will be lost if you lose "
-"access to all your sessions."
+"Fractal does not support online backup for encryption keys yet, so you will need "
+"to back them up manually or your message history will be lost if you lose access "
+"to all your sessions."
 msgstr ""
 
 #: src/session/view/room_creation.ui:132
@@ -2407,12 +2401,12 @@ msgstr "رد کردن دعوت"
 #: src/session/view/sidebar/category_row.rs:97
 #: src/session/view/sidebar/category_row.rs:110
 msgid "Move to Rooms"
-msgstr "انتقال به اتاق‌ها"
+msgstr "جابه‌جایی به اتاق‌ها"
 
 #: src/session/view/sidebar/category_row.rs:98
 #: src/session/view/sidebar/category_row.rs:104
 msgid "Move to Low Priority"
-msgstr "انتقال به کم‌اهمّیت"
+msgstr "جابه‌جایی به کم‌اهمّیت"
 
 #: src/session/view/sidebar/category_row.rs:99
 #: src/session/view/sidebar/category_row.rs:105
@@ -2423,7 +2417,7 @@ msgstr "ترک اتاق"
 #: src/session/view/sidebar/category_row.rs:103
 #: src/session/view/sidebar/category_row.rs:109
 msgid "Move to Favorites"
-msgstr "انتقال به موارد دلخواه"
+msgstr "جابه‌جایی به برگزیده‌ها"
 
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
@@ -2467,15 +2461,15 @@ msgstr "_رد کردن"
 
 #: src/session/view/sidebar/mod.ui:44
 msgid "Move to _Favorites"
-msgstr "انتقال به _برگزیده‌ها"
+msgstr "جابه‌جایی به _برگزیده‌ها"
 
 #: src/session/view/sidebar/mod.ui:49
 msgid "Move to _Rooms"
-msgstr "انتقال به _اتاق‌ها"
+msgstr "جابه‌جایی به _اتاق‌ها"
 
 #: src/session/view/sidebar/mod.ui:54
 msgid "Move to Low _Priority"
-msgstr ""
+msgstr "جابه‌جایی به _کم‌اهمّیت"
 
 #: src/session/view/sidebar/mod.ui:92 src/session/view/sidebar/mod.ui:94
 msgid "Main Menu"
@@ -2508,7 +2502,7 @@ msgstr "اجازهٔ به پیمایش بین اتاق‌ها"
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/room_row.rs:362 src/session/view/sidebar/row.rs:297
 msgid "Failed to move {room} from {previous_category} to {new_category}."
-msgstr "شکست در انتقال {room} از {previous_category} به {new_category}."
+msgstr "شکست در جابه‌جایی {room} از {previous_category} به {new_category}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
@@ -2802,8 +2796,8 @@ msgstr ""
 
 #: src/utils/message_dialog.rs:37
 msgid ""
-"Do you really want to leave this room? You won’t be able to come back without "
-"an invitation."
+"Do you really want to leave this room? You won’t be able to come back without an "
+"invitation."
 msgstr ""
 
 #: src/utils/message_dialog.rs:40
@@ -2826,14 +2820,14 @@ msgstr "برداشتن دعوت {user}؟"
 
 #: src/utils/message_dialog.rs:91
 msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will still be "
-"able to join the room on their own."
+"Are you sure you want to revoke the invite for {user_id}? They will still be able "
+"to join the room on their own."
 msgstr ""
 
 #: src/utils/message_dialog.rs:96
 msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will not be able "
-"to join the room again until someone reinvites them."
+"Are you sure you want to revoke the invite for {user_id}? They will not be able to "
+"join the room again until someone reinvites them."
 msgstr ""
 
 #: src/utils/message_dialog.rs:105
@@ -2850,8 +2844,8 @@ msgstr "اخراج {user}؟"
 
 #: src/utils/message_dialog.rs:119
 msgid ""
-"Are you sure you want to kick {user_id}? They will still be able to join the "
-"room again on their own."
+"Are you sure you want to kick {user_id}? They will still be able to join the room "
+"again on their own."
 msgstr ""
 
 #: src/utils/message_dialog.rs:124
@@ -3019,8 +3013,7 @@ msgstr "هویت‌سنجی کامل شد"
 #. variable name.
 #: src/verification_view/identity_verification_view/completed_page.rs:124
 msgid ""
-"{user} is verified and you can now be sure that your communication will be "
-"private."
+"{user} is verified and you can now be sure that your communication will be private."
 msgstr ""
 
 #: src/verification_view/identity_verification_view/confirm_qr_code_page.rs:122
@@ -3047,8 +3040,8 @@ msgstr ""
 
 #: src/verification_view/identity_verification_view/no_supported_methods_page.rs:132
 msgid ""
-"A login request was received, but none of the methods offered by the other "
-"client are supported by Fractal."
+"A login request was received, but none of the methods offered by the other client "
+"are supported by Fractal."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
@@ -3061,8 +3054,8 @@ msgstr ""
 #. variable name.
 #: src/verification_view/identity_verification_view/no_supported_methods_page.rs:148
 msgid ""
-"{user} sent a verification request, but none of the methods offered by the "
-"other client are supported by Fractal."
+"{user} sent a verification request, but none of the methods offered by the other "
+"client are supported by Fractal."
 msgstr ""
 
 #: src/verification_view/identity_verification_view/no_supported_methods_page.rs:160
@@ -3079,8 +3072,8 @@ msgstr ""
 
 #: src/verification_view/identity_verification_view/no_supported_methods_page.ui:40
 msgid ""
-"You can accept this verification from another session or decline it for all "
-"your sessions."
+"You can accept this verification from another session or decline it for all your "
+"sessions."
 msgstr ""
 
 #: src/verification_view/identity_verification_view/qr_code_scanned_page.rs:117
@@ -3093,8 +3086,7 @@ msgstr ""
 #. variable name.
 #: src/verification_view/identity_verification_view/qr_code_scanned_page.rs:122
 msgid ""
-"You scanned the QR code successfully. {user} may need to confirm the "
-"verification."
+"You scanned the QR code successfully. {user} may need to confirm the verification."
 msgstr ""
 
 #: src/verification_view/identity_verification_view/qr_code_scanned_page.ui:19
@@ -3190,8 +3182,7 @@ msgid "Cancel Verification Request"
 msgstr "لغو درخواست اعتبارسنجی"
 
 #: src/verification_view/session_verification_view.rs:320
-msgid ""
-"You need to set up an encryption identity, since it has never been created."
+msgid "You need to set up an encryption identity, since it has never been created."
 msgstr ""
 
 #: src/verification_view/session_verification_view.rs:324
@@ -3214,8 +3205,8 @@ msgstr "بازنشانی"
 #: src/verification_view/session_verification_view.rs:333
 msgid ""
 "If you lost access to all other sessions, you can create a new encryption "
-"identity. Be careful because this will cancel the verifications of all users "
-"and sessions."
+"identity. Be careful because this will cancel the verifications of all users and "
+"sessions."
 msgstr ""
 
 #: src/verification_view/session_verification_view.rs:395
@@ -3232,8 +3223,8 @@ msgstr "تأیید نشست جدیدتان"
 
 #: src/verification_view/session_verification_view.ui:38
 msgid ""
-"Verifying your session allows you and the people you chat with to be sure that "
-"no one is trying to impersonate you or intercept your conversations."
+"Verifying your session allows you and the people you chat with to be sure that no "
+"one is trying to impersonate you or intercept your conversations."
 msgstr ""
 
 #: src/verification_view/session_verification_view.ui:47
@@ -3564,8 +3555,7 @@ msgstr ""
 #~ msgstr "بستن"
 
 #~ msgid ""
-#~ "Once you leave, you won’t be able to interact with people in the room "
-#~ "anymore."
+#~ "Once you leave, you won’t be able to interact with people in the room anymore."
 #~ msgstr "پس از خروج دیگر نمی‌توانید با افراد حاضر در اتاق تعامل داشته باشید."
 
 #~ msgid "What is your Provider?"
@@ -3741,8 +3731,7 @@ msgstr ""
 #~ msgid ""
 #~ "You’ve been invited to join <b>{room_name}</b> room by <b>{sender_name}</b>"
 #~ msgstr ""
-#~ "شما برای پیوستن به اتاق <b>{room_name}</b> توسط <b>{sender_name}</b> دعوت "
-#~ "شده‌اید"
+#~ "شما برای پیوستن به اتاق <b>{room_name}</b> توسط <b>{sender_name}</b> دعوت شده‌اید"
 
 #~ msgid "You’ve been invited to join <b>{room_name}</b>"
 #~ msgstr "شما برای عضویت به <b>{room_name}</b> دعوت شده‌اید"
