@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="CreateDmDialog" parent="AdwWindow">
+  <template class="CreateDmDialog" parent="AdwDialog">
     <property name="title" translatable="yes">Direct Chat</property>
-    <property name="modal">True</property>
-    <property name="default-width">380</property>
-    <property name="default-height">620</property>
-    <property name="content">
+    <property name="content-width">380</property>
+    <property name="content-height">620</property>
+    <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">

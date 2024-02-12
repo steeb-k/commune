@@ -94,8 +94,8 @@ mod imp {
                 obj.show_join_room_dialog(None);
             });
 
-            klass.install_action("session.create-dm", None, move |obj, _, _| {
-                obj.show_create_dm_dialog();
+            klass.install_action_async("session.create-dm", None, |obj, _, _| async move {
+                obj.show_create_dm_dialog().await;
             });
 
             klass.add_binding_action(
@@ -276,13 +276,13 @@ impl SessionView {
         window.present();
     }
 
-    fn show_create_dm_dialog(&self) {
+    async fn show_create_dm_dialog(&self) {
         let Some(session) = self.session() else {
             return;
         };
 
-        let window = CreateDmDialog::new(self.parent_window().as_ref(), &session);
-        window.present();
+        let dialog = CreateDmDialog::new(&session);
+        dialog.start_direct_chat(self).await;
     }
 
     /// Offer to the user to join a room.

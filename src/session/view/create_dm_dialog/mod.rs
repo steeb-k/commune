@@ -1,5 +1,7 @@
-use adw::subclass::prelude::*;
-use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use futures_channel::oneshot;
+use gtk::{glib, glib::clone, CompositeTemplate};
+use tracing::error;
 
 mod dm_user;
 mod dm_user_list;
@@ -12,10 +14,12 @@ use crate::{
     components::{PillSource, PillSourceRow},
     gettext,
     session::model::{Session, User},
-    spawn, Window,
+    Window,
 };
 
 mod imp {
+    use std::cell::RefCell;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -35,20 +39,20 @@ mod imp {
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub error_page: TemplateChild<adw::StatusPage>,
+        pub sender: RefCell<Option<oneshot::Sender<Option<User>>>>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for CreateDmDialog {
         const NAME: &'static str = "CreateDmDialog";
         type Type = super::CreateDmDialog;
-        type ParentType = adw::Window;
+        type ParentType = adw::Dialog;
 
         fn class_init(klass: &mut Self::Class) {
             PillSourceRow::static_type();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -60,12 +64,20 @@ mod imp {
     impl ObjectImpl for CreateDmDialog {}
 
     impl WidgetImpl for CreateDmDialog {}
-    impl WindowImpl for CreateDmDialog {}
-    impl AdwWindowImpl for CreateDmDialog {}
+
+    impl AdwDialogImpl for CreateDmDialog {
+        fn closed(&self) {
+            if let Some(sender) = self.sender.take() {
+                if sender.send(None).is_err() {
+                    error!("Failed to send selected session");
+                }
+            }
+        }
+    }
 
     impl CreateDmDialog {
         /// Set the current session.
-        pub fn set_session(&self, session: Option<Session>) {
+        pub(super) fn set_session(&self, session: Option<Session>) {
             if self.session.upgrade() == session {
                 return;
             }
@@ -109,16 +121,13 @@ mod imp {
 glib::wrapper! {
     /// Dialog to create a new direct chat.
     pub struct CreateDmDialog(ObjectSubclass<imp::CreateDmDialog>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl CreateDmDialog {
-    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>, session: &Session) -> Self {
-        glib::Object::builder()
-            .property("transient-for", parent_window)
-            .property("session", session)
-            .build()
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 
     fn update_view(&self, model: &DmUserList) {
@@ -158,15 +167,27 @@ impl CreateDmDialog {
         imp.stack.set_visible_child_name("loading-page");
         imp.search_entry.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.start_direct_chat(&user).await;
-        }));
+        if let Some(sender) = imp.sender.take() {
+            if sender.send(Some(user)).is_err() {
+                error!("Failed to send selected session");
+            }
+        }
     }
 
-    async fn start_direct_chat(&self, user: &User) {
+    /// Select a user to start a direct chat with.
+    pub async fn start_direct_chat(&self, parent: &impl IsA<gtk::Widget>) {
+        let (sender, receiver) = oneshot::channel();
+        self.imp().sender.replace(Some(sender));
+
+        self.present(parent);
+
+        let Ok(Some(user)) = receiver.await else {
+            return;
+        };
+
         match user.get_or_create_direct_chat().await {
             Ok(room) => {
-                let Some(window) = self.transient_for().and_downcast::<Window>() else {
+                let Some(window) = parent.root().and_downcast::<Window>() else {
                     return;
                 };
 
