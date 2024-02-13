@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 use matrix_sdk::{
     ruma::{
         api::client::{
@@ -15,7 +15,7 @@ use ruma::events::{room::encryption::RoomEncryptionEventContent, InitialStateEve
 use tracing::error;
 
 use crate::{
-    components::{SpinnerButton, ToastableWindow},
+    components::{SpinnerButton, ToastableDialog},
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast, Window,
@@ -62,13 +62,11 @@ mod imp {
     impl ObjectSubclass for RoomCreation {
         const NAME: &'static str = "RoomCreation";
         type Type = super::RoomCreation;
-        type ParentType = ToastableWindow;
+        type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -80,9 +78,8 @@ mod imp {
     impl ObjectImpl for RoomCreation {}
 
     impl WidgetImpl for RoomCreation {}
-    impl WindowImpl for RoomCreation {}
-    impl AdwWindowImpl for RoomCreation {}
-    impl ToastableWindowImpl for RoomCreation {}
+    impl AdwDialogImpl for RoomCreation {}
+    impl ToastableDialogImpl for RoomCreation {}
 
     impl RoomCreation {
         /// Set the current session.
@@ -105,16 +102,13 @@ mod imp {
 glib::wrapper! {
     /// Dialog to create a new room.
     pub struct RoomCreation(ObjectSubclass<imp::RoomCreation>)
-        @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl RoomCreation {
-    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>, session: &Session) -> Self {
-        glib::Object::builder()
-            .property("transient-for", parent_window)
-            .property("session", session)
-            .build()
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 
     /// Create the room, if it is allowed.
@@ -168,7 +162,7 @@ impl RoomCreation {
                 match handle.await.unwrap() {
                     Ok(matrix_room) => {
                         if let Some(session) = obj.session() {
-                            let Some(window) = obj.transient_for().and_downcast::<Window>() else {
+                            let Some(window) = obj.root().and_downcast::<Window>() else {
                                 return;
                             };
                             let room = session.room_list().get_wait(matrix_room.room_id()).await;

@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
-use super::{Avatar, Spinner, SpinnerButton, ToastableWindow};
+use super::{Avatar, Spinner, SpinnerButton, ToastableDialog};
 use crate::{
     i18n::ngettext_f,
     prelude::*,
@@ -62,18 +62,13 @@ mod imp {
     impl ObjectSubclass for JoinRoomDialog {
         const NAME: &'static str = "JoinRoomDialog";
         type Type = super::JoinRoomDialog;
-        type ParentType = ToastableWindow;
+        type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
             Spinner::static_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {
-                obj.go_back();
-                glib::Propagation::Stop
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -85,9 +80,8 @@ mod imp {
     impl ObjectImpl for JoinRoomDialog {}
 
     impl WidgetImpl for JoinRoomDialog {}
-    impl WindowImpl for JoinRoomDialog {}
-    impl AdwWindowImpl for JoinRoomDialog {}
-    impl ToastableWindowImpl for JoinRoomDialog {}
+    impl AdwDialogImpl for JoinRoomDialog {}
+    impl ToastableDialogImpl for JoinRoomDialog {}
 
     impl JoinRoomDialog {
         /// Set the current session.
@@ -143,16 +137,13 @@ mod imp {
 glib::wrapper! {
     /// Dialog to join a room.
     pub struct JoinRoomDialog(ObjectSubclass<imp::JoinRoomDialog>)
-        @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl JoinRoomDialog {
-    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>, session: &Session) -> Self {
-        glib::Object::builder()
-            .property("transient-for", parent_window)
-            .property("session", session)
-            .build()
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 
     /// Set the room URI to look up.
@@ -214,7 +205,7 @@ impl JoinRoomDialog {
         let Some(uri) = imp.uri.borrow().clone() else {
             return;
         };
-        let Some(window) = self.transient_for().and_downcast::<Window>() else {
+        let Some(window) = self.root().and_downcast::<Window>() else {
             return;
         };
 
@@ -319,7 +310,7 @@ impl JoinRoomDialog {
             match room_list.join_by_id_or_alias(uri.id.into(), uri.via).await {
                 Ok(room_id) => {
                     if let Some(room) = room_list.get_wait(&room_id).await {
-                        if let Some(window) = obj.transient_for().and_downcast_ref::<Window>() {
+                        if let Some(window) = obj.root().and_downcast_ref::<Window>() {
                             window.session_view().select_room(Some(room));
                         }
                     }
@@ -350,7 +341,7 @@ impl JoinRoomDialog {
             imp.entry_page.set_sensitive(true);
             imp.set_visible_page("entry");
         } else {
-            self.close()
+            self.close();
         }
     }
 }

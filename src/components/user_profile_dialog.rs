@@ -1,8 +1,8 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 use ruma::OwnedUserId;
 
-use super::{Spinner, ToastableWindow, UserPage};
+use super::{Spinner, ToastableDialog, UserPage};
 use crate::{
     prelude::*,
     session::model::{Member, RemoteUser, Session, User},
@@ -27,15 +27,13 @@ mod imp {
     impl ObjectSubclass for UserProfileDialog {
         const NAME: &'static str = "UserProfileDialog";
         type Type = super::UserProfileDialog;
-        type ParentType = ToastableWindow;
+        type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
             Spinner::static_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -45,24 +43,21 @@ mod imp {
 
     impl ObjectImpl for UserProfileDialog {}
     impl WidgetImpl for UserProfileDialog {}
-    impl WindowImpl for UserProfileDialog {}
-    impl AdwWindowImpl for UserProfileDialog {}
-    impl ToastableWindowImpl for UserProfileDialog {}
+    impl AdwDialogImpl for UserProfileDialog {}
+    impl ToastableDialogImpl for UserProfileDialog {}
 }
 
 glib::wrapper! {
     /// Dialog to join a room.
     pub struct UserProfileDialog(ObjectSubclass<imp::UserProfileDialog>)
-        @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl UserProfileDialog {
     /// Create a new `UserProfileDialog`.
-    pub fn new(parent_window: Option<&impl IsA<gtk::Window>>) -> Self {
-        glib::Object::builder::<Self>()
-            .property("transient-for", parent_window)
-            .build()
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
     /// Load the user with the given session and user ID.

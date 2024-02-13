@@ -272,8 +272,8 @@ impl SessionView {
             return;
         };
 
-        let window = RoomCreation::new(self.parent_window().as_ref(), &session);
-        window.present();
+        let dialog = RoomCreation::new(&session);
+        dialog.present(self);
     }
 
     async fn show_create_dm_dialog(&self) {
@@ -299,13 +299,13 @@ impl SessionView {
             }
         }
 
-        let dialog = JoinRoomDialog::new(self.parent_window().as_ref(), &session);
+        let dialog = JoinRoomDialog::new(&session);
 
         if let Some(uri) = room_uri {
             dialog.set_uri(uri);
         }
 
-        dialog.present();
+        dialog.present(self);
     }
 
     pub fn handle_paste_action(&self) {
@@ -342,8 +342,8 @@ impl SessionView {
             return;
         };
 
-        let dialog = UserProfileDialog::new(self.parent_window().as_ref());
+        let dialog = UserProfileDialog::new();
         dialog.load_user(&session, user_id);
-        dialog.present();
+        dialog.present(self);
     }
 }

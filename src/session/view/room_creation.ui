@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="RoomCreation" parent="ToastableWindow">
+  <template class="RoomCreation" parent="ToastableDialog">
     <property name="default-widget">create_button</property>
-    <property name="modal">True</property>
-    <property name="default-width">380</property>
-    <property name="default-height">620</property>
+    <property name="content-width">380</property>
+    <property name="content-height">620</property>
     <property name="child-content">
       <object class="AdwToolbarView">
         <child type="top">

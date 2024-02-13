@@ -176,21 +176,21 @@ macro_rules! _add_toast {
     ($widget:expr, $toast:expr) => {{
         use gtk::prelude::WidgetExt;
         if let Some(dialog) = $widget
+            .ancestor($crate::components::ToastableDialog::static_type())
+            .and_downcast::<$crate::components::ToastableDialog>()
+        {
+            use $crate::prelude::ToastableDialogExt;
+            dialog.add_toast($toast);
+        } else if let Some(dialog) = $widget
             .ancestor(adw::PreferencesDialog::static_type())
             .and_downcast::<adw::PreferencesDialog>()
         {
             use adw::prelude::PreferencesDialogExt;
             dialog.add_toast($toast);
-        } else if let Some(root) = $widget.root() {
-            if let Some(window) = root.downcast_ref::<$crate::Window>() {
-                window.add_toast($toast);
-            } else if let Some(window) = root.downcast_ref::<$crate::components::ToastableWindow>()
-            {
-                use $crate::prelude::ToastableWindowExt;
-                window.add_toast($toast);
-            } else {
-                panic!("Trying to display a toast when the parent doesn't support it");
-            }
+        } else if let Some(window) = $widget.root().and_downcast_ref::<$crate::Window>() {
+            window.add_toast($toast);
+        } else {
+            panic!("Trying to display a toast when the parent doesn't support it");
         }
     }};
 }

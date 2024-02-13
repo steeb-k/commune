@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ToastableWindow" parent="AdwWindow">
-    <property name="content">
+  <template class="ToastableDialog" parent="AdwDialog">
+    <property name="child">
       <object class="AdwToastOverlay" id="toast_overlay"/>
     </property>
   </template>

@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="EventDetailsDialog" parent="ToastableWindow">
-    <property name="modal">True</property>
+  <template class="EventDetailsDialog" parent="ToastableDialog">
     <property name="title" translatable="yes">Event Details</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="default-width">500</property>
-    <property name="default-height">400</property>
+    <property name="content-width">500</property>
+    <property name="content-height">400</property>
     <style>
       <class name="event-details-dialog"/>
     </style>

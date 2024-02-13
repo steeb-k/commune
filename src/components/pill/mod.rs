@@ -1,5 +1,5 @@
-use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
 mod source;
 mod source_row;
@@ -173,14 +173,11 @@ impl Pill {
         let Some(source) = self.source() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         if let Some(member) = source.downcast_ref::<Member>() {
-            let dialog = UserProfileDialog::new(Some(&window));
+            let dialog = UserProfileDialog::new();
             dialog.set_room_member(member.clone());
-            dialog.present();
+            dialog.present(self);
         } else if let Some(room) = source.downcast_ref::<Room>() {
             let Some(session_view) = self
                 .ancestor(SessionView::static_type())
@@ -195,9 +192,9 @@ impl Pill {
                 return;
             };
 
-            let dialog = JoinRoomDialog::new(Some(&window), &session);
+            let dialog = JoinRoomDialog::new(&session);
             dialog.set_room(room);
-            dialog.present();
+            dialog.present(self);
         }
     }
 }

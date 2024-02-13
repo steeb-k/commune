@@ -29,7 +29,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/room_title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/substring_entry_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/switch_loading_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/toastable_window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/toastable_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/user_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/user_profile_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/video_player.ui</file>

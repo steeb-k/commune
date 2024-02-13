@@ -1,6 +1,6 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
 use crate::{
@@ -460,9 +460,9 @@ impl SenderAvatar {
             return;
         };
 
-        let dialog = UserProfileDialog::new(self.root().and_downcast_ref::<gtk::Window>());
+        let dialog = UserProfileDialog::new();
         dialog.set_room_member(sender);
-        dialog.present();
+        dialog.present(self);
     }
 
     /// Open a direct chat with the current sender.

@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="JoinRoomDialog" parent="ToastableWindow">
+  <template class="JoinRoomDialog" parent="ToastableDialog">
     <property name="title" translatable="yes">Join a Room</property>
-    <property name="modal">True</property>
-    <property name="default-width">480</property>
-    <property name="default-height">500</property>
-    <property name="content">
+    <property name="content-width">480</property>
+    <property name="content-height">500</property>
+    <property name="child-content">
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">

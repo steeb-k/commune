@@ -28,7 +28,7 @@ mod spinner;
 mod spinner_button;
 mod substring_entry_row;
 mod switch_loading_row;
-mod toastable_window;
+mod toastable_dialog;
 mod user_page;
 mod user_profile_dialog;
 mod video_player;
@@ -65,7 +65,7 @@ pub use self::{
     spinner_button::SpinnerButton,
     substring_entry_row::SubstringEntryRow,
     switch_loading_row::SwitchLoadingRow,
-    toastable_window::{ToastableWindow, ToastableWindowExt, ToastableWindowImpl},
+    toastable_dialog::{ToastableDialog, ToastableDialogExt, ToastableDialogImpl},
     user_page::UserPage,
     user_profile_dialog::UserProfileDialog,
     video_player::VideoPlayer,

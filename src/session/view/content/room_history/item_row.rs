@@ -462,9 +462,8 @@ impl ItemRow {
                 // View Event Source
                 gio::ActionEntry::builder("view-details")
                     .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                        let window = widget.root().and_downcast().unwrap();
-                        let dialog = EventDetailsDialog::new(&window, &event);
-                        dialog.present();
+                        let dialog = EventDetailsDialog::new(&event);
+                        dialog.present(&widget);
                     }))
                     .build(),
             ]);

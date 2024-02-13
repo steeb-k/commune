@@ -1,5 +1,5 @@
 pub use crate::{
-    components::{PillSourceExt, PillSourceImpl, ToastableWindowExt, ToastableWindowImpl},
+    components::{PillSourceExt, PillSourceImpl, ToastableDialogExt, ToastableDialogImpl},
     contrib::CameraExt,
     session::model::{TimelineItemExt, UserExt},
     session_list::SessionInfoExt,

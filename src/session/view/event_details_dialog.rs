@@ -1,10 +1,11 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, glib, CompositeTemplate};
+use gtk::{glib, CompositeTemplate};
 use sourceview::prelude::*;
 
 use crate::{
-    components::{ButtonRow, ToastableWindow, ToastableWindowImpl},
+    components::{ButtonRow, ToastableDialog},
+    prelude::*,
     session::model::Event,
     toast, utils,
 };
@@ -47,7 +48,7 @@ mod imp {
     impl ObjectSubclass for EventDetailsDialog {
         const NAME: &'static str = "EventDetailsDialog";
         type Type = super::EventDetailsDialog;
-        type ParentType = ToastableWindow;
+        type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
             ButtonRow::static_type();
@@ -132,8 +133,6 @@ mod imp {
                     toast!(obj, gettext("Source copied to clipboard"))
                 },
             );
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -159,23 +158,20 @@ mod imp {
     }
 
     impl WidgetImpl for EventDetailsDialog {}
-    impl WindowImpl for EventDetailsDialog {}
-    impl AdwWindowImpl for EventDetailsDialog {}
-    impl ToastableWindowImpl for EventDetailsDialog {}
+    impl AdwDialogImpl for EventDetailsDialog {}
+    impl ToastableDialogImpl for EventDetailsDialog {}
 }
 
 glib::wrapper! {
+    /// A dialog showing the details of an event.
     pub struct EventDetailsDialog(ObjectSubclass<imp::EventDetailsDialog>)
-        @extends gtk::Widget, gtk::Window, adw::Window, ToastableWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, ToastableDialog, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
 impl EventDetailsDialog {
-    pub fn new(window: &gtk::Window, event: &Event) -> Self {
-        glib::Object::builder()
-            .property("transient-for", window)
-            .property("event", event)
-            .build()
+    pub fn new(event: &Event) -> Self {
+        glib::Object::builder().property("event", event).build()
     }
 
     /// View the given source.
