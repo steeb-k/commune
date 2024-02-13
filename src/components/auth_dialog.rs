@@ -1,13 +1,9 @@
-use std::{cell::Cell, fmt::Debug, future::Future};
+use std::{fmt::Debug, future::Future};
 
-use adw::subclass::prelude::*;
-use gtk::{
-    gdk,
-    gio::prelude::*,
-    glib::{self, clone, closure_local},
-    prelude::*,
-    CompositeTemplate,
-};
+use adw::{prelude::*, subclass::prelude::*};
+use futures_channel::oneshot;
+use gettextrs::gettext;
+use gtk::{glib, glib::clone, CompositeTemplate};
 use matrix_sdk::Error;
 use ruma::{
     api::client::{
@@ -44,17 +40,16 @@ pub enum AuthError {
     /// The parent `Session` could not be upgraded.
     #[error("The session could not be upgraded")]
     NoSession,
+
+    /// The parent `gtk::Widget` could not be upgraded.
+    #[error("The parent widget could not be upgraded")]
+    NoParentWidget,
 }
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{
-        object::WeakRef,
-        subclass::{InitializingObject, Signal},
-        SignalHandlerId,
-    };
-    use once_cell::sync::Lazy;
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
@@ -62,39 +57,30 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/auth_dialog.ui")]
     #[properties(wrapper_type = super::AuthDialog)]
     pub struct AuthDialog {
-        #[property(get, set, construct_only)]
-        /// The parent session.
-        pub session: WeakRef<Session>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub password: TemplateChild<gtk::PasswordEntry>,
         #[template_child]
-        pub error: TemplateChild<gtk::Label>,
-
-        #[template_child]
-        pub button_cancel: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub button_ok: TemplateChild<gtk::Button>,
-
-        #[template_child]
         pub open_browser_btn: TemplateChild<gtk::Button>,
-        pub open_browser_btn_handler: RefCell<Option<SignalHandlerId>>,
+        pub open_browser_btn_handler: RefCell<Option<glib::SignalHandlerId>>,
+        #[template_child]
+        pub error: TemplateChild<gtk::Label>,
+        #[property(get, set, construct_only)]
+        /// The parent session.
+        pub session: glib::WeakRef<Session>,
+        #[property(get)]
+        /// The parent widget.
+        pub parent: glib::WeakRef<gtk::Widget>,
+        pub sender: RefCell<Option<oneshot::Sender<String>>>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for AuthDialog {
         const NAME: &'static str = "ComponentsAuthDialog";
         type Type = super::AuthDialog;
-        type ParentType = adw::Window;
+        type ParentType = adw::AlertDialog;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-
-            klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {
-                obj.emit_by_name::<()>("response", &[&false]);
-                glib::Propagation::Stop
-            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -108,38 +94,25 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.button_cancel
-                .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.emit_by_name::<()>("response", &[&false]);
+            self.password
+                .connect_changed(clone!(@weak obj => move |password| {
+                    obj.set_response_enabled("confirm", !password.text().is_empty());
                 }));
-
-            self.button_ok
-                .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.emit_by_name::<()>("response", &[&true]);
-                }));
-
-            obj.connect_close_request(
-                clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_| {
-                    obj.emit_by_name::<()>("response", &[&false]);
-                    glib::Propagation::Proceed
-                }),
-            );
-        }
-
-        fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![Signal::builder("response")
-                    .param_types([bool::static_type()])
-                    .action()
-                    .build()]
-            });
-            SIGNALS.as_ref()
         }
     }
 
     impl WidgetImpl for AuthDialog {}
-    impl WindowImpl for AuthDialog {}
-    impl AdwWindowImpl for AuthDialog {}
+    impl AdwDialogImpl for AuthDialog {}
+
+    impl AdwAlertDialogImpl for AuthDialog {
+        fn response(&self, response: &str) {
+            if let Some(sender) = self.sender.take() {
+                if sender.send(response.to_owned()).is_err() {
+                    error!("Failed to send response");
+                }
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -147,15 +120,12 @@ glib::wrapper! {
     ///
     /// [User-Interaction Authentication API]: https://spec.matrix.org/v1.7/client-server-api/#user-interactive-authentication-api
     pub struct AuthDialog(ObjectSubclass<imp::AuthDialog>)
-        @extends gtk::Widget, adw::Window, gtk::Window, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::Dialog, adw::AlertDialog, @implements gtk::Accessible;
 }
 
 impl AuthDialog {
-    pub fn new(transient_for: Option<&impl IsA<gtk::Window>>, session: &Session) -> Self {
-        glib::Object::builder()
-            .property("transient-for", transient_for)
-            .property("session", session)
-            .build()
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 
     /// Authenticates the user to the server via an authentication flow.
@@ -168,11 +138,14 @@ impl AuthDialog {
         FN: Fn(matrix_sdk::Client, Option<AuthData>) -> F1 + Send + 'static + Sync + Clone,
     >(
         &self,
+        parent: &impl IsA<gtk::Widget>,
         callback: FN,
     ) -> Result<Response, AuthError> {
         let Some(client) = self.session().map(|s| s.client()) else {
             return Err(AuthError::NoSession);
         };
+
+        self.imp().parent.set(Some(parent.upcast_ref()));
 
         let mut auth_data = None;
 
@@ -256,12 +229,18 @@ impl AuthDialog {
             return Err(AuthError::NoSession);
         };
 
-        let stack = &self.imp().stack;
-        stack.set_visible_child_name(AuthType::Password.as_ref());
+        let imp = self.imp();
+        imp.password.set_visible(true);
+        imp.open_browser_btn.set_visible(false);
+        self.set_body(&gettext(
+            "Please authenticate the operation with your password",
+        ));
+        self.set_response_enabled("confirm", false);
+
         self.show_and_wait_for_response().await?;
 
         let user_id = session.user_id().to_string();
-        let password = self.imp().password.text().to_string();
+        let password = imp.password.text().into();
 
         let data = assign!(
             Password::new(UserIdentifier::UserIdOrLocalpart(user_id), password),
@@ -289,9 +268,17 @@ impl AuthDialog {
         };
         let uiaa_session = uiaa_session.ok_or(AuthError::MissingSessionId)?;
 
+        let imp = self.imp();
+        imp.password.set_visible(false);
+        imp.open_browser_btn.set_visible(true);
+        self.set_body(&gettext(
+            "Please authenticate the operation via the browser and, once completed, press confirm",
+        ));
+        self.set_response_enabled("confirm", false);
+
         let homeserver = client.homeserver();
-        self.imp().stack.set_visible_child_name("fallback");
         self.setup_fallback_page(homeserver.as_str(), stage.as_ref(), &uiaa_session);
+
         self.show_and_wait_for_response().await?;
 
         Ok(AuthData::FallbackAcknowledgement(
@@ -301,34 +288,33 @@ impl AuthDialog {
 
     /// Lets the user complete the current stage.
     async fn show_and_wait_for_response(&self) -> Result<(), AuthError> {
+        let Some(parent) = self.parent() else {
+            return Err(AuthError::NoParentWidget);
+        };
+
         let (sender, receiver) = futures_channel::oneshot::channel();
-        let sender = Cell::new(Some(sender));
+        self.imp().sender.replace(Some(sender));
 
-        let handler_id = self.connect_response(move |_, response| {
-            if let Some(sender) = sender.take() {
-                sender.send(response).unwrap();
-            }
-        });
-
-        self.present();
+        self.present(&parent);
 
         let result = receiver.await.unwrap();
-        self.disconnect(handler_id);
         self.close();
 
-        result.then_some(()).ok_or(AuthError::UserCancelled)
+        if result == "confirm" {
+            Ok(())
+        } else {
+            Err(AuthError::UserCancelled)
+        }
     }
 
     fn show_auth_error(&self, auth_error: &Option<StandardErrorBody>) {
         let imp = self.imp();
 
-        let visible = if let Some(auth_error) = auth_error {
+        if let Some(auth_error) = auth_error {
             imp.error.set_label(&auth_error.message);
-            true
-        } else {
-            false
-        };
-        imp.error.set_visible(visible);
+        }
+
+        imp.error.set_visible(auth_error.is_some());
     }
 
     fn setup_fallback_page(&self, homeserver: &str, auth_type: &str, uiaa_session: &str) {
@@ -346,23 +332,22 @@ impl AuthDialog {
             .open_browser_btn
             .connect_clicked(clone!(@weak self as obj => move |_| {
                 let uri = uri.clone();
-                spawn!(clone!(@weak obj => async move {
-                    if let Err(error) = gtk::UriLauncher::new(&uri).launch_future(obj.transient_for().as_ref()).await {
+                spawn!(async move {
+                    let Some(parent) = obj.parent() else {
+                        return;
+                    };
+
+                    if let Err(error) = gtk::UriLauncher::new(&uri)
+                        .launch_future(parent.root().and_downcast_ref::<gtk::Window>())
+                        .await
+                    {
                         error!("Could not launch URI: {error}");
                     }
-                }));
+
+                    obj.set_response_enabled("confirm", true);
+                });
             }));
 
         imp.open_browser_btn_handler.replace(Some(handler));
-    }
-
-    pub fn connect_response<F: Fn(&Self, bool) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "response",
-            true,
-            closure_local!(move |obj: Self, response: bool| {
-                f(&obj, response);
-            }),
-        )
     }
 }

@@ -127,10 +127,10 @@ impl DeactivateAccountSubpage {
         imp.button.set_loading(true);
         imp.confirmation.set_sensitive(false);
 
-        let dialog = AuthDialog::new(self.root().and_downcast_ref::<gtk::Window>(), &session);
+        let dialog = AuthDialog::new(&session);
 
         let result = dialog
-            .authenticate(move |client, auth| async move {
+            .authenticate(self, move |client, auth| async move {
                 let request = assign!(deactivate::v3::Request::new(), { auth });
                 client.send(request, None).await.map_err(Into::into)
             })

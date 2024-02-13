@@ -152,10 +152,8 @@ impl UserSessionRow {
 
         self.imp().disconnect_button.set_loading(true);
 
-        spawn!(clone!(@weak self as obj, @weak user_session => async move {
-            let window = obj.root().and_downcast::<gtk::Window>();
-
-            match user_session.delete(window.as_ref()).await {
+        spawn!(clone!(@weak self as obj => async move {
+            match user_session.delete(&obj).await {
                 Ok(_) => obj.set_visible(false),
                 Err(AuthError::UserCancelled) => {},
                 Err(_) => {

@@ -227,10 +227,10 @@ impl ChangePasswordSubpage {
         imp.password.set_sensitive(false);
         imp.confirm_password.set_sensitive(false);
 
-        let dialog = AuthDialog::new(self.root().and_downcast_ref::<gtk::Window>(), &session);
+        let dialog = AuthDialog::new(&session);
 
         let result = dialog
-            .authenticate(move |client, auth| {
+            .authenticate(self, move |client, auth| {
                 let password = password.clone();
                 async move {
                     let request =

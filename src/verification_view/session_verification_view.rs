@@ -414,10 +414,10 @@ impl SessionVerificationView {
         let Some(session) = self.session() else {
             return;
         };
-        let dialog = AuthDialog::new(self.root().and_downcast_ref::<gtk::Window>(), &session);
+        let dialog = AuthDialog::new(&session);
 
         let result = dialog
-            .authenticate(move |client, auth| async move {
+            .authenticate(self, move |client, auth| async move {
                 client.encryption().bootstrap_cross_signing(auth).await
             })
             .await;

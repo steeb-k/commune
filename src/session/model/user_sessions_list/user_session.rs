@@ -4,7 +4,7 @@ use ruma::{
     api::client::device::{delete_device, Device as DeviceData},
     assign, DeviceId,
 };
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     components::{AuthDialog, AuthError},
@@ -168,20 +168,17 @@ impl UserSession {
 
     /// Deletes the `UserSession`.
     ///
-    /// Requires a window because it might show a dialog for UIAA.
-    pub async fn delete(
-        &self,
-        transient_for: Option<&impl IsA<gtk::Window>>,
-    ) -> Result<(), AuthError> {
+    /// Requires a widget because it might show a dialog for UIAA.
+    pub async fn delete(&self, parent: &impl IsA<gtk::Widget>) -> Result<(), AuthError> {
         let Some(session) = self.session() else {
             return Err(AuthError::NoSession);
         };
         let device_id = self.imp().data().device_id().to_owned();
 
-        let dialog = AuthDialog::new(transient_for, &session);
+        let dialog = AuthDialog::new(&session);
 
         let res = dialog
-            .authenticate(move |client, auth| {
+            .authenticate(parent, move |client, auth| {
                 let device_id = device_id.clone();
                 async move {
                     let request = assign!(delete_device::v3::Request::new(device_id), { auth });
@@ -193,10 +190,12 @@ impl UserSession {
         match res {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!(
-                    "Failed to delete user session {}: {error:?}",
-                    self.device_id()
-                );
+                let device_id = self.device_id();
+                if matches!(error, AuthError::UserCancelled) {
+                    debug!("Deletion of user session {device_id} cancelled by user");
+                } else {
+                    error!("Failed to delete user session {device_id}: {error:?}");
+                }
                 Err(error)
             }
         }
