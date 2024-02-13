@@ -58,32 +58,21 @@
                                       <class name="boxed-list"/>
                                     </style>
                                     <child>
-                                      <object class="AdwActionRow" id="original_event_id_row">
+                                      <object class="CopyableRow" id="original_event_id_row">
+                                        <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Event ID</property>
                                         <binding name="subtitle">
                                           <lookup name="event-id-string">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="selectable">False</property>
-                                        <style>
-                                          <class name="property"/>
-                                        </style>
-                                        <child>
-                                          <object class="GtkButton">
-                                            <property name="icon-name">copy-symbolic</property>
-                                            <property name="action-name">event-details-dialog.copy-original-event-id</property>
-                                            <property name="tooltip-text" translatable="yes">Copy event ID to clipboard</property>
-                                            <property name="valign">center</property>
-                                            <style>
-                                              <class name="flat"/>
-                                            </style>
-                                          </object>
-                                        </child>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy event ID to clipboard</property>
+                                        <property name="toast-text" translatable="yes">Event ID copied to clipboard</property>
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="AdwActionRow" id="room_id_row">
+                                      <object class="CopyableRow" id="room_id_row">
+                                        <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Room ID</property>
                                         <binding name="subtitle">
                                           <lookup name="room-id-string">
@@ -92,71 +81,34 @@
                                             </lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="selectable">False</property>
-                                        <style>
-                                          <class name="property"/>
-                                        </style>
-                                        <child>
-                                          <object class="GtkButton">
-                                            <property name="icon-name">copy-symbolic</property>
-                                            <property name="action-name">event-details-dialog.copy-room-id</property>
-                                            <property name="tooltip-text" translatable="yes">Copy room ID to clipboard</property>
-                                            <property name="valign">center</property>
-                                            <style>
-                                              <class name="flat"/>
-                                            </style>
-                                          </object>
-                                        </child>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy room ID to clipboard</property>
+                                        <property name="toast-text" translatable="yes">Room ID copied to clipboard</property>
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="AdwActionRow" id="sender_id_row">
+                                      <object class="CopyableRow" id="sender_id_row">
+                                        <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Sender ID</property>
                                         <binding name="subtitle">
                                           <lookup name="sender-id-string">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="selectable">False</property>
-                                        <style>
-                                          <class name="property"/>
-                                        </style>
-                                        <child>
-                                          <object class="GtkButton">
-                                            <property name="icon-name">copy-symbolic</property>
-                                            <property name="action-name">event-details-dialog.copy-sender-id</property>
-                                            <property name="tooltip-text" translatable="yes">Copy sender ID to clipboard</property>
-                                            <property name="valign">center</property>
-                                            <style>
-                                              <class name="flat"/>
-                                            </style>
-                                          </object>
-                                        </child>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy sender ID to clipboard</property>
+                                        <property name="toast-text" translatable="yes">Sender ID copied to clipboard</property>
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="AdwActionRow" id="original_timestamp_row">
+                                      <object class="CopyableRow" id="original_timestamp_row">
+                                        <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Timestamp</property>
                                         <binding name="subtitle">
                                           <lookup name="timestamp-full">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="selectable">False</property>
-                                        <style>
-                                          <class name="property"/>
-                                        </style>
-                                        <child>
-                                          <object class="GtkButton">
-                                            <property name="icon-name">copy-symbolic</property>
-                                            <property name="action-name">event-details-dialog.copy-original-timestamp</property>
-                                            <property name="tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
-                                            <property name="valign">center</property>
-                                            <style>
-                                              <class name="flat"/>
-                                            </style>
-                                          </object>
-                                        </child>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
+                                        <property name="toast-text" translatable="yes">Timestamp copied to clipboard</property>
                                       </object>
                                     </child>
                                     <child>
@@ -195,53 +147,29 @@
                                       <class name="boxed-list"/>
                                     </style>
                                     <child>
-                                      <object class="AdwActionRow" id="edit_event_id_row">
+                                      <object class="CopyableRow" id="edit_event_id_row">
+                                        <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Event ID</property>
                                         <binding name="subtitle">
                                           <lookup name="latest-edit-event-id-string">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="selectable">False</property>
-                                        <style>
-                                          <class name="property"/>
-                                        </style>
-                                        <child>
-                                          <object class="GtkButton">
-                                            <property name="icon-name">copy-symbolic</property>
-                                            <property name="action-name">event-details-dialog.copy-edit-event-id</property>
-                                            <property name="tooltip-text" translatable="yes">Copy event ID to clipboard</property>
-                                            <property name="valign">center</property>
-                                            <style>
-                                              <class name="flat"/>
-                                            </style>
-                                          </object>
-                                        </child>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy event ID to clipboard</property>
+                                        <property name="toast-text" translatable="yes">Event ID copied to clipboard</property>
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="AdwActionRow" id="edit_timestamp_row">
+                                      <object class="CopyableRow" id="edit_timestamp_row">
+                                        <property name="main-title">subtitle</property>
                                         <property name="title" translatable="yes">Timestamp</property>
                                         <binding name="subtitle">
                                           <lookup name="latest-edit-timestamp-full">
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="selectable">False</property>
-                                        <style>
-                                          <class name="property"/>
-                                        </style>
-                                        <child>
-                                          <object class="GtkButton">
-                                            <property name="icon-name">copy-symbolic</property>
-                                            <property name="action-name">event-details-dialog.copy-edit-timestamp</property>
-                                            <property name="tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
-                                            <property name="valign">center</property>
-                                            <style>
-                                              <class name="flat"/>
-                                            </style>
-                                          </object>
-                                        </child>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
+                                        <property name="toast-text" translatable="yes">Timestamp copied to clipboard</property>
                                       </object>
                                     </child>
                                     <child>

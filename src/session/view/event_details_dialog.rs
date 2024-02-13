@@ -4,7 +4,7 @@ use gtk::{glib, CompositeTemplate};
 use sourceview::prelude::*;
 
 use crate::{
-    components::{ButtonRow, ToastableDialog},
+    components::{ButtonRow, CopyableRow, ToastableDialog},
     prelude::*,
     session::model::Event,
     toast, utils,
@@ -27,18 +27,6 @@ mod imp {
         #[template_child]
         pub navigation_view: TemplateChild<adw::NavigationView>,
         #[template_child]
-        pub original_event_id_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub room_id_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub sender_id_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub original_timestamp_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub edit_event_id_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub edit_timestamp_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
         pub source_page: TemplateChild<adw::NavigationPage>,
         #[template_child]
         pub source_view: TemplateChild<sourceview::View>,
@@ -52,75 +40,10 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             ButtonRow::static_type();
+            CopyableRow::static_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
-
-            klass.install_action(
-                "event-details-dialog.copy-original-event-id",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let subtitle = obj.imp().original_event_id_row.subtitle();
-                    clipboard.set_text(subtitle.as_deref().unwrap_or_default());
-                    toast!(obj, gettext("Event ID copied to clipboard"))
-                },
-            );
-
-            klass.install_action(
-                "event-details-dialog.copy-room-id",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let subtitle = obj.imp().room_id_row.subtitle();
-                    clipboard.set_text(subtitle.as_deref().unwrap_or_default());
-                    toast!(obj, gettext("Room ID copied to clipboard"))
-                },
-            );
-
-            klass.install_action(
-                "event-details-dialog.copy-sender-id",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let subtitle = obj.imp().sender_id_row.subtitle();
-                    clipboard.set_text(subtitle.as_deref().unwrap_or_default());
-                    toast!(obj, gettext("Sender ID copied to clipboard"))
-                },
-            );
-
-            klass.install_action(
-                "event-details-dialog.copy-original-timestamp",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let subtitle = obj.imp().original_timestamp_row.subtitle();
-                    clipboard.set_text(subtitle.as_deref().unwrap_or_default());
-                    toast!(obj, gettext("Timestamp copied to clipboard"))
-                },
-            );
-
-            klass.install_action(
-                "event-details-dialog.copy-edit-event-id",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let subtitle = obj.imp().edit_event_id_row.subtitle();
-                    clipboard.set_text(subtitle.as_deref().unwrap_or_default());
-                    toast!(obj, gettext("Event ID copied to clipboard"))
-                },
-            );
-
-            klass.install_action(
-                "event-details-dialog.copy-edit-timestamp",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let subtitle = obj.imp().edit_timestamp_row.subtitle();
-                    clipboard.set_text(subtitle.as_deref().unwrap_or_default());
-                    toast!(obj, gettext("Timestamp copied to clipboard"))
-                },
-            );
 
             klass.install_action(
                 "event-details-dialog.copy-source",
