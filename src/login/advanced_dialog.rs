@@ -1,9 +1,10 @@
-use std::cell::Cell;
-
-use adw::subclass::prelude::*;
-use gtk::{gdk, glib, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use futures_channel::oneshot;
+use gtk::{glib, CompositeTemplate};
 
 mod imp {
+    use std::cell::{Cell, RefCell};
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -15,18 +16,17 @@ mod imp {
         /// Whether auto-discovery is enabled.
         #[property(get, set, default = true)]
         pub autodiscovery: Cell<bool>,
+        pub sender: RefCell<Option<oneshot::Sender<()>>>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for LoginAdvancedDialog {
         const NAME: &'static str = "LoginAdvancedDialog";
         type Type = super::LoginAdvancedDialog;
-        type ParentType = adw::PreferencesWindow;
+        type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-
-            klass.add_binding_action(gdk::Key::Escape, gdk::ModifierType::empty(), "window.close");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -38,36 +38,38 @@ mod imp {
     impl ObjectImpl for LoginAdvancedDialog {}
 
     impl WidgetImpl for LoginAdvancedDialog {}
-    impl WindowImpl for LoginAdvancedDialog {}
-    impl AdwWindowImpl for LoginAdvancedDialog {}
-    impl PreferencesWindowImpl for LoginAdvancedDialog {}
+
+    impl AdwDialogImpl for LoginAdvancedDialog {
+        fn closed(&self) {
+            if let Some(sender) = self.sender.take() {
+                sender.send(()).unwrap();
+            }
+        }
+    }
+
+    impl PreferencesDialogImpl for LoginAdvancedDialog {}
 }
 
 glib::wrapper! {
+    /// A dialog with advanced settings for the login flow.
     pub struct LoginAdvancedDialog(ObjectSubclass<imp::LoginAdvancedDialog>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow,
+        @extends gtk::Widget, adw::Dialog, adw::PreferencesDialog,
         @implements gtk::Accessible;
 }
 
 impl LoginAdvancedDialog {
-    pub fn new(window: &gtk::Window) -> Self {
-        glib::Object::builder()
-            .property("transient-for", window)
-            .build()
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
-    pub async fn run_future(&self) {
-        let (sender, receiver) = futures_channel::oneshot::channel();
-        let sender = Cell::new(Some(sender));
+    /// Present this dialog.
+    ///
+    /// Returns when the dialog is closed.
+    pub async fn run_future(&self, parent: &impl IsA<gtk::Widget>) {
+        let (sender, receiver) = oneshot::channel();
+        self.imp().sender.replace(Some(sender));
 
-        self.connect_close_request(move |_| {
-            if let Some(sender) = sender.take() {
-                sender.send(()).unwrap();
-            }
-            glib::Propagation::Proceed
-        });
-
-        self.present();
+        self.present(parent);
         receiver.await.unwrap();
     }
 }

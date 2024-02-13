@@ -1,12 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="LoginAdvancedDialog" parent="AdwPreferencesWindow">
-    <property name="modal">True</property>
+  <template class="LoginAdvancedDialog" parent="AdwPreferencesDialog">
     <property name="title" translatable="yes">Homeserver Discovery</property>
-    <property name="destroy-with-parent">True</property>
-    <property name="default-width">500</property>
-    <property name="default-height">300</property>
-    <property name="search-enabled">false</property>
+    <property name="content-width">500</property>
+    <property name="content-height">300</property>
     <child>
       <object class="AdwPreferencesPage">
         <child>
