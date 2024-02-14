@@ -27,7 +27,7 @@
                 <property name="hexpand">True</property>
                 <property name="ellipsize">end</property>
                 <binding name="label">
-                  <lookup name="display-name">
+                  <lookup name="disambiguated-name">
                     <lookup name="member">
                       <lookup name="data">ContentMemberTimestampRow</lookup>
                     </lookup>

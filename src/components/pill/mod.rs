@@ -14,7 +14,7 @@ use crate::{
         model::{Member, RemoteRoom, Room},
         view::SessionView,
     },
-    utils::add_activate_binding_action,
+    utils::{add_activate_binding_action, BoundObject},
 };
 
 mod imp {
@@ -34,11 +34,10 @@ mod imp {
         pub avatar: TemplateChild<Avatar>,
         /// The source of the data displayed by this widget.
         #[property(get, set = Self::set_source, explicit_notify, nullable)]
-        pub source: RefCell<Option<PillSource>>,
+        pub source: BoundObject<PillSource>,
         /// Whether the pill can be activated.
         #[property(get, set = Self::set_activatable, explicit_notify)]
         pub activatable: Cell<bool>,
-        display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
         gesture_click: RefCell<Option<gtk::GestureClick>>,
     }
 
@@ -64,15 +63,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Pill {
-        fn dispose(&self) {
-            if let Some(source) = &*self.source.borrow() {
-                if let Some(handler) = self.display_name_handler.take() {
-                    source.avatar_data().disconnect(handler);
-                }
-            }
-        }
-    }
+    impl ObjectImpl for Pill {}
 
     impl WidgetImpl for Pill {}
     impl BinImpl for Pill {}
@@ -80,32 +71,23 @@ mod imp {
     impl Pill {
         /// Set the source of the data displayed by this widget.
         fn set_source(&self, source: Option<PillSource>) {
-            let prev_source = self.source.borrow().clone();
-
-            if prev_source == source {
+            if self.source.obj() == source {
                 return;
             }
 
-            if let Some(source) = prev_source {
-                if let Some(handler) = self.display_name_handler.take() {
-                    source.avatar_data().disconnect(handler);
-                }
-            }
+            self.source.disconnect_signals();
 
-            if let Some(source) = &source {
-                let avatar_data = source.avatar_data();
-
-                let display_name_handler = avatar_data.connect_display_name_notify(
-                    clone!(@weak self as imp => move |avatar_data| {
-                        imp.set_display_name(&avatar_data.display_name());
+            if let Some(source) = source {
+                let display_name_handler = source.connect_disambiguated_name_notify(
+                    clone!(@weak self as imp => move |source| {
+                        imp.set_display_name(&source.disambiguated_name());
                     }),
                 );
-                self.display_name_handler
-                    .replace(Some(display_name_handler));
-                self.set_display_name(&avatar_data.display_name());
+                self.set_display_name(&source.disambiguated_name());
+
+                self.source.set(source, vec![display_name_handler]);
             }
 
-            self.source.replace(source);
             self.obj().notify_source();
         }
 

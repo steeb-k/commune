@@ -131,10 +131,18 @@ impl Notifications {
 
         let sender_name = sender
             .as_ref()
-            .and_then(|m| m.display_name())
-            .unwrap_or_else(|| sender_id.localpart());
+            .map(|member| {
+                let name = member.name();
 
-        let body = match get_event_body(&event, sender_name, session.user_id(), !is_direct) {
+                if member.name_ambiguous() {
+                    format!("{name} ({})", member.user_id())
+                } else {
+                    name.to_owned()
+                }
+            })
+            .unwrap_or_else(|| sender_id.localpart().to_owned());
+
+        let body = match get_event_body(&event, &sender_name, session.user_id(), !is_direct) {
             Some(body) => body,
             None => {
                 debug!("Received notification for event of unexpected type {event:?}",);

@@ -5,14 +5,8 @@ use gtk::{
     subclass::prelude::*,
 };
 use indexmap::{map::Entry, IndexMap};
-use matrix_sdk::{
-    ruma::{
-        events::{room::member::RoomMemberEventContent, OriginalSyncStateEvent},
-        OwnedUserId, UserId,
-    },
-    RoomMemberships,
-};
-use ruma::events::room::power_levels::RoomPowerLevels;
+use matrix_sdk::RoomMemberships;
+use ruma::{events::room::power_levels::RoomPowerLevels, OwnedUserId, UserId};
 use tracing::error;
 
 use super::{Event, Member, Membership, Room};
@@ -269,16 +263,12 @@ impl MemberList {
         member
     }
 
-    /// Updates a room member based on the room member state event.
+    /// Update a room member with the SDK's data.
     ///
     /// Creates a new member first if there is no member matching the given
     /// event.
-    pub(super) fn update_member_for_member_event(
-        &self,
-        event: &OriginalSyncStateEvent<RoomMemberEventContent>,
-    ) {
-        self.get_or_create(event.state_key.clone())
-            .update_from_member_event(event);
+    pub(super) fn update_member(&self, user_id: OwnedUserId) {
+        self.get_or_create(user_id).update();
     }
 
     /// Updates the room members' power level.

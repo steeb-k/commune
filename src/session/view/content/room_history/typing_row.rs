@@ -128,7 +128,7 @@ impl TypingRow {
         }
 
         let members = list.members();
-        let user = members[0].display_name();
+        let user = members[0].disambiguated_name();
 
         let label = if n == 1 {
             gettext_f(

@@ -4,7 +4,7 @@ use super::Pill;
 use crate::components::AvatarData;
 
 mod imp {
-    use std::marker::PhantomData;
+    use std::{cell::Cell, marker::PhantomData};
 
     use super::*;
 
@@ -32,6 +32,15 @@ mod imp {
         /// The display name of this source.
         #[property(get = Self::display_name, set = Self::set_display_name, explicit_notify)]
         pub display_name: PhantomData<String>,
+        /// Whether the display name of this source is ambiguous.
+        #[property(get, set = Self::set_name_ambiguous, explicit_notify)]
+        pub is_name_ambiguous: Cell<bool>,
+        /// The disambiguated display name of this source.
+        ///
+        /// This is the name to display in case the identifier does not appear
+        /// next to it.
+        #[property(get = Self::disambiguated_name)]
+        pub disambiguated_name: PhantomData<String>,
         /// The avatar data of this source.
         #[property(get)]
         pub avatar_data: AvatarData,
@@ -66,7 +75,34 @@ mod imp {
             }
 
             self.avatar_data.set_display_name(display_name);
-            self.obj().notify_display_name();
+
+            let obj = self.obj();
+            obj.notify_display_name();
+            obj.notify_disambiguated_name();
+        }
+
+        /// Set whether the display name of this source is ambiguous.
+        fn set_name_ambiguous(&self, is_ambiguous: bool) {
+            if self.is_name_ambiguous.get() == is_ambiguous {
+                return;
+            }
+
+            self.is_name_ambiguous.set(is_ambiguous);
+
+            let obj = self.obj();
+            obj.notify_is_name_ambiguous();
+            obj.notify_disambiguated_name();
+        }
+
+        /// The disambiguated display name of this source.
+        fn disambiguated_name(&self) -> String {
+            let display_name = self.display_name();
+
+            if self.is_name_ambiguous.get() {
+                format!("{display_name} ({})", self.identifier())
+            } else {
+                display_name
+            }
         }
     }
 }
@@ -92,11 +128,30 @@ pub trait PillSourceExt: 'static {
     /// Set the display name of this source.
     fn set_display_name(&self, display_name: String);
 
+    /// Whether the display name of this source is ambiguous.
+    #[allow(dead_code)]
+    fn is_name_ambiguous(&self) -> bool;
+
+    /// Set whether the display name of this source is ambiguous.
+    fn set_is_name_ambiguous(&self, is_ambiguous: bool);
+
+    /// The disambiguated display name of this source.
+    ///
+    /// This is the name to display in case the identifier does not appear next
+    /// to it.
+    fn disambiguated_name(&self) -> String;
+
     /// The avatar data of this source.
     fn avatar_data(&self) -> AvatarData;
 
     /// Connect to the signal emitted when the display name changes.
     fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId;
+
+    /// Connect to the signal emitted when the disambiguated name changes.
+    fn connect_disambiguated_name_notify<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId;
 
     /// Get a `Pill` representing this source.
     fn to_pill(&self) -> Pill;
@@ -118,6 +173,21 @@ impl<O: IsA<PillSource>> PillSourceExt for O {
         self.upcast_ref().set_display_name(display_name);
     }
 
+    /// Whether the display name of this source is ambiguous.
+    fn is_name_ambiguous(&self) -> bool {
+        self.upcast_ref().is_name_ambiguous()
+    }
+
+    /// Set whether the display name of this source is ambiguous.
+    fn set_is_name_ambiguous(&self, is_ambiguous: bool) {
+        self.upcast_ref().set_is_name_ambiguous(is_ambiguous);
+    }
+
+    /// The disambiguated display name of this source.
+    fn disambiguated_name(&self) -> String {
+        self.upcast_ref().disambiguated_name()
+    }
+
     /// The avatar data of this source.
     fn avatar_data(&self) -> AvatarData {
         self.upcast_ref().avatar_data()
@@ -127,6 +197,15 @@ impl<O: IsA<PillSource>> PillSourceExt for O {
     fn connect_display_name_notify<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.upcast_ref()
             .connect_display_name_notify(move |source| f(source.downcast_ref().unwrap()))
+    }
+
+    /// Connect to the signal emitted when the disambiguated name changes.
+    fn connect_disambiguated_name_notify<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.upcast_ref()
+            .connect_disambiguated_name_notify(move |source| f(source.downcast_ref().unwrap()))
     }
 
     /// Get a `Pill` representing this source.
@@ -141,6 +220,7 @@ impl<O: IsA<PillSource>> PillSourceExt for O {
 /// Overriding a method from this Trait overrides also its behavior in
 /// `PillSourceExt`.
 pub trait PillSourceImpl: ObjectImpl {
+    /// A unique identifier for this source.
     fn identifier(&self) -> String;
 }
 

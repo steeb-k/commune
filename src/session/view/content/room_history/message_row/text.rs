@@ -142,7 +142,7 @@ impl MessageText {
                 return;
             }
 
-            let with_sender = format!("<b>{}</b> {body}", sender.display_name());
+            let with_sender = format!("<b>{}</b> {body}", sender.disambiguated_name());
 
             if let Some(html_blocks) = parse_formatted_body(&with_sender) {
                 self.reset();
@@ -151,9 +151,9 @@ impl MessageText {
                 self.set_is_html(true);
                 self.set_format(format);
 
-                let handler = sender.connect_display_name_notify(
+                let handler = sender.connect_disambiguated_name_notify(
                     clone!(@weak self as obj, @weak room => move |sender| {
-                        obj.update_emote(&room, &sender.display_name());
+                        obj.update_emote(&room, &sender.disambiguated_name());
                     }),
                 );
                 self.imp().sender.set(&sender, vec![handler]);
@@ -172,7 +172,7 @@ impl MessageText {
             return;
         }
 
-        let with_sender = format!("<b>{}</b> {body}", sender.display_name());
+        let with_sender = format!("<b>{}</b> {body}", sender.disambiguated_name());
 
         self.reset();
         self.add_css_class("emote");
@@ -180,9 +180,9 @@ impl MessageText {
         self.set_is_html(false);
         self.set_format(format);
 
-        let handler = sender.connect_display_name_notify(
+        let handler = sender.connect_disambiguated_name_notify(
             clone!(@weak self as obj, @weak room => move |sender| {
-                obj.update_emote(&room, &sender.display_name());
+                obj.update_emote(&room, &sender.disambiguated_name());
             }),
         );
         self.imp().sender.set(&sender, vec![handler]);

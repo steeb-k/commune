@@ -88,7 +88,7 @@ impl MessageReply {
         }
 
         let related_display_name_binding = user
-            .bind_property("display-name", &*imp.related_content_sender, "label")
+            .bind_property("disambiguated-name", &*imp.related_content_sender, "label")
             .sync_create()
             .build();
         imp.related_display_name_binding

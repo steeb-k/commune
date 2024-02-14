@@ -161,7 +161,7 @@ mod imp {
 
             let display_name_binding = event
                 .sender()
-                .bind_property("display-name", &*self.display_name, "label")
+                .bind_property("disambiguated-name", &*self.display_name, "label")
                 .sync_create()
                 .build();
 

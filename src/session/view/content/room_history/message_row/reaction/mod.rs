@@ -223,7 +223,7 @@ impl MessageReaction {
         let text = gettext_f(
             "{user} reacted with {reaction_key}",
             &[
-                ("user", &member.display_name()),
+                ("user", &member.disambiguated_name()),
                 ("reaction_key", &group.key()),
             ],
         );

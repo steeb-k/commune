@@ -72,9 +72,11 @@ mod imp {
                 TimelineItemContent::MembershipChange(membership_change) => {
                     obj.update_with_membership_change(&membership_change, &event.sender_id())
                 }
-                TimelineItemContent::ProfileChange(profile_change) => {
-                    obj.update_with_profile_change(&profile_change, &event.sender().display_name())
-                }
+                TimelineItemContent::ProfileChange(profile_change) => obj
+                    .update_with_profile_change(
+                        &profile_change,
+                        &event.sender().disambiguated_name(),
+                    ),
                 TimelineItemContent::OtherState(other_state) => {
                     obj.update_with_other_state(&event, &other_state)
                 }

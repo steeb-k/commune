@@ -1,19 +1,13 @@
-use gtk::{glib, prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::room::RoomMember;
-use ruma::{
-    events::{
-        room::member::{MembershipState, RoomMemberEventContent},
-        OriginalSyncStateEvent, StrippedStateEvent,
-    },
-    OwnedEventId, OwnedMxcUri, OwnedUserId,
-};
-use tracing::error;
+use ruma::{events::room::member::MembershipState, OwnedEventId, OwnedUserId};
+use tracing::{debug, error};
 
 use super::{
     permissions::{PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
     MemberRole, Room,
 };
-use crate::{components::PillSource, prelude::*, session::model::User};
+use crate::{components::PillSource, prelude::*, session::model::User, spawn, spawn_tokio};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum, glib::Variant)]
 #[variant_enum(repr)]
@@ -151,14 +145,15 @@ impl Member {
         self.notify_membership();
     }
 
-    /// Update the user based on the room member.
+    /// Update this member with the data from the given SDK's member.
     pub fn update_from_room_member(&self, member: &RoomMember) {
         if member.user_id() != self.user_id() {
             error!("Tried Member update from RoomMember with wrong user ID.");
             return;
         };
 
-        self.set_name(member.display_name().map(String::from));
+        self.set_name(member.display_name().map(ToOwned::to_owned));
+        self.set_is_name_ambiguous(member.name_ambiguous());
         self.avatar_data()
             .image()
             .unwrap()
@@ -167,71 +162,33 @@ impl Member {
         self.set_membership(member.membership().into());
     }
 
-    /// Update the user based on the room member state event
-    pub fn update_from_member_event(&self, event: &impl MemberEvent) {
-        if event.state_key() != self.user_id() {
-            error!("Tried Member update from MemberEvent with wrong user ID.");
-            return;
-        };
+    /// Update this member with the SDK's data.
+    pub fn update(&self) {
+        spawn!(clone!(@weak self as obj => async move {
+            obj.update_inner().await;
+        }));
+    }
 
-        self.set_name(event.display_name());
-        self.avatar_data()
-            .image()
-            .unwrap()
-            .set_uri(event.avatar_url().map(String::from));
-        self.set_membership((&event.content().membership).into());
+    async fn update_inner(&self) {
+        let room = self.room();
 
-        if self.is_own_user() {
-            self.session().update_user_profile();
+        let matrix_room = room.matrix_room().clone();
+        let user_id = self.user_id().clone();
+        let handle = spawn_tokio!(async move { matrix_room.get_member_no_sync(&user_id).await });
+
+        match handle.await.unwrap() {
+            Ok(Some(member)) => self.update_from_room_member(&member),
+            Ok(None) => {
+                debug!("Room member {} not found", self.user_id());
+            }
+            Err(error) => {
+                error!("Failed to load room member {}: {error}", self.user_id());
+            }
         }
     }
 
     /// The IDs of the events sent by this member that can be redacted.
     pub fn redactable_events(&self) -> Vec<OwnedEventId> {
         self.room().timeline().redactable_events_for(self.user_id())
-    }
-}
-
-pub trait MemberEvent {
-    fn sender(&self) -> &OwnedUserId;
-    fn content(&self) -> &RoomMemberEventContent;
-    fn state_key(&self) -> &OwnedUserId;
-
-    fn avatar_url(&self) -> Option<OwnedMxcUri> {
-        self.content().avatar_url.clone()
-    }
-
-    fn display_name(&self) -> Option<String> {
-        match &self.content().displayname {
-            Some(display_name) => Some(display_name.clone()),
-            None => self
-                .content()
-                .third_party_invite
-                .as_ref()
-                .map(|i| i.display_name.clone()),
-        }
-    }
-}
-
-impl MemberEvent for OriginalSyncStateEvent<RoomMemberEventContent> {
-    fn sender(&self) -> &OwnedUserId {
-        &self.sender
-    }
-    fn content(&self) -> &RoomMemberEventContent {
-        &self.content
-    }
-    fn state_key(&self) -> &OwnedUserId {
-        &self.state_key
-    }
-}
-impl MemberEvent for StrippedStateEvent<RoomMemberEventContent> {
-    fn sender(&self) -> &OwnedUserId {
-        &self.sender
-    }
-    fn content(&self) -> &RoomMemberEventContent {
-        &self.content
-    }
-    fn state_key(&self) -> &OwnedUserId {
-        &self.state_key
     }
 }

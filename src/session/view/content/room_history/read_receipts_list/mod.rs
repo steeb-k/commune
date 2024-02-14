@@ -261,7 +261,7 @@ impl ReadReceiptsList {
     fn update_member_tooltip(&self, member: &Member) {
         // Translators: Do NOT translate the content between '{' and '}', this is a
         // variable name.
-        let text = gettext_f("Seen by {name}", &[("name", &member.display_name())]);
+        let text = gettext_f("Seen by {name}", &[("name", &member.disambiguated_name())]);
 
         self.set_tooltip_text(Some(&text));
     }

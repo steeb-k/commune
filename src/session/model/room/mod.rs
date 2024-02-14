@@ -9,7 +9,7 @@ mod room_type;
 mod timeline;
 mod typing_list;
 
-use std::{cell::RefCell, io::Cursor};
+use std::{cell::RefCell, collections::HashSet, io::Cursor};
 
 use futures_util::StreamExt;
 use gettextrs::gettext;
@@ -21,7 +21,7 @@ use gtk::{
 };
 use matrix_sdk::{
     attachment::{generate_image_thumbnail, AttachmentConfig, AttachmentInfo, Thumbnail},
-    deserialized_responses::{MemberEvent, SyncTimelineEvent},
+    deserialized_responses::{AmbiguityChange, MemberEvent, SyncTimelineEvent},
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
     sync::{JoinedRoomUpdate, LeftRoomUpdate},
@@ -1226,14 +1226,16 @@ impl Room {
         for event in events.iter() {
             if let AnySyncTimelineEvent::State(state_event) = event {
                 match state_event {
-                    AnySyncStateEvent::RoomMember(SyncStateEvent::Original(event)) => {
+                    AnySyncStateEvent::RoomMember(event) => {
+                        let user_id = event.state_key();
+
                         if let Some(members) = self.members() {
-                            members.update_member_for_member_event(event);
-                        } else if event.state_key == *own_user_id {
-                            own_member.update_from_member_event(event);
-                        } else if Some(&event.state_key) == direct_member_id {
+                            members.update_member(user_id.clone());
+                        } else if user_id == own_user_id {
+                            own_member.update();
+                        } else if direct_member_id.is_some_and(|id| id == user_id) {
                             if let Some(member) = &direct_member {
-                                member.update_from_member_event(event);
+                                member.update();
                             }
                         }
 
@@ -1441,6 +1443,7 @@ impl Room {
 
     pub fn handle_left_update(&self, update: LeftRoomUpdate) {
         self.update_for_events(update.timeline.events);
+        self.handle_ambiguity_changes(update.ambiguity_changes.values());
     }
 
     pub fn handle_joined_update(&self, update: JoinedRoomUpdate) {
@@ -1453,6 +1456,28 @@ impl Room {
         }
 
         self.update_for_events(update.timeline.events);
+        self.handle_ambiguity_changes(update.ambiguity_changes.values());
+    }
+
+    /// Handle changes in the ambiguity of members display names.
+    fn handle_ambiguity_changes<'a>(&self, changes: impl Iterator<Item = &'a AmbiguityChange>) {
+        // Use a set to make sure we update members only once.
+        let user_ids = changes.flat_map(|c| c.user_ids()).collect::<HashSet<_>>();
+
+        if let Some(members) = self.members() {
+            for user_id in user_ids {
+                members.update_member(user_id.to_owned());
+            }
+        } else {
+            let own_member = self.own_member();
+            let own_user_id = own_member.user_id();
+
+            for user_id in user_ids {
+                if user_id == *own_user_id {
+                    own_member.update();
+                }
+            }
+        }
     }
 
     /// Connect to the signal emitted when the room was forgotten.
