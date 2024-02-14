@@ -1,6 +1,17 @@
-use gtk::{gio, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use adw::prelude::*;
+use gtk::{
+    gio,
+    glib::{self, clone},
+    subclass::prelude::*,
+    CompositeTemplate,
+};
 
-use crate::session::view::content::room_history::member_timestamp::row::MemberTimestampRow;
+use crate::{
+    components::UserProfileDialog,
+    session::view::content::room_history::member_timestamp::{
+        row::MemberTimestampRow, MemberTimestamp,
+    },
+};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -49,9 +60,24 @@ mod imp {
     impl ReadReceiptsPopover {
         /// Set the receipts to display.
         fn set_receipts(&self, receipts: gio::ListStore) {
+            let obj = self.obj();
+
             self.receipts.set(Some(&receipts));
             self.list
                 .set_model(Some(&gtk::NoSelection::new(Some(receipts))));
+            self.list
+                .connect_activate(clone!(@weak obj => move |_, pos| {
+                    let Some(member) = obj.receipts()
+                        .and_then(|list| list.item(pos))
+                        .and_downcast::<MemberTimestamp>()
+                        .and_then(|ts| ts.member())
+                        else { return; };
+
+                    let dialog = UserProfileDialog::new();
+                    dialog.set_room_member(member);
+                    dialog.present(&obj);
+                    obj.popdown();
+                }));
         }
     }
 }
