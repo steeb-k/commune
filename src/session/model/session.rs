@@ -413,7 +413,7 @@ impl Session {
         debug!("Received sync response");
         match response {
             Ok(response) => {
-                self.room_list().handle_response_rooms(response.rooms);
+                self.room_list().handle_room_updates(response.rooms);
 
                 if self.state() < SessionState::Ready {
                     self.set_state(SessionState::Ready);

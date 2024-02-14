@@ -173,7 +173,7 @@ impl MediaItem {
             let thumbnail = if content.thumbnail_source().is_some() {
                 media
                     .get_thumbnail(
-                        content.clone(),
+                        &content,
                         MediaThumbnailSize {
                             method: Method::Scale,
                             width: uint!(300),
@@ -191,7 +191,7 @@ impl MediaItem {
             if let Some(data) = thumbnail {
                 Ok(Some(data))
             } else {
-                media.get_file(content, true).await
+                media.get_file(&content, true).await
             }
         });
 

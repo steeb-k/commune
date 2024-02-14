@@ -328,7 +328,7 @@ impl MessageMedia {
                 if media_type != MediaType::Video && content.thumbnail_source().is_some() {
                     media
                         .get_thumbnail(
-                            content.clone(),
+                            &content,
                             MediaThumbnailSize {
                                 method: Method::Scale,
                                 width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32).into(),
@@ -346,7 +346,7 @@ impl MessageMedia {
             if let Some(data) = thumbnail {
                 Ok(Some(data))
             } else {
-                media.get_file(content, true).await
+                media.get_file(&content, true).await
             }
         });
 

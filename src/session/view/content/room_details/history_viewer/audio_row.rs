@@ -122,7 +122,7 @@ glib::wrapper! {
 impl AudioRow {
     async fn download_audio(&self, audio: AudioMessageEventContent, session: &Session) {
         let client = session.client();
-        let handle = spawn_tokio!(async move { client.media().get_file(audio, true).await });
+        let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
 
         match handle.await.unwrap() {
             Ok(Some(data)) => {

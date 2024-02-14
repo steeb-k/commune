@@ -24,7 +24,7 @@ use matrix_sdk::{
     deserialized_responses::{MemberEvent, SyncTimelineEvent},
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
-    sync::{JoinedRoom, LeftRoom},
+    sync::{JoinedRoomUpdate, LeftRoomUpdate},
     DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
@@ -1439,12 +1439,12 @@ impl Room {
         }));
     }
 
-    pub fn handle_left_response(&self, response_room: LeftRoom) {
-        self.update_for_events(response_room.timeline.events);
+    pub fn handle_left_update(&self, update: LeftRoomUpdate) {
+        self.update_for_events(update.timeline.events);
     }
 
-    pub fn handle_joined_response(&self, response_room: JoinedRoom) {
-        if response_room
+    pub fn handle_joined_update(&self, update: JoinedRoomUpdate) {
+        if update
             .account_data
             .iter()
             .any(|e| matches!(e.deserialize(), Ok(AnyRoomAccountDataEvent::Tag(_))))
@@ -1452,7 +1452,7 @@ impl Room {
             self.load_category();
         }
 
-        self.update_for_events(response_room.timeline.events);
+        self.update_for_events(update.timeline.events);
     }
 
     /// Connect to the signal emitted when the room was forgotten.

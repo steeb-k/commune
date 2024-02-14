@@ -538,7 +538,7 @@ impl Timeline {
         let room_id = room.room_id().to_owned();
         let matrix_room = room.matrix_room().clone();
 
-        let matrix_timeline = spawn_tokio!(async move {
+        let handle = spawn_tokio!(async move {
             matrix_room
                 .timeline_builder()
                 .event_filter(|any, room_version| {
@@ -586,9 +586,15 @@ impl Timeline {
                 .add_failed_to_parse(false)
                 .build()
                 .await
-        })
-        .await
-        .unwrap();
+        });
+
+        let matrix_timeline = match handle.await.unwrap() {
+            Ok(t) => t,
+            Err(error) => {
+                error!("Failed to create timeline: {error}");
+                return;
+            }
+        };
 
         let matrix_timeline = Arc::new(matrix_timeline);
         imp.timeline.set(matrix_timeline.clone()).unwrap();

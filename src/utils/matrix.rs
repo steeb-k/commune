@@ -328,7 +328,7 @@ pub async fn get_media_content(
                         None,
                     )
                 });
-            let handle = spawn_tokio!(async move { media.get_file(content, true).await });
+            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }
@@ -344,7 +344,7 @@ pub async fn get_media_content(
             } else {
                 content.body.clone()
             };
-            let handle = spawn_tokio!(async move { media.get_file(content, true).await });
+            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }
@@ -360,7 +360,7 @@ pub async fn get_media_content(
             } else {
                 content.body.clone()
             };
-            let handle = spawn_tokio!(async move { media.get_file(content, true).await });
+            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }
@@ -376,7 +376,7 @@ pub async fn get_media_content(
             } else {
                 content.body.clone()
             };
-            let handle = spawn_tokio!(async move { media.get_file(content, true).await });
+            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }

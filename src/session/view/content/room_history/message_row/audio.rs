@@ -163,7 +163,7 @@ impl MessageAudio {
         self.set_state(MediaState::Loading);
 
         let client = session.client();
-        let handle = spawn_tokio!(async move { client.media().get_file(audio, true).await });
+        let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
 
         spawn!(
             glib::Priority::LOW,

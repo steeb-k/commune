@@ -12,7 +12,7 @@ use gtk::{
 use indexmap::map::IndexMap;
 use matrix_sdk::{
     ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId},
-    sync::Rooms as ResponseRooms,
+    sync::RoomUpdates,
 };
 use ruma::UserId;
 use tracing::{error, warn};
@@ -294,7 +294,7 @@ impl RoomList {
         self.items_added(added);
     }
 
-    pub fn handle_response_rooms(&self, rooms: ResponseRooms) {
+    pub fn handle_room_updates(&self, rooms: RoomUpdates) {
         let Some(session) = self.session() else {
             return;
         };
@@ -320,7 +320,7 @@ impl RoomList {
 
             self.pending_rooms_remove((*room_id).into());
             room.update_room();
-            room.handle_left_response(left_room);
+            room.handle_left_update(left_room);
         }
 
         for (room_id, joined_room) in rooms.join {
@@ -341,7 +341,7 @@ impl RoomList {
             self.pending_rooms_remove((*room_id).into());
             imp.metainfo.watch_room(&room);
             room.update_room();
-            room.handle_joined_response(joined_room);
+            room.handle_joined_update(joined_room);
         }
 
         for (room_id, _invited_room) in rooms.invite {
