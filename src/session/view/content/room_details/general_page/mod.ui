@@ -296,6 +296,13 @@
             <signal name="notify::selected-string" handler="set_join_rule" swapped="yes"/>
           </object>
         </child>
+        <child>
+          <object class="SwitchLoadingRow" id="guest_access">
+            <property name="title" translatable="yes">Allow Guests</property>
+            <property name="subtitle" translatable="yes">Guests are Matrix users without a registered account</property>
+            <signal name="notify::is-active" handler="toggle_guest_access" swapped="true"/>
+          </object>
+        </child>
       </object>
     </child>
     <child>

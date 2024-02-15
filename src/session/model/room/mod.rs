@@ -20,7 +20,7 @@ use ruma::{
     events::{
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
-        room::encryption::SyncRoomEncryptionEvent,
+        room::{encryption::SyncRoomEncryptionEvent, guest_access::GuestAccess},
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
@@ -195,6 +195,9 @@ mod imp {
         /// The join rule of this room.
         #[property(get)]
         pub join_rule: JoinRule,
+        /// Whether guests are allowed.
+        #[property(get)]
+        pub guests_allowed: Cell<bool>,
         pub typing_drop_guard: OnceCell<EventHandlerDropGuard>,
         pub receipts_drop_guard: OnceCell<EventHandlerDropGuard>,
     }
@@ -380,6 +383,7 @@ impl Room {
         self.init_timeline();
         self.set_up_is_encrypted();
         self.aliases().init(self);
+        self.update_guests_allowed();
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
@@ -1257,6 +1261,9 @@ impl Room {
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();
                     }
+                    AnySyncStateEvent::RoomGuestAccess(_) => {
+                        self.update_guests_allowed();
+                    }
                     _ => {}
                 }
             }
@@ -2036,5 +2043,18 @@ impl Room {
         } else {
             Err(failed)
         }
+    }
+
+    /// Update whether guests are allowed.
+    fn update_guests_allowed(&self) {
+        let matrix_room = self.matrix_room();
+        let guests_allowed = matrix_room.guest_access() == GuestAccess::CanJoin;
+
+        if self.guests_allowed() == guests_allowed {
+            return;
+        }
+
+        self.imp().guests_allowed.set(guests_allowed);
+        self.notify_guests_allowed();
     }
 }

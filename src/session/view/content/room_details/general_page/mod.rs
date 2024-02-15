@@ -10,7 +10,11 @@ use ruma::{
     api::client::{discovery::get_capabilities::Capabilities, room::upgrade_room},
     assign,
     events::{
-        room::{avatar::ImageInfo, power_levels::PowerLevelAction},
+        room::{
+            avatar::ImageInfo,
+            guest_access::{GuestAccess, RoomGuestAccessEventContent},
+            power_levels::PowerLevelAction,
+        },
         StateEventType,
     },
 };
@@ -20,7 +24,7 @@ use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{
         AvatarData, AvatarImage, CheckLoadingRow, ComboLoadingRow, CopyableRow, CustomEntry,
-        EditableAvatar, SpinnerButton,
+        EditableAvatar, SpinnerButton, SwitchLoadingRow,
     },
     prelude::*,
     session::model::{JoinRuleValue, MemberList, NotificationsRoomSetting, Room},
@@ -91,6 +95,8 @@ mod imp {
         pub alt_aliases_rows: RefCell<Vec<CopyableRow>>,
         #[template_child]
         pub join_rule: TemplateChild<ComboLoadingRow>,
+        #[template_child]
+        pub guest_access: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -184,6 +190,7 @@ mod imp {
                         obj.update_upgrade_button();
                         obj.update_edit_addresses_button();
                         obj.update_join_rule();
+                        obj.update_guest_access();
                     }));
             self.permissions_handler.replace(Some(permissions_handler));
 
@@ -225,6 +232,9 @@ mod imp {
                 room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
                     obj.update_upgrade_button();
                 })),
+                room.connect_guests_allowed_notify(clone!(@weak obj => move |_| {
+                    obj.update_guest_access();
+                })),
             ];
 
             obj.member_count_changed(room.joined_members_count());
@@ -259,6 +269,7 @@ mod imp {
             obj.update_federated();
             obj.update_sections();
             obj.update_join_rule();
+            obj.update_guest_access();
             obj.update_upgrade_button();
             self.load_capabilities();
         }
@@ -997,6 +1008,56 @@ impl GeneralPage {
             if join_rule.set_value(value).await.is_err() {
                 toast!(obj, gettext("Could not change who can join"));
                 obj.update_join_rule();
+            }
+        }));
+    }
+
+    /// Update the guest access row.
+    fn update_guest_access(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let row = &self.imp().guest_access;
+        row.set_is_active(room.guests_allowed());
+        row.set_is_loading(false);
+
+        let can_change = room
+            .permissions()
+            .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomGuestAccess));
+        row.set_sensitive(can_change);
+    }
+
+    /// Toggle the guest access.
+    #[template_callback]
+    fn toggle_guest_access(&self) {
+        let Some(room) = self.room() else { return };
+
+        let row = &self.imp().guest_access;
+        let guests_allowed = row.is_active();
+
+        if room.guests_allowed() == guests_allowed {
+            return;
+        }
+
+        row.set_is_loading(true);
+        row.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj => async move {
+            let guest_access = if guests_allowed {
+                GuestAccess::CanJoin
+            } else {
+                GuestAccess::Forbidden
+            };
+            let content = RoomGuestAccessEventContent::new(guest_access);
+
+            let matrix_room = room.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+
+            if let Err(error) = handle.await.unwrap() {
+                error!("Could not change guest access: {error}");
+                toast!(obj, gettext("Failed to change guest access"));
+                obj.update_guest_access();
             }
         }));
     }

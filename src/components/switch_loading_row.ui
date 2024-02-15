@@ -9,6 +9,7 @@
         <property name="spacing">6</property>
         <child>
           <object class="Spinner" id="spinner">
+            <property name="visible">False</property>
             <property name="accessible-role">status</property>
           </object>
         </child>
