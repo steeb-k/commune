@@ -1,7 +1,16 @@
-use adw::subclass::prelude::*;
-use gtk::{gio, glib, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{
+    gio,
+    glib::{self, clone},
+    CompositeTemplate,
+};
 
-use crate::session::view::content::room_history::member_timestamp::row::MemberTimestampRow;
+use crate::{
+    components::UserProfileDialog,
+    session::view::content::room_history::member_timestamp::{
+        row::MemberTimestampRow, MemberTimestamp,
+    },
+};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -46,9 +55,24 @@ mod imp {
     impl ReactionPopover {
         /// Set the reaction senders to display.
         fn set_senders(&self, senders: gio::ListStore) {
+            let obj = self.obj();
+
             self.senders.set(Some(&senders));
             self.list
                 .set_model(Some(&gtk::NoSelection::new(Some(senders))));
+            self.list
+                .connect_activate(clone!(@weak obj => move |_, pos| {
+                    let Some(member) = obj.senders()
+                        .and_then(|list| list.item(pos))
+                        .and_downcast::<MemberTimestamp>()
+                        .and_then(|ts| ts.member())
+                        else { return; };
+
+                    let dialog = UserProfileDialog::new();
+                    dialog.set_room_member(member);
+                    dialog.present(&obj);
+                    obj.popdown();
+                }));
         }
     }
 }
