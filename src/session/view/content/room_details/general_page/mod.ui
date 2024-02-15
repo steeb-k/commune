@@ -273,6 +273,32 @@
       </object>
     </child>
     <child>
+      <object class="AdwPreferencesGroup" id="visibility_group">
+        <property name="title" translatable="yes">Access and Visibility</property>
+        <child>
+          <object class="ComboLoadingRow" id="join_rule">
+            <property name="title" translatable="yes">Who can join</property>
+            <property name="string-model">
+              <object class="GtkStringList">
+                <items>
+                  <item translatable="yes">Only invited users</item>
+                  <item translatable="yes">Any registered user</item>
+                </items>
+              </object>
+            </property>
+            <binding name="selected-string">
+              <lookup name="display-name">
+                <lookup name="join-rule">
+                  <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                </lookup>
+              </lookup>
+            </binding>
+            <signal name="notify::selected-string" handler="set_join_rule" swapped="yes"/>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
       <object class="AdwPreferencesGroup">
         <property name="title" translatable="yes">Advanced Information</property>
         <child>

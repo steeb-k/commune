@@ -4,6 +4,7 @@ mod auth_dialog;
 mod avatar;
 mod button_row;
 mod check_loading_row;
+mod combo_loading_row;
 mod context_menu_bin;
 mod copyable_row;
 mod custom_entry;
@@ -41,6 +42,7 @@ pub use self::{
     avatar::{Avatar, AvatarData, AvatarImage, AvatarUriSource},
     button_row::ButtonRow,
     check_loading_row::CheckLoadingRow,
+    combo_loading_row::ComboLoadingRow,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     copyable_row::CopyableRow,
     custom_entry::CustomEntry,

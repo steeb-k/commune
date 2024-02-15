@@ -1,14 +1,3 @@
-mod aliases;
-mod event;
-mod highlight_flags;
-mod member;
-mod member_list;
-mod member_role;
-mod permissions;
-mod room_type;
-mod timeline;
-mod typing_list;
-
 use std::{cell::RefCell, collections::HashSet, io::Cursor};
 
 use futures_util::StreamExt;
@@ -31,10 +20,7 @@ use ruma::{
     events::{
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
-        room::{
-            encryption::SyncRoomEncryptionEvent,
-            join_rules::{AllowRule, JoinRule},
-        },
+        room::encryption::SyncRoomEncryptionEvent,
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
@@ -45,10 +31,23 @@ use ruma::{
 };
 use tracing::{debug, error, warn};
 
+mod aliases;
+mod event;
+mod highlight_flags;
+mod join_rule;
+mod member;
+mod member_list;
+mod member_role;
+mod permissions;
+mod room_type;
+mod timeline;
+mod typing_list;
+
 pub use self::{
     aliases::{AddAltAliasError, RegisterLocalAliasError, RoomAliases},
     event::*,
     highlight_flags::HighlightFlags,
+    join_rule::{JoinRule, JoinRuleValue},
     member::{Member, Membership},
     member_list::MemberList,
     member_role::MemberRole,
@@ -193,9 +192,9 @@ mod imp {
         /// The notifications settings for this room.
         #[property(get, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
         pub notifications_setting: Cell<NotificationsRoomSetting>,
-        /// Whether anyone can join this room.
-        #[property(get = Self::anyone_can_join)]
-        pub anyone_can_join: PhantomData<bool>,
+        /// The join rule of this room.
+        #[property(get)]
+        pub join_rule: JoinRule,
         pub typing_drop_guard: OnceCell<EventHandlerDropGuard>,
         pub receipts_drop_guard: OnceCell<EventHandlerDropGuard>,
     }
@@ -210,12 +209,8 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for Room {
         fn signals() -> &'static [Signal] {
-            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
-                vec![
-                    Signal::builder("room-forgotten").build(),
-                    Signal::builder("join-rule-changed").build(),
-                ]
-            });
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("room-forgotten").build()]);
             SIGNALS.as_ref()
         }
     }
@@ -331,11 +326,6 @@ mod imp {
             self.notifications_setting.set(setting);
             self.obj().notify_notifications_setting();
         }
-
-        /// Whether anyone can join this room.
-        fn anyone_can_join(&self) -> bool {
-            self.matrix_room().join_rule() == JoinRule::Public
-        }
     }
 }
 
@@ -430,6 +420,13 @@ impl Room {
             glib::Priority::DEFAULT_IDLE,
             clone!(@weak self as obj => async move {
                 obj.imp().permissions.init(&obj).await;
+            })
+        );
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(@weak self as obj => async move {
+                obj.imp().join_rule.init(&obj).await;
             })
         );
     }
@@ -1260,10 +1257,6 @@ impl Room {
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();
                     }
-                    AnySyncStateEvent::RoomJoinRules(_) => {
-                        self.emit_by_name::<()>("join-rule-changed", &[]);
-                        self.notify_anyone_can_join();
-                    }
                     _ => {}
                 }
             }
@@ -1484,17 +1477,6 @@ impl Room {
     pub fn connect_room_forgotten<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "room-forgotten",
-            true,
-            closure_local!(move |obj: Self| {
-                f(&obj);
-            }),
-        )
-    }
-
-    /// Connect to the signal emitted when the join rule of the room changed.
-    pub fn connect_join_rule_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
-        self.connect_closure(
-            "join-rule-changed",
             true,
             closure_local!(move |obj: Self| {
                 f(&obj);
@@ -1935,36 +1917,6 @@ impl Room {
                 None,
                 AvatarUriSource::Room,
             )))
-        }
-    }
-
-    /// Whether our own user can join this room on their own.
-    pub fn can_join(&self) -> bool {
-        if self.own_member().membership() == Membership::Ban {
-            return false;
-        }
-
-        let join_rule = self.matrix_room().join_rule();
-
-        match join_rule {
-            JoinRule::Public => true,
-            JoinRule::Restricted(rules) => rules
-                .allow
-                .into_iter()
-                .all(|rule| self.passes_restricted_allow_rule(rule)),
-            _ => false,
-        }
-    }
-
-    /// Whether our account passes the given restricted allow rule.
-    fn passes_restricted_allow_rule(&self, rule: AllowRule) -> bool {
-        match rule {
-            AllowRule::RoomMembership(room_membership) => self.session().is_some_and(|s| {
-                s.room_list()
-                    .joined_room(&room_membership.room_id.into())
-                    .is_some()
-            }),
-            _ => false,
         }
     }
 

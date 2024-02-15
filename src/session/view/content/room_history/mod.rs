@@ -115,6 +115,7 @@ mod imp {
         pub selection_model: OnceCell<gtk::NoSelection>,
         pub can_invite_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -247,18 +248,7 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(room) = self.room.obj() {
-                for handler in self.timeline_handlers.take() {
-                    room.timeline().disconnect(handler);
-                }
-
-                if let Some(handler) = self.can_invite_handler.take() {
-                    room.permissions().disconnect(handler);
-                }
-                if let Some(handler) = self.membership_handler.take() {
-                    room.own_member().disconnect(handler);
-                }
-            }
+            self.disconnect_all();
         }
     }
 
@@ -367,16 +357,8 @@ mod imp {
     }
 
     impl RoomHistory {
-        /// Set the room currently displayed.
-        fn set_room(&self, room: Option<Room>) {
-            let prev_room = self.room.obj();
-
-            if prev_room == room {
-                return;
-            }
-            let obj = self.obj();
-
-            if let Some(room) = prev_room {
+        fn disconnect_all(&self) {
+            if let Some(room) = self.room.obj() {
                 for handler in self.timeline_handlers.take() {
                     room.timeline().disconnect(handler);
                 }
@@ -387,8 +369,22 @@ mod imp {
                 if let Some(handler) = self.membership_handler.take() {
                     room.own_member().disconnect(handler);
                 }
+                if let Some(handler) = self.join_rule_handler.take() {
+                    room.join_rule().disconnect(handler);
+                }
             }
+
             self.room.disconnect_signals();
+        }
+
+        /// Set the room currently displayed.
+        fn set_room(&self, room: Option<Room>) {
+            if self.room.obj() == room {
+                return;
+            }
+            let obj = self.obj();
+
+            self.disconnect_all();
 
             if let Some(source_id) = self.scroll_timeout.take() {
                 source_id.remove();
@@ -412,6 +408,13 @@ mod imp {
                         }));
                 self.membership_handler.replace(Some(membership_handler));
 
+                let join_rule_handler =
+                    room.join_rule()
+                        .connect_we_can_join_notify(clone!(@weak obj => move |_| {
+                            obj.update_room_menu();
+                        }));
+                self.join_rule_handler.replace(Some(join_rule_handler));
+
                 let tombstoned_handler =
                     room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
                         obj.update_tombstoned_banner();
@@ -427,18 +430,12 @@ mod imp {
                         obj.update_tombstoned_banner();
                     }));
 
-                let join_rule_handler =
-                    room.connect_join_rule_changed(clone!(@weak obj => move |_| {
-                        obj.update_room_menu();
-                    }));
-
                 self.room.set(
                     room,
                     vec![
                         tombstoned_handler,
                         successor_handler,
                         successor_room_handler,
-                        join_rule_handler,
                     ],
                 );
 
@@ -641,7 +638,7 @@ impl RoomHistory {
         self.action_set_enabled("room-history.leave", membership == Membership::Join);
         self.action_set_enabled(
             "room-history.join",
-            membership == Membership::Leave && room.can_join(),
+            membership == Membership::Leave && room.join_rule().we_can_join(),
         );
         self.action_set_enabled(
             "room-history.forget",

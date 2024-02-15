@@ -693,6 +693,18 @@ impl From<MatrixRoomId> for MatrixRoomIdUri {
     }
 }
 
+impl From<OwnedRoomId> for MatrixRoomIdUri {
+    fn from(value: OwnedRoomId) -> Self {
+        MatrixRoomId::from(value).into()
+    }
+}
+
+impl From<OwnedRoomAliasId> for MatrixRoomIdUri {
+    fn from(value: OwnedRoomAliasId) -> Self {
+        MatrixRoomId::from(value).into()
+    }
+}
+
 impl From<&MatrixRoomIdUri> for MatrixUri {
     fn from(value: &MatrixRoomIdUri) -> Self {
         match &value.id {

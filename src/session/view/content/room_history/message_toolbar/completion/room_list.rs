@@ -1,7 +1,7 @@
 use gtk::{glib, glib::closure, prelude::*, subclass::prelude::*};
 
 use crate::{
-    session::model::{Member, Membership, Room, RoomAliases, RoomList, RoomType},
+    session::model::{JoinRule, Member, Membership, Room, RoomAliases, RoomList, RoomType},
     utils::{expression, ExpressionListModel},
 };
 
@@ -57,7 +57,8 @@ mod imp {
                 ));
             let joined_filter = gtk::BoolFilter::new(Some(&joined_expr));
 
-            let anyone_can_join_expr = Room::this_expression("anyone-can-join");
+            let anyone_can_join_expr =
+                Room::this_expression("join-rule").chain_property::<JoinRule>("anyone-can-join");
             let anyone_can_join_filter = gtk::BoolFilter::builder()
                 .expression(&anyone_can_join_expr)
                 .build();

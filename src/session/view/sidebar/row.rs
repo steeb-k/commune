@@ -74,7 +74,7 @@ mod imp {
         fn dispose(&self) {
             if let Some(room) = self.room() {
                 if let Some(handler) = self.room_join_rule_handler.take() {
-                    room.disconnect(handler);
+                    room.join_rule().disconnect(handler);
                 }
             }
         }
@@ -131,7 +131,7 @@ mod imp {
             }
             if let Some(room) = self.room() {
                 if let Some(handler) = self.room_join_rule_handler.take() {
-                    room.disconnect(handler);
+                    room.join_rule().disconnect(handler);
                 }
             }
 
@@ -166,10 +166,11 @@ mod imp {
                         child
                     };
 
-                    let room_join_rule_handler =
-                        room.connect_join_rule_changed(clone!(@weak self as imp => move |_| {
+                    let room_join_rule_handler = room.join_rule().connect_we_can_join_notify(
+                        clone!(@weak self as imp => move |_| {
                             imp.update_context_menu();
-                        }));
+                        }),
+                    );
                     self.room_join_rule_handler
                         .replace(Some(room_join_rule_handler));
 
@@ -329,7 +330,7 @@ mod imp {
                         .build()]);
                 }
                 RoomType::Left => {
-                    if room.can_join() {
+                    if room.join_rule().we_can_join() {
                         action_group.add_action_entries([gio::ActionEntry::builder("join")
                             .activate(clone!(@weak obj => move |_, _, _| {
                                 if let Some(room) = obj.room() {

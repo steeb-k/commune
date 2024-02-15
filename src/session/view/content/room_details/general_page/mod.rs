@@ -1,5 +1,3 @@
-use std::convert::From;
-
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{
@@ -21,11 +19,11 @@ use tracing::error;
 use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{
-        AvatarData, AvatarImage, CheckLoadingRow, CopyableRow, CustomEntry, EditableAvatar,
-        SpinnerButton,
+        AvatarData, AvatarImage, CheckLoadingRow, ComboLoadingRow, CopyableRow, CustomEntry,
+        EditableAvatar, SpinnerButton,
     },
     prelude::*,
-    session::model::{MemberList, NotificationsRoomSetting, Room},
+    session::model::{JoinRuleValue, MemberList, NotificationsRoomSetting, Room},
     spawn, spawn_tokio, toast,
     utils::{
         expression,
@@ -92,6 +90,8 @@ mod imp {
         pub canonical_alias_row: RefCell<Option<CopyableRow>>,
         pub alt_aliases_rows: RefCell<Vec<CopyableRow>>,
         #[template_child]
+        pub join_rule: TemplateChild<ComboLoadingRow>,
+        #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
@@ -113,6 +113,7 @@ mod imp {
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub canonical_alias_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub alt_aliases_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub capabilities: RefCell<Capabilities>,
     }
 
@@ -182,6 +183,7 @@ mod imp {
                     .connect_changed(clone!(@weak obj => move |_| {
                         obj.update_upgrade_button();
                         obj.update_edit_addresses_button();
+                        obj.update_join_rule();
                     }));
             self.permissions_handler.replace(Some(permissions_handler));
 
@@ -199,6 +201,13 @@ mod imp {
                 }),
             );
             self.alt_aliases_handler.replace(Some(alt_aliases_handler));
+
+            let join_rule_handler =
+                room.join_rule()
+                    .connect_changed(clone!(@weak obj => move |_| {
+                        obj.update_join_rule();
+                    }));
+            self.join_rule_handler.replace(Some(join_rule_handler));
 
             let room_handler_ids = vec![
                 room.connect_name_notify(clone!(@weak obj => move |room| {
@@ -249,6 +258,7 @@ mod imp {
             obj.update_addresses();
             obj.update_federated();
             obj.update_sections();
+            obj.update_join_rule();
             obj.update_upgrade_button();
             self.load_capabilities();
         }
@@ -744,6 +754,10 @@ impl GeneralPage {
             if let Some(handler) = imp.alt_aliases_handler.take() {
                 aliases.alt_aliases_model().disconnect(handler);
             }
+
+            if let Some(handler) = imp.join_rule_handler.take() {
+                room.join_rule().disconnect(handler);
+            }
         }
 
         imp.room.disconnect_signals();
@@ -928,6 +942,63 @@ impl GeneralPage {
         for row in imp.alt_aliases_rows.take() {
             imp.addresses_group.remove(&row);
         }
+    }
+
+    /// Update the join rule row.
+    fn update_join_rule(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let row = &self.imp().join_rule;
+        row.set_is_loading(false);
+
+        let permissions = room.permissions();
+        let join_rule = room.join_rule();
+
+        let is_supported_join_rule = matches!(
+            join_rule.value(),
+            JoinRuleValue::Public | JoinRuleValue::Invite
+        ) && !join_rule.can_knock();
+        let can_change =
+            permissions.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomJoinRules));
+
+        row.set_sensitive(is_supported_join_rule && can_change);
+        row.set_selected_string(Some(join_rule.display_name()));
+    }
+
+    /// Set the join rule of the room.
+    #[template_callback]
+    fn set_join_rule(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let join_rule = room.join_rule();
+
+        let row = &self.imp().join_rule;
+
+        let value = match row.selected() {
+            0 => JoinRuleValue::Invite,
+            1 => JoinRuleValue::Public,
+            _ => {
+                return;
+            }
+        };
+
+        if join_rule.value() == value {
+            // Nothing to do.
+            return;
+        }
+
+        row.set_is_loading(true);
+        row.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj => async move {
+            if join_rule.set_value(value).await.is_err() {
+                toast!(obj, gettext("Could not change who can join"));
+                obj.update_join_rule();
+            }
+        }));
     }
 
     /// Update the room upgrade button.

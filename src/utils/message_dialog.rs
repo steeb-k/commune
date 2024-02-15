@@ -17,7 +17,7 @@ pub async fn confirm_leave_room(room: &Room, parent: &impl IsA<gtk::Widget>) -> 
     let (heading, body, response) = if room.category() == RoomType::Invited {
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
-        let body = if room.can_join() {
+        let body = if room.join_rule().we_can_join() {
             gettext("Do you really want to decline this invite? You can join this room on your own later.")
         } else {
             gettext(
@@ -30,7 +30,7 @@ pub async fn confirm_leave_room(room: &Room, parent: &impl IsA<gtk::Widget>) -> 
     } else {
         // We are leaving a room that was joined.
         let heading = gettext("Leave Room?");
-        let body = if room.can_join() {
+        let body = if room.join_rule().we_can_join() {
             gettext("Do you really want to leave this room? You can come back later.")
         } else {
             gettext(
@@ -93,7 +93,7 @@ pub async fn confirm_room_member_destructive_action(
             (heading, body, Some(response))
         }
         RoomMemberDestructiveAction::Kick => {
-            let can_rejoin = member.room().anyone_can_join();
+            let can_rejoin = member.room().join_rule().anyone_can_join();
 
             match member.membership() {
                 Membership::Invite => {

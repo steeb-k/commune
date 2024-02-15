@@ -1,14 +1,12 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
+
 mod addresses_subpage;
 mod general_page;
 mod history_viewer;
 mod invite_subpage;
 mod members_page;
 mod room_upgrade_dialog;
-
-use std::convert::From;
-
-use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, CompositeTemplate};
 
 use self::{
     addresses_subpage::AddressesSubpage,

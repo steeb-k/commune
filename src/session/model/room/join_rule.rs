@@ -1,0 +1,457 @@
+use gettextrs::gettext;
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
+use matrix_sdk::event_handler::EventHandlerDropGuard;
+use ruma::{
+    events::{
+        room::join_rules::{
+            AllowRule, JoinRule as MatrixJoinRule, Restricted, RoomJoinRulesEventContent,
+        },
+        SyncStateEvent,
+    },
+    OwnedRoomId,
+};
+use tracing::error;
+
+use super::{Membership, Room};
+use crate::{
+    components::PillSource, gettext_f, session::model::RemoteRoom, spawn, spawn_tokio,
+    utils::BoundObject,
+};
+
+/// Supported values for the join rule.
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+#[enum_type(name = "JoinRuleValue")]
+pub enum JoinRuleValue {
+    /// Only invited users can join.
+    #[default]
+    Invite,
+    /// Anyone can join.
+    Public,
+    /// Members of a room can join.
+    RoomMembership,
+    /// The rule is unsupported.
+    Unsupported,
+}
+
+impl From<&MatrixJoinRule> for JoinRuleValue {
+    fn from(value: &MatrixJoinRule) -> Self {
+        match value {
+            MatrixJoinRule::Invite | MatrixJoinRule::Knock => Self::Invite,
+            MatrixJoinRule::Restricted(restricted)
+            | MatrixJoinRule::KnockRestricted(restricted) => {
+                if has_restricted_membership_room(restricted) {
+                    Self::RoomMembership
+                } else {
+                    Self::Unsupported
+                }
+            }
+            MatrixJoinRule::Public => Self::Public,
+            _ => Self::Unsupported,
+        }
+    }
+}
+
+mod imp {
+    use std::cell::{Cell, OnceCell, RefCell};
+
+    use glib::subclass::Signal;
+    use once_cell::sync::Lazy;
+
+    use super::*;
+
+    #[derive(Debug, Default, glib::Properties)]
+    #[properties(wrapper_type = super::JoinRule)]
+    pub struct JoinRule {
+        /// The room where these permissions apply.
+        #[property(get)]
+        pub room: glib::WeakRef<Room>,
+        own_membership_handler: RefCell<Option<glib::SignalHandlerId>>,
+        join_rule_drop_guard: OnceCell<EventHandlerDropGuard>,
+        /// The current join rule.
+        pub matrix_join_rule: RefCell<Option<MatrixJoinRule>>,
+        /// The value of the join rule.
+        #[property(get, builder(JoinRuleValue::default()))]
+        pub value: Cell<JoinRuleValue>,
+        /// Whether users can knock.
+        #[property(get)]
+        pub can_knock: Cell<bool>,
+        /// The string to use to display this join rule.
+        ///
+        /// This string can contain markup.
+        #[property(get)]
+        pub display_name: RefCell<String>,
+        /// The room we need to be a member of to match this join rule, if any.
+        ///
+        /// This can be a `Room` or a `RemoteRoom`.
+        // TODO: Support multiple rooms.
+        #[property(get)]
+        pub membership_room: BoundObject<PillSource>,
+        /// Whether our own user can join this room on their own.
+        #[property(get)]
+        pub we_can_join: Cell<bool>,
+        /// Whether anyone can join this room on their own.
+        #[property(get)]
+        pub anyone_can_join: Cell<bool>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for JoinRule {
+        const NAME: &'static str = "RoomJoinRule";
+        type Type = super::JoinRule;
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for JoinRule {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("changed").build()]);
+            SIGNALS.as_ref()
+        }
+
+        fn dispose(&self) {
+            if let Some(room) = self.room.upgrade() {
+                if let Some(handler) = self.own_membership_handler.take() {
+                    room.own_member().disconnect(handler);
+                }
+            }
+        }
+    }
+
+    impl JoinRule {
+        /// Initialize the join rule.
+        pub(super) async fn init_join_rule(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            let own_membership_handler =
+                room.own_member()
+                    .connect_membership_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_we_can_join();
+                    }));
+            self.own_membership_handler
+                .replace(Some(own_membership_handler));
+
+            let matrix_room = room.matrix_room();
+
+            // Initialize the properties.
+            self.update_join_rule(matrix_room.join_rule());
+
+            // Listen to changes.
+            let obj_weak = glib::SendWeakRef::from(self.obj().downgrade());
+            let handle = matrix_room.add_event_handler(
+                move |event: SyncStateEvent<RoomJoinRulesEventContent>| {
+                    let obj_weak = obj_weak.clone();
+                    async move {
+                        let ctx = glib::MainContext::default();
+                        ctx.spawn(async move {
+                            spawn!(async move {
+                                if let Some(obj) = obj_weak.upgrade() {
+                                    obj.imp().update_join_rule(event.join_rule().clone());
+                                }
+                            });
+                        });
+                    }
+                },
+            );
+
+            let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
+            self.join_rule_drop_guard.set(drop_guard).unwrap();
+        }
+
+        /// Update the join rule.
+        fn update_join_rule(&self, join_rule: MatrixJoinRule) {
+            if self.matrix_join_rule.borrow().as_ref() == Some(&join_rule) {
+                return;
+            }
+
+            self.matrix_join_rule.replace(Some(join_rule));
+
+            self.update_value();
+            self.update_can_knock();
+            self.update_membership_room();
+            self.update_display_name();
+
+            self.update_we_can_join();
+            self.update_anyone_can_join();
+
+            self.obj().emit_by_name::<()>("changed", &[]);
+        }
+
+        /// Update the value of the join rule.
+        fn update_value(&self) {
+            let value = self
+                .matrix_join_rule
+                .borrow()
+                .as_ref()
+                .map(Into::into)
+                .unwrap_or_default();
+
+            if self.value.get() == value {
+                return;
+            }
+
+            self.value.set(value);
+            self.obj().notify_value();
+        }
+
+        /// Update whether users can knock.
+        fn update_can_knock(&self) {
+            let can_knock = self.matrix_join_rule.borrow().as_ref().is_some_and(|r| {
+                matches!(
+                    r,
+                    MatrixJoinRule::Knock | MatrixJoinRule::KnockRestricted(_)
+                )
+            });
+
+            if self.can_knock.get() == can_knock {
+                return;
+            }
+
+            self.can_knock.set(can_knock);
+            self.obj().notify_can_knock();
+        }
+
+        /// Set the room we need to be a member of to match this join rule.
+        fn update_membership_room(&self) {
+            let room_id = self
+                .matrix_join_rule
+                .borrow()
+                .as_ref()
+                .and_then(|r| match r {
+                    MatrixJoinRule::Restricted(restricted)
+                    | MatrixJoinRule::KnockRestricted(restricted) => {
+                        restricted_membership_room(restricted)
+                    }
+                    _ => None,
+                });
+
+            if self
+                .membership_room
+                .obj()
+                .map(|d| d.identifier())
+                .as_deref()
+                == room_id.as_ref().map(|id| id.as_str())
+            {
+                return;
+            }
+
+            self.membership_room.disconnect_signals();
+
+            if let Some(room_id) = room_id {
+                let Some(session) = self.room.upgrade().and_then(|r| r.session()) else {
+                    return;
+                };
+
+                let room: PillSource = if let Some(room) = session.room_list().get(&room_id) {
+                    room.upcast()
+                } else {
+                    RemoteRoom::new(&session, room_id.into()).upcast()
+                };
+
+                let display_name_handler =
+                    room.connect_display_name_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_display_name();
+                    }));
+
+                self.membership_room.set(room, vec![display_name_handler])
+            }
+
+            self.obj().notify_membership_room();
+        }
+
+        /// Update the display name of the join rule.
+        fn update_display_name(&self) {
+            let value = self.value.get();
+            let can_knock = self.can_knock.get();
+
+            let name = match value {
+                JoinRuleValue::Invite => {
+                    if can_knock {
+                        gettext("Only invited users, and users can knock")
+                    } else {
+                        gettext("Only invited users")
+                    }
+                }
+                JoinRuleValue::RoomMembership => {
+                    let room_name = self
+                        .membership_room
+                        .obj()
+                        .map(|r| r.display_name())
+                        .unwrap_or_default();
+
+                    if can_knock {
+                        gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "Members of {room}, and users can knock",
+                            &[("room", &format!("<b>{room_name}</b>"))],
+                        )
+                    } else {
+                        gettext_f(
+                            // Translators: Do NOT translate the content between '{' and '}',
+                            // this is a variable name.
+                            "Members of {room}",
+                            &[("room", &format!("<b>{room_name}</b>"))],
+                        )
+                    }
+                }
+                JoinRuleValue::Public => gettext("Any registered user"),
+                JoinRuleValue::Unsupported => gettext("Unsupported rule"),
+            };
+
+            if *self.display_name.borrow() == name {
+                return;
+            }
+
+            self.display_name.replace(name);
+            self.obj().notify_display_name();
+        }
+
+        /// Update whether our own user can join this room on their own.
+        fn update_we_can_join(&self) {
+            let we_can_join = self.we_can_join();
+
+            if self.we_can_join.get() == we_can_join {
+                return;
+            }
+
+            self.we_can_join.set(we_can_join);
+            self.obj().notify_we_can_join();
+        }
+
+        /// Whether our own user can join this room on their own.
+        fn we_can_join(&self) -> bool {
+            let Some(matrix_join_rule) = self.matrix_join_rule.borrow().clone() else {
+                return false;
+            };
+            let Some(room) = self.room.upgrade() else {
+                return false;
+            };
+
+            if room.own_member().membership() == Membership::Ban {
+                return false;
+            }
+
+            match matrix_join_rule {
+                MatrixJoinRule::Public => true,
+                MatrixJoinRule::Restricted(rules) | MatrixJoinRule::KnockRestricted(rules) => rules
+                    .allow
+                    .into_iter()
+                    .any(|rule| we_pass_restricted_allow_rule(&room, rule)),
+                _ => false,
+            }
+        }
+
+        /// Update whether our own user can join this room on their own.
+        fn update_anyone_can_join(&self) {
+            let anyone_can_join = self
+                .matrix_join_rule
+                .borrow()
+                .as_ref()
+                .is_some_and(|r| *r == MatrixJoinRule::Public);
+
+            if self.anyone_can_join.get() == anyone_can_join {
+                return;
+            }
+
+            self.anyone_can_join.set(anyone_can_join);
+            self.obj().notify_anyone_can_join();
+        }
+    }
+}
+
+glib::wrapper! {
+    /// The join rule of a room.
+    pub struct JoinRule(ObjectSubclass<imp::JoinRule>);
+}
+
+impl JoinRule {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// Set the room.
+    pub(super) async fn init(&self, room: &Room) {
+        let imp = self.imp();
+
+        imp.room.set(Some(room));
+        imp.init_join_rule().await;
+    }
+
+    /// Change the value of the join rule.
+    pub async fn set_value(&self, value: JoinRuleValue) -> Result<(), ()> {
+        let Some(room) = self.room() else {
+            return Err(());
+        };
+
+        let rule = match value {
+            JoinRuleValue::Invite => MatrixJoinRule::Invite,
+            JoinRuleValue::Public => MatrixJoinRule::Public,
+            _ => unimplemented!(),
+        };
+        let content = RoomJoinRulesEventContent::new(rule);
+
+        let matrix_room = room.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+
+        match handle.await.unwrap() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Failed to change join rule: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Connect to the signal emitted when the join rule changed.
+    pub fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+}
+
+impl Default for JoinRule {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Whether the given restricted rule allows a room membership.
+fn has_restricted_membership_room(restricted: &Restricted) -> bool {
+    restricted
+        .allow
+        .iter()
+        .any(|a| matches!(a, AllowRule::RoomMembership(_)))
+}
+
+/// The ID of the first room, if the given restricted rule allows a room
+/// membership.
+fn restricted_membership_room(restricted: &Restricted) -> Option<OwnedRoomId> {
+    restricted.allow.iter().find_map(|a| match a {
+        AllowRule::RoomMembership(m) => Some(m.room_id.clone()),
+        _ => None,
+    })
+}
+
+/// Whether our account passes the given restricted allow rule.
+fn we_pass_restricted_allow_rule(room: &Room, rule: AllowRule) -> bool {
+    match rule {
+        AllowRule::RoomMembership(room_membership) => room.session().is_some_and(|s| {
+            s.room_list()
+                .joined_room(&room_membership.room_id.into())
+                .is_some()
+        }),
+        _ => false,
+    }
+}
