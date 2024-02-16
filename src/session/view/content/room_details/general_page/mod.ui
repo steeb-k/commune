@@ -343,6 +343,17 @@
           </object>
         </child>
         <child>
+          <object class="SwitchLoadingRow" id="encryption">
+            <property name="title" translatable="yes">Enable encryption</property>
+            <binding name="is-active">
+              <lookup name="is-encrypted">
+                <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+              </lookup>
+            </binding>
+            <signal name="notify::is-active" handler="enable_encryption" swapped="true"/>
+          </object>
+        </child>
+        <child>
           <object class="AdwActionRow" id="room_version">
             <property name="selectable">False</property>
             <property name="title" translatable="yes">Room Version</property>

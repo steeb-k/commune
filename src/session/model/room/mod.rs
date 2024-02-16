@@ -172,7 +172,7 @@ mod imp {
         pub verification: RefCell<Option<IdentityVerification>>,
         /// Whether this room is encrypted.
         #[property(get)]
-        pub encrypted: Cell<bool>,
+        pub is_encrypted: Cell<bool>,
         /// The list of members currently typing in this room.
         #[property(get)]
         pub typing_list: TypingList,
@@ -1823,27 +1823,6 @@ impl Room {
         self.set_latest_activity(latest_activity);
     }
 
-    /// Set whether this room is encrypted.
-    fn set_is_encrypted(&self, is_encrypted: bool) {
-        let was_encrypted = self.encrypted();
-        if was_encrypted == is_encrypted {
-            return;
-        }
-
-        if was_encrypted && !is_encrypted {
-            error!("Encryption for a room can't be disabled");
-            return;
-        }
-
-        // if self.matrix_room().is_encrypted() != is_encrypted {
-        // TODO: enable encryption if it isn't enabled yet
-        // }
-
-        spawn!(clone!(@strong self as obj => async move {
-            obj.load_is_encrypted().await;
-        }));
-    }
-
     /// Listen to changes in room encryption.
     fn set_up_is_encrypted(&self) {
         let matrix_room = self.matrix_room();
@@ -1854,9 +1833,11 @@ impl Room {
             async move {
                 let ctx = glib::MainContext::default();
                 ctx.spawn(async move {
-                    if let Some(obj) = obj_weak.upgrade() {
-                        obj.set_is_encrypted(true);
-                    }
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.load_is_encrypted().await;
+                        }
+                    });
                 });
             }
         });
@@ -1874,18 +1855,35 @@ impl Room {
         let matrix_room = self.matrix_room().clone();
         let handle = spawn_tokio!(async move { matrix_room.is_encrypted().await });
 
-        if handle
-            .await
-            .unwrap()
-            .ok()
-            .filter(|encrypted| *encrypted)
-            .is_none()
-        {
-            return;
+        match handle.await.unwrap() {
+            Ok(true) => {
+                self.imp().is_encrypted.set(true);
+                self.notify_is_encrypted();
+            }
+            Ok(false) => {}
+            Err(error) => {
+                error!("Failed to load room encryption state: {error}");
+            }
+        }
+    }
+
+    /// Enable encryption for this room.
+    pub async fn enable_encryption(&self) -> Result<(), ()> {
+        if self.is_encrypted() {
+            // Nothing to do.
+            return Ok(());
         }
 
-        self.imp().encrypted.set(true);
-        self.notify_encrypted();
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.enable_encryption().await });
+
+        match handle.await.unwrap() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Failed to enabled room encryption: {error}");
+                Err(())
+            }
+        }
     }
 
     /// Get a human-readable ID for this `Room`.

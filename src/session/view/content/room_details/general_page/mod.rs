@@ -110,6 +110,8 @@ mod imp {
         #[template_child]
         pub history_visibility: TemplateChild<ComboLoadingRow>,
         #[template_child]
+        pub encryption: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
@@ -207,6 +209,7 @@ mod imp {
                         obj.update_join_rule();
                         obj.update_guest_access();
                         obj.update_history_visibility();
+                        obj.update_encryption();
 
                         spawn!(clone!(@weak obj => async move {
                             obj.update_publish().await;
@@ -258,6 +261,9 @@ mod imp {
                 room.connect_history_visibility_notify(clone!(@weak obj => move |_| {
                     obj.update_history_visibility();
                 })),
+                room.connect_is_encrypted_notify(clone!(@weak obj => move |_| {
+                    obj.update_encryption();
+                })),
             ];
 
             obj.member_count_changed(room.joined_members_count());
@@ -295,6 +301,7 @@ mod imp {
             obj.update_guest_access();
             obj.update_publish_title();
             obj.update_history_visibility();
+            obj.update_encryption();
             obj.update_upgrade_button();
 
             spawn!(clone!(@weak obj => async move {
@@ -1264,6 +1271,67 @@ impl GeneralPage {
                 toast!(obj, gettext("Could not change who can read history"));
 
                 obj.update_history_visibility();
+            }
+        }));
+    }
+
+    /// Update the encryption row.
+    fn update_encryption(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let imp = self.imp();
+        let row = &imp.encryption;
+        row.set_is_loading(false);
+
+        let is_encrypted = room.is_encrypted();
+        row.set_is_active(is_encrypted);
+
+        let can_change = !is_encrypted
+            && room
+                .permissions()
+                .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomEncryption));
+        row.set_sensitive(can_change);
+    }
+
+    /// Enable encryption in the room.
+    #[template_callback]
+    fn enable_encryption(&self) {
+        let Some(room) = self.room() else { return };
+
+        let imp = self.imp();
+        let row = &imp.encryption;
+
+        if room.is_encrypted() || !row.is_active() {
+            // Nothing to do.
+            return;
+        }
+
+        row.set_is_loading(true);
+        row.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj => async move {
+            // Ask for confirmation.
+            let dialog = adw::AlertDialog::builder()
+                .heading(gettext("Enable Encryption?"))
+                .body(gettext("Enabling encryption will prevent new members to read the history before they arrived. This cannot be disabled later."))
+                .default_response("cancel")
+                .build();
+            dialog.add_responses(&[
+                ("cancel", &gettext("Cancel")),
+                ("enable", &gettext("Enable")),
+            ]);
+            dialog.set_response_appearance("enable", adw::ResponseAppearance::Destructive);
+
+            if dialog.choose_future(&obj).await != "enable" {
+                obj.update_encryption();
+                return;
+            };
+
+            if room.enable_encryption().await.is_err() {
+                toast!(obj, gettext("Failed to enable encryption"));
+                obj.update_encryption();
             }
         }));
     }
