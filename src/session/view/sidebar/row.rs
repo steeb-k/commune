@@ -465,11 +465,7 @@ impl Row {
 
     /// Change the category of the given room room.
     async fn set_room_category(&self, room: &Room, category: RoomType) {
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
-
-        if category == RoomType::Left && !message_dialog::confirm_leave_room(room, &window).await {
+        if category == RoomType::Left && !message_dialog::confirm_leave_room(room, self).await {
             return;
         }
 

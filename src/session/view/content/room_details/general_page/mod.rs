@@ -460,13 +460,9 @@ impl GeneralPage {
             error!("Cannot remove avatar of room not joined");
             return;
         }
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         // Ask for confirmation.
-        let confirm_dialog = adw::MessageDialog::builder()
-            .transient_for(&window)
+        let confirm_dialog = adw::AlertDialog::builder()
             .default_response("cancel")
             .heading(gettext("Remove Avatar?"))
             .body(gettext(
@@ -479,7 +475,7 @@ impl GeneralPage {
         ]);
         confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
 
-        if confirm_dialog.choose_future().await != "remove" {
+        if confirm_dialog.choose_future(self).await != "remove" {
             return;
         }
 
@@ -976,17 +972,13 @@ impl GeneralPage {
         let Some(room) = self.room() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
         let imp = self.imp();
 
         // TODO: Hide upgrade button if room already upgraded?
         imp.upgrade_button.set_loading(true);
         let room_versions_capability = imp.capabilities.borrow().room_versions.clone();
 
-        let Some(new_version) = confirm_room_upgrade(room_versions_capability, &window).await
-        else {
+        let Some(new_version) = confirm_room_upgrade(room_versions_capability, self).await else {
             imp.upgrade_button.set_loading(false);
             return;
         };

@@ -216,15 +216,12 @@ impl Invite {
 
     /// Decline the invite.
     async fn decline(&self) {
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
         let Some(room) = self.room() else {
             return;
         };
         let imp = self.imp();
 
-        if !message_dialog::confirm_leave_room(&room, &window).await {
+        if !message_dialog::confirm_leave_room(&room, self).await {
             return;
         }
 

@@ -15,7 +15,7 @@ use crate::gettext_f;
 /// Returns the selected room version, or `None` if the user didn't confirm.
 pub async fn confirm_room_upgrade(
     capability: RoomVersionsCapability,
-    transient_for: &gtk::Window,
+    parent: &impl IsA<gtk::Widget>,
 ) -> Option<RoomVersionId> {
     // Build the model.
     let default = capability.default;
@@ -70,8 +70,7 @@ pub async fn confirm_room_upgrade(
     list_box.append(&version_combo);
 
     // Build dialog.
-    let upgrade_dialog = adw::MessageDialog::builder()
-        .transient_for(transient_for)
+    let upgrade_dialog = adw::AlertDialog::builder()
         .default_response("cancel")
         .heading(gettext("Upgrade Room"))
         .body(gettext("Upgrading a room to a more recent version allows to benefit from new features from the Matrix specification. It can also be used to reset the room state, which should make the room faster to join. However it should be used sparingly because it can be disruptive, as room members need to join the new room manually."))
@@ -84,7 +83,7 @@ pub async fn confirm_room_upgrade(
     ]);
     upgrade_dialog.set_response_appearance("upgrade", adw::ResponseAppearance::Destructive);
 
-    if upgrade_dialog.choose_future().await != "upgrade" {
+    if upgrade_dialog.choose_future(parent).await != "upgrade" {
         return None;
     }
 

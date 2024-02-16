@@ -689,9 +689,6 @@ impl ItemRow {
 
     /// Redact the event of this row.
     async fn redact_message(&self) {
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
         let Some(event) = self.item().and_downcast::<Event>() else {
             return;
         };
@@ -699,8 +696,7 @@ impl ItemRow {
             return;
         };
 
-        let confirm_dialog = adw::MessageDialog::builder()
-            .transient_for(&window)
+        let confirm_dialog = adw::AlertDialog::builder()
             .default_response("cancel")
             .heading(gettext("Remove Message?"))
             .body(gettext(
@@ -713,7 +709,7 @@ impl ItemRow {
         ]);
         confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
 
-        if confirm_dialog.choose_future().await != "remove" {
+        if confirm_dialog.choose_future(self).await != "remove" {
             return;
         }
 
@@ -738,9 +734,6 @@ impl ItemRow {
 
     /// Report the current event.
     async fn report_event(&self) {
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
         let Some(event) = self.item().and_downcast::<Event>() else {
             return;
         };
@@ -759,8 +752,7 @@ impl ItemRow {
             .build();
         list_box.append(&reason_entry);
 
-        let confirm_dialog = adw::MessageDialog::builder()
-            .transient_for(&window)
+        let confirm_dialog = adw::AlertDialog::builder()
             .default_response("cancel")
             .heading(gettext("Report Event?"))
             .body(gettext(
@@ -775,7 +767,7 @@ impl ItemRow {
         ]);
         confirm_dialog.set_response_appearance("report", adw::ResponseAppearance::Destructive);
 
-        if confirm_dialog.choose_future().await != "report" {
+        if confirm_dialog.choose_future(self).await != "report" {
             return;
         }
 

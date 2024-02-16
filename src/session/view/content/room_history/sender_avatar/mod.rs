@@ -514,14 +514,11 @@ impl SenderAvatar {
         let Some(sender) = self.sender() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let Some(response) = confirm_room_member_destructive_action(
             &sender,
             RoomMemberDestructiveAction::Kick,
-            &window,
+            self,
         )
         .await
         else {
@@ -554,9 +551,6 @@ impl SenderAvatar {
         let Some(sender) = self.sender() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let permissions = sender.room().permissions();
         let redactable_events = if permissions.can_redact_other() {
@@ -568,7 +562,7 @@ impl SenderAvatar {
         let Some(response) = confirm_room_member_destructive_action(
             &sender,
             RoomMemberDestructiveAction::Ban(redactable_events.len()),
-            &window,
+            self,
         )
         .await
         else {
@@ -613,16 +607,13 @@ impl SenderAvatar {
         let Some(sender) = self.sender() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let redactable_events = sender.redactable_events();
 
         let Some(response) = confirm_room_member_destructive_action(
             &sender,
             RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
-            &window,
+            self,
         )
         .await
         else {

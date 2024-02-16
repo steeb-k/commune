@@ -532,14 +532,11 @@ impl RoomHistory {
 
     /// Leave the room.
     async fn leave(&self) {
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
         let Some(room) = self.room() else {
             return;
         };
 
-        if !message_dialog::confirm_leave_room(&room, &window).await {
+        if !message_dialog::confirm_leave_room(&room, self).await {
             return;
         }
 

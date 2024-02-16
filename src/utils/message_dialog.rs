@@ -13,7 +13,7 @@ use crate::{
 /// Show a dialog to confirm leaving a room.
 ///
 /// This supports both leaving a joined room and rejecting an invite.
-pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> bool {
+pub async fn confirm_leave_room(room: &Room, parent: &impl IsA<gtk::Widget>) -> bool {
     let (heading, body, response) = if room.category() == RoomType::Invited {
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
@@ -43,8 +43,7 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
     };
 
     // Ask for confirmation.
-    let confirm_dialog = adw::MessageDialog::builder()
-        .transient_for(transient_for)
+    let confirm_dialog = adw::AlertDialog::builder()
         .default_response("cancel")
         .heading(heading)
         .body(body)
@@ -52,7 +51,7 @@ pub async fn confirm_leave_room(room: &Room, transient_for: &gtk::Window) -> boo
     confirm_dialog.add_responses(&[("cancel", &gettext("Cancel")), ("leave", &response)]);
     confirm_dialog.set_response_appearance("leave", adw::ResponseAppearance::Destructive);
 
-    confirm_dialog.choose_future().await == "leave"
+    confirm_dialog.choose_future(parent).await == "leave"
 }
 
 /// The room member destructive actions that need to be confirmed.
@@ -77,7 +76,7 @@ pub enum RoomMemberDestructiveAction {
 pub async fn confirm_room_member_destructive_action(
     member: &Member,
     action: RoomMemberDestructiveAction,
-    transient_for: &gtk::Window,
+    parent: &impl IsA<gtk::Widget>,
 ) -> Option<ConfirmRoomMemberDestructiveActionResponse> {
     let (heading, body, response) = match action {
         RoomMemberDestructiveAction::Ban(_) => {
@@ -251,8 +250,7 @@ pub async fn confirm_room_member_destructive_action(
     };
 
     // Ask for confirmation.
-    let confirm_dialog = adw::MessageDialog::builder()
-        .transient_for(transient_for)
+    let confirm_dialog = adw::AlertDialog::builder()
         .default_response("cancel")
         .heading(heading)
         .body(body)
@@ -265,7 +263,7 @@ pub async fn confirm_room_member_destructive_action(
         confirm_dialog.set_response_appearance("confirm", adw::ResponseAppearance::Destructive);
     }
 
-    if confirm_dialog.choose_future().await != "confirm" {
+    if confirm_dialog.choose_future(parent).await != "confirm" {
         return None;
     }
 

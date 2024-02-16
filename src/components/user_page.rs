@@ -469,9 +469,6 @@ impl UserPage {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let imp = self.imp();
         imp.kick_button.set_loading(true);
@@ -483,7 +480,7 @@ impl UserPage {
             let Some(response) = confirm_room_member_destructive_action(
                 &member,
                 RoomMemberDestructiveAction::Kick,
-                &window,
+                &obj,
             )
             .await
             else {
@@ -512,9 +509,6 @@ impl UserPage {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let imp = self.imp();
         imp.ban_button.set_loading(true);
@@ -533,7 +527,7 @@ impl UserPage {
             let Some(response) = confirm_room_member_destructive_action(
                 &member,
                 RoomMemberDestructiveAction::Ban(redactable_events.len()),
-                &window,
+                &obj,
             )
             .await
             else {
@@ -591,9 +585,6 @@ impl UserPage {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
-        let Some(window) = self.root().and_downcast::<gtk::Window>() else {
-            return;
-        };
 
         let imp = self.imp();
         imp.remove_messages_button.set_loading(true);
@@ -604,7 +595,7 @@ impl UserPage {
             let Some(response) = confirm_room_member_destructive_action(
                 &member,
                 RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
-                &window,
+                &obj,
             )
             .await
             else {
