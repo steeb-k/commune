@@ -20,7 +20,10 @@ use ruma::{
     events::{
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
-        room::{encryption::SyncRoomEncryptionEvent, guest_access::GuestAccess},
+        room::{
+            encryption::SyncRoomEncryptionEvent, guest_access::GuestAccess,
+            history_visibility::HistoryVisibility,
+        },
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
         AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
@@ -198,6 +201,9 @@ mod imp {
         /// Whether guests are allowed.
         #[property(get)]
         pub guests_allowed: Cell<bool>,
+        /// The visibility of the history.
+        #[property(get, builder(HistoryVisibilityValue::default()))]
+        pub history_visibility: Cell<HistoryVisibilityValue>,
         pub typing_drop_guard: OnceCell<EventHandlerDropGuard>,
         pub receipts_drop_guard: OnceCell<EventHandlerDropGuard>,
     }
@@ -384,6 +390,7 @@ impl Room {
         self.set_up_is_encrypted();
         self.aliases().init(self);
         self.update_guests_allowed();
+        self.update_history_visibility();
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
@@ -1264,6 +1271,9 @@ impl Room {
                     AnySyncStateEvent::RoomGuestAccess(_) => {
                         self.update_guests_allowed();
                     }
+                    AnySyncStateEvent::RoomHistoryVisibility(_) => {
+                        self.update_history_visibility();
+                    }
                     _ => {}
                 }
             }
@@ -2056,5 +2066,59 @@ impl Room {
 
         self.imp().guests_allowed.set(guests_allowed);
         self.notify_guests_allowed();
+    }
+
+    /// Update the visibility of the history.
+    fn update_history_visibility(&self) {
+        let matrix_room = self.matrix_room();
+        let visibility = matrix_room.history_visibility().into();
+
+        if self.history_visibility() == visibility {
+            return;
+        }
+
+        self.imp().history_visibility.set(visibility);
+        self.notify_history_visibility();
+    }
+}
+
+/// Supported values for the history visibility.
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+#[enum_type(name = "HistoryVisibilityValue")]
+pub enum HistoryVisibilityValue {
+    /// Anyone can read.
+    WorldReadable,
+    /// Members, since this was selected.
+    #[default]
+    Shared,
+    /// Members, since they were invited.
+    Invited,
+    /// Members, since they joined.
+    Joined,
+    /// Unsupported value.
+    Unsupported,
+}
+
+impl From<HistoryVisibility> for HistoryVisibilityValue {
+    fn from(value: HistoryVisibility) -> Self {
+        match value {
+            HistoryVisibility::Invited => Self::Invited,
+            HistoryVisibility::Joined => Self::Joined,
+            HistoryVisibility::Shared => Self::Shared,
+            HistoryVisibility::WorldReadable => Self::WorldReadable,
+            _ => Self::Unsupported,
+        }
+    }
+}
+
+impl From<HistoryVisibilityValue> for HistoryVisibility {
+    fn from(value: HistoryVisibilityValue) -> Self {
+        match value {
+            HistoryVisibilityValue::Invited => Self::Invited,
+            HistoryVisibilityValue::Joined => Self::Joined,
+            HistoryVisibilityValue::Shared => Self::Shared,
+            HistoryVisibilityValue::WorldReadable => Self::WorldReadable,
+            HistoryVisibilityValue::Unsupported => unimplemented!(),
+        }
     }
 }

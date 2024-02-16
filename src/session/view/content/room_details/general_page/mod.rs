@@ -17,6 +17,7 @@ use ruma::{
         room::{
             avatar::ImageInfo,
             guest_access::{GuestAccess, RoomGuestAccessEventContent},
+            history_visibility::RoomHistoryVisibilityEventContent,
             power_levels::PowerLevelAction,
         },
         StateEventType,
@@ -32,7 +33,9 @@ use crate::{
     },
     gettext_f,
     prelude::*,
-    session::model::{JoinRuleValue, MemberList, NotificationsRoomSetting, Room},
+    session::model::{
+        HistoryVisibilityValue, JoinRuleValue, MemberList, NotificationsRoomSetting, Room,
+    },
     spawn, spawn_tokio, toast,
     utils::{
         expression,
@@ -104,6 +107,8 @@ mod imp {
         pub guest_access: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         pub publish: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
+        pub history_visibility: TemplateChild<ComboLoadingRow>,
         #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -201,6 +206,7 @@ mod imp {
                         obj.update_edit_addresses_button();
                         obj.update_join_rule();
                         obj.update_guest_access();
+                        obj.update_history_visibility();
 
                         spawn!(clone!(@weak obj => async move {
                             obj.update_publish().await;
@@ -249,6 +255,9 @@ mod imp {
                 room.connect_guests_allowed_notify(clone!(@weak obj => move |_| {
                     obj.update_guest_access();
                 })),
+                room.connect_history_visibility_notify(clone!(@weak obj => move |_| {
+                    obj.update_history_visibility();
+                })),
             ];
 
             obj.member_count_changed(room.joined_members_count());
@@ -285,6 +294,7 @@ mod imp {
             obj.update_join_rule();
             obj.update_guest_access();
             obj.update_publish_title();
+            obj.update_history_visibility();
             obj.update_upgrade_button();
 
             spawn!(clone!(@weak obj => async move {
@@ -1180,6 +1190,81 @@ impl GeneralPage {
             }
 
             obj.update_publish().await;
+        }));
+    }
+
+    /// Update the history visibility edit button.
+    fn update_history_visibility(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let row = &self.imp().history_visibility;
+        row.set_is_loading(false);
+
+        let visibility = room.history_visibility();
+
+        let text = match visibility {
+            HistoryVisibilityValue::WorldReadable => {
+                gettext("Anyone, even if they are not in the room")
+            }
+            HistoryVisibilityValue::Shared => {
+                gettext("Members only, since this option was selected")
+            }
+            HistoryVisibilityValue::Invited => gettext("Members only, since they were invited"),
+            HistoryVisibilityValue::Joined => gettext("Members only, since they joined the room"),
+            HistoryVisibilityValue::Unsupported => gettext("Unsupported rule"),
+        };
+        row.set_selected_string(Some(text));
+
+        let is_supported = visibility != HistoryVisibilityValue::Unsupported;
+        let can_change = room
+            .permissions()
+            .is_allowed_to(PowerLevelAction::SendState(
+                StateEventType::RoomHistoryVisibility,
+            ));
+
+        row.set_sensitive(is_supported && can_change);
+    }
+
+    /// Set the history_visibility of the room.
+    #[template_callback]
+    fn set_history_visibility(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let row = &self.imp().history_visibility;
+
+        let visibility = match row.selected() {
+            0 => HistoryVisibilityValue::WorldReadable,
+            1 => HistoryVisibilityValue::Shared,
+            2 => HistoryVisibilityValue::Joined,
+            3 => HistoryVisibilityValue::Invited,
+            _ => {
+                return;
+            }
+        };
+
+        if room.history_visibility() == visibility {
+            // Nothing to do.
+            return;
+        }
+
+        row.set_is_loading(true);
+        row.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj => async move {
+            let content = RoomHistoryVisibilityEventContent::new(visibility.into());
+
+            let matrix_room = room.matrix_room().clone();
+            let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+
+            if let Err(error) = handle.await.unwrap() {
+                error!("Failed to change room history visibility: {error}");
+                toast!(obj, gettext("Could not change who can read history"));
+
+                obj.update_history_visibility();
+            }
         }));
     }
 

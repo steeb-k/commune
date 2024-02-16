@@ -96,7 +96,7 @@ mod imp {
                     let label = gtk::Label::builder()
                         .xalign(0.0)
                         .ellipsize(pango::EllipsizeMode::End)
-                        .max_width_chars(20)
+                        .max_width_chars(40)
                         .valign(gtk::Align::Center)
                         .label(string)
                         .build();

@@ -308,6 +308,22 @@
             <signal name="notify::is-active" handler="toggle_publish" swapped="true"/>
           </object>
         </child>
+        <child>
+          <object class="ComboLoadingRow" id="history_visibility">
+            <property name="title" translatable="yes">Who can read history</property>
+            <property name="string-model">
+              <object class="GtkStringList">
+                <items>
+                  <item translatable="yes">Anyone, even if they are not in the room</item>
+                  <item translatable="yes">Members only, since this option was selected</item>
+                  <item translatable="yes">Members only, since they joined the room</item>
+                  <item translatable="yes">Members only, since they were invited</item>
+                </items>
+              </object>
+            </property>
+            <signal name="notify::selected-string" handler="set_history_visibility" swapped="yes"/>
+          </object>
+        </child>
       </object>
     </child>
     <child>
