@@ -303,6 +303,11 @@
             <signal name="notify::is-active" handler="toggle_guest_access" swapped="true"/>
           </object>
         </child>
+        <child>
+          <object class="SwitchLoadingRow" id="publish">
+            <signal name="notify::is-active" handler="toggle_publish" swapped="true"/>
+          </object>
+        </child>
       </object>
     </child>
     <child>

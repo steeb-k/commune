@@ -7,7 +7,11 @@ use gtk::{
 };
 use matrix_sdk::RoomState;
 use ruma::{
-    api::client::{discovery::get_capabilities::Capabilities, room::upgrade_room},
+    api::client::{
+        directory::{get_room_visibility, set_room_visibility},
+        discovery::get_capabilities::Capabilities,
+        room::{upgrade_room, Visibility},
+    },
     assign,
     events::{
         room::{
@@ -26,6 +30,7 @@ use crate::{
         AvatarData, AvatarImage, CheckLoadingRow, ComboLoadingRow, CopyableRow, CustomEntry,
         EditableAvatar, SpinnerButton, SwitchLoadingRow,
     },
+    gettext_f,
     prelude::*,
     session::model::{JoinRuleValue, MemberList, NotificationsRoomSetting, Room},
     spawn, spawn_tokio, toast,
@@ -98,6 +103,8 @@ mod imp {
         #[template_child]
         pub guest_access: TemplateChild<SwitchLoadingRow>,
         #[template_child]
+        pub publish: TemplateChild<SwitchLoadingRow>,
+        #[template_child]
         pub upgrade_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
@@ -110,6 +117,9 @@ mod imp {
         /// Whether the notifications section is busy.
         #[property(get)]
         pub notifications_loading: Cell<bool>,
+        /// Whether the room is published in the directory.
+        #[property(get)]
+        pub is_published: Cell<bool>,
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
@@ -191,6 +201,10 @@ mod imp {
                         obj.update_edit_addresses_button();
                         obj.update_join_rule();
                         obj.update_guest_access();
+
+                        spawn!(clone!(@weak obj => async move {
+                            obj.update_publish().await;
+                        }));
                     }));
             self.permissions_handler.replace(Some(permissions_handler));
 
@@ -270,7 +284,13 @@ mod imp {
             obj.update_sections();
             obj.update_join_rule();
             obj.update_guest_access();
+            obj.update_publish_title();
             obj.update_upgrade_button();
+
+            spawn!(clone!(@weak obj => async move {
+                obj.update_publish().await;
+            }));
+
             self.load_capabilities();
         }
 
@@ -1059,6 +1079,107 @@ impl GeneralPage {
                 toast!(obj, gettext("Failed to change guest access"));
                 obj.update_guest_access();
             }
+        }));
+    }
+
+    /// Update the title of the publish row.
+    fn update_publish_title(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let own_member = room.own_member();
+        let server_name = own_member.user_id().server_name();
+
+        let title = gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}',
+            // this is a variable name.
+            "Publish in the {homeserver} directory",
+            &[("homeserver", server_name.as_str())],
+        );
+        self.imp().publish.set_title(&title);
+    }
+
+    /// Update the publish row.
+    async fn update_publish(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let imp = self.imp();
+        let row = &imp.publish;
+
+        // There is no clear definition of who is allowed to publish a room to the
+        // directory in the Matrix spec. Let's assume it doesn't make sense unless the
+        // user can change the public addresses.
+        let can_change = room
+            .permissions()
+            .is_allowed_to(PowerLevelAction::SendState(
+                StateEventType::RoomCanonicalAlias,
+            ));
+        row.set_sensitive(can_change);
+
+        let matrix_room = room.matrix_room();
+        let client = matrix_room.client();
+        let request = get_room_visibility::v3::Request::new(matrix_room.room_id().to_owned());
+
+        let handle = spawn_tokio!(async move { client.send(request, None).await });
+
+        match handle.await.unwrap() {
+            Ok(response) => {
+                let is_published = response.visibility == Visibility::Public;
+                imp.is_published.set(is_published);
+                row.set_is_active(is_published);
+            }
+            Err(error) => {
+                error!("Failed to get directory visibility of room: {error}");
+            }
+        }
+
+        row.set_is_loading(false);
+    }
+
+    /// Toggle whether the room is published in the room directory.
+    #[template_callback]
+    fn toggle_publish(&self) {
+        let Some(room) = self.room() else { return };
+
+        let imp = self.imp();
+        let row = &imp.publish;
+        let publish = row.is_active();
+
+        if imp.is_published.get() == publish {
+            return;
+        }
+
+        row.set_is_loading(true);
+        row.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj => async move {
+            let visibility = if publish {
+                Visibility::Public
+            } else {
+                Visibility::Private
+            };
+
+            let matrix_room = room.matrix_room();
+            let client = matrix_room.client();
+            let request =
+                set_room_visibility::v3::Request::new(matrix_room.room_id().to_owned(), visibility);
+
+            let handle = spawn_tokio!(async move { client.send(request, None).await });
+
+            if let Err(error) = handle.await.unwrap() {
+                error!("Could not change directory visibility of room: {error}");
+                let text = if publish {
+                    gettext("Failed to publish room in directory")
+                } else {
+                    gettext("Failed to unpublish room from directory")
+                };
+                toast!(obj, text);
+            }
+
+            obj.update_publish().await;
         }));
     }
 
