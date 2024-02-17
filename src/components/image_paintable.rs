@@ -27,8 +27,12 @@ impl From<image::Frame> for Frame {
         }
 
         let sample = f.into_buffer().into_flat_samples();
-        let texture =
-            texture_from_data(&sample.samples, sample.layout, gdk::MemoryFormat::R8g8b8a8);
+        let texture = texture_from_data(
+            &sample.samples,
+            sample.layout,
+            gdk::MemoryFormat::R8g8b8a8,
+            image::ColorType::Rgba8.bytes_per_pixel(),
+        );
 
         Frame {
             texture: texture.upcast(),
@@ -233,11 +237,21 @@ impl ImagePaintable {
         let texture = match image.color() {
             image::ColorType::L8 | image::ColorType::Rgb8 => {
                 let sample = image.into_rgb8().into_flat_samples();
-                texture_from_data(&sample.samples, sample.layout, gdk::MemoryFormat::R8g8b8)
+                texture_from_data(
+                    &sample.samples,
+                    sample.layout,
+                    gdk::MemoryFormat::R8g8b8,
+                    image::ColorType::Rgb8.bytes_per_pixel(),
+                )
             }
             image::ColorType::La8 | image::ColorType::Rgba8 => {
                 let sample = image.into_rgba8().into_flat_samples();
-                texture_from_data(&sample.samples, sample.layout, gdk::MemoryFormat::R8g8b8a8)
+                texture_from_data(
+                    &sample.samples,
+                    sample.layout,
+                    gdk::MemoryFormat::R8g8b8a8,
+                    image::ColorType::Rgba8.bytes_per_pixel(),
+                )
             }
             image::ColorType::L16 | image::ColorType::Rgb16 => {
                 let sample = image.into_rgb16().into_flat_samples();
@@ -246,7 +260,12 @@ impl ImagePaintable {
                     .into_iter()
                     .flat_map(|b| b.to_ne_bytes())
                     .collect::<Vec<_>>();
-                texture_from_data(&bytes, sample.layout, gdk::MemoryFormat::R16g16b16)
+                texture_from_data(
+                    &bytes,
+                    sample.layout,
+                    gdk::MemoryFormat::R16g16b16,
+                    image::ColorType::Rgb16.bytes_per_pixel(),
+                )
             }
             image::ColorType::La16 | image::ColorType::Rgba16 => {
                 let sample = image.into_rgba16().into_flat_samples();
@@ -255,7 +274,12 @@ impl ImagePaintable {
                     .into_iter()
                     .flat_map(|b| b.to_ne_bytes())
                     .collect::<Vec<_>>();
-                texture_from_data(&bytes, sample.layout, gdk::MemoryFormat::R16g16b16a16)
+                texture_from_data(
+                    &bytes,
+                    sample.layout,
+                    gdk::MemoryFormat::R16g16b16a16,
+                    image::ColorType::Rgba16.bytes_per_pixel(),
+                )
             }
             image::ColorType::Rgb32F => {
                 let sample = image.into_rgb32f().into_flat_samples();
@@ -264,7 +288,12 @@ impl ImagePaintable {
                     .into_iter()
                     .flat_map(|b| b.to_ne_bytes())
                     .collect::<Vec<_>>();
-                texture_from_data(&bytes, sample.layout, gdk::MemoryFormat::R32g32b32Float)
+                texture_from_data(
+                    &bytes,
+                    sample.layout,
+                    gdk::MemoryFormat::R32g32b32Float,
+                    image::ColorType::Rgb32F.bytes_per_pixel(),
+                )
             }
             image::ColorType::Rgba32F => {
                 let sample = image.into_rgb32f().into_flat_samples();
@@ -273,7 +302,12 @@ impl ImagePaintable {
                     .into_iter()
                     .flat_map(|b| b.to_ne_bytes())
                     .collect::<Vec<_>>();
-                texture_from_data(&bytes, sample.layout, gdk::MemoryFormat::R32g32b32Float)
+                texture_from_data(
+                    &bytes,
+                    sample.layout,
+                    gdk::MemoryFormat::R32g32b32Float,
+                    image::ColorType::Rgb32F.bytes_per_pixel(),
+                )
             }
             c => {
                 error!("Received image of unsupported color format: {c:?}");
@@ -350,14 +384,17 @@ fn texture_from_data(
     bytes: &[u8],
     layout: SampleLayout,
     format: gdk::MemoryFormat,
+    bpp: u8,
 ) -> gdk::MemoryTexture {
     let bytes = glib::Bytes::from(bytes);
+
+    let stride = layout.width * bpp as u32;
 
     gdk::MemoryTexture::new(
         layout.width as i32,
         layout.height as i32,
         format,
         &bytes,
-        layout.height_stride,
+        stride as usize,
     )
 }
