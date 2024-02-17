@@ -1,8 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
-use super::Spinner;
-use crate::utils::bool_to_accessible_tristate;
+use crate::{components::Spinner, utils::bool_to_accessible_tristate};
 
 mod imp {
     use std::marker::PhantomData;
@@ -12,7 +11,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/switch_loading_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/switch_loading_row.ui")]
     #[properties(wrapper_type = super::SwitchLoadingRow)]
     pub struct SwitchLoadingRow {
         #[template_child]

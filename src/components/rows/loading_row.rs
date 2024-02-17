@@ -7,7 +7,7 @@ use gtk::{
     CompositeTemplate,
 };
 
-use super::LoadingBin;
+use crate::components::LoadingBin;
 
 mod imp {
     use std::marker::PhantomData;
@@ -18,7 +18,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/loading_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/loading_row.ui")]
     #[properties(wrapper_type = super::LoadingRow)]
     pub struct LoadingRow {
         #[template_child]

@@ -1,8 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
-use super::LoadingBin;
-use crate::utils::bool_to_accessible_tristate;
+use crate::{components::LoadingBin, utils::bool_to_accessible_tristate};
 
 mod imp {
     use std::marker::PhantomData;
@@ -12,7 +11,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/check_loading_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/check_loading_row.ui")]
     #[properties(wrapper_type = super::CheckLoadingRow)]
     pub struct CheckLoadingRow {
         #[template_child]

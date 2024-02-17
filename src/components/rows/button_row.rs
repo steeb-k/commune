@@ -15,7 +15,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/button_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/button_row.ui")]
     #[properties(wrapper_type = super::ButtonRow)]
     pub struct ButtonRow {
         /// Whether activating this button opens a subpage.

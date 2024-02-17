@@ -16,10 +16,10 @@ src/components/editable_avatar.rs
 src/components/editable_avatar.ui
 src/components/join_room_dialog.rs
 src/components/join_room_dialog.ui
-src/components/loading_row.ui
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
 src/components/reaction_chooser.ui
+src/components/rows/loading_row.ui
 src/components/spinner.rs
 src/components/user_page.rs
 src/components/user_page.ui

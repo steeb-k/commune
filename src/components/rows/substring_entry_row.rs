@@ -5,7 +5,7 @@ use gtk::{
     pango, CompositeTemplate,
 };
 
-use super::SpinnerButton;
+use crate::components::SpinnerButton;
 
 mod imp {
     use std::{
@@ -19,7 +19,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/substring_entry_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/substring_entry_row.ui")]
     #[properties(wrapper_type = super::SubstringEntryRow)]
     pub struct SubstringEntryRow {
         #[template_child]

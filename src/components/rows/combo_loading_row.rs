@@ -1,8 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, pango, CompositeTemplate};
 
-use super::LoadingBin;
-use crate::utils::BoundObject;
+use crate::{components::LoadingBin, utils::BoundObject};
 
 mod imp {
     use std::{
@@ -15,7 +14,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/combo_loading_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/combo_loading_row.ui")]
     #[properties(wrapper_type = super::ComboLoadingRow)]
     pub struct ComboLoadingRow {
         #[template_child]

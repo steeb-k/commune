@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::closure_local, CompositeTemplate};
 
-use super::SpinnerButton;
+use crate::components::SpinnerButton;
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -12,7 +12,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/removable_row.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/removable_row.ui")]
     #[properties(wrapper_type = super::RemovableRow)]
     pub struct RemovableRow {
         #[template_child]
