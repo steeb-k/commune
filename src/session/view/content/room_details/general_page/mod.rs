@@ -28,8 +28,8 @@ use tracing::error;
 use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{
-        AvatarData, AvatarImage, CheckLoadingRow, ComboLoadingRow, CopyableRow, CustomEntry,
-        EditableAvatar, SpinnerButton, SwitchLoadingRow,
+        AvatarData, AvatarImage, ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow,
+        CustomEntry, EditableAvatar, SpinnerButton, SwitchLoadingRow,
     },
     gettext_f,
     prelude::*,
@@ -80,9 +80,7 @@ mod imp {
         #[template_child]
         pub save_details_btn: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub members_row: TemplateChild<adw::ActionRow>,
-        #[template_child]
-        pub members_count: TemplateChild<gtk::Label>,
+        pub members_row: TemplateChild<ButtonCountRow>,
         #[template_child]
         pub notifications: TemplateChild<adw::PreferencesGroup>,
         #[template_child]
@@ -770,7 +768,7 @@ impl GeneralPage {
 
     fn member_count_changed(&self, n: u64) {
         let imp = self.imp();
-        imp.members_count.set_text(&format!("{n}"));
+        imp.members_row.set_count(format!("{n}"));
 
         let n = n.try_into().unwrap_or(u32::MAX);
         imp.members_row.set_title(&ngettext("Member", "Members", n));

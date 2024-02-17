@@ -22,29 +22,11 @@
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
-            <property name="activatable">True</property>
-            <property name="selectable">False</property>
-            <property name="accessible-role">button</property>
+          <object class="ButtonCountRow" id="ignored_users_row">
             <property name="title" translatable="yes">Ignored Users</property>
             <property name="subtitle" translatable="yes">All messages or invitations sent by these users will be ignored. You will still see some of their activity, like when they join or leave a room.</property>
             <property name="action-name">account-settings.show-subpage</property>
             <property name="action-target">'ignored-users'</property>
-            <child type="suffix">
-              <object class="GtkLabel" id="ignored_users_count">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
-            <child type="suffix">
-              <object class="GtkImage">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="icon-name">go-next-symbolic</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
           </object>
         </child>
       </object>

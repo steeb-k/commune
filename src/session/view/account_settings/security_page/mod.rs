@@ -9,7 +9,11 @@ pub use self::{
     ignored_users_subpage::IgnoredUsersSubpage,
     import_export_keys_subpage::{ImportExportKeysSubpage, ImportExportKeysSubpageMode},
 };
-use crate::{components::ButtonRow, session::model::Session, spawn, spawn_tokio};
+use crate::{
+    components::{ButtonCountRow, ButtonRow},
+    session::model::Session,
+    spawn, spawn_tokio,
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -29,7 +33,7 @@ mod imp {
         #[template_child]
         pub typing_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub ignored_users_count: TemplateChild<gtk::Label>,
+        pub ignored_users_row: TemplateChild<ButtonCountRow>,
         #[template_child]
         pub master_key_status: TemplateChild<gtk::Label>,
         #[template_child]
@@ -101,11 +105,11 @@ mod imp {
                 let ignored_users = session.ignored_users();
                 let ignored_users_count_handler = ignored_users.connect_items_changed(
                     clone!(@weak self as imp => move |ignored_users, _, _, _| {
-                        imp.ignored_users_count.set_label(&ignored_users.n_items().to_string());
+                        imp.ignored_users_row.set_count(ignored_users.n_items().to_string());
                     }),
                 );
-                self.ignored_users_count
-                    .set_label(&ignored_users.n_items().to_string());
+                self.ignored_users_row
+                    .set_count(ignored_users.n_items().to_string());
 
                 self.ignored_users_count_handler
                     .replace(Some(ignored_users_count_handler));

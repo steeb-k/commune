@@ -126,28 +126,10 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="AdwActionRow" id="members_row">
-            <property name="accessible-role">button</property>
+          <object class="ButtonCountRow" id="members_row">
             <property name="icon-name">users-symbolic</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'members'</property>
-            <property name="activatable">True</property>
-            <property name="selectable">False</property>
-            <child type="suffix">
-              <object class="GtkLabel" id="members_count">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
-            <child type="suffix">
-              <object class="GtkImage">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="icon-name">go-next-symbolic</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
           </object>
         </child>
       </object>
@@ -155,58 +137,25 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="AdwActionRow">
-            <property name="accessible-role">button</property>
+          <object class="ButtonCountRow">
             <property name="title" translatable="yes">Media</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'media-history'</property>
-            <property name="activatable">True</property>
-            <property name="selectable">False</property>
-            <child type="suffix">
-              <object class="GtkImage">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="icon-name">go-next-symbolic</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
-            <property name="accessible-role">button</property>
+          <object class="ButtonCountRow">
             <property name="title" translatable="yes">Files</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'file-history'</property>
-            <property name="activatable">True</property>
-            <property name="selectable">False</property>
-            <child type="suffix">
-              <object class="GtkImage">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="icon-name">go-next-symbolic</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
           </object>
         </child>
         <child>
-          <object class="AdwActionRow">
-            <property name="accessible-role">button</property>
+          <object class="ButtonCountRow">
             <!-- Translators: As in 'Audio file'. -->
             <property name="title" translatable="yes">Audio</property>
             <property name="action-name">details.show-subpage</property>
             <property name="action-target">'audio-history'</property>
-            <property name="activatable">True</property>
-            <property name="selectable">False</property>
-            <child type="suffix">
-              <object class="GtkImage">
-                <property name="valign">center</property>
-                <property name="halign">center</property>
-                <property name="icon-name">go-next-symbolic</property>
-                <property name="accessible-role">presentation</property>
-              </object>
-            </child>
           </object>
         </child>
       </object>
