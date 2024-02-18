@@ -60,10 +60,10 @@ mod imp {
         pub file_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub proceed_button: TemplateChild<SpinnerButton>,
-        /// The path to export the keys to.
+        /// The path of the file for the encryption keys.
         #[property(get)]
         pub file_path: RefCell<Option<gio::File>>,
-        /// The path to export the keys to, as a string.
+        /// The path of the file for the encryption keys, as a string.
         #[property(get = Self::file_path_string)]
         pub file_path_string: PhantomData<Option<String>>,
         /// The export/import mode of the subpage.
@@ -91,19 +91,7 @@ mod imp {
     impl ObjectImpl for ImportExportKeysSubpage {
         fn constructed(&self) {
             self.parent_constructed();
-            let obj = self.obj();
-
-            self.passphrase
-                .connect_changed(clone!(@weak obj => move|_| {
-                    obj.validate_passphrase_confirmation();
-                }));
-
-            self.confirm_passphrase
-                .connect_changed(clone!(@weak obj => move|_| {
-                    obj.validate_passphrase_confirmation();
-                }));
-
-            obj.update_for_mode();
+            self.obj().update_for_mode();
         }
     }
 
@@ -150,7 +138,12 @@ impl ImportExportKeysSubpage {
             .build()
     }
 
-    /// Set the path to export the keys to.
+    /// Whether the subpage is in export mode.
+    fn is_export(&self) -> bool {
+        self.mode() == ImportExportKeysSubpageMode::Export
+    }
+
+    /// Set the path of the file for the encryption keys.
     fn set_file_path(&self, path: Option<gio::File>) {
         let imp = self.imp();
         if *imp.file_path.borrow() == path {
@@ -163,6 +156,7 @@ impl ImportExportKeysSubpage {
         self.notify_file_path_string();
     }
 
+    /// Reset the subpage's fields.
     fn clear(&self) {
         let imp = self.imp();
 
@@ -171,10 +165,11 @@ impl ImportExportKeysSubpage {
         imp.confirm_passphrase.set_text("");
     }
 
+    /// Update the UI for the current mode.
     fn update_for_mode(&self) {
         let imp = self.imp();
 
-        if self.mode() == ImportExportKeysSubpageMode::Export {
+        if self.is_export() {
             // Translators: 'Room encryption keys' are encryption keys for all rooms.
             self.set_title(&gettext("Export Room Encryption Keys"));
             imp.description.set_label(&gettext(
@@ -203,14 +198,15 @@ impl ImportExportKeysSubpage {
         self.update_button();
     }
 
+    /// Open a dialog to choose the file.
     #[template_callback]
-    fn handle_choose_file(&self) {
+    fn choose_file(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            obj.choose_file().await;
+            obj.choose_file_inner().await;
         }));
     }
 
-    async fn choose_file(&self) {
+    async fn choose_file_inner(&self) {
         let is_export = self.mode() == ImportExportKeysSubpageMode::Export;
 
         let dialog = gtk::FileDialog::builder()
@@ -250,6 +246,8 @@ impl ImportExportKeysSubpage {
         };
     }
 
+    /// Validate the passphrase confirmation.
+    #[template_callback]
     fn validate_passphrase_confirmation(&self) {
         let imp = self.imp();
         let entry = &imp.confirm_passphrase;
@@ -258,10 +256,12 @@ impl ImportExportKeysSubpage {
         let passphrase = imp.passphrase.text();
         let confirmation = entry.text();
 
-        if confirmation.is_empty() {
+        if !self.is_export() || confirmation.is_empty() {
             revealer.set_reveal_child(false);
             entry.remove_css_class("success");
             entry.remove_css_class("warning");
+
+            self.update_button();
             return;
         }
 
@@ -275,13 +275,16 @@ impl ImportExportKeysSubpage {
             entry.remove_css_class("success");
             entry.add_css_class("warning");
         }
+
         self.update_button();
     }
 
+    /// Update the state of the button.
     fn update_button(&self) {
         self.imp().proceed_button.set_sensitive(self.can_proceed());
     }
 
+    /// Whether we can proceed to the import/export.
     fn can_proceed(&self) -> bool {
         let imp = self.imp();
         let file_path = imp.file_path.borrow();
@@ -293,7 +296,7 @@ impl ImportExportKeysSubpage {
             .is_some()
             && !passphrase.is_empty();
 
-        if self.mode() == ImportExportKeysSubpageMode::Export {
+        if self.is_export() {
             let confirmation = imp.confirm_passphrase.text();
             res = res && passphrase == confirmation;
         }
@@ -301,14 +304,15 @@ impl ImportExportKeysSubpage {
         res
     }
 
+    /// Proceed to the import/export.
     #[template_callback]
-    fn handle_proceed(&self) {
+    fn proceed(&self) {
         spawn!(clone!(@weak self as obj => async move {
-            obj.proceed().await;
+            obj.proceed_inner().await;
         }));
     }
 
-    async fn proceed(&self) {
+    async fn proceed_inner(&self) {
         if !self.can_proceed() {
             return;
         }
@@ -316,7 +320,7 @@ impl ImportExportKeysSubpage {
         let imp = self.imp();
         let file_path = self.file_path().and_then(|file| file.path()).unwrap();
         let passphrase = imp.passphrase.text();
-        let is_export = self.mode() == ImportExportKeysSubpageMode::Export;
+        let is_export = self.is_export();
 
         imp.proceed_button.set_loading(true);
         imp.file_button.set_sensitive(false);
