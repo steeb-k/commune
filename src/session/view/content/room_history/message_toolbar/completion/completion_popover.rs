@@ -437,8 +437,10 @@ impl CompletionPopover {
         for (event, range) in Parser::new(&text).into_offset_iter() {
             match event {
                 Event::Start(tag) => {
-                    in_escaped_tag =
-                        matches!(tag, Tag::CodeBlock(_) | Tag::Link(..) | Tag::Image(..));
+                    in_escaped_tag = matches!(
+                        tag,
+                        Tag::CodeBlock(_) | Tag::Link { .. } | Tag::Image { .. }
+                    );
                 }
                 Event::End(_) => {
                     // A link or a code block only contains text so an end tag

@@ -102,7 +102,7 @@ impl SessionListSettings {
 
     /// Remove the settings of the session with the given ID.
     pub fn remove(&self, session_id: &str) {
-        self.imp().sessions.borrow_mut().remove(session_id);
+        self.imp().sessions.borrow_mut().shift_remove(session_id);
         self.save();
     }
 

@@ -258,7 +258,7 @@ impl UserSessionsList {
             .into_iter()
             .filter_map(|id| {
                 let data = match (
-                    api_sessions.remove(&id),
+                    api_sessions.shift_remove(&id),
                     crypto_sessions.as_ref().and_then(|s| s.get(&id)),
                 ) {
                     (Some(api), Some(crypto)) => UserSessionData::Both { api, crypto },

@@ -26,7 +26,7 @@ pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
     keyring.unlock().await?;
 
     let items = keyring
-        .search_items(HashMap::from([(SCHEMA_ATTRIBUTE, APP_ID)]))
+        .search_items(&HashMap::from([(SCHEMA_ATTRIBUTE, APP_ID)]))
         .await?;
 
     let mut sessions = Vec::with_capacity(items.len());
@@ -79,8 +79,7 @@ pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
 pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
     let keyring = Keyring::new().await?;
 
-    let attrs = session.attributes();
-    let attributes = attrs.iter().map(|(k, v)| (*k, v.as_ref())).collect();
+    let attributes = session.attributes();
     let secret = serde_json::to_string(&session.secret).unwrap();
 
     keyring
@@ -91,7 +90,7 @@ pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
                 "Fractal: Matrix credentials for {user_id}",
                 &[("user_id", session.user_id.as_str())],
             ),
-            attributes,
+            &attributes,
             secret,
             true,
         )
@@ -288,11 +287,7 @@ impl StoredSession {
     /// Remove this session from the `SecretService`
     async fn delete_from_secret_service(&self) -> Result<(), SecretError> {
         let keyring = Keyring::new().await?;
-
-        let attrs = self.attributes();
-        let attributes = attrs.iter().map(|(k, v)| (*k, v.as_ref())).collect();
-
-        keyring.delete(attributes).await?;
+        keyring.delete(&self.attributes()).await?;
 
         Ok(())
     }
