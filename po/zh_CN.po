@@ -7,16 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-02-17 08:56+0000\n"
-"PO-Revision-Date: 2024-02-17 09:48-0500\n"
-"Last-Translator: Boyuan Yang <073plan@gmail.com>\n"
+"POT-Creation-Date: 2024-02-18 10:21+0000\n"
+"PO-Revision-Date: 2024-02-20 08:59+0800\n"
+"Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese - China <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.4.2\n"
+"Plural-Forms: nplurals=1; plural=0\n"
+"X-Generator: Gtranslator 45.3\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
@@ -241,7 +241,7 @@ msgid "Choose Avatar"
 msgstr "选择头像"
 
 #: src/components/editable_avatar.rs:354
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:218
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:214
 msgid "Choose"
 msgstr "选择"
 
@@ -268,7 +268,7 @@ msgstr "选择新头像"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/join_room_dialog.rs:191
 #: src/session/view/content/explore/public_room_row.rs:168
-#: src/session/view/content/room_history/mod.rs:944
+#: src/session/view/content/room_history/mod.rs:941
 #: src/session/view/content/room_history/state_row/tombstone.rs:88
 msgid "View"
 msgstr "查看"
@@ -311,7 +311,7 @@ msgstr "输入聊天室标识、别名或永久链接来查找聊天室。"
 
 #: src/components/join_room_dialog.ui:191
 #: src/session/view/content/explore/public_room_row.rs:170
-#: src/session/view/content/room_history/mod.rs:947
+#: src/session/view/content/room_history/mod.rs:944
 #: src/session/view/content/room_history/state_row/tombstone.rs:90
 msgid "Join"
 msgstr "加入"
@@ -851,6 +851,37 @@ msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默
 msgid "Failed to logout the session."
 msgstr "登出该会话失败。"
 
+#: src/session/model/room/join_rule.rs:276
+msgid "Only invited users, and users can knock"
+msgstr "仅邀请的和可以敲门的用户"
+
+#: src/session/model/room/join_rule.rs:278
+#: src/session/view/content/room_details/general_page/mod.ui:284
+msgid "Only invited users"
+msgstr "仅邀请的用户"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/model/room/join_rule.rs:292
+msgid "Members of {room}, and users can knock"
+msgstr "{room} 的成员和可以敲门的用户"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/model/room/join_rule.rs:299
+msgid "Members of {room}"
+msgstr "{room} 的成员"
+
+#: src/session/model/room/join_rule.rs:304
+#: src/session/view/content/room_details/general_page/mod.ui:285
+msgid "Any registered user"
+msgstr "任何注册的用户"
+
+#: src/session/model/room/join_rule.rs:305
+#: src/session/view/content/room_details/general_page/mod.rs:1223
+msgid "Unsupported rule"
+msgstr "不支持的规则"
+
 #: src/session/model/room/member_role.rs:50
 msgid "Admin"
 msgstr "管理员"
@@ -863,24 +894,24 @@ msgstr "仲裁员"
 msgid "Normal user"
 msgstr "普通用户"
 
-#: src/session/model/room/mod.rs:1134
+#: src/session/model/room/mod.rs:1142
 msgid "Empty Room (was {user})"
 msgstr "空聊天室（曾有成员 {user}）"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1137
+#: src/session/model/room/mod.rs:1145
 msgid "Empty Room"
 msgstr "空聊天室"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1147
+#: src/session/model/room/mod.rs:1155
 msgid "Unknown"
 msgstr "未知"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:567
+#: src/session/view/content/room_history/mod.rs:564
 msgid "Failed to join room {room_name}. Try again later."
 msgstr "加入聊天室 {room_name} 失败。请稍后重试。"
 
@@ -1032,32 +1063,32 @@ msgid "Backup Encryption Keys"
 msgstr "备份加密密钥"
 
 #: src/session/view/account_settings/general_page/mod.rs:193
-#: src/session/view/content/room_details/general_page/mod.rs:377
+#: src/session/view/content/room_details/general_page/mod.rs:435
 msgid "Avatar removed successfully"
 msgstr "头像已成功移除"
 
 #: src/session/view/account_settings/general_page/mod.rs:195
-#: src/session/view/content/room_details/general_page/mod.rs:379
+#: src/session/view/content/room_details/general_page/mod.rs:437
 msgid "Avatar changed successfully"
 msgstr "头像已成功更改"
 
 #: src/session/view/account_settings/general_page/mod.rs:212
-#: src/session/view/content/room_details/general_page/mod.rs:402
+#: src/session/view/content/room_details/general_page/mod.rs:460
 msgid "Could not load file"
 msgstr "无法加载文件"
 
 #: src/session/view/account_settings/general_page/mod.rs:227
-#: src/session/view/content/room_details/general_page/mod.rs:426
+#: src/session/view/content/room_details/general_page/mod.rs:484
 msgid "Could not upload avatar"
 msgstr "无法上传头像"
 
 #: src/session/view/account_settings/general_page/mod.rs:256
-#: src/session/view/content/room_details/general_page/mod.rs:447
+#: src/session/view/content/room_details/general_page/mod.rs:505
 msgid "Could not change avatar"
 msgstr "无法更改头像"
 
 #: src/session/view/account_settings/general_page/mod.rs:271
-#: src/session/view/content/room_details/general_page/mod.rs:467
+#: src/session/view/content/room_details/general_page/mod.rs:525
 msgid "Remove Avatar?"
 msgstr "移除头像吗？"
 
@@ -1066,7 +1097,8 @@ msgid "Do you really want to remove your avatar?"
 msgstr "您确定想要移除您的头像吗？"
 
 #: src/session/view/account_settings/general_page/mod.rs:275
-#: src/session/view/content/room_details/general_page/mod.rs:473
+#: src/session/view/content/room_details/general_page/mod.rs:531
+#: src/session/view/content/room_details/general_page/mod.rs:1322
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
 #: src/session/view/content/room_history/item_row.rs:707
 #: src/session/view/content/room_history/item_row.rs:764
@@ -1079,14 +1111,14 @@ msgid "Cancel"
 msgstr "取消"
 
 #: src/session/view/account_settings/general_page/mod.rs:276
-#: src/session/view/content/room_details/general_page/mod.rs:474
+#: src/session/view/content/room_details/general_page/mod.rs:532
 #: src/session/view/content/room_history/item_row.rs:708
 #: src/utils/message_dialog.rs:181
 msgid "Remove"
 msgstr "移除"
 
 #: src/session/view/account_settings/general_page/mod.rs:310
-#: src/session/view/content/room_details/general_page/mod.rs:500
+#: src/session/view/content/room_details/general_page/mod.rs:558
 msgid "Could not remove avatar"
 msgstr "无法移除头像"
 
@@ -1112,7 +1144,7 @@ msgid "Name"
 msgstr "名字"
 
 #: src/session/view/account_settings/general_page/mod.ui:65
-#: src/session/view/content/room_details/general_page/mod.ui:277
+#: src/session/view/content/room_details/general_page/mod.ui:331
 msgid "Advanced Information"
 msgstr "高级信息"
 
@@ -1245,13 +1277,13 @@ msgid "You can add users to this list from their room member profile."
 msgstr "您可以从他们的聊天室成员配置将其添加到该列表。"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:179
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:174
 #: src/session/view/account_settings/security_page/mod.ui:59
 msgid "Export Room Encryption Keys"
 msgstr "导出聊天室加密密钥"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:182
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:177
 msgid ""
 "Exporting your room encryption keys allows you to make a backup to be able "
 "to decrypt your messages in end-to-end encrypted rooms on another device or "
@@ -1260,24 +1292,24 @@ msgstr ""
 "导出聊天室加密密钥允许您在其它设备或其它 Matrix 客户端上解密端对端加密聊天室"
 "中的消息。"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:185
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:180
 msgid ""
 "The backup must be stored in a safe place and must be protected with a "
 "strong passphrase that will be used to encrypt the data."
 msgstr "该备份必须存储在安全地方且必须由用来加密数据的强密语进行保护。"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:188
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:183
 msgid "Export Keys"
 msgstr "导出密钥"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:191
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:186
 #: src/session/view/account_settings/security_page/mod.ui:68
 msgid "Import Room Encryption Keys"
 msgstr "导入聊天室加密密钥"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:194
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:189
 msgid ""
 "Importing your room encryption keys allows you to decrypt your messages in "
 "end-to-end encrypted rooms with a previous backup from a Matrix client."
@@ -1285,29 +1317,29 @@ msgstr ""
 "导入聊天室加密密钥允许您通过来自 Matrix 客户端的上个备份解密端到端加密聊天室"
 "中的消息。"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:197
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:192
 msgid "Enter the passphrase provided when the backup file was created."
 msgstr "输入创建该备份文件时提供的密语。"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:200
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:195
 msgid "Import Keys"
 msgstr "导入密钥"
 
 #. Translators: Do no translate "fractal" as it is the application
 #. name.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:226
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:222
 msgid "fractal-encryption-keys"
 msgstr "fractal-加密密钥"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:231
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:227
 msgid "Save Encryption Keys To…"
 msgstr "保存加密密钥…"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:234
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:230
 msgid "Import Encryption Keys From…"
 msgstr "导入加密密钥…"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:247
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:243
 #: src/utils/media.rs:218
 msgid "Could not access file"
 msgstr "无法访问文件"
@@ -1316,24 +1348,24 @@ msgstr "无法访问文件"
 msgid "Passphrases do not match"
 msgstr "密语不匹配"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:347
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:351
 msgid "Room encryption keys exported successfully"
 msgstr "聊天室加密密钥导出成功"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:352
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:356
 msgid "Imported 1 room encryption key"
 msgid_plural "Imported {n} room encryption keys"
 msgstr[0] "已导入 {n} 个聊天室加密密钥"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:366
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:370
 msgid "Could not export the keys"
 msgstr "无法导出该密钥"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:376
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:380
 msgid "The passphrase doesn't match the one used to export the keys."
 msgstr "该密语与导出密钥时使用的密语不匹配。"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:380
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:384
 msgid "Could not import the keys"
 msgstr "无法导入该密钥"
 
@@ -1342,17 +1374,17 @@ msgstr "无法导入该密钥"
 msgid "Passphrase"
 msgstr "密语"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:80
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
 msgid "Confirm Passphrase"
 msgstr "确认密语"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:114
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:116
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 #: src/session/view/content/room_history/message_row/file.rs:65
 msgid "File"
 msgstr "文件"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:118
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:120
 msgid "Choose…"
 msgstr "选择…"
 
@@ -1676,7 +1708,7 @@ msgid "Remove “{address}”"
 msgstr "移除“{address}”"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:408
-#: src/session/view/content/room_details/general_page/mod.rs:865
+#: src/session/view/content/room_details/general_page/mod.rs:927
 msgid "Main Address"
 msgstr "主地址"
 
@@ -1785,61 +1817,125 @@ msgstr "my-room"
 msgid "First part of the address, for example “my-room”"
 msgstr "地址的第一部分，比如“my-room”"
 
-#: src/session/view/content/room_details/general_page/mod.rs:469
+#: src/session/view/content/room_details/general_page/mod.rs:527
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "您确定想要移除该聊天室的头像吗？"
 
-#: src/session/view/content/room_details/general_page/mod.rs:578
+#: src/session/view/content/room_details/general_page/mod.rs:636
 msgid "Room name saved successfully"
 msgstr "聊天室名字已成功保存"
 
-#: src/session/view/content/room_details/general_page/mod.rs:603
+#: src/session/view/content/room_details/general_page/mod.rs:661
 msgid "Room topic saved successfully"
 msgstr "聊天室主题已成功保存"
 
-#: src/session/view/content/room_details/general_page/mod.rs:681
+#: src/session/view/content/room_details/general_page/mod.rs:739
 msgid "Could not change room name"
 msgstr "无法更改聊天室名字"
 
-#: src/session/view/content/room_details/general_page/mod.rs:705
+#: src/session/view/content/room_details/general_page/mod.rs:763
 msgid "Could not change room topic"
 msgstr "无法更改聊天室主题"
 
-#: src/session/view/content/room_details/general_page/mod.rs:718
+#: src/session/view/content/room_details/general_page/mod.rs:776
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:258
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "成员"
 
-#: src/session/view/content/room_details/general_page/mod.rs:818
+#: src/session/view/content/room_details/general_page/mod.rs:880
 msgid "Could not change notifications setting"
 msgstr "无法更改通知设置"
 
-#: src/session/view/content/room_details/general_page/mod.rs:860
-#: src/session/view/content/room_details/general_page/mod.rs:899
+#: src/session/view/content/room_details/general_page/mod.rs:922
+#: src/session/view/content/room_details/general_page/mod.rs:961
 msgid "Copy address"
 msgstr "复制地址"
 
-#: src/session/view/content/room_details/general_page/mod.rs:861
-#: src/session/view/content/room_details/general_page/mod.rs:900
+#: src/session/view/content/room_details/general_page/mod.rs:923
+#: src/session/view/content/room_details/general_page/mod.rs:962
 msgid "Address copied to clipboard"
 msgstr "地址已复制到剪贴板"
 
+#: src/session/view/content/room_details/general_page/mod.rs:1046
+msgid "Could not change who can join"
+msgstr "无法更改加入权限"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1096
+msgid "Failed to change guest access"
+msgstr "更改客人访问权限失败"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/view/content/room_details/general_page/mod.rs:1114
+msgid "Publish in the {homeserver} directory"
+msgstr "公布在 {homeserver} 目录"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1192
+msgid "Failed to publish room in directory"
+msgstr "在目录公布聊天室失败"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1194
+msgid "Failed to unpublish room from directory"
+msgstr "从目录撤下聊天室失败"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1216
+#: src/session/view/content/room_details/general_page/mod.ui:317
+msgid "Anyone, even if they are not in the room"
+msgstr "任何人，即使他们未加入聊天室"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1219
+#: src/session/view/content/room_details/general_page/mod.ui:318
+msgid "Members only, since this option was selected"
+msgstr "仅成员，在选择该选项之后"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1221
+#: src/session/view/content/room_details/general_page/mod.ui:320
+msgid "Members only, since they were invited"
+msgstr "仅成员，在他们被邀请之后"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1222
+#: src/session/view/content/room_details/general_page/mod.ui:319
+msgid "Members only, since they joined the room"
+msgstr "仅成员，在他们加入聊天室后"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1271
+msgid "Could not change who can read history"
+msgstr "无法更改历史查阅权限"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1317
+msgid "Enable Encryption?"
+msgstr "启用加密吗？"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1318
+msgid ""
+"Enabling encryption will prevent new members to read the history before they "
+"arrived. This cannot be disabled later."
+msgstr "启用加密将阻止新成员在到达聊天室前查阅聊天历史。该选项无法在随后禁用。"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1323
+msgid "Enable"
+msgstr "启用"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1333
+msgid "Failed to enable encryption"
+msgstr "启用加密失败"
+
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:954
+#: src/session/view/content/room_details/general_page/mod.rs:1360
 msgid "Federated"
 msgstr "联合的"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:957
+#: src/session/view/content/room_details/general_page/mod.rs:1363
 msgid "Not federated"
 msgstr "未联合"
 
-#: src/session/view/content/room_details/general_page/mod.rs:993
+#: src/session/view/content/room_details/general_page/mod.rs:1399
 msgid "Room upgraded successfully"
 msgstr "聊天室已成功升级"
 
-#: src/session/view/content/room_details/general_page/mod.rs:997
+#: src/session/view/content/room_details/general_page/mod.rs:1403
 msgid "Failed to upgrade room"
 msgstr "升级聊天室失败"
 
@@ -1914,29 +2010,53 @@ msgstr "编辑公开地址"
 msgid "This room has no public addresses"
 msgstr "该聊天室无公开地址"
 
+#: src/session/view/content/room_details/general_page/mod.ui:277
+msgid "Access and Visibility"
+msgstr "访问和可见性"
+
 #: src/session/view/content/room_details/general_page/mod.ui:280
+msgid "Who can join"
+msgstr "加入权限"
+
+#: src/session/view/content/room_details/general_page/mod.ui:301
+msgid "Allow Guests"
+msgstr "允许客人"
+
+#: src/session/view/content/room_details/general_page/mod.ui:302
+msgid "Guests are Matrix users without a registered account"
+msgstr "客人为未注册账户的 Matrix 用户"
+
+#: src/session/view/content/room_details/general_page/mod.ui:313
+msgid "Who can read history"
+msgstr "历史查阅权限"
+
+#: src/session/view/content/room_details/general_page/mod.ui:334
 msgid "Matrix Room ID"
 msgstr "Matrix 聊天室标识"
 
-#: src/session/view/content/room_details/general_page/mod.ui:287
+#: src/session/view/content/room_details/general_page/mod.ui:341
 msgid "Copy Matrix room ID to clipboard"
 msgstr "将 Matrix 聊天室标识复制到剪贴板"
 
-#: src/session/view/content/room_details/general_page/mod.ui:288
+#: src/session/view/content/room_details/general_page/mod.ui:342
 msgid "Matrix room ID copied to clipboard"
 msgstr "Matrix 聊天室标识已复制到剪贴板"
 
-#: src/session/view/content/room_details/general_page/mod.ui:294
+#: src/session/view/content/room_details/general_page/mod.ui:347
+msgid "Enable encryption"
+msgstr "启用加密"
+
+#: src/session/view/content/room_details/general_page/mod.ui:359
 msgid "Room Version"
 msgstr "聊天室版本"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page/mod.ui:306
+#: src/session/view/content/room_details/general_page/mod.ui:371
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
 msgstr "升级"
 
-#: src/session/view/content/room_details/general_page/mod.ui:319
+#: src/session/view/content/room_details/general_page/mod.ui:384
 msgid "Federation"
 msgstr "联合"
 
@@ -2215,7 +2335,7 @@ msgid "New Messages"
 msgstr "新消息"
 
 #: src/session/view/content/room_history/item_row.rs:482
-#: src/session/view/content/room_history/mod.rs:597
+#: src/session/view/content/room_history/mod.rs:594
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
 #: src/session/view/media_viewer.rs:526
 msgid "Permalink copied to clipboard"
@@ -2521,37 +2641,37 @@ msgstr "%m 月 %d 日 %I:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%m 月 %d 日 %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:356
+#: src/session/view/content/room_history/mod.rs:346
 msgid "Error getting file from drop"
 msgstr "从拖放获取文件时出错"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:548
+#: src/session/view/content/room_history/mod.rs:545
 msgid "Failed to leave {room}"
 msgstr "离开 {room} 失败"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:584
-#: src/session/view/sidebar/row.rs:493
+#: src/session/view/content/room_history/mod.rs:581
+#: src/session/view/sidebar/row.rs:494
 msgid "Failed to forget {room}."
 msgstr "忘记 {room} 失败。"
 
-#: src/session/view/content/room_history/mod.rs:755
+#: src/session/view/content/room_history/mod.rs:752
 #: src/session/view/sidebar/mod.rs:301
 msgid "Context Menu"
 msgstr "上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:775
+#: src/session/view/content/room_history/mod.rs:772
 msgid "Sender Context Menu"
 msgstr "发送者上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:942
-#: src/session/view/content/room_history/mod.rs:946
+#: src/session/view/content/room_history/mod.rs:939
+#: src/session/view/content/room_history/mod.rs:943
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "该聊天室有新版本"
 
-#: src/session/view/content/room_history/mod.rs:949
+#: src/session/view/content/room_history/mod.rs:946
 msgid "This room was closed"
 msgstr "该聊天室已关闭"
 
@@ -3240,7 +3360,7 @@ msgid "Direct chat with {name}"
 msgstr "与 {name} 的直接聊天"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:478
+#: src/session/view/sidebar/row.rs:479
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr "将 {room} 从 {previous_category} 移至 {new_category} 失败。"
 
@@ -4214,9 +4334,6 @@ msgstr "会话"
 #~ msgid "Room Name"
 #~ msgstr "聊天室名字"
 
-#~ msgid "Visibility"
-#~ msgstr "可见性"
-
 #~ msgid "Setup"
 #~ msgstr "设定"
 
@@ -4488,14 +4605,8 @@ msgstr "会话"
 #~ msgid "All room history"
 #~ msgstr "所有聊天室记录"
 
-#~ msgid "History after they were invited"
-#~ msgstr "他们被邀请后的记录"
-
 #~ msgid "Allow joining without invite"
 #~ msgstr "允许无邀请加入"
-
-#~ msgid "Publish in room directory"
-#~ msgstr "公布在聊天室目录"
 
 #~ msgid "Show rooms from:"
 #~ msgstr "显示聊天室："
