@@ -272,7 +272,7 @@ pub trait UserExt: IsA<User> {
         let display_name = if let Some(name) = name.filter(|n| !n.is_empty()) {
             name
         } else {
-            user.user_id_string()
+            user.user_id().localpart().to_owned()
         };
 
         user.set_display_name(display_name);
