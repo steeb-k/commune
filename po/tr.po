@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-02-13 15:55+0000\n"
-"PO-Revision-Date: 2024-02-14 08:00+0300\n"
+"POT-Creation-Date: 2024-02-18 19:16+0000\n"
+"PO-Revision-Date: 2024-02-25 08:00+0300\n"
 "Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
@@ -126,19 +126,15 @@ msgstr "Kimin iletileri okuduğunu ve kimin yazdığını görün"
 msgid "Log into multiple accounts at once (with Single-Sign On support)"
 msgstr "Aynı anda birden çok hesapta oturum açın (Single-Sign On desteği ile)"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:26 src/application.rs:192
-msgid "The Fractal Team"
-msgstr "Fractal Takımı"
-
-#: data/org.gnome.Fractal.metainfo.xml.in.in:33
+#: data/org.gnome.Fractal.metainfo.xml.in.in:35
 msgid "Fractal’s main window"
 msgstr "Fraktal ana penceresi"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:37
+#: data/org.gnome.Fractal.metainfo.xml.in.in:39
 msgid "View the media history of a Matrix room"
 msgstr "Matrix odasının ortam geçmişini görüntüsü"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:41
+#: data/org.gnome.Fractal.metainfo.xml.in.in:43
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Fractal arayüzü küçük ekranlara uyum sağlarken"
 
@@ -163,6 +159,10 @@ msgstr "_Hesap Ekle"
 #: src/session/view/account_settings/mod.ui:4
 msgid "Account Settings"
 msgstr "Hesap Ayarları"
+
+#: src/application.rs:192
+msgid "The Fractal Team"
+msgstr "Fractal Takımı"
 
 #: src/application.rs:198
 msgid "© 2017-2024 The Fractal Team"
@@ -189,7 +189,7 @@ msgstr "Oturum bulunamadı"
 msgid "Confirm change"
 msgstr "Değişikliği onayla"
 
-#: src/components/action_button.ui:54 src/components/loading_row.ui:26
+#: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
 msgid "Try again"
 msgstr "Yeniden dene"
@@ -254,7 +254,7 @@ msgid "Choose Avatar"
 msgstr "Profil Resmi Seç"
 
 #: src/components/editable_avatar.rs:354
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:218
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:214
 msgid "Choose"
 msgstr "Seç"
 
@@ -281,7 +281,7 @@ msgstr "Yeni Profil Resmi Seç"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/join_room_dialog.rs:191
 #: src/session/view/content/explore/public_room_row.rs:168
-#: src/session/view/content/room_history/mod.rs:947
+#: src/session/view/content/room_history/mod.rs:941
 #: src/session/view/content/room_history/state_row/tombstone.rs:88
 msgid "View"
 msgstr "Görünüm"
@@ -325,7 +325,7 @@ msgstr "Oda aramak için, oda kimliği, oda takma adı ya da kalıcı bağlantı
 
 #: src/components/join_room_dialog.ui:191
 #: src/session/view/content/explore/public_room_row.rs:170
-#: src/session/view/content/room_history/mod.rs:950
+#: src/session/view/content/room_history/mod.rs:944
 #: src/session/view/content/room_history/state_row/tombstone.rs:90
 msgid "Join"
 msgstr "Katıl"
@@ -410,16 +410,16 @@ msgstr "Bilinmeyen"
 msgid "Allow Access"
 msgstr "Erişime İzin Ver"
 
-#: src/components/user_page.rs:396 src/utils/message_dialog.rs:122
+#: src/components/user_page.rs:396 src/utils/message_dialog.rs:121
 msgid "Revoke Invite"
 msgstr "Daveti Geri Al"
 
-#: src/components/user_page.rs:397 src/utils/message_dialog.rs:138
+#: src/components/user_page.rs:397 src/utils/message_dialog.rs:137
 msgid "Deny Access"
 msgstr "Erişimi Reddet"
 
 #. Translators: As in, 'Kick room member'.
-#: src/components/user_page.rs:399 src/utils/message_dialog.rs:160
+#: src/components/user_page.rs:399 src/utils/message_dialog.rs:159
 msgid "Kick"
 msgstr "At"
 
@@ -428,77 +428,77 @@ msgstr "At"
 msgid "Failed to invite user"
 msgstr "Kullanıcı davet edilemedi"
 
-#: src/components/user_page.rs:498
-#: src/session/view/content/room_history/sender_avatar/mod.rs:544
+#: src/components/user_page.rs:495
+#: src/session/view/content/room_history/sender_avatar/mod.rs:541
 msgid "Failed to revoke invite of user"
 msgstr "Kullanıcı davetiyesi geri alınamadı"
 
-#: src/components/user_page.rs:499
-#: src/session/view/content/room_history/sender_avatar/mod.rs:545
+#: src/components/user_page.rs:496
+#: src/session/view/content/room_history/sender_avatar/mod.rs:542
 msgid "Failed to deny access to user"
 msgstr "Kullanıcıya erişim reddedilemedi"
 
-#: src/components/user_page.rs:500
-#: src/session/view/content/room_history/sender_avatar/mod.rs:546
+#: src/components/user_page.rs:497
+#: src/session/view/content/room_history/sender_avatar/mod.rs:543
 msgid "Failed to kick user"
 msgstr "Kullanıcı atılamadı"
 
-#: src/components/user_page.rs:551
-#: src/session/view/content/room_history/sender_avatar/mod.rs:587
+#: src/components/user_page.rs:545
+#: src/session/view/content/room_history/sender_avatar/mod.rs:581
 msgid "Failed to ban user"
 msgstr "Kullanıcı yasaklanamadı"
 
-#: src/components/user_page.rs:581
-#: src/session/view/content/room_history/sender_avatar/mod.rs:607
+#: src/components/user_page.rs:575
+#: src/session/view/content/room_history/sender_avatar/mod.rs:601
 msgid "Failed to unban user"
 msgstr "Kullanıcı yasağı kaldırılamadı"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:635
-#: src/session/view/content/room_history/sender_avatar/mod.rs:664
+#: src/components/user_page.rs:626
+#: src/session/view/content/room_history/sender_avatar/mod.rs:655
 msgid "Failed to remove 1 message sent by the user"
 msgid_plural "Failed to remove {n} messages sent by the user"
 msgstr[0] "Kullanıcıca gönderilen {n} ileti kaldırılamadı"
 
-#: src/components/user_page.rs:652
+#: src/components/user_page.rs:643
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
 msgid "Identity verified"
 msgstr "Kimlik doğrulandı"
 
-#: src/components/user_page.rs:659
+#: src/components/user_page.rs:650
 msgid "Identity not verified"
 msgstr "Kimlik doğrulanmadı"
 
-#: src/components/user_page.rs:675
+#: src/components/user_page.rs:666
 msgid "Failed to start user verification"
 msgstr "Kullanıcı doğrulama başlatılamadı"
 
-#: src/components/user_page.rs:701
+#: src/components/user_page.rs:692
 msgid "Ignored"
 msgstr "Yok Sayılmış"
 
-#: src/components/user_page.rs:703
+#: src/components/user_page.rs:694
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Yok Saymayı Durdur"
 
-#: src/components/user_page.rs:706
+#: src/components/user_page.rs:697
 msgid "Not Ignored"
 msgstr "Yok Sayılmamış"
 
-#: src/components/user_page.rs:707
+#: src/components/user_page.rs:698
 msgid "Ignore"
 msgstr "Yok Say"
 
-#: src/components/user_page.rs:725
+#: src/components/user_page.rs:716
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
-#: src/session/view/content/room_history/sender_avatar/mod.rs:689
+#: src/session/view/content/room_history/sender_avatar/mod.rs:680
 msgid "Failed to stop ignoring user"
 msgstr "Kullanıcı yok sayılması durdurulamadı"
 
-#: src/components/user_page.rs:728
-#: src/session/view/content/room_history/sender_avatar/mod.rs:692
+#: src/components/user_page.rs:719
+#: src/session/view/content/room_history/sender_avatar/mod.rs:683
 msgid "Failed to ignore user"
 msgstr "Kullanıcı yok sayılamadı"
 
@@ -513,7 +513,7 @@ msgid "Role"
 msgstr "Rol"
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/user_page.ui:160 src/utils/message_dialog.rs:93
+#: src/components/user_page.ui:160 src/utils/message_dialog.rs:92
 msgid "Ban"
 msgstr "Yasakla"
 
@@ -754,74 +754,74 @@ msgstr "Lütfen tarayıcıdaki adımları izleyin."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:91
+#: src/secret/linux.rs:90
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal: {user_id} için Matrix kimlik bilgileri"
 
-#: src/secret/linux.rs:144
+#: src/secret/linux.rs:143
 msgid "Malformed version in stored session"
 msgstr "Depolanan oturumda kusurlu sürüm"
 
-#: src/secret/linux.rs:169
+#: src/secret/linux.rs:168
 msgid "Could not find profile in stored session"
 msgstr "Depolanan oturumda profil bulunamadı"
 
-#: src/secret/linux.rs:182
+#: src/secret/linux.rs:181
 msgid "Malformed homeserver in stored session"
 msgstr "Depolanan oturumda kusurlu ev sunucusu"
 
-#: src/secret/linux.rs:188
+#: src/secret/linux.rs:187
 msgid "Could not find homeserver in stored session"
 msgstr "Depolanan oturumda ev sunucusu bulunamadı"
 
-#: src/secret/linux.rs:198
+#: src/secret/linux.rs:197
 msgid "Malformed user ID in stored session"
 msgstr "Depolanan oturumda kusurlu kullanıcı kimliği"
 
-#: src/secret/linux.rs:204
+#: src/secret/linux.rs:203
 msgid "Could not find user ID in stored session"
 msgstr "Depolanan oturumda kullanıcı kimliği bulunamadı"
 
-#: src/secret/linux.rs:212
+#: src/secret/linux.rs:211
 msgid "Could not find device ID in stored session"
 msgstr "Depolanan oturumda aygıt kimliği bulunamadı"
 
-#: src/secret/linux.rs:220
+#: src/secret/linux.rs:219
 msgid "Could not find database path in stored session"
 msgstr "Depolanan oturumda veri tabanı yolu bulunamadı"
 
-#: src/secret/linux.rs:232 src/secret/linux.rs:242
+#: src/secret/linux.rs:231 src/secret/linux.rs:241
 msgid "Malformed secret in stored session"
 msgstr "Depolanan oturumda kusurlu giz"
 
-#: src/secret/linux.rs:251
+#: src/secret/linux.rs:250
 msgid "Could not get secret in stored session"
 msgstr "Depolanan oturumda giz alınamadı"
 
-#: src/secret/linux.rs:418
+#: src/secret/linux.rs:413
 msgid "The secret storage file is corrupted."
 msgstr "Giz depolama dosyası bozuk."
 
-#: src/secret/linux.rs:422
+#: src/secret/linux.rs:417
 msgid "Could not access the secret storage file location."
 msgstr "Giz depolama dosyası konumuna erişilemedi."
 
-#: src/secret/linux.rs:425
+#: src/secret/linux.rs:420
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr "Giz depolama dosyasına erişilirken bilinmeyen hata oluştu."
 
-#: src/secret/linux.rs:428
+#: src/secret/linux.rs:423
 msgid "The secret storage file has been changed by another process."
 msgstr "Giz depolama dosyası başka süreççe değiştirildi."
 
-#: src/secret/linux.rs:431
+#: src/secret/linux.rs:426
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 "D-Bus Giz Portal arka ucuyla etkileşim kurulurken bilinmeyen hata oluştu."
 
-#: src/secret/linux.rs:434
+#: src/secret/linux.rs:429
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -829,7 +829,7 @@ msgstr ""
 "Flatpak Giz Portalına yapılan istek iptal edildi. Erişmek isteyen herhangi "
 "bir istemi kabul ettiğinizden emin olun."
 
-#: src/secret/linux.rs:437
+#: src/secret/linux.rs:432
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -837,32 +837,32 @@ msgstr ""
 "Flatpak Giz Portalı yok. xdg-desktop-portalʼın kurulu olduğundan ve en az "
 "1.5.0 sürümünün olduğundan emin olun."
 
-#: src/secret/linux.rs:440
+#: src/secret/linux.rs:435
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr "Flatpak Giz Portalı, güvenli olamayacak dek zayıf bir anahtar sağladı."
 
-#: src/secret/linux.rs:452
+#: src/secret/linux.rs:447
 msgid "The item was deleted."
 msgstr "Öge silinmiş."
 
-#: src/secret/linux.rs:456 src/secret/linux.rs:476
+#: src/secret/linux.rs:451 src/secret/linux.rs:471
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr "D-Bus Giz Hizmeti ile etkileşim kurulurken bilinmeyen hata oluştu."
 
-#: src/secret/linux.rs:459
+#: src/secret/linux.rs:454
 msgid "The collection or item is locked."
 msgstr "Derleme ya da öge kilitli."
 
-#: src/secret/linux.rs:462
+#: src/secret/linux.rs:457
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "D-Bus Giz Hizmeti oturumu yok."
 
-#: src/secret/linux.rs:465
+#: src/secret/linux.rs:460
 msgid "The collection or item does not exist."
 msgstr "Derleme ya da öge yok."
 
-#: src/secret/linux.rs:469
+#: src/secret/linux.rs:464
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -870,7 +870,7 @@ msgstr ""
 "D-Bus Giz Hizmeti’ne yapılan istek iptal edildi. Erişmek için sorulan istemi "
 "kabul ettiğinizden emin olun."
 
-#: src/secret/linux.rs:472
+#: src/secret/linux.rs:467
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -881,6 +881,37 @@ msgstr ""
 #: src/session/model/session.rs:452
 msgid "Failed to logout the session."
 msgstr "Oturum kapatılamadı."
+
+#: src/session/model/room/join_rule.rs:276
+msgid "Only invited users, and users can knock"
+msgstr "Yalnızca davetli kullanıcılar ve kullanıcılar çalabilir"
+
+#: src/session/model/room/join_rule.rs:278
+#: src/session/view/content/room_details/general_page/mod.ui:233
+msgid "Only invited users"
+msgstr "Yalnızca davetli kullanıcılar"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/model/room/join_rule.rs:292
+msgid "Members of {room}, and users can knock"
+msgstr "{room} üyeleri ve kullanıcılar çalabilir"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/model/room/join_rule.rs:299
+msgid "Members of {room}"
+msgstr "{room} üyeleri"
+
+#: src/session/model/room/join_rule.rs:304
+#: src/session/view/content/room_details/general_page/mod.ui:234
+msgid "Any registered user"
+msgstr "Herhangi bir kayıtlı kullanıcı"
+
+#: src/session/model/room/join_rule.rs:305
+#: src/session/view/content/room_details/general_page/mod.rs:1221
+msgid "Unsupported rule"
+msgstr "Desteklenmeyen kural"
 
 #: src/session/model/room/member_role.rs:50
 msgid "Admin"
@@ -894,24 +925,24 @@ msgstr "Moderatör"
 msgid "Normal user"
 msgstr "Sıradan kullanıcı"
 
-#: src/session/model/room/mod.rs:1134
+#: src/session/model/room/mod.rs:1142
 msgid "Empty Room (was {user})"
 msgstr "Oda Boş ({user} vardı)"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1137
+#: src/session/model/room/mod.rs:1145
 msgid "Empty Room"
 msgstr "Boş Oda"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1147
+#: src/session/model/room/mod.rs:1155
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:570
+#: src/session/view/content/room_history/mod.rs:564
 msgid "Failed to join room {room_name}. Try again later."
 msgstr "{room_name} odasına katılamadı. Sonra yeniden deneyin."
 
@@ -1069,32 +1100,32 @@ msgid "Backup Encryption Keys"
 msgstr "Şifreleme Anahtarlarını Yedekle"
 
 #: src/session/view/account_settings/general_page/mod.rs:193
-#: src/session/view/content/room_details/general_page/mod.rs:377
+#: src/session/view/content/room_details/general_page/mod.rs:433
 msgid "Avatar removed successfully"
 msgstr "Profil resmi kaldırıldı"
 
 #: src/session/view/account_settings/general_page/mod.rs:195
-#: src/session/view/content/room_details/general_page/mod.rs:379
+#: src/session/view/content/room_details/general_page/mod.rs:435
 msgid "Avatar changed successfully"
 msgstr "Profil resmi değişitirildi"
 
 #: src/session/view/account_settings/general_page/mod.rs:212
-#: src/session/view/content/room_details/general_page/mod.rs:402
+#: src/session/view/content/room_details/general_page/mod.rs:458
 msgid "Could not load file"
 msgstr "Dosya yüklenemedi"
 
 #: src/session/view/account_settings/general_page/mod.rs:227
-#: src/session/view/content/room_details/general_page/mod.rs:426
+#: src/session/view/content/room_details/general_page/mod.rs:482
 msgid "Could not upload avatar"
 msgstr "Profil resmi yüklenemedi"
 
 #: src/session/view/account_settings/general_page/mod.rs:256
-#: src/session/view/content/room_details/general_page/mod.rs:447
+#: src/session/view/content/room_details/general_page/mod.rs:503
 msgid "Could not change avatar"
 msgstr "Profil resmi değiştirilemedi"
 
 #: src/session/view/account_settings/general_page/mod.rs:271
-#: src/session/view/content/room_details/general_page/mod.rs:471
+#: src/session/view/content/room_details/general_page/mod.rs:523
 msgid "Remove Avatar?"
 msgstr "Profil Resmi Kaldırılsın Mı?"
 
@@ -1103,27 +1134,28 @@ msgid "Do you really want to remove your avatar?"
 msgstr "Profil resmi gerçekten kaldırılsın mı?"
 
 #: src/session/view/account_settings/general_page/mod.rs:275
-#: src/session/view/content/room_details/general_page/mod.rs:477
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:81
-#: src/session/view/content/room_history/item_row.rs:711
-#: src/session/view/content/room_history/item_row.rs:772
+#: src/session/view/content/room_details/general_page/mod.rs:529
+#: src/session/view/content/room_details/general_page/mod.rs:1320
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:80
+#: src/session/view/content/room_history/item_row.rs:707
+#: src/session/view/content/room_history/item_row.rs:764
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:174
-#: src/utils/message_dialog.rs:52 src/utils/message_dialog.rs:261
+#: src/utils/message_dialog.rs:51 src/utils/message_dialog.rs:259
 #: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:61
 msgid "Cancel"
 msgstr "İptal"
 
 #: src/session/view/account_settings/general_page/mod.rs:276
-#: src/session/view/content/room_details/general_page/mod.rs:478
-#: src/session/view/content/room_history/item_row.rs:712
-#: src/utils/message_dialog.rs:182
+#: src/session/view/content/room_details/general_page/mod.rs:530
+#: src/session/view/content/room_history/item_row.rs:708
+#: src/utils/message_dialog.rs:181
 msgid "Remove"
 msgstr "Kaldır"
 
 #: src/session/view/account_settings/general_page/mod.rs:310
-#: src/session/view/content/room_details/general_page/mod.rs:504
+#: src/session/view/content/room_details/general_page/mod.rs:556
 msgid "Could not remove avatar"
 msgstr "Profil resmi kaldırılamadı"
 
@@ -1149,7 +1181,7 @@ msgid "Name"
 msgstr "Ad"
 
 #: src/session/view/account_settings/general_page/mod.ui:65
-#: src/session/view/content/room_details/general_page/mod.ui:277
+#: src/session/view/content/room_details/general_page/mod.ui:280
 msgid "Advanced Information"
 msgstr "Gelişmiş Bilgiler"
 
@@ -1207,7 +1239,7 @@ msgid "Could not add notification keyword"
 msgstr "Bildirim anahtar sözcüğü eklenemedi"
 
 #: src/session/view/account_settings/notifications_page.ui:5
-#: src/session/view/content/room_details/general_page/mod.ui:216
+#: src/session/view/content/room_details/general_page/mod.ui:165
 msgid "Notifications"
 msgstr "Bildirimler"
 
@@ -1266,7 +1298,7 @@ msgid "Add Keyword"
 msgstr "Anahtar Sözcük Ekle"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:4
-#: src/session/view/account_settings/security_page/mod.ui:29
+#: src/session/view/account_settings/security_page/mod.ui:26
 msgid "Ignored Users"
 msgstr "Yok Sayılan Kullanıcılar"
 
@@ -1287,13 +1319,13 @@ msgid "You can add users to this list from their room member profile."
 msgstr "Kullanıcıları oda üye profillerinden bu listeye ekleyebilirsiniz."
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:179
-#: src/session/view/account_settings/security_page/mod.ui:59
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:174
+#: src/session/view/account_settings/security_page/mod.ui:41
 msgid "Export Room Encryption Keys"
 msgstr "Oda Şifreleme Anahtarlarını Dışa Aktar"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:182
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:177
 msgid ""
 "Exporting your room encryption keys allows you to make a backup to be able "
 "to decrypt your messages in end-to-end encrypted rooms on another device or "
@@ -1303,7 +1335,7 @@ msgstr ""
 "odalardaki iletilerinizin şifresini başka aygıtta ya da başka bir Matrix "
 "istemcisinde çözebilmek için yedeklemenizi sağlar."
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:185
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:180
 msgid ""
 "The backup must be stored in a safe place and must be protected with a "
 "strong passphrase that will be used to encrypt the data."
@@ -1311,18 +1343,18 @@ msgstr ""
 "Yedek, güvenli bir yerde saklanmalı ve verileri şifrelemek için kullanılacak "
 "güçlü bir parola metniyle korunmalıdır."
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:188
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:183
 msgid "Export Keys"
 msgstr "Anahtarları Dışa Aktar"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:191
-#: src/session/view/account_settings/security_page/mod.ui:68
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:186
+#: src/session/view/account_settings/security_page/mod.ui:50
 msgid "Import Room Encryption Keys"
 msgstr "Oda Şifreleme Anahtarlarını İçe Aktar"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:194
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:189
 msgid ""
 "Importing your room encryption keys allows you to decrypt your messages in "
 "end-to-end encrypted rooms with a previous backup from a Matrix client."
@@ -1331,29 +1363,29 @@ msgstr ""
 "yedeklemeyle uçtan uca şifrelenmiş odalardaki iletilerinizin şifresini "
 "çözmenizi sağlar."
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:197
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:192
 msgid "Enter the passphrase provided when the backup file was created."
 msgstr "Yedekleme dosyası oluşturulurken belirlenen parola metnini girin."
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:200
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:195
 msgid "Import Keys"
 msgstr "Anahtarları İçe Aktar"
 
 #. Translators: Do no translate "fractal" as it is the application
 #. name.
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:226
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:222
 msgid "fractal-encryption-keys"
 msgstr "fractal-şifreleme-anahtarları"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:231
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:227
 msgid "Save Encryption Keys To…"
 msgstr "Şifreleme Anahtarını Şuraya Kaydet…"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:234
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:230
 msgid "Import Encryption Keys From…"
 msgstr "Şifreleme Anahtarlarını Şuradan İçe Aktar…"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:247
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:243
 #: src/utils/media.rs:218
 msgid "Could not access file"
 msgstr "Dosyaya erişilemedi"
@@ -1362,24 +1394,24 @@ msgstr "Dosyaya erişilemedi"
 msgid "Passphrases do not match"
 msgstr "Parola metinleri eşleşmiyor"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:347
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:351
 msgid "Room encryption keys exported successfully"
 msgstr "Oda şifreleme anahtarları dışa aktarıldı"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:352
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:356
 msgid "Imported 1 room encryption key"
 msgid_plural "Imported {n} room encryption keys"
 msgstr[0] "{n} odanın şifreleme anahtarları içe aktarıldı"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:366
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:370
 msgid "Could not export the keys"
 msgstr "Anahtarlar dışa aktarılamadı"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:376
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:380
 msgid "The passphrase doesn't match the one used to export the keys."
 msgstr "Parola metni, anahtarları dışa aktarmak için kullanılanla eşleşmiyor."
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:380
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:384
 msgid "Could not import the keys"
 msgstr "Anahtarlar içe aktarılamadı"
 
@@ -1388,27 +1420,27 @@ msgstr "Anahtarlar içe aktarılamadı"
 msgid "Passphrase"
 msgstr "Parola Metni"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:80
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
 msgid "Confirm Passphrase"
 msgstr "Parola Metnini Doğrula"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:114
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:116
 #: src/session/view/content/room_details/history_viewer/file.ui:4
 #: src/session/view/content/room_history/message_row/file.rs:65
 msgid "File"
 msgstr "Dosya"
 
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:118
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:120
 msgid "Choose…"
 msgstr "Seç…"
 
 #. Translators: As in "The signing key is available".
-#: src/session/view/account_settings/security_page/mod.rs:196
+#: src/session/view/account_settings/security_page/mod.rs:200
 msgid "Available"
 msgstr "Kullanılabilir"
 
 #. Translators: As in "The signing key is not available".
-#: src/session/view/account_settings/security_page/mod.rs:201
+#: src/session/view/account_settings/security_page/mod.rs:205
 msgid "Not available"
 msgstr "Kullanılamaz"
 
@@ -1440,7 +1472,7 @@ msgstr ""
 "Bu etkinleştirildiğinde, katıldığınız odaların diğer üyeleri sizi ileti "
 "yazarken görebilir."
 
-#: src/session/view/account_settings/security_page/mod.ui:30
+#: src/session/view/account_settings/security_page/mod.ui:27
 msgid ""
 "All messages or invitations sent by these users will be ignored. You will "
 "still see some of their activity, like when they join or leave a room."
@@ -1449,23 +1481,23 @@ msgstr ""
 "de odaya katılıp çıkmaları gibi bazı etkinliklerini görebilirsiniz."
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
-#: src/session/view/account_settings/security_page/mod.ui:55
+#: src/session/view/account_settings/security_page/mod.ui:37
 msgid "Room Encryption Keys"
 msgstr "Oda Şifreleme Anahtarları"
 
-#: src/session/view/account_settings/security_page/mod.ui:78
+#: src/session/view/account_settings/security_page/mod.ui:60
 msgid "Cross-Signing"
 msgstr "Çapraz İmzalama"
 
-#: src/session/view/account_settings/security_page/mod.ui:85
+#: src/session/view/account_settings/security_page/mod.ui:67
 msgid "Master key"
 msgstr "Ana anahtar"
 
-#: src/session/view/account_settings/security_page/mod.ui:99
+#: src/session/view/account_settings/security_page/mod.ui:81
 msgid "Self-signing key"
 msgstr "Kendi kendini imzalayan anahtar"
 
-#: src/session/view/account_settings/security_page/mod.ui:113
+#: src/session/view/account_settings/security_page/mod.ui:95
 msgid "User-signing key"
 msgstr "Kullanıcı imzalama anahtarı"
 
@@ -1656,7 +1688,7 @@ msgstr "{room} için davetiye kabul edilemedi. Sonra yeniden deneyin."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:243
+#: src/session/view/content/invite.rs:240
 msgid "Failed to decline invitation for {room}. Try again later."
 msgstr "{room} için davetiye reddedilemedi. Sonra yeniden deneyin."
 
@@ -1726,7 +1758,7 @@ msgid "Remove “{address}”"
 msgstr "“{address}” adresini kaldır"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:408
-#: src/session/view/content/room_details/general_page/mod.rs:869
+#: src/session/view/content/room_details/general_page/mod.rs:925
 msgid "Main Address"
 msgstr "Ana Adres"
 
@@ -1793,7 +1825,7 @@ msgid "Edit Room Addresses"
 msgstr "Oda Adreslerini Düzenle"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:14
-#: src/session/view/content/room_details/general_page/mod.ui:250
+#: src/session/view/content/room_details/general_page/mod.ui:199
 msgid "Public Addresses"
 msgstr "Genel Adresler"
 
@@ -1803,9 +1835,9 @@ msgid ""
 "address is used to identify a room publicly. Before adding an address to "
 "this list, it must be registered as a local address."
 msgstr ""
-"Genel adresler odadaki tüm kullanıcılara duyrulur ve ana adres odayı "
-"genel olarak tanımlamada kullanılır. Bir adres, bu listeye eklemeden "
-"önce yerel adres olarak kaydedilmelidir."
+"Genel adresler odadaki tüm kullanıcılara duyrulur ve ana adres odayı genel "
+"olarak tanımlamada kullanılır. Bir adres, bu listeye eklemeden önce yerel "
+"adres olarak kaydedilmelidir."
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:46
 msgid ""
@@ -1836,61 +1868,128 @@ msgstr "odam"
 msgid "First part of the address, for example “my-room”"
 msgstr "Adresin ilk bölümü, örn: “odam”"
 
-#: src/session/view/content/room_details/general_page/mod.rs:473
+#: src/session/view/content/room_details/general_page/mod.rs:525
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Bu odanın profil resmini gerçekten kaldırmak istiyor musunuz?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:582
+#: src/session/view/content/room_details/general_page/mod.rs:634
 msgid "Room name saved successfully"
 msgstr "Oda adı kaydedildi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:607
+#: src/session/view/content/room_details/general_page/mod.rs:659
 msgid "Room topic saved successfully"
 msgstr "Oda konusu kaydedildi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:685
+#: src/session/view/content/room_details/general_page/mod.rs:737
 msgid "Could not change room name"
 msgstr "Oda adı değiştirilemedi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:709
+#: src/session/view/content/room_details/general_page/mod.rs:761
 msgid "Could not change room topic"
 msgstr "Oda konusu değiştirilemedi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:722
+#: src/session/view/content/room_details/general_page/mod.rs:774
 #: src/session/view/content/room_details/invite_subpage/invitee_list.rs:258
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Üyeler"
 
-#: src/session/view/content/room_details/general_page/mod.rs:822
+#: src/session/view/content/room_details/general_page/mod.rs:878
 msgid "Could not change notifications setting"
 msgstr "Bildirim ayarları değiştirilemedi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:864
-#: src/session/view/content/room_details/general_page/mod.rs:903
+#: src/session/view/content/room_details/general_page/mod.rs:920
+#: src/session/view/content/room_details/general_page/mod.rs:959
 msgid "Copy address"
 msgstr "Adresi kopyala"
 
-#: src/session/view/content/room_details/general_page/mod.rs:865
-#: src/session/view/content/room_details/general_page/mod.rs:904
+#: src/session/view/content/room_details/general_page/mod.rs:921
+#: src/session/view/content/room_details/general_page/mod.rs:960
 msgid "Address copied to clipboard"
 msgstr "Adres panoya kopyalandı"
 
+#: src/session/view/content/room_details/general_page/mod.rs:1044
+msgid "Could not change who can join"
+msgstr "Kimlerin katılabileceği değiştirilemedi"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1094
+msgid "Failed to change guest access"
+msgstr "Konuk erişimi değiştirilemedi"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/session/view/content/room_details/general_page/mod.rs:1112
+msgid "Publish in the {homeserver} directory"
+msgstr "{homeserver} dizininde yayınla"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1190
+msgid "Failed to publish room in directory"
+msgstr "Oda dizinde yayınlanamadı"
+
+# dizinden yayından kaldırılamadı şeklindeki çeviri okuması zor geldi.
+#: src/session/view/content/room_details/general_page/mod.rs:1192
+msgid "Failed to unpublish room from directory"
+msgstr "Oda dizinden kaldırılamadı"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1214
+#: src/session/view/content/room_details/general_page/mod.ui:266
+msgid "Anyone, even if they are not in the room"
+msgstr "Herkes, odada olmasalar bile"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1217
+#: src/session/view/content/room_details/general_page/mod.ui:267
+msgid "Members only, since this option was selected"
+msgstr "Yalnızca üyeler, bunun seçilmesinden bu yana"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1219
+#: src/session/view/content/room_details/general_page/mod.ui:269
+msgid "Members only, since they were invited"
+msgstr "Yalnızca üyeler, davet edilmelerinden bu yana"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1220
+#: src/session/view/content/room_details/general_page/mod.ui:268
+msgid "Members only, since they joined the room"
+msgstr "Yalnızca üyeler, odaya katılmalarından bu yana"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1269
+msgid "Could not change who can read history"
+msgstr "Geçmişi kimin okuyabileceği değiştirilemedi"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1315
+msgid "Enable Encryption?"
+msgstr "Şifreleme Etkinleştirilsin Mi?"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1316
+msgid ""
+"Enabling encryption will prevent new members to read the history before they "
+"arrived. This cannot be disabled later."
+msgstr ""
+"Şifrelemenin etkinleştirilmesi, yeni üyelerin katılmadan önce geçmişi "
+"okumasını önler. Bu daha sonra devre dışı bırakılamaz."
+
+#: src/session/view/content/room_details/general_page/mod.rs:1321
+msgid "Enable"
+msgstr "Etkinleştir"
+
+#: src/session/view/content/room_details/general_page/mod.rs:1331
+msgid "Failed to enable encryption"
+msgstr "Şifreleme etkinleştirilemedi"
+
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:958
+#: src/session/view/content/room_details/general_page/mod.rs:1358
 msgid "Federated"
 msgstr "Federasyon"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:961
+#: src/session/view/content/room_details/general_page/mod.rs:1361
 msgid "Not federated"
 msgstr "Federasyon değil"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1001
+#: src/session/view/content/room_details/general_page/mod.rs:1397
 msgid "Room upgraded successfully"
 msgstr "Oda başarıyla yükseltildi"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1005
+#: src/session/view/content/room_details/general_page/mod.rs:1401
 msgid "Failed to upgrade room"
 msgstr "Oda yükseltilemedi"
 
@@ -1915,79 +2014,103 @@ msgstr "Ayrıntıları Düzenle"
 msgid "Save Details"
 msgstr "Ayrıntıları Kaydet"
 
-#: src/session/view/content/room_details/general_page/mod.ui:160
+#: src/session/view/content/room_details/general_page/mod.ui:141
 #: src/session/view/content/room_details/history_viewer/media.ui:4
 msgid "Media"
 msgstr "Ortam"
 
-#: src/session/view/content/room_details/general_page/mod.ui:178
+#: src/session/view/content/room_details/general_page/mod.ui:148
 msgid "Files"
 msgstr "Dosyalar"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:197
+#: src/session/view/content/room_details/general_page/mod.ui:156
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 #: src/session/view/content/room_history/message_row/audio.rs:94
 msgid "Audio"
 msgstr "Ses"
 
-#: src/session/view/content/room_details/general_page/mod.ui:217
+#: src/session/view/content/room_details/general_page/mod.ui:166
 msgid "Which messages trigger notifications in this room."
 msgstr "Bu odada hangi iletilerin bildirimleri tetiklediği."
 
-#: src/session/view/content/room_details/general_page/mod.ui:220
+#: src/session/view/content/room_details/general_page/mod.ui:169
 msgid "Use the global setting"
 msgstr "Genel ayarı kullan"
 
-#: src/session/view/content/room_details/general_page/mod.ui:227
+#: src/session/view/content/room_details/general_page/mod.ui:176
 msgid "All messages"
 msgstr "Tüm iletiler"
 
-#: src/session/view/content/room_details/general_page/mod.ui:234
+#: src/session/view/content/room_details/general_page/mod.ui:183
 msgid "Only mentions and keywords"
 msgstr "Yalnızca bahsetmeler ve anahtar sözcükler"
 
-#: src/session/view/content/room_details/general_page/mod.ui:241
+#: src/session/view/content/room_details/general_page/mod.ui:190
 msgid "Disable notifications"
 msgstr "Bildirimleri devre dışı bırak"
 
 #. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_details/general_page/mod.ui:254
+#: src/session/view/content/room_details/general_page/mod.ui:203
 msgctxt "room details"
 msgid "Edit"
 msgstr "Düzenle"
 
-#: src/session/view/content/room_details/general_page/mod.ui:258
+#: src/session/view/content/room_details/general_page/mod.ui:207
 msgid "Edit Public Addresses"
 msgstr "Genel Adresleri Düzenle"
 
-#: src/session/view/content/room_details/general_page/mod.ui:267
+#: src/session/view/content/room_details/general_page/mod.ui:216
 msgid "This room has no public addresses"
 msgstr "Bu odanın genel adresi yok"
 
-#: src/session/view/content/room_details/general_page/mod.ui:280
+#: src/session/view/content/room_details/general_page/mod.ui:226
+msgid "Access and Visibility"
+msgstr "Erişim ve Görünürlük"
+
+#: src/session/view/content/room_details/general_page/mod.ui:229
+msgid "Who can join"
+msgstr "Kim katılabilir"
+
+#: src/session/view/content/room_details/general_page/mod.ui:250
+msgid "Allow Guests"
+msgstr "Konuklara İzin Ver"
+
+#: src/session/view/content/room_details/general_page/mod.ui:251
+msgid "Guests are Matrix users without a registered account"
+msgstr "Konuklar, kayıtlı hesabı olmayan Matrix kullanıcılarıdır"
+
+#: src/session/view/content/room_details/general_page/mod.ui:262
+msgid "Who can read history"
+msgstr "Geçmişi kim okuyabilir"
+
+#: src/session/view/content/room_details/general_page/mod.ui:283
 msgid "Matrix Room ID"
 msgstr "Matrix Oda Kimliği"
 
-#: src/session/view/content/room_details/general_page/mod.ui:287
+#: src/session/view/content/room_details/general_page/mod.ui:290
 msgid "Copy Matrix room ID to clipboard"
 msgstr "Matrix oda kimliğini panoya kopyala"
 
-#: src/session/view/content/room_details/general_page/mod.ui:288
+#: src/session/view/content/room_details/general_page/mod.ui:291
 msgid "Matrix room ID copied to clipboard"
 msgstr "Matrix oda kimliği panoya kopyalandı"
 
-#: src/session/view/content/room_details/general_page/mod.ui:294
+#: src/session/view/content/room_details/general_page/mod.ui:296
+msgid "Enable encryption"
+msgstr "Şifrelemeyi etkinleştir"
+
+#: src/session/view/content/room_details/general_page/mod.ui:308
 msgid "Room Version"
 msgstr "Oda Sürümü"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page/mod.ui:306
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:83
+#: src/session/view/content/room_details/general_page/mod.ui:320
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
 msgstr "Yükselt"
 
-#: src/session/view/content/room_details/general_page/mod.ui:319
+#: src/session/view/content/room_details/general_page/mod.ui:333
 msgid "Federation"
 msgstr "Federasyon"
 
@@ -2140,11 +2263,11 @@ msgstr "Kullanıcı artık oda üyeleri listesinde değil"
 msgid "Version"
 msgstr "Sürüm"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:76
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:75
 msgid "Upgrade Room"
 msgstr "Odayı Yükselt"
 
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:77
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:76
 msgid ""
 "Upgrading a room to a more recent version allows to benefit from new "
 "features from the Matrix specification. It can also be used to reset the "
@@ -2159,7 +2282,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:132
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:131
 msgid "{version} (unstable)"
 msgstr "{version} (kararsız)"
 
@@ -2270,7 +2393,7 @@ msgid "New Messages"
 msgstr "Yeni İletiler"
 
 #: src/session/view/content/room_history/item_row.rs:482
-#: src/session/view/content/room_history/mod.rs:600
+#: src/session/view/content/room_history/mod.rs:594
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
 #: src/session/view/media_viewer.rs:526
 msgid "Permalink copied to clipboard"
@@ -2286,33 +2409,33 @@ msgstr "İleti panoya kopyalandı"
 msgid "Thumbnail copied to clipboard"
 msgstr "Küçük resim panoya kopyalandı"
 
-#: src/session/view/content/room_history/item_row.rs:705
+#: src/session/view/content/room_history/item_row.rs:701
 msgid "Remove Message?"
 msgstr "İleti Kaldırılsın Mı?"
 
-#: src/session/view/content/room_history/item_row.rs:707
+#: src/session/view/content/room_history/item_row.rs:703
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Bu iletiyi gerçekten kaldırmak istiyor musunuz? Bu işlem geri alınamaz."
 
-#: src/session/view/content/room_history/item_row.rs:721
+#: src/session/view/content/room_history/item_row.rs:717
 msgid "Failed to remove message"
 msgstr "İleti kaldırılamadı"
 
-#: src/session/view/content/room_history/item_row.rs:735
+#: src/session/view/content/room_history/item_row.rs:731
 msgid "Failed to toggle reaction"
 msgstr "Tepki açılıp kapatılamadı"
 
-#: src/session/view/content/room_history/item_row.rs:753
-#: src/utils/message_dialog.rs:209
+#: src/session/view/content/room_history/item_row.rs:746
+#: src/utils/message_dialog.rs:208
 msgid "Reason (optional)"
 msgstr "Neden (isteğe bağlı)"
 
-#: src/session/view/content/room_history/item_row.rs:765
+#: src/session/view/content/room_history/item_row.rs:757
 msgid "Report Event?"
 msgstr "Olay Bildirilsin Mi?"
 
-#: src/session/view/content/room_history/item_row.rs:767
+#: src/session/view/content/room_history/item_row.rs:759
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator won’t be able to see the content of the event "
@@ -2322,11 +2445,11 @@ msgstr ""
 "Yönetici, şifrelenmiş ya da düzenlenmişse olayın içeriğini göremeyecektir."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:774
+#: src/session/view/content/room_history/item_row.rs:766
 msgid "Report"
 msgstr "Bildir"
 
-#: src/session/view/content/room_history/item_row.rs:792
+#: src/session/view/content/room_history/item_row.rs:784
 msgid "Failed to report event"
 msgstr "Olay bildirilemedi"
 
@@ -2462,11 +2585,11 @@ msgstr "Yanıt Olarak"
 msgid "_Send"
 msgstr "_Gönder"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:617
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:619
 msgid "Public Room Mention Auto-completion"
 msgstr "Genel Oda Atıf Kendiliğinden Tamamlama"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:619
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:621
 msgid "Room Member Mention Auto-completion"
 msgstr "Oda Üyesi Atıf Kendiliğinden Tamamlama"
 
@@ -2581,37 +2704,37 @@ msgstr "%-e %B, %p %-l∶%M"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e %B, %-k∶%M"
 
-#: src/session/view/content/room_history/mod.rs:356
+#: src/session/view/content/room_history/mod.rs:346
 msgid "Error getting file from drop"
 msgstr "Sürükle bıraktan dosya alınırken hata oluştu"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:551
+#: src/session/view/content/room_history/mod.rs:545
 msgid "Failed to leave {room}"
 msgstr "{room} odası terk edilemedi."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:587
-#: src/session/view/sidebar/row.rs:497
+#: src/session/view/content/room_history/mod.rs:581
+#: src/session/view/sidebar/row.rs:494
 msgid "Failed to forget {room}."
 msgstr "{room} odası unutulamadı."
 
-#: src/session/view/content/room_history/mod.rs:758
+#: src/session/view/content/room_history/mod.rs:752
 #: src/session/view/sidebar/mod.rs:301
 msgid "Context Menu"
 msgstr "İçerik Menüsü"
 
-#: src/session/view/content/room_history/mod.rs:778
+#: src/session/view/content/room_history/mod.rs:772
 msgid "Sender Context Menu"
 msgstr "Gönderen İçerik Menüsü"
 
-#: src/session/view/content/room_history/mod.rs:945
-#: src/session/view/content/room_history/mod.rs:949
+#: src/session/view/content/room_history/mod.rs:939
+#: src/session/view/content/room_history/mod.rs:943
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Bu odanın daha yeni bir sürümü var"
 
-#: src/session/view/content/room_history/mod.rs:952
+#: src/session/view/content/room_history/mod.rs:946
 msgid "This room was closed"
 msgstr "Bu oda kapatıldı"
 
@@ -2741,38 +2864,38 @@ msgstr "Doğrudan İleti Oluşturuluyor…"
 msgid "Inviting user…"
 msgstr "Kullanıcı davet ediliyor…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:534
+#: src/session/view/content/room_history/sender_avatar/mod.rs:531
 msgid "Revoking invite…"
 msgstr "Davet geri alınıyor…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:535
+#: src/session/view/content/room_history/sender_avatar/mod.rs:532
 msgid "Denying access…"
 msgstr "Erişim reddediliyor…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:536
+#: src/session/view/content/room_history/sender_avatar/mod.rs:533
 msgid "Kicking user…"
 msgstr "Kullanıcı atılıyor…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:578
+#: src/session/view/content/room_history/sender_avatar/mod.rs:572
 msgid "Banning user…"
 msgstr "Kullanıcı yasaklanıyor…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:602
+#: src/session/view/content/room_history/sender_avatar/mod.rs:596
 msgid "Unbanning user…"
 msgstr "Kullanıcı yasağı kaldırılıyor…"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:648
+#: src/session/view/content/room_history/sender_avatar/mod.rs:639
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "Kullanıcıca gönderilmiş {n} ileti kaldırılıyor…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:681
+#: src/session/view/content/room_history/sender_avatar/mod.rs:672
 msgid "Stop ignoring user…"
 msgstr "Kullanıcıyı yok saymayı durdur…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:683
+#: src/session/view/content/room_history/sender_avatar/mod.rs:674
 msgid "Ignoring user…"
 msgstr "Kullanıcı yok sayılıyor…"
 
@@ -2792,20 +2915,20 @@ msgstr "Bu, bu odanın başlangıcıdır."
 msgid "Previous room"
 msgstr "Önceki oda"
 
-#: src/session/view/content/room_history/state_row/mod.rs:111
+#: src/session/view/content/room_history/state_row/mod.rs:113
 msgid "This room is encrypted from this point on."
-msgstr "Bu oda şu andan itibaren şifrelenmiştir."
+msgstr "Bu oda şu andan sonra şifrelenmiştir."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #. Translators: Do NOT translate the content between '{' and '}', this is
 #. a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:126
-#: src/session/view/content/room_history/state_row/mod.rs:242
+#: src/session/view/content/room_history/state_row/mod.rs:128
+#: src/session/view/content/room_history/state_row/mod.rs:244
 msgid "{user} was invited to this room."
 msgstr "{user} bu odaya davet edildi."
 
-#: src/session/view/content/room_history/state_row/mod.rs:138
+#: src/session/view/content/room_history/state_row/mod.rs:140
 msgid "An unsupported state event was received."
 msgstr "Desteklenmeyen durum olayı alındı."
 
@@ -2814,114 +2937,114 @@ msgstr "Desteklenmeyen durum olayı alındı."
 #. We don't know what changed so fall back to the membership.
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:214
-#: src/session/view/content/room_history/state_row/mod.rs:371
+#: src/session/view/content/room_history/state_row/mod.rs:216
+#: src/session/view/content/room_history/state_row/mod.rs:373
 msgid "{user} joined this room."
 msgstr "{user} odaya katıldı."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:219
+#: src/session/view/content/room_history/state_row/mod.rs:221
 msgid "{user} left the room."
 msgstr "{user} odayı terk etti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:224
+#: src/session/view/content/room_history/state_row/mod.rs:226
 msgid "{user} was banned."
 msgstr "{user} yasaklandı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:230
+#: src/session/view/content/room_history/state_row/mod.rs:232
 msgid "{user} was unbanned."
 msgstr "{user} yasağı kaldırıldı."
 
 #. Translators: Do NOT translate the content between '{' and
 #. '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:236
+#: src/session/view/content/room_history/state_row/mod.rs:238
 msgid "{user} was kicked out of the room."
 msgstr "{user} odadan uzaklaştırıldı."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is
 #. a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:248
+#: src/session/view/content/room_history/state_row/mod.rs:250
 msgid "{user} was kicked out of the room and banned."
 msgstr "{user} odadan uzaklaştırıldı ve yasaklandı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:254
+#: src/session/view/content/room_history/state_row/mod.rs:256
 msgid "{user} accepted the invite."
 msgstr "{user} daveti kabul etti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:260
+#: src/session/view/content/room_history/state_row/mod.rs:262
 msgid "{user} rejected the invite."
 msgstr "{user} daveti reddetti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:266
+#: src/session/view/content/room_history/state_row/mod.rs:268
 msgid "The invitation for {user} has been revoked."
 msgstr "{user} için davetiye geri alındı."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:275
+#: src/session/view/content/room_history/state_row/mod.rs:277
 msgid "{user} requested to be invited to this room."
 msgstr "{user} odaya davet edilmeyi istedi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:282
+#: src/session/view/content/room_history/state_row/mod.rs:284
 msgid "{user} retracted their request to be invited to this room."
 msgstr "{user} odaya davet edilme isteğini geri çekti."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:288
+#: src/session/view/content/room_history/state_row/mod.rs:290
 msgid "{user}’s request to be invited to this room was denied."
 msgstr "{user} kullanıcısının bu odaya davet edilme isteği reddedildi."
 
-#: src/session/view/content/room_history/state_row/mod.rs:296
+#: src/session/view/content/room_history/state_row/mod.rs:298
 msgid "An unsupported room member event was received."
 msgstr "Desteklenmeyen oda üyesi etkinliği alındı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:315
+#: src/session/view/content/room_history/state_row/mod.rs:317
 msgid "{previous_user_name} changed their display name to {new_user_name}."
 msgstr "{previous_user_name} görünen adını {new_user_name} olarak değiştirdi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:325
+#: src/session/view/content/room_history/state_row/mod.rs:327
 msgid "{previous_user_name} removed their display name."
 msgstr "{previous_user_name} görünen adını kaldırdı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:337
+#: src/session/view/content/room_history/state_row/mod.rs:339
 msgid "{user_id} set their display name to {new_user_name}."
 msgstr "{user_id} görünen adını {new_user_name} olarak belirledi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:349
+#: src/session/view/content/room_history/state_row/mod.rs:351
 msgid "{user} set their avatar."
 msgstr "{user} profil resmi belirledi."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:356
+#: src/session/view/content/room_history/state_row/mod.rs:358
 msgid "{user} removed their avatar."
 msgstr "{user} profil resmini kaldırdı."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/state_row/mod.rs:363
+#: src/session/view/content/room_history/state_row/mod.rs:365
 msgid "{user} changed their avatar."
 msgstr "{user} profil resmini değiştirdi."
 
@@ -3301,7 +3424,7 @@ msgid "Direct chat with {name}"
 msgstr "{name} ile doğrudan söyleşi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:482
+#: src/session/view/sidebar/row.rs:479
 msgid "Failed to move {room} from {previous_category} to {new_category}."
 msgstr ""
 "{room} odası {previous_category} kategorisinden {new_category} kategorisine "
@@ -3491,13 +3614,13 @@ msgstr "Terk Et"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:86
+#: src/utils/message_dialog.rs:85
 msgid "Ban {user}?"
 msgstr "{user} yasaklansın mı?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:90
+#: src/utils/message_dialog.rs:89
 msgid ""
 "Are you sure you want to ban {user_id}? They will not be able to join the "
 "room again until someone unbans them."
@@ -3507,13 +3630,13 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:104
+#: src/utils/message_dialog.rs:103
 msgid "Revoke Invite for {user}?"
 msgstr "{user} için davet geri alınsın mı?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:111
+#: src/utils/message_dialog.rs:110
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will still be "
 "able to join the room on their own."
@@ -3523,7 +3646,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:118
+#: src/utils/message_dialog.rs:117
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will not be "
 "able to join the room again until someone reinvites them."
@@ -3533,25 +3656,25 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:129
+#: src/utils/message_dialog.rs:128
 msgid "Deny Access to {user}?"
 msgstr "{user} Kullanıcısına Erişim Reddedilsin Mi?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:135
+#: src/utils/message_dialog.rs:134
 msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "{user_id} kullanıcısına erişimi reddetmek istediğinizden emin misiniz?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:144
+#: src/utils/message_dialog.rs:143
 msgid "Kick {user}?"
 msgstr "{user} atılsın mı?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:149
+#: src/utils/message_dialog.rs:148
 msgid ""
 "Are you sure you want to kick {user_id}? They will still be able to join the "
 "room again on their own."
@@ -3561,7 +3684,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:156
+#: src/utils/message_dialog.rs:155
 msgid ""
 "Are you sure you want to kick {user_id}? They will not be able to join the "
 "room again until someone invites them."
@@ -3571,13 +3694,13 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:171
+#: src/utils/message_dialog.rs:170
 msgid "Remove Messages Sent by {user}?"
 msgstr "{user} Tarafından Gönderilen İletiler Kaldırılsın Mı?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:177
+#: src/utils/message_dialog.rs:176
 msgid ""
 "This removes all the messages received from the homeserver. Are you sure you "
 "want to remove 1 message sent by {user_id}? This cannot be undone."
@@ -3590,13 +3713,13 @@ msgstr[0] ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:188
+#: src/utils/message_dialog.rs:187
 msgid "No Messages Sent by {user}"
 msgstr "{user} Tarafından Gönderilen İleti Yok"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:194
+#: src/utils/message_dialog.rs:193
 msgid ""
 "There are no messages received from the homeserver sent by {user_id}. You "
 "can try to load more by going further back in the room history."
@@ -3606,7 +3729,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/utils/message_dialog.rs:233
+#: src/utils/message_dialog.rs:232
 msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] "Kullanıcıca gönderilmiş son {n} iletiyi kaldır"
@@ -4147,9 +4270,6 @@ msgstr "Oturum"
 
 #~ msgid "Matrix group messaging app"
 #~ msgstr "Matrix küme mesajlaşma uygulaması"
-
-#~ msgid "Failed to add reaction"
-#~ msgstr "İfade eklenemedi"
 
 #~ msgid "Source"
 #~ msgstr "Kaynak"
