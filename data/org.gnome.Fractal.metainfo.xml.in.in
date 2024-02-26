@@ -21,6 +21,10 @@
       <li>Log into multiple accounts at once (with Single-Sign On support)</li>
     </ul>
   </description>
+  <branding>
+    <color type="primary" scheme_preference="light">#a5c8f2</color>
+    <color type="primary" scheme_preference="dark">#1b549b</color>
+  </branding>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <developer id="https://gitlab.gnome.org/GNOME/fractal">
