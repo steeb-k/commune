@@ -43,7 +43,7 @@ impl From<MembershipState> for Membership {
 }
 
 mod imp {
-    use std::cell::{Cell, OnceCell};
+    use std::cell::{Cell, OnceCell, RefCell};
 
     use super::*;
 
@@ -51,17 +51,21 @@ mod imp {
     #[properties(wrapper_type = super::Member)]
     pub struct Member {
         /// The room of the member.
-        #[property(get, construct_only)]
+        #[property(get, set = Self::set_room, construct_only)]
         pub room: OnceCell<Room>,
         /// The power level of the member.
         #[property(get, minimum = POWER_LEVEL_MIN, maximum = POWER_LEVEL_MAX)]
         pub power_level: Cell<PowerLevel>,
+        /// The role of the member.
+        #[property(get, builder(MemberRole::default()))]
+        pub role: Cell<MemberRole>,
         /// This member's membership state.
         #[property(get, builder(Membership::default()))]
         pub membership: Cell<Membership>,
         /// The timestamp of the latest activity of this member.
         #[property(get, set = Self::set_latest_activity, explicit_notify)]
         pub latest_activity: Cell<u64>,
+        power_level_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -72,7 +76,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Member {}
+    impl ObjectImpl for Member {
+        fn dispose(&self) {
+            if let Some(room) = self.room.get() {
+                for handler in self.power_level_handlers.take() {
+                    room.permissions().disconnect(handler);
+                }
+            }
+        }
+    }
 
     impl PillSourceImpl for Member {
         fn identifier(&self) -> String {
@@ -81,6 +93,26 @@ mod imp {
     }
 
     impl Member {
+        /// Set the room of the member.
+        fn set_room(&self, room: Room) {
+            let obj = self.obj();
+
+            let default_pl_handler = room.permissions().connect_default_power_level_notify(
+                clone!(@weak obj => move |_| {
+                    obj.update_role();
+                }),
+            );
+            let mute_pl_handler =
+                room.permissions()
+                    .connect_mute_power_level_notify(clone!(@weak obj => move |_| {
+                        obj.update_role();
+                    }));
+            self.power_level_handlers
+                .replace(vec![default_pl_handler, mute_pl_handler]);
+
+            self.room.set(room).unwrap();
+        }
+
         /// Set the timestamp of the latest activity of this member.
         fn set_latest_activity(&self, activity: u64) {
             if self.latest_activity.get() >= activity {
@@ -115,24 +147,22 @@ impl Member {
         if self.power_level() == power_level {
             return;
         }
-        self.imp().power_level.replace(power_level);
+
+        self.imp().power_level.set(power_level);
+        self.update_role();
         self.notify_power_level();
     }
 
-    pub fn role(&self) -> MemberRole {
-        self.power_level().into()
-    }
+    /// Update the role of the member.
+    fn update_role(&self) {
+        let role = self.room().permissions().role(self.power_level());
 
-    pub fn is_admin(&self) -> bool {
-        self.role().is_admin()
-    }
+        if self.role() == role {
+            return;
+        }
 
-    pub fn is_mod(&self) -> bool {
-        self.role().is_mod()
-    }
-
-    pub fn is_peasant(&self) -> bool {
-        self.role().is_peasant()
+        self.imp().role.set(role);
+        self.notify_role();
     }
 
     /// Set this member's membership state.
@@ -140,6 +170,7 @@ impl Member {
         if self.membership() == membership {
             return;
         }
+
         let imp = self.imp();
         imp.membership.replace(membership);
         self.notify_membership();

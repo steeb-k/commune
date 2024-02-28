@@ -28,6 +28,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/rows/copyable_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/entry_add_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/loading_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/rows/power_level_selection_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/removable_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/substring_entry_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/switch_loading_row.ui</file>

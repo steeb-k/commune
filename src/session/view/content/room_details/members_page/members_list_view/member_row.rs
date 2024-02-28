@@ -1,7 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{Avatar, PowerLevelBadge},
+    components::{Avatar, RoleBadge},
     session::model::Member,
 };
 
@@ -31,7 +31,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Avatar::static_type();
-            PowerLevelBadge::static_type();
+            RoleBadge::static_type();
 
             Self::bind_template(klass);
         }

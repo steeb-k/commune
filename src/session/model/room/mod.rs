@@ -40,7 +40,6 @@ mod highlight_flags;
 mod join_rule;
 mod member;
 mod member_list;
-mod member_role;
 mod permissions;
 mod room_type;
 mod timeline;
@@ -53,8 +52,7 @@ pub use self::{
     join_rule::{JoinRule, JoinRuleValue},
     member::{Member, Membership},
     member_list::MemberList,
-    member_role::MemberRole,
-    permissions::{Permissions, PowerLevel, POWER_LEVEL_MAX, POWER_LEVEL_MIN},
+    permissions::*,
     room_type::RoomType,
     timeline::*,
     typing_list::TypingList,

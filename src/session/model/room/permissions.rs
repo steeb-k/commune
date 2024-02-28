@@ -1,3 +1,6 @@
+use std::fmt;
+
+use gettextrs::gettext;
 use gtk::{
     glib,
     glib::{clone, closure_local},
@@ -14,7 +17,7 @@ use ruma::{
         },
         MessageLikeEventType, StateEventType, SyncStateEvent,
     },
-    UserId,
+    Int, OwnedUserId, UserId,
 };
 use tracing::error;
 
@@ -25,9 +28,56 @@ use crate::{prelude::*, spawn, spawn_tokio};
 ///
 /// Is usually in the range (0..=100), but can be any JS integer.
 pub type PowerLevel = i64;
-// Same value as MAX_SAFE_INT from js_int.
-pub const POWER_LEVEL_MAX: i64 = 0x001F_FFFF_FFFF_FFFF;
-pub const POWER_LEVEL_MIN: i64 = -POWER_LEVEL_MAX;
+
+/// The maximum power level that can be set, according to the Matrix
+/// specification.
+///
+/// This is the same value as `MAX_SAFE_INT` from the `js_int` crate.
+pub const POWER_LEVEL_MAX: PowerLevel = 0x001F_FFFF_FFFF_FFFF;
+/// The minimum power level that can be set, according to the Matrix
+/// specification.
+///
+/// This is the same value as `MIN_SAFE_INT` from the `js_int` crate.
+pub const POWER_LEVEL_MIN: PowerLevel = -POWER_LEVEL_MAX;
+/// The minimum power level to have the role of Administrator, according to the
+/// Matrix specification.
+pub const POWER_LEVEL_ADMIN: PowerLevel = 100;
+/// The minimum power level to have the role of Moderator, according to the
+/// Matrix specification.
+pub const POWER_LEVEL_MOD: PowerLevel = 50;
+
+/// Role of a room member, like admin or moderator.
+#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
+#[enum_type(name = "MemberRole")]
+pub enum MemberRole {
+    /// A room member with the default power level.
+    #[default]
+    Default,
+    /// A room member with a non-default power level, but lower than and a
+    /// moderator.
+    Custom,
+    /// A moderator.
+    Moderator,
+    /// An administrator.
+    Administrator,
+    /// A room member that cannot send messages.
+    Muted,
+}
+
+impl fmt::Display for MemberRole {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            // Translators: As in 'Default power level'.
+            Self::Default => write!(f, "{}", gettext("Default")),
+            // Translators: As in, 'Custom power level'.
+            Self::Custom => write!(f, "{}", gettext("Custom")),
+            Self::Moderator => write!(f, "{}", gettext("Moderator")),
+            Self::Administrator => write!(f, "{}", gettext("Admin")),
+            // Translators: As in 'Muted room member', a member that cannot send messages.
+            Self::Muted => write!(f, "{}", gettext("Muted")),
+        }
+    }
+}
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
@@ -48,6 +98,15 @@ mod imp {
         power_levels_drop_guard: OnceCell<EventHandlerDropGuard>,
         /// Whether our own member is joined.
         pub is_joined: Cell<bool>,
+        /// The power level of our own member.
+        #[property(get)]
+        pub own_power_level: Cell<PowerLevel>,
+        /// The default power level for members.
+        #[property(get)]
+        pub default_power_level: Cell<PowerLevel>,
+        /// The power level to mute members.
+        #[property(get)]
+        pub mute_power_level: Cell<PowerLevel>,
         /// Whether our own member can change the room's avatar.
         #[property(get)]
         pub can_change_avatar: Cell<bool>,
@@ -81,6 +140,9 @@ mod imp {
                 power_levels: RefCell::new(RoomPowerLevelsEventContent::default().into()),
                 power_levels_drop_guard: Default::default(),
                 is_joined: Default::default(),
+                own_power_level: Default::default(),
+                default_power_level: Default::default(),
+                mute_power_level: Default::default(),
                 can_change_avatar: Default::default(),
                 can_change_name: Default::default(),
                 can_change_topic: Default::default(),
@@ -213,6 +275,9 @@ mod imp {
 
         /// Trigger updates when the permissions changed.
         fn permissions_changed(&self) {
+            self.update_own_power_level();
+            self.update_default_power_level();
+            self.update_mute_power_level();
             self.update_can_change_avatar();
             self.update_can_change_name();
             self.update_can_change_topic();
@@ -222,6 +287,58 @@ mod imp {
             self.update_can_redact_own();
             self.update_can_redact_other();
             self.obj().emit_by_name::<()>("changed", &[]);
+        }
+
+        /// Update the power level of our own member.
+        fn update_own_power_level(&self) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+            let own_member = room.own_member();
+
+            let power_level = self
+                .power_levels
+                .borrow()
+                .for_user(own_member.user_id())
+                .into();
+
+            if self.own_power_level.get() == power_level {
+                return;
+            }
+
+            self.own_power_level.set(power_level);
+            self.obj().notify_own_power_level();
+        }
+
+        /// Update the default power level for members.
+        fn update_default_power_level(&self) {
+            let power_level = self.power_levels.borrow().users_default.into();
+
+            if self.default_power_level.get() == power_level {
+                return;
+            }
+
+            self.default_power_level.set(power_level);
+            self.obj().notify_default_power_level();
+        }
+
+        /// Update the power level to mute members.
+        fn update_mute_power_level(&self) {
+            // To mute user they must not have enough power to send messages.
+            let power_levels = self.power_levels.borrow();
+            let message_power_level = power_levels
+                .events
+                .get(&MessageLikeEventType::RoomMessage.into())
+                .copied()
+                .unwrap_or(power_levels.events_default);
+            let power_level = (-1).min(message_power_level.into());
+
+            if self.mute_power_level.get() == power_level {
+                return;
+            }
+
+            self.mute_power_level.set(power_level);
+            self.obj().notify_mute_power_level();
         }
 
         /// Whether our own member is allowed to do the given action.
@@ -364,6 +481,24 @@ impl Permissions {
         imp.init_power_levels().await;
     }
 
+    /// The current [`MemberRole`] for the given power level.
+    pub fn role(&self, power_level: PowerLevel) -> MemberRole {
+        if power_level >= POWER_LEVEL_ADMIN {
+            MemberRole::Administrator
+        } else if power_level >= POWER_LEVEL_MOD {
+            MemberRole::Moderator
+        } else if power_level == self.default_power_level() {
+            MemberRole::Default
+        } else if power_level < self.default_power_level() && power_level <= self.mute_power_level()
+        {
+            // Only set role as muted for members below default, to avoid visual noise in
+            // rooms where muted is the default.
+            MemberRole::Muted
+        } else {
+            MemberRole::Custom
+        }
+    }
+
     /// Whether our own member is allowed to do the given action.
     pub fn is_allowed_to(&self, room_action: PowerLevelAction) -> bool {
         self.imp().is_allowed_to(room_action)
@@ -393,6 +528,33 @@ impl Permissions {
         }
 
         power_levels.user_can_do_to_user(own_user_id, user_id, action)
+    }
+
+    /// Set the power level of the room member with the given user ID.
+    pub async fn set_user_power_level(
+        &self,
+        user_id: OwnedUserId,
+        power_level: PowerLevel,
+    ) -> Result<(), ()> {
+        let Some(room) = self.room() else {
+            return Err(());
+        };
+
+        let matrix_room = room.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            let power_level = Int::new_saturating(power_level);
+            matrix_room
+                .update_power_levels(vec![(&user_id, power_level)])
+                .await
+        });
+
+        match handle.await.unwrap() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Failed to set user power level: {error}");
+                Err(())
+            }
+        }
     }
 
     /// Connect to the signal emitted when the permissions changed.

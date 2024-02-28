@@ -291,3 +291,68 @@ pub struct ConfirmRoomMemberDestructiveActionResponse {
     /// Whether we can remove the events.
     pub remove_events: bool,
 }
+
+/// Show a dialog to confirm muting a room member.
+pub async fn confirm_mute_room_member(member: &Member, parent: &impl IsA<gtk::Widget>) -> bool {
+    let heading = gettext_f(
+        // Translators: Do NOT translate the content between '{' and '}',
+        // this is a variable name.
+        "Mute {user}?",
+        &[("user", &member.display_name())],
+    );
+    let body = gettext_f(
+        // Translators: Do NOT translate the content between '{' and '}',
+        // this is a variable name.
+        "Are you sure you want to mute {user_id}? They will not be able to send new messages.",
+        &[("user_id", member.user_id().as_str())],
+    );
+
+    // Ask for confirmation.
+    let confirm_dialog = adw::AlertDialog::builder()
+        .default_response("cancel")
+        .heading(heading)
+        .body(body)
+        .build();
+    confirm_dialog.add_responses(&[
+        ("cancel", &gettext("Cancel")),
+        // Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
+        ("mute", &gettext("Mute")),
+    ]);
+    confirm_dialog.set_response_appearance("mute", adw::ResponseAppearance::Destructive);
+
+    confirm_dialog.choose_future(parent).await == "mute"
+}
+
+/// Show a dialog to confirm setting the power level of a room member with the
+/// same value as our own.
+pub async fn confirm_set_room_member_power_level_same_as_own(
+    member: &Member,
+    parent: &impl IsA<gtk::Widget>,
+) -> bool {
+    let heading = gettext_f(
+        // Translators: Do NOT translate the content between '{' and '}',
+        // this is a variable name.
+        "Promote {user}?",
+        &[("user", &member.display_name())],
+    );
+    let body = gettext_f(
+        // Translators: Do NOT translate the content between '{' and '}',
+        // this is a variable name.
+        "If you promote {user_id} to the same level as yours, you will not be able to demote them in the future.",
+        &[("user_id", member.user_id().as_str())],
+    );
+
+    // Ask for confirmation.
+    let confirm_dialog = adw::AlertDialog::builder()
+        .default_response("cancel")
+        .heading(heading)
+        .body(body)
+        .build();
+    confirm_dialog.add_responses(&[
+        ("cancel", &gettext("Cancel")),
+        ("promote", &gettext("Promote")),
+    ]);
+    confirm_dialog.set_response_appearance("promote", adw::ResponseAppearance::Destructive);
+
+    confirm_dialog.choose_future(parent).await == "promote"
+}

@@ -182,23 +182,27 @@ button.overlaid {
   background-color: @accent_bg_color;
 }
 
-power-level-badge {
+role-badge {
   color: @dark_5;
   background-color: @light_3;
   border-radius: 0.4em;
   padding: 0.1em 0.5em;
   font-size: 0.8em;
-  margin-left: 0.5em;
 }
 
-power-level-badge.admin {
+role-badge.admin {
   color: @error_fg_color;
   background-color: @error_bg_color;
 }
 
-power-level-badge.mod {
+role-badge.mod {
   color: @warning_fg_color;
   background-color: @warning_bg_color;
+}
+
+role-badge.muted {
+  color: @light_1;
+  background-color: @dark_2;
 }
 
 media-viewer toolbarview headerbar {
@@ -236,6 +240,39 @@ spinner-wrapper.large spinner {
 
 .substring-entry-row .header text placeholder {
   opacity: 0.55;
+}
+
+.role-selection-row popover viewport > box {
+  padding: 6px;
+}
+
+.role-selection-row popover list row.spin {
+  padding: 0;
+}
+
+.role-selection-row popover row.spin > box {
+  min-height: 30px;
+}
+
+.role-selection-row popover row.spin spinbutton > button {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.role-selection-row popover row.spin button.spin-confirm {
+  min-height: 22px;
+  min-width: 22px;
+  padding: 0;
+  margin-left: 2px;
+}
+
+.role-selection-row popover row.spin button.spin-confirm:dir(rtl) {
+  margin-left: 0;
+  margin-right: 2px;
+}
+
+.role-selection-row popover row.spin button.spin-confirm image {
+  padding: 7px;
 }
 
 

@@ -1,0 +1,385 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, CompositeTemplate};
+
+use crate::{
+    components::{LoadingBin, RoleBadge},
+    session::model::{Permissions, PowerLevel, POWER_LEVEL_ADMIN, POWER_LEVEL_MOD},
+    utils::BoundObject,
+};
+
+mod imp {
+    use std::{cell::Cell, marker::PhantomData};
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/power_level_selection_row.ui")]
+    #[properties(wrapper_type = super::PowerLevelSelectionRow)]
+    pub struct PowerLevelSelectionRow {
+        #[template_child]
+        pub selected_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub selected_level_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub selected_role_badge: TemplateChild<RoleBadge>,
+        #[template_child]
+        pub loading_bin: TemplateChild<LoadingBin>,
+        #[template_child]
+        pub popover: TemplateChild<gtk::Popover>,
+        #[template_child]
+        pub admin_row: TemplateChild<gtk::ListBoxRow>,
+        #[template_child]
+        pub admin_selected: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub mod_row: TemplateChild<gtk::ListBoxRow>,
+        #[template_child]
+        pub mod_selected: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub default_row: TemplateChild<gtk::ListBoxRow>,
+        #[template_child]
+        pub default_pl_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub default_selected: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub muted_row: TemplateChild<gtk::ListBoxRow>,
+        #[template_child]
+        pub muted_pl_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub muted_selected: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub custom_row: TemplateChild<adw::SpinRow>,
+        #[template_child]
+        pub custom_adjustment: TemplateChild<gtk::Adjustment>,
+        #[template_child]
+        pub custom_confirm: TemplateChild<gtk::Button>,
+        /// The permissions to watch.
+        #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
+        pub permissions: BoundObject<Permissions>,
+        /// The selected power level.
+        #[property(get, set = Self::set_selected_power_level, explicit_notify)]
+        pub selected_power_level: Cell<PowerLevel>,
+        /// Whether the row is loading.
+        #[property(get = Self::is_loading, set = Self::set_is_loading)]
+        pub is_loading: PhantomData<bool>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for PowerLevelSelectionRow {
+        const NAME: &'static str = "PowerLevelSelectionRow";
+        type Type = super::PowerLevelSelectionRow;
+        type ParentType = adw::ActionRow;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for PowerLevelSelectionRow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.obj()
+                .reset_relation(gtk::AccessibleRelation::DescribedBy);
+        }
+    }
+
+    impl WidgetImpl for PowerLevelSelectionRow {}
+    impl ListBoxRowImpl for PowerLevelSelectionRow {}
+    impl PreferencesRowImpl for PowerLevelSelectionRow {}
+
+    impl ActionRowImpl for PowerLevelSelectionRow {
+        fn activate(&self) {
+            if !self.is_loading() {
+                self.popover.popup();
+            }
+        }
+    }
+
+    impl PowerLevelSelectionRow {
+        /// Set the permissions to watch.
+        fn set_permissions(&self, permissions: Option<Permissions>) {
+            if self.permissions.obj() == permissions {
+                return;
+            }
+            let obj = self.obj();
+
+            self.permissions.disconnect_signals();
+
+            if let Some(permissions) = permissions {
+                let own_pl_handler = permissions.connect_own_power_level_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update();
+                    }),
+                );
+                let default_pl_handler = permissions.connect_default_power_level_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_default();
+                        imp.update_muted();
+                        imp.update_selection();
+                    }),
+                );
+                let muted_pl_handler = permissions.connect_mute_power_level_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_muted();
+                        imp.update_selection();
+                    }),
+                );
+
+                self.permissions.set(
+                    permissions,
+                    vec![own_pl_handler, default_pl_handler, muted_pl_handler],
+                );
+            }
+
+            self.update();
+            self.update_selected_label();
+            obj.notify_permissions();
+        }
+
+        /// Update the label of the selected power level.
+        fn update_selected_label(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let power_level = self.selected_power_level.get();
+            let role = permissions.role(power_level);
+
+            self.selected_role_badge.set_role(role);
+            self.selected_level_label
+                .set_label(&power_level.to_string());
+
+            let role_string = format!("{power_level} {role}");
+            obj.update_property(&[gtk::accessible::Property::Description(&role_string)]);
+        }
+
+        /// Set the selected power level.
+        fn set_selected_power_level(&self, power_level: PowerLevel) {
+            if self.selected_power_level.get() == power_level {
+                return;
+            }
+
+            self.selected_power_level.set(power_level);
+
+            self.update_selected_label();
+            self.update_selection();
+            self.update_custom();
+            self.obj().notify_selected_power_level();
+        }
+
+        /// Whether the row is loading.
+        fn is_loading(&self) -> bool {
+            self.loading_bin.is_loading()
+        }
+
+        /// Set whether the row is loading.
+        fn set_is_loading(&self, loading: bool) {
+            if self.is_loading() == loading {
+                return;
+            }
+
+            self.loading_bin.set_is_loading(loading);
+            self.obj().notify_is_loading();
+        }
+
+        /// Update the rows.
+        fn update(&self) {
+            self.update_admin();
+            self.update_mod();
+            self.update_default();
+            self.update_muted();
+            self.update_custom();
+            self.update_selection();
+        }
+
+        /// Update the admin row.
+        fn update_admin(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let can_change_to_admin = permissions.own_power_level() >= POWER_LEVEL_ADMIN;
+
+            if can_change_to_admin {
+                self.admin_row.set_sensitive(true);
+                self.admin_row.set_activatable(true);
+            } else {
+                self.admin_row.set_sensitive(false);
+                self.admin_row.set_activatable(false);
+            }
+        }
+
+        /// Update the moderator row.
+        fn update_mod(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let can_change_to_mod = permissions.own_power_level() >= POWER_LEVEL_MOD;
+
+            if can_change_to_mod {
+                self.mod_row.set_sensitive(true);
+                self.mod_row.set_activatable(true);
+            } else {
+                self.mod_row.set_sensitive(false);
+                self.mod_row.set_activatable(false);
+            }
+        }
+
+        /// Update the default row.
+        fn update_default(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let default = permissions.default_power_level();
+            self.default_pl_label.set_label(&default.to_string());
+
+            let can_change_to_default = permissions.own_power_level() >= default;
+
+            if can_change_to_default {
+                self.default_row.set_sensitive(true);
+                self.default_row.set_activatable(true);
+            } else {
+                self.default_row.set_sensitive(false);
+                self.default_row.set_activatable(false);
+            }
+        }
+
+        /// Update the muted row.
+        fn update_muted(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let mute = permissions.mute_power_level();
+            let default = permissions.default_power_level();
+
+            if mute >= default {
+                // There is no point in having the muted row since all users are muted by
+                // default.
+                self.muted_row.set_visible(false);
+                return;
+            }
+
+            self.muted_pl_label.set_label(&mute.to_string());
+
+            let can_change_to_muted = permissions.own_power_level() >= mute;
+
+            if can_change_to_muted {
+                self.muted_row.set_sensitive(true);
+                self.muted_row.set_activatable(true);
+            } else {
+                self.muted_row.set_sensitive(false);
+                self.muted_row.set_activatable(false);
+            }
+
+            self.muted_row.set_visible(true);
+        }
+
+        /// Update the custom row.
+        fn update_custom(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            self.custom_adjustment
+                .set_upper(permissions.own_power_level() as f64);
+            self.custom_adjustment
+                .set_value(self.selected_power_level.get() as f64);
+        }
+
+        /// Update the selected row.
+        fn update_selection(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let power_level = self.selected_power_level.get();
+
+            self.admin_selected
+                .set_opacity((power_level == POWER_LEVEL_ADMIN).into());
+            self.mod_selected
+                .set_opacity((power_level == POWER_LEVEL_MOD).into());
+            self.default_selected
+                .set_opacity((power_level == permissions.default_power_level()).into());
+            self.muted_selected
+                .set_opacity((power_level == permissions.mute_power_level()).into());
+        }
+    }
+}
+
+glib::wrapper! {
+    /// An `AdwActionRow` behaving like a combo box to select a room member's power level.
+    pub struct PowerLevelSelectionRow(ObjectSubclass<imp::PowerLevelSelectionRow>)
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
+        @implements gtk::Actionable, gtk::Accessible;
+}
+
+#[gtk::template_callbacks]
+impl PowerLevelSelectionRow {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// The custom value changed.
+    #[template_callback]
+    fn custom_value_changed(&self) {
+        let imp = self.imp();
+        let power_level = imp.custom_adjustment.value() as PowerLevel;
+        let can_confirm = power_level != self.selected_power_level();
+
+        imp.custom_confirm.set_sensitive(can_confirm);
+    }
+
+    /// The custom value was confirmed.
+    #[template_callback]
+    fn custom_value_confirmed(&self) {
+        let imp = self.imp();
+        let power_level = imp.custom_adjustment.value() as PowerLevel;
+
+        imp.popover.popdown();
+        self.set_selected_power_level(power_level);
+    }
+
+    /// A row was activated.
+    #[template_callback]
+    fn row_activated(&self, row: &gtk::ListBoxRow) {
+        let Some(permissions) = self.permissions() else {
+            return;
+        };
+        let imp = self.imp();
+
+        let power_level = match row.index() {
+            0 => POWER_LEVEL_ADMIN,
+            1 => POWER_LEVEL_MOD,
+            2 => permissions.default_power_level(),
+            3 => permissions.mute_power_level(),
+            _ => return,
+        };
+
+        imp.popover.popdown();
+        self.set_selected_power_level(power_level);
+    }
+
+    /// The popover's visibility changed.
+    #[template_callback]
+    fn popover_visible(&self) {
+        let is_visible = self.imp().popover.is_visible();
+
+        if is_visible {
+            self.add_css_class("has-open-popup");
+        } else {
+            self.remove_css_class("has-open-popup");
+        }
+    }
+}

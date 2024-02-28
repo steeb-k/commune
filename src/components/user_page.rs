@@ -7,15 +7,18 @@ use gtk::{
 };
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
-use super::{Avatar, SpinnerButton};
+use super::{Avatar, PowerLevelSelectionRow, SpinnerButton};
 use crate::{
     i18n::gettext_f,
     ngettext_f,
     prelude::*,
-    session::model::{Member, MemberRole, Membership, Room, User},
+    session::model::{Member, Membership, Permissions, Room, User},
     spawn, toast,
     utils::{
-        message_dialog::{confirm_room_member_destructive_action, RoomMemberDestructiveAction},
+        message_dialog::{
+            confirm_mute_room_member, confirm_room_member_destructive_action,
+            confirm_set_room_member_power_level_same_as_own, RoomMemberDestructiveAction,
+        },
         BoundObject,
     },
     Window,
@@ -48,13 +51,11 @@ mod imp {
         #[template_child]
         pub room_title: TemplateChild<gtk::Label>,
         #[template_child]
-        pub role_row: TemplateChild<adw::ActionRow>,
+        pub membership_row: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub role_group: TemplateChild<gtk::Box>,
+        pub membership_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub role_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub power_level_label: TemplateChild<gtk::Label>,
+        pub power_level_row: TemplateChild<PowerLevelSelectionRow>,
         #[template_child]
         pub invite_button: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -158,6 +159,7 @@ mod imp {
                 binding.unbind();
             }
             self.user.disconnect_signals();
+            self.power_level_row.set_permissions(None::<Permissions>);
 
             if let Some(user) = user {
                 let title_binding = user
@@ -168,28 +170,28 @@ mod imp {
                     .bind_property("avatar-data", &*self.avatar, "data")
                     .sync_create()
                     .build();
-                self.bindings.replace(vec![title_binding, avatar_binding]);
+                let bindings = vec![title_binding, avatar_binding];
 
-                let mut handlers = Vec::new();
-                handlers.push(user.connect_verified_notify(clone!(@weak obj => move |_| {
+                let verified_handler = user.connect_verified_notify(clone!(@weak obj => move |_| {
                     obj.update_verified();
-                })));
-                handlers.push(
+                }));
+                let ignored_handler =
                     user.connect_is_ignored_notify(clone!(@weak obj => move |_| {
                         obj.update_direct_chat();
                         obj.update_ignored();
-                    })),
-                );
+                    }));
+                let mut handlers = vec![verified_handler, ignored_handler];
 
                 if let Some(member) = user.downcast_ref::<Member>() {
                     let room = member.room();
 
+                    let permissions = room.permissions();
                     let permissions_handler =
-                        room.permissions()
-                            .connect_changed(clone!(@weak obj => move |_| {
-                                obj.update_room();
-                            }));
+                        permissions.connect_changed(clone!(@weak obj => move |_| {
+                            obj.update_room();
+                        }));
                     self.permissions_handler.replace(Some(permissions_handler));
+                    self.power_level_row.set_permissions(Some(permissions));
 
                     let room_display_name_handler =
                         room.connect_display_name_notify(clone!(@weak obj => move |_| {
@@ -198,20 +200,19 @@ mod imp {
                     self.room_display_name_handler
                         .replace(Some(room_display_name_handler));
 
-                    handlers.push(member.connect_membership_notify(
-                        clone!(@weak obj => move |member| {
+                    let membership_handler =
+                        member.connect_membership_notify(clone!(@weak obj => move |member| {
                             if member.membership() == Membership::Leave {
                                 obj.emit_by_name::<()>("close", &[]);
                             } else {
                                 obj.update_room();
                             }
-                        }),
-                    ));
-                    handlers.push(member.connect_power_level_notify(
-                        clone!(@weak obj => move |_| {
+                        }));
+                    let power_level_handler =
+                        member.connect_power_level_notify(clone!(@weak obj => move |_| {
                             obj.update_room();
-                        }),
-                    ));
+                        }));
+                    handlers.extend([membership_handler, power_level_handler]);
                 }
 
                 // We don't need to listen to changes of the property, it never changes after
@@ -220,6 +221,7 @@ mod imp {
                 self.ignored_row.set_visible(!is_own_user);
 
                 self.user.set(user, handlers);
+                self.bindings.replace(bindings);
             }
 
             obj.load_direct_chat();
@@ -340,44 +342,44 @@ impl UserPage {
         match membership {
             Membership::Leave => unreachable!(),
             Membership::Join => {
-                let power_level = member.power_level();
-                let role = MemberRole::from(power_level).to_string();
-
-                imp.role_label.set_label(&role);
-                imp.power_level_label.set_label(&power_level.to_string());
-                imp.role_group
-                    .update_property(&[gtk::accessible::Property::Label(&format!(
-                        "{role} {power_level}"
-                    ))]);
+                // Nothing to update, it should show the role row.
             }
             Membership::Invite => {
-                // Translators: As in, 'The room member was invited'.
-                imp.role_label.set_label(&pgettext("member", "Invited"));
+                imp.membership_label
+                    // Translators: As in, 'The room member was invited'.
+                    .set_label(&pgettext("member", "Invited"));
             }
             Membership::Ban => {
-                // Translators: As in, 'The room member was banned'.
-                imp.role_label.set_label(&pgettext("member", "Banned"));
+                imp.membership_label
+                    // Translators: As in, 'The room member was banned'.
+                    .set_label(&pgettext("member", "Banned"));
             }
             Membership::Knock => {
-                // Translators: As in, 'The room member knocked to request access to the room'.
-                imp.role_label.set_label(&pgettext("member", "Knocked"));
+                imp.membership_label
+                    // Translators: As in, 'The room member knocked to request access to the room'.
+                    .set_label(&pgettext("member", "Knocked"));
             }
             Membership::Custom => {
-                // Translators: As in, 'The room member has an unknown role'.
-                imp.role_label.set_label(&pgettext("member", "Unknown"));
+                imp.membership_label
+                    // Translators: As in, 'The room member has an unknown role'.
+                    .set_label(&pgettext("member", "Unknown"));
             }
         }
 
-        if matches!(membership, Membership::Ban) {
-            imp.role_label.add_css_class("error");
-        } else {
-            imp.role_label.remove_css_class("error");
-        }
-        imp.power_level_label
-            .set_visible(matches!(membership, Membership::Join));
+        let is_role = membership == Membership::Join;
+        imp.membership_row.set_visible(!is_role);
+        imp.power_level_row.set_visible(is_role);
 
         let permissions = room.permissions();
         let user_id = member.user_id();
+
+        imp.power_level_row.set_is_loading(false);
+        imp.power_level_row
+            .set_selected_power_level(member.power_level());
+
+        let can_change_power_level = !member.is_own_user()
+            && permissions.can_do_to_user(user_id, PowerLevelUserAction::ChangePowerLevel);
+        imp.power_level_row.set_sensitive(can_change_power_level);
 
         let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
         if can_invite {
@@ -436,6 +438,56 @@ impl UserPage {
 
         imp.remove_messages_button.set_loading(false);
         imp.remove_messages_button.set_sensitive(true);
+    }
+
+    /// Set the power level of the user.
+    #[template_callback]
+    fn set_power_level(&self) {
+        let Some(member) = self.user().and_downcast::<Member>() else {
+            return;
+        };
+
+        let row = &self.imp().power_level_row;
+        let power_level = row.selected_power_level();
+        let old_power_level = member.power_level();
+
+        if old_power_level == power_level {
+            // Nothing to do.
+            return;
+        }
+
+        row.set_is_loading(true);
+        row.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj => async move {
+            let permissions = member.room().permissions();
+
+            // Warn if user is muted but was not before.
+            let mute_power_level = permissions.mute_power_level();
+            let is_muted = power_level <= mute_power_level && old_power_level > mute_power_level;
+            if is_muted && !confirm_mute_room_member(&member, &obj).await {
+                obj.update_room();
+                return;
+            }
+
+            // Warn if power level is set at same level as own power level.
+            let is_own_power_level = power_level == permissions.own_power_level();
+            if is_own_power_level && !confirm_set_room_member_power_level_same_as_own(&member, &obj).await {
+                obj.update_room();
+                return;
+            }
+
+            let user_id = member.user_id().clone();
+
+            if permissions
+                .set_user_power_level(user_id, power_level)
+                .await
+                .is_err()
+            {
+                toast!(obj, gettext("Failed to change the role"));
+                obj.update_room();
+            }
+        }));
     }
 
     /// Invite the user to the room.

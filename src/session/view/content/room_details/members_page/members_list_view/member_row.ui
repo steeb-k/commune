@@ -24,7 +24,7 @@
         </style>
         <child>
           <object class="GtkBox">
-            <property name="spacing">3</property>
+            <property name="spacing">6</property>
             <child>
               <object class="GtkLabel" id="title">
                 <property name="halign">start</property>
@@ -54,9 +54,10 @@
               </object>
             </child>
             <child>
-              <object class="PowerLevelBadge">
-                <binding name="power-level">
-                  <lookup name="power-level" type="Member">
+              <object class="RoleBadge" id="role_badge">
+                <property name="visible" bind-source="role_badge" bind-property="is-default-role" bind-flags="sync-create | invert-boolean"/>
+                <binding name="role">
+                  <lookup name="role" type="Member">
                     <lookup name="member">ContentMemberRow</lookup>
                   </lookup>
                 </binding>
