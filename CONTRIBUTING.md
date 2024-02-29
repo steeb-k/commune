@@ -1,21 +1,22 @@
 # Contributing
 
-## Newcomers
+On this page you can learn how to contribute to [Fractal](https://gitlab.gnome.org/World/fractal/)
+by working on the code.
 
-[Fractal](https://gitlab.gnome.org/World/fractal/) follows the [GNOME Newcomers workflow](https://wiki.gnome.org/Newcomers/BuildProject).
-Follow these pages to learn how to contribute.
+## Getting Started
 
-Here are also a few links to help you get started with Rust and the GTK Rust bindings:
+Here are a few links to help you get started with Rust and the GTK Rust bindings:
 
 - [Learn Rust](https://www.rust-lang.org/learn)
 - [GUI development with Rust and GTK 4](https://gtk-rs.org/gtk4-rs/stable/latest/book)
 - [gtk-rs website](https://gtk-rs.org/)
 
-[The Rust docs of our application](https://gnome.pages.gitlab.gnome.org/fractal/) might also be
-useful.
+[The Rust docs of our application](https://gnome.pages.gitlab.gnome.org/fractal/) and the [GNOME Development Center](https://developer.gnome.org/)
+might also be useful.
 
 Don't hesitate to join [our Matrix room](https://matrix.to/#/#fractal:gnome.org) to come talk to us
-and ask us any questions you might have.
+and ask us any questions you might have. The [“Rust ❤️ GNOME” room](https://matrix.to/#/#rust:gnome.org)
+can also provide general help about using Rust in GNOME.
 
 ## Build Instructions
 
@@ -23,14 +24,14 @@ and ask us any questions you might have.
 
 Fractal is written in Rust, so you will need to have at least Rust 1.75 and Cargo available on your
 system. You will also need to install the Rust nightly toolchain to be able to run our
-[pre-commit hook](#pre-commit) which can be done with:
+[pre-commit hook](#pre-commit), which can be done with:
 
 ```sh
 rustup toolchain install nightly
 ```
 
 If you're building Fractal with Flatpak (via GNOME Builder or the command line), you will need to
-manually add the necessary remotes and install the required FreeDesktop extensions:
+manually add the necessary remotes and install the required freedesktop.org extensions:
 
 ```sh
 # Add Flathub and the gnome-nightly repo
@@ -52,8 +53,10 @@ If you are building the flatpak manually you will also need flatpak-builder on y
 
 ### GNOME Builder
 
-Using [GNOME Builder](https://wiki.gnome.org/Apps/Builder) with [flatpak](https://flatpak.org/) is
+Using [GNOME Builder](https://apps.gnome.org/Builder/) with [flatpak](https://flatpak.org/) is
 the recommended way of building and installing Fractal.
+
+You can find help on cloning and building a project in the [docs of Builder](https://builder.readthedocs.io/).
 
 ### Flatpak via fenv
 
@@ -152,8 +155,12 @@ submissions and is once again checked by our CI.
 ## Commit
 
 Please follow the [GNOME commit message guidelines](https://handbook.gnome.org/development/commit-messages.html).
+We enforce the use of a tag as a prefix for the summary line. It should be the area of the app that
+is changed. 
 
 ## Merge Request
+
+You must pass all the prerequisites of the [Change Submission Guide](https://handbook.gnome.org/development/change-submission.html).
 
 Before submitting a merge request, make sure that [your fork is available publicly](https://gitlab.gnome.org/help/user/public_access.md),
 otherwise CI won't be able to run.
