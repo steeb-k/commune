@@ -1,0 +1,236 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
+
+use super::PowerLevelSelectionPopover;
+use crate::{
+    components::{LoadingBin, RoleBadge},
+    session::model::{Permissions, PowerLevel},
+};
+
+mod imp {
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/components/power_level_selection/row.ui")]
+    #[properties(wrapper_type = super::PowerLevelSelectionRow)]
+    pub struct PowerLevelSelectionRow {
+        #[template_child]
+        pub subtitle_bin: TemplateChild<adw::Bin>,
+        #[template_child]
+        pub combo_selection_bin: TemplateChild<adw::Bin>,
+        #[template_child]
+        pub arrow_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub loading_bin: TemplateChild<LoadingBin>,
+        #[template_child]
+        pub popover: TemplateChild<PowerLevelSelectionPopover>,
+        #[template_child]
+        pub selected_box: TemplateChild<gtk::Box>,
+        #[template_child]
+        pub selected_level_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub selected_role_badge: TemplateChild<RoleBadge>,
+        /// The permissions to watch.
+        #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
+        pub permissions: RefCell<Option<Permissions>>,
+        /// The selected power level.
+        #[property(get, set = Self::set_selected_power_level, explicit_notify)]
+        pub selected_power_level: Cell<PowerLevel>,
+        /// Whether the selected power level should be displayed in the
+        /// subtitle, rather than next to the combo arrow.
+        #[property(get, set = Self::set_use_subtitle, explicit_notify)]
+        pub use_subtitle: Cell<bool>,
+        /// Whether the row is loading.
+        #[property(get = Self::is_loading, set = Self::set_is_loading)]
+        pub is_loading: PhantomData<bool>,
+        /// Whether the row is read-only.
+        #[property(get, set = Self::set_read_only, explicit_notify)]
+        pub read_only: Cell<bool>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for PowerLevelSelectionRow {
+        const NAME: &'static str = "PowerLevelSelectionRow";
+        type Type = super::PowerLevelSelectionRow;
+        type ParentType = adw::PreferencesRow;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+
+            klass.install_action("power-level-selection-row.popup", None, |obj, _, _| {
+                if !obj.read_only() && !obj.is_loading() {
+                    obj.imp().popover.popup();
+                }
+            });
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for PowerLevelSelectionRow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.update_selected_position();
+        }
+    }
+
+    impl WidgetImpl for PowerLevelSelectionRow {}
+    impl ListBoxRowImpl for PowerLevelSelectionRow {}
+    impl PreferencesRowImpl for PowerLevelSelectionRow {}
+
+    impl PowerLevelSelectionRow {
+        /// Set the permissions to watch.
+        fn set_permissions(&self, permissions: Option<Permissions>) {
+            if *self.permissions.borrow() == permissions {
+                return;
+            }
+
+            self.permissions.replace(permissions);
+            self.update_selected_label();
+            self.obj().notify_permissions();
+        }
+
+        /// Update the label of the selected power level.
+        fn update_selected_label(&self) {
+            let Some(permissions) = self.permissions.borrow().clone() else {
+                return;
+            };
+            let obj = self.obj();
+
+            let power_level = self.selected_power_level.get();
+            let role = permissions.role(power_level);
+
+            self.selected_role_badge.set_role(role);
+            self.selected_level_label
+                .set_label(&power_level.to_string());
+
+            let role_string = format!("{power_level} {role}");
+            obj.update_property(&[gtk::accessible::Property::Description(&role_string)]);
+        }
+
+        /// Set the selected power level.
+        fn set_selected_power_level(&self, power_level: PowerLevel) {
+            if self.selected_power_level.get() == power_level {
+                return;
+            }
+
+            self.selected_power_level.set(power_level);
+
+            self.update_selected_label();
+            self.obj().notify_selected_power_level();
+        }
+
+        /// Set whether the selected power level should be displayed in the
+        /// subtitle, rather than next to the combo arrow.
+        fn set_use_subtitle(&self, use_subtitle: bool) {
+            if self.use_subtitle.get() == use_subtitle {
+                return;
+            }
+
+            self.use_subtitle.set(use_subtitle);
+
+            self.update_selected_position();
+            self.obj().notify_use_subtitle();
+        }
+
+        /// Whether the row is loading.
+        fn is_loading(&self) -> bool {
+            self.loading_bin.is_loading()
+        }
+
+        /// Set whether the row is loading.
+        fn set_is_loading(&self, loading: bool) {
+            if self.is_loading() == loading {
+                return;
+            }
+
+            self.loading_bin.set_is_loading(loading);
+            self.obj().notify_is_loading();
+        }
+
+        /// Update the position of the selected label.
+        fn update_selected_position(&self) {
+            if self.use_subtitle.get() {
+                if !self
+                    .selected_box
+                    .parent()
+                    .is_some_and(|p| p == *self.subtitle_bin)
+                {
+                    if self.selected_box.parent().is_some() {
+                        self.combo_selection_bin.set_child(None::<&gtk::Widget>);
+                    }
+
+                    self.subtitle_bin.set_child(Some(&*self.selected_box));
+                }
+            } else if !self
+                .selected_box
+                .parent()
+                .is_some_and(|p| p == *self.combo_selection_bin)
+            {
+                if self.selected_box.parent().is_some() {
+                    self.subtitle_bin.set_child(None::<&gtk::Widget>);
+                }
+
+                self.combo_selection_bin
+                    .set_child(Some(&*self.selected_box));
+            }
+        }
+
+        /// Set whether the row is read-only.
+        fn set_read_only(&self, read_only: bool) {
+            if self.read_only.get() == read_only {
+                return;
+            }
+            let obj = self.obj();
+
+            self.read_only.set(read_only);
+
+            let role = if read_only {
+                gtk::AccessibleRole::ListItem
+            } else {
+                gtk::AccessibleRole::ComboBox
+            };
+            obj.set_accessible_role(role);
+
+            obj.notify_read_only();
+        }
+    }
+}
+
+glib::wrapper! {
+    /// An `AdwPreferencesRow` behaving like a combo box to select a room member's power level.
+    pub struct PowerLevelSelectionRow(ObjectSubclass<imp::PowerLevelSelectionRow>)
+        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow,
+        @implements gtk::Actionable, gtk::Accessible;
+}
+
+#[gtk::template_callbacks]
+impl PowerLevelSelectionRow {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// The popover's visibility changed.
+    #[template_callback]
+    fn popover_visible(&self) {
+        let is_visible = self.imp().popover.is_visible();
+
+        if is_visible {
+            self.add_css_class("has-open-popup");
+        } else {
+            self.remove_css_class("has-open-popup");
+        }
+    }
+}

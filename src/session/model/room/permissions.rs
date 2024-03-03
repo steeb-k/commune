@@ -481,6 +481,11 @@ impl Permissions {
         imp.init_power_levels().await;
     }
 
+    /// The source of the power levels information.
+    pub fn power_levels(&self) -> RoomPowerLevels {
+        self.imp().power_levels.borrow().clone()
+    }
+
     /// The current [`MemberRole`] for the given power level.
     pub fn role(&self, power_level: PowerLevel) -> MemberRole {
         if power_level >= POWER_LEVEL_ADMIN {
@@ -552,6 +557,27 @@ impl Permissions {
             Ok(_) => Ok(()),
             Err(error) => {
                 error!("Failed to set user power level: {error}");
+                Err(())
+            }
+        }
+    }
+
+    /// Set the power levels.
+    pub async fn set_power_levels(&self, power_levels: RoomPowerLevels) -> Result<(), ()> {
+        let Some(room) = self.room() else {
+            return Err(());
+        };
+
+        let matrix_room = room.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            let event = RoomPowerLevelsEventContent::from(power_levels);
+            matrix_room.send_state_event(event).await
+        });
+
+        match handle.await.unwrap() {
+            Ok(_) => Ok(()),
+            Err(error) => {
+                error!("Failed to set power levels: {error}");
                 Err(())
             }
         }

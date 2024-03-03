@@ -19,8 +19,8 @@ src/components/join_room_dialog.ui
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
 src/components/reaction_chooser.ui
+src/components/power_level_selection/popover.ui
 src/components/rows/loading_row.ui
-src/components/rows/power_level_selection_row.ui
 src/components/spinner.rs
 src/components/user_page.rs
 src/components/user_page.ui
@@ -97,6 +97,10 @@ src/session/view/content/room_details/members_page/members_list_view/mod.rs
 src/session/view/content/room_details/members_page/members_list_view/mod.ui
 src/session/view/content/room_details/members_page/mod.rs
 src/session/view/content/room_details/mod.ui
+src/session/view/content/room_details/permissions/add_members_subpage.ui
+src/session/view/content/room_details/permissions/members_subpage.ui
+src/session/view/content/room_details/permissions/permissions_subpage.rs
+src/session/view/content/room_details/permissions/permissions_subpage.ui
 src/session/view/content/room_details/room_upgrade_dialog.rs
 src/session/view/content/room_history/event_actions.ui
 src/session/view/content/room_history/item_row.rs

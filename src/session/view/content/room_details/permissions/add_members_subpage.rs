@@ -1,0 +1,345 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{
+    glib,
+    glib::{clone, closure, closure_local},
+    CompositeTemplate,
+};
+use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedUserId};
+use tracing::error;
+
+use super::{MemberPowerLevel, PermissionsSelectMemberRow, PrivilegedMembers};
+use crate::{
+    components::{PillSearchEntry, PowerLevelSelectionComboBox},
+    prelude::*,
+    session::model::{Member, Permissions},
+    utils::expression,
+};
+
+mod imp {
+    use std::{cell::RefCell, collections::HashMap};
+
+    use glib::subclass::{InitializingObject, Signal};
+    use once_cell::sync::Lazy;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/add_members_subpage.ui"
+    )]
+    #[properties(wrapper_type = super::PermissionsAddMembersSubpage)]
+    pub struct PermissionsAddMembersSubpage {
+        #[template_child]
+        pub search_entry: TemplateChild<PillSearchEntry>,
+        #[template_child]
+        pub power_level_combo: TemplateChild<PowerLevelSelectionComboBox>,
+        #[template_child]
+        pub list_view: TemplateChild<gtk::ListView>,
+        #[template_child]
+        pub add_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub stack: TemplateChild<gtk::Stack>,
+        /// The permissions of the room.
+        #[property(get, set = Self::set_permissions, explicit_notify, nullable)]
+        pub permissions: glib::WeakRef<Permissions>,
+        power_level_filter: gtk::CustomFilter,
+        filtered_model: gtk::FilterListModel,
+        /// The list of members with custom power levels.
+        #[property(get, set = Self::set_privileged_members, explicit_notify, nullable)]
+        pub privileged_members: glib::WeakRef<PrivilegedMembers>,
+        /// The selected members in the list.
+        pub selected_members: RefCell<HashMap<OwnedUserId, Member>>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for PermissionsAddMembersSubpage {
+        const NAME: &'static str = "RoomDetailsPermissionsAddMembersSubpage";
+        type Type = super::PermissionsAddMembersSubpage;
+        type ParentType = adw::NavigationPage;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for PermissionsAddMembersSubpage {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("selection-changed").build()]);
+            SIGNALS.as_ref()
+        }
+
+        fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+
+            self.search_entry
+                .connect_pill_removed(clone!(@weak self as imp => move |_, source| {
+                    if let Ok(member) = source.downcast::<Member>() {
+                        imp.remove_selected(member.user_id());
+                    }
+                }));
+
+            self.list_view
+                .connect_activate(clone!(@weak self as imp => move |list_view, index| {
+                    let Some(member) = list_view
+                        .model()
+                        .and_then(|m| m.item(index))
+                        .and_downcast::<Member>()
+                    else {
+                        return;
+                    };
+
+                    imp.toggle_selected(member);
+                }));
+
+            // Search filter.
+            fn search_string(member: Member) -> String {
+                format!(
+                    "{} {} {} {}",
+                    member.display_name(),
+                    member.user_id(),
+                    member.role(),
+                    member.power_level(),
+                )
+            }
+
+            let user_expr = gtk::ClosureExpression::new::<String>(
+                &[] as &[gtk::Expression],
+                closure!(|item: Option<glib::Object>| {
+                    item.and_downcast().map(search_string).unwrap_or_default()
+                }),
+            );
+            let search_filter = gtk::StringFilter::builder()
+                .match_mode(gtk::StringFilterMatchMode::Substring)
+                .expression(expression::normalize_string(user_expr))
+                .ignore_case(true)
+                .build();
+
+            expression::normalize_string(self.search_entry.property_expression("text")).bind(
+                &search_filter,
+                "search",
+                None::<&glib::Object>,
+            );
+
+            let filter = gtk::EveryFilter::new();
+            filter.append(self.power_level_filter.clone());
+            filter.append(search_filter);
+
+            self.filtered_model.set_filter(Some(&filter));
+
+            self.filtered_model.connect_items_changed(
+                clone!(@weak self as imp => move |_, _, _, _| {
+                    imp.update_visible_page();
+                }),
+            );
+
+            // Sort members by display name, then user ID.
+            let display_name_expr = Member::this_expression("display-name");
+            let display_name_sorter = gtk::StringSorter::new(Some(display_name_expr));
+
+            let user_id_expr = Member::this_expression("user-id-string");
+            let user_id_sorter = gtk::StringSorter::new(Some(user_id_expr));
+
+            let sorter = gtk::MultiSorter::new();
+            sorter.append(display_name_sorter);
+            sorter.append(user_id_sorter);
+
+            let sorted_model =
+                gtk::SortListModel::new(Some(self.filtered_model.clone()), Some(sorter));
+
+            self.list_view
+                .set_model(Some(&gtk::NoSelection::new(Some(sorted_model))));
+
+            let factory = gtk::SignalListItemFactory::new();
+            factory.connect_setup(clone!(@weak obj => move |_, item| {
+                let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                    error!("List item factory did not receive a list item: {item:?}");
+                    return;
+                };
+
+                let row = PermissionsSelectMemberRow::new();
+                item.set_child(Some(&row));
+                item.bind_property("item", &row, "member")
+                    .sync_create()
+                    .build();
+                item.set_selectable(false);
+
+                obj.connect_selection_changed(clone!(@weak row => move |obj| {
+                    let Some(member) = row.member() else {
+                        return;
+                    };
+
+                    let selected = obj
+                        .imp()
+                        .selected_members
+                        .borrow()
+                        .contains_key(member.user_id());
+                    row.set_selected(selected);
+                }));
+            }));
+            self.list_view.set_factory(Some(&factory));
+        }
+    }
+
+    impl WidgetImpl for PermissionsAddMembersSubpage {}
+    impl NavigationPageImpl for PermissionsAddMembersSubpage {}
+
+    impl PermissionsAddMembersSubpage {
+        /// Set the permissions of the room.
+        fn set_permissions(&self, permissions: Option<Permissions>) {
+            if self.permissions.upgrade() == permissions {
+                return;
+            }
+
+            self.permissions.set(permissions.as_ref());
+
+            if let Some(permissions) = &permissions {
+                self.power_level_filter.set_filter_func(clone!(@weak permissions => @default-return true, move |obj| {
+                    let Some(member) = obj.downcast_ref::<Member>() else {
+                        return false;
+                    };
+
+                    // Filter out members whose power level cannot be changed.
+                    permissions
+                        .can_do_to_user(member.user_id(), PowerLevelUserAction::ChangePowerLevel)
+                }));
+            }
+
+            let members = permissions
+                .as_ref()
+                .and_then(|p| p.room())
+                .map(|r| r.get_or_create_members());
+            self.filtered_model.set_model(members.as_ref());
+
+            self.power_level_combo.set_selected_power_level(
+                permissions
+                    .as_ref()
+                    .map(|p| p.default_power_level())
+                    .unwrap_or_default(),
+            );
+            self.power_level_combo.set_permissions(permissions);
+
+            self.update_visible_page();
+            self.obj().notify_permissions();
+        }
+
+        /// Set the list of members with custom power levels.
+        fn set_privileged_members(&self, members: Option<PrivilegedMembers>) {
+            if self.privileged_members.upgrade() == members {
+                return;
+            }
+
+            self.privileged_members.set(members.as_ref());
+            self.obj().notify_privileged_members();
+        }
+
+        /// Update the visible page of the stack.
+        fn update_visible_page(&self) {
+            let is_empty = self.filtered_model.n_items() == 0;
+
+            let visible_page = if is_empty { "no-match" } else { "list" };
+            self.stack.set_visible_child_name(visible_page);
+        }
+
+        /// Toggle whether the given member is selected.
+        fn toggle_selected(&self, member: Member) {
+            let is_empty = {
+                let mut selected_members = self.selected_members.borrow_mut();
+
+                let user_id = member.user_id();
+                let was_selected = selected_members.remove(user_id).is_some();
+
+                if was_selected {
+                    self.search_entry.remove_pill(&member.identifier());
+                } else {
+                    self.search_entry.add_pill(&member);
+                    selected_members.insert(user_id.clone(), member);
+                }
+
+                selected_members.is_empty()
+            };
+
+            self.add_button.set_sensitive(!is_empty);
+            self.obj().emit_by_name::<()>("selection-changed", &[]);
+        }
+
+        /// Remove the member with the given user ID from the selected list.
+        fn remove_selected(&self, user_id: &OwnedUserId) {
+            let (was_removed, is_empty) = {
+                let mut selected_members = self.selected_members.borrow_mut();
+                let was_removed = selected_members.remove(user_id).is_some();
+                let is_empty = selected_members.is_empty();
+
+                (was_removed, is_empty)
+            };
+
+            if was_removed {
+                self.add_button.set_sensitive(!is_empty);
+                self.obj().emit_by_name::<()>("selection-changed", &[]);
+            }
+        }
+    }
+}
+
+glib::wrapper! {
+    /// Subpage to add members with custom permissions.
+    pub struct PermissionsAddMembersSubpage(ObjectSubclass<imp::PermissionsAddMembersSubpage>)
+        @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
+}
+
+#[gtk::template_callbacks]
+impl PermissionsAddMembersSubpage {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// Add the selected members to the list of members with custom power
+    /// levels.
+    #[template_callback]
+    fn add_members(&self) {
+        let Some(permissions) = self.permissions() else {
+            return;
+        };
+        let Some(privileged_members) = self.privileged_members() else {
+            return;
+        };
+        let imp = self.imp();
+
+        let power_level = imp.power_level_combo.selected_power_level();
+
+        let members = imp
+            .selected_members
+            .take()
+            .into_iter()
+            .map(|(user_id, member)| {
+                let member = MemberPowerLevel::new(&member, &permissions);
+                member.set_power_level(power_level);
+
+                (user_id, member)
+            });
+        privileged_members.add_members(members);
+
+        self.activate_action("navigation.pop", None).unwrap();
+        imp.search_entry.clear();
+        imp.add_button.set_sensitive(false);
+        self.emit_by_name::<()>("selection-changed", &[]);
+    }
+
+    /// Connect to the signal emitted when the selection changes.
+    pub fn connect_selection_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "selection-changed",
+            true,
+            closure_local!(|obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+}

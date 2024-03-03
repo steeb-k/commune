@@ -6,6 +6,7 @@ mod general_page;
 mod history_viewer;
 mod invite_subpage;
 mod members_page;
+mod permissions;
 mod room_upgrade_dialog;
 
 use self::{
@@ -16,6 +17,7 @@ use self::{
     },
     invite_subpage::InviteSubpage,
     members_page::MembersPage,
+    permissions::PermissionsSubpage,
 };
 use crate::session::model::Room;
 
@@ -27,6 +29,7 @@ pub enum SubpageName {
     FileHistory,
     AudioHistory,
     Addresses,
+    Permissions,
 }
 
 mod imp {
@@ -144,6 +147,7 @@ impl RoomDetails {
             SubpageName::FileHistory => FileHistoryViewer::new(&self.timeline()).upcast(),
             SubpageName::AudioHistory => AudioHistoryViewer::new(&self.timeline()).upcast(),
             SubpageName::Addresses => AddressesSubpage::new(&room).upcast(),
+            SubpageName::Permissions => PermissionsSubpage::new(&room.permissions()).upcast(),
         });
 
         if is_initial {

@@ -14,6 +14,7 @@ mod location_viewer;
 mod media_content_viewer;
 mod overlapping_avatars;
 mod pill;
+mod power_level_selection;
 mod reaction_chooser;
 mod role_badge;
 mod room_title;
@@ -44,6 +45,7 @@ pub use self::{
     media_content_viewer::{ContentType, MediaContentViewer},
     overlapping_avatars::OverlappingAvatars,
     pill::*,
+    power_level_selection::*,
     reaction_chooser::ReactionChooser,
     role_badge::RoleBadge,
     room_title::RoomTitle,

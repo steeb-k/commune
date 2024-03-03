@@ -237,6 +237,11 @@ impl MemberList {
         }
     }
 
+    /// Returns the member with the given ID, if it exists in the list.
+    pub fn get(&self, user_id: &UserId) -> Option<Member> {
+        self.imp().members.borrow().get(user_id).cloned()
+    }
+
     /// Returns the member with the given ID.
     ///
     /// Creates a new member first if there is no member with the given ID.

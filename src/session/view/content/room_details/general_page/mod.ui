@@ -303,6 +303,13 @@
           </object>
         </child>
         <child>
+          <object class="ButtonCountRow" id="permission">
+            <property name="title" translatable="yes">Permissions</property>
+            <property name="action-name">details.show-subpage</property>
+            <property name="action-target">'permissions'</property>
+          </object>
+        </child>
+        <child>
           <object class="AdwActionRow" id="room_version">
             <property name="selectable">False</property>
             <property name="title" translatable="yes">Room Version</property>

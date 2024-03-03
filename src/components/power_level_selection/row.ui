@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <template class="PowerLevelSelectionRow" parent="AdwPreferencesRow">
+    <property name="selectable">False</property>
+    <property name="activatable" bind-source="PowerLevelSelectionRow" bind-property="read-only" bind-flags="sync-create | invert-boolean" />
+    <property name="accessible-role">combo-box</property>
+    <property name="action-name">power-level-selection-row.popup</property>
+    <accessibility>
+      <relation name="labelled-by">title</relation>
+    </accessibility>
+    <style>
+      <class name="combo" />
+    </style>
+    <property name="child">
+      <object class="GtkBox" id="header">
+        <property name="valign">center</property>
+        <property name="hexpand">False</property>
+        <style>
+          <class name="header"/>
+        </style>
+        <child>
+          <object class="GtkBox" id="title_box">
+            <property name="orientation">vertical</property>
+            <property name="valign">center</property>
+            <property name="hexpand">True</property>
+            <style>
+              <class name="title"/>
+            </style>
+            <child>
+              <object class="GtkLabel" id="title">
+                <property name="ellipsize">none</property>
+                <property name="label" bind-source="PowerLevelSelectionRow" bind-property="title" bind-flags="sync-create"/>
+                <property name="lines">0</property>
+                <property name="mnemonic-widget">PowerLevelSelectionRow</property>
+                <property name="wrap">True</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="xalign">0</property>
+                <style>
+                  <class name="title"/>
+                </style>
+              </object>
+            </child>
+            <child>
+              <object class="AdwBin" id="subtitle_bin">
+                <property name="visible" bind-source="PowerLevelSelectionRow" bind-property="use-subtitle" bind-flags="sync-create" />
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkBox" id="suffixes">
+            <style>
+              <class name="suffixes"/>
+            </style>
+            <child>
+              <object class="AdwBin" id="combo_selection_bin">
+                <property name="visible" bind-source="PowerLevelSelectionRow" bind-property="use-subtitle" bind-flags="sync-create | invert-boolean" />
+              </object>
+            </child>
+            <child>
+              <object class="GtkBox" id="arrow_box">
+                <property name="visible" bind-source="PowerLevelSelectionRow" bind-property="read-only" bind-flags="sync-create | invert-boolean" />
+                <property name="valign">center</property>
+                <child>
+                  <object class="LoadingBin" id="loading_bin">
+                    <property name="child">
+                      <object class="GtkImage">
+                        <property name="icon_name">pan-down-symbolic</property>
+                        <property name="accessible-role">presentation</property>
+                        <style>
+                          <class name="dropdown-arrow" />
+                        </style>
+                      </object>
+                    </property>
+                  </object>
+                </child>
+                <child>
+                  <object class="PowerLevelSelectionPopover" id="popover">
+                    <signal name="notify::visible" handler="popover_visible" swapped="true" />
+                    <property name="permissions" bind-source="PowerLevelSelectionRow" bind-property="permissions" bind-flags="sync-create"/>
+                    <property name="selected-power-level" bind-source="PowerLevelSelectionRow" bind-property="selected-power-level" bind-flags="sync-create | bidirectional"/>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </property>
+  </template>
+  <object class="GtkBox" id="selected_box">
+    <property name="accessible-role">group</property>
+    <property name="spacing">12</property>
+    <property name="margin-end">6</property>
+    <child>
+      <object class="GtkLabel" id="selected_level_label" />
+    </child>
+    <child>
+      <object class="RoleBadge" id="selected_role_badge">
+        <property name="valign">center</property>
+      </object>
+    </child>
+  </object>
+</interface>

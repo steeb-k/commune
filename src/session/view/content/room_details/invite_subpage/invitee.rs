@@ -18,9 +18,6 @@ mod imp {
         /// Whether this user is invited.
         #[property(get, set = Self::set_invited, explicit_notify)]
         pub invited: Cell<bool>,
-        /// The anchor for this user in the text buffer.
-        #[property(get, set = Self::set_anchor, explicit_notify, nullable)]
-        pub anchor: RefCell<Option<gtk::TextChildAnchor>>,
         /// The reason the user can't be invited.
         #[property(get, set = Self::set_invite_exception, explicit_notify, nullable)]
         pub invite_exception: RefCell<Option<String>>,
@@ -51,16 +48,6 @@ mod imp {
 
             self.invited.set(invited);
             self.obj().notify_invited();
-        }
-
-        /// Set the anchor for this user in the text buffer.
-        fn set_anchor(&self, anchor: Option<gtk::TextChildAnchor>) {
-            if *self.anchor.borrow() == anchor {
-                return;
-            }
-
-            self.anchor.replace(anchor);
-            self.obj().notify_anchor();
         }
 
         /// Set the reason the user can't be invited.
@@ -95,14 +82,5 @@ impl Invitee {
         obj.set_avatar_url(avatar_url);
         obj.upcast_ref::<User>().imp().set_user_id(user_id);
         obj
-    }
-
-    /// Take the anchor for this user in the text buffer.
-    ///
-    /// The anchor will be `None` after calling this method.
-    pub fn take_anchor(&self) -> Option<gtk::TextChildAnchor> {
-        let anchor = self.imp().anchor.take();
-        self.notify_anchor();
-        anchor
     }
 }

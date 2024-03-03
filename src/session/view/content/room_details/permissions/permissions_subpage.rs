@@ -1,0 +1,866 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
+use gtk::{glib, glib::clone, CompositeTemplate};
+use ruma::{
+    events::{
+        room::power_levels::{PowerLevelAction, RoomPowerLevels},
+        StateEventType, TimelineEventType,
+    },
+    Int,
+};
+
+use super::{PermissionsAddMembersSubpage, PermissionsMembersSubpage, PrivilegedMembers};
+use crate::{
+    components::{ButtonCountRow, PowerLevelSelectionRow, SpinnerButton},
+    session::model::{Permissions, PowerLevel},
+    spawn, toast,
+    utils::BoundObjectWeakRef,
+};
+
+mod imp {
+    use std::cell::{Cell, OnceCell};
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/permissions/permissions_subpage.ui"
+    )]
+    #[properties(wrapper_type = super::PermissionsSubpage)]
+    pub struct PermissionsSubpage {
+        #[template_child]
+        pub save_button: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub messages_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub redact_own_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub redact_others_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub notify_room_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub state_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub name_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub topic_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub avatar_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub aliases_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub history_visibility_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub encryption_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub power_levels_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub server_acl_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub upgrade_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub invite_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub kick_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub ban_row: TemplateChild<PowerLevelSelectionRow>,
+        #[template_child]
+        pub members_default_spin_row: TemplateChild<adw::SpinRow>,
+        #[template_child]
+        pub members_default_adjustment: TemplateChild<gtk::Adjustment>,
+        #[template_child]
+        pub members_default_text_row: TemplateChild<adw::ActionRow>,
+        #[template_child]
+        pub members_default_label: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub members_privileged_button: TemplateChild<ButtonCountRow>,
+        /// The subpage to view and edit members with custom power levels.
+        #[template_child]
+        pub members_subpage: TemplateChild<PermissionsMembersSubpage>,
+        /// The subpage to add members with custom power levels.
+        #[template_child]
+        pub add_members_subpage: TemplateChild<PermissionsAddMembersSubpage>,
+        /// The permissions to watch.
+        #[property(get, set = Self::set_permissions, construct_only)]
+        pub permissions: BoundObjectWeakRef<Permissions>,
+        /// Whether our own user can change the power levels in this room.
+        #[property(get)]
+        pub editable: Cell<bool>,
+        /// Whether the permissions were changed by the user.
+        #[property(get)]
+        pub changed: Cell<bool>,
+        /// The list of members with custom power levels.
+        #[property(get)]
+        pub privileged_members: OnceCell<PrivilegedMembers>,
+        /// Whether an update is in progress.
+        ///
+        /// Avoids to call `Self::update_changed()` too often when several rows
+        /// might be changed at once.
+        pub update_in_progress: Cell<bool>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for PermissionsSubpage {
+        const NAME: &'static str = "RoomDetailsPermissionsSubpage";
+        type Type = super::PermissionsSubpage;
+        type ParentType = adw::NavigationPage;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for PermissionsSubpage {}
+
+    impl WidgetImpl for PermissionsSubpage {}
+    impl NavigationPageImpl for PermissionsSubpage {}
+
+    impl PermissionsSubpage {
+        /// Set the permissions to watch.
+        fn set_permissions(&self, permissions: &Permissions) {
+            let changed_handler =
+                permissions.connect_changed(clone!(@weak self as imp => move |_| {
+                    imp.update();
+                }));
+
+            self.permissions.set(permissions, vec![changed_handler]);
+
+            let privileged_members = PrivilegedMembers::new(permissions);
+            self.privileged_members
+                .set(privileged_members.clone())
+                .unwrap();
+
+            privileged_members.connect_changed_notify(clone!(@weak self as imp => move |_| {
+                imp.update_changed();
+            }));
+
+            self.members_subpage
+                .set_list(Some(privileged_members.clone()));
+
+            self.add_members_subpage.set_permissions(Some(permissions));
+            self.add_members_subpage
+                .set_privileged_members(Some(privileged_members));
+
+            self.update();
+        }
+
+        /// Update all the permissions.
+        pub(super) fn update(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            self.update_in_progress.set(true);
+
+            let can_change = permissions
+                .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomPowerLevels));
+            self.set_editable(can_change);
+
+            self.update_room_actions();
+            self.update_member_actions();
+            self.update_members_power_levels();
+
+            self.save_button.set_loading(false);
+
+            self.update_in_progress.set(false);
+            self.update_changed();
+        }
+
+        /// Set whether our own user can change the power levels in this room.
+        fn set_editable(&self, editable: bool) {
+            if self.editable.get() == editable {
+                return;
+            }
+
+            self.editable.set(editable);
+            self.obj().notify_editable();
+        }
+
+        /// Update whether the permissions were changed by the user.
+        pub(super) fn update_changed(&self) {
+            if self.update_in_progress.get() {
+                // Do not update, it will be called when all updates are done.
+                return;
+            }
+
+            let changed = self.compute_changed();
+
+            if self.changed.get() == changed {
+                return;
+            }
+
+            self.changed.set(changed);
+            self.obj().notify_changed();
+        }
+
+        /// Compute whether the user changed the permissions.
+        pub(super) fn compute_changed(&self) -> bool {
+            let Some(privileged_members) = self.privileged_members.get() else {
+                return false;
+            };
+
+            if privileged_members.changed() {
+                return true;
+            }
+
+            let Some(permissions) = self.permissions.obj() else {
+                return false;
+            };
+            let power_levels = permissions.power_levels();
+
+            let events_default = PowerLevel::from(power_levels.events_default);
+            if self.messages_row.selected_power_level() != events_default {
+                return true;
+            }
+
+            let redact_own = power_levels
+                .events
+                .get(&TimelineEventType::RoomRedaction)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(events_default);
+            if self.redact_own_row.selected_power_level() != redact_own {
+                return true;
+            }
+
+            let redact_others = redact_own.max(power_levels.redact.into());
+            if self.redact_others_row.selected_power_level() != redact_others {
+                return true;
+            }
+
+            let notify_room = PowerLevel::from(power_levels.notifications.room);
+            if self.notify_room_row.selected_power_level() != notify_room {
+                return true;
+            }
+
+            let state_default = PowerLevel::from(power_levels.state_default);
+            if self.state_row.selected_power_level() != state_default {
+                return true;
+            }
+
+            let name = power_levels
+                .events
+                .get(&TimelineEventType::RoomName)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.name_row.selected_power_level() != name {
+                return true;
+            }
+
+            let topic = power_levels
+                .events
+                .get(&TimelineEventType::RoomTopic)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.topic_row.selected_power_level() != topic {
+                return true;
+            }
+
+            let avatar = power_levels
+                .events
+                .get(&TimelineEventType::RoomAvatar)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.avatar_row.selected_power_level() != avatar {
+                return true;
+            }
+
+            let aliases = power_levels
+                .events
+                .get(&TimelineEventType::RoomCanonicalAlias)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.aliases_row.selected_power_level() != aliases {
+                return true;
+            }
+
+            let history_visibility = power_levels
+                .events
+                .get(&TimelineEventType::RoomHistoryVisibility)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.history_visibility_row.selected_power_level() != history_visibility {
+                return true;
+            }
+
+            let encryption = power_levels
+                .events
+                .get(&TimelineEventType::RoomEncryption)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.encryption_row.selected_power_level() != encryption {
+                return true;
+            }
+
+            let pl = power_levels
+                .events
+                .get(&TimelineEventType::RoomPowerLevels)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.power_levels_row.selected_power_level() != pl {
+                return true;
+            }
+
+            let server_acl = power_levels
+                .events
+                .get(&TimelineEventType::RoomServerAcl)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.server_acl_row.selected_power_level() != server_acl {
+                return true;
+            }
+
+            let upgrade = power_levels
+                .events
+                .get(&TimelineEventType::RoomTombstone)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            if self.upgrade_row.selected_power_level() != upgrade {
+                return true;
+            }
+
+            let invite = PowerLevel::from(power_levels.invite);
+            if self.invite_row.selected_power_level() != invite {
+                return true;
+            }
+
+            let kick = PowerLevel::from(power_levels.kick);
+            if self.kick_row.selected_power_level() != kick {
+                return true;
+            }
+
+            let ban = PowerLevel::from(power_levels.ban);
+            if self.ban_row.selected_power_level() != ban {
+                return true;
+            }
+
+            let default_pl = PowerLevel::from(power_levels.users_default);
+            self.members_default_adjustment.value() as PowerLevel != default_pl
+        }
+
+        /// Update the room actions section.
+        fn update_room_actions(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let editable = self.editable.get();
+            let power_levels = permissions.power_levels();
+            let own_pl = permissions.own_power_level();
+
+            let events_default = PowerLevel::from(power_levels.events_default);
+            self.messages_row.set_selected_power_level(events_default);
+            self.messages_row
+                .set_read_only(!editable || own_pl < events_default);
+
+            let redact_own = power_levels
+                .events
+                .get(&TimelineEventType::RoomRedaction)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(events_default);
+            self.redact_own_row.set_selected_power_level(redact_own);
+            self.redact_own_row
+                .set_read_only(!editable || own_pl < redact_own);
+
+            let redact_others = redact_own.max(power_levels.redact.into());
+            self.redact_others_row
+                .set_selected_power_level(redact_others);
+            self.redact_others_row
+                .set_read_only(!editable || own_pl < redact_others);
+
+            let notify_room = PowerLevel::from(power_levels.notifications.room);
+            self.notify_room_row.set_selected_power_level(notify_room);
+            self.notify_room_row
+                .set_read_only(!editable || own_pl < notify_room);
+
+            let state_default = PowerLevel::from(power_levels.state_default);
+            self.state_row.set_selected_power_level(state_default);
+            self.state_row
+                .set_read_only(!editable || own_pl < state_default);
+
+            self.update_state_rows();
+        }
+
+        /// Update the rows about state events, except the default one.
+        pub(super) fn update_state_rows(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let editable = self.editable.get();
+            let power_levels = permissions.power_levels();
+            let own_pl = permissions.own_power_level();
+            let state_default = self.state_row.selected_power_level();
+
+            let name = power_levels
+                .events
+                .get(&TimelineEventType::RoomName)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.name_row.set_selected_power_level(name);
+            self.name_row.set_read_only(!editable || own_pl < name);
+
+            let topic = power_levels
+                .events
+                .get(&TimelineEventType::RoomTopic)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.topic_row.set_selected_power_level(topic);
+            self.topic_row.set_read_only(!editable || own_pl < topic);
+
+            let avatar = power_levels
+                .events
+                .get(&TimelineEventType::RoomAvatar)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.avatar_row.set_selected_power_level(avatar);
+            self.avatar_row.set_read_only(!editable || own_pl < avatar);
+
+            let aliases = power_levels
+                .events
+                .get(&TimelineEventType::RoomCanonicalAlias)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.aliases_row.set_selected_power_level(aliases);
+            self.aliases_row
+                .set_read_only(!editable || own_pl < aliases);
+
+            let history_visibility = power_levels
+                .events
+                .get(&TimelineEventType::RoomHistoryVisibility)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.history_visibility_row
+                .set_selected_power_level(history_visibility);
+            self.history_visibility_row
+                .set_read_only(!editable || own_pl < history_visibility);
+
+            let encryption = power_levels
+                .events
+                .get(&TimelineEventType::RoomEncryption)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.encryption_row.set_selected_power_level(encryption);
+            self.encryption_row
+                .set_read_only(!editable || own_pl < encryption);
+
+            let pl = power_levels
+                .events
+                .get(&TimelineEventType::RoomPowerLevels)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.power_levels_row.set_selected_power_level(pl);
+            self.power_levels_row
+                .set_read_only(!editable || own_pl < pl);
+
+            let server_acl = power_levels
+                .events
+                .get(&TimelineEventType::RoomServerAcl)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.server_acl_row.set_selected_power_level(server_acl);
+            self.server_acl_row
+                .set_read_only(!editable || own_pl < server_acl);
+
+            let upgrade = power_levels
+                .events
+                .get(&TimelineEventType::RoomTombstone)
+                .copied()
+                .map(Into::into)
+                .unwrap_or(state_default);
+            self.upgrade_row.set_selected_power_level(upgrade);
+            self.upgrade_row
+                .set_read_only(!editable || own_pl < upgrade);
+        }
+
+        /// Update the member actions section.
+        fn update_member_actions(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+
+            let editable = self.editable.get();
+            let power_levels = permissions.power_levels();
+            let own_pl = permissions.own_power_level();
+
+            let invite = PowerLevel::from(power_levels.invite);
+            self.invite_row.set_selected_power_level(invite);
+            self.invite_row.set_read_only(!editable || own_pl < invite);
+
+            let kick = PowerLevel::from(power_levels.kick);
+            self.kick_row.set_selected_power_level(kick);
+            self.kick_row.set_read_only(!editable || own_pl < kick);
+
+            let ban = PowerLevel::from(power_levels.ban);
+            self.ban_row.set_selected_power_level(ban);
+            self.ban_row.set_read_only(!editable || own_pl < ban);
+        }
+
+        /// Update the member roles section.
+        fn update_members_power_levels(&self) {
+            let Some(permissions) = self.permissions.obj() else {
+                return;
+            };
+            let power_levels = permissions.power_levels();
+
+            let default_pl = PowerLevel::from(power_levels.users_default);
+            self.members_default_adjustment.set_value(default_pl as f64);
+            self.members_default_label
+                .set_label(&default_pl.to_string());
+
+            // We cannot change any required power level to something higher than ours.
+            let own_pl = permissions.own_power_level();
+            let max = default_pl.max(own_pl);
+            self.members_default_adjustment.set_upper(max as f64);
+
+            let editable = self.editable.get();
+            let can_change_default = editable && own_pl >= default_pl;
+            self.members_default_spin_row
+                .set_visible(can_change_default);
+            self.members_default_text_row
+                .set_visible(!can_change_default);
+
+            self.members_privileged_button
+                .set_count(power_levels.users.len().to_string());
+        }
+    }
+}
+
+glib::wrapper! {
+    /// Subpage to view and change the permissions of a room.
+    pub struct PermissionsSubpage(ObjectSubclass<imp::PermissionsSubpage>)
+        @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
+}
+
+#[gtk::template_callbacks]
+impl PermissionsSubpage {
+    pub fn new(permissions: &Permissions) -> Self {
+        glib::Object::builder()
+            .property("permissions", permissions)
+            .build()
+    }
+
+    /// Go back to the previous page in the room details.
+    ///
+    /// If there are changes in the page, ask the user to confirm.
+    #[template_callback]
+    fn go_back(&self) {
+        spawn!(clone!(@weak self as obj => async move { obj.go_back_inner().await; }));
+    }
+
+    async fn go_back_inner(&self) {
+        let mut reset_after = false;
+
+        if self.changed() {
+            let title = gettext("Save Changes?");
+            let description = gettext(
+                "This page contains unsaved changes. Changes which are not saved will be lost.",
+            );
+            let dialog = adw::AlertDialog::builder()
+                .title(title)
+                .body(description)
+                .default_response("cancel")
+                .build();
+
+            dialog.add_responses(&[
+                ("cancel", &gettext("Cancel")),
+                ("discard", &gettext("Discard")),
+                ("save", &gettext("Save")),
+            ]);
+            dialog.set_response_appearance("discard", adw::ResponseAppearance::Destructive);
+            dialog.set_response_appearance("save", adw::ResponseAppearance::Suggested);
+
+            match dialog.choose_future(self).await.as_str() {
+                "discard" => {
+                    reset_after = true;
+                }
+                "save" => {
+                    self.save();
+                }
+                _ => {
+                    return;
+                }
+            }
+        }
+
+        self.activate_action("navigation.pop", None).unwrap();
+
+        if reset_after {
+            self.imp().update();
+        }
+    }
+
+    /// Save the changes of this page.
+    #[template_callback]
+    fn save(&self) {
+        spawn!(clone!(@weak self as obj => async move { obj.save_inner().await; }));
+    }
+
+    async fn save_inner(&self) {
+        if !self.imp().compute_changed() {
+            return;
+        }
+
+        let Some(permissions) = self.permissions() else {
+            return;
+        };
+        let imp = self.imp();
+
+        imp.save_button.set_loading(true);
+
+        let Some(power_levels) = self.collect_power_levels() else {
+            return;
+        };
+
+        if permissions.set_power_levels(power_levels).await.is_err() {
+            toast!(self, gettext("Could not save permissions"));
+            imp.save_button.set_loading(false);
+        }
+    }
+
+    /// Collect the current power levels.
+    ///
+    /// Returns `None` if the permissions could not be upgraded.
+    fn collect_power_levels(&self) -> Option<RoomPowerLevels> {
+        let Some(permissions) = self.permissions() else {
+            return None;
+        };
+
+        let imp = self.imp();
+        let mut power_levels = permissions.power_levels();
+
+        let events_default = imp.messages_row.selected_power_level();
+        power_levels.events_default = Int::new_saturating(events_default);
+
+        let mut redact_own = imp.redact_own_row.selected_power_level();
+        let redact_others = imp.redact_others_row.selected_power_level();
+
+        // redact_own cannot be higher than redact_others because redact_others depends
+        // also on redact_own.
+        redact_own = redact_own.min(redact_others);
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomRedaction,
+            redact_own,
+            events_default,
+        );
+
+        power_levels.redact = Int::new_saturating(redact_others);
+
+        let notify_room = imp.notify_room_row.selected_power_level();
+        power_levels.notifications.room = Int::new_saturating(notify_room);
+
+        let state_default = imp.state_row.selected_power_level();
+        power_levels.state_default = Int::new_saturating(state_default);
+
+        let name = imp.name_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomName,
+            name,
+            state_default,
+        );
+
+        let topic = imp.topic_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomTopic,
+            topic,
+            state_default,
+        );
+
+        let avatar = imp.avatar_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomAvatar,
+            avatar,
+            state_default,
+        );
+
+        let aliases = imp.aliases_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomCanonicalAlias,
+            aliases,
+            state_default,
+        );
+
+        let history_visibility = imp.history_visibility_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomHistoryVisibility,
+            history_visibility,
+            state_default,
+        );
+
+        let encryption = imp.encryption_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomEncryption,
+            encryption,
+            state_default,
+        );
+
+        let pl = imp.power_levels_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomPowerLevels,
+            pl,
+            state_default,
+        );
+
+        let server_acl = imp.server_acl_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomServerAcl,
+            server_acl,
+            state_default,
+        );
+
+        let upgrade = imp.upgrade_row.selected_power_level();
+        set_event_power_level(
+            &mut power_levels,
+            TimelineEventType::RoomTombstone,
+            upgrade,
+            state_default,
+        );
+
+        let invite = imp.invite_row.selected_power_level();
+        power_levels.invite = Int::new_saturating(invite);
+
+        let kick = imp.kick_row.selected_power_level();
+        power_levels.kick = Int::new_saturating(kick);
+
+        let ban = imp.ban_row.selected_power_level();
+        power_levels.ban = Int::new_saturating(ban);
+
+        let default_pl = imp.members_default_adjustment.value() as PowerLevel;
+        power_levels.users_default = Int::new_saturating(default_pl);
+
+        let privileged_members = self.privileged_members();
+        power_levels.users = privileged_members.collect();
+
+        Some(power_levels)
+    }
+
+    /// Handle when a value in the page has changed.
+    #[template_callback]
+    fn value_changed(&self) {
+        let imp = self.imp();
+        if imp.update_in_progress.get() {
+            // No need to run checks.
+            return;
+        };
+
+        imp.update_changed();
+    }
+
+    /// Handle when the redact_own row has changed.
+    #[template_callback]
+    fn redact_own_changed(&self) {
+        let imp = self.imp();
+        if imp.update_in_progress.get() {
+            // No need to run checks.
+            return;
+        };
+
+        let redact_own = imp.redact_own_row.selected_power_level();
+        let redact_others = imp.redact_others_row.selected_power_level();
+
+        // redact_own cannot be higher than redact_others because redact_others depends
+        // also on redact_own.
+        if redact_others < redact_own {
+            imp.update_in_progress.set(true);
+
+            imp.redact_others_row.set_selected_power_level(redact_own);
+
+            imp.update_in_progress.set(false);
+        }
+
+        imp.update_changed();
+    }
+
+    /// Handle when the redact_others row has changed.
+    #[template_callback]
+    fn redact_others_changed(&self) {
+        let imp = self.imp();
+        if imp.update_in_progress.get() {
+            // No need to run checks.
+            return;
+        };
+
+        let redact_own = imp.redact_own_row.selected_power_level();
+        let redact_others = imp.redact_others_row.selected_power_level();
+
+        // redact_own cannot be higher than redact_others because redact_others depends
+        // also on redact_own.
+        if redact_others < redact_own {
+            imp.update_in_progress.set(true);
+
+            imp.redact_own_row.set_selected_power_level(redact_others);
+
+            imp.update_in_progress.set(false);
+        }
+
+        imp.update_changed();
+    }
+
+    /// Handle when the state default has changed.
+    #[template_callback]
+    fn state_default_changed(&self) {
+        let imp = self.imp();
+        if imp.update_in_progress.get() {
+            // No need to run checks.
+            return;
+        };
+
+        imp.update_in_progress.set(true);
+
+        imp.update_state_rows();
+
+        imp.update_in_progress.set(false);
+        imp.update_changed();
+    }
+}
+
+/// Set the power level for the given event type in the given power levels.
+fn set_event_power_level(
+    power_levels: &mut RoomPowerLevels,
+    event_type: TimelineEventType,
+    value: PowerLevel,
+    default: PowerLevel,
+) {
+    if value == default {
+        power_levels.events.remove(&event_type);
+    } else {
+        power_levels
+            .events
+            .insert(event_type, Int::new_saturating(value));
+    }
+}

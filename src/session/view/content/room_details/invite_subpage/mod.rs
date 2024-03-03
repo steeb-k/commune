@@ -12,7 +12,7 @@ use self::{
     invitee_row::InviteeRow,
 };
 use crate::{
-    components::{Pill, Spinner, SpinnerButton},
+    components::{PillSearchEntry, Spinner, SpinnerButton},
     prelude::*,
     session::model::Room,
     spawn, toast,
@@ -33,15 +33,13 @@ mod imp {
         #[property(get, set = Self::set_room, construct_only)]
         pub room: glib::WeakRef<Room>,
         #[template_child]
-        pub list_view: TemplateChild<gtk::ListView>,
+        pub search_entry: TemplateChild<PillSearchEntry>,
         #[template_child]
-        pub text_buffer: TemplateChild<gtk::TextBuffer>,
+        pub list_view: TemplateChild<gtk::ListView>,
         #[template_child]
         pub invite_button: TemplateChild<SpinnerButton>,
         #[template_child]
         pub cancel_button: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub text_view: TemplateChild<gtk::TextView>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -88,50 +86,11 @@ mod imp {
                     obj.close();
                 }));
 
-            self.text_buffer.connect_delete_range(|_, start, end| {
-                let mut current = *start;
-                loop {
-                    if let Some(anchor) = current.child_anchor() {
-                        let user = anchor.widgets()[0]
-                            .downcast_ref::<Pill>()
-                            .unwrap()
-                            .source()
-                            .and_downcast::<Invitee>()
-                            .unwrap();
-                        user.take_anchor();
-                        user.set_invited(false);
-                    }
-
-                    current.forward_char();
-
-                    if &current == end {
-                        break;
-                    }
+            self.search_entry.connect_pill_removed(|_, source| {
+                if let Ok(user) = source.downcast::<Invitee>() {
+                    user.set_invited(false);
                 }
             });
-
-            self.text_buffer
-                .connect_insert_text(|text_buffer, location, text| {
-                    let mut changed = false;
-
-                    // We don't allow adding chars before and between pills
-                    loop {
-                        if location.child_anchor().is_some() {
-                            changed = true;
-                            if !location.forward_char() {
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if changed {
-                        text_buffer.place_cursor(location);
-                        text_buffer.stop_signal_emission_by_name("insert-text");
-                        text_buffer.insert(location, text);
-                    }
-                });
 
             self.invite_button
                 .connect_clicked(clone!(@weak obj => move |_| {
@@ -139,12 +98,13 @@ mod imp {
                 }));
 
             self.list_view.connect_activate(|list_view, index| {
-                let invitee = list_view
+                let Some(invitee) = list_view
                     .model()
-                    .unwrap()
-                    .item(index)
+                    .and_then(|m| m.item(index))
                     .and_downcast::<Invitee>()
-                    .unwrap();
+                else {
+                    return;
+                };
 
                 invitee.set_invited(!invitee.invited());
             });
@@ -160,19 +120,19 @@ mod imp {
             let obj = self.obj();
 
             let user_list = InviteeList::new(&room);
-            user_list.connect_invitee_added(clone!(@weak obj => move |_, invitee| {
-                obj.add_user_pill(invitee);
+            user_list.connect_invitee_added(clone!(@weak self as imp => move |_, invitee| {
+                imp.search_entry.add_pill(invitee);
             }));
 
-            user_list.connect_invitee_removed(clone!(@weak obj => move |_, invitee| {
-                obj.remove_user_pill(invitee);
+            user_list.connect_invitee_removed(clone!(@weak self as imp => move |_, invitee| {
+                imp.search_entry.remove_pill(&invitee.identifier());
             }));
 
             user_list.connect_state_notify(clone!(@weak obj => move |_| {
                 obj.update_view();
             }));
 
-            self.text_buffer
+            self.search_entry
                 .bind_property("text", &user_list, "search-term")
                 .sync_create()
                 .build();
@@ -211,46 +171,6 @@ impl InviteSubpage {
             window.pop_subpage();
         } else {
             window.close();
-        }
-    }
-
-    fn add_user_pill(&self, user: &Invitee) {
-        let imp = self.imp();
-
-        let pill = Pill::new(user);
-        pill.set_margin_start(3);
-        pill.set_margin_end(3);
-
-        let (mut start_iter, mut end_iter) = imp.text_buffer.bounds();
-
-        // We don't allow adding chars before and between pills
-        loop {
-            if start_iter.child_anchor().is_some() {
-                start_iter.forward_char();
-            } else {
-                break;
-            }
-        }
-
-        imp.text_buffer.delete(&mut start_iter, &mut end_iter);
-        let anchor = imp.text_buffer.create_child_anchor(&mut start_iter);
-        imp.text_view.add_child_at_anchor(&pill, &anchor);
-        user.set_anchor(Some(anchor));
-
-        imp.text_view.grab_focus();
-    }
-
-    fn remove_user_pill(&self, user: &Invitee) {
-        let Some(anchor) = user.take_anchor() else {
-            return;
-        };
-
-        if !anchor.is_deleted() {
-            let text_buffer = &self.imp().text_buffer;
-            let mut start_iter = text_buffer.iter_at_child_anchor(&anchor);
-            let mut end_iter = start_iter;
-            end_iter.forward_char();
-            text_buffer.delete(&mut start_iter, &mut end_iter);
         }
     }
 

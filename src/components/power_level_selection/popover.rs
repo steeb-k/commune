@@ -2,32 +2,21 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 
 use crate::{
-    components::{LoadingBin, RoleBadge},
     session::model::{Permissions, PowerLevel, POWER_LEVEL_ADMIN, POWER_LEVEL_MOD},
     utils::BoundObject,
 };
 
 mod imp {
-    use std::{cell::Cell, marker::PhantomData};
+    use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
 
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/rows/power_level_selection_row.ui")]
-    #[properties(wrapper_type = super::PowerLevelSelectionRow)]
-    pub struct PowerLevelSelectionRow {
-        #[template_child]
-        pub selected_box: TemplateChild<gtk::Box>,
-        #[template_child]
-        pub selected_level_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub selected_role_badge: TemplateChild<RoleBadge>,
-        #[template_child]
-        pub loading_bin: TemplateChild<LoadingBin>,
-        #[template_child]
-        pub popover: TemplateChild<gtk::Popover>,
+    #[template(resource = "/org/gnome/Fractal/ui/components/power_level_selection/popover.ui")]
+    #[properties(wrapper_type = super::PowerLevelSelectionPopover)]
+    pub struct PowerLevelSelectionPopover {
         #[template_child]
         pub admin_row: TemplateChild<gtk::ListBoxRow>,
         #[template_child]
@@ -60,16 +49,13 @@ mod imp {
         /// The selected power level.
         #[property(get, set = Self::set_selected_power_level, explicit_notify)]
         pub selected_power_level: Cell<PowerLevel>,
-        /// Whether the row is loading.
-        #[property(get = Self::is_loading, set = Self::set_is_loading)]
-        pub is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for PowerLevelSelectionRow {
-        const NAME: &'static str = "PowerLevelSelectionRow";
-        type Type = super::PowerLevelSelectionRow;
-        type ParentType = adw::ActionRow;
+    impl ObjectSubclass for PowerLevelSelectionPopover {
+        const NAME: &'static str = "PowerLevelSelectionPopover";
+        type Type = super::PowerLevelSelectionPopover;
+        type ParentType = gtk::Popover;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -82,28 +68,12 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for PowerLevelSelectionRow {
-        fn constructed(&self) {
-            self.parent_constructed();
+    impl ObjectImpl for PowerLevelSelectionPopover {}
 
-            self.obj()
-                .reset_relation(gtk::AccessibleRelation::DescribedBy);
-        }
-    }
+    impl WidgetImpl for PowerLevelSelectionPopover {}
+    impl PopoverImpl for PowerLevelSelectionPopover {}
 
-    impl WidgetImpl for PowerLevelSelectionRow {}
-    impl ListBoxRowImpl for PowerLevelSelectionRow {}
-    impl PreferencesRowImpl for PowerLevelSelectionRow {}
-
-    impl ActionRowImpl for PowerLevelSelectionRow {
-        fn activate(&self) {
-            if !self.is_loading() {
-                self.popover.popup();
-            }
-        }
-    }
-
-    impl PowerLevelSelectionRow {
+    impl PowerLevelSelectionPopover {
         /// Set the permissions to watch.
         fn set_permissions(&self, permissions: Option<Permissions>) {
             if self.permissions.obj() == permissions {
@@ -140,26 +110,7 @@ mod imp {
             }
 
             self.update();
-            self.update_selected_label();
             obj.notify_permissions();
-        }
-
-        /// Update the label of the selected power level.
-        fn update_selected_label(&self) {
-            let Some(permissions) = self.permissions.obj() else {
-                return;
-            };
-            let obj = self.obj();
-
-            let power_level = self.selected_power_level.get();
-            let role = permissions.role(power_level);
-
-            self.selected_role_badge.set_role(role);
-            self.selected_level_label
-                .set_label(&power_level.to_string());
-
-            let role_string = format!("{power_level} {role}");
-            obj.update_property(&[gtk::accessible::Property::Description(&role_string)]);
         }
 
         /// Set the selected power level.
@@ -170,25 +121,9 @@ mod imp {
 
             self.selected_power_level.set(power_level);
 
-            self.update_selected_label();
             self.update_selection();
             self.update_custom();
             self.obj().notify_selected_power_level();
-        }
-
-        /// Whether the row is loading.
-        fn is_loading(&self) -> bool {
-            self.loading_bin.is_loading()
-        }
-
-        /// Set whether the row is loading.
-        fn set_is_loading(&self, loading: bool) {
-            if self.is_loading() == loading {
-                return;
-            }
-
-            self.loading_bin.set_is_loading(loading);
-            self.obj().notify_is_loading();
         }
 
         /// Update the rows.
@@ -319,14 +254,13 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// An `AdwActionRow` behaving like a combo box to select a room member's power level.
-    pub struct PowerLevelSelectionRow(ObjectSubclass<imp::PowerLevelSelectionRow>)
-        @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, adw::ActionRow,
-        @implements gtk::Actionable, gtk::Accessible;
+    /// An `AdwPreferencesRow` behaving like a combo box to select a room member's power level.
+    pub struct PowerLevelSelectionPopover(ObjectSubclass<imp::PowerLevelSelectionPopover>)
+        @extends gtk::Widget, gtk::Popover, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl PowerLevelSelectionRow {
+impl PowerLevelSelectionPopover {
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -347,7 +281,7 @@ impl PowerLevelSelectionRow {
         let imp = self.imp();
         let power_level = imp.custom_adjustment.value() as PowerLevel;
 
-        imp.popover.popdown();
+        self.popdown();
         self.set_selected_power_level(power_level);
     }
 
@@ -357,7 +291,6 @@ impl PowerLevelSelectionRow {
         let Some(permissions) = self.permissions() else {
             return;
         };
-        let imp = self.imp();
 
         let power_level = match row.index() {
             0 => POWER_LEVEL_ADMIN,
@@ -367,19 +300,7 @@ impl PowerLevelSelectionRow {
             _ => return,
         };
 
-        imp.popover.popdown();
+        self.popdown();
         self.set_selected_power_level(power_level);
-    }
-
-    /// The popover's visibility changed.
-    #[template_callback]
-    fn popover_visible(&self) {
-        let is_visible = self.imp().popover.is_visible();
-
-        if is_visible {
-            self.add_css_class("has-open-popup");
-        } else {
-            self.remove_css_class("has-open-popup");
-        }
     }
 }
