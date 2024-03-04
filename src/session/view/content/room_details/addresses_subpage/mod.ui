@@ -85,6 +85,7 @@
   </object>
   <object class="SubstringEntryRow" id="local_addresses_add_row">
     <property name="title" translatable="yes">Register Local Address</property>
+    <!-- Translators: This is the placeholder for the first part of a room address, as in '@my-room:example.org'. -->
     <property name="placeholder-text" translatable="yes">my-room</property>
     <property name="accessible-description" translatable="yes">First part of the address, for example “my-room”</property>
     <property name="prefix-text">#</property>
