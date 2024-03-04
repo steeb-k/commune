@@ -1,0 +1,21 @@
+# Tests after the app is built.
+
+# Validate the metainfo with Flathub's tool.
+metainfo:
+  stage: test
+  image:
+    name: "ghcr.io/flathub/flatpak-builder-lint:latest"
+    entrypoint: [""]
+  variables:
+    METAINFO: ".flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/data/${APP_ID}.metainfo.xml"
+  script:
+    # This tool has extra tests on top of appstreamcli and is required to pass for Flathub.
+    - flatpak-builder-lint appstream ${METAINFO}
+    # Test also with the pedantic and strict flags.
+    - appstreamcli validate --pedantic --explain --strict ${METAINFO}
+  needs: ["build@x86_64"]
+  rules:
+    - changes:
+        - data/org.gnome.Fractal.metainfo.xml.in.in
+      when: always
+    - when: manual
