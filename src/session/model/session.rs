@@ -447,9 +447,9 @@ impl Session {
                 Ok(())
             }
             Err(error) => {
-                error!("Could not logout the session: {error}");
+                error!("Could not log the session out: {error}");
 
-                Err(gettext("Could not logout the session."))
+                Err(gettext("Could not log the session out."))
             }
         }
     }
