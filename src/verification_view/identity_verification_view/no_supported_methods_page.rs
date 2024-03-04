@@ -185,7 +185,7 @@ impl NoSupportedMethodsPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Failed to decline the verification"));
+                toast!(obj, gettext("Could not decline the verification"));
                 obj.reset();
             }
         }));

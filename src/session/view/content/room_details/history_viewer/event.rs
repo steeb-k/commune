@@ -149,12 +149,12 @@ impl HistoryViewerEvent {
     pub async fn get_file_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
         let Some(room) = self.room() else {
             return Err(matrix_sdk::Error::UnknownError(
-                "Failed to upgrade Room".into(),
+                "Could not upgrade Room".into(),
             ));
         };
         let Some(session) = room.session() else {
             return Err(matrix_sdk::Error::UnknownError(
-                "Failed to upgrade Session".into(),
+                "Could not upgrade Session".into(),
             ));
         };
         let client = session.client();

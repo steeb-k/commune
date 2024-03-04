@@ -196,7 +196,7 @@ impl LinuxCameraPaintable {
                 glib::ControlFlow::Continue
             }),
         )
-        .expect("Failed to add bus watch");
+        .expect("Could not add bus watch");
 
         let paintable = sink.property::<gdk::Paintable>("paintable");
 
@@ -207,7 +207,7 @@ impl LinuxCameraPaintable {
         paintable.connect_invalidate_contents(move |_| {
             if let Some(sender) = sender.take() {
                 if sender.send(()).is_err() {
-                    error!("Failed to send camera paintable `invalidate-contents` signal");
+                    error!("Could not send camera paintable `invalidate-contents` signal");
                 }
             }
         });

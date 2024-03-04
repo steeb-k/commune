@@ -48,7 +48,7 @@ impl SessionListSettings {
                 Ok(stored_sessions) => stored_sessions,
                 Err(error) => {
                     error!(
-                        "Failed to load sessions settings, fallback to default settings: {error}"
+                        "Could not load sessions settings, fallback to default settings: {error}"
                     );
                     Default::default()
                 }
@@ -79,7 +79,7 @@ impl SessionListSettings {
             "sessions",
             &serde_json::to_string(&stored_sessions).unwrap(),
         ) {
-            error!("Failed to save sessions settings: {error}");
+            error!("Could not save sessions settings: {error}");
         }
     }
 

@@ -158,7 +158,7 @@ impl AcceptRequestPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Failed to decline verification request"));
+                toast!(obj, gettext("Could not decline verification request"));
                 obj.reset();
             }
         }));
@@ -175,7 +175,7 @@ impl AcceptRequestPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.accept().await.is_err() {
-                toast!(obj, gettext("Failed to accept verification request"));
+                toast!(obj, gettext("Could not accept verification request"));
                 obj.reset();
             }
         }));

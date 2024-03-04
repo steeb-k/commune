@@ -556,7 +556,7 @@ impl Permissions {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to set user power level: {error}");
+                error!("Could not set user power level: {error}");
                 Err(())
             }
         }

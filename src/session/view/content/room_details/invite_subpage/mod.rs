@@ -233,8 +233,8 @@ impl InviteSubpage {
                     ngettext(
                         // Translators: Do NOT translate the content between '{' and '}', these
                         // are variable names.
-                        "Failed to invite {user} to {room}. Try again later.",
-                        "Failed to invite {n} users to {room}. Try again later.",
+                        "Could not invite {user} to {room}. Try again later.",
+                        "Could not invite {n} users to {room}. Try again later.",
                         n as u32,
                     ),
                     @user = first_failed,

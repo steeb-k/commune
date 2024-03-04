@@ -1091,7 +1091,7 @@ impl GeneralPage {
 
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not change guest access: {error}");
-                toast!(obj, gettext("Failed to change guest access"));
+                toast!(obj, gettext("Could not change guest access"));
                 obj.update_guest_access();
             }
         }));
@@ -1147,7 +1147,7 @@ impl GeneralPage {
                 row.set_is_active(is_published);
             }
             Err(error) => {
-                error!("Failed to get directory visibility of room: {error}");
+                error!("Could not get directory visibility of room: {error}");
             }
         }
 
@@ -1187,9 +1187,9 @@ impl GeneralPage {
             if let Err(error) = handle.await.unwrap() {
                 error!("Could not change directory visibility of room: {error}");
                 let text = if publish {
-                    gettext("Failed to publish room in directory")
+                    gettext("Could not publish room in directory")
                 } else {
-                    gettext("Failed to unpublish room from directory")
+                    gettext("Could not unpublish room from directory")
                 };
                 toast!(obj, text);
             }
@@ -1265,7 +1265,7 @@ impl GeneralPage {
             let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
 
             if let Err(error) = handle.await.unwrap() {
-                error!("Failed to change room history visibility: {error}");
+                error!("Could not change room history visibility: {error}");
                 toast!(obj, gettext("Could not change who can read history"));
 
                 obj.update_history_visibility();
@@ -1328,7 +1328,7 @@ impl GeneralPage {
             };
 
             if room.enable_encryption().await.is_err() {
-                toast!(obj, gettext("Failed to enable encryption"));
+                toast!(obj, gettext("Could not enable encryption"));
                 obj.update_encryption();
             }
         }));
@@ -1398,7 +1398,7 @@ impl GeneralPage {
             }
             Err(error) => {
                 error!("Could not upgrade room: {error}");
-                toast!(self, gettext("Failed to upgrade room"));
+                toast!(self, gettext("Could not upgrade room"));
                 imp.upgrade_button.set_loading(false);
             }
         }

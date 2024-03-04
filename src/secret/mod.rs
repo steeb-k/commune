@@ -156,7 +156,7 @@ impl StoredSession {
 
         spawn_tokio!(async move {
             if let Err(error) = fs::remove_dir_all(self.path).await {
-                error!("Failed to remove session database: {error}");
+                error!("Could not remove session database: {error}");
             }
         })
         .await

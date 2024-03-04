@@ -82,7 +82,7 @@
               <object class="AdwStatusPage">
                 <property name="icon-name">error-symbolic</property>
                 <property name="title" translatable="yes">Error</property>
-                <property name="description" translatable="yes">Failed to load the list of connected devices.</property>
+                <property name="description" translatable="yes">Could not load the list of connected devices.</property>
                 <property name="child">
                   <object class="GtkButton">
                     <property name="can-shrink">true</property>

@@ -453,7 +453,7 @@ impl Login {
                 self.handle_login_response(response).await;
             }
             Err(error) => {
-                warn!("Failed to log in: {error}");
+                warn!("Could not log in: {error}");
                 toast!(self, error.to_user_facing());
                 self.go_previous();
             }
@@ -472,7 +472,7 @@ impl Login {
                 self.init_session(session).await;
             }
             Err(error) => {
-                warn!("Failed to create session: {error}");
+                warn!("Could not create session: {error}");
                 toast!(self, error.to_user_facing());
 
                 self.go_previous();
@@ -488,7 +488,7 @@ impl Login {
         // Save ID of logging in session to GSettings
         let settings = Application::default().settings();
         if let Err(err) = settings.set_string("current-session", session.session_id()) {
-            warn!("Failed to save current session: {err}");
+            warn!("Could not save current session: {err}");
         }
 
         let session_info = session.info().clone();
@@ -496,7 +496,7 @@ impl Login {
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not store session: {error}");
-            toast!(self, gettext("Unable to store session"));
+            toast!(self, gettext("Could not store session"));
         }
 
         session.connect_ready(clone!(@weak self as obj => move |_| {

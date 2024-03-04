@@ -565,7 +565,7 @@ impl Event {
                 EventSendState::NotSentYet => return MessageState::Sending,
                 EventSendState::SendingFailed { error } => {
                     if self.state() != MessageState::Error {
-                        error!("Failed to send message: {error}");
+                        error!("Could not send message: {error}");
                     }
 
                     return MessageState::Error;
@@ -695,7 +695,7 @@ impl Event {
     pub async fn get_media_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
         let Some(session) = self.room().session() else {
             return Err(matrix_sdk::Error::UnknownError(
-                "Failed to upgrade Session".into(),
+                "Could not upgrade Session".into(),
             ));
         };
         let TimelineItemContent::Message(message) = self.content() else {

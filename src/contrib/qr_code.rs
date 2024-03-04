@@ -146,7 +146,7 @@ impl QRCode {
     /// Sets the displayed code of `self` to a QR code generated from `bytes`.
     pub fn set_bytes(&self, bytes: &[u8]) {
         let data = QRCodeData::try_from(bytes).unwrap_or_else(|_| {
-            glib::g_warning!(None, "Failed to load QRCode from bytes");
+            glib::g_warning!(None, "Could not load QRCode from bytes");
             Default::default()
         });
         self.imp().data.replace(data);

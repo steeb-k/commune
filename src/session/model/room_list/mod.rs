@@ -378,7 +378,7 @@ impl RoomList {
         via: Vec<OwnedServerName>,
     ) -> Result<OwnedRoomId, String> {
         let Some(session) = self.session() else {
-            return Err("Failed to upgrade Session".to_owned());
+            return Err("Could not upgrade Session".to_owned());
         };
         let client = session.client();
         let identifier_clone = identifier.clone();
@@ -403,7 +403,7 @@ impl RoomList {
                 let error = gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "Failed to join room {room_name}. Try again later.",
+                    "Could not join room {room_name}. Try again later.",
                     &[("room_name", identifier.as_str())],
                 );
 

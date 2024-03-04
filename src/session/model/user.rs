@@ -154,7 +154,7 @@ impl User {
         match handle.await.unwrap() {
             Ok(identity) => identity,
             Err(error) => {
-                error!("Failed to find crypto identity: {error}");
+                error!("Could not find crypto identity: {error}");
                 None
             }
         }
@@ -216,7 +216,7 @@ impl User {
                 Ok(room)
             }
             Err(error) => {
-                error!("Failed to create direct chat: {error}");
+                error!("Could not create direct chat: {error}");
                 Err(error)
             }
         }
@@ -309,7 +309,7 @@ pub trait UserExt: IsA<User> {
                     user.set_avatar_url(response.avatar_url);
                 },
                 Err(error) => {
-                    error!("Failed to load user profile for {}: {}", user.user_id(), error);
+                    error!("Could not load user profile for {}: {}", user.user_id(), error);
                 }
             };
         }));

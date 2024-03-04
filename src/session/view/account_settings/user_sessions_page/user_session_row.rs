@@ -159,7 +159,7 @@ impl UserSessionRow {
                 Err(_) => {
                     let device_name = user_session.display_name();
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    let error_message = gettext_f("Failed to disconnect device “{device_name}”", &[("device_name", &device_name)]);
+                    let error_message = gettext_f("Could not disconnect device “{device_name}”", &[("device_name", &device_name)]);
                     toast!(obj, error_message);
                 },
             }

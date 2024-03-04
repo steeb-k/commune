@@ -235,7 +235,7 @@ impl LoginMethodPage {
                 login.handle_login_response(response).await;
             }
             Err(error) => {
-                warn!("Failed to log in: {error}");
+                warn!("Could not log in: {error}");
                 toast!(self, error.to_user_facing());
             }
         }

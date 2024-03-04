@@ -211,7 +211,7 @@ impl ScanQrCodePage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.qr_code_scanned(data).await.is_err() {
-                toast!(obj, gettext("Failed to validate scanned QR Code"));
+                toast!(obj, gettext("Could not validate scanned QR Code"));
             }
         }));
     }
@@ -239,7 +239,7 @@ impl ScanQrCodePage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.start_sas().await.is_err() {
-                toast!(obj, gettext("Failed to start emoji verification"));
+                toast!(obj, gettext("Could not start emoji verification"));
                 obj.reset();
             }
         }));
@@ -257,7 +257,7 @@ impl ScanQrCodePage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Failed to cancel the verification"));
+                toast!(obj, gettext("Could not cancel the verification"));
                 obj.reset();
             }
         }));

@@ -403,7 +403,7 @@ impl JoinRule {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to change join rule: {error}");
+                error!("Could not change join rule: {error}");
                 Err(())
             }
         }

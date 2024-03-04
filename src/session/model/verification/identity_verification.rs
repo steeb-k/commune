@@ -236,7 +236,7 @@ mod imp {
             if !request.is_done() && !request.is_passive() && !request.is_cancelled() {
                 spawn_tokio!(async move {
                     if let Err(error) = request.cancel().await {
-                        error!("Failed to cancel verification request on dispose: {error}");
+                        error!("Could not cancel verification request on dispose: {error}");
                     }
                 });
             }
@@ -249,7 +249,7 @@ mod imp {
             self.request.set(request.clone()).unwrap();
 
             let Ok(datetime) = glib::DateTime::now_local() else {
-                error!("Failed to get current GDateTime");
+                error!("Could not get current GDateTime");
                 return;
             };
 
@@ -571,7 +571,7 @@ impl IdentityVerification {
                 Ok(())
             }
             Err(error) => {
-                error!("Failed to cancel verification request: {error}");
+                error!("Could not cancel verification request: {error}");
                 Err(error)
             }
         }
@@ -593,7 +593,7 @@ impl IdentityVerification {
         match handle.await.unwrap() {
             Ok(()) => Ok(()),
             Err(error) => {
-                error!("Failed to accept verification request: {error}");
+                error!("Could not accept verification request: {error}");
                 Err(())
             }
         }
@@ -713,7 +713,7 @@ impl IdentityVerification {
                 if !self.we_started_sas() {
                     let handle = spawn_tokio!(async move { sas_verification.accept().await });
                     if let Err(error) = handle.await.unwrap() {
-                        error!("Failed to accept SAS verification: {error}");
+                        error!("Could not accept SAS verification: {error}");
                         imp.set_state(VerificationState::Error);
                     }
                 }
@@ -778,11 +778,11 @@ impl IdentityVerification {
         let qr_verification = match handle.await.unwrap() {
             Ok(Some(qr_verification)) => qr_verification,
             Ok(None) => {
-                error!("Failed to start QR verification generation: unknown reason");
+                error!("Could not start QR verification generation: unknown reason");
                 return false;
             }
             Err(error) => {
-                error!("Failed to start QR verification generation: {error}");
+                error!("Could not start QR verification generation: {error}");
                 return false;
             }
         };
@@ -793,7 +793,7 @@ impl IdentityVerification {
                 true
             }
             Err(error) => {
-                error!("Failed to generate verification QR code: {error}");
+                error!("Could not generate verification QR code: {error}");
                 false
             }
         }
@@ -836,11 +836,11 @@ impl IdentityVerification {
         match handle.await.unwrap() {
             Ok(Some(_)) => Ok(()),
             Ok(None) => {
-                error!("Failed to validate scanned verification QR code: unknown reason");
+                error!("Could not validate scanned verification QR code: unknown reason");
                 Err(())
             }
             Err(error) => {
-                error!("Failed to validate scanned verification QR code: {error}");
+                error!("Could not validate scanned verification QR code: {error}");
                 Err(())
             }
         }
@@ -858,7 +858,7 @@ impl IdentityVerification {
         match handle.await.unwrap() {
             Ok(()) => Ok(()),
             Err(error) => {
-                error!("Failed to confirm scanned verification QR code: {error}");
+                error!("Could not confirm scanned verification QR code: {error}");
                 Err(())
             }
         }
@@ -877,13 +877,13 @@ impl IdentityVerification {
         match handle.await.unwrap() {
             Ok(Some(_)) => Ok(()),
             Ok(None) => {
-                error!("Failed to start SAS verification: unknown reason");
+                error!("Could not start SAS verification: unknown reason");
                 // Unset it because it didn't work.
                 self.set_we_started_sas(false);
                 Err(())
             }
             Err(error) => {
-                error!("Failed to start SAS verification: {error}");
+                error!("Could not start SAS verification: {error}");
                 // Unset it because it didn't work.
                 self.set_we_started_sas(false);
                 Err(())
@@ -903,7 +903,7 @@ impl IdentityVerification {
         match handle.await.unwrap() {
             Ok(()) => Ok(()),
             Err(error) => {
-                error!("Failed to send SAS verification mismatch: {error}");
+                error!("Could not send SAS verification mismatch: {error}");
                 Err(())
             }
         }
@@ -921,7 +921,7 @@ impl IdentityVerification {
         match handle.await.unwrap() {
             Ok(()) => Ok(()),
             Err(error) => {
-                error!("Failed to send SAS verification match: {error}");
+                error!("Could not send SAS verification match: {error}");
                 Err(())
             }
         }

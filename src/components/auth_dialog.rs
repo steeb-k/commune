@@ -108,7 +108,7 @@ mod imp {
         fn response(&self, response: &str) {
             if let Some(sender) = self.sender.take() {
                 if sender.send(response.to_owned()).is_err() {
-                    error!("Failed to send response");
+                    error!("Could not send response");
                 }
             }
         }

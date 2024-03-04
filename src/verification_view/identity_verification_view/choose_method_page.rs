@@ -228,7 +228,7 @@ impl ChooseMethodPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.start_qr_code_scan().await.is_err() {
-                toast!(obj, gettext("Failed to access camera"));
+                toast!(obj, gettext("Could not access camera"));
                 obj.reset();
             }
         }));
@@ -247,7 +247,7 @@ impl ChooseMethodPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.start_sas().await.is_err() {
-                toast!(obj, gettext("Failed to start emoji verification"));
+                toast!(obj, gettext("Could not start emoji verification"));
                 obj.reset();
             }
         }));
@@ -265,7 +265,7 @@ impl ChooseMethodPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Failed to cancel the verification"));
+                toast!(obj, gettext("Could not cancel the verification"));
                 obj.reset();
             }
         }));

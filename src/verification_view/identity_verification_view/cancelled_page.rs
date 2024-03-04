@@ -185,7 +185,7 @@ impl CancelledPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.restart().await.is_err() {
-                toast!(obj, gettext("Failed to send a new verification request"));
+                toast!(obj, gettext("Could not send a new verification request"));
                 obj.reset()
             }
         }));

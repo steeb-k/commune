@@ -240,7 +240,7 @@ impl RemoteRoom {
                 match handle.await.unwrap() {
                     Ok(response) => response.room_id,
                     Err(error) => {
-                        error!("Failed to resolve room alias `{}`: {error}", uri.id);
+                        error!("Could not resolve room alias `{}`: {error}", uri.id);
                         imp.set_loading_state(LoadingState::Error);
                         return;
                     }
@@ -272,7 +272,7 @@ impl RemoteRoom {
                 }
             }
             Err(error) => {
-                error!("Failed to get room details for room `{}`: {error}", uri.id);
+                error!("Could not get room details for room `{}`: {error}", uri.id);
                 imp.set_loading_state(LoadingState::Error);
             }
         }

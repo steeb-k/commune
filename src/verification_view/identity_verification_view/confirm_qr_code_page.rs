@@ -158,7 +158,7 @@ impl ConfirmQrCodePage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.confirm_qr_code_scanned().await.is_err() {
-                toast!(obj, gettext("Failed to confirm the scan of the QR Code"));
+                toast!(obj, gettext("Could not confirm the scan of the QR Code"));
                 obj.reset();
             }
         }));
@@ -176,7 +176,7 @@ impl ConfirmQrCodePage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Failed to cancel the verification"));
+                toast!(obj, gettext("Could not cancel the verification"));
                 obj.reset();
             }
         }));

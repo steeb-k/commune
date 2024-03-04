@@ -145,7 +145,7 @@ impl HistoryViewerTimeline {
                 }
             },
             Err(error) => {
-                error!("Failed to load history viewer timeline events: {error}");
+                error!("Could not load history viewer timeline events: {error}");
                 self.set_state(TimelineState::Error);
                 false
             }

@@ -86,7 +86,7 @@ impl AvatarData {
         match icon {
             Ok(icon) => Some(icon),
             Err(error) => {
-                warn!("Failed to generate icon for notification: {error}");
+                warn!("Could not generate icon for notification: {error}");
                 None
             }
         }

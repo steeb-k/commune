@@ -257,7 +257,7 @@ impl ChangePasswordSubpage {
                     toast!(self, gettext("Password rejected for being too weak"));
                 }
                 _ => {
-                    error!("Failed to change the password: {error:?}");
+                    error!("Could not change the password: {error:?}");
                     toast!(self, gettext("Could not change password"));
                 }
             },

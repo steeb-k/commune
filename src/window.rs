@@ -233,10 +233,10 @@ mod imp {
         // save window state on delete event
         fn close_request(&self) -> glib::Propagation {
             if let Err(error) = self.save_window_size() {
-                warn!("Failed to save window state: {error}");
+                warn!("Could not save window state: {error}");
             }
             if let Err(error) = self.save_current_visible_session() {
-                warn!("Failed to save current session: {error}");
+                warn!("Could not save current session: {error}");
             }
 
             glib::Propagation::Proceed

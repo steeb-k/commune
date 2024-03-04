@@ -34,7 +34,7 @@ mod imp {
                 let camera = match camera::Camera::new().await {
                     Ok(camera) => camera,
                     Err(error) => {
-                        error!("Failed to create instance of camera proxy: {error}");
+                        error!("Could not create instance of camera proxy: {error}");
                         return false;
                     }
                 };
@@ -42,7 +42,7 @@ mod imp {
                 match camera.is_present().await {
                     Ok(is_present) => is_present,
                     Err(error) => {
-                        error!("Failed to check whether system has cameras: {error}");
+                        error!("Could not check whether system has cameras: {error}");
                         false
                     }
                 }
@@ -53,7 +53,7 @@ mod imp {
                 Ok(is_present) => is_present.expect("The task should not have been aborted"),
                 Err(_) => {
                     abort_handle.abort();
-                    error!("Failed to check whether system has cameras: the request timed out");
+                    error!("Could not check whether system has cameras: the request timed out");
                     false
                 }
             }
@@ -79,18 +79,18 @@ mod imp {
                         Some(paintable.upcast())
                     }
                     Ok(None) => {
-                        error!("Failed to request access to cameras: the response is empty");
+                        error!("Could not request access to cameras: the response is empty");
                         None
                     }
                     Err(error) => {
-                        error!("Failed to request access to cameras: {error}");
+                        error!("Could not request access to cameras: {error}");
                         None
                     }
                 },
                 Err(_) => {
                     // Error because we reached the timeout.
                     abort_handle.abort();
-                    error!("Failed to request access to cameras: the request timed out");
+                    error!("Could not request access to cameras: the request timed out");
                     None
                 }
             }

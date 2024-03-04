@@ -72,7 +72,7 @@ mod imp {
         pub(super) fn send_response(&self, response: gtk::ResponseType) {
             if let Some(sender) = self.sender.take() {
                 if sender.send(response).is_err() {
-                    error!("Failed to send attachment dialog response {response:?}");
+                    error!("Could not send attachment dialog response {response:?}");
                 }
             }
         }

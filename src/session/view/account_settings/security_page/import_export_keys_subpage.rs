@@ -366,7 +366,7 @@ impl ImportExportKeysSubpage {
             }
             Err(err) => {
                 if is_export {
-                    error!("Failed to export the keys: {err:?}");
+                    error!("Could not export the keys: {err:?}");
                     toast!(self, gettext("Could not export the keys"));
                 } else if err
                     .downcast_ref::<RoomKeyImportError>()
@@ -380,7 +380,7 @@ impl ImportExportKeysSubpage {
                         gettext("The passphrase doesn't match the one used to export the keys.")
                     );
                 } else {
-                    error!("Failed to import the keys: {err:?}");
+                    error!("Could not import the keys: {err:?}");
                     toast!(self, gettext("Could not import the keys"));
                 }
             }

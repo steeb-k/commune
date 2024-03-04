@@ -140,7 +140,7 @@ impl UserSessionsList {
         let stream = match client.encryption().devices_stream().await {
             Ok(stream) => stream,
             Err(error) => {
-                error!("Failed to access the user sessions stream: {error}");
+                error!("Could not access the user sessions stream: {error}");
                 return;
             }
         };
@@ -198,7 +198,7 @@ impl UserSessionsList {
             let crypto_sessions = match client.encryption().get_user_devices(&user_id).await {
                 Ok(crypto_sessions) => Some(crypto_sessions),
                 Err(error) => {
-                    error!("Failed to get crypto sessions for user {user_id}: {error}");
+                    error!("Could not get crypto sessions for user {user_id}: {error}");
                     None
                 }
             };
@@ -212,7 +212,7 @@ impl UserSessionsList {
                         api_sessions = Some(response.devices);
                     }
                     Err(error) => {
-                        error!("Failed to get sessions list for user {user_id}: {error}");
+                        error!("Could not get sessions list for user {user_id}: {error}");
                     }
                 }
             }

@@ -57,7 +57,7 @@ impl LinuxSystemSettings {
         {
             Ok(proxy) => proxy,
             Err(error) => {
-                error!("Failed to access settings portal: {error}");
+                error!("Could not access settings portal: {error}");
                 return;
             }
         };
@@ -76,7 +76,7 @@ impl LinuxSystemSettings {
                 .upcast_ref::<SystemSettings>()
                 .set_clock_format(clock_format),
             Err(error) => {
-                error!("Failed to access clock format system setting: {error}");
+                error!("Could not access clock format system setting: {error}");
                 return;
             }
         };
@@ -94,7 +94,7 @@ impl LinuxSystemSettings {
         {
             Ok(stream) => stream,
             Err(error) => {
-                error!("Failed to listen to changes of the clock format system setting: {error}");
+                error!("Could not listen to changes of the clock format system setting: {error}");
                 return;
             }
         };

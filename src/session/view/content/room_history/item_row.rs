@@ -714,7 +714,7 @@ impl ItemRow {
         }
 
         if event.room().redact(&[event_id], None).await.is_err() {
-            toast!(self, gettext("Failed to remove message"));
+            toast!(self, gettext("Could not remove message"));
         }
     }
 
@@ -728,7 +728,7 @@ impl ItemRow {
         };
 
         if event.room().toggle_reaction(key, event_id).await.is_err() {
-            toast!(self, gettext("Failed to toggle reaction"));
+            toast!(self, gettext("Could not toggle reaction"));
         }
     }
 
@@ -781,7 +781,7 @@ impl ItemRow {
             .await
             .is_err()
         {
-            toast!(self, gettext("Failed to report event"));
+            toast!(self, gettext("Could not report event"));
         }
     }
 }

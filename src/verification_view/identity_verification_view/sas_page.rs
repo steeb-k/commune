@@ -249,7 +249,7 @@ impl SasPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.sas_mismatch().await.is_err() {
-                toast!(obj, gettext("Failed to send that the data does not match"));
+                toast!(obj, gettext("Could not send that the data does not match"));
                 obj.reset_buttons();
             }
         }));
@@ -266,7 +266,7 @@ impl SasPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.sas_match().await.is_err() {
-                toast!(obj, gettext("Failed to send confirmation that the data matches"));
+                toast!(obj, gettext("Could not send confirmation that the data matches"));
                 obj.reset_buttons();
             }
         }));

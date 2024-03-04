@@ -98,7 +98,7 @@ impl IgnoredUserRow {
         spawn!(
             clone!(@weak self as obj, @weak ignored_users => async move {
                 if ignored_users.remove(&user_id).await.is_err() {
-                    toast!(obj, gettext("Failed to stop ignoring user"));
+                    toast!(obj, gettext("Could not stop ignoring user"));
                     obj.imp().stop_ignoring_button.set_loading(false);
                 }
             })

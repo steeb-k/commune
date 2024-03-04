@@ -131,7 +131,7 @@ mod imp {
                     return;
                 }
                 Err(error) => {
-                    error!("Failed to get ignored users list: {error}");
+                    error!("Could not get ignored users list: {error}");
                     return;
                 }
             };
@@ -139,7 +139,7 @@ mod imp {
             match raw.deserialize() {
                 Ok(content) => self.update_list(content.ignored_users.into_keys().collect()),
                 Err(error) => {
-                    error!("Failed to deserialize ignored users list: {error}");
+                    error!("Could not deserialize ignored users list: {error}");
                 }
             }
         }
@@ -228,7 +228,7 @@ impl IgnoredUsers {
                 Ok(())
             }
             Err(error) => {
-                error!("Failed to add `{user_id}` to the ignored users: {error}");
+                error!("Could not add `{user_id}` to the ignored users: {error}");
                 Err(())
             }
         }
@@ -260,7 +260,7 @@ impl IgnoredUsers {
                 Ok(())
             }
             Err(error) => {
-                error!("Failed to remove `{user_id}` from the ignored users: {error}");
+                error!("Could not remove `{user_id}` from the ignored users: {error}");
                 Err(())
             }
         }

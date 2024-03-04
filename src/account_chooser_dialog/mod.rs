@@ -52,7 +52,7 @@ mod imp {
         fn closed(&self) {
             if let Some(sender) = self.sender.take() {
                 if sender.send(None).is_err() {
-                    error!("Failed to send selected session");
+                    error!("Could not send selected session");
                 }
             }
         }
@@ -112,7 +112,7 @@ impl AccountChooserDialog {
                 .map(|s| s.session_id());
 
             if sender.send(session_id).is_err() {
-                error!("Failed to send selected session");
+                error!("Could not send selected session");
             }
         }
 

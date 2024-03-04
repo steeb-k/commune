@@ -245,15 +245,15 @@ impl LoginHomeserverPage {
 
         match (discovery_error, server_error) {
             (Some(discovery_error), Some(server_error)) => {
-                warn!("Failed to discover homeserver. Auto-discovery error: {discovery_error}. Homeserver detection error: {server_error}");
+                warn!("Could not discover homeserver. Auto-discovery error: {discovery_error}. Homeserver detection error: {server_error}");
                 Err(discovery_error)
             }
             (Some(discovery_error), None) => {
-                warn!("Failed to discover homeserver. Auto-discovery error: {discovery_error}");
+                warn!("Could not discover homeserver. Auto-discovery error: {discovery_error}");
                 Err(discovery_error)
             }
             (None, Some(server_error)) => {
-                warn!("Failed to discover homeserver. Homeserver detection error: {server_error}");
+                warn!("Could not discover homeserver. Homeserver detection error: {server_error}");
                 Err(server_error)
             }
             // We should have at least one error at this step.
@@ -297,8 +297,8 @@ impl LoginHomeserverPage {
                 login.show_login_screen();
             }
             Err(error) => {
-                warn!("Failed to get available login types: {error}");
-                toast!(self, "Failed to get available login types.");
+                warn!("Could not get available login types: {error}");
+                toast!(self, "Could not get available login types.");
 
                 // Drop the client because it is bound to the homeserver.
                 login.drop_client();

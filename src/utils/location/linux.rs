@@ -46,7 +46,7 @@ mod imp {
             if let Some(proxy) = self.proxy.get().cloned() {
                 spawn_tokio!(async move {
                     if let Err(error) = proxy.1.close().await {
-                        error!("Failed to close session of location API: {error}");
+                        error!("Could not close session of location API: {error}");
                     }
                 });
             }
@@ -62,7 +62,7 @@ mod imp {
             match self.init().await {
                 Ok(()) => Ok(()),
                 Err(error) => {
-                    error!("Failed to initialize location API: {error}");
+                    error!("Could not initialize location API: {error}");
                     Err(error.into())
                 }
             }
@@ -78,7 +78,7 @@ mod imp {
                         .expect("Got invalid coordinates from location API")
                 })),
                 Err(error) => {
-                    error!("Failed to access update stream of location API: {error}");
+                    error!("Could not access update stream of location API: {error}");
                     Err(error.into())
                 }
             }

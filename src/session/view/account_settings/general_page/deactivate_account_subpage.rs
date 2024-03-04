@@ -148,7 +148,7 @@ impl DeactivateAccountSubpage {
                     .unwrap();
             }
             Err(error) => {
-                error!("Failed to deactivate account: {error:?}");
+                error!("Could not deactivate account: {error:?}");
                 toast!(self, gettext("Could not deactivate account"));
             }
         }

@@ -153,7 +153,7 @@ impl MemberList {
                 }
             }
             Err(error) => {
-                error!("Failed to load room members from store: {error}");
+                error!("Could not load room members from store: {error}");
             }
         }
 
@@ -175,7 +175,7 @@ impl MemberList {
             }
             Err(error) => {
                 self.set_state(LoadingState::Error);
-                error!(%error, "Failed to load room members from server");
+                error!(%error, "Could not load room members from server");
             }
         }
     }

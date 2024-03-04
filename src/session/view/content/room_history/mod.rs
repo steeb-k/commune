@@ -542,7 +542,7 @@ impl RoomHistory {
                 self,
                 gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Failed to leave {room}",
+                    "Could not leave {room}",
                 ),
                 @room,
             );
@@ -561,7 +561,7 @@ impl RoomHistory {
                 gettext_f(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "Failed to join room {room_name}. Try again later.",
+                    "Could not join room {room_name}. Try again later.",
                     &[("room_name", &room.display_name())],
                 )
             );
@@ -578,7 +578,7 @@ impl RoomHistory {
             toast!(
                 self,
                 // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                gettext("Failed to forget {room}."),
+                gettext("Could not forget {room}."),
                 @room,
             );
         }
@@ -917,7 +917,7 @@ impl RoomHistory {
         });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to send read receipt: {error}");
+            error!("Could not send read receipt: {error}");
         }
     }
 

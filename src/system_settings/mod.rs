@@ -25,7 +25,7 @@ impl Default for ClockFormat {
             Ok(s) if s.ends_with("am") || s.ends_with("pm") => ClockFormat::TwelveHours,
             Ok(_) => ClockFormat::TwentyFourHours,
             Err(error) => {
-                error!("Failed to get local formatted time: {error}");
+                error!("Could not get local formatted time: {error}");
                 ClockFormat::TwelveHours
             }
         }

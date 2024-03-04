@@ -204,7 +204,7 @@ impl Invite {
                 gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this
                     // is a variable name.
-                    "Failed to accept invitation for {room}. Try again later.",
+                    "Could not accept invitation for {room}. Try again later.",
                 ),
                 @room,
             );
@@ -237,7 +237,7 @@ impl Invite {
                 gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this
                     // is a variable name.
-                    "Failed to decline invitation for {room}. Try again later.",
+                    "Could not decline invitation for {room}. Try again later.",
                 ),
                 @room,
             );

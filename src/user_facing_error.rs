@@ -24,7 +24,7 @@ impl UserFacingError for HttpError {
                 if error.is_timeout() {
                     gettext("The connection timed out. Try again later.")
                 } else {
-                    gettext("Unable to connect to the homeserver.")
+                    gettext("Could not connect to the homeserver.")
                 }
             }
             HttpError::Api(FromHttpResponseError::Server(RumaApiError::ClientApi(

@@ -66,7 +66,7 @@ pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
             }
             Err(LinuxSecretError::WrongProfile) => {}
             Err(error) => {
-                error!("Failed to restore previous session: {error}");
+                error!("Could not restore previous session: {error}");
             }
         }
     }
@@ -103,7 +103,7 @@ pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
 pub async fn delete_session(session: StoredSession) {
     spawn_tokio!(async move {
         if let Err(error) = session.delete_from_secret_service().await {
-            error!("Failed to delete session data from Secret Service: {error}");
+            error!("Could not delete session data from Secret Service: {error}");
         }
     })
     .await
@@ -117,11 +117,11 @@ async fn log_out_session(session: StoredSession) {
         match matrix::client_with_stored_session(session).await {
             Ok(client) => {
                 if let Err(error) = client.matrix_auth().logout().await {
-                    error!("Failed to log out session: {error}");
+                    error!("Could not log out session: {error}");
                 }
             }
             Err(error) => {
-                error!("Failed to build client to log out session: {error}")
+                error!("Could not build client to log out session: {error}")
             }
         }
     })
@@ -303,11 +303,11 @@ impl StoredSession {
                 debug!("Moving database to: {}", target_path.to_string_lossy());
 
                 if let Err(error) = fs::create_dir_all(&target_path) {
-                    error!("Failed to create new directory: {error}");
+                    error!("Could not create new directory: {error}");
                 }
 
                 if let Err(error) = fs::rename(&self.path, &target_path) {
-                    error!("Failed to move database: {error}");
+                    error!("Could not move database: {error}");
                 }
 
                 self.path = target_path;
@@ -319,11 +319,11 @@ impl StoredSession {
         let clone = self.clone();
         spawn_tokio!(async move {
             if let Err(error) = item.delete().await {
-                error!("Failed to remove outdated session: {error}");
+                error!("Could not remove outdated session: {error}");
             }
 
             if let Err(error) = store_session(clone).await {
-                error!("Failed to store updated session: {error}");
+                error!("Could not store updated session: {error}");
             }
         })
         .await

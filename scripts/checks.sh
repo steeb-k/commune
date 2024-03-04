@@ -94,7 +94,7 @@ check_rustup() {
             curl https://sh.rustup.rs -sSf  | sh -s -- -y --default-toolchain nightly
             export PATH=$PATH:$HOME/.cargo/bin
             if ! which rustup &> /dev/null; then
-                echo -e "$Failed to install rustup"
+                echo -e "$Could not install rustup"
                 exit 2
             fi
         else
@@ -107,7 +107,7 @@ check_rustup() {
 install_cargo() {
     check_rustup -i
     if ! which cargo >/dev/null 2>&1; then
-        echo -e "$Failed to install cargo"
+        echo -e "$Could not install cargo"
         exit 2
     fi
 }
@@ -115,7 +115,7 @@ install_cargo() {
 # Check if cargo is available. If not, ask to install it.
 check_cargo() {
     if ! which cargo >/dev/null 2>&1; then
-        echo "Unable to find cargo for pre-commit checks"
+        echo "Could not find cargo for pre-commit checks"
 
         if [[ $force_install -eq 1 ]]; then
             install_cargo
@@ -139,7 +139,7 @@ check_cargo() {
                     [Nn]* | "" )
                         exit 2
                         ;;
-                    * ) 
+                    * )
                         echo $invalid
                         ;;
                 esac
@@ -160,7 +160,7 @@ install_rustfmt() {
     echo -e "$Installing rustfmt…"
     rustup component add --toolchain nightly rustfmt
     if ! cargo +nightly fmt --version >/dev/null 2>&1; then
-        echo -e "$Failed to install rustfmt"
+        echo -e "$Could not install rustfmt"
         exit 2
     fi
 }
@@ -171,7 +171,7 @@ run_rustfmt() {
         if [[ $force_install -eq 1 ]]; then
             install_rustfmt
         elif [ ! -t 1 ]; then
-            echo "Unable to check Fractal’s code style, because rustfmt could not be run"
+            echo "Could not check Fractal’s code style, because rustfmt could not be run"
             exit 2
         else
             echo "Rustfmt is needed to check Fractal’s code style, but it isn’t available"
@@ -182,21 +182,21 @@ run_rustfmt() {
             while true; do
                 echo -n "Install rustfmt? [y/N]: "; read yn < /dev/tty
                 case $yn in
-                    [Yy]* ) 
+                    [Yy]* )
                         install_rustfmt
                         break
                         ;;
                     [Nn]* | "" )
                         exit 2
                         ;;
-                    * ) 
+                    * )
                         echo $invalid
                         ;;
                 esac
             done
         fi
     fi
-    
+
     echo -e "$Checking code style…"
 
     if [[ $verbose -eq 1 ]]; then
@@ -239,7 +239,7 @@ install_typos() {
     echo -e "$Installing typos…"
     cargo install typos-cli
     if ! typos --version >/dev/null 2>&1; then
-        echo -e "$Failed to install typos"
+        echo -e "$Could not install typos"
         exit 2
     fi
 }
@@ -250,7 +250,7 @@ run_typos() {
         if [[ $force_install -eq 1 ]]; then
             install_typos
         elif [ ! -t 1 ]; then
-            echo "Unable to check spelling mistakes, because typos could not be run"
+            echo "Could not check spelling mistakes, because typos could not be run"
             exit 2
         else
             echo "Typos is needed to check spelling mistakes, but it isn’t available"
@@ -261,14 +261,14 @@ run_typos() {
             while true; do
                 echo -n "Install typos? [y/N]: "; read yn < /dev/tty
                 case $yn in
-                    [Yy]* ) 
+                    [Yy]* )
                         install_typos
                         break
                         ;;
                     [Nn]* | "" )
                         exit 2
                         ;;
-                    * ) 
+                    * )
                         echo $invalid
                         ;;
                 esac
@@ -358,7 +358,7 @@ check_potfiles() {
 
     # Get Rust files with regex 'gettext(_f)?\('.
     rs_files=(`grep -lIrE 'gettext(_f)?\(' src/*`)
-    
+
     # Get Rust files with macros, regex 'gettext!\('.
     rs_macro_files=(`grep -lIrE 'gettext!\(' src/*`)
 
@@ -374,7 +374,7 @@ check_potfiles() {
     diff
     ui_potfiles=("${to_diff1[@]}")
     ui_files=("${to_diff2[@]}")
-    
+
     to_diff1=("${rs_skip[@]}")
     to_diff2=("${rs_files[@]}")
     diff
@@ -504,7 +504,7 @@ install_cargo_sort() {
     echo -e "$Installing cargo-sort…"
     cargo install cargo-sort
     if ! cargo-sort --version >/dev/null 2>&1; then
-        echo -e "$Failed to install cargo-sort"
+        echo -e "$Could not install cargo-sort"
         exit 2
     fi
 }
@@ -515,7 +515,7 @@ run_cargo_sort() {
         if [[ $force_install -eq 1 ]]; then
             install_cargo_sort
         elif [ ! -t 1 ]; then
-            echo "Unable to check Cargo.toml sorting, because cargo-sort could not be run"
+            echo "Could not check Cargo.toml sorting, because cargo-sort could not be run"
             exit 2
         else
             echo "Cargo-sort is needed to check the sorting in Cargo.toml, but it isn’t available"
@@ -526,14 +526,14 @@ run_cargo_sort() {
             while true; do
                 echo -n "Install cargo-sort? [y/N]: "; read yn < /dev/tty
                 case $yn in
-                    [Yy]* ) 
+                    [Yy]* )
                         install_cargo_sort
                         break
                         ;;
                     [Nn]* | "" )
                         exit 2
                         ;;
-                    * ) 
+                    * )
                         echo $invalid
                         ;;
                 esac
@@ -581,7 +581,7 @@ esac; shift; done
 if [[ $git_staged -eq 1 ]]; then
    staged_files=`git diff --name-only --cached`
    if [[ -z $staged_files ]]; then
-      echo -e "$Failed to check files because none where staged"
+      echo -e "$Could not check files because none where staged"
       exit 2
    fi
 else

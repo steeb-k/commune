@@ -178,7 +178,7 @@ mod imp {
                     false
                 }
                 Err(error) => {
-                    error!("Failed to get encryption user identity: {error}");
+                    error!("Could not get encryption user identity: {error}");
                     false
                 }
             };
@@ -197,7 +197,7 @@ mod imp {
             let has_sessions = match devices_handle.await.unwrap() {
                 Ok(devices) => devices.devices().any(|d| d.is_cross_signed_by_owner()),
                 Err(error) => {
-                    error!("Failed to get user devices: {error}");
+                    error!("Could not get user devices: {error}");
                     // If there are actually no other devices, the user can still
                     // reset the cross-signing identity.
                     true
@@ -425,13 +425,13 @@ impl SessionVerificationView {
         let error_message = match result {
             Ok(_) => None,
             Err(AuthError::UserCancelled) => {
-                error!("Failed to bootstrap cross-signing: User cancelled the authentication");
+                error!("Could not bootstrap cross-signing: User cancelled the authentication");
                 Some(gettext(
                     "You cancelled the authentication needed to create the encryption identity.",
                 ))
             }
             Err(error) => {
-                error!("Failed to bootstrap cross-signing: {error:?}");
+                error!("Could not bootstrap cross-signing: {error:?}");
                 Some(gettext(
                     "An error occurred during the creation of the encryption identity.",
                 ))
@@ -462,7 +462,7 @@ impl SessionVerificationView {
                     obj.show_verification();
                 }
                 Err(()) => {
-                    toast!(obj, gettext("Failed to send a new verification request"));
+                    toast!(obj, gettext("Could not send a new verification request"));
                     obj.reset();
                 }
             }

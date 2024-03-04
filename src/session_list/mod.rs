@@ -247,11 +247,11 @@ impl SessionList {
                 self.set_state(LoadingState::Ready)
             }
             Err(error) => {
-                error!("Failed to restore previous sessions: {error}");
+                error!("Could not restore previous sessions: {error}");
 
                 let message = format!(
                     "{}\n\n{}",
-                    gettext("Failed to restore previous sessions"),
+                    gettext("Could not restore previous sessions"),
                     error.to_user_facing(),
                 );
 
@@ -270,7 +270,7 @@ impl SessionList {
                 self.insert(session);
             }
             Err(error) => {
-                warn!("Failed to restore previous session: {error}");
+                warn!("Could not restore previous session: {error}");
                 self.insert(FailedSession::new(session_info, error));
             }
         }

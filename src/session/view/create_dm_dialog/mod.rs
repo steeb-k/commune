@@ -69,7 +69,7 @@ mod imp {
         fn closed(&self) {
             if let Some(sender) = self.sender.take() {
                 if sender.send(None).is_err() {
-                    error!("Failed to send selected session");
+                    error!("Could not send selected session");
                 }
             }
         }
@@ -169,7 +169,7 @@ impl CreateDmDialog {
 
         if let Some(sender) = imp.sender.take() {
             if sender.send(Some(user)).is_err() {
-                error!("Failed to send selected session");
+                error!("Could not send selected session");
             }
         }
     }
@@ -195,7 +195,7 @@ impl CreateDmDialog {
                 self.close();
             }
             Err(_) => {
-                self.show_error(&gettext("Failed to create a new Direct Chat"));
+                self.show_error(&gettext("Could not create a new Direct Chat"));
                 self.imp().search_entry.set_sensitive(true);
             }
         }

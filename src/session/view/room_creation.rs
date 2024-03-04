@@ -171,7 +171,7 @@ impl RoomCreation {
                         obj.close();
                     },
                     Err(error) => {
-                        error!("Couldn’t create a new room: {error}");
+                        error!("Could not create a new room: {error}");
                         obj.handle_error(error);
                     },
                 };

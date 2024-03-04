@@ -112,7 +112,7 @@
                 <property name="name">session</property>
                 <property name="child">
                   <object class="AdwStatusPage" id="session_error_page">
-                    <property name="title" translatable="yes">Failed to Initialize the Session</property>
+                    <property name="title" translatable="yes">Could not Initialize the Session</property>
                     <property name="icon-name">warning-symbolic</property>
                     <property name="vexpand">true</property>
                   </object>

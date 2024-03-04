@@ -220,7 +220,7 @@ impl VerificationList {
             }
             Err(error) => {
                 error!(
-                    "Failed to get room member for verification request `({}, {})`: {error}",
+                    "Could not get room member for verification request `({}, {})`: {error}",
                     request.other_user_id(),
                     request.flow_id()
                 );
@@ -280,7 +280,7 @@ impl VerificationList {
     /// user and sent to other devices.
     pub async fn create(&self, user: Option<User>) -> Result<IdentityVerification, ()> {
         let Some(session) = self.session() else {
-            error!("Failed to create identity verification: failed to upgrade session");
+            error!("Could not create identity verification: failed to upgrade session");
             return Err(());
         };
 
@@ -289,7 +289,7 @@ impl VerificationList {
         let supported_methods = load_supported_verification_methods().await;
 
         let Some(identity) = user.crypto_identity().await else {
-            error!("Failed to create identity verification: cryptographic identity not found");
+            error!("Could not create identity verification: cryptographic identity not found");
             return Err(());
         };
 
@@ -321,7 +321,7 @@ impl VerificationList {
                 Ok(verification)
             }
             Err(error) => {
-                error!("Failed to create identity verification: {error}");
+                error!("Could not create identity verification: {error}");
                 Err(())
             }
         }

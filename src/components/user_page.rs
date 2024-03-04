@@ -303,7 +303,7 @@ impl UserPage {
         self.set_direct_chat_loading(true);
 
         let Ok(room) = user.get_or_create_direct_chat().await else {
-            toast!(self, &gettext("Failed to create a new Direct Chat"));
+            toast!(self, &gettext("Could not create a new Direct Chat"));
             self.set_direct_chat_loading(false);
 
             return;
@@ -484,7 +484,7 @@ impl UserPage {
                 .await
                 .is_err()
             {
-                toast!(obj, gettext("Failed to change the role"));
+                toast!(obj, gettext("Could not change the role"));
                 obj.update_room();
             }
         }));
@@ -508,7 +508,7 @@ impl UserPage {
             let user_id = member.user_id().clone();
 
             if room.invite(&[user_id]).await.is_err() {
-                toast!(obj, gettext("Failed to invite user"));
+                toast!(obj, gettext("Could not invite user"));
             }
 
             obj.reset_room()
@@ -544,9 +544,9 @@ impl UserPage {
             let user_id = member.user_id().clone();
             if room.kick(&[(user_id, response.reason)]).await.is_err() {
                 let error = match member.membership() {
-                    Membership::Invite => gettext("Failed to revoke invite of user"),
-                    Membership::Knock => gettext("Failed to deny access to user"),
-                    _ => gettext("Failed to kick user"),
+                    Membership::Invite => gettext("Could not revoke invite of user"),
+                    Membership::Knock => gettext("Could not deny access to user"),
+                    _ => gettext("Could not kick user"),
                 };
                 toast!(obj, error);
 
@@ -594,7 +594,7 @@ impl UserPage {
                 .await
                 .is_err()
             {
-                toast!(obj, gettext("Failed to ban user"));
+                toast!(obj, gettext("Could not ban user"));
             }
 
             if response.remove_events {
@@ -624,7 +624,7 @@ impl UserPage {
             let user_id = member.user_id().clone();
 
             if room.unban(&[(user_id, None)]).await.is_err() {
-                toast!(obj, gettext("Failed to unban user"));
+                toast!(obj, gettext("Could not unban user"));
             }
 
             obj.reset_room();
@@ -675,8 +675,8 @@ impl UserPage {
                 ngettext_f(
                     // Translators: Do NOT translate the content between '{' and '}',
                     // this is a variable name.
-                    "Failed to remove 1 message sent by the user",
-                    "Failed to remove {n} messages sent by the user",
+                    "Could not remove 1 message sent by the user",
+                    "Could not remove {n} messages sent by the user",
                     n,
                     &[("n", &n.to_string())]
                 )
@@ -715,7 +715,7 @@ impl UserPage {
         let verification = match user.verify_identity().await {
             Ok(verification) => verification,
             Err(()) => {
-                toast!(self, gettext("Failed to start user verification"));
+                toast!(self, gettext("Could not start user verification"));
                 self.action_set_enabled("user-page.verify-user", true);
                 imp.verify_button.set_loading(false);
                 return;
@@ -765,10 +765,10 @@ impl UserPage {
         spawn!(clone!(@weak self as obj, @weak user => async move {
             if is_ignored {
                 if user.stop_ignoring().await.is_err() {
-                    toast!(obj, gettext("Failed to stop ignoring user"));
+                    toast!(obj, gettext("Could not stop ignoring user"));
                 }
             } else if user.ignore().await.is_err() {
-                toast!(obj, gettext("Failed to ignore user"));
+                toast!(obj, gettext("Could not ignore user"));
             }
 
             obj.imp().ignored_button.set_loading(false);

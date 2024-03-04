@@ -500,7 +500,7 @@ impl Room {
         match handle.await.unwrap() {
             Ok(is_direct) => self.set_is_direct(is_direct),
             Err(error) => {
-                error!(room_id = %self.room_id(), "Failed to load whether room is direct: {error}");
+                error!(room_id = %self.room_id(), "Could not load whether room is direct: {error}");
             }
         }
     }
@@ -537,7 +537,7 @@ impl Room {
         let members = match handle.await.unwrap() {
             Ok(m) => m,
             Err(error) => {
-                error!("Failed to load room members: {error}");
+                error!("Could not load room members: {error}");
                 vec![]
             }
         };
@@ -606,7 +606,7 @@ impl Room {
             }
             Ok(None) => {}
             Err(error) => {
-                error!("Failed to get direct member: {error}");
+                error!("Could not get direct member: {error}");
             }
         }
 
@@ -651,7 +651,7 @@ impl Room {
                 Ok(())
             }
             Err(error) => {
-                error!("Couldn’t forget the room: {error}");
+                error!("Could not forget the room: {error}");
 
                 // Load the previous category
                 self.load_category();
@@ -1041,7 +1041,7 @@ impl Room {
             Ok(Some(matrix_member)) => own_member.update_from_room_member(&matrix_member),
             Ok(None) => {}
             Err(error) => error!(
-                "Failed to load own member for room {}: {error}",
+                "Could not load own member for room {}: {error}",
                 self.room_id()
             ),
         }
@@ -1145,7 +1145,7 @@ impl Room {
 
                 self.set_display_name(name);
             }
-            Err(error) => error!("Couldn’t fetch display name: {error}"),
+            Err(error) => error!("Could not fetch display name: {error}"),
         };
 
         if self.display_name().is_empty() {
@@ -1175,7 +1175,7 @@ impl Room {
             Ok(Some(member)) => member,
             Ok(None) => return,
             Err(error) => {
-                error!("Failed to get room member: {error}");
+                error!("Could not get room member: {error}");
                 return;
             }
         };
@@ -1194,7 +1194,7 @@ impl Room {
             Ok(Some(member)) => member,
             Ok(None) => return,
             Err(error) => {
-                error!("Failed to get room member: {error}");
+                error!("Could not get room member: {error}");
                 return;
             }
         };
@@ -1311,7 +1311,7 @@ impl Room {
         let handle = spawn_tokio!(async move { timeline.toggle_reaction(&annotation).await });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to toggle reaction: {error}");
+            error!("Could not toggle reaction: {error}");
             return Err(());
         }
 
@@ -1341,7 +1341,7 @@ impl Room {
                 match matrix_room.redact(event_id, reason.as_deref(), None).await {
                     Ok(_) => {}
                     Err(error) => {
-                        error!("Failed to redact event with ID {event_id}: {error}");
+                        error!("Could not redact event with ID {event_id}: {error}");
                         failed_redactions.push(i);
                     }
                 }
@@ -1377,7 +1377,7 @@ impl Room {
             clone!(@weak self as obj => async move {
                 match handle.await.unwrap() {
                     Ok(_) => {},
-                    Err(error) => error!("Couldn’t send typing notification: {error}"),
+                    Err(error) => error!("Could not send typing notification: {error}"),
                 };
             })
         );
@@ -1681,7 +1681,7 @@ impl Room {
             match result {
                 Ok(_) => {}
                 Err(error) => {
-                    error!("Failed to invite user with ID {}: {error}", user_ids[index],);
+                    error!("Could not invite user with ID {}: {error}", user_ids[index],);
                     failed_invites.push(&*user_ids[index]);
                 }
             }
@@ -1718,7 +1718,7 @@ impl Room {
             match result {
                 Ok(_) => {}
                 Err(error) => {
-                    error!("Failed to kick user with ID {}: {error}", users[index].0);
+                    error!("Could not kick user with ID {}: {error}", users[index].0);
                     failed_kicks.push(&*users[index].0);
                 }
             }
@@ -1755,7 +1755,7 @@ impl Room {
             match result {
                 Ok(_) => {}
                 Err(error) => {
-                    error!("Failed to ban user with ID {}: {error}", users[index].0);
+                    error!("Could not ban user with ID {}: {error}", users[index].0);
                     failed_bans.push(&*users[index].0);
                 }
             }
@@ -1792,7 +1792,7 @@ impl Room {
             match result {
                 Ok(_) => {}
                 Err(error) => {
-                    error!("Failed to unban user with ID {}: {error}", users[index].0);
+                    error!("Could not unban user with ID {}: {error}", users[index].0);
                     failed_unbans.push(&*users[index].0);
                 }
             }
@@ -1860,7 +1860,7 @@ impl Room {
             }
             Ok(false) => {}
             Err(error) => {
-                error!("Failed to load room encryption state: {error}");
+                error!("Could not load room encryption state: {error}");
             }
         }
     }
@@ -1878,7 +1878,7 @@ impl Room {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to enabled room encryption: {error}");
+                error!("Could not enabled room encryption: {error}");
                 Err(())
             }
         }
@@ -2036,7 +2036,7 @@ impl Room {
                 Ok(_) => {}
                 Err(error) => {
                     error!(
-                        "Failed to report content with event ID {}: {error}",
+                        "Could not report content with event ID {}: {error}",
                         events[index].0,
                     );
                     failed.push(&*events[index].0);

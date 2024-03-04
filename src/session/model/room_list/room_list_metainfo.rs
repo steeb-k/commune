@@ -47,13 +47,13 @@ impl RoomListMetainfo {
             Ok(Some(value)) => match serde_json::from_slice(&value) {
                 Ok(metainfo) => metainfo,
                 Err(error) => {
-                    error!("Failed to deserialize rooms metainfo: {error}");
+                    error!("Could not deserialize rooms metainfo: {error}");
                     Default::default()
                 }
             },
             Ok(None) => Default::default(),
             Err(error) => {
-                error!("Failed to load rooms metainfo: {error}");
+                error!("Could not load rooms metainfo: {error}");
                 Default::default()
             }
         };
@@ -146,7 +146,7 @@ impl RoomListMetainfoInner {
         let value = match serde_json::to_vec(rooms_metainfo) {
             Ok(value) => value,
             Err(error) => {
-                error!("Failed to serialize rooms metainfo: {error}");
+                error!("Could not serialize rooms metainfo: {error}");
                 return;
             }
         };
@@ -160,7 +160,7 @@ impl RoomListMetainfoInner {
         });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to store rooms metainfo: {error}");
+            error!("Could not store rooms metainfo: {error}");
         }
     }
 

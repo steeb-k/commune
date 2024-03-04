@@ -463,7 +463,7 @@ impl Timeline {
         });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to load timeline: {error}");
+            error!("Could not load timeline: {error}");
             self.set_state(TimelineState::Error);
         }
     }
@@ -513,7 +513,7 @@ impl Timeline {
             event.raw().unwrap().deserialize().map_err(Into::into)
         } else {
             let Some(room) = self.room() else {
-                return Err(MatrixError::UnknownError("Failed to upgrade Room".into()));
+                return Err(MatrixError::UnknownError("Could not upgrade Room".into()));
             };
             let matrix_room = room.matrix_room().clone();
             let event_id_clone = event_id.clone();
@@ -591,7 +591,7 @@ impl Timeline {
         let matrix_timeline = match handle.await.unwrap() {
             Ok(t) => t,
             Err(error) => {
-                error!("Failed to create timeline: {error}");
+                error!("Could not create timeline: {error}");
                 return;
             }
         };
@@ -811,7 +811,7 @@ fn is_event_redactable(event: &Event) -> bool {
             false
         }
         Err(error) => {
-            error!("Failed to deserialize unsigned field in event: {error}");
+            error!("Could not deserialize unsigned field in event: {error}");
             false
         }
     };
@@ -827,7 +827,7 @@ fn is_event_redactable(event: &Event) -> bool {
             true
         }
         Err(error) => {
-            error!("Failed to deserialize type field in event: {error}");
+            error!("Could not deserialize type field in event: {error}");
             true
         }
     }

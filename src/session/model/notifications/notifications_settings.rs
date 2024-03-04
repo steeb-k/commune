@@ -251,7 +251,7 @@ impl NotificationsSettings {
             // The rule disables notifications, so we need to invert the boolean.
             Ok(enabled) => !enabled,
             Err(error) => {
-                error!("Failed to get account notifications setting: {error}");
+                error!("Could not get account notifications setting: {error}");
                 true
             }
         };
@@ -295,7 +295,7 @@ impl NotificationsSettings {
                 Ok(())
             }
             Err(error) => {
-                error!("Failed to change account notifications setting: {error}");
+                error!("Could not change account notifications setting: {error}");
                 Err(error)
             }
         }
@@ -328,11 +328,11 @@ impl NotificationsSettings {
 
         if let Err(error) = set_default_rooms_notifications_all(api.clone(), false, group_all).await
         {
-            error!("Failed to change global group chats notifications setting: {error}");
+            error!("Could not change global group chats notifications setting: {error}");
             return Err(error);
         }
         if let Err(error) = set_default_rooms_notifications_all(api, true, one_to_one_all).await {
-            error!("Failed to change global 1-to-1 chats notifications setting: {error}");
+            error!("Could not change global 1-to-1 chats notifications setting: {error}");
             return Err(error);
         }
 
@@ -406,7 +406,7 @@ impl NotificationsSettings {
         let handle = spawn_tokio!(async move { api.remove_keyword(&keyword_clone).await });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to remove notification keyword `{keyword}`: {error}");
+            error!("Could not remove notification keyword `{keyword}`: {error}");
             return Err(error);
         }
 
@@ -426,7 +426,7 @@ impl NotificationsSettings {
         let handle = spawn_tokio!(async move { api.add_keyword(keyword_clone).await });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to add notification keyword `{keyword}`: {error}");
+            error!("Could not add notification keyword `{keyword}`: {error}");
             return Err(error);
         }
 
@@ -515,7 +515,7 @@ impl NotificationsSettings {
         };
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to update notifications setting for room `{room_id}`: {error}");
+            error!("Could not update notifications setting for room `{room_id}`: {error}");
             return Err(error);
         }
 

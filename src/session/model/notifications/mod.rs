@@ -124,7 +124,7 @@ impl Notifications {
         let sender = match handle.await.unwrap() {
             Ok(member) => member,
             Err(error) => {
-                error!("Failed to get member for notification: {error}");
+                error!("Could not get member for notification: {error}");
                 None
             }
         };

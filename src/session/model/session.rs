@@ -286,7 +286,7 @@ impl Session {
                 false
             }
             Err(error) => {
-                error!("Failed to get session’s encryption profile: {error}");
+                error!("Could not get session’s encryption profile: {error}");
                 false
             }
         }
@@ -342,7 +342,7 @@ impl Session {
                     user.set_name(res.displayname);
                     user.set_avatar_url(res.avatar_url);
                 }
-                Err(error) => error!("Couldn’t fetch account metadata: {error}"),
+                Err(error) => error!("Could not fetch account metadata: {error}"),
             }
         });
     }
@@ -425,7 +425,7 @@ impl Session {
                         self.handle_logged_out();
                     }
                 }
-                error!("Failed to perform sync: {error}");
+                error!("Could not perform sync: {error}");
             }
         }
     }
@@ -447,9 +447,9 @@ impl Session {
                 Ok(())
             }
             Err(error) => {
-                error!("Couldn’t logout the session: {error}");
+                error!("Could not logout the session: {error}");
 
-                Err(gettext("Failed to logout the session."))
+                Err(gettext("Could not logout the session."))
             }
         }
     }

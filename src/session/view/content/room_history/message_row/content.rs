@@ -111,14 +111,14 @@ impl MessageContent {
                             glib::Priority::HIGH,
                             clone!(@weak event => async move {
                                 if let Err(error) = event.fetch_missing_details().await {
-                                    error!("Failed to fetch event details: {error}");
+                                    error!("Could not fetch event details: {error}");
                                 }
                             })
                         );
                     }
                     TimelineDetails::Error(error) => {
                         error!(
-                            "Failed to fetch replied to event '{}': {error}",
+                            "Could not fetch replied to event '{}': {error}",
                             event.reply_to_id().unwrap()
                         );
                     }
@@ -346,7 +346,7 @@ fn build_content(
                 parent.set_child(Some(&child));
                 child
             };
-            child.with_text(gettext("Unable to decrypt this message, decryption will be retried once the keys are available."), format);
+            child.with_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
         }
         TimelineItemContent::RedactedMessage => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {

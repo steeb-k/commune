@@ -52,25 +52,25 @@ mod imp {
                 "/org/gnome/Fractal/mapstyle/osm-liberty/style.json",
                 gio::ResourceLookupFlags::NONE,
             )
-            .expect("Failed to load map style");
+            .expect("Could not load map style");
             let source =
                 shumate::VectorRenderer::new("vector-tiles", &String::from_utf8_lossy(&style))
-                    .expect("Failed to read map style");
+                    .expect("Could not read map style");
             source.set_license("© OpenMapTiles © OpenStreetMap contributors");
             source.set_license_uri("https://www.openstreetmap.org/copyright");
 
             let spritepixbuf = gdk_pixbuf::Pixbuf::from_resource(
                 "/org/gnome/Fractal/mapstyle/osm-liberty/sprites.png",
             )
-            .expect("Failed to load map sprites");
+            .expect("Could not load map sprites");
             let spritejson = gio::resources_lookup_data(
                 "/org/gnome/Fractal/mapstyle/osm-liberty/sprites.json",
                 gio::ResourceLookupFlags::NONE,
             )
-            .expect("Failed to load map sprite sheet");
+            .expect("Could not load map sprite sheet");
             source
                 .set_sprite_sheet_data(&spritepixbuf, &String::from_utf8_lossy(&spritejson))
-                .expect("Failed to set map sprite sheet");
+                .expect("Could not set map sprite sheet");
 
             self.map.set_map_source(Some(&source));
 

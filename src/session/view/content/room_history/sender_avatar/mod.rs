@@ -481,7 +481,7 @@ impl SenderAvatar {
             match sender.get_or_create_direct_chat().await {
                 Ok(room) => room,
                 Err(_) => {
-                    toast!(self, &gettext("Failed to create a new Direct Chat"));
+                    toast!(self, &gettext("Could not create a new Direct Chat"));
                     return;
                 }
             }
@@ -505,7 +505,7 @@ impl SenderAvatar {
         let room = sender.room();
         let user_id = sender.user_id().clone();
         if room.invite(&[user_id]).await.is_err() {
-            toast!(self, gettext("Failed to invite user"));
+            toast!(self, gettext("Could not invite user"));
         }
     }
 
@@ -538,9 +538,9 @@ impl SenderAvatar {
         let user_id = sender.user_id().clone();
         if room.kick(&[(user_id, response.reason)]).await.is_err() {
             let error = match membership {
-                Membership::Invite => gettext("Failed to revoke invite of user"),
-                Membership::Knock => gettext("Failed to deny access to user"),
-                _ => gettext("Failed to kick user"),
+                Membership::Invite => gettext("Could not revoke invite of user"),
+                Membership::Knock => gettext("Could not deny access to user"),
+                _ => gettext("Could not kick user"),
             };
             toast!(self, error);
         }
@@ -578,7 +578,7 @@ impl SenderAvatar {
             .await
             .is_err()
         {
-            toast!(self, gettext("Failed to ban user"));
+            toast!(self, gettext("Could not ban user"));
         }
 
         if response.remove_events {
@@ -598,7 +598,7 @@ impl SenderAvatar {
         let room = sender.room();
         let user_id = sender.user_id().clone();
         if room.unban(&[(user_id, None)]).await.is_err() {
-            toast!(self, gettext("Failed to unban user"));
+            toast!(self, gettext("Could not unban user"));
         }
     }
 
@@ -652,8 +652,8 @@ impl SenderAvatar {
                 ngettext_f(
                     // Translators: Do NOT translate the content between '{' and '}',
                     // this is a variable name.
-                    "Failed to remove 1 message sent by the user",
-                    "Failed to remove {n} messages sent by the user",
+                    "Could not remove 1 message sent by the user",
+                    "Could not remove {n} messages sent by the user",
                     n,
                     &[("n", &n.to_string())]
                 )
@@ -677,10 +677,10 @@ impl SenderAvatar {
 
         if is_ignored {
             if sender.stop_ignoring().await.is_err() {
-                toast!(self, gettext("Failed to stop ignoring user"));
+                toast!(self, gettext("Could not stop ignoring user"));
             }
         } else if sender.ignore().await.is_err() {
-            toast!(self, gettext("Failed to ignore user"));
+            toast!(self, gettext("Could not ignore user"));
         }
     }
 }

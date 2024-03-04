@@ -53,7 +53,7 @@ impl RemoteUser {
         let profile = match handle.await.unwrap() {
             Ok(profile) => profile,
             Err(error) => {
-                error!("Failed to load profile for user `{user_id}`: {error}");
+                error!("Could not load profile for user `{user_id}`: {error}");
                 return;
             }
         };

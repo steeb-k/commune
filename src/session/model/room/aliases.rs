@@ -203,7 +203,7 @@ impl RoomAliases {
             // We shouldn't need to load this is an invited room.
             Ok(_) => return Ok(None),
             Err(error) => {
-                error!("Failed to get canonical alias event: {error}");
+                error!("Could not get canonical alias event: {error}");
                 return Err(());
             }
         };
@@ -213,7 +213,7 @@ impl RoomAliases {
             // The redacted event doesn't have a content.
             Ok(_) => Ok(None),
             Err(error) => {
-                error!("Failed to deserialize canonical alias event: {error}");
+                error!("Could not deserialize canonical alias event: {error}");
                 Err(())
             }
         }
@@ -249,7 +249,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to remove canonical alias: {error}");
+                error!("Could not remove canonical alias: {error}");
                 Err(())
             }
         }
@@ -295,7 +295,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to set canonical alias: {error}");
+                error!("Could not set canonical alias: {error}");
                 Err(())
             }
         }
@@ -334,7 +334,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to remove alt alias: {error}");
+                error!("Could not remove alt alias: {error}");
                 Err(())
             }
         }
@@ -377,7 +377,7 @@ impl RoomAliases {
                 }
             }
             Err(error) => {
-                error!("Failed to check room alias: {error}");
+                error!("Could not check room alias: {error}");
                 if error
                     .as_client_api_error()
                     .is_some_and(|e| e.status_code == StatusCode::NOT_FOUND)
@@ -396,7 +396,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to add alt alias: {error}");
+                error!("Could not add alt alias: {error}");
                 Err(AddAltAliasError::Other)
             }
         }
@@ -421,7 +421,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(response) => Ok(response.aliases),
             Err(error) => {
-                error!("Failed to fetch local room aliases: {error}");
+                error!("Could not fetch local room aliases: {error}");
                 Err(())
             }
         }
@@ -443,7 +443,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to unregister local alias: {error}");
+                error!("Could not unregister local alias: {error}");
                 Err(())
             }
         }
@@ -469,7 +469,7 @@ impl RoomAliases {
         match handle.await.unwrap() {
             Ok(_) => Ok(()),
             Err(error) => {
-                error!("Failed to register local alias: {error}");
+                error!("Could not register local alias: {error}");
 
                 if error
                     .as_client_api_error()

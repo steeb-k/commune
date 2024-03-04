@@ -213,7 +213,7 @@ impl Member {
                 debug!("Room member {} not found", self.user_id());
             }
             Err(error) => {
-                error!("Failed to load room member {}: {error}", self.user_id());
+                error!("Could not load room member {}: {error}", self.user_id());
             }
         }
     }

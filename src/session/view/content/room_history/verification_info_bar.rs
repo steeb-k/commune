@@ -63,7 +63,7 @@ mod imp {
                     spawn!(
                         clone!(@weak obj, @weak verification, @weak window => async move {
                             if verification.accept().await.is_err() {
-                                toast!(obj, gettext("Failed to accept verification"));
+                                toast!(obj, gettext("Could not accept verification"));
                             } else {
                                 window.session_view().select_verification(verification);
                             }
@@ -79,7 +79,7 @@ mod imp {
 
                 spawn!(clone!(@weak obj, @weak verification => async move {
                     if verification.cancel().await.is_err() {
-                        toast!(obj, gettext("Failed to decline verification"));
+                        toast!(obj, gettext("Could not decline verification"));
                     }
                 }));
             });

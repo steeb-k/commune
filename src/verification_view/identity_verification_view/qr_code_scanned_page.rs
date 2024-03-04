@@ -142,7 +142,7 @@ impl QrCodeScannedPage {
 
         spawn!(clone!(@weak self as obj, @weak verification => async move {
             if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Failed to cancel the verification"));
+                toast!(obj, gettext("Could not cancel the verification"));
                 obj.reset();
             }
         }));
