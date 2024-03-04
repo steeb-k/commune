@@ -1,19 +1,19 @@
 # Turkish translation for fractal.
-# Copyright (C) 2018-2023 fractal's COPYRIGHT HOLDER
+# Copyright (C) 2018-2024 fractal's COPYRIGHT HOLDER
 # This file is distributed under the same license as the fractal package.
 #
 # Çağatay Yiğit Şahin <cyigitsahin@outlook.com>, 2018.
 # Serdar Sağlam <teknomobil@yandex.com>, 2019.
-# Sabri Ünal <libreajans@gmail.com>, 2019, 2022-2024.
+# Sabri Ünal <yakushabb@gmail.com>, 2019, 2022-2024.
 # Emin Tufan Çetin <etcetin@gmail.com>, 2019, 2021-2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-02-18 19:16+0000\n"
-"PO-Revision-Date: 2024-02-25 08:00+0300\n"
-"Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
+"POT-Creation-Date: 2024-02-28 13:01+0000\n"
+"PO-Revision-Date: 2024-03-02 01:58+0300\n"
+"Last-Translator: Sabri Ünal <yakushabb@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
@@ -126,15 +126,15 @@ msgstr "Kimin iletileri okuduğunu ve kimin yazdığını görün"
 msgid "Log into multiple accounts at once (with Single-Sign On support)"
 msgstr "Aynı anda birden çok hesapta oturum açın (Single-Sign On desteği ile)"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:35
+#: data/org.gnome.Fractal.metainfo.xml.in.in:39
 msgid "Fractal’s main window"
 msgstr "Fraktal ana penceresi"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:39
+#: data/org.gnome.Fractal.metainfo.xml.in.in:43
 msgid "View the media history of a Matrix room"
 msgstr "Matrix odasının ortam geçmişini görüntüsü"
 
-#: data/org.gnome.Fractal.metainfo.xml.in.in:43
+#: data/org.gnome.Fractal.metainfo.xml.in.in:47
 msgid "Fractal’s interface adapts to small screens"
 msgstr "Fractal arayüzü küçük ekranlara uyum sağlarken"
 
@@ -358,146 +358,161 @@ msgstr "Tepki Gönder"
 msgid "More reactions"
 msgstr "Daha çok tepki"
 
-#: src/components/user_page.rs:256
+#. Translators: As in 'Custom role'.
+#. Translators: As in, 'Custom power level'.
+#: src/components/rows/power_level_selection_row.ui:189
+#: src/session/model/room/permissions.rs:73
+msgid "Custom"
+msgstr "Özel"
+
+#: src/components/rows/power_level_selection_row.ui:204
+msgid "Confirm Custom Role"
+msgstr "Özel Rolü Onayla"
+
+#: src/components/user_page.rs:258
 #: src/session/view/account_settings/general_page/mod.ui:71
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matris kullanıcı kimliği panoya kopyalandı"
 
-#: src/components/user_page.rs:278
+#: src/components/user_page.rs:280
 msgid "Open Direct Chat"
 msgstr "Doğrudan Söyleşi Aç"
 
-#: src/components/user_page.rs:280
+#: src/components/user_page.rs:282
 msgid "Create Direct Chat"
 msgstr "Doğrudan Söyleşi Oluştur"
 
-#: src/components/user_page.rs:304
+#: src/components/user_page.rs:306
 #: src/session/view/content/room_history/sender_avatar/mod.rs:484
 #: src/session/view/create_dm_dialog/mod.rs:198
 msgid "Failed to create a new Direct Chat"
 msgstr "Yeni Doğrudan Söyleşi oluşturulamadı"
 
-#: src/components/user_page.rs:337
+#: src/components/user_page.rs:339
 msgid "In {room_name}"
 msgstr "{room_name} odasında"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:355
+#: src/components/user_page.rs:350
 msgctxt "member"
 msgid "Invited"
 msgstr "Davet Edildi"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:359
+#: src/components/user_page.rs:355
 msgctxt "member"
 msgid "Banned"
 msgstr "Yasaklanmış"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:363
+#: src/components/user_page.rs:360
 msgctxt "member"
 msgid "Knocked"
 msgstr "Çaldı"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:367
+#: src/components/user_page.rs:365
 msgctxt "member"
 msgid "Unknown"
 msgstr "Bilinmeyen"
 
-#: src/components/user_page.rs:384
+#: src/components/user_page.rs:386
 msgid "Allow Access"
 msgstr "Erişime İzin Ver"
 
-#: src/components/user_page.rs:396 src/utils/message_dialog.rs:121
+#: src/components/user_page.rs:398 src/utils/message_dialog.rs:121
 msgid "Revoke Invite"
 msgstr "Daveti Geri Al"
 
-#: src/components/user_page.rs:397 src/utils/message_dialog.rs:137
+#: src/components/user_page.rs:399 src/utils/message_dialog.rs:137
 msgid "Deny Access"
 msgstr "Erişimi Reddet"
 
 #. Translators: As in, 'Kick room member'.
-#: src/components/user_page.rs:399 src/utils/message_dialog.rs:159
+#: src/components/user_page.rs:401 src/utils/message_dialog.rs:159
 msgid "Kick"
 msgstr "At"
 
-#: src/components/user_page.rs:459
+#: src/components/user_page.rs:487
+msgid "Failed to change the role"
+msgstr "Rol değiştirilemedi"
+
+#: src/components/user_page.rs:511
 #: src/session/view/content/room_history/sender_avatar/mod.rs:508
 msgid "Failed to invite user"
 msgstr "Kullanıcı davet edilemedi"
 
-#: src/components/user_page.rs:495
+#: src/components/user_page.rs:547
 #: src/session/view/content/room_history/sender_avatar/mod.rs:541
 msgid "Failed to revoke invite of user"
 msgstr "Kullanıcı davetiyesi geri alınamadı"
 
-#: src/components/user_page.rs:496
+#: src/components/user_page.rs:548
 #: src/session/view/content/room_history/sender_avatar/mod.rs:542
 msgid "Failed to deny access to user"
 msgstr "Kullanıcıya erişim reddedilemedi"
 
-#: src/components/user_page.rs:497
+#: src/components/user_page.rs:549
 #: src/session/view/content/room_history/sender_avatar/mod.rs:543
 msgid "Failed to kick user"
 msgstr "Kullanıcı atılamadı"
 
-#: src/components/user_page.rs:545
+#: src/components/user_page.rs:597
 #: src/session/view/content/room_history/sender_avatar/mod.rs:581
 msgid "Failed to ban user"
 msgstr "Kullanıcı yasaklanamadı"
 
-#: src/components/user_page.rs:575
+#: src/components/user_page.rs:627
 #: src/session/view/content/room_history/sender_avatar/mod.rs:601
 msgid "Failed to unban user"
 msgstr "Kullanıcı yasağı kaldırılamadı"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:626
+#: src/components/user_page.rs:678
 #: src/session/view/content/room_history/sender_avatar/mod.rs:655
 msgid "Failed to remove 1 message sent by the user"
 msgid_plural "Failed to remove {n} messages sent by the user"
 msgstr[0] "Kullanıcıca gönderilen {n} ileti kaldırılamadı"
 
-#: src/components/user_page.rs:643
+#: src/components/user_page.rs:695
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
 msgid "Identity verified"
 msgstr "Kimlik doğrulandı"
 
-#: src/components/user_page.rs:650
+#: src/components/user_page.rs:702
 msgid "Identity not verified"
 msgstr "Kimlik doğrulanmadı"
 
-#: src/components/user_page.rs:666
+#: src/components/user_page.rs:718
 msgid "Failed to start user verification"
 msgstr "Kullanıcı doğrulama başlatılamadı"
 
-#: src/components/user_page.rs:692
+#: src/components/user_page.rs:744
 msgid "Ignored"
 msgstr "Yok Sayılmış"
 
-#: src/components/user_page.rs:694
+#: src/components/user_page.rs:746
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Yok Saymayı Durdur"
 
-#: src/components/user_page.rs:697
+#: src/components/user_page.rs:749
 msgid "Not Ignored"
 msgstr "Yok Sayılmamış"
 
-#: src/components/user_page.rs:698
+#: src/components/user_page.rs:750
 msgid "Ignore"
 msgstr "Yok Say"
 
-#: src/components/user_page.rs:716
+#: src/components/user_page.rs:768
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
 #: src/session/view/content/room_history/sender_avatar/mod.rs:680
 msgid "Failed to stop ignoring user"
 msgstr "Kullanıcı yok sayılması durdurulamadı"
 
-#: src/components/user_page.rs:719
+#: src/components/user_page.rs:771
 #: src/session/view/content/room_history/sender_avatar/mod.rs:683
 msgid "Failed to ignore user"
 msgstr "Kullanıcı yok sayılamadı"
@@ -512,26 +527,30 @@ msgstr "Matrix kullanıcı kimliğini panoya kopyala"
 msgid "Role"
 msgstr "Rol"
 
+#: src/components/user_page.ui:126
+msgid "Power Level"
+msgstr "Güç Düzeyi"
+
 #. Translators: As in, 'Ban room member'.
-#: src/components/user_page.ui:160 src/utils/message_dialog.rs:92
+#: src/components/user_page.ui:156 src/utils/message_dialog.rs:92
 msgid "Ban"
 msgstr "Yasakla"
 
 #. Translators: As in, 'Unban room member'.
-#: src/components/user_page.ui:170
+#: src/components/user_page.ui:166
 msgid "Unban"
 msgstr "Yasak Kaldır"
 
-#: src/components/user_page.ui:180
+#: src/components/user_page.ui:176
 msgid "Remove Messages"
 msgstr "İletileri Kaldır"
 
-#: src/components/user_page.ui:192
+#: src/components/user_page.ui:188
 #: src/session/view/account_settings/security_page/mod.ui:5
 msgid "Security"
 msgstr "Güvenlik"
 
-#: src/components/user_page.ui:219
+#: src/components/user_page.ui:215
 #: src/session/view/content/room_history/verification_info_bar.rs:168
 #: src/verification_view/identity_verification_view/accept_request_page.ui:58
 msgid "Verify"
@@ -913,31 +932,37 @@ msgstr "Herhangi bir kayıtlı kullanıcı"
 msgid "Unsupported rule"
 msgstr "Desteklenmeyen kural"
 
-#: src/session/model/room/member_role.rs:50
-msgid "Admin"
-msgstr "Yönetici"
-
-#: src/session/model/room/member_role.rs:51
-msgid "Moderator"
-msgstr "Moderatör"
-
-#: src/session/model/room/member_role.rs:52
-msgid "Normal user"
-msgstr "Sıradan kullanıcı"
-
-#: src/session/model/room/mod.rs:1142
+#: src/session/model/room/mod.rs:1140
 msgid "Empty Room (was {user})"
 msgstr "Oda Boş ({user} vardı)"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1145
+#: src/session/model/room/mod.rs:1143
 msgid "Empty Room"
 msgstr "Boş Oda"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1155
+#: src/session/model/room/mod.rs:1153
 msgid "Unknown"
 msgstr "Bilinmeyen"
+
+#. Translators: As in 'Default power level'.
+#: src/session/model/room/permissions.rs:71
+msgid "Default"
+msgstr "Öntanımlı"
+
+#: src/session/model/room/permissions.rs:74
+msgid "Moderator"
+msgstr "Moderatör"
+
+#: src/session/model/room/permissions.rs:75
+msgid "Admin"
+msgstr "Yönetici"
+
+#. Translators: As in 'Muted room member', a member that cannot send messages.
+#: src/session/model/room/permissions.rs:77
+msgid "Muted"
+msgstr "Sessiz"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1143,6 +1168,7 @@ msgstr "Profil resmi gerçekten kaldırılsın mı?"
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:174
 #: src/utils/message_dialog.rs:51 src/utils/message_dialog.rs:259
+#: src/utils/message_dialog.rs:317 src/utils/message_dialog.rs:352
 #: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:61
 msgid "Cancel"
 msgstr "İptal"
@@ -3734,6 +3760,47 @@ msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] "Kullanıcıca gönderilmiş son {n} iletiyi kaldır"
 
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/utils/message_dialog.rs:300
+msgid "Mute {user}?"
+msgstr "{user} sessize alınsın mı?"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/utils/message_dialog.rs:306
+msgid ""
+"Are you sure you want to mute {user_id}? They will not be able to send new "
+"messages."
+msgstr ""
+"{user_id} kullanıcısını sessize almak istediğinizden emin misiniz? Yine de "
+"yeni ileti gönderebilecekler."
+
+#. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
+#: src/utils/message_dialog.rs:319
+msgid "Mute"
+msgstr "Sessize Al"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/utils/message_dialog.rs:335
+msgid "Promote {user}?"
+msgstr "{user} yükseltilsin mi?"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/utils/message_dialog.rs:341
+msgid ""
+"If you promote {user_id} to the same level as yours, you will not be able to "
+"demote them in the future."
+msgstr ""
+"Eğer {user_id} kullanıcısını sizinle aynı düzeye yükseltirseniz, ileride bu "
+"kullanıcının düzeyini düşüremezsiniz."
+
+#: src/utils/message_dialog.rs:353
+msgid "Promote"
+msgstr "Yükselt"
+
 #: src/verification_view/identity_verification_view/accept_request_page.rs:129
 msgid "Login Request From Another Session"
 msgstr "Başka Oturumdan Giriş İsteği"
@@ -4267,81 +4334,3 @@ msgstr "Giriş Yap"
 #: src/window.ui:75
 msgid "Session"
 msgstr "Oturum"
-
-#~ msgid "Matrix group messaging app"
-#~ msgstr "Matrix küme mesajlaşma uygulaması"
-
-#~ msgid "Source"
-#~ msgstr "Kaynak"
-
-#~ msgid "Scroll to bottom"
-#~ msgstr "En alta kaydır"
-
-#~ msgid "Found stored session with unsupported version {version_nb}"
-#~ msgstr "Desteklenmeyen {version_nb} sürümüne ait depolanan oturum bulundu"
-
-#~ msgid "Failed to load connected device."
-#~ msgstr "Bağlı aygıtlar yüklenemedi."
-
-#~ msgid "Failed to copy the permalink"
-#~ msgstr "Kalıcı bağlantı kopyalanamadı"
-
-#~ msgid "Members"
-#~ msgstr "Üyeler"
-
-#~ msgid "_View"
-#~ msgstr "_Görünüm"
-
-#~ msgid "_Join"
-#~ msgstr "_Katıl"
-
-#~ msgid "Scan the QR code from another session logged into this account."
-#~ msgstr "Bu hesapta oturum açmış diğer oturumdan QR kodunu tarayın."
-
-#~ msgid "Scan this QR code from the newly logged in session."
-#~ msgstr "Yeni giriş yaptığınız oturumdan bu QR kodunu tarayın."
-
-#~ msgid "Restart verification"
-#~ msgstr "Doğrulamamayı yeniden başlat"
-
-#~ msgid "_Forgot Password?"
-#~ msgstr "_Parolanızı Mı Unuttunuz?"
-
-#~ msgid "Member Menu"
-#~ msgstr "Üye Menüsü"
-
-#~ msgid "_Verify"
-#~ msgstr "_Doğrula"
-
-#~ msgid "Make _Mod"
-#~ msgstr "_Mod Yap"
-
-#~ msgid "Make _Admin"
-#~ msgstr "_Yönetici Yap"
-
-#~ msgid "Session removed successfully."
-#~ msgstr "Oturum kaldırıldı."
-
-#~ msgid "Could not remove session from secret storage"
-#~ msgstr "Oturum giz deposundan kaldırılamadı"
-
-#~ msgid ""
-#~ "It seems like one of the Fractal sessions stored in the Secret Service is "
-#~ "corrupted. If you know how to fix it you should do so."
-#~ msgstr ""
-#~ "Giz Hizmeti’nde saklanan Fractal oturumlarından biri bozulmuş görünüyor. "
-#~ "Eğer nasıl yapacağınızı biliyorsanız onarmalısınız."
-
-#~ msgid ""
-#~ "Alternatively, we could disconnect this session for you. This means you "
-#~ "will have to login again and you will lose access to your encrypted "
-#~ "messages, unless you have a session open in another client or you have "
-#~ "already backed up your encryption keys."
-#~ msgstr ""
-#~ "Bir başka seçenek olarak, sizin için bu oturumun bağını koparabiliriz. "
-#~ "Bu, yeniden oturum açmanız gerektiği ve eğer başka istemcide açık "
-#~ "oturumunuz yoksa ya da şifreleme anahtarlarınızı yedeklememişseniz, "
-#~ "şifrelenmiş iletilere erişimi yitireceğiniz anlamına gelir."
-
-#~ msgid "Clicking this button might disconnect more than one session!"
-#~ msgstr "Bu düğmeye tıklamak birden çok oturumun bağını koparabilir!"
