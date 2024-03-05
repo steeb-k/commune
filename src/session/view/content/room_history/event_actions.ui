@@ -74,7 +74,7 @@
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">Rep_ort</attribute>
+        <attribute name="label" translatable="yes">Rep_ort…</attribute>
         <attribute name="action">event.report</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
