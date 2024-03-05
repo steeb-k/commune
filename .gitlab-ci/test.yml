@@ -19,3 +19,4 @@ metainfo:
         - data/org.gnome.Fractal.metainfo.xml.in.in
       when: always
     - when: manual
+      allow_failure: true
