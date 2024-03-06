@@ -14,9 +14,3 @@ metainfo:
     # Test also with the pedantic and strict flags.
     - appstreamcli validate --pedantic --explain --strict ${METAINFO}
   needs: ["build@x86_64"]
-  rules:
-    - changes:
-        - data/org.gnome.Fractal.metainfo.xml.in.in
-      when: always
-    - when: manual
-      allow_failure: true
