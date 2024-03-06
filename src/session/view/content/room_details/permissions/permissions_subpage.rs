@@ -648,9 +648,7 @@ impl PermissionsSubpage {
     ///
     /// Returns `None` if the permissions could not be upgraded.
     fn collect_power_levels(&self) -> Option<RoomPowerLevels> {
-        let Some(permissions) = self.permissions() else {
-            return None;
-        };
+        let permissions = self.permissions()?;
 
         let imp = self.imp();
         let mut power_levels = permissions.power_levels();

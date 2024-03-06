@@ -148,9 +148,7 @@ impl MemberPowerLevel {
     /// Returns `None` if the permissions could not be upgraded, or if the power
     /// level is the users default.
     pub fn to_parts(&self) -> Option<(OwnedUserId, Int)> {
-        let Some(permissions) = self.permissions() else {
-            return None;
-        };
+        let permissions = self.permissions()?;
 
         let users_default = permissions.default_power_level();
         let pl = self.power_level();
