@@ -20,8 +20,9 @@ use self::{
     method_page::LoginMethodPage, sso_page::LoginSsoPage,
 };
 use crate::{
-    prelude::*, secret::store_session, session::model::Session, spawn, spawn_tokio, toast,
-    verification_view::SessionVerificationView, Application, Window, WindowPage, RUNTIME,
+    prelude::*, secret::store_session, session::model::Session,
+    session_setup_view::SessionSetupView, spawn, spawn_tokio, toast, Application, Window,
+    WindowPage, RUNTIME,
 };
 
 #[derive(Clone, Debug, Default, glib::Boxed)]
@@ -40,8 +41,8 @@ enum LoginPage {
     Sso,
     /// The loading page.
     Loading,
-    /// The session verification stack.
-    SessionVerification,
+    /// The session setup stack.
+    SessionSetup,
     /// The login is completed.
     Completed,
 }
@@ -166,9 +167,9 @@ mod imp {
                 LoginPage::Homeserver => self.homeserver_page.grab_focus(),
                 LoginPage::Method => self.method_page.grab_focus(),
                 LoginPage::Sso | LoginPage::Loading => false,
-                LoginPage::SessionVerification => {
-                    if let Some(session_verification) = self.session_verification() {
-                        session_verification.grab_focus()
+                LoginPage::SessionSetup => {
+                    if let Some(session_setup) = self.session_setup() {
+                        session_setup.grab_focus()
                     } else {
                         false
                     }
@@ -220,10 +221,10 @@ mod imp {
                 .map(|url| url.as_ref().trim_end_matches('/').to_owned())
         }
 
-        /// Get the session verification, if any.
-        pub(super) fn session_verification(&self) -> Option<SessionVerificationView> {
+        /// Get the session setup view, if any.
+        pub(super) fn session_setup(&self) -> Option<SessionSetupView> {
             self.main_stack
-                .child_by_name(LoginPage::SessionVerification.as_ref())
+                .child_by_name(LoginPage::SessionSetup.as_ref())
                 .and_downcast()
         }
     }
@@ -349,7 +350,7 @@ impl Login {
         match self.imp().visible_page() {
             LoginPage::Homeserver => None,
             LoginPage::Method => Some(LoginPage::Homeserver),
-            LoginPage::Sso | LoginPage::Loading | LoginPage::SessionVerification => {
+            LoginPage::Sso | LoginPage::Loading | LoginPage::SessionSetup => {
                 if self.supports_password() {
                     Some(LoginPage::Method)
                 } else {
@@ -364,10 +365,10 @@ impl Login {
     /// Go back to the previous step.
     #[template_callback]
     fn go_previous(&self) {
-        let session_verification = self.imp().session_verification();
-        if let Some(session_verification) = &session_verification {
-            if session_verification.go_previous() {
-                // The session verification handled the action.
+        let session_setup = self.imp().session_setup();
+        if let Some(session_setup) = &session_setup {
+            if session_setup.go_previous() {
+                // The session setup handled the action.
                 return;
             }
         }
@@ -517,16 +518,14 @@ impl Login {
             return;
         }
 
-        let verification_view = SessionVerificationView::new(&session);
-        verification_view.connect_completed(clone!(@weak self as obj => move |_| {
+        let setup_view = SessionSetupView::new(&session);
+        setup_view.connect_completed(clone!(@weak self as obj => move |_| {
             obj.show_completed();
         }));
 
-        imp.main_stack.add_named(
-            &verification_view,
-            Some(LoginPage::SessionVerification.as_ref()),
-        );
-        self.set_visible_page(LoginPage::SessionVerification);
+        imp.main_stack
+            .add_named(&setup_view, Some(LoginPage::SessionSetup.as_ref()));
+        self.set_visible_page(LoginPage::SessionSetup);
     }
 
     /// Show the completed page.
@@ -555,8 +554,8 @@ impl Login {
         // Clean pages.
         imp.homeserver_page.clean();
         imp.method_page.clean();
-        if let Some(session_verification) = imp.session_verification() {
-            imp.main_stack.remove(&session_verification);
+        if let Some(session_setup) = imp.session_setup() {
+            imp.main_stack.remove(&session_setup);
         }
 
         // Clean data.

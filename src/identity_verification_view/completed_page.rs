@@ -2,10 +2,7 @@ use adw::subclass::prelude::*;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
-use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
-    toast,
-};
+use crate::{gettext_f, prelude::*, session::model::IdentityVerification};
 
 mod imp {
     use std::cell::RefCell;
@@ -15,11 +12,9 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/wait_for_other_page.ui"
-    )]
-    #[properties(wrapper_type = super::WaitForOtherPage)]
-    pub struct WaitForOtherPage {
+    #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/completed_page.ui")]
+    #[properties(wrapper_type = super::CompletedPage)]
+    pub struct CompletedPage {
         /// The current identity verification.
         #[property(get, set = Self::set_verification, explicit_notify, nullable)]
         pub verification: glib::WeakRef<IdentityVerification>,
@@ -27,15 +22,15 @@ mod imp {
         #[template_child]
         pub title: TemplateChild<gtk::Label>,
         #[template_child]
-        pub instructions: TemplateChild<gtk::Label>,
+        pub message: TemplateChild<gtk::Label>,
         #[template_child]
-        pub cancel_btn: TemplateChild<SpinnerButton>,
+        pub dismiss_btn: TemplateChild<gtk::Button>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for WaitForOtherPage {
-        const NAME: &'static str = "IdentityVerificationWaitForOtherPage";
-        type Type = super::WaitForOtherPage;
+    impl ObjectSubclass for CompletedPage {
+        const NAME: &'static str = "IdentityVerificationCompletedPage";
+        type Type = super::CompletedPage;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -49,7 +44,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for WaitForOtherPage {
+    impl ObjectImpl for CompletedPage {
         fn dispose(&self) {
             if let Some(verification) = self.verification.upgrade() {
                 if let Some(handler) = self.display_name_handler.take() {
@@ -59,10 +54,15 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for WaitForOtherPage {}
-    impl BinImpl for WaitForOtherPage {}
+    impl WidgetImpl for CompletedPage {
+        fn grab_focus(&self) -> bool {
+            self.dismiss_btn.grab_focus()
+        }
+    }
 
-    impl WaitForOtherPage {
+    impl BinImpl for CompletedPage {}
+
+    impl CompletedPage {
         /// Set the current identity verification.
         fn set_verification(&self, verification: Option<IdentityVerification>) {
             let prev_verification = self.verification.upgrade();
@@ -92,22 +92,21 @@ mod imp {
             self.verification.set(verification.as_ref());
 
             obj.update_labels();
+            obj.notify_verification();
         }
     }
 }
 
 glib::wrapper! {
-    /// A page instructing the user to wait for the other party.
-    pub struct WaitForOtherPage(ObjectSubclass<imp::WaitForOtherPage>)
+    /// A page to show when the verification was completed.
+    pub struct CompletedPage(ObjectSubclass<imp::CompletedPage>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl WaitForOtherPage {
-    pub fn new(verification: &IdentityVerification) -> Self {
-        glib::Object::builder()
-            .property("verification", verification)
-            .build()
+impl CompletedPage {
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
     /// Update the labels for the current verification.
@@ -118,48 +117,25 @@ impl WaitForOtherPage {
         let imp = self.imp();
 
         if verification.is_self_verification() {
-            imp.title.set_label(&gettext("Get Another Device"));
-            imp.instructions.set_label(&gettext(
-                "Accept the verification request from another session or device.",
+            imp.title.set_label(&gettext("Request Complete"));
+            imp.message.set_label(&gettext(
+                "The new session is now ready to send and receive secure messages.",
             ));
         } else {
             let name = verification.user().display_name();
-            imp.title.set_markup(&gettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                "Waiting for {user}",
-                &[("user", &format!("<b>{name}</b>"))],
-            ));
-            imp.instructions.set_markup(&gettext_f(
-                // Translators: Do NOT translate the content between '{' and '}', this is a
-                // variable name.
-                "Ask {user} to accept the verification request.",
-                &[("user", &format!("<b>{name}</b>"))],
-            ));
+            imp.title.set_markup(&gettext("Verification Complete"));
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            imp.message.set_markup(&gettext_f("{user} is verified and you can now be sure that your communication will be private.", &[("user", &format!("<b>{name}</b>"))]));
         }
     }
 
-    /// Reset the UI to its initial state.
-    pub fn reset(&self) {
-        self.imp().cancel_btn.set_loading(false);
-        self.set_sensitive(true);
-    }
-
-    /// Cancel the verification.
+    /// Dismiss the verification.
     #[template_callback]
-    fn cancel(&self) {
+    fn dismiss(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
-
-        self.imp().cancel_btn.set_loading(true);
-        self.set_sensitive(false);
-
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Could not cancel the verification"));
-                obj.reset();
-            }
-        }));
+        verification.dismiss();
     }
 }

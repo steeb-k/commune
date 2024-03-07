@@ -14,16 +14,17 @@ mod contrib;
 mod error_page;
 mod greeter;
 mod i18n;
+mod identity_verification_view;
 mod intent;
 mod login;
 mod prelude;
 mod secret;
 mod session;
 mod session_list;
+mod session_setup_view;
 mod system_settings;
 mod user_facing_error;
 mod utils;
-mod verification_view;
 mod window;
 
 use gettextrs::*;

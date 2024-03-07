@@ -10,10 +10,10 @@ use self::{
     explore::Explore, invite::Invite, room_details::RoomDetails, room_history::RoomHistory,
 };
 use crate::{
+    identity_verification_view::IdentityVerificationView,
     session::model::{
         IdentityVerification, Room, RoomType, Session, SidebarIconItem, SidebarIconItemType,
     },
-    verification_view::IdentityVerificationView,
 };
 
 /// A page of the content stack.

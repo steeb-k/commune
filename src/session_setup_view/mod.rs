@@ -8,9 +8,9 @@ use gtk::{
 };
 use tracing::{debug, error};
 
-use super::IdentityVerificationView;
 use crate::{
     components::{AuthDialog, AuthError, SpinnerButton},
+    identity_verification_view::IdentityVerificationView,
     session::model::{IdentityVerification, Session},
     spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
@@ -38,9 +38,9 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/verification_view/session_verification_view.ui")]
-    #[properties(wrapper_type = super::SessionVerificationView)]
-    pub struct SessionVerificationView {
+    #[template(resource = "/org/gnome/Fractal/ui/session_setup_view/mod.ui")]
+    #[properties(wrapper_type = super::SessionSetupView)]
+    pub struct SessionSetupView {
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
@@ -65,16 +65,16 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for SessionVerificationView {
-        const NAME: &'static str = "SessionVerificationView";
-        type Type = super::SessionVerificationView;
+    impl ObjectSubclass for SessionSetupView {
+        const NAME: &'static str = "SessionSetupView";
+        type Type = super::SessionSetupView;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.set_css_name("session-verification");
+            klass.set_css_name("session-setup");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -83,7 +83,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for SessionVerificationView {
+    impl ObjectImpl for SessionSetupView {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
                 vec![
@@ -116,7 +116,7 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for SessionVerificationView {
+    impl WidgetImpl for SessionSetupView {
         fn grab_focus(&self) -> bool {
             let Some(name) = self.main_stack.visible_child_name() else {
                 return false;
@@ -137,9 +137,9 @@ mod imp {
         }
     }
 
-    impl BinImpl for SessionVerificationView {}
+    impl BinImpl for SessionSetupView {}
 
-    impl SessionVerificationView {
+    impl SessionSetupView {
         /// Set the current session.
         fn set_session(&self, session: Option<Session>) {
             self.session.set(session.as_ref());
@@ -295,12 +295,12 @@ mod imp {
 
 glib::wrapper! {
     /// A view with the different flows to verify a session.
-    pub struct SessionVerificationView(ObjectSubclass<imp::SessionVerificationView>)
+    pub struct SessionSetupView(ObjectSubclass<imp::SessionSetupView>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl SessionVerificationView {
+impl SessionSetupView {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }
@@ -469,7 +469,7 @@ impl SessionVerificationView {
         }));
     }
 
-    /// Connect to the signal emitted when the verification was completed.
+    /// Connect to the signal emitted when the setup was completed.
     pub fn connect_completed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "completed",

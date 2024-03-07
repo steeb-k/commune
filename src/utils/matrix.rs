@@ -8,8 +8,10 @@ use std::{
 use html2pango::html_escape;
 use html5gum::{HtmlString, Token, Tokenizer};
 use matrix_sdk::{
-    config::RequestConfig, deserialized_responses::RawAnySyncOrStrippedTimelineEvent, Client,
-    ClientBuildError,
+    config::RequestConfig,
+    deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
+    encryption::{BackupDownloadStrategy, EncryptionSettings},
+    Client, ClientBuildError,
 };
 use ruma::{
     events::{
@@ -276,6 +278,12 @@ pub async fn client_with_stored_session(
 ) -> Result<Client, ClientSetupError> {
     let (homeserver, path, passphrase, data) = session.into_parts();
 
+    let encryption_settings = EncryptionSettings {
+        auto_enable_cross_signing: true,
+        backup_download_strategy: BackupDownloadStrategy::AfterDecryptionFailure,
+        auto_enable_backups: true,
+    };
+
     let client = Client::builder()
         .homeserver_url(homeserver)
         .sqlite_store(path, Some(&passphrase))
@@ -283,6 +291,7 @@ pub async fn client_with_stored_session(
         // auth for profiles:
         // https://gitlab.gnome.org/World/fractal/-/issues/934
         .request_config(RequestConfig::new().retry_limit(2).force_auth())
+        .with_encryption_settings(encryption_settings)
         .build()
         .await?;
 

@@ -18,9 +18,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/sas_page.ui"
-    )]
+    #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/sas_page.ui")]
     #[properties(wrapper_type = super::SasPage)]
     pub struct SasPage {
         /// The current identity verification.

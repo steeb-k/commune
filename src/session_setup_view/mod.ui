@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="SessionVerificationView" parent="AdwBin">
+  <template class="SessionSetupView" parent="AdwBin">
     <accessibility>
       <property name="label" translatable="yes">Session Verification</property>
     </accessibility>

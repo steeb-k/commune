@@ -16,7 +16,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/accept_request_page.ui"
+        resource = "/org/gnome/Fractal/ui/identity_verification_view/accept_request_page.ui"
     )]
     #[properties(wrapper_type = super::AcceptRequestPage)]
     pub struct AcceptRequestPage {

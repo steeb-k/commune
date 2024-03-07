@@ -16,9 +16,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/cancelled_page.ui"
-    )]
+    #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/cancelled_page.ui")]
     #[properties(wrapper_type = super::CancelledPage)]
     pub struct CancelledPage {
         /// The current identity verification.

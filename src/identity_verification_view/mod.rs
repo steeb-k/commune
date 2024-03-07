@@ -31,9 +31,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/mod.ui"
-    )]
+    #[template(resource = "/org/gnome/Fractal/ui/identity_verification_view/mod.ui")]
     #[properties(wrapper_type = super::IdentityVerificationView)]
     pub struct IdentityVerificationView {
         /// The current identity verification.

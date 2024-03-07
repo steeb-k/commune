@@ -16,24 +16,26 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/qr_code_scanned_page.ui"
+        resource = "/org/gnome/Fractal/ui/identity_verification_view/confirm_qr_code_page.ui"
     )]
-    #[properties(wrapper_type = super::QrCodeScannedPage)]
-    pub struct QrCodeScannedPage {
+    #[properties(wrapper_type = super::ConfirmQrCodePage)]
+    pub struct ConfirmQrCodePage {
         /// The current identity verification.
         #[property(get, set = Self::set_verification, explicit_notify, nullable)]
         pub verification: glib::WeakRef<IdentityVerification>,
         pub display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
-        pub message: TemplateChild<gtk::Label>,
+        pub question: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub confirm_btn: TemplateChild<SpinnerButton>,
         #[template_child]
         pub cancel_btn: TemplateChild<SpinnerButton>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for QrCodeScannedPage {
-        const NAME: &'static str = "IdentityVerificationQrCodeScannedPage";
-        type Type = super::QrCodeScannedPage;
+    impl ObjectSubclass for ConfirmQrCodePage {
+        const NAME: &'static str = "IdentityVerificationConfirmQrCodePage";
+        type Type = super::ConfirmQrCodePage;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -47,7 +49,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for QrCodeScannedPage {
+    impl ObjectImpl for ConfirmQrCodePage {
         fn dispose(&self) {
             if let Some(verification) = self.verification.upgrade() {
                 if let Some(handler) = self.display_name_handler.take() {
@@ -57,10 +59,15 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for QrCodeScannedPage {}
-    impl BinImpl for QrCodeScannedPage {}
+    impl WidgetImpl for ConfirmQrCodePage {
+        fn grab_focus(&self) -> bool {
+            self.confirm_btn.grab_focus()
+        }
+    }
 
-    impl QrCodeScannedPage {
+    impl BinImpl for ConfirmQrCodePage {}
+
+    impl ConfirmQrCodePage {
         /// Set the current identity verification.
         fn set_verification(&self, verification: Option<IdentityVerification>) {
             let prev_verification = self.verification.upgrade();
@@ -69,6 +76,8 @@ mod imp {
                 return;
             }
             let obj = self.obj();
+
+            obj.reset();
 
             if let Some(verification) = prev_verification {
                 if let Some(handler) = self.display_name_handler.take() {
@@ -96,13 +105,13 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A page to show when a QR code was scanned.
-    pub struct QrCodeScannedPage(ObjectSubclass<imp::QrCodeScannedPage>)
+    /// A page to confirm whether the QR Code was scanned successfully by the other party.
+    pub struct ConfirmQrCodePage(ObjectSubclass<imp::ConfirmQrCodePage>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl QrCodeScannedPage {
+impl ConfirmQrCodePage {
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -115,19 +124,44 @@ impl QrCodeScannedPage {
         let imp = self.imp();
 
         if verification.is_self_verification() {
-            imp.message.set_label(&gettext("You scanned the QR code successfully. You may need to confirm the verification from the other session."));
+            imp.question
+                .set_label(&gettext("Does the other session show a confirmation?"));
         } else {
             let name = verification.user().display_name();
-            // Translators: Do NOT translate the content between '{' and '}', this is a
-            // variable name.
-            imp.message.set_markup(&gettext_f("You scanned the QR code successfully. {user} may need to confirm the verification.", &[("user", &format!("<b>{name}</b>"))]));
+            imp.question.set_markup(&gettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                "Does {user} see a confirmation on their session?",
+                &[("user", &format!("<b>{name}</b>"))],
+            ));
         }
     }
 
     /// Reset the UI to its initial state.
     pub fn reset(&self) {
-        self.imp().cancel_btn.set_loading(false);
+        let imp = self.imp();
+
+        imp.confirm_btn.set_loading(false);
+        imp.cancel_btn.set_loading(false);
         self.set_sensitive(true);
+    }
+
+    /// Confirm that the QR Code was successfully scanned.
+    #[template_callback]
+    fn confirm_scanned(&self) {
+        let Some(verification) = self.verification() else {
+            return;
+        };
+
+        self.imp().confirm_btn.set_loading(true);
+        self.set_sensitive(false);
+
+        spawn!(clone!(@weak self as obj, @weak verification => async move {
+            if verification.confirm_qr_code_scanned().await.is_err() {
+                toast!(obj, gettext("Could not confirm the scan of the QR Code"));
+                obj.reset();
+            }
+        }));
     }
 
     /// Cancel the verification.

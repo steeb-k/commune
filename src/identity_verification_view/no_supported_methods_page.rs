@@ -16,7 +16,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/verification_view/identity_verification_view/no_supported_methods_page.ui"
+        resource = "/org/gnome/Fractal/ui/identity_verification_view/no_supported_methods_page.ui"
     )]
     #[properties(wrapper_type = super::NoSupportedMethodsPage)]
     pub struct NoSupportedMethodsPage {

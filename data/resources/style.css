@@ -300,13 +300,13 @@ qrcode {
 }
 
 
-/* Verification */
+/* Session Setup */
 
-session-verification clamp {
+session-setup clamp {
   margin: 12px;
 }
 
-session-verification .text-button {
+session-setup .text-button {
   min-width: 200px;
 }
 
