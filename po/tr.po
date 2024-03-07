@@ -11,9 +11,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-02-28 13:01+0000\n"
-"PO-Revision-Date: 2024-03-02 01:58+0300\n"
-"Last-Translator: Sabri Ünal <yakushabb@gmail.com>\n"
+"POT-Creation-Date: 2024-03-06 11:07+0000\n"
+"PO-Revision-Date: 2024-03-07 08:00+0300\n"
+"Last-Translator: Emin Tufan Çetin <etcetin@gmail.com>\n"
 "Language-Team: Türkçe <takim@gnome.org.tr>\n"
 "Language: tr\n"
 "MIME-Version: 1.0\n"
@@ -172,14 +172,12 @@ msgstr "© 2017-2024 Fractal Takımı"
 msgid "translator-credits"
 msgstr ""
 "Sabri Ünal <libreajans@gmail.com>\n"
-"Emin Tufan Çetin <etcetin@gmail.com>\n"
-"Çağatay Yiğit Şahin <cyigitsahin@outlook.com>\n"
-"Serdar Sağlam <teknomobil@yandex.com>"
+"Emin Tufan Çetin <etcetin@gmail.com>"
 
 #. This can't be added via the builder
 #: src/application.rs:216
 msgid "Name by"
-msgstr "Adını veren"
+msgstr "Adlandıran"
 
 #: src/application.rs:302
 msgid "Session not found"
@@ -210,7 +208,7 @@ msgstr "Uyarı"
 
 #: src/components/action_button.ui:125 src/error_page.ui:10
 #: src/session/view/account_settings/user_sessions_page/mod.ui:84
-#: src/session/view/content/room_details/invite_subpage/mod.ui:140
+#: src/session/view/content/room_details/invite_subpage/mod.ui:108
 #: src/session/view/create_dm_dialog/mod.ui:104 src/window.ui:84
 msgid "Error"
 msgstr "Hata"
@@ -314,8 +312,9 @@ msgid "Join a Room"
 msgstr "Odaya Katıl"
 
 #: src/components/join_room_dialog.ui:17 src/greeter.ui:16 src/greeter.ui:18
-#: src/login/mod.ui:16 src/login/mod.ui:18 src/session/view/media_viewer.ui:56
-#: src/session/view/media_viewer.ui:58
+#: src/login/mod.ui:16 src/login/mod.ui:18
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
+#: src/session/view/media_viewer.ui:56 src/session/view/media_viewer.ui:58
 msgid "Back"
 msgstr "Geri"
 
@@ -360,12 +359,12 @@ msgstr "Daha çok tepki"
 
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level'.
-#: src/components/rows/power_level_selection_row.ui:189
+#: src/components/power_level_selection/popover.ui:149
 #: src/session/model/room/permissions.rs:73
 msgid "Custom"
 msgstr "Özel"
 
-#: src/components/rows/power_level_selection_row.ui:204
+#: src/components/power_level_selection/popover.ui:164
 msgid "Confirm Custom Role"
 msgstr "Özel Rolü Onayla"
 
@@ -386,7 +385,7 @@ msgstr "Doğrudan Söyleşi Oluştur"
 #: src/components/user_page.rs:306
 #: src/session/view/content/room_history/sender_avatar/mod.rs:484
 #: src/session/view/create_dm_dialog/mod.rs:198
-msgid "Failed to create a new Direct Chat"
+msgid "Could not create a new Direct Chat"
 msgstr "Yeni Doğrudan Söyleşi oluşturulamadı"
 
 #: src/components/user_page.rs:339
@@ -430,51 +429,54 @@ msgid "Deny Access"
 msgstr "Erişimi Reddet"
 
 #. Translators: As in, 'Kick room member'.
-#: src/components/user_page.rs:401 src/utils/message_dialog.rs:159
+#. // Translators: As in, 'Kick room member'.
+#: src/components/user_page.rs:401
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
+#: src/utils/message_dialog.rs:159
 msgid "Kick"
 msgstr "At"
 
 #: src/components/user_page.rs:487
-msgid "Failed to change the role"
+msgid "Could not change the role"
 msgstr "Rol değiştirilemedi"
 
 #: src/components/user_page.rs:511
 #: src/session/view/content/room_history/sender_avatar/mod.rs:508
-msgid "Failed to invite user"
+msgid "Could not invite user"
 msgstr "Kullanıcı davet edilemedi"
 
 #: src/components/user_page.rs:547
 #: src/session/view/content/room_history/sender_avatar/mod.rs:541
-msgid "Failed to revoke invite of user"
+msgid "Could not revoke invite of user"
 msgstr "Kullanıcı davetiyesi geri alınamadı"
 
 #: src/components/user_page.rs:548
 #: src/session/view/content/room_history/sender_avatar/mod.rs:542
-msgid "Failed to deny access to user"
+msgid "Could not deny access to user"
 msgstr "Kullanıcıya erişim reddedilemedi"
 
 #: src/components/user_page.rs:549
 #: src/session/view/content/room_history/sender_avatar/mod.rs:543
-msgid "Failed to kick user"
+msgid "Could not kick user"
 msgstr "Kullanıcı atılamadı"
 
 #: src/components/user_page.rs:597
 #: src/session/view/content/room_history/sender_avatar/mod.rs:581
-msgid "Failed to ban user"
+msgid "Could not ban user"
 msgstr "Kullanıcı yasaklanamadı"
 
 #: src/components/user_page.rs:627
 #: src/session/view/content/room_history/sender_avatar/mod.rs:601
-msgid "Failed to unban user"
+msgid "Could not unban user"
 msgstr "Kullanıcı yasağı kaldırılamadı"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/user_page.rs:678
 #: src/session/view/content/room_history/sender_avatar/mod.rs:655
-msgid "Failed to remove 1 message sent by the user"
-msgid_plural "Failed to remove {n} messages sent by the user"
-msgstr[0] "Kullanıcıca gönderilen {n} ileti kaldırılamadı"
+msgid "Could not remove 1 message sent by the user"
+msgid_plural "Could not remove {n} messages sent by the user"
+msgstr[0] "Kullanıcıca gönderilen {n} ileti kaldırılamadı "
 
 #: src/components/user_page.rs:695
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
@@ -486,7 +488,7 @@ msgid "Identity not verified"
 msgstr "Kimlik doğrulanmadı"
 
 #: src/components/user_page.rs:718
-msgid "Failed to start user verification"
+msgid "Could not start user verification"
 msgstr "Kullanıcı doğrulama başlatılamadı"
 
 #: src/components/user_page.rs:744
@@ -509,12 +511,12 @@ msgstr "Yok Say"
 #: src/components/user_page.rs:768
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:101
 #: src/session/view/content/room_history/sender_avatar/mod.rs:680
-msgid "Failed to stop ignoring user"
+msgid "Could not stop ignoring user"
 msgstr "Kullanıcı yok sayılması durdurulamadı"
 
 #: src/components/user_page.rs:771
 #: src/session/view/content/room_history/sender_avatar/mod.rs:683
-msgid "Failed to ignore user"
+msgid "Could not ignore user"
 msgstr "Kullanıcı yok sayılamadı"
 
 #: src/components/user_page.ui:68
@@ -532,7 +534,9 @@ msgid "Power Level"
 msgstr "Güç Düzeyi"
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/user_page.ui:156 src/utils/message_dialog.rs:92
+#: src/components/user_page.ui:156
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
+#: src/utils/message_dialog.rs:92
 msgid "Ban"
 msgstr "Yasakla"
 
@@ -561,7 +565,7 @@ msgid "User Profile"
 msgstr "Kullanıcı Profili"
 
 #: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
-msgid "Unable to Connect to Camera"
+msgid "Could not Connect to Camera"
 msgstr "Kameraya Bağlanamadı"
 
 #: src/contrib/qr_code_scanner/mod.ui:36
@@ -618,7 +622,7 @@ msgstr ""
 "belgelendirmesini gözden geçirin."
 
 #: src/error_page.ui:115
-msgid "Failed to Initialize the Session"
+msgid "Could not Initialize the Session"
 msgstr "Oturum Başlatılamadı"
 
 #: src/greeter.rs:76 src/login/mod.rs:592 src/window.rs:466
@@ -740,7 +744,7 @@ msgid "Single Sign-On Providers"
 msgstr "Tekil Oturum Açma Sağlayıcıları"
 
 #: src/login/mod.rs:499
-msgid "Unable to store session"
+msgid "Could not store session"
 msgstr "Oturum depolanamadı"
 
 #: src/login/mod.ui:10
@@ -898,7 +902,7 @@ msgstr ""
 "olarak ayarlandığından emin olun."
 
 #: src/session/model/session.rs:452
-msgid "Failed to logout the session."
+msgid "Could not log the session out."
 msgstr "Oturum kapatılamadı."
 
 #: src/session/model/room/join_rule.rs:276
@@ -968,7 +972,7 @@ msgstr "Sessiz"
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
 #: src/session/view/content/room_history/mod.rs:564
-msgid "Failed to join room {room_name}. Try again later."
+msgid "Could not join room {room_name}. Try again later."
 msgstr "{room_name} odasına katılamadı. Sonra yeniden deneyin."
 
 #: src/session/model/sidebar_data/category/category_type.rs:29
@@ -1161,6 +1165,7 @@ msgstr "Profil resmi gerçekten kaldırılsın mı?"
 #: src/session/view/account_settings/general_page/mod.rs:275
 #: src/session/view/content/room_details/general_page/mod.rs:529
 #: src/session/view/content/room_details/general_page/mod.rs:1320
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:592
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
 #: src/session/view/content/room_history/item_row.rs:707
 #: src/session/view/content/room_history/item_row.rs:764
@@ -1542,7 +1547,7 @@ msgid "Other Active Sessions"
 msgstr "Diğer Etkin Oturumlar"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:85
-msgid "Failed to load the list of connected devices."
+msgid "Could not load the list of connected devices."
 msgstr "Bağlı aygıtların listesi yüklenemedi."
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
@@ -1551,7 +1556,7 @@ msgstr "Oturumu Sonlandır"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:162
-msgid "Failed to disconnect device “{device_name}”"
+msgid "Could not disconnect device “{device_name}”"
 msgstr "“{device_name}” aygıtının bağlantısı kesilemedi."
 
 #. Translators: Time in 24h format, i.e. "23:04".
@@ -1709,18 +1714,19 @@ msgstr "{user} sizi davet etti"
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
 #: src/session/view/content/invite.rs:207
-msgid "Failed to accept invitation for {room}. Try again later."
+msgid "Could not accept invitation for {room}. Try again later."
 msgstr "{room} için davetiye kabul edilemedi. Sonra yeniden deneyin."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
 #: src/session/view/content/invite.rs:240
-msgid "Failed to decline invitation for {room}. Try again later."
+msgid "Could not decline invitation for {room}. Try again later."
 msgstr "{room} için davetiye reddedilemedi. Sonra yeniden deneyin."
 
 #. Translators: This is a verb.
 #: src/session/view/content/invite.ui:13 src/session/view/content/invite.ui:39
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:99
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:209
 msgid "Invite"
 msgstr "Davet Et"
 
@@ -1882,15 +1888,16 @@ msgid "Add Public Address"
 msgstr "Genel Adres Ekle"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:87
-#: src/session/view/content/room_details/addresses_subpage/mod.ui:91
+#: src/session/view/content/room_details/addresses_subpage/mod.ui:92
 msgid "Register Local Address"
 msgstr "Yerel Adresi Kaydet"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.ui:88
+#. Translators: This is the placeholder for the first part of a room address, as in '@my-room:example.org'.
+#: src/session/view/content/room_details/addresses_subpage/mod.ui:89
 msgid "my-room"
 msgstr "odam"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.ui:89
+#: src/session/view/content/room_details/addresses_subpage/mod.ui:90
 msgid "First part of the address, for example “my-room”"
 msgstr "Adresin ilk bölümü, örn: “odam”"
 
@@ -1939,7 +1946,7 @@ msgid "Could not change who can join"
 msgstr "Kimlerin katılabileceği değiştirilemedi"
 
 #: src/session/view/content/room_details/general_page/mod.rs:1094
-msgid "Failed to change guest access"
+msgid "Could not change guest access"
 msgstr "Konuk erişimi değiştirilemedi"
 
 #. Translators: Do NOT translate the content between '{' and '}',
@@ -1949,12 +1956,12 @@ msgid "Publish in the {homeserver} directory"
 msgstr "{homeserver} dizininde yayınla"
 
 #: src/session/view/content/room_details/general_page/mod.rs:1190
-msgid "Failed to publish room in directory"
+msgid "Could not publish room in directory"
 msgstr "Oda dizinde yayınlanamadı"
 
 # dizinden yayından kaldırılamadı şeklindeki çeviri okuması zor geldi.
 #: src/session/view/content/room_details/general_page/mod.rs:1192
-msgid "Failed to unpublish room from directory"
+msgid "Could not unpublish room from directory"
 msgstr "Oda dizinden kaldırılamadı"
 
 #: src/session/view/content/room_details/general_page/mod.rs:1214
@@ -1998,7 +2005,7 @@ msgid "Enable"
 msgstr "Etkinleştir"
 
 #: src/session/view/content/room_details/general_page/mod.rs:1331
-msgid "Failed to enable encryption"
+msgid "Could not enable encryption"
 msgstr "Şifreleme etkinleştirilemedi"
 
 #. Translators: As in, 'Room federated'.
@@ -2016,7 +2023,7 @@ msgid "Room upgraded successfully"
 msgstr "Oda başarıyla yükseltildi"
 
 #: src/session/view/content/room_details/general_page/mod.rs:1401
-msgid "Failed to upgrade room"
+msgid "Could not upgrade room"
 msgstr "Oda yükseltilemedi"
 
 #: src/session/view/content/room_details/general_page/mod.ui:4
@@ -2126,17 +2133,23 @@ msgstr "Matrix oda kimliği panoya kopyalandı"
 msgid "Enable encryption"
 msgstr "Şifrelemeyi etkinleştir"
 
-#: src/session/view/content/room_details/general_page/mod.ui:308
+#: src/session/view/content/room_details/general_page/mod.ui:307
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
+msgid "Permissions"
+msgstr "İzinler"
+
+#: src/session/view/content/room_details/general_page/mod.ui:315
 msgid "Room Version"
 msgstr "Oda Sürümü"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page/mod.ui:320
+#: src/session/view/content/room_details/general_page/mod.ui:327
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
 msgstr "Yükselt"
 
-#: src/session/view/content/room_details/general_page/mod.ui:333
+#: src/session/view/content/room_details/general_page/mod.ui:340
 msgid "Federation"
 msgstr "Federasyon"
 
@@ -2183,6 +2196,7 @@ msgid "Save File"
 msgstr "Dosyayı Kaydet"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:125
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:594
 #: src/utils/media.rs:193
 msgid "Save"
 msgstr "Kaydet"
@@ -2201,9 +2215,9 @@ msgstr "Yasaklanmış"
 
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
-#: src/session/view/content/room_details/invite_subpage/mod.rs:316
-msgid "Failed to invite {user} to {room}. Try again later."
-msgid_plural "Failed to invite {n} users to {room}. Try again later."
+#: src/session/view/content/room_details/invite_subpage/mod.rs:236
+msgid "Could not invite {user} to {room}. Try again later."
+msgid_plural "Could not invite {n} users to {room}. Try again later."
 msgstr[0] ""
 "{n} kullanıcı {room} odasına davet edilemedi. Sonra yeniden deneyin."
 
@@ -2216,25 +2230,25 @@ msgid "I_nvite"
 msgstr "_Davet Et"
 
 #. Translators: In this string, this is a verb.
-#: src/session/view/content/room_details/invite_subpage/mod.ui:87
+#: src/session/view/content/room_details/invite_subpage/mod.ui:55
 #: src/session/view/create_dm_dialog/mod.ui:53
 msgid "Search"
 msgstr "Ara"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:88
+#: src/session/view/content/room_details/invite_subpage/mod.ui:56
 msgid "Search for users to invite them to this room."
 msgstr "Odaya davet edecek kullanıcıları ara."
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:133
+#: src/session/view/content/room_details/invite_subpage/mod.ui:101
 #: src/session/view/create_dm_dialog/mod.ui:92
 msgid "No Users Found"
 msgstr "Kullanıcı Bulunamadı"
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:134
+#: src/session/view/content/room_details/invite_subpage/mod.ui:102
 msgid "No users matching the search were found."
 msgstr "Aramayla eşleşen kullanıcı bulunamadı."
 
-#: src/session/view/content/room_details/invite_subpage/mod.ui:141
+#: src/session/view/content/room_details/invite_subpage/mod.ui:109
 msgid "An error occurred while searching for matches."
 msgstr "Eşleşmeler aranırken hata oluştu."
 
@@ -2273,17 +2287,163 @@ msgstr[0] "Oda Üyeleri"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
+#: src/session/view/content/room_details/permissions/members_subpage.ui:12
+#: src/session/view/content/room_details/permissions/members_subpage.ui:14
 msgid "Toggle Room Members Search"
 msgstr "Oda Üyeleri Aramayı Aç/Kapat"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:29
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
+#: src/session/view/content/room_details/permissions/members_subpage.ui:30
+#: src/session/view/content/room_details/permissions/members_subpage.ui:34
 msgid "Search for room members"
 msgstr "Oda üyeleri ara"
 
 #: src/session/view/content/room_details/members_page/mod.rs:84
 msgid "The user is not in the room members list anymore"
 msgstr "Kullanıcı artık oda üyeleri listesinde değil"
+
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:4
+msgid "Add Custom Permissions"
+msgstr "Özel İzinler Ekle"
+
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:11
+msgid "_Add"
+msgstr "_Ekle"
+
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:50
+msgid "Assign Power Level"
+msgstr "Güç Düzeyi Ata"
+
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:71
+msgid "Search Results"
+msgstr "Arama Sonuçları"
+
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:96
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:100
+msgid "No Matching Members Found"
+msgstr "Eşleşen Üye Bulunamadı"
+
+#: src/session/view/content/room_details/permissions/add_members_subpage.ui:101
+msgid "No room members matching the search were found."
+msgstr "Aramayla eşleşen oda üyesi bulunamadı."
+
+#: src/session/view/content/room_details/permissions/members_subpage.ui:4
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:279
+msgid "Members With Custom Power Levels"
+msgstr "Özel Güç Düzeyindeki Üyeler"
+
+#: src/session/view/content/room_details/permissions/members_subpage.ui:83
+msgid "Add"
+msgstr "Ekle"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:581
+msgid "Save Changes?"
+msgstr "Değişiklikler Kaydedilsin Mi?"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:583
+msgid ""
+"This page contains unsaved changes. Changes which are not saved will be lost."
+msgstr ""
+"Bu sayfada kaydedilmemiş değişiklikler var. Kaydedilmeyen değişiklikler "
+"yitecek."
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:593
+msgid "Discard"
+msgstr "Gözden Çıkar"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:642
+msgid "Could not save permissions"
+msgstr "İzinler kaydedilemedi"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:30
+msgid "_Save"
+msgstr "_Kaydet"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:44
+msgid "Room Actions"
+msgstr "Oda Eylemleri"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:45
+msgid "Power level required to perform different actions in the room"
+msgstr "Odada başka eylemleri gerçekleştirmek için gereken güç düzeyi"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:48
+msgid "Send Messages"
+msgstr "İleti Gönder"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:59
+msgid "Remove Own Messages"
+msgstr "Kendi İletilerini Kaldır"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:70
+msgid "Remove Messages of Other Members"
+msgstr "Diğer Üye İletilerini Kaldır"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:81
+msgid "Notify the Whole Room"
+msgstr "Tüm Odayı Bilgilendir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:92
+msgid "Change Room Settings"
+msgstr "Oda Ayarlarını Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:103
+msgid "Change the Room Name"
+msgstr "Oda Adını Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:114
+msgid "Change the Room Topic"
+msgstr "Oda Konusunu Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:125
+msgid "Change the Room Avatar"
+msgstr "Oda Profil Resmini Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:136
+msgid "Change the Addresses"
+msgstr "Adresleri Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:147
+msgid "Change Who Can Read History"
+msgstr "Geçmişi Okuyabilenleri Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
+msgid "Enable Encryption"
+msgstr "Şifrelemeyi Etkinleştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:169
+msgid "Change Permissions"
+msgstr "İzinleri Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:180
+msgid "Change the Server Access Control List"
+msgstr "Sunucu Erişim Denetim Listesini Değiştir"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
+msgid "Upgrade the Room"
+msgstr "Odayı Yükselt"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:204
+msgid "Member Actions"
+msgstr "Üye Eylemleri"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:205
+msgid "Power level required to perform different actions on room members"
+msgstr "Oda üyelerinde başka eylemler gerçekleştirmek için gereken güç düzeyi"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:246
+msgid "Members Power Levels"
+msgstr "Üye Güç Düzeyleri"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:247
+msgid "Power levels defined for all members of the room"
+msgstr "Odanın tüm üyeleri için tanımlanmış güç düzeyleri"
+
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:250
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:266
+msgid "Default Power Level"
+msgstr "Öntanımlı Güç Düzeyi"
 
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:59
 msgid "Version"
@@ -2381,16 +2541,19 @@ msgid "_View Details"
 msgstr "_Ayrıntıları Göster"
 
 #: src/session/view/content/room_history/event_actions.ui:77
-#: src/session/view/content/room_history/event_actions.ui:157
-#: src/session/view/content/room_history/event_actions.ui:190
-msgid "Rep_ort"
-msgstr "_Bildir"
+msgid "Rep_ort…"
+msgstr "_Bildir…"
 
 #: src/session/view/content/room_history/event_actions.ui:82
 #: src/session/view/content/room_history/event_actions.ui:162
 #: src/session/view/content/room_history/event_actions.ui:195
 msgid "Re_move"
 msgstr "_Kaldır"
+
+#: src/session/view/content/room_history/event_actions.ui:157
+#: src/session/view/content/room_history/event_actions.ui:190
+msgid "Rep_ort"
+msgstr "_Bildir"
 
 #: src/session/view/content/room_history/item_row.rs:272
 msgid "This is the start of the visible history"
@@ -2445,11 +2608,11 @@ msgstr ""
 "Bu iletiyi gerçekten kaldırmak istiyor musunuz? Bu işlem geri alınamaz."
 
 #: src/session/view/content/room_history/item_row.rs:717
-msgid "Failed to remove message"
+msgid "Could not remove message"
 msgstr "İleti kaldırılamadı"
 
 #: src/session/view/content/room_history/item_row.rs:731
-msgid "Failed to toggle reaction"
+msgid "Could not toggle reaction"
 msgstr "Tepki açılıp kapatılamadı"
 
 #: src/session/view/content/room_history/item_row.rs:746
@@ -2476,7 +2639,7 @@ msgid "Report"
 msgstr "Bildir"
 
 #: src/session/view/content/room_history/item_row.rs:784
-msgid "Failed to report event"
+msgid "Could not report event"
 msgstr "Olay bildirilemedi"
 
 #: src/session/view/content/room_history/message_row/audio.rs:92
@@ -2503,10 +2666,10 @@ msgstr "Desteklenmeyen olay"
 
 #: src/session/view/content/room_history/message_row/content.rs:349
 msgid ""
-"Unable to decrypt this message, decryption will be retried once the keys are "
+"Could not decrypt this message, decryption will be retried once the keys are "
 "available."
 msgstr ""
-"Bu iletinin şifresi çözülemiyor, anahtarlar kullanılabildiğinde şifre çözme "
+"Bu iletinin şifresi çözülemedi, anahtarlar kullanılabildiğinde şifre çözme "
 "yeniden denenecek."
 
 #: src/session/view/content/room_history/message_row/content.rs:359
@@ -2647,7 +2810,7 @@ msgid "The location request has been cancelled."
 msgstr "Konum isteği iptal edildi."
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:744
-msgid "Failed to retrieve current location."
+msgid "Could not retrieve current location."
 msgstr "Geçerli konum alınamadı."
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:784
@@ -2736,13 +2899,13 @@ msgstr "Sürükle bıraktan dosya alınırken hata oluştu"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:545
-msgid "Failed to leave {room}"
+msgid "Could not leave {room}"
 msgstr "{room} odası terk edilemedi."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:581
 #: src/session/view/sidebar/row.rs:494
-msgid "Failed to forget {room}."
+msgid "Could not forget {room}."
 msgstr "{room} odası unutulamadı."
 
 #: src/session/view/content/room_history/mod.rs:752
@@ -2769,8 +2932,8 @@ msgid "Room _Details"
 msgstr "Oda _Ayrıntıları"
 
 #: src/session/view/content/room_history/mod.ui:11
-msgid "_Invite New Members"
-msgstr "Yeni Üye _Davet Et"
+msgid "_Invite New Members…"
+msgstr "Yeni Üyeleri _Davet Et…"
 
 #: src/session/view/content/room_history/mod.ui:16
 msgid "Room _Permalink"
@@ -2846,7 +3009,7 @@ msgstr "Oda Menüsü"
 
 #: src/session/view/content/room_history/mod.ui:193
 #: src/session/view/content/room_history/mod.ui:200
-msgid "Unable to Load Room"
+msgid "Could not Load Room"
 msgstr "Oda Yüklenemedi"
 
 #: src/session/view/content/room_history/mod.ui:201
@@ -3088,11 +3251,11 @@ msgid_plural "{n} members are typing…"
 msgstr[0] "{n} üye yazıyor…"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:66
-msgid "Failed to accept verification"
+msgid "Could not accept verification"
 msgstr "Doğrulama kabul edilemedi"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:82
-msgid "Failed to decline verification"
+msgid "Could not decline verification"
 msgstr "Doğrulama reddedilemedi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
@@ -3375,16 +3538,16 @@ msgid "Rejoin Room as Low Priority"
 msgstr "Odaya Yeniden Katıl ve Düşük Önceliklilere Ekle"
 
 #: src/session/view/sidebar/mod.ui:6
-msgid "New _Direct Chat"
-msgstr "Yeni _Doğrudan Söyleşi"
+msgid "New _Direct Chat…"
+msgstr "Yeni _Doğrudan Söyleşi…"
 
 #: src/session/view/sidebar/mod.ui:10
-msgid "_New Room"
-msgstr "_Yeni Oda"
+msgid "_New Room…"
+msgstr "_Yeni Oda…"
 
 #: src/session/view/sidebar/mod.ui:14
-msgid "_Join Room"
-msgstr "Odaya _Katıl"
+msgid "_Join Room…"
+msgstr "Odaya _Katıl…"
 
 #: src/session/view/sidebar/mod.ui:20
 msgid "_Keyboard Shortcuts"
@@ -3451,13 +3614,13 @@ msgstr "{name} ile doğrudan söyleşi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/row.rs:479
-msgid "Failed to move {room} from {previous_category} to {new_category}."
+msgid "Could not move {room} from {previous_category} to {new_category}."
 msgstr ""
 "{room} odası {previous_category} kategorisinden {new_category} kategorisine "
 "taşınamadı."
 
 #: src/session_list/mod.rs:254
-msgid "Failed to restore previous sessions"
+msgid "Could not restore previous sessions"
 msgstr "Önceki oturumlar geri yüklenemedi"
 
 #: src/shortcuts.ui:11
@@ -3491,7 +3654,7 @@ msgid "The connection timed out. Try again later."
 msgstr "Bağlantı zaman aşımına uğradı. Sonra yeniden deneyin."
 
 #: src/user_facing_error.rs:27
-msgid "Unable to connect to the homeserver."
+msgid "Could not connect to the homeserver."
 msgstr "Ev sunucusuna bağlanılamadı."
 
 #: src/user_facing_error.rs:37
@@ -3827,11 +3990,11 @@ msgstr ""
 "artırır."
 
 #: src/verification_view/identity_verification_view/accept_request_page.rs:161
-msgid "Failed to decline verification request"
+msgid "Could not decline verification request"
 msgstr "Doğrulama isteği reddedilemedi"
 
 #: src/verification_view/identity_verification_view/accept_request_page.rs:178
-msgid "Failed to accept verification request"
+msgid "Could not accept verification request"
 msgstr "Doğrulama isteği kabul edilemedi"
 
 #: src/verification_view/identity_verification_view/cancelled_page.rs:136
@@ -3875,7 +4038,7 @@ msgstr "Doğrulama Hatası"
 
 #: src/verification_view/identity_verification_view/cancelled_page.rs:188
 #: src/verification_view/session_verification_view.rs:465
-msgid "Failed to send a new verification request"
+msgid "Could not send a new verification request"
 msgstr "Yeni doğrulama isteği gönderilemedi"
 
 #: src/verification_view/identity_verification_view/cancelled_page.ui:41
@@ -3906,12 +4069,12 @@ msgid "Click on the verification method to proceed."
 msgstr "Sürdürmek için doğrulama yöntemine tıkla."
 
 #: src/verification_view/identity_verification_view/choose_method_page.rs:231
-msgid "Failed to access camera"
+msgid "Could not access camera"
 msgstr "Kameraya erişilemedi"
 
 #: src/verification_view/identity_verification_view/choose_method_page.rs:250
 #: src/verification_view/identity_verification_view/scan_qr_code_page.rs:242
-msgid "Failed to start emoji verification"
+msgid "Could not start emoji verification"
 msgstr "Emoji doğrulaması başlatılamadı"
 
 #: src/verification_view/identity_verification_view/choose_method_page.rs:268
@@ -3919,7 +4082,7 @@ msgstr "Emoji doğrulaması başlatılamadı"
 #: src/verification_view/identity_verification_view/qr_code_scanned_page.rs:145
 #: src/verification_view/identity_verification_view/scan_qr_code_page.rs:260
 #: src/verification_view/identity_verification_view/wait_for_other_page.rs:160
-msgid "Failed to cancel the verification"
+msgid "Could not cancel the verification"
 msgstr "Doğrulama iptal edilemedi"
 
 #: src/verification_view/identity_verification_view/choose_method_page.ui:51
@@ -3976,7 +4139,7 @@ msgid "Does {user} see a confirmation on their session?"
 msgstr "{user} oturumunda onay görüyor mu?"
 
 #: src/verification_view/identity_verification_view/confirm_qr_code_page.rs:161
-msgid "Failed to confirm the scan of the QR Code"
+msgid "Could not confirm the scan of the QR Code"
 msgstr "QR Kodunun taranması doğrulanamadı"
 
 #: src/verification_view/identity_verification_view/confirm_qr_code_page.ui:19
@@ -4064,7 +4227,7 @@ msgid "Decline Verification"
 msgstr "Doğrulamayı Reddet"
 
 #: src/verification_view/identity_verification_view/no_supported_methods_page.rs:188
-msgid "Failed to decline the verification"
+msgid "Could not decline the verification"
 msgstr "Doğrulama reddedilemedi"
 
 #: src/verification_view/identity_verification_view/no_supported_methods_page.ui:44
@@ -4123,11 +4286,11 @@ msgstr ""
 "görünmediğini sorun."
 
 #: src/verification_view/identity_verification_view/sas_page.rs:252
-msgid "Failed to send that the data does not match"
+msgid "Could not send that the data does not match"
 msgstr "Veriler eşleşmediği için gönderilemedi"
 
 #: src/verification_view/identity_verification_view/sas_page.rs:269
-msgid "Failed to send confirmation that the data matches"
+msgid "Could not send confirmation that the data matches"
 msgstr "Verilerin eşleştiği onayı gönderilemedi"
 
 #. Translators: During emoji comparison, this is the label of the button to click when the emojis do not match.
@@ -4152,7 +4315,7 @@ msgid "Scan the QR code shown on the device of {user}."
 msgstr "{user} aygıtında gösterilen QR kodunu tarayın."
 
 #: src/verification_view/identity_verification_view/scan_qr_code_page.rs:214
-msgid "Failed to validate scanned QR Code"
+msgid "Could not validate scanned QR Code"
 msgstr "Taranan QR Kodu doğrulanamadı"
 
 #: src/verification_view/identity_verification_view/scan_qr_code_page.ui:57
