@@ -98,7 +98,7 @@
                   <object class="AdwStatusPage" id="no_matching_page">
                     <property name="icon-name">system-search-symbolic</property>
                     <property name="title" translatable="yes">No Matching Members Found</property>
-                    <property name="description" translatable="yes">No room members matching the search were found.</property>
+                    <property name="description" translatable="yes">No room members matching the search were found</property>
                   </object>
                 </property>
               </object>

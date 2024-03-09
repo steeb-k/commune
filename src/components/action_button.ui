@@ -31,7 +31,7 @@
                   <class name="circular"/>
                   <class name="suggested-action"/>
                 </style>
-                <property name="tooltip-text" translatable="yes">Confirm change</property>
+                <property name="tooltip-text" translatable="yes">Confirm Change</property>
                 <property name="valign">center</property>
                 <property name="icon-name">checkmark-symbolic</property>
                 <property name="action-name" bind-source="ComponentsActionButton" bind-property="action-name" bind-flags="sync-create"/>
@@ -51,7 +51,7 @@
                   <class name="circular"/>
                   <class name="suggested-action"/>
                 </style>
-                <property name="tooltip-text" translatable="yes">Try again</property>
+                <property name="tooltip-text" translatable="yes">Try Again</property>
                 <property name="valign">center</property>
                 <property name="icon-name">refresh-symbolic</property>
                 <property name="action-name" bind-source="ComponentsActionButton" bind-property="action-name" bind-flags="sync-create"/>

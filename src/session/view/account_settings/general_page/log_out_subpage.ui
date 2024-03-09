@@ -4,7 +4,7 @@
     <style>
       <class name="form-page"/>
     </style>
-    <property name="title" translatable="yes">Log Out of this Session</property>
+    <property name="title" translatable="yes">Log Out of This Session</property>
     <property name="child">
       <object class="AdwToolbarView">
         <child type="top">

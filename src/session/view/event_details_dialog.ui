@@ -66,7 +66,7 @@
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy event ID to clipboard</property>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Event ID to Clipboard</property>
                                         <property name="toast-text" translatable="yes">Event ID copied to clipboard</property>
                                       </object>
                                     </child>
@@ -81,7 +81,7 @@
                                             </lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy room ID to clipboard</property>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Room ID to Clipboard</property>
                                         <property name="toast-text" translatable="yes">Room ID copied to clipboard</property>
                                       </object>
                                     </child>
@@ -94,7 +94,7 @@
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy sender ID to clipboard</property>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Sender ID to Clipboard</property>
                                         <property name="toast-text" translatable="yes">Sender ID copied to clipboard</property>
                                       </object>
                                     </child>
@@ -107,7 +107,7 @@
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Timestamp to Clipboard</property>
                                         <property name="toast-text" translatable="yes">Timestamp copied to clipboard</property>
                                       </object>
                                     </child>
@@ -155,7 +155,7 @@
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy event ID to clipboard</property>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Event ID to Clipboard</property>
                                         <property name="toast-text" translatable="yes">Event ID copied to clipboard</property>
                                       </object>
                                     </child>
@@ -168,7 +168,7 @@
                                             <lookup name="event">EventDetailsDialog</lookup>
                                           </lookup>
                                         </binding>
-                                        <property name="copy-button-tooltip-text" translatable="yes">Copy timestamp to clipboard</property>
+                                        <property name="copy-button-tooltip-text" translatable="yes">Copy Timestamp to Clipboard</property>
                                         <property name="toast-text" translatable="yes">Timestamp copied to clipboard</property>
                                       </object>
                                     </child>
@@ -205,7 +205,7 @@
                         <property name="icon-name">copy-symbolic</property>
                         <property name="focus-on-click">False</property>
                         <property name="action-name">event-details-dialog.copy-source</property>
-                        <property name="tooltip-text" translatable="yes">Copy source to clipboard</property>
+                        <property name="tooltip-text" translatable="yes">Copy Source to Clipboard</property>
                         <property name="valign">center</property>
                         <style>
                           <class name="flat"/>

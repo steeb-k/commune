@@ -11,14 +11,14 @@
           <object class="AdwSwitchRow" id="public_read_receipts_row">
             <property name="selectable">False</property>
             <property name="title" translatable="yes">Send Read Receipts</property>
-            <property name="subtitle" translatable="yes">When this is enabled, other members of the rooms you participate in can track which messages you have seen.</property>
+            <property name="subtitle" translatable="yes">Allow other members of the rooms you participate in to track which messages you have seen</property>
           </object>
         </child>
         <child>
           <object class="AdwSwitchRow" id="typing_row">
             <property name="selectable">False</property>
             <property name="title" translatable="yes">Send Typing Notifications</property>
-            <property name="subtitle" translatable="yes">When this is enabled, other members of the rooms you participate in can see when you are typing a message.</property>
+            <property name="subtitle" translatable="yes">Allow other members of the rooms you participate in to see when you are typing a message</property>
           </object>
         </child>
         <child>
@@ -64,7 +64,7 @@
             <accessibility>
               <relation name="described-by">master_key_status</relation>
             </accessibility>
-            <property name="title" translatable="yes">Master key</property>
+            <property name="title" translatable="yes">Master Key</property>
             <child>
               <object class="GtkLabel" id="master_key_status">
                 <property name="ellipsize">end</property>
@@ -78,7 +78,7 @@
             <accessibility>
               <relation name="described-by">self_signing_key_status</relation>
             </accessibility>
-            <property name="title" translatable="yes">Self-signing key</property>
+            <property name="title" translatable="yes">Self-Signing Key</property>
             <child>
               <object class="GtkLabel" id="self_signing_key_status">
                 <property name="ellipsize">end</property>
@@ -92,7 +92,7 @@
             <accessibility>
               <relation name="described-by">user_signing_key_status</relation>
             </accessibility>
-            <property name="title" translatable="yes">User-signing key</property>
+            <property name="title" translatable="yes">User-Signing Key</property>
             <child>
               <object class="GtkLabel" id="user_signing_key_status">
                 <property name="ellipsize">end</property>

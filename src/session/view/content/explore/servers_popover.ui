@@ -35,7 +35,7 @@
                 <child>
                   <object class="GtkEntry" id="server_entry">
                     <property name="hexpand">true</property>
-                    <property name="placeholder-text" translatable="yes">Add server…</property>
+                    <property name="placeholder-text" translatable="yes">Add Server</property>
                   </object>
                 </child>
                 <child>

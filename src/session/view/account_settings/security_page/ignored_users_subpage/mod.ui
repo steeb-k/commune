@@ -72,7 +72,7 @@
                   <object class="AdwStatusPage">
                     <property name="icon-name">users-symbolic</property>
                     <property name="title" translatable="yes">No Ignored Users</property>
-                    <property name="description" translatable="yes">You can add users to this list from their room member profile.</property>
+                    <property name="description" translatable="yes">You can add users to this list from their room member profile</property>
                     <property name="vexpand">true</property>
                   </object>
                 </property>

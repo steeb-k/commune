@@ -78,7 +78,7 @@
     </property>
   </template>
   <object class="EntryAddRow" id="public_addresses_add_row">
-    <property name="title" translatable="yes">Add Public Address…</property>
+    <property name="title" translatable="yes">Add Public Address</property>
     <property name="add-button-tooltip-text" translatable="yes">Add Public Address</property>
     <signal name="add" handler="add_public_address" swapped="yes"/>
     <signal name="entry-activated" handler="handle_public_addresses_add_row_activated" swapped="yes"/>

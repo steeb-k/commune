@@ -69,7 +69,7 @@
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
                                 <property name="use-markup">True</property>
-                                <property name="label" translatable="yes">Enter a room ID, room alias, or permalink to look up a room.</property>
+                                <property name="label" translatable="yes">Enter a room ID, room alias, or permalink to look up a room</property>
                                 <style>
                                   <class name="body"/>
                                   <class name="description"/>

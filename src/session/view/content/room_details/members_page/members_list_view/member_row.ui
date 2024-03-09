@@ -42,7 +42,7 @@
             <child>
               <object class="GtkImage" id="verified_icon">
                 <property name="icon-name">verified-symbolic</property>
-                <property name="tooltip-text" translatable="yes">Identity verified</property>
+                <property name="tooltip-text" translatable="yes">Identity Verified</property>
                 <binding name="visible">
                   <lookup name="verified" type="User">
                     <lookup name="member">ContentMemberRow</lookup>

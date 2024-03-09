@@ -59,7 +59,7 @@
                         <property name="wrap">True</property>
                         <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
-                        <property name="label" translatable="yes">Select the account you want to open the URI with.</property>
+                        <property name="label" translatable="yes">Select the account you want to open the URI with</property>
                         <style>
                           <class name="body"/>
                           <class name="description"/>

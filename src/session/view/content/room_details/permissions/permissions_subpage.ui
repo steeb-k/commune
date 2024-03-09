@@ -78,7 +78,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="notify_room_row">
-                            <property name="title" translatable="yes">Notify the Whole Room</property>
+                            <property name="title" translatable="yes">Notify Entire Room</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
@@ -100,7 +100,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="name_row">
-                            <property name="title" translatable="yes">Change the Room Name</property>
+                            <property name="title" translatable="yes">Change Room Name</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
@@ -111,7 +111,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="topic_row">
-                            <property name="title" translatable="yes">Change the Room Topic</property>
+                            <property name="title" translatable="yes">Change Room Topic</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
@@ -122,7 +122,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="avatar_row">
-                            <property name="title" translatable="yes">Change the Room Avatar</property>
+                            <property name="title" translatable="yes">Change Room Avatar</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
@@ -133,7 +133,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="aliases_row">
-                            <property name="title" translatable="yes">Change the Addresses</property>
+                            <property name="title" translatable="yes">Change Addresses</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
@@ -177,7 +177,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="server_acl_row">
-                            <property name="title" translatable="yes">Change the Server Access Control List</property>
+                            <property name="title" translatable="yes">Change Server Access Control List</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
@@ -188,7 +188,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="upgrade_row">
-                            <property name="title" translatable="yes">Upgrade the Room</property>
+                            <property name="title" translatable="yes">Upgrade Room</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>

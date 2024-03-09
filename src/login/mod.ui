@@ -77,7 +77,7 @@
                                     <property name="wrap">True</property>
                                     <property name="wrap-mode">word-char</property>
                                     <property name="justify">center</property>
-                                    <property name="label" translatable="yes">This session is ready to send and receive secure messages.</property>
+                                    <property name="label" translatable="yes">This session is ready to send and receive secure messages</property>
                                   </object>
                                 </child>
                                 <child>
@@ -108,3 +108,4 @@
     </property>
   </template>
 </interface>
+

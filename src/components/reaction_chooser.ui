@@ -14,7 +14,7 @@
         </style>
         <child>
           <object class="GtkButton">
-            <property name="tooltip-text" translatable="yes">More reactions</property>
+            <property name="tooltip-text" translatable="yes">More Reactions</property>
             <style>
               <class name="circular"/>
             </style>

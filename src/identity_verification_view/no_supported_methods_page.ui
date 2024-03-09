@@ -41,7 +41,7 @@
                     <property name="wrap">True</property>
                     <property name="wrap-mode">word-char</property>
                     <property name="justify">center</property>
-                    <property name="label" translatable="yes">You can accept this verification from another session or decline it for all your sessions.</property>
+                    <property name="label" translatable="yes">You can accept this verification from another session or decline it for all your sessions</property>
                   </object>
                 </child>
                 <child>

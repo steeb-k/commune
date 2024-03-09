@@ -53,7 +53,7 @@
                             <property name="wrap">True</property>
                             <property name="wrap-mode">word-char</property>
                             <property name="justify">center</property>
-                            <property name="label" translatable="yes">Please follow the steps in the browser.</property>
+                            <property name="label" translatable="yes">Please follow the steps in the browser</property>
                             <style>
                               <class name="title-4"/>
                             </style>
@@ -71,3 +71,4 @@
     </property>
   </template>
 </interface>
+

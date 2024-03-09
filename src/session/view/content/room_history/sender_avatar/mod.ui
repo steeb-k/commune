@@ -28,7 +28,7 @@
         <lookup name="sender">ContentSenderAvatar</lookup>
       </lookup>
     </binding>
-    <property name="tooltip-text" translatable="yes">Copy Matrix user ID to clipboard</property>
+    <property name="tooltip-text" translatable="yes">Copy Matrix User ID to Clipboard</property>
     <property name="action-name">sender-avatar.copy-user-id</property>
     <property name="can-shrink">True</property>
     <style>

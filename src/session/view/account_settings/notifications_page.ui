@@ -8,7 +8,7 @@
       <object class="AdwPreferencesGroup">
         <child>
           <object class="SwitchLoadingRow" id="account_row">
-            <property name="title" translatable="yes">Enable for this account</property>
+            <property name="title" translatable="yes">Enable for This Account</property>
             <property name="is-loading" bind-source="NotificationsPage" bind-property="account-loading" bind-flags="sync-create"/>
             <signal name="notify::is-active" handler="account_switched" swapped="true"/>
           </object>
@@ -16,7 +16,7 @@
         <child>
           <object class="AdwSwitchRow" id="session_row">
             <property name="selectable">False</property>
-            <property name="title" translatable="yes">Enable for this session</property>
+            <property name="title" translatable="yes">Enable for This Session</property>
             <signal name="notify::active" handler="session_switched" swapped="true"/>
           </object>
         </child>
@@ -25,7 +25,7 @@
     <child>
       <object class="AdwPreferencesGroup" id="global">
         <property name="title" translatable="yes">Global</property>
-        <property name="description" translatable="yes">Which messages trigger notifications in rooms that do not have more specific rules.</property>
+        <property name="description" translatable="yes">Which messages trigger notifications in rooms that do not have more specific rules</property>
         <child>
           <object class="CheckLoadingRow" id="global_all_row">
             <property name="title" translatable="yes">All messages in all rooms</property>
@@ -64,7 +64,7 @@
     </child>
   </template>
   <object class="EntryAddRow" id="keywords_add_row">
-    <property name="title" translatable="yes">Add Keyword…</property>
+    <property name="title" translatable="yes">Add Keyword</property>
     <property name="add-button-tooltip-text" translatable="yes">Add Keyword</property>
     <signal name="add" handler="add_keyword" swapped="yes"/>
     <signal name="entry-activated" handler="add_keyword" swapped="yes"/>

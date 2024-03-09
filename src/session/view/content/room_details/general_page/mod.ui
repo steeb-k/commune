@@ -163,31 +163,31 @@
     <child>
       <object class="AdwPreferencesGroup" id="notifications">
         <property name="title" translatable="yes">Notifications</property>
-        <property name="description" translatable="yes">Which messages trigger notifications in this room.</property>
+        <property name="description" translatable="yes">Which messages trigger notifications in this room</property>
         <child>
           <object class="CheckLoadingRow" id="notifications_global_row">
-            <property name="title" translatable="yes">Use the global setting</property>
+            <property name="title" translatable="yes">Use Global Setting</property>
             <property name="action-name">room.set-notifications-setting</property>
             <property name="action-target">'global'</property>
           </object>
         </child>
         <child>
           <object class="CheckLoadingRow" id="notifications_all_row">
-            <property name="title" translatable="yes">All messages</property>
+            <property name="title" translatable="yes">All Messages</property>
             <property name="action-name">room.set-notifications-setting</property>
             <property name="action-target">'all'</property>
           </object>
         </child>
         <child>
           <object class="CheckLoadingRow" id="notifications_mentions_row">
-            <property name="title" translatable="yes">Only mentions and keywords</property>
+            <property name="title" translatable="yes">Only Mentions and Keywords</property>
             <property name="action-name">room.set-notifications-setting</property>
             <property name="action-target">'mentions-only'</property>
           </object>
         </child>
         <child>
           <object class="CheckLoadingRow" id="notifications_mute_row">
-            <property name="title" translatable="yes">Disable notifications</property>
+            <property name="title" translatable="yes">Disable Notifications</property>
             <property name="action-name">room.set-notifications-setting</property>
             <property name="action-target">'mute'</property>
           </object>
@@ -226,12 +226,12 @@
         <property name="title" translatable="yes">Access and Visibility</property>
         <child>
           <object class="ComboLoadingRow" id="join_rule">
-            <property name="title" translatable="yes">Who can join</property>
+            <property name="title" translatable="yes">Who Can Join</property>
             <property name="string-model">
               <object class="GtkStringList">
                 <items>
-                  <item translatable="yes">Only invited users</item>
-                  <item translatable="yes">Any registered user</item>
+                  <item translatable="yes">Only Invited Users</item>
+                  <item translatable="yes">Any Registered User</item>
                 </items>
               </object>
             </property>
@@ -259,7 +259,7 @@
         </child>
         <child>
           <object class="ComboLoadingRow" id="history_visibility">
-            <property name="title" translatable="yes">Who can read history</property>
+            <property name="title" translatable="yes">Who Can Read History</property>
             <property name="string-model">
               <object class="GtkStringList">
                 <items>
@@ -287,13 +287,13 @@
               </lookup>
             </binding>
             <property name="main-title">subtitle</property>
-            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix room ID to clipboard</property>
+            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix Room ID to Clipboard</property>
             <property name="toast-text" translatable="yes">Matrix room ID copied to clipboard</property>
           </object>
         </child>
         <child>
           <object class="SwitchLoadingRow" id="encryption">
-            <property name="title" translatable="yes">Enable encryption</property>
+            <property name="title" translatable="yes">Enable Encryption</property>
             <binding name="is-active">
               <lookup name="is-encrypted">
                 <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
