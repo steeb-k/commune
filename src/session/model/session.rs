@@ -217,7 +217,12 @@ impl Session {
 
     /// Finish initialization of this session.
     pub async fn prepare(&self) {
-        self.update_user_profile();
+        spawn!(
+            glib::Priority::LOW,
+            clone!(@weak self as obj => async move {
+                obj.update_user_profile().await;
+            })
+        );
         self.update_offline().await;
 
         self.room_list().load().await;
@@ -330,21 +335,19 @@ impl Session {
     /// Update the profile of this session’s user.
     ///
     /// Fetches the updated profile and updates the local data.
-    pub fn update_user_profile(&self) {
+    async fn update_user_profile(&self) {
         let client = self.client();
-        let user = self.user();
+        let handle = spawn_tokio!(async move { client.account().fetch_user_profile().await });
 
-        let handle = spawn_tokio!(async move { client.account().get_profile().await });
+        match handle.await.unwrap() {
+            Ok(res) => {
+                let user = self.user();
 
-        spawn!(glib::Priority::LOW, async move {
-            match handle.await.unwrap() {
-                Ok(res) => {
-                    user.set_name(res.displayname);
-                    user.set_avatar_url(res.avatar_url);
-                }
-                Err(error) => error!("Could not fetch account metadata: {error}"),
+                user.set_name(res.displayname);
+                user.set_avatar_url(res.avatar_url);
             }
-        });
+            Err(error) => error!("Could not fetch account metadata: {error}"),
+        }
     }
 
     /// The Matrix client.

@@ -181,7 +181,9 @@ impl DmUserList {
                     // If it is the "custom user" from the search term, fetch the avatar
                     // and display name
                     if add_custom && *user.user_id() == search_term {
-                        user.load_profile();
+                        spawn!(clone!(@weak user => async move {
+                            user.load_profile().await;
+                        }));
                     }
 
                     users.push(user);

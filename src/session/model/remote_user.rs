@@ -44,11 +44,14 @@ impl RemoteUser {
 
     /// Request this user's profile from the homeserver.
     pub async fn load_profile(&self) {
-        let client = self.session().client();
         let user_id = self.user_id();
 
+        let client = self.session().client();
         let user_id_clone = user_id.clone();
-        let handle = spawn_tokio!(async move { client.get_profile(&user_id_clone).await });
+        let handle =
+            spawn_tokio!(
+                async move { client.account().fetch_user_profile_of(&user_id_clone).await }
+            );
 
         let profile = match handle.await.unwrap() {
             Ok(profile) => profile,

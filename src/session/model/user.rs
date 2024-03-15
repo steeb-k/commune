@@ -295,24 +295,27 @@ pub trait UserExt: IsA<User> {
     /// Load the user profile from the homeserver.
     ///
     /// This overwrites the already loaded display name and avatar.
-    fn load_profile(&self) {
+    async fn load_profile(&self) {
+        let user_id = self.user_id();
+
         let client = self.session().client();
-        let user_id = self.user_id().clone();
-        let user = self.upcast_ref::<User>();
+        let user_id_clone = user_id.clone();
+        let handle =
+            spawn_tokio!(
+                async move { client.account().fetch_user_profile_of(&user_id_clone).await }
+            );
 
-        let handle = spawn_tokio!(async move { client.get_profile(&user_id).await });
+        match handle.await.unwrap() {
+            Ok(response) => {
+                let user = self.upcast_ref::<User>();
 
-        spawn!(clone!(@weak user => async move {
-            match handle.await.unwrap() {
-                Ok(response) => {
-                    user.set_name(response.displayname);
-                    user.set_avatar_url(response.avatar_url);
-                },
-                Err(error) => {
-                    error!("Could not load user profile for {}: {}", user.user_id(), error);
-                }
-            };
-        }));
+                user.set_name(response.displayname);
+                user.set_avatar_url(response.avatar_url);
+            }
+            Err(error) => {
+                error!("Could not load user profile for {user_id}: {error}");
+            }
+        };
     }
 
     /// Whether this user is currently ignored.
