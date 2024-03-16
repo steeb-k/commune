@@ -14,6 +14,7 @@ src/components/auth_dialog.rs
 src/components/auth_dialog.ui
 src/components/editable_avatar.rs
 src/components/editable_avatar.ui
+src/components/offline_banner.rs
 src/components/join_room_dialog.rs
 src/components/join_room_dialog.ui
 src/components/location_viewer.rs
@@ -28,7 +29,6 @@ src/components/user_profile_dialog.ui
 src/contrib/qr_code_scanner/mod.ui
 src/contrib/qr_code.rs
 src/error_page.ui
-src/greeter.rs
 src/greeter.ui
 src/identity_verification_view/accept_request_page.rs
 src/identity_verification_view/accept_request_page.ui
@@ -176,5 +176,4 @@ src/user_facing_error.rs
 src/utils/matrix.rs
 src/utils/media.rs
 src/utils/message_dialog.rs
-src/window.rs
 src/window.ui

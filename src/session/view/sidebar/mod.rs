@@ -15,6 +15,7 @@ use self::{
 };
 use crate::{
     account_switcher::AccountSwitcherButton,
+    components::OfflineBanner,
     session::model::{
         Category, CategoryType, IdentityVerification, Room, RoomType, Selection, SidebarIconItem,
         SidebarListModel, User,
@@ -46,8 +47,6 @@ mod imp {
         pub room_search: TemplateChild<gtk::SearchBar>,
         #[template_child]
         pub room_row_menu: TemplateChild<gio::MenuModel>,
-        #[template_child]
-        pub offline_banner: TemplateChild<adw::Banner>,
         pub room_row_popover: OnceCell<gtk::PopoverMenu>,
         /// The logged-in user.
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
@@ -67,7 +66,6 @@ mod imp {
         pub list_model: glib::WeakRef<SidebarListModel>,
         pub binding: RefCell<Option<glib::Binding>>,
         pub expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
-        pub offline_handler_id: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -77,7 +75,8 @@ mod imp {
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            AccountSwitcherButton::static_type();
+            AccountSwitcherButton::ensure_type();
+            OfflineBanner::ensure_type();
 
             Self::bind_template(klass);
             klass.set_css_name("sidebar");
@@ -159,23 +158,6 @@ mod imp {
             let prev_user = self.user.borrow().clone();
             if prev_user == user {
                 return;
-            }
-
-            if let Some(prev_user) = prev_user {
-                if let Some(handler_id) = self.offline_handler_id.take() {
-                    prev_user.session().disconnect(handler_id);
-                }
-            }
-
-            if let Some(user) = &user {
-                let session = user.session();
-                let handler_id =
-                    session.connect_offline_notify(clone!(@weak self as imp => move |session| {
-                        imp.offline_banner.set_revealed(session.offline());
-                    }));
-                self.offline_banner.set_revealed(session.offline());
-
-                self.offline_handler_id.replace(Some(handler_id));
             }
 
             self.user.replace(user);

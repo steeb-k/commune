@@ -12,6 +12,7 @@ mod label_with_widgets;
 mod loading_bin;
 mod location_viewer;
 mod media_content_viewer;
+mod offline_banner;
 mod overlapping_avatars;
 mod pill;
 mod power_level_selection;
@@ -43,6 +44,7 @@ pub use self::{
     loading_bin::LoadingBin,
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
+    offline_banner::OfflineBanner,
     overlapping_avatars::OverlappingAvatars,
     pill::*,
     power_level_selection::*,

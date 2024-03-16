@@ -119,8 +119,12 @@
           <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
-              <object class="AdwBanner" id="offline_banner">
-                <property name="title" translatable="yes">Offline</property>
+              <object class="OfflineBanner">
+                <binding name="session">
+                  <lookup name="session">
+                    <lookup name="user">Sidebar</lookup>
+                  </lookup>
+                </binding>
               </object>
             </child>
             <child>

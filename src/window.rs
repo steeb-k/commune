@@ -1,7 +1,6 @@
 use std::cell::Cell;
 
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
 use gtk::{self, gdk, gio, glib, glib::clone, CompositeTemplate};
 use ruma::RoomId;
 use tracing::{error, warn};
@@ -9,7 +8,7 @@ use tracing::{error, warn};
 use crate::{
     account_chooser_dialog::AccountChooserDialog,
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
-    components::Spinner,
+    components::{OfflineBanner, Spinner},
     error_page::ErrorPage,
     greeter::Greeter,
     intent,
@@ -65,8 +64,6 @@ mod imp {
         #[template_child]
         pub toast_overlay: TemplateChild<adw::ToastOverlay>,
         #[template_child]
-        pub offline_banner: TemplateChild<adw::Banner>,
-        #[template_child]
         pub spinner: TemplateChild<Spinner>,
         /// Whether the window should be in compact view.
         ///
@@ -89,7 +86,8 @@ mod imp {
         type ParentType = adw::ApplicationWindow;
 
         fn class_init(klass: &mut Self::Class) {
-            AccountSwitcherButton::static_type();
+            AccountSwitcherButton::ensure_type();
+            OfflineBanner::ensure_type();
 
             Self::bind_template(klass);
 
@@ -221,11 +219,10 @@ mod imp {
             }
 
             let monitor = gio::NetworkMonitor::default();
-            monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
-                obj.update_network_state();
+            monitor.connect_network_changed(clone!(@weak obj => move |_, available| {
+                obj.action_set_enabled("win.show-login", available);
             }));
-
-            obj.update_network_state();
+            obj.action_set_enabled("win.show-login", monitor.is_network_available());
         }
     }
 
@@ -452,26 +449,6 @@ impl Window {
     /// The `SessionView` of this window.
     pub fn session_view(&self) -> &SessionView {
         &self.imp().session
-    }
-
-    fn update_network_state(&self) {
-        let imp = self.imp();
-        let monitor = gio::NetworkMonitor::default();
-
-        let is_network_available = monitor.is_network_available();
-        self.action_set_enabled("win.show-login", is_network_available);
-
-        if !is_network_available {
-            imp.offline_banner
-                .set_title(&gettext("No network connection"));
-            imp.offline_banner.set_revealed(true);
-        } else if monitor.connectivity() < gio::NetworkConnectivity::Full {
-            imp.offline_banner
-                .set_title(&gettext("No Internet connection"));
-            imp.offline_banner.set_revealed(true);
-        } else {
-            imp.offline_banner.set_revealed(false);
-        }
     }
 
     /// Show the given room for the given session.

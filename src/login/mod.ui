@@ -28,9 +28,7 @@
           <object class="GtkBox">
             <property name="orientation">vertical</property>
             <child>
-              <object class="AdwBanner" id="offline_banner">
-                <property name="accessible-role">alert</property>
-              </object>
+              <object class="OfflineBanner" />
             </child>
             <child>
               <object class="GtkStack" id="main_stack">

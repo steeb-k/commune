@@ -1,7 +1,7 @@
 use adw::subclass::prelude::BinImpl;
-use gtk::{self, gio, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use crate::gettext;
+use crate::components::OfflineBanner;
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -13,8 +13,6 @@ mod imp {
     pub struct Greeter {
         #[template_child]
         pub login_button: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub offline_banner: TemplateChild<adw::Banner>,
     }
 
     #[glib::object_subclass]
@@ -24,6 +22,8 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            OfflineBanner::ensure_type();
+
             Self::bind_template(klass);
             klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
@@ -33,19 +33,7 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for Greeter {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            let monitor = gio::NetworkMonitor::default();
-            monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
-                obj.update_network_state();
-            }));
-
-            obj.update_network_state();
-        }
-    }
+    impl ObjectImpl for Greeter {}
 
     impl WidgetImpl for Greeter {}
     impl BinImpl for Greeter {}
@@ -65,22 +53,5 @@ impl Greeter {
 
     pub fn default_widget(&self) -> gtk::Widget {
         self.imp().login_button.get().upcast()
-    }
-
-    fn update_network_state(&self) {
-        let imp = self.imp();
-        let monitor = gio::NetworkMonitor::default();
-
-        if !monitor.is_network_available() {
-            imp.offline_banner
-                .set_title(&gettext("No network connection"));
-            imp.offline_banner.set_revealed(true);
-        } else if monitor.connectivity() < gio::NetworkConnectivity::Full {
-            imp.offline_banner
-                .set_title(&gettext("No Internet connection"));
-            imp.offline_banner.set_revealed(true);
-        } else {
-            imp.offline_banner.set_revealed(false);
-        }
     }
 }

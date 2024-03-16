@@ -20,7 +20,7 @@ use self::{
     method_page::LoginMethodPage, sso_page::LoginSsoPage,
 };
 use crate::{
-    prelude::*, secret::store_session, session::model::Session,
+    components::OfflineBanner, prelude::*, secret::store_session, session::model::Session,
     session_setup_view::SessionSetupView, spawn, spawn_tokio, toast, Application, Window,
     WindowPage, RUNTIME,
 };
@@ -69,8 +69,6 @@ mod imp {
         #[template_child]
         pub sso_page: TemplateChild<LoginSsoPage>,
         #[template_child]
-        pub offline_banner: TemplateChild<adw::Banner>,
-        #[template_child]
         pub done_button: TemplateChild<gtk::Button>,
         pub prepared_source_id: RefCell<Option<SignalHandlerId>>,
         pub logged_out_source_id: RefCell<Option<SignalHandlerId>>,
@@ -100,6 +98,8 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            OfflineBanner::ensure_type();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
@@ -137,9 +137,10 @@ mod imp {
             self.parent_constructed();
 
             let monitor = gio::NetworkMonitor::default();
-            monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
-                obj.update_network_state();
+            monitor.connect_network_changed(clone!(@weak obj => move |_, available| {
+                obj.action_set_enabled("login.sso", available);
             }));
+            obj.action_set_enabled("login.sso", monitor.is_network_available());
 
             self.main_stack.connect_transition_running_notify(
                 clone!(@weak self as imp => move |stack|
@@ -149,8 +150,6 @@ mod imp {
                     }
                 ),
             );
-
-            obj.update_network_state();
         }
 
         fn dispose(&self) {
@@ -580,25 +579,5 @@ impl Login {
     /// Unfreeze the login screen.
     fn unfreeze(&self) {
         self.imp().main_stack.set_sensitive(true);
-    }
-
-    fn update_network_state(&self) {
-        let imp = self.imp();
-        let monitor = gio::NetworkMonitor::default();
-
-        if !monitor.is_network_available() {
-            imp.offline_banner
-                .set_title(&gettext("No network connection"));
-            imp.offline_banner.set_revealed(true);
-            self.action_set_enabled("login.sso", false);
-        } else if monitor.connectivity() < gio::NetworkConnectivity::Full {
-            imp.offline_banner
-                .set_title(&gettext("No Internet connection"));
-            imp.offline_banner.set_revealed(true);
-            self.action_set_enabled("login.sso", true);
-        } else {
-            imp.offline_banner.set_revealed(false);
-            self.action_set_enabled("login.sso", true);
-        }
     }
 }
