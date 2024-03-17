@@ -12,7 +12,6 @@ mod components;
 mod config;
 mod contrib;
 mod error_page;
-mod greeter;
 mod i18n;
 mod identity_verification_view;
 mod intent;
@@ -21,7 +20,6 @@ mod prelude;
 mod secret;
 mod session;
 mod session_list;
-mod session_setup_view;
 mod system_settings;
 mod user_facing_error;
 mod utils;
@@ -32,12 +30,7 @@ use gtk::{gdk::Display, gio, IconTheme};
 use once_cell::sync::Lazy;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
-use self::{
-    application::*,
-    config::*,
-    i18n::*,
-    window::{Window, WindowPage},
-};
+use self::{application::*, config::*, i18n::*, window::Window};
 
 /// The default tokio runtime to be used for async tasks
 pub static RUNTIME: Lazy<tokio::runtime::Runtime> =

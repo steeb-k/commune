@@ -53,15 +53,6 @@
             </child>
             <child>
               <object class="GtkStackPage">
-                <property name="name">greeter</property>
-                <property name="title" translatable="yes">Welcome to Fractal</property>
-                <property name="child">
-                  <object class="Greeter" id="greeter"/>
-                </property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkStackPage">
                 <property name="name">login</property>
                 <property name="title" translatable="yes">Log In</property>
                 <property name="child">

@@ -1,6 +1,6 @@
-use adw::{prelude::*, subclass::prelude::BinImpl};
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, gio, glib, glib::clone, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, gio, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::Client;
 use ruma::{
     api::client::session::{get_login_types::v3::LoginType, login},
@@ -10,19 +10,20 @@ use tracing::{error, warn};
 use url::Url;
 
 mod advanced_dialog;
+mod greeter;
 mod homeserver_page;
 mod idp_button;
 mod method_page;
+mod session_setup_view;
 mod sso_page;
 
 use self::{
-    advanced_dialog::LoginAdvancedDialog, homeserver_page::LoginHomeserverPage,
-    method_page::LoginMethodPage, sso_page::LoginSsoPage,
+    advanced_dialog::LoginAdvancedDialog, greeter::Greeter, homeserver_page::LoginHomeserverPage,
+    method_page::LoginMethodPage, session_setup_view::SessionSetupView, sso_page::LoginSsoPage,
 };
 use crate::{
-    components::OfflineBanner, prelude::*, secret::store_session, session::model::Session,
-    session_setup_view::SessionSetupView, spawn, spawn_tokio, toast, Application, Window,
-    WindowPage, RUNTIME,
+    components::OfflineBanner, prelude::*, secret::store_session, session::model::Session, spawn,
+    spawn_tokio, toast, Application, Window, RUNTIME,
 };
 
 #[derive(Clone, Debug, Default, glib::Boxed)]
@@ -33,6 +34,8 @@ pub struct BoxedLoginTypes(Vec<LoginType>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
 #[strum(serialize_all = "kebab-case")]
 enum LoginPage {
+    /// The greeter page.
+    Greeter,
     /// The homeserver page.
     Homeserver,
     /// The page to select a login method.
@@ -59,9 +62,9 @@ mod imp {
     #[properties(wrapper_type = super::Login)]
     pub struct Login {
         #[template_child]
-        pub back_button: TemplateChild<gtk::Button>,
+        pub navigation: TemplateChild<adw::NavigationView>,
         #[template_child]
-        pub main_stack: TemplateChild<gtk::Stack>,
+        pub greeter: TemplateChild<Greeter>,
         #[template_child]
         pub homeserver_page: TemplateChild<LoginHomeserverPage>,
         #[template_child]
@@ -116,6 +119,7 @@ mod imp {
                     }));
                 },
             );
+
             klass.install_action("login.open-advanced", None, move |widget, _, _| {
                 spawn!(clone!(@weak widget => async move {
                     widget.open_advanced_dialog().await;
@@ -142,14 +146,10 @@ mod imp {
             }));
             obj.action_set_enabled("login.sso", monitor.is_network_available());
 
-            self.main_stack.connect_transition_running_notify(
-                clone!(@weak self as imp => move |stack|
-                    if !stack.is_transition_running() {
-                        // Focus the default widget when the transition has ended.
-                        imp.grab_focus();
-                    }
-                ),
-            );
+            self.navigation
+                .connect_visible_page_notify(clone!(@weak obj => move |_| {
+                    obj.visible_page_changed();
+                }));
         }
 
         fn dispose(&self) {
@@ -163,6 +163,7 @@ mod imp {
     impl WidgetImpl for Login {
         fn grab_focus(&self) -> bool {
             match self.visible_page() {
+                LoginPage::Greeter => self.greeter.grab_focus(),
                 LoginPage::Homeserver => self.homeserver_page.grab_focus(),
                 LoginPage::Method => self.method_page.grab_focus(),
                 LoginPage::Sso | LoginPage::Loading => false,
@@ -182,10 +183,11 @@ mod imp {
     impl AccessibleImpl for Login {}
 
     impl Login {
-        /// The visible page of the login stack.
+        /// The visible page of the view.
         pub(super) fn visible_page(&self) -> LoginPage {
-            self.main_stack
-                .visible_child_name()
+            self.navigation
+                .visible_page()
+                .and_then(|p| p.tag())
                 .and_then(|s| s.as_str().try_into().ok())
                 .unwrap()
         }
@@ -222,8 +224,8 @@ mod imp {
 
         /// Get the session setup view, if any.
         pub(super) fn session_setup(&self) -> Option<SessionSetupView> {
-            self.main_stack
-                .child_by_name(LoginPage::SessionSetup.as_ref())
+            self.navigation
+                .find_page(LoginPage::SessionSetup.as_ref())
                 .and_downcast()
         }
     }
@@ -239,6 +241,40 @@ glib::wrapper! {
 impl Login {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// Set the visible page.
+    fn set_visible_page(&self, page: LoginPage) {
+        let navigation = &self.imp().navigation;
+
+        if page == LoginPage::Greeter {
+            navigation.pop_to_tag(page.as_ref());
+        } else {
+            navigation.push_by_tag(page.as_ref());
+        }
+    }
+
+    /// The visible page changed.
+    fn visible_page_changed(&self) {
+        let imp = self.imp();
+
+        match imp.visible_page() {
+            LoginPage::Greeter => {
+                self.clean();
+            }
+            LoginPage::Homeserver => {
+                // Drop the client because it is bound to the homeserver.
+                self.drop_client();
+                // Drop the session because it is bound to the homeserver and account.
+                self.drop_session();
+                self.imp().method_page.clean();
+            }
+            LoginPage::Method => {
+                // Drop the session because it is bound to the account.
+                self.drop_session();
+            }
+            _ => {}
+        }
     }
 
     fn parent_window(&self) -> Window {
@@ -337,65 +373,6 @@ impl Login {
             .any(|t| matches!(t, LoginType::Password(_)))
     }
 
-    /// Set the visible page of the login stack.
-    fn set_visible_page(&self, visible_child: LoginPage) {
-        self.imp()
-            .main_stack
-            .set_visible_child_name(visible_child.as_ref());
-    }
-
-    /// The page to go back to for the current login stack page.
-    fn previous_page(&self) -> Option<LoginPage> {
-        match self.imp().visible_page() {
-            LoginPage::Homeserver => None,
-            LoginPage::Method => Some(LoginPage::Homeserver),
-            LoginPage::Sso | LoginPage::Loading | LoginPage::SessionSetup => {
-                if self.supports_password() {
-                    Some(LoginPage::Method)
-                } else {
-                    Some(LoginPage::Homeserver)
-                }
-            }
-            // The go-back button should be deactivated.
-            LoginPage::Completed => None,
-        }
-    }
-
-    /// Go back to the previous step.
-    #[template_callback]
-    fn go_previous(&self) {
-        let session_setup = self.imp().session_setup();
-        if let Some(session_setup) = &session_setup {
-            if session_setup.go_previous() {
-                // The session setup handled the action.
-                return;
-            }
-        }
-
-        let Some(previous_page) = self.previous_page() else {
-            self.parent_window().set_visible_page(WindowPage::Greeter);
-            self.clean();
-            return;
-        };
-
-        self.set_visible_page(previous_page);
-
-        match previous_page {
-            LoginPage::Homeserver => {
-                // Drop the client because it is bound to the homeserver.
-                self.drop_client();
-                // Drop the session because it is bound to the homeserver and account.
-                self.drop_session();
-                self.imp().method_page.clean();
-            }
-            LoginPage::Method => {
-                // Drop the session because it is bound to the account.
-                self.drop_session();
-            }
-            _ => {}
-        }
-    }
-
     async fn open_advanced_dialog(&self) {
         let dialog = LoginAdvancedDialog::new();
         self.bind_property("autodiscovery", &dialog, "autodiscovery")
@@ -455,7 +432,7 @@ impl Login {
             Err(error) => {
                 warn!("Could not log in: {error}");
                 toast!(self, error.to_user_facing());
-                self.go_previous();
+                self.imp().navigation.pop();
             }
         }
     }
@@ -475,15 +452,22 @@ impl Login {
                 warn!("Could not create session: {error}");
                 toast!(self, error.to_user_facing());
 
-                self.go_previous();
+                self.imp().navigation.pop();
             }
         }
     }
 
     pub async fn init_session(&self, session: Session) {
-        self.set_visible_page(LoginPage::Loading);
+        let imp = self.imp();
+
+        let setup_view = SessionSetupView::new(&session);
+        setup_view.connect_completed(clone!(@weak self as obj => move |_| {
+            obj.show_completed();
+        }));
+        imp.navigation.push(&setup_view);
+
         self.drop_client();
-        self.imp().session.replace(Some(session.clone()));
+        imp.session.replace(Some(session.clone()));
 
         // Save ID of logging in session to GSettings
         let settings = Application::default().settings();
@@ -499,32 +483,7 @@ impl Login {
             toast!(self, gettext("Could not store session"));
         }
 
-        session.connect_ready(clone!(@weak self as obj => move |_| {
-            spawn!(clone!(@weak obj => async move {
-                obj.check_verification().await;
-            }));
-        }));
         session.prepare().await;
-    }
-
-    /// Check whether the logged in session needs to be verified.
-    async fn check_verification(&self) {
-        let imp = self.imp();
-        let session = imp.session.borrow().clone().unwrap();
-
-        if session.is_verified().await {
-            self.finish_login();
-            return;
-        }
-
-        let setup_view = SessionSetupView::new(&session);
-        setup_view.connect_completed(clone!(@weak self as obj => move |_| {
-            obj.show_completed();
-        }));
-
-        imp.main_stack
-            .add_named(&setup_view, Some(LoginPage::SessionSetup.as_ref()));
-        self.set_visible_page(LoginPage::SessionSetup);
     }
 
     /// Show the completed page.
@@ -532,7 +491,6 @@ impl Login {
     pub fn show_completed(&self) {
         let imp = self.imp();
 
-        imp.back_button.set_visible(false);
         self.set_visible_page(LoginPage::Completed);
         imp.done_button.grab_focus();
     }
@@ -553,9 +511,6 @@ impl Login {
         // Clean pages.
         imp.homeserver_page.clean();
         imp.method_page.clean();
-        if let Some(session_setup) = imp.session_setup() {
-            imp.main_stack.remove(&session_setup);
-        }
 
         // Clean data.
         self.set_autodiscovery(true);
@@ -566,18 +521,17 @@ impl Login {
         self.drop_session();
 
         // Reinitialize UI.
-        self.set_visible_page(LoginPage::Homeserver);
-        imp.back_button.set_visible(true);
+        self.set_visible_page(LoginPage::Greeter);
         self.unfreeze();
     }
 
     /// Freeze the login screen.
     fn freeze(&self) {
-        self.imp().main_stack.set_sensitive(false);
+        self.imp().navigation.set_sensitive(false);
     }
 
     /// Unfreeze the login screen.
     fn unfreeze(&self) {
-        self.imp().main_stack.set_sensitive(true);
+        self.imp().navigation.set_sensitive(true);
     }
 }

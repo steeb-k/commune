@@ -10,7 +10,6 @@ use crate::{
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
     components::{OfflineBanner, Spinner},
     error_page::ErrorPage,
-    greeter::Greeter,
     intent,
     login::Login,
     prelude::*,
@@ -30,8 +29,6 @@ use crate::{
 pub enum WindowPage {
     /// The loading page.
     Loading,
-    /// The welcome screen.
-    Greeter,
     /// The login view.
     Login,
     /// The session view.
@@ -53,8 +50,6 @@ mod imp {
         pub main_stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub loading: TemplateChild<gtk::WindowHandle>,
-        #[template_child]
-        pub greeter: TemplateChild<Greeter>,
         #[template_child]
         pub login: TemplateChild<Login>,
         #[template_child]
@@ -108,9 +103,6 @@ mod imp {
             );
 
             klass.install_action("win.new-session", None, |obj, _, _| {
-                obj.set_visible_page(WindowPage::Greeter);
-            });
-            klass.install_action("win.show-login", None, |obj, _, _| {
                 obj.set_visible_page(WindowPage::Login);
             });
             klass.install_action("win.show-session", None, |obj, _, _| {
@@ -148,11 +140,6 @@ mod imp {
 
             self.load_window_size();
 
-            self.main_stack.connect_visible_child_notify(
-                clone!(@weak obj => move |_| obj.set_default_by_child()),
-            );
-            obj.set_default_by_child();
-
             self.main_stack.connect_transition_running_notify(
                 clone!(@weak self as imp => move |stack|
                     if !stack.is_transition_running() {
@@ -175,7 +162,8 @@ mod imp {
                     obj.action_set_enabled("win.show-session", n_items > 0);
 
                     if removed > 0 && n_items == 0 {
-                        obj.set_visible_page(WindowPage::Greeter);
+                        // There are no more sessions.
+                        obj.set_visible_page(WindowPage::Login);
                         return;
                     }
 
@@ -208,21 +196,15 @@ mod imp {
 
             if session_list.state() == LoadingState::Ready {
                 if session_list.is_empty() {
-                    obj.set_visible_page(WindowPage::Greeter);
+                    obj.set_visible_page(WindowPage::Login);
                 }
             } else {
                 session_list.connect_state_notify(clone!(@weak obj => move |session_list| {
                     if session_list.state() == LoadingState::Ready && session_list.is_empty() {
-                        obj.set_visible_page(WindowPage::Greeter);
+                        obj.set_visible_page(WindowPage::Login);
                     }
                 }));
             }
-
-            let monitor = gio::NetworkMonitor::default();
-            monitor.connect_network_changed(clone!(@weak obj => move |_, available| {
-                obj.action_set_enabled("win.show-login", available);
-            }));
-            obj.action_set_enabled("win.show-login", monitor.is_network_available());
         }
     }
 
@@ -244,7 +226,6 @@ mod imp {
         fn grab_focus(&self) -> bool {
             match self.visible_page() {
                 WindowPage::Loading => false,
-                WindowPage::Greeter => self.greeter.grab_focus(),
                 WindowPage::Login => self.login.grab_focus(),
                 WindowPage::Session => self.session.grab_focus(),
                 WindowPage::Error => self.error_page.grab_focus(),
@@ -413,22 +394,6 @@ impl Window {
         }
 
         imp.session.set_session(None::<Session>);
-    }
-
-    /// Change the default widget of the window based on the visible child.
-    ///
-    /// These are the default widgets:
-    ///
-    /// - `Greeter` screen => `Log In` button.
-    fn set_default_by_child(&self) {
-        let imp = self.imp();
-
-        let default_widget = match imp.visible_page() {
-            WindowPage::Greeter => Some(imp.greeter.default_widget()),
-            _ => None,
-        };
-
-        self.set_default_widget(default_widget.as_ref());
     }
 
     /// Set the visible page of the window.

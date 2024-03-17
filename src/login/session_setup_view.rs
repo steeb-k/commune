@@ -1,9 +1,8 @@
-use adw::subclass::prelude::*;
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
     glib,
     glib::{clone, closure_local},
-    prelude::*,
     CompositeTemplate,
 };
 use tracing::{debug, error};
@@ -38,7 +37,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/session_setup_view/mod.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/login/session_setup_view.ui")]
     #[properties(wrapper_type = super::SessionSetupView)]
     pub struct SessionSetupView {
         /// The current session.
@@ -48,7 +47,9 @@ mod imp {
         #[property(get)]
         pub verification: BoundObjectWeakRef<IdentityVerification>,
         #[template_child]
-        pub main_stack: TemplateChild<gtk::Stack>,
+        pub stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        pub navigation: TemplateChild<adw::NavigationView>,
         #[template_child]
         pub send_request_btn: TemplateChild<SpinnerButton>,
         #[template_child]
@@ -68,7 +69,7 @@ mod imp {
     impl ObjectSubclass for SessionSetupView {
         const NAME: &'static str = "SessionSetupView";
         type Type = super::SessionSetupView;
-        type ParentType = adw::Bin;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -97,14 +98,17 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.main_stack.connect_transition_running_notify(
-                clone!(@weak self as imp => move |stack|
+            self.stack
+                .connect_transition_running_notify(clone!(@weak self as imp => move |stack|
                     if !stack.is_transition_running() {
                         // Focus the default widget when the transition has ended.
                         imp.grab_focus();
                     }
-                ),
-            );
+                ));
+            self.navigation
+                .connect_visible_page_notify(clone!(@weak self as imp => move |_| {
+                        imp.grab_focus();
+                }));
         }
 
         fn dispose(&self) {
@@ -118,7 +122,7 @@ mod imp {
 
     impl WidgetImpl for SessionSetupView {
         fn grab_focus(&self) -> bool {
-            let Some(name) = self.main_stack.visible_child_name() else {
+            let Some(name) = self.visible_page_name() else {
                 return false;
             };
 
@@ -137,15 +141,32 @@ mod imp {
         }
     }
 
-    impl BinImpl for SessionSetupView {}
+    impl NavigationPageImpl for SessionSetupView {}
 
     impl SessionSetupView {
-        /// Set the current session.
-        fn set_session(&self, session: Option<Session>) {
-            self.session.set(session.as_ref());
+        /// The name of the visible page.
+        ///
+        /// Returns `None` if the loading page is visible.
+        fn visible_page_name(&self) -> Option<glib::GString> {
+            if self
+                .stack
+                .visible_child_name()
+                .is_some_and(|name| name == "loading")
+            {
+                return None;
+            }
 
-            spawn!(clone!(@weak self as imp => async move {
-                imp.load().await;
+            self.navigation.visible_page().and_then(|p| p.tag())
+        }
+
+        /// Set the current session.
+        fn set_session(&self, session: &Session) {
+            self.session.set(Some(session));
+
+            session.connect_ready(clone!(@weak self as imp => move |_| {
+                spawn!(async move {
+                    imp.load().await;
+                });
             }));
         }
 
@@ -163,6 +184,13 @@ mod imp {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
+
+            if session.is_verified().await {
+                // Nothing more to do.
+                self.obj().emit_by_name::<()>("completed", &[]);
+                return;
+            }
+
             let client = session.client();
 
             let client_clone = client.clone();
@@ -185,7 +213,8 @@ mod imp {
 
             if !has_identity {
                 self.set_identity_state(IdentityState::Missing);
-                self.obj().show_bootstrap();
+                self.navigation.replace_with_tags(&["bootstrap"]);
+                self.finish_loading();
                 return;
             }
 
@@ -206,7 +235,8 @@ mod imp {
 
             if !has_sessions {
                 self.set_identity_state(IdentityState::NoSessions);
-                self.obj().show_bootstrap();
+                self.navigation.replace_with_tags(&["bootstrap"]);
+                self.finish_loading();
                 return;
             }
 
@@ -229,9 +259,14 @@ mod imp {
 
             if let Some(verification) = verification_list.ongoing_session_verification() {
                 self.set_verification(Some(verification));
-            } else {
-                self.obj().choose_method();
             }
+
+            self.finish_loading();
+        }
+
+        /// Stop showing the loading page.
+        fn finish_loading(&self) {
+            self.stack.set_visible_child_name("setup");
         }
 
         /// Set the ongoing identity verification.
@@ -270,10 +305,11 @@ mod imp {
                         glib::Propagation::Stop
                     }),
                 );
-                let remove_handler = verification.connect_dismiss(clone!(@weak obj => move |_| {
-                    obj.choose_method();
-                    obj.imp().set_verification(None);
-                }));
+                let remove_handler =
+                    verification.connect_dismiss(clone!(@weak self as imp => move |_| {
+                        imp.navigation.pop();
+                        imp.set_verification(None);
+                    }));
 
                 self.verification.set(
                     verification,
@@ -296,7 +332,7 @@ mod imp {
 glib::wrapper! {
     /// A view with the different flows to verify a session.
     pub struct SessionSetupView(ObjectSubclass<imp::SessionSetupView>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
@@ -305,24 +341,9 @@ impl SessionSetupView {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Reset the UI to its initial state.
-    fn reset(&self) {
-        let imp = self.imp();
-        imp.bootstrap_setup_btn.set_loading(false);
-        imp.send_request_btn.set_loading(false);
-    }
-
-    /// Show the page to choose a verification method.
-    fn choose_method(&self) {
-        self.reset();
-        let imp = self.imp();
-        imp.set_verification(None);
-        imp.main_stack.set_visible_child_name("choose-method");
-    }
-
     /// Show the verification flow.
     fn show_verification(&self) {
-        self.imp().main_stack.set_visible_child_name("verification");
+        self.imp().navigation.push_by_tag("verification");
     }
 
     /// Show the recovery flow.
@@ -330,7 +351,7 @@ impl SessionSetupView {
     fn show_recovery(&self) {
         let imp = self.imp();
         imp.set_verification(None);
-        imp.main_stack.set_visible_child_name("recovery");
+        imp.navigation.push_by_tag("recovery");
     }
 
     /// Show the bootstrap page.
@@ -338,7 +359,7 @@ impl SessionSetupView {
     fn show_bootstrap(&self) {
         let imp = self.imp();
         imp.set_verification(None);
-        imp.main_stack.set_visible_child_name("bootstrap");
+        imp.navigation.push_by_tag("bootstrap");
     }
 
     /// Update the bootstrap page according to the current state.
@@ -370,33 +391,6 @@ impl SessionSetupView {
                 setup_btn.add_css_class("destructive-action");
                 setup_btn.set_content_label(gettext("Reset"));
             }
-        }
-    }
-
-    /// Go to the previous step.
-    ///
-    /// Return `true` if the action was handled, `false` if the stack cannot go
-    /// back.
-    pub fn go_previous(&self) -> bool {
-        let imp = self.imp();
-        let Some(page) = imp.main_stack.visible_child_name() else {
-            return false;
-        };
-
-        match &*page {
-            "verification" => {
-                self.choose_method();
-                true
-            }
-            "bootstrap" => {
-                if self.identity_state() == IdentityState::CanVerify {
-                    self.choose_method();
-                    true
-                } else {
-                    false
-                }
-            }
-            _ => false,
         }
     }
 
@@ -440,7 +434,7 @@ impl SessionSetupView {
 
         if let Some(error_message) = error_message {
             toast!(self, error_message);
-            self.reset();
+            self.imp().bootstrap_setup_btn.set_loading(false);
         } else {
             self.emit_by_name::<()>("completed", &[]);
         }
@@ -456,16 +450,18 @@ impl SessionSetupView {
         self.imp().send_request_btn.set_loading(true);
 
         spawn!(clone!(@weak self as obj, @weak session => async move {
+            let imp = obj.imp();
+
             match session.verification_list().create(None).await {
-                Ok(verification) => {
-                    obj.imp().set_verification(Some(verification));
-                    obj.show_verification();
+                Ok(_) => {
+                    // The verification should be shown automatically.
                 }
                 Err(()) => {
                     toast!(obj, gettext("Could not send a new verification request"));
-                    obj.reset();
                 }
             }
+
+            imp.send_request_btn.set_loading(false);
         }));
     }
 

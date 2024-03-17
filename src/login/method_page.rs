@@ -1,6 +1,6 @@
-use adw::{prelude::*, subclass::prelude::BinImpl};
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, glib, glib::clone, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, glib, glib::clone, CompositeTemplate};
 use ruma::api::client::session::get_login_types::v3::LoginType;
 use tracing::warn;
 
@@ -40,7 +40,7 @@ mod imp {
     impl ObjectSubclass for LoginMethodPage {
         const NAME: &'static str = "LoginMethodPage";
         type Type = super::LoginMethodPage;
-        type ParentType = adw::Bin;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -61,7 +61,7 @@ mod imp {
         }
     }
 
-    impl BinImpl for LoginMethodPage {}
+    impl NavigationPageImpl for LoginMethodPage {}
 
     impl LoginMethodPage {
         /// Set the parent `Login` object.
@@ -93,7 +93,7 @@ mod imp {
 glib::wrapper! {
     /// The login page allowing to login via password or to choose a SSO provider.
     pub struct LoginMethodPage(ObjectSubclass<imp::LoginMethodPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]

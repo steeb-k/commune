@@ -1,5 +1,5 @@
-use adw::subclass::prelude::BinImpl;
-use gtk::{self, glib, subclass::prelude::*, CompositeTemplate};
+use adw::subclass::prelude::*;
+use gtk::{self, glib, CompositeTemplate};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -14,7 +14,7 @@ mod imp {
     impl ObjectSubclass for LoginSsoPage {
         const NAME: &'static str = "LoginSsoPage";
         type Type = super::LoginSsoPage;
-        type ParentType = adw::Bin;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -27,13 +27,13 @@ mod imp {
 
     impl ObjectImpl for LoginSsoPage {}
     impl WidgetImpl for LoginSsoPage {}
-    impl BinImpl for LoginSsoPage {}
+    impl NavigationPageImpl for LoginSsoPage {}
 }
 
 glib::wrapper! {
-    /// A widget handling the login flows.
+    /// A page shown while the user is logging in via SSO.
     pub struct LoginSsoPage(ObjectSubclass<imp::LoginSsoPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
 impl LoginSsoPage {

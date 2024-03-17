@@ -41,7 +41,6 @@
     <file compressed="true" preprocess="xml-stripblanks">components/video_player.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">contrib/qr_code_scanner/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">error_page.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">greeter.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/accept_request_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/cancelled_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/choose_method_page.ui</file>
@@ -55,10 +54,12 @@
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/scan_qr_code_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">identity_verification_view/wait_for_other_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/advanced_dialog.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">login/greeter.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/homeserver_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/idp_button.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/method_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">login/session_setup_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">login/sso_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/change_password_subpage.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/account_settings/general_page/deactivate_account_subpage.ui</file>
@@ -134,7 +135,6 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/room_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/sidebar/verification_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session_setup_view/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">shortcuts.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
   </gresource>

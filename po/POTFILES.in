@@ -29,7 +29,6 @@ src/components/user_profile_dialog.ui
 src/contrib/qr_code_scanner/mod.ui
 src/contrib/qr_code.rs
 src/error_page.ui
-src/greeter.ui
 src/identity_verification_view/accept_request_page.rs
 src/identity_verification_view/accept_request_page.ui
 src/identity_verification_view/cancelled_page.rs
@@ -52,6 +51,7 @@ src/identity_verification_view/scan_qr_code_page.ui
 src/identity_verification_view/wait_for_other_page.rs
 src/identity_verification_view/wait_for_other_page.ui
 src/login/advanced_dialog.ui
+src/login/greeter.ui
 src/login/homeserver_page.rs
 src/login/homeserver_page.ui
 src/login/idp_button.rs
@@ -59,6 +59,8 @@ src/login/method_page.rs
 src/login/method_page.ui
 src/login/mod.rs
 src/login/mod.ui
+src/login/session_setup_view.rs
+src/login/session_setup_view.ui
 src/login/sso_page.ui
 src/secret/linux.rs
 src/session/model/session.rs
@@ -169,8 +171,6 @@ src/session/view/sidebar/mod.ui
 src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
 src/session_list/mod.rs
-src/session_setup_view/mod.rs
-src/session_setup_view/mod.ui
 src/shortcuts.ui
 src/user_facing_error.rs
 src/utils/matrix.rs

@@ -1,6 +1,6 @@
-use adw::{prelude::*, subclass::prelude::BinImpl};
+use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{self, glib, glib::clone, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, glib, glib::clone, CompositeTemplate};
 use matrix_sdk::{
     config::RequestConfig, sanitize_server_name, Client, ClientBuildError, ClientBuilder,
 };
@@ -10,7 +10,10 @@ use url::{ParseError, Url};
 
 use super::Login;
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, spawn, spawn_tokio, toast,
+    components::{OfflineBanner, SpinnerButton},
+    gettext_f,
+    prelude::*,
+    spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -38,9 +41,11 @@ mod imp {
     impl ObjectSubclass for LoginHomeserverPage {
         const NAME: &'static str = "LoginHomeserverPage";
         type Type = super::LoginHomeserverPage;
-        type ParentType = adw::Bin;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
+            OfflineBanner::ensure_type();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
         }
@@ -59,7 +64,7 @@ mod imp {
         }
     }
 
-    impl BinImpl for LoginHomeserverPage {}
+    impl NavigationPageImpl for LoginHomeserverPage {}
 
     impl LoginHomeserverPage {
         /// Set the parent `Login` object.
@@ -86,7 +91,7 @@ mod imp {
 glib::wrapper! {
     /// The login page to provide the homeserver and login settings.
     pub struct LoginHomeserverPage(ObjectSubclass<imp::LoginHomeserverPage>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]

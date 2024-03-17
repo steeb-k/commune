@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="Greeter" parent="AdwBin">
-    <accessibility>
-      <relation name="labelled-by">title</relation>
-    </accessibility>
-    <child>
+  <template class="Greeter" parent="AdwNavigationPage">
+    <property name="tag">greeter</property>
+    <!-- Translators: Fractal is the application name. -->
+    <property name="title" translatable="yes">Welcome to Fractal</property>
+    <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">
@@ -47,7 +47,7 @@
           <object class="GtkScrolledWindow">
             <property name="hscrollbar-policy">never</property>
             <property name="propagate-natural-height">True</property>
-            <property name="vexpand">true</property>
+            <property name="vexpand">True</property>
             <property name="child">
               <object class="GtkBox">
                 <property name="orientation">vertical</property>
@@ -116,7 +116,8 @@
                                     <property name="can-shrink">true</property>
                                     <property name="label" translatable="yes">_Log In</property>
                                     <property name="use-underline">true</property>
-                                    <property name="action-name">win.show-login</property>
+                                    <property name="action-name">navigation.push</property>
+                                    <property name="action-target">'homeserver'</property>
                                   </object>
                                 </child>
                                 <child>
@@ -144,6 +145,6 @@
           </object>
         </property>
       </object>
-    </child>
+    </property>
   </template>
 </interface>

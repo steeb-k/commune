@@ -1,5 +1,5 @@
-use adw::subclass::prelude::BinImpl;
-use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, CompositeTemplate};
 
 use crate::components::OfflineBanner;
 
@@ -9,7 +9,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/Fractal/ui/greeter.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/login/greeter.ui")]
     pub struct Greeter {
         #[template_child]
         pub login_button: TemplateChild<gtk::Button>,
@@ -19,7 +19,7 @@ mod imp {
     impl ObjectSubclass for Greeter {
         const NAME: &'static str = "Greeter";
         type Type = super::Greeter;
-        type ParentType = adw::Bin;
+        type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             OfflineBanner::ensure_type();
@@ -36,22 +36,18 @@ mod imp {
     impl ObjectImpl for Greeter {}
 
     impl WidgetImpl for Greeter {}
-    impl BinImpl for Greeter {}
+    impl NavigationPageImpl for Greeter {}
     impl AccessibleImpl for Greeter {}
 }
 
 glib::wrapper! {
     /// The welcome screen of the app.
     pub struct Greeter(ObjectSubclass<imp::Greeter>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
 impl Greeter {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    pub fn default_widget(&self) -> gtk::Widget {
-        self.imp().login_button.get().upcast()
     }
 }
