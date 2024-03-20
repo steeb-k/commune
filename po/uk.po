@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-03-17 11:59+0000\n"
-"PO-Revision-Date: 2024-03-17 18:41+0200\n"
+"POT-Creation-Date: 2024-03-19 15:58+0000\n"
+"PO-Revision-Date: 2024-03-20 12:15+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -154,8 +154,9 @@ msgid "Select an Account"
 msgstr "Виберіть обліковий запис"
 
 #: src/account_chooser_dialog/mod.ui:62
-msgid "Select the account you want to open the URI with."
-msgstr "Виберіть обліковий запис, для якого ви хочете відкрити адресу."
+#| msgid "Select the account you want to open the URI with."
+msgid "Select the account you want to open the URI with"
+msgstr "Виберіть обліковий запис, для якого ви хочете відкрити адресу"
 
 #: src/account_switcher/account_switcher_button.ui:14
 msgid "Switch Accounts"
@@ -193,13 +194,15 @@ msgid "Session not found"
 msgstr "Не знайдено сеансу"
 
 #: src/components/action_button.ui:34
-msgid "Confirm change"
+#| msgid "Confirm change"
+msgid "Confirm Change"
 msgstr "Підтвердити зміну"
 
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
-msgid "Try again"
-msgstr "Спробувати ще раз"
+#: src/session/view/content/room_history/mod.ui:205
+msgid "Try Again"
+msgstr "Повторити спробу"
 
 #: src/components/action_button.ui:67 src/components/spinner.rs:31
 #: src/login/session_setup_view.ui:13
@@ -344,10 +347,11 @@ msgid "Back"
 msgstr "Назад"
 
 #: src/components/join_room_dialog.ui:72
-msgid "Enter a room ID, room alias, or permalink to look up a room."
+#| msgid "Enter a room ID, room alias, or permalink to look up a room."
+msgid "Enter a room ID, room alias, or permalink to look up a room"
 msgstr ""
 "Введіть ідентифікатор кімнати, альтернативну назву кімнати або постійне "
-"посилання, щоб виконати пошук кімнати."
+"посилання, щоб виконати пошук кімнати"
 
 #: src/components/join_room_dialog.ui:191
 #: src/session/view/content/explore/public_room_row.rs:170
@@ -381,7 +385,8 @@ msgid "Send a Reaction"
 msgstr "Надіслати реакцію"
 
 #: src/components/reaction_chooser.ui:17
-msgid "More reactions"
+#| msgid "More reactions"
+msgid "More Reactions"
 msgstr "Інші реакції"
 
 #. Translators: As in 'Custom role'.
@@ -509,7 +514,6 @@ msgstr[2] "Не вдалося вилучити {n} повідомлень, як
 msgstr[3] "Не вдалося вилучити {n} повідомлення, яке надіслано користувачем"
 
 #: src/components/user_page.rs:695
-#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
 msgid "Identity verified"
 msgstr "Профіль перевірено"
 
@@ -552,7 +556,8 @@ msgstr "Не вдалося почати ігнорувати користува
 #: src/components/user_page.ui:68
 #: src/session/view/account_settings/general_page/mod.ui:70
 #: src/session/view/content/room_history/sender_avatar/mod.ui:31
-msgid "Copy Matrix user ID to clipboard"
+#| msgid "Copy Matrix user ID to clipboard"
+msgid "Copy Matrix User ID to Clipboard"
 msgstr "Скопіювати ідентифікатор користувача Matrix до буфера"
 
 #: src/components/user_page.ui:113
@@ -595,7 +600,8 @@ msgid "User Profile"
 msgstr "Профіль користувача"
 
 #: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
-msgid "Could not Connect to Camera"
+#| msgid "Could not Connect to Camera"
+msgid "Could Not Connect to Camera"
 msgstr "Не вдалося встановити з'єднання з «Камерою»"
 
 #: src/contrib/qr_code_scanner/mod.ui:36
@@ -652,7 +658,8 @@ msgstr ""
 "щоб дізнатися більше."
 
 #: src/error_page.ui:115
-msgid "Could not Initialize the Session"
+#| msgid "Could not Initialize the Session"
+msgid "Could Not Initialize Session"
 msgstr "Не вдалося ініціалізувати сеанс"
 
 #: src/identity_verification_view/accept_request_page.rs:129
@@ -958,12 +965,15 @@ msgid "Could not decline the verification"
 msgstr "Не вдалося відхилити перевірку"
 
 #: src/identity_verification_view/no_supported_methods_page.ui:44
+#| msgid ""
+#| "You can accept this verification from another session or decline it for "
+#| "all your sessions."
 msgid ""
 "You can accept this verification from another session or decline it for all "
-"your sessions."
+"your sessions"
 msgstr ""
 "Ви можете прийняти запит щодо перевірки з іншого сеансу або відхилити його "
-"для усіх ваших сеансів."
+"для усіх ваших сеансів"
 
 #: src/identity_verification_view/qr_code_scanned_page.rs:118
 msgid ""
@@ -1097,7 +1107,8 @@ msgstr ""
 "якщо ви хочете вказати адресу самостійно."
 
 #: src/login/advanced_dialog.ui:14
-msgid "_Auto-discovery"
+#| msgid "_Auto-discovery"
+msgid "_Auto-Discovery"
 msgstr "_Автовизначення"
 
 #. Translators: Fractal is the application name.
@@ -1202,8 +1213,9 @@ msgid "Login Complete"
 msgstr "Вхід завершено"
 
 #: src/login/mod.ui:80
-msgid "This session is ready to send and receive secure messages."
-msgstr "Цей сеанс готовий до надсилання і отримання захищених повідомлень."
+#| msgid "This session is ready to send and receive secure messages."
+msgid "This session is ready to send and receive secure messages"
+msgstr "Цей сеанс готовий до надсилання і отримання захищених повідомлень"
 
 #: src/login/mod.ui:86
 msgid "Start Chatting"
@@ -1256,7 +1268,6 @@ msgid "An error occurred during the creation of the encryption identity."
 msgstr "Під час створення профілю шифрування сталася помилка."
 
 #: src/login/session_setup_view.ui:5
-#| msgid "Session"
 msgid "Session Setup"
 msgstr "Налаштовування сеансу"
 
@@ -1359,8 +1370,9 @@ msgid "Single Sign-On"
 msgstr "Єдина система розпізнавання"
 
 #: src/login/sso_page.ui:56
-msgid "Please follow the steps in the browser."
-msgstr "Будь ласка, виконайте настанови з браузера."
+#| msgid "Please follow the steps in the browser."
+msgid "Please follow the steps in the browser"
+msgstr "Будь ласка, виконайте настанови з браузера"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1510,7 +1522,6 @@ msgid "Only invited users, and users can knock"
 msgstr "Лише запрошені користувачі, і користувачі можуть стукати"
 
 #: src/session/model/room/join_rule.rs:278
-#: src/session/view/content/room_details/general_page/mod.ui:233
 msgid "Only invited users"
 msgstr "Лише запрошені користувачі"
 
@@ -1527,7 +1538,6 @@ msgid "Members of {room}"
 msgstr "Учасники {room}"
 
 #: src/session/model/room/join_rule.rs:304
-#: src/session/view/content/room_details/general_page/mod.ui:234
 msgid "Any registered user"
 msgstr "Будь-який зареєстрований користувач"
 
@@ -1709,7 +1719,8 @@ msgstr ""
 "введіть свій ідентифікатор Matrix:"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
-msgid "Log Out of this Session"
+#| msgid "Log Out of this Session"
+msgid "Log Out of This Session"
 msgstr "Вийти з цього сеансу"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:41
@@ -1808,7 +1819,8 @@ msgid "Matrix User ID"
 msgstr "Ідентифікатор користувача Matrix"
 
 #: src/session/view/account_settings/general_page/mod.ui:78
-msgid "Copy homeserver address to clipboard"
+#| msgid "Copy homeserver address to clipboard"
+msgid "Copy Homeserver Address to Clipboard"
 msgstr "Скопіювати адресу домашнього сервера до буфера"
 
 #: src/session/view/account_settings/general_page/mod.ui:79
@@ -1820,7 +1832,8 @@ msgid "Session ID"
 msgstr "Ідентифікатор сеансу"
 
 #: src/session/view/account_settings/general_page/mod.ui:86
-msgid "Copy session ID to clipboard"
+#| msgid "Copy session ID to clipboard"
+msgid "Copy Session ID to Clipboard"
 msgstr "Скопіювати ідентифікатор сеансу до буфера"
 
 #: src/session/view/account_settings/general_page/mod.ui:87
@@ -1862,11 +1875,13 @@ msgid "Notifications"
 msgstr "Сповіщення"
 
 #: src/session/view/account_settings/notifications_page.ui:11
-msgid "Enable for this account"
+#| msgid "Enable for this account"
+msgid "Enable for This Account"
 msgstr "Увімкнути для цього запису"
 
 #: src/session/view/account_settings/notifications_page.ui:19
-msgid "Enable for this session"
+#| msgid "Enable for this session"
+msgid "Enable for This Session"
 msgstr "Увімкнути для цього сеансу"
 
 #: src/session/view/account_settings/notifications_page.ui:27
@@ -1874,12 +1889,15 @@ msgid "Global"
 msgstr "Загальні"
 
 #: src/session/view/account_settings/notifications_page.ui:28
+#| msgid ""
+#| "Which messages trigger notifications in rooms that do not have more "
+#| "specific rules."
 msgid ""
 "Which messages trigger notifications in rooms that do not have more specific "
-"rules."
+"rules"
 msgstr ""
 "Визначає те, які повідомлення вмикатимуть сповіщення у кімнатах, де немає "
-"специфічніших правил."
+"специфічніших правил"
 
 #: src/session/view/account_settings/notifications_page.ui:31
 msgid "All messages in all rooms"
@@ -1909,9 +1927,6 @@ msgstr ""
 "символів."
 
 #: src/session/view/account_settings/notifications_page.ui:67
-msgid "Add Keyword…"
-msgstr "Додати ключове слово…"
-
 #: src/session/view/account_settings/notifications_page.ui:68
 msgid "Add Keyword"
 msgstr "Додавання ключового слова"
@@ -1934,10 +1949,11 @@ msgid "No Ignored Users"
 msgstr "Немає ігнорованих користувачів"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
-msgid "You can add users to this list from their room member profile."
+#| msgid "You can add users to this list from their room member profile."
+msgid "You can add users to this list from their room member profile"
 msgstr ""
 "Ви можете додати користувачів до цього списку з їхньої сторінки учасника "
-"кімнати."
+"кімнати"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:174
@@ -2075,24 +2091,30 @@ msgid "Send Read Receipts"
 msgstr "Надсилати повідомлення про прочитання"
 
 #: src/session/view/account_settings/security_page/mod.ui:14
+#| msgid ""
+#| "When this is enabled, other members of the rooms you participate in can "
+#| "track which messages you have seen."
 msgid ""
-"When this is enabled, other members of the rooms you participate in can "
-"track which messages you have seen."
+"Allow other members of the rooms you participate in to track which messages "
+"you have seen"
 msgstr ""
-"Якщо увімкнено, інші учасники кімнати, у роботі якої ви берете участь, "
-"зможуть бачити, які повідомлення ви переглянули."
+"Дозволити іншим учасникам кімнати, у роботі якої ви берете участь, бачити,"
+" які повідомлення ви переглянули"
 
 #: src/session/view/account_settings/security_page/mod.ui:20
 msgid "Send Typing Notifications"
 msgstr "Надсилати сповіщення щодо введення"
 
 #: src/session/view/account_settings/security_page/mod.ui:21
+#| msgid ""
+#| "When this is enabled, other members of the rooms you participate in can "
+#| "see when you are typing a message."
 msgid ""
-"When this is enabled, other members of the rooms you participate in can see "
-"when you are typing a message."
+"Allow other members of the rooms you participate in to see when you are "
+"typing a message"
 msgstr ""
-"Якщо увімкнено, інші учасники кімнати, у роботі якої ви берете участь, "
-"зможуть бачити, чи набираєте ви повідомлення."
+"Дозволити іншим учасникам кімнати, у роботі якої ви берете участь, бачити,"
+" чи набираєте ви повідомлення."
 
 #: src/session/view/account_settings/security_page/mod.ui:27
 msgid ""
@@ -2113,15 +2135,18 @@ msgid "Cross-Signing"
 msgstr "Перехресне підписування"
 
 #: src/session/view/account_settings/security_page/mod.ui:67
-msgid "Master key"
+#| msgid "Master key"
+msgid "Master Key"
 msgstr "Основний ключ"
 
 #: src/session/view/account_settings/security_page/mod.ui:81
-msgid "Self-signing key"
+#| msgid "Self-signing key"
+msgid "Self-Signing Key"
 msgstr "Ключ самопідписування"
 
 #: src/session/view/account_settings/security_page/mod.ui:95
-msgid "User-signing key"
+#| msgid "User-signing key"
+msgid "User-Signing Key"
 msgstr "Ключ підписування користувача"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:5
@@ -2139,8 +2164,9 @@ msgid "Other Active Sessions"
 msgstr "Інші активні сеанси"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:85
-msgid "Could not load the list of connected devices."
-msgstr "Не вдалося завантажити список з'єднаних пристроїв."
+#| msgid "Could not load the list of connected devices."
+msgid "Could not load the list of connected devices"
+msgstr "Не вдалося завантажити список з'єднаних пристроїв"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
 msgid "Disconnect Session"
@@ -2278,9 +2304,6 @@ msgid "Server List"
 msgstr "Список серверів"
 
 #: src/session/view/content/explore/servers_popover.ui:38
-msgid "Add server…"
-msgstr "Додати сервер…"
-
 #: src/session/view/content/explore/servers_popover.ui:45
 msgid "Add Server"
 msgstr "Додати сервер"
@@ -2332,8 +2355,9 @@ msgid "No Room Selected"
 msgstr "Не вибрано жодної кімнати"
 
 #: src/session/view/content/mod.ui:29
-msgid "Join a room to start chatting."
-msgstr "Увійдіть до кімнати, щоб почати спілкування."
+#| msgid "Join a room to start chatting."
+msgid "Join a room to start chatting"
+msgstr "Увійдіть до кімнати, щоб почати спілкування"
 
 #: src/session/view/content/mod.ui:39
 #: src/session/view/content/room_history/mod.ui:220
@@ -2461,9 +2485,6 @@ msgstr ""
 "лише користувачі вашого домашнього сервера."
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:81
-msgid "Add Public Address…"
-msgstr "Додати загальнодоступну адресу…"
-
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:82
 msgid "Add Public Address"
 msgstr "Додати загальнодоступну адресу"
@@ -2647,23 +2668,28 @@ msgid "Audio"
 msgstr "Звук"
 
 #: src/session/view/content/room_details/general_page/mod.ui:166
-msgid "Which messages trigger notifications in this room."
-msgstr "Визначає те, які повідомлення вмикатимуть сповіщення у цій кімнаті."
+#| msgid "Which messages trigger notifications in this room."
+msgid "Which messages trigger notifications in this room"
+msgstr "Визначає те, які повідомлення вмикатимуть сповіщення у цій кімнаті"
 
 #: src/session/view/content/room_details/general_page/mod.ui:169
-msgid "Use the global setting"
+#| msgid "Use the global setting"
+msgid "Use Global Setting"
 msgstr "Використовувати загальний параметр"
 
 #: src/session/view/content/room_details/general_page/mod.ui:176
-msgid "All messages"
+#| msgid "All messages"
+msgid "All Messages"
 msgstr "Усі повідомлення"
 
 #: src/session/view/content/room_details/general_page/mod.ui:183
-msgid "Only mentions and keywords"
+#| msgid "Only mentions and keywords"
+msgid "Only Mentions and Keywords"
 msgstr "Лише згадки та ключові слова"
 
 #: src/session/view/content/room_details/general_page/mod.ui:190
-msgid "Disable notifications"
+#| msgid "Disable notifications"
+msgid "Disable Notifications"
 msgstr "Вимкнути сповіщення"
 
 #. Translators: In this string, 'Edit' is a verb.
@@ -2685,8 +2711,19 @@ msgid "Access and Visibility"
 msgstr "Доступ і видимість"
 
 #: src/session/view/content/room_details/general_page/mod.ui:229
-msgid "Who can join"
+#| msgid "Who can join"
+msgid "Who Can Join"
 msgstr "Хто може долучатися"
+
+#: src/session/view/content/room_details/general_page/mod.ui:233
+#| msgid "Only invited users"
+msgid "Only Invited Users"
+msgstr "Лише запрошені користувачі"
+
+#: src/session/view/content/room_details/general_page/mod.ui:234
+#| msgid "Any registered user"
+msgid "Any Registered User"
+msgstr "Будь-який зареєстрований користувач"
 
 #: src/session/view/content/room_details/general_page/mod.ui:250
 msgid "Allow Guests"
@@ -2697,7 +2734,8 @@ msgid "Guests are Matrix users without a registered account"
 msgstr "Гості — користувачі Matrix без зареєстрованого облікового запису"
 
 #: src/session/view/content/room_details/general_page/mod.ui:262
-msgid "Who can read history"
+#| msgid "Change Who Can Read History"
+msgid "Who Can Read History"
 msgstr "Хто може читати журнал"
 
 #: src/session/view/content/room_details/general_page/mod.ui:283
@@ -2705,7 +2743,8 @@ msgid "Matrix Room ID"
 msgstr "Ідентифікатор кімнати Matrix"
 
 #: src/session/view/content/room_details/general_page/mod.ui:290
-msgid "Copy Matrix room ID to clipboard"
+#| msgid "Copy Matrix room ID to clipboard"
+msgid "Copy Matrix Room ID to Clipboard"
 msgstr "Скопіювати ідентифікатор кімнати Matrix до буфера"
 
 #: src/session/view/content/room_details/general_page/mod.ui:291
@@ -2713,8 +2752,9 @@ msgid "Matrix room ID copied to clipboard"
 msgstr "Ідентифікатор кімнати Matrix скопійовано до буфера обміну"
 
 #: src/session/view/content/room_details/general_page/mod.ui:296
-msgid "Enable encryption"
-msgstr "Увімкнути шифрування"
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
+msgid "Enable Encryption"
+msgstr "Вмикати шифрування"
 
 #: src/session/view/content/room_details/general_page/mod.ui:307
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
@@ -2824,8 +2864,9 @@ msgid "Search"
 msgstr "Шукати"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:56
-msgid "Search for users to invite them to this room."
-msgstr "Шукати користувачів для запрошення їх до цієї кімнати."
+#| msgid "Search for users to invite them to this room."
+msgid "Search for users to invite them to this room"
+msgstr "Шукати користувачів для запрошення їх до цієї кімнати"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:101
 #: src/session/view/create_dm_dialog/mod.ui:92
@@ -2833,16 +2874,23 @@ msgid "No Users Found"
 msgstr "Користувачів не знайдено"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:102
-msgid "No users matching the search were found."
-msgstr "Не знайдено жодного користувача, який відповідає критерію пошуку."
+#| msgid "No users matching the search were found."
+msgid "No users matching the search were found"
+msgstr "Не знайдено жодного користувача, який відповідає критерію пошуку"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:109
-msgid "An error occurred while searching for matches."
-msgstr "Під час пошуку відповідників сталася помилка."
+#: src/session/view/create_dm_dialog/mod.ui:105
+msgid "An error occurred while searching for matches"
+msgstr "Під час пошуку відповідників сталася помилка"
 
 #: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:161
 msgid "Could not load the full list of room members"
 msgstr "Не вдалося завантажити повний список учасників кімнати."
+
+#: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
+#| msgid "Identity verified"
+msgid "Identity Verified"
+msgstr "Профіль перевірено"
 
 #. Translators: As in 'Invited Room Member(s)'.
 #: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:117
@@ -2928,7 +2976,8 @@ msgid "No Matching Members Found"
 msgstr "Не знайдено жодного відповідного учасника"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:101
-msgid "No room members matching the search were found."
+#| msgid "No room members matching the search were found."
+msgid "No room members matching the search were found"
 msgstr "Не знайдено жодного учасника кімнати, який відповідає критерію пошуку"
 
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
@@ -2984,7 +3033,8 @@ msgid "Remove Messages of Other Members"
 msgstr "Вилучати повідомлення інших учасників"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:81
-msgid "Notify the Whole Room"
+#| msgid "Notify the Whole Room"
+msgid "Notify Entire Room"
 msgstr "Сповістити усю кімнату"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:92
@@ -2992,39 +3042,41 @@ msgid "Change Room Settings"
 msgstr "Змінювати параметри кімнати"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:103
-msgid "Change the Room Name"
+#| msgid "Change the Room Name"
+msgid "Change Room Name"
 msgstr "Змінювати назву кімнати"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:114
-msgid "Change the Room Topic"
+#| msgid "Change the Room Topic"
+msgid "Change Room Topic"
 msgstr "Змінювати тему кімнати"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:125
-msgid "Change the Room Avatar"
+#| msgid "Change the Room Avatar"
+msgid "Change Room Avatar"
 msgstr "Змінювати аватар кімнати"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:136
-msgid "Change the Addresses"
+#| msgid "Change the Addresses"
+msgid "Change Addresses"
 msgstr "Змінювати адреси"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:147
 msgid "Change Who Can Read History"
 msgstr "Змінювати тих, хто може читати журнал"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
-msgid "Enable Encryption"
-msgstr "Вмикати шифрування"
-
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:169
 msgid "Change Permissions"
 msgstr "Змінити права доступу"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:180
-msgid "Change the Server Access Control List"
+#| msgid "Change the Server Access Control List"
+msgid "Change Server Access Control List"
 msgstr "Змінити списки керування доступом сервера"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
-msgid "Upgrade the Room"
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:75
+msgid "Upgrade Room"
 msgstr "Оновити кімнату"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:204
@@ -3053,10 +3105,6 @@ msgstr "Типовий рівень повноважень"
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:59
 msgid "Version"
 msgstr "Версія"
-
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:75
-msgid "Upgrade Room"
-msgstr "Оновити кімнату"
 
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:76
 msgid ""
@@ -3617,16 +3665,13 @@ msgstr "Меню кімнати"
 
 #: src/session/view/content/room_history/mod.ui:193
 #: src/session/view/content/room_history/mod.ui:200
-msgid "Could not Load Room"
+#| msgid "Could not Load Room"
+msgid "Could Not Load Room"
 msgstr "Не вдалося завантажити кімнату"
 
 #: src/session/view/content/room_history/mod.ui:201
 msgid "Check your network connection."
 msgstr "Перевірте ваше з'єднання з мережею."
-
-#: src/session/view/content/room_history/mod.ui:205
-msgid "Try Again"
-msgstr "Повторити спробу"
 
 #: src/session/view/content/room_history/mod.ui:235
 msgid "Scroll to Bottom"
@@ -3905,10 +3950,6 @@ msgstr "Шукати тих, з ким слід почати спілкуван�
 msgid "No users matching the search pattern were found"
 msgstr "Не знайдено жодного користувача, який відповідає критерію пошуку"
 
-#: src/session/view/create_dm_dialog/mod.ui:105
-msgid "An error occurred while searching for matches"
-msgstr "Під час пошуку відповідників сталася помилка"
-
 #: src/session/view/event_details_dialog.rs:56
 msgid "Source copied to clipboard"
 msgstr "Джерело скопійовано до буфера обміну"
@@ -3941,7 +3982,8 @@ msgstr "Ід. події"
 
 #: src/session/view/event_details_dialog.ui:69
 #: src/session/view/event_details_dialog.ui:158
-msgid "Copy event ID to clipboard"
+#| msgid "Copy event ID to clipboard"
+msgid "Copy Event ID to Clipboard"
 msgstr "Скопіювати ідентифікатор події до буфера"
 
 #: src/session/view/event_details_dialog.ui:70
@@ -3954,7 +3996,8 @@ msgid "Room ID"
 msgstr "Ід. кімнати"
 
 #: src/session/view/event_details_dialog.ui:84
-msgid "Copy room ID to clipboard"
+#| msgid "Copy room ID to clipboard"
+msgid "Copy Room ID to Clipboard"
 msgstr "Копіювати ідентифікатор кімнати до буфера обміну"
 
 #: src/session/view/event_details_dialog.ui:85
@@ -3966,7 +4009,8 @@ msgid "Sender ID"
 msgstr "Ід. відправника"
 
 #: src/session/view/event_details_dialog.ui:97
-msgid "Copy sender ID to clipboard"
+#| msgid "Copy sender ID to clipboard"
+msgid "Copy Sender ID to Clipboard"
 msgstr "Скопіювати ідентифікатор відправника до буфера"
 
 #: src/session/view/event_details_dialog.ui:98
@@ -3980,7 +4024,8 @@ msgstr "Часова позначка"
 
 #: src/session/view/event_details_dialog.ui:110
 #: src/session/view/event_details_dialog.ui:171
-msgid "Copy timestamp to clipboard"
+#| msgid "Copy timestamp to clipboard"
+msgid "Copy Timestamp to Clipboard"
 msgstr "Скопіювати часову позначку до буфера"
 
 #: src/session/view/event_details_dialog.ui:111
@@ -3998,7 +4043,8 @@ msgid "Latest Edit"
 msgstr "Найсвіжіше редагування"
 
 #: src/session/view/event_details_dialog.ui:208
-msgid "Copy source to clipboard"
+#| msgid "Copy source to clipboard"
+msgid "Copy Source to Clipboard"
 msgstr "Копіювати джерело до буфера"
 
 #: src/session/view/media_viewer.rs:486
@@ -4605,6 +4651,30 @@ msgstr "Розширити повноваження"
 #: src/window.ui:66
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "Try again"
+#~ msgstr "Спробувати ще раз"
+
+#~ msgid "Add Keyword…"
+#~ msgstr "Додати ключове слово…"
+
+#~ msgid "Add server…"
+#~ msgstr "Додати сервер…"
+
+#~ msgid "Add Public Address…"
+#~ msgstr "Додати загальнодоступну адресу…"
+
+#~ msgid "Who can read history"
+#~ msgstr "Хто може читати журнал"
+
+#~ msgid "Enable encryption"
+#~ msgstr "Увімкнути шифрування"
+
+#~ msgid "An error occurred while searching for matches."
+#~ msgstr "Під час пошуку відповідників сталася помилка."
+
+#~ msgid "Upgrade the Room"
+#~ msgstr "Оновити кімнату"
 
 #~ msgid "Header Bar"
 #~ msgstr "Панель заголовка"
