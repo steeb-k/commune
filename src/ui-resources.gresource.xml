@@ -12,6 +12,8 @@
     <file compressed="true" preprocess="xml-stripblanks">components/auth_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/avatar/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/context_menu_bin.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/crypto/identity_setup_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/crypto/recovery_setup_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/editable_avatar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/join_room_dialog.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/loading_bin.ui</file>

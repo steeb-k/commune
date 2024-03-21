@@ -309,11 +309,11 @@ qrcode {
 
 /* Session Setup */
 
-session-setup clamp {
+setup-view clamp {
   margin: 12px;
 }
 
-session-setup .text-button {
+setup-view .text-button {
   min-width: 200px;
 }
 

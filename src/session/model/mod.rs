@@ -20,7 +20,7 @@ pub use self::{
     remote_user::RemoteUser,
     room::*,
     room_list::RoomList,
-    session::{Session, SessionState},
+    session::*,
     session_settings::{SessionSettings, StoredSessionSettings},
     sidebar_data::{
         Category, CategoryType, ItemList, Selection, SidebarIconItem, SidebarIconItemType,

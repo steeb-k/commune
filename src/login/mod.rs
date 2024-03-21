@@ -453,7 +453,7 @@ impl Login {
         }
     }
 
-    pub async fn init_session(&self, session: Session) {
+    async fn init_session(&self, session: Session) {
         let imp = self.imp();
 
         let setup_view = SessionSetupView::new(&session);

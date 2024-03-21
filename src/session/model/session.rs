@@ -8,7 +8,15 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use matrix_sdk::{config::SyncSettings, matrix_auth::MatrixSession, sync::SyncResponse, Client};
+use matrix_sdk::{
+    config::SyncSettings,
+    encryption::{
+        recovery::RecoveryState as SdkRecoveryState, VerificationState as SdkVerificationState,
+    },
+    matrix_auth::MatrixSession,
+    sync::SyncResponse,
+    Client,
+};
 use ruma::{
     api::client::{
         error::ErrorKind,
@@ -18,7 +26,7 @@ use ruma::{
     assign,
     events::{direct::DirectEventContent, GlobalAccountDataEvent},
 };
-use tokio::task::JoinHandle;
+use tokio::task::AbortHandle;
 use tracing::{debug, error};
 use url::Url;
 
@@ -56,6 +64,72 @@ pub enum SessionState {
 #[boxed_type(name = "BoxedClient")]
 pub struct BoxedClient(Client);
 
+/// The state of the crypto identity.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "CryptoIdentityState")]
+pub enum CryptoIdentityState {
+    /// The state is not known yet.
+    #[default]
+    Unknown,
+    /// The crypto identity does not exist.
+    ///
+    /// It means that cross-signing is not set up.
+    Missing,
+    /// There are no other verified sessions.
+    LastManStanding,
+    /// There are other verified sessions.
+    OtherSessions,
+}
+
+/// The state of the verification of the session.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "SessionVerificationState")]
+pub enum SessionVerificationState {
+    /// The state is not known yet.
+    #[default]
+    Unknown,
+    /// The session is verified.
+    Verified,
+    /// The session is not verified.
+    Unverified,
+}
+
+impl From<SdkVerificationState> for SessionVerificationState {
+    fn from(value: SdkVerificationState) -> Self {
+        match value {
+            SdkVerificationState::Unknown => Self::Unknown,
+            SdkVerificationState::Verified => Self::Verified,
+            SdkVerificationState::Unverified => Self::Unverified,
+        }
+    }
+}
+
+/// The state of the recovery.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, glib::Enum)]
+#[enum_type(name = "RecoveryState")]
+pub enum RecoveryState {
+    /// The state is not known yet.
+    #[default]
+    Unknown,
+    /// Recovery is disabled.
+    Disabled,
+    /// Recovery is enabled and we have all the keys.
+    Enabled,
+    /// Recovery is enabled and we are missing some keys.
+    Incomplete,
+}
+
+impl From<SdkRecoveryState> for RecoveryState {
+    fn from(value: SdkRecoveryState) -> Self {
+        match value {
+            SdkRecoveryState::Unknown => Self::Unknown,
+            SdkRecoveryState::Disabled => Self::Disabled,
+            SdkRecoveryState::Enabled => Self::Enabled,
+            SdkRecoveryState::Incomplete => Self::Incomplete,
+        }
+    }
+}
+
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
 
@@ -76,8 +150,6 @@ mod imp {
         /// The current state of the session.
         #[property(get, builder(SessionState::default()))]
         pub state: Cell<SessionState>,
-        pub sync_tokio_handle: RefCell<Option<JoinHandle<()>>>,
-        pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
         /// Whether this session has a connection to the homeserver.
         #[property(get)]
         pub offline: Cell<bool>,
@@ -93,6 +165,18 @@ mod imp {
         /// The list of sessions for this session's user.
         #[property(get)]
         pub user_sessions: UserSessionsList,
+        /// The state of the crypto identity for this session.
+        #[property(get, builder(CryptoIdentityState::default()))]
+        pub crypto_identity_state: Cell<CryptoIdentityState>,
+        /// The state of the verification for this session.
+        #[property(get, builder(SessionVerificationState::default()))]
+        pub verification_state: Cell<SessionVerificationState>,
+        /// The state of recovery for this session.
+        #[property(get, builder(RecoveryState::default()))]
+        pub recovery_state: Cell<RecoveryState>,
+        pub sync_handle: RefCell<Option<AbortHandle>>,
+        pub abort_handles: RefCell<Vec<AbortHandle>>,
+        pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -118,7 +202,6 @@ mod imp {
                     obj.update_offline().await;
                 });
             }));
-
             self.offline_handler_id.replace(Some(handler_id));
         }
 
@@ -128,7 +211,11 @@ mod imp {
                 gio::NetworkMonitor::default().disconnect(handler_id);
             }
 
-            if let Some(handle) = self.sync_tokio_handle.take() {
+            if let Some(handle) = self.sync_handle.take() {
+                handle.abort();
+            }
+
+            for handle in self.abort_handles.take() {
                 handle.abort();
             }
         }
@@ -159,6 +246,36 @@ mod imp {
             self.user
                 .get_or_init(|| User::new(&obj, obj.info().user_id.clone()))
                 .clone()
+        }
+
+        /// Set the crypto identity state of this session.
+        pub(super) fn set_crypto_identity_state(&self, state: CryptoIdentityState) {
+            if self.crypto_identity_state.get() == state {
+                return;
+            }
+
+            self.crypto_identity_state.set(state);
+            self.obj().notify_crypto_identity_state();
+        }
+
+        /// Set the verification state of this session.
+        pub(super) fn set_verification_state(&self, state: SessionVerificationState) {
+            if self.verification_state.get() == state {
+                return;
+            }
+
+            self.verification_state.set(state);
+            self.obj().notify_verification_state();
+        }
+
+        /// Set the recovery state of this session.
+        pub(super) fn set_recovery_state(&self, state: RecoveryState) {
+            if self.recovery_state.get() == state {
+                return;
+            }
+
+            self.recovery_state.set(state);
+            self.obj().notify_recovery_state();
         }
     }
 }
@@ -228,6 +345,12 @@ impl Session {
         self.room_list().load().await;
         self.setup_direct_room_handler();
         self.verification_list().init();
+        self.init_verification_state();
+        self.init_recovery_state();
+
+        spawn!(clone!(@weak self as obj => async move {
+            obj.init_crypto_identity_state().await;
+        }));
 
         self.set_state(SessionState::InitialSync);
         self.sync();
@@ -270,31 +393,200 @@ impl Session {
                     }
                 });
             }
-        });
+        })
+        .abort_handle();
 
-        self.imp().sync_tokio_handle.replace(Some(handle));
+        self.imp().sync_handle.replace(Some(handle));
     }
 
-    /// Whether this session is verified with cross-signing.
-    pub async fn is_verified(&self) -> bool {
+    /// Listen to crypto identity changes.
+    async fn init_crypto_identity_state(&self) {
         let client = self.client();
-        let e2ee_device_handle = spawn_tokio!(async move {
-            let user_id = client.user_id().unwrap();
-            let device_id = client.device_id().unwrap();
-            client.encryption().get_device(user_id, device_id).await
+
+        let encryption = client.encryption();
+
+        let encryption_clone = encryption.clone();
+        let handle = spawn_tokio!(async move { encryption_clone.user_identities_stream().await });
+        let identities_stream = match handle.await.unwrap() {
+            Ok(stream) => stream,
+            Err(error) => {
+                error!("Could not get user identities stream: {error}");
+                // All method calls here have the same error, so we can return early.
+                return;
+            }
+        };
+
+        let obj_weak: glib::SendWeakRef<Session> = self.downgrade().into();
+        let fut = identities_stream.for_each(move |updates| {
+            let obj_weak = obj_weak.clone();
+
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            let own_user_id = obj.user_id();
+                            if updates.new.contains_key(own_user_id)
+                                || updates.changed.contains_key(own_user_id)
+                            {
+                                obj.load_crypto_identity_state().await;
+                            }
+                        }
+                    });
+                });
+            }
+        });
+        let identities_abort_handle = spawn_tokio!(fut).abort_handle();
+
+        let handle = spawn_tokio!(async move { encryption.devices_stream().await });
+        let devices_stream = match handle.await.unwrap() {
+            Ok(stream) => stream,
+            Err(error) => {
+                error!("Could not get devices stream: {error}");
+                // All method calls here have the same error, so we can return early.
+                return;
+            }
+        };
+
+        let obj_weak: glib::SendWeakRef<Session> = self.downgrade().into();
+        let fut = devices_stream.for_each(move |updates| {
+            let obj_weak = obj_weak.clone();
+
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            let own_user_id = obj.user_id();
+                            if updates.new.contains_key(own_user_id)
+                                || updates.changed.contains_key(own_user_id)
+                            {
+                                obj.load_crypto_identity_state().await;
+                            }
+                        }
+                    });
+                });
+            }
+        });
+        let devices_abort_handle = spawn_tokio!(fut).abort_handle();
+
+        self.imp()
+            .abort_handles
+            .borrow_mut()
+            .extend([identities_abort_handle, devices_abort_handle]);
+
+        self.load_crypto_identity_state().await;
+    }
+
+    /// Load the crypto identity state.
+    async fn load_crypto_identity_state(&self) {
+        let imp = self.imp();
+        let client = self.client();
+
+        let client_clone = client.clone();
+        let user_identity_handle = spawn_tokio!(async move {
+            let user_id = client_clone.user_id().unwrap();
+            client_clone.encryption().get_user_identity(user_id).await
         });
 
-        match e2ee_device_handle.await.unwrap() {
-            Ok(Some(device)) => device.is_verified_with_cross_signing(),
+        let has_identity = match user_identity_handle.await.unwrap() {
+            Ok(Some(_)) => true,
             Ok(None) => {
-                error!("Could not find this session’s encryption profile");
+                debug!("No crypto user identity found");
                 false
             }
             Err(error) => {
-                error!("Could not get session’s encryption profile: {error}");
+                error!("Could not get crypto user identity: {error}");
                 false
             }
+        };
+
+        if !has_identity {
+            imp.set_crypto_identity_state(CryptoIdentityState::Missing);
+            return;
         }
+
+        let devices_handle = spawn_tokio!(async move {
+            let user_id = client.user_id().unwrap();
+            client.encryption().get_user_devices(user_id).await
+        });
+
+        let own_device = self.device_id();
+        let has_other_sessions = match devices_handle.await.unwrap() {
+            Ok(devices) => devices
+                .devices()
+                .any(|d| d.device_id() != own_device && d.is_cross_signed_by_owner()),
+            Err(error) => {
+                error!("Could not get user devices: {error}");
+                // If there are actually no other devices, the user can still
+                // reset the crypto identity.
+                true
+            }
+        };
+
+        let state = if has_other_sessions {
+            CryptoIdentityState::OtherSessions
+        } else {
+            CryptoIdentityState::LastManStanding
+        };
+
+        imp.set_crypto_identity_state(state);
+    }
+
+    /// Listen to verification state changes.
+    fn init_verification_state(&self) {
+        let client = self.client();
+        let mut stream = client.encryption().verification_state();
+        // Get the current value right away.
+        stream.reset();
+
+        let obj_weak: glib::SendWeakRef<Session> = self.downgrade().into();
+        let fut = stream.for_each(move |state| {
+            let obj_weak = obj_weak.clone();
+
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.imp().set_verification_state(state.into());
+                        }
+                    });
+                });
+            }
+        });
+        let verification_abort_handle = spawn_tokio!(fut).abort_handle();
+
+        self.imp()
+            .abort_handles
+            .borrow_mut()
+            .push(verification_abort_handle);
+    }
+
+    /// Listen to recovery state changes.
+    fn init_recovery_state(&self) {
+        let client = self.client();
+
+        let obj_weak: glib::SendWeakRef<Session> = self.downgrade().into();
+        let stream = client.encryption().recovery().state_stream();
+
+        let fut = stream.for_each(move |state| {
+            let obj_weak = obj_weak.clone();
+
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.imp().set_recovery_state(state.into());
+                        }
+                    });
+                });
+            }
+        });
+
+        let abort_handle = spawn_tokio!(fut).abort_handle();
+        self.imp().abort_handles.borrow_mut().push(abort_handle);
     }
 
     /// Start listening to notifications.
@@ -383,7 +675,7 @@ impl Session {
 
         imp.offline.set(offline);
 
-        if let Some(handle) = imp.sync_tokio_handle.take() {
+        if let Some(handle) = imp.sync_handle.take() {
             handle.abort();
         }
 
@@ -478,7 +770,7 @@ impl Session {
 
         self.set_state(SessionState::LoggedOut);
 
-        if let Some(handle) = imp.sync_tokio_handle.take() {
+        if let Some(handle) = imp.sync_handle.take() {
             handle.abort();
         }
 

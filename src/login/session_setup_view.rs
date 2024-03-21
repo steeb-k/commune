@@ -1,35 +1,32 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
 use gtk::{
     glib,
     glib::{clone, closure_local},
     CompositeTemplate,
 };
-use tracing::{debug, error};
 
 use crate::{
-    components::{AuthDialog, AuthError, SpinnerButton},
-    identity_verification_view::IdentityVerificationView,
-    session::model::{IdentityVerification, Session},
-    spawn, spawn_tokio, toast,
-    utils::BoundObjectWeakRef,
+    components::crypto::{
+        CryptoIdentitySetupNextStep, CryptoIdentitySetupView, CryptoRecoverySetupView,
+    },
+    session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
+    spawn, spawn_tokio,
 };
 
-/// The state of the cross-signing identity.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
-#[enum_type(name = "SessionVerificationIdentityState")]
-pub enum IdentityState {
-    /// It does not exist.
-    #[default]
-    Missing,
-    /// There are no verified sessions.
-    NoSessions,
-    /// We should be able to verify this session with another session.
-    CanVerify,
+/// A page of the session setup stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr)]
+#[strum(serialize_all = "kebab-case")]
+enum SessionSetupPage {
+    /// The loading page.
+    Loading,
+    /// The crypto identity setup view.
+    CryptoIdentity,
+    /// The recovery view.
+    Recovery,
 }
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{OnceCell, RefCell};
 
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
@@ -40,29 +37,16 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/login/session_setup_view.ui")]
     #[properties(wrapper_type = super::SessionSetupView)]
     pub struct SessionSetupView {
+        #[template_child]
+        pub stack: TemplateChild<gtk::Stack>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
-        /// The ongoing identity verification, if any.
-        #[property(get)]
-        pub verification: BoundObjectWeakRef<IdentityVerification>,
-        #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub navigation: TemplateChild<adw::NavigationView>,
-        #[template_child]
-        pub send_request_btn: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub choose_bootstrap_btn: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub bootstrap_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub bootstrap_setup_btn: TemplateChild<SpinnerButton>,
-        #[template_child]
-        pub verification_page: TemplateChild<IdentityVerificationView>,
-        /// The state of the cross-signing identity.
-        #[property(get, builder(IdentityState::default()))]
-        pub identity_state: Cell<IdentityState>,
+        /// The crypto identity view.
+        crypto_identity_view: OnceCell<CryptoIdentitySetupView>,
+        /// The recovery view.
+        recovery_view: OnceCell<CryptoRecoverySetupView>,
+        session_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -75,7 +59,7 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.set_css_name("session-setup");
+            klass.set_css_name("setup-view");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -88,55 +72,28 @@ mod imp {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
                 vec![
-                    // The session verification was completed.
+                    // The session setup is done.
                     Signal::builder("completed").build(),
                 ]
             });
             SIGNALS.as_ref()
         }
 
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.stack
-                .connect_transition_running_notify(clone!(@weak self as imp => move |stack|
-                    if !stack.is_transition_running() {
-                        // Focus the default widget when the transition has ended.
-                        imp.grab_focus();
-                    }
-                ));
-            self.navigation
-                .connect_visible_page_notify(clone!(@weak self as imp => move |_| {
-                        imp.grab_focus();
-                }));
-        }
-
         fn dispose(&self) {
-            if let Some(verification) = self.verification.obj() {
-                spawn!(clone!(@strong verification => async move {
-                    let _ = verification.cancel().await;
-                }));
+            if let Some(session) = self.session.upgrade() {
+                if let Some(handler) = self.session_handler.take() {
+                    session.disconnect(handler);
+                }
             }
         }
     }
 
     impl WidgetImpl for SessionSetupView {
         fn grab_focus(&self) -> bool {
-            let Some(name) = self.visible_page_name() else {
-                return false;
-            };
-
-            match name.as_str() {
-                "choose-method" => {
-                    if self.send_request_btn.is_visible() {
-                        self.send_request_btn.grab_focus()
-                    } else {
-                        self.choose_bootstrap_btn.grab_focus()
-                    }
-                }
-                "verification" => self.verification_page.grab_focus(),
-                "bootstrap" => self.bootstrap_setup_btn.grab_focus(),
-                _ => false,
+            match self.visible_stack_page() {
+                SessionSetupPage::Loading => false,
+                SessionSetupPage::CryptoIdentity => self.crypto_identity_view().grab_focus(),
+                SessionSetupPage::Recovery => self.recovery_view().grab_focus(),
             }
         }
     }
@@ -144,187 +101,187 @@ mod imp {
     impl NavigationPageImpl for SessionSetupView {}
 
     impl SessionSetupView {
-        /// The name of the visible page.
-        ///
-        /// Returns `None` if the loading page is visible.
-        fn visible_page_name(&self) -> Option<glib::GString> {
-            if self
-                .stack
+        /// The visible page of the stack.
+        fn visible_stack_page(&self) -> SessionSetupPage {
+            self.stack
                 .visible_child_name()
-                .is_some_and(|name| name == "loading")
-            {
-                return None;
-            }
+                .and_then(|n| n.as_str().try_into().ok())
+                .unwrap()
+        }
 
-            self.navigation.visible_page().and_then(|p| p.tag())
+        /// The crypto identity view.
+        fn crypto_identity_view(&self) -> &CryptoIdentitySetupView {
+            self.crypto_identity_view.get_or_init(|| {
+                let session = self
+                    .session
+                    .upgrade()
+                    .expect("Session should still have a strong reference");
+                let crypto_identity_view = CryptoIdentitySetupView::new(&session);
+
+                crypto_identity_view.connect_completed(clone!(@weak self as imp => move |_, next| {
+                    match next {
+                        CryptoIdentitySetupNextStep::None => imp.obj().emit_completed(),
+                        CryptoIdentitySetupNextStep::EnableRecovery => imp.check_recovery(true),
+                        CryptoIdentitySetupNextStep::CompleteRecovery => imp.check_recovery(false),
+                    }
+                }));
+
+                crypto_identity_view
+            })
+        }
+
+        /// The recovery view.
+        fn recovery_view(&self) -> &CryptoRecoverySetupView {
+            self.recovery_view.get_or_init(|| {
+                let session = self
+                    .session
+                    .upgrade()
+                    .expect("Session should still have a strong reference");
+                let recovery_view = CryptoRecoverySetupView::new(&session, false);
+
+                let obj = self.obj();
+                recovery_view.connect_completed(clone!(@weak obj => move |_| {
+                    obj.emit_completed();
+                }));
+
+                recovery_view
+            })
         }
 
         /// Set the current session.
         fn set_session(&self, session: &Session) {
             self.session.set(Some(session));
 
-            session.connect_ready(clone!(@weak self as imp => move |_| {
+            let ready_handler = session.connect_ready(clone!(@weak self as imp => move |_| {
                 spawn!(async move {
                     imp.load().await;
                 });
             }));
+            self.session_handler.replace(Some(ready_handler));
         }
 
-        /// Set the state of the cross-signing identity.
-        fn set_identity_state(&self, state: IdentityState) {
-            self.identity_state.set(state);
-
-            let obj = self.obj();
-            obj.notify_identity_state();
-            obj.update_bootstrap_page();
-        }
-
-        /// Load the cross-signing state for the current page.
+        /// Load the session state.
         async fn load(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
 
-            if session.is_verified().await {
-                // Nothing more to do.
-                self.obj().emit_by_name::<()>("completed", &[]);
-                return;
-            }
+            // Make sure the encryption API is ready.
+            let encryption = session.client().encryption();
+            spawn_tokio!(async move {
+                encryption.wait_for_e2ee_initialization_tasks().await;
+            })
+            .await
+            .unwrap();
 
-            let client = session.client();
-
-            let client_clone = client.clone();
-            let user_identity_handle = spawn_tokio!(async move {
-                let user_id = client_clone.user_id().unwrap();
-                client_clone.encryption().get_user_identity(user_id).await
-            });
-
-            let has_identity = match user_identity_handle.await.unwrap() {
-                Ok(Some(_)) => true,
-                Ok(None) => {
-                    debug!("No encryption user identity found");
-                    false
-                }
-                Err(error) => {
-                    error!("Could not get encryption user identity: {error}");
-                    false
-                }
-            };
-
-            if !has_identity {
-                self.set_identity_state(IdentityState::Missing);
-                self.navigation.replace_with_tags(&["bootstrap"]);
-                self.finish_loading();
-                return;
-            }
-
-            let devices_handle = spawn_tokio!(async move {
-                let user_id = client.user_id().unwrap();
-                client.encryption().get_user_devices(user_id).await
-            });
-
-            let has_sessions = match devices_handle.await.unwrap() {
-                Ok(devices) => devices.devices().any(|d| d.is_cross_signed_by_owner()),
-                Err(error) => {
-                    error!("Could not get user devices: {error}");
-                    // If there are actually no other devices, the user can still
-                    // reset the cross-signing identity.
-                    true
-                }
-            };
-
-            if !has_sessions {
-                self.set_identity_state(IdentityState::NoSessions);
-                self.navigation.replace_with_tags(&["bootstrap"]);
-                self.finish_loading();
-                return;
-            }
-
-            self.set_identity_state(IdentityState::CanVerify);
-
-            // Use received verification requests too.
-            let verification_list = session.verification_list();
-            verification_list.connect_items_changed(
-                clone!(@weak self as imp => move |verification_list, _, _, _| {
-                    if imp.verification.obj().is_some() {
-                        // We don't want to override the current verification.
-                        return;
-                    }
-
-                    if let Some(verification) = verification_list.ongoing_session_verification() {
-                        imp.set_verification(Some(verification));
-                    }
-                }),
-            );
-
-            if let Some(verification) = verification_list.ongoing_session_verification() {
-                self.set_verification(Some(verification));
-            }
-
-            self.finish_loading();
+            self.check_session_setup();
         }
 
-        /// Stop showing the loading page.
-        fn finish_loading(&self) {
-            self.stack.set_visible_child_name("setup");
-        }
+        /// Check whether we need to show the session setup.
+        fn check_session_setup(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
 
-        /// Set the ongoing identity verification.
-        ///
-        /// Cancels the previous verification if it's not finished.
-        pub fn set_verification(&self, verification: Option<IdentityVerification>) {
-            let prev_verification = self.verification.obj();
+            // Stop listening to notifications.
+            if let Some(handler) = self.session_handler.take() {
+                session.disconnect(handler);
+            }
 
-            if prev_verification == verification {
+            // Wait if we don't know the crypto identity state.
+            let crypto_identity_state = session.crypto_identity_state();
+            if crypto_identity_state == CryptoIdentityState::Unknown {
+                let handler = session.connect_crypto_identity_state_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.check_session_setup();
+                    }),
+                );
+                self.session_handler.replace(Some(handler));
                 return;
             }
-            let obj = self.obj();
 
-            if let Some(verification) = prev_verification {
-                if !verification.is_finished() {
-                    spawn!(clone!(@strong verification => async move {
-                        let _ = verification.cancel().await;
+            // Wait if we don't know the verification state.
+            let verification_state = session.verification_state();
+            if verification_state == SessionVerificationState::Unknown {
+                let handler = session.connect_verification_state_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.check_session_setup();
+                    }),
+                );
+                self.session_handler.replace(Some(handler));
+                return;
+            }
+
+            // Wait if we don't know the recovery state.
+            let recovery_state = session.recovery_state();
+            if recovery_state == RecoveryState::Unknown {
+                let handler =
+                    session.connect_recovery_state_notify(clone!(@weak self as imp => move |_| {
+                        imp.check_session_setup();
                     }));
+                self.session_handler.replace(Some(handler));
+                return;
+            }
+
+            if verification_state == SessionVerificationState::Verified
+                && recovery_state == RecoveryState::Enabled
+            {
+                // No need for setup.
+                self.obj().emit_completed();
+                return;
+            }
+
+            self.init();
+        }
+
+        /// Initialize this view.
+        fn init(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let verification_state = session.verification_state();
+            if verification_state == SessionVerificationState::Unverified {
+                let crypto_identity_view = self.crypto_identity_view();
+
+                self.stack.add_named(
+                    crypto_identity_view,
+                    Some(SessionSetupPage::CryptoIdentity.as_ref()),
+                );
+                self.stack
+                    .set_visible_child_name(SessionSetupPage::CryptoIdentity.as_ref());
+            } else {
+                self.switch_to_recovery();
+            }
+        }
+
+        /// Check whether we need to enable or set up recovery.
+        pub(super) fn check_recovery(&self, enable_only: bool) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            match session.recovery_state() {
+                RecoveryState::Disabled => {
+                    self.switch_to_recovery();
                 }
-
-                self.verification.disconnect_signals();
+                RecoveryState::Incomplete if !enable_only => {
+                    self.switch_to_recovery();
+                }
+                _ => {
+                    self.obj().emit_completed();
+                }
             }
+        }
 
-            if let Some(verification) = &verification {
-                let replaced_handler = verification.connect_replaced(
-                    clone!(@weak self as imp => move |_, new_verification| {
-                        imp.set_verification(Some(new_verification.clone()));
-                    }),
-                );
-                let done_handler = verification.connect_done(
-                    clone!(@weak obj => @default-return glib::Propagation::Stop, move |verification| {
-                        obj.emit_by_name::<()>("completed", &[]);
-                        obj.imp().set_verification(None);
-                        verification.remove_from_list();
+        /// Switch to the recovery view.
+        fn switch_to_recovery(&self) {
+            let recovery_view = self.recovery_view();
 
-                        glib::Propagation::Stop
-                    }),
-                );
-                let remove_handler =
-                    verification.connect_dismiss(clone!(@weak self as imp => move |_| {
-                        imp.navigation.pop();
-                        imp.set_verification(None);
-                    }));
-
-                self.verification.set(
-                    verification,
-                    vec![replaced_handler, done_handler, remove_handler],
-                );
-            }
-
-            let has_verification = verification.is_some();
-            self.verification_page.set_verification(verification);
-
-            if has_verification {
-                obj.show_verification();
-            }
-
-            obj.notify_verification();
+            self.stack
+                .add_named(recovery_view, Some(SessionSetupPage::Recovery.as_ref()));
+            self.stack
+                .set_visible_child_name(SessionSetupPage::Recovery.as_ref());
         }
     }
 }
@@ -341,131 +298,24 @@ impl SessionSetupView {
         glib::Object::builder().property("session", session).build()
     }
 
-    /// Show the verification flow.
-    fn show_verification(&self) {
-        self.imp().navigation.push_by_tag("verification");
-    }
-
-    /// Show the recovery flow.
+    /// Focus the proper widget for the current page.
     #[template_callback]
-    fn show_recovery(&self) {
+    fn grab_focus(&self) {
         let imp = self.imp();
-        imp.set_verification(None);
-        imp.navigation.push_by_tag("recovery");
-    }
 
-    /// Show the bootstrap page.
-    #[template_callback]
-    fn show_bootstrap(&self) {
-        let imp = self.imp();
-        imp.set_verification(None);
-        imp.navigation.push_by_tag("bootstrap");
-    }
-
-    /// Update the bootstrap page according to the current state.
-    fn update_bootstrap_page(&self) {
-        let identity_state = self.identity_state();
-
-        let imp = self.imp();
-        let label = &imp.bootstrap_label;
-        let setup_btn = &imp.bootstrap_setup_btn;
-
-        match identity_state {
-            IdentityState::Missing => {
-                label.set_label(&gettext(
-                    "You need to set up an encryption identity, since it has never been created.",
-                ));
-                setup_btn.add_css_class("suggested-action");
-                setup_btn.remove_css_class("destructive-action");
-                setup_btn.set_content_label(gettext("Set Up"));
-            }
-            IdentityState::NoSessions => {
-                label.set_label(&gettext("No other sessions are available to verify this session. You can either restore cross-signing from another session and restart this process, or reset the encryption identity."));
-                setup_btn.remove_css_class("suggested-action");
-                setup_btn.add_css_class("destructive-action");
-                setup_btn.set_content_label(gettext("Reset"));
-            }
-            IdentityState::CanVerify => {
-                label.set_label(&gettext("If you lost access to all other sessions, you can create a new encryption identity. Be careful because this will cancel the verifications of all users and sessions."));
-                setup_btn.remove_css_class("suggested-action");
-                setup_btn.add_css_class("destructive-action");
-                setup_btn.set_content_label(gettext("Reset"));
-            }
+        if !imp.stack.is_transition_running() {
+            // Focus the default widget when the transition has ended.
+            imp.grab_focus();
         }
     }
 
-    /// Create a new encryption user identity.
+    // Emit the `completed` signal.
     #[template_callback]
-    fn bootstrap_cross_signing(&self) {
-        self.imp().bootstrap_setup_btn.set_loading(true);
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.bootstrap_cross_signing_inner().await;
-        }));
+    fn emit_completed(&self) {
+        self.emit_by_name::<()>("completed", &[]);
     }
 
-    async fn bootstrap_cross_signing_inner(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let dialog = AuthDialog::new(&session);
-
-        let result = dialog
-            .authenticate(self, move |client, auth| async move {
-                client.encryption().bootstrap_cross_signing(auth).await
-            })
-            .await;
-
-        let error_message = match result {
-            Ok(_) => None,
-            Err(AuthError::UserCancelled) => {
-                error!("Could not bootstrap cross-signing: User cancelled the authentication");
-                Some(gettext(
-                    "You cancelled the authentication needed to create the encryption identity.",
-                ))
-            }
-            Err(error) => {
-                error!("Could not bootstrap cross-signing: {error:?}");
-                Some(gettext(
-                    "An error occurred during the creation of the encryption identity.",
-                ))
-            }
-        };
-
-        if let Some(error_message) = error_message {
-            toast!(self, error_message);
-            self.imp().bootstrap_setup_btn.set_loading(false);
-        } else {
-            self.emit_by_name::<()>("completed", &[]);
-        }
-    }
-
-    /// Create a new verification request.
-    #[template_callback]
-    fn send_request(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-
-        self.imp().send_request_btn.set_loading(true);
-
-        spawn!(clone!(@weak self as obj, @weak session => async move {
-            let imp = obj.imp();
-
-            match session.verification_list().create(None).await {
-                Ok(_) => {
-                    // The verification should be shown automatically.
-                }
-                Err(()) => {
-                    toast!(obj, gettext("Could not send a new verification request"));
-                }
-            }
-
-            imp.send_request_btn.set_loading(false);
-        }));
-    }
-
-    /// Connect to the signal emitted when the setup was completed.
+    /// Connect to the signal emitted when the setup is completed.
     pub fn connect_completed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "completed",

@@ -3,6 +3,7 @@ mod audio_player;
 mod auth_dialog;
 mod avatar;
 mod context_menu_bin;
+pub mod crypto;
 mod custom_entry;
 mod drag_overlay;
 mod editable_avatar;

@@ -1,0 +1,508 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
+use gtk::{
+    glib,
+    glib::{clone, closure_local},
+    CompositeTemplate,
+};
+use tracing::{debug, error};
+
+use super::{CryptoRecoverySetupInitialPage, CryptoRecoverySetupView};
+use crate::{
+    components::{AuthDialog, AuthError, SpinnerButton},
+    identity_verification_view::IdentityVerificationView,
+    session::model::{
+        CryptoIdentityState, IdentityVerification, RecoveryState, Session, SessionVerificationState,
+    },
+    spawn, toast,
+    utils::BoundObjectWeakRef,
+};
+
+/// A page of the crypto identity setup navigation stack.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::EnumString, strum::AsRefStr, glib::Variant)]
+#[strum(serialize_all = "kebab-case")]
+enum CryptoIdentitySetupPage {
+    /// Choose a verification method.
+    ChooseMethod,
+    /// In-progress verification.
+    Verify,
+    /// Bootstrap cross-signing.
+    Bootstrap,
+    /// Use recovery or reset cross-signing and recovery.
+    Recovery,
+}
+
+/// The result of the crypto identity setup.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "CryptoIdentitySetupNextStep")]
+pub enum CryptoIdentitySetupNextStep {
+    /// No more steps should be needed.
+    None,
+    /// We should enable the recovery, if it is disabled.
+    EnableRecovery,
+    /// We should make sure that the recovery is fully set up.
+    CompleteRecovery,
+}
+
+mod imp {
+    use std::cell::{OnceCell, RefCell};
+
+    use glib::subclass::{InitializingObject, Signal};
+    use once_cell::sync::Lazy;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/components/crypto/identity_setup_view.ui")]
+    #[properties(wrapper_type = super::CryptoIdentitySetupView)]
+    pub struct CryptoIdentitySetupView {
+        #[template_child]
+        pub navigation: TemplateChild<adw::NavigationView>,
+        #[template_child]
+        pub send_request_btn: TemplateChild<SpinnerButton>,
+        #[template_child]
+        pub use_recovery_btn: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub verification_page: TemplateChild<IdentityVerificationView>,
+        #[template_child]
+        pub bootstrap_title: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub bootstrap_description_1: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub bootstrap_description_2: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub bootstrap_btn: TemplateChild<SpinnerButton>,
+        /// The current session.
+        #[property(get, set = Self::set_session, construct_only)]
+        pub session: glib::WeakRef<Session>,
+        /// The ongoing identity verification, if any.
+        #[property(get)]
+        pub verification: BoundObjectWeakRef<IdentityVerification>,
+        verification_list_handler: RefCell<Option<glib::SignalHandlerId>>,
+        /// The recovery view.
+        recovery_view: OnceCell<CryptoRecoverySetupView>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for CryptoIdentitySetupView {
+        const NAME: &'static str = "CryptoIdentitySetupView";
+        type Type = super::CryptoIdentitySetupView;
+        type ParentType = adw::Bin;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+
+            klass.set_css_name("setup-view");
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for CryptoIdentitySetupView {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![
+                    // The crypto identity setup is done.
+                    Signal::builder("completed")
+                        .param_types([CryptoIdentitySetupNextStep::static_type()])
+                        .build(),
+                ]
+            });
+            SIGNALS.as_ref()
+        }
+
+        fn dispose(&self) {
+            if let Some(verification) = self.verification.obj() {
+                spawn!(clone!(@strong verification => async move {
+                    let _ = verification.cancel().await;
+                }));
+            }
+
+            if let Some(session) = self.session.upgrade() {
+                if let Some(handler) = self.verification_list_handler.take() {
+                    session.verification_list().disconnect(handler);
+                }
+            }
+        }
+    }
+
+    impl WidgetImpl for CryptoIdentitySetupView {
+        fn grab_focus(&self) -> bool {
+            match self.visible_page() {
+                CryptoIdentitySetupPage::ChooseMethod => self.send_request_btn.grab_focus(),
+                CryptoIdentitySetupPage::Verify => self.verification_page.grab_focus(),
+                CryptoIdentitySetupPage::Bootstrap => self.bootstrap_btn.grab_focus(),
+                CryptoIdentitySetupPage::Recovery => self.recovery_view().grab_focus(),
+            }
+        }
+    }
+
+    impl BinImpl for CryptoIdentitySetupView {}
+
+    impl CryptoIdentitySetupView {
+        /// The visible page of the view.
+        fn visible_page(&self) -> CryptoIdentitySetupPage {
+            self.navigation
+                .visible_page()
+                .and_then(|p| p.tag())
+                .and_then(|t| t.as_str().try_into().ok())
+                .unwrap()
+        }
+
+        /// The recovery view.
+        fn recovery_view(&self) -> &CryptoRecoverySetupView {
+            self.recovery_view.get_or_init(|| {
+                let session = self
+                    .session
+                    .upgrade()
+                    .expect("Session should still have a strong reference");
+                let recovery_view = CryptoRecoverySetupView::new(&session, true);
+
+                let obj = self.obj();
+                recovery_view.connect_completed(clone!(@weak obj => move |_| {
+                    obj.emit_completed(CryptoIdentitySetupNextStep::None);
+                }));
+
+                recovery_view
+            })
+        }
+
+        /// Set the current session.
+        fn set_session(&self, session: &Session) {
+            self.session.set(Some(session));
+
+            // Use received verification requests too.
+            let verification_list = session.verification_list();
+            let verification_list_handler = verification_list.connect_items_changed(
+                clone!(@weak self as imp => move |verification_list, _, _, _| {
+                    if imp.verification.obj().is_some() {
+                        // We don't want to override the current verification.
+                        return;
+                    }
+
+                    if let Some(verification) = verification_list.ongoing_session_verification() {
+                        imp.set_verification(Some(verification));
+                    }
+                }),
+            );
+            self.verification_list_handler
+                .replace(Some(verification_list_handler));
+
+            self.init();
+        }
+
+        /// Initialize the view.
+        fn init(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            // Initialize bootstrap/reset page.
+            self.update_bootstrap();
+
+            // If the session is already verified, offer to reset it.
+            let verification_state = session.verification_state();
+            if verification_state == SessionVerificationState::Verified {
+                self.navigation
+                    .replace_with_tags(&[CryptoIdentitySetupPage::Bootstrap.as_ref()]);
+                return;
+            }
+
+            let crypto_identity_state = session.crypto_identity_state();
+            let recovery_state = session.recovery_state();
+
+            // If there is no crypto identity, we need to bootstrap it.
+            if crypto_identity_state == CryptoIdentityState::Missing {
+                self.navigation
+                    .replace_with_tags(&[CryptoIdentitySetupPage::Bootstrap.as_ref()]);
+                return;
+            }
+
+            // If there is no other session available, we can only use recovery or reset.
+            if crypto_identity_state == CryptoIdentityState::LastManStanding {
+                // If recovery is disabled, we can only reset.
+                if recovery_state == RecoveryState::Disabled {
+                    self.navigation
+                        .replace_with_tags(&[CryptoIdentitySetupPage::Bootstrap.as_ref()]);
+                    return;
+                }
+
+                // We can recover or reset.
+                let recovery_view = self.recovery_page(CryptoRecoverySetupInitialPage::Recover);
+                self.navigation.replace(&[recovery_view]);
+
+                return;
+            }
+
+            if let Some(verification) = session.verification_list().ongoing_session_verification() {
+                self.set_verification(Some(verification));
+            }
+
+            // Choose methods is the default page.
+            self.update_choose_methods();
+        }
+
+        /// Update the choose methods page for the current state.
+        fn update_choose_methods(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let can_recover = session.recovery_state() != RecoveryState::Disabled;
+            self.use_recovery_btn.set_visible(can_recover);
+        }
+
+        /// Update the cross-signing bootstrap page for the current state.
+        fn update_bootstrap(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let reset = session.crypto_identity_state() != CryptoIdentityState::Missing;
+
+            let title = &self.bootstrap_title;
+            let description_1 = &self.bootstrap_description_1;
+            let description_2 = &self.bootstrap_description_2;
+            let setup_btn = &self.bootstrap_btn;
+
+            if reset {
+                title.set_label(&gettext("Reset Crypto Identity"));
+                description_2.set_label(&gettext(
+                    "This will cancel the verifications of all users and sessions",
+                ));
+                setup_btn.remove_css_class("suggested-action");
+                setup_btn.add_css_class("destructive-action");
+                setup_btn.set_content_label(gettext("Reset"));
+
+                let is_verified =
+                    session.verification_state() == SessionVerificationState::Verified;
+                let label = if is_verified {
+                    gettext("You should reset your crypto identity if a device that does not belong to you managed to be verified")
+                } else {
+                    gettext("Since no other sessions are available to verify this device and account recovery cannot be used, you need to reset your crypto identity")
+                };
+                description_1.set_label(&label);
+            } else {
+                title.set_label(&gettext("Set Up Crypto Identity"));
+                description_1.set_label(&gettext(
+                    "You need to set up a crypto identity, since it has never been created",
+                ));
+                description_2.set_label(&gettext(
+                    "Your crypto identity allows you to verify other Matrix accounts and automatically trust their verified sessions",
+                ));
+                setup_btn.add_css_class("suggested-action");
+                setup_btn.remove_css_class("destructive-action");
+                setup_btn.set_content_label(gettext("Set Up"));
+            }
+        }
+
+        /// Set the ongoing identity verification.
+        ///
+        /// Cancels the previous verification if it's not finished.
+        pub(super) fn set_verification(&self, verification: Option<IdentityVerification>) {
+            let prev_verification = self.verification.obj();
+
+            if prev_verification == verification {
+                return;
+            }
+            let obj = self.obj();
+
+            if let Some(verification) = prev_verification {
+                if !verification.is_finished() {
+                    spawn!(clone!(@strong verification => async move {
+                        let _ = verification.cancel().await;
+                    }));
+                }
+
+                self.verification.disconnect_signals();
+            }
+
+            if let Some(verification) = &verification {
+                let replaced_handler = verification.connect_replaced(
+                    clone!(@weak self as imp => move |_, new_verification| {
+                        imp.set_verification(Some(new_verification.clone()));
+                    }),
+                );
+                let done_handler = verification.connect_done(
+                    clone!(@weak obj => @default-return glib::Propagation::Stop, move |verification| {
+                        obj.emit_completed(CryptoIdentitySetupNextStep::EnableRecovery);
+                        obj.imp().set_verification(None);
+                        verification.remove_from_list();
+
+                        glib::Propagation::Stop
+                    }),
+                );
+                let remove_handler =
+                    verification.connect_dismiss(clone!(@weak self as imp => move |_| {
+                        imp.navigation.pop();
+                        imp.set_verification(None);
+                    }));
+
+                self.verification.set(
+                    verification,
+                    vec![replaced_handler, done_handler, remove_handler],
+                );
+            }
+
+            let has_verification = verification.is_some();
+            self.verification_page.set_verification(verification);
+
+            if has_verification
+                && !self
+                    .navigation
+                    .visible_page()
+                    .and_then(|p| p.tag())
+                    .is_some_and(|t| t == CryptoIdentitySetupPage::Verify.as_ref())
+            {
+                self.navigation
+                    .push_by_tag(CryptoIdentitySetupPage::Verify.as_ref());
+            }
+
+            obj.notify_verification();
+        }
+
+        /// Construct the recovery view and wrap it into a navigation page.
+        pub(super) fn recovery_page(
+            &self,
+            initial_page: CryptoRecoverySetupInitialPage,
+        ) -> adw::NavigationPage {
+            let recovery_view = self.recovery_view();
+            recovery_view.set_initial_page(initial_page);
+
+            let page = adw::NavigationPage::builder()
+                .tag(CryptoIdentitySetupPage::Recovery.as_ref())
+                .child(recovery_view)
+                .build();
+            page.connect_shown(clone!(@weak recovery_view => move |_| {
+                recovery_view.grab_focus();
+            }));
+
+            page
+        }
+    }
+}
+
+glib::wrapper! {
+    /// A view with the different flows to setup a crypto identity.
+    pub struct CryptoIdentitySetupView(ObjectSubclass<imp::CryptoIdentitySetupView>)
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+}
+
+#[gtk::template_callbacks]
+impl CryptoIdentitySetupView {
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
+    }
+
+    /// Focus the proper widget for the current page.
+    #[template_callback]
+    fn grab_focus(&self) {
+        self.imp().grab_focus();
+    }
+
+    /// Create a new verification request.
+    #[template_callback]
+    async fn send_request(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.send_request_btn.set_loading(true);
+
+        match session.verification_list().create(None).await {
+            Ok(_) => {
+                // The verification should be shown automatically.
+            }
+            Err(()) => {
+                toast!(self, gettext("Could not send a new verification request"));
+            }
+        }
+
+        imp.send_request_btn.set_loading(false);
+    }
+
+    /// Reset cross-signing and optionally recovery.
+    #[template_callback]
+    fn reset(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let imp = self.imp();
+        let can_recover = session.recovery_state() != RecoveryState::Disabled;
+
+        if can_recover {
+            let recovery_view = imp.recovery_page(CryptoRecoverySetupInitialPage::Reset);
+            imp.navigation.push(&recovery_view);
+        } else {
+            imp.navigation
+                .push_by_tag(CryptoIdentitySetupPage::Bootstrap.as_ref());
+        }
+    }
+
+    /// Create a new crypto user identity.
+    #[template_callback]
+    async fn bootstrap_cross_signing(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.bootstrap_btn.set_loading(true);
+
+        let dialog = AuthDialog::new(&session);
+
+        let result = dialog
+            .authenticate(self, move |client, auth| async move {
+                client.encryption().bootstrap_cross_signing(auth).await
+            })
+            .await;
+
+        match result {
+            Ok(_) => self.emit_completed(CryptoIdentitySetupNextStep::CompleteRecovery),
+            Err(AuthError::UserCancelled) => {
+                debug!("User cancelled authentication for cross-signing bootstrap");
+            }
+            Err(error) => {
+                error!("Could not bootstrap cross-signing: {error:?}");
+                toast!(self, gettext("Could not create the crypto identity",));
+            }
+        }
+
+        imp.bootstrap_btn.set_loading(false);
+    }
+
+    /// Recover the data.
+    #[template_callback]
+    fn recover(&self) {
+        let imp = self.imp();
+
+        let recovery_view = imp.recovery_page(CryptoRecoverySetupInitialPage::Recover);
+        imp.navigation.push(&recovery_view);
+    }
+
+    // Emit the `completed` signal.
+    #[template_callback]
+    fn emit_completed(&self, next: CryptoIdentitySetupNextStep) {
+        self.emit_by_name::<()>("completed", &[&next]);
+    }
+
+    /// Connect to the signal emitted when the setup is completed.
+    pub fn connect_completed<F: Fn(&Self, CryptoIdentitySetupNextStep) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "completed",
+            true,
+            closure_local!(move |obj: Self, next: CryptoIdentitySetupNextStep| {
+                f(&obj, next);
+            }),
+        )
+    }
+}

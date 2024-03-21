@@ -12,6 +12,10 @@ src/application.rs
 src/components/action_button.ui
 src/components/auth_dialog.rs
 src/components/auth_dialog.ui
+src/components/crypto/identity_setup_view.rs
+src/components/crypto/identity_setup_view.ui
+src/components/crypto/recovery_setup_view.rs
+src/components/crypto/recovery_setup_view.ui
 src/components/editable_avatar.rs
 src/components/editable_avatar.ui
 src/components/offline_banner.rs
@@ -59,7 +63,6 @@ src/login/method_page.rs
 src/login/method_page.ui
 src/login/mod.rs
 src/login/mod.ui
-src/login/session_setup_view.rs
 src/login/session_setup_view.ui
 src/login/sso_page.ui
 src/secret/linux.rs
