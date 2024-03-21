@@ -1,5 +1,3 @@
-use std::convert::AsRef;
-
 use futures_channel::mpsc;
 use gst_video::{prelude::*, video_frame::VideoFrameRef, VideoInfo};
 use image::{GenericImage, GenericImageView, Luma};

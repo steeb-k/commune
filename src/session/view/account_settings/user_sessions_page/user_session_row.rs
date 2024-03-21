@@ -1,4 +1,4 @@
-use adw::{self, prelude::*};
+use adw::prelude::*;
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 

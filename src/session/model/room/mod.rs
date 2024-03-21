@@ -880,9 +880,9 @@ impl Room {
                             let mut category = RoomType::Normal;
 
                             if let Ok(Some(tags)) = tags.await.unwrap() {
-                                if tags.get(&TagName::Favorite).is_some() {
+                                if tags.contains_key(&TagName::Favorite) {
                                     category = RoomType::Favorite;
-                                } else if tags.get(&TagName::LowPriority).is_some() {
+                                } else if tags.contains_key(&TagName::LowPriority) {
                                     category = RoomType::LowPriority;
                                 }
                             }

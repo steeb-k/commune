@@ -43,7 +43,7 @@ impl SidebarItem {
 }
 
 mod imp {
-    use std::cell::{Cell, OnceCell};
+    use std::cell::OnceCell;
 
     use super::*;
 

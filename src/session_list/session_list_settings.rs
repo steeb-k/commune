@@ -11,7 +11,6 @@ mod imp {
     use std::cell::RefCell;
 
     use super::*;
-    use crate::session::model::SessionSettings;
 
     #[derive(Debug, Default)]
     pub struct SessionListSettings {

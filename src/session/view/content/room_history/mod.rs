@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
+use gtk::{gdk, gio, glib, glib::clone, graphene::Point, CompositeTemplate};
 use matrix_sdk::ruma::EventId;
 use ruma::{
     api::client::receipt::create_receipt::v3::ReceiptType, events::receipt::ReceiptThread,
@@ -722,8 +722,9 @@ impl RoomHistory {
 
         imp.is_auto_scrolling.set(true);
 
-        imp.scrolled_window
-            .emit_scroll_child(gtk::ScrollType::End, false);
+        let num_events = self.selection_model().n_items();
+        imp.listview
+            .scroll_to(num_events - 1, gtk::ListScrollFlags::FOCUS, None);
     }
 
     /// Set `RoomHistory` to stick to the bottom based on scrollbar position
@@ -783,10 +784,9 @@ impl RoomHistory {
 
         if let Some(pos) = room.timeline().find_event_position(key) {
             let pos = pos as u32;
-            let _ = self
-                .imp()
+            self.imp()
                 .listview
-                .activate_action("list.scroll-to-item", Some(&pos.to_variant()));
+                .scroll_to(pos, gtk::ListScrollFlags::FOCUS, None);
         }
     }
 
@@ -862,15 +862,19 @@ impl RoomHistory {
         let listview = &*self.imp().listview;
         let mut child = listview.last_child();
         // The visible part of the listview spans between 0 and max.
-        let max = listview.height() as f64;
+        let max = listview.height() as f32;
 
         while let Some(item) = child {
             // Vertical position of the top of the item.
-            let (_, top_pos) = item.translate_coordinates(listview, 0.0, 0.0).unwrap();
+            let top_pos = item
+                .compute_point(listview, &Point::new(0.0, 0.0))
+                .unwrap()
+                .y();
             // Vertical position of the bottom of the item.
-            let (_, bottom_pos) = item
-                .translate_coordinates(listview, 0.0, item.height() as f64)
-                .unwrap();
+            let bottom_pos = item
+                .compute_point(listview, &Point::new(0.0, item.height() as f32))
+                .unwrap()
+                .y();
 
             let top_in_view = top_pos > 0.0 && top_pos <= max;
             let bottom_in_view = bottom_pos > 0.0 && bottom_pos <= max;

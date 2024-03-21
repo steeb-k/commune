@@ -19,9 +19,9 @@ if pre_release_version != ''
 endif
 full_version = version
 
-dependency('glib-2.0', version: '>= 2.72') # update when changing gtk version
-dependency('gio-2.0', version: '>= 2.72') # always same version as glib
-dependency('gtk4', version: '>= 4.10.0')
+dependency('glib-2.0', version: '>= 2.76') # update when changing gtk version
+dependency('gio-2.0', version: '>= 2.76') # always same version as glib
+dependency('gtk4', version: '>= 4.12.0')
 dependency(
   'libadwaita-1', version: '>= 1.5.beta',
   fallback: ['libadwaita', 'libadwaita_dep'],
