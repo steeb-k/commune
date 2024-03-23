@@ -71,7 +71,7 @@
                             <child>
                               <object class="GtkButton" id="use_recovery_btn">
                                 <property name="can-shrink">true</property>
-                                <property name="label" translatable="yes">Use Account Recovery</property>
+                                <property name="label" translatable="yes">Recover Account</property>
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="recover" swapped="yes" />
                                 <style>

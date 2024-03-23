@@ -14,10 +14,14 @@ use self::{
     },
     user_sessions_page::UserSessionsPage,
 };
-use crate::{session::model::Session, utils::BoundObjectWeakRef};
+use crate::{
+    components::crypto::{CryptoIdentitySetupView, CryptoRecoverySetupView},
+    session::model::Session,
+    utils::BoundObjectWeakRef,
+};
 
 /// A subpage of the account settings.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, glib::Variant)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, glib::Variant, strum::AsRefStr)]
 pub enum AccountSettingsSubpage {
     /// A form to change the account's password.
     ChangePassword,
@@ -31,6 +35,10 @@ pub enum AccountSettingsSubpage {
     ImportKeys,
     /// A form to export encryption keys.
     ExportKeys,
+    /// The crypto identity setup view.
+    CryptoIdentitySetup,
+    /// The recovery setup view.
+    RecoverySetup,
 }
 
 mod imp {
@@ -152,6 +160,38 @@ impl AccountSettings {
             }
             AccountSettingsSubpage::ExportKeys => {
                 ImportExportKeysSubpage::new(&session, ImportExportKeysSubpageMode::Export).upcast()
+            }
+            AccountSettingsSubpage::CryptoIdentitySetup => {
+                let view = CryptoIdentitySetupView::new(&session);
+                view.connect_completed(clone!(@weak self as obj => move |_, _| {
+                    obj.pop_subpage();
+                }));
+
+                let page = adw::NavigationPage::builder()
+                    .tag(AccountSettingsSubpage::CryptoIdentitySetup.as_ref())
+                    .child(&view)
+                    .build();
+                page.connect_shown(clone!(@weak view => move |_| {
+                    view.grab_focus();
+                }));
+
+                page
+            }
+            AccountSettingsSubpage::RecoverySetup => {
+                let view = CryptoRecoverySetupView::new(&session, false);
+                view.connect_completed(clone!(@weak self as obj => move |_| {
+                    obj.pop_subpage();
+                }));
+
+                let page = adw::NavigationPage::builder()
+                    .tag(AccountSettingsSubpage::RecoverySetup.as_ref())
+                    .child(&view)
+                    .build();
+                page.connect_shown(clone!(@weak view => move |_| {
+                    view.grab_focus();
+                }));
+
+                page
             }
         };
 

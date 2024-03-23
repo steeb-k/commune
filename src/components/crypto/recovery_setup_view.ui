@@ -43,7 +43,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">Use recovery to restore full access to your account</property>
+                                <property name="label" translatable="yes">Restore full access to your account.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -51,7 +51,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">To access the recovery data, we need the recovery passphrase or the recovery key that is usually set up when you create your account</property>
+                                <property name="label" translatable="yes">To access the recovery data, we need the recovery passphrase or the recovery key that is usually set up when you create your account.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -158,7 +158,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">If you do not provide a new recovery passphrase, a recovery key will be created</property>
+                                <property name="label" translatable="yes">If you do not provide a new recovery passphrase, a recovery key will be created.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -166,7 +166,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">You should not reuse the password of your Matrix account as a passphrase, otherwise if someone manages to get your account password, they will also be able to access all your encrypted conversations and to impersonate you</property>
+                                <property name="label" translatable="yes">You should not reuse the password of your Matrix account as a passphrase. Otherwise, if someone manages to get your account password, they will also be able to access all your encrypted conversations and to impersonate you.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -245,7 +245,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">Account recovery allows you to recover your crypto identity and to be able to read your encrypted messages even if you lose access to all your sessions</property>
+                                <property name="label" translatable="yes">Account recovery allows you to recover your crypto identity and to be able to read your encrypted messages even if you lose access to all your sessions.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -253,7 +253,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">If you do not provide a recovery passphrase, a recovery key will be created</property>
+                                <property name="label" translatable="yes">If you do not provide a recovery passphrase, a recovery key will be created.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -261,7 +261,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">You should not reuse the password of your Matrix account as a passphrase, otherwise if someone manages to get your account password, they will also be able to access all your encrypted conversations and to impersonate you</property>
+                                <property name="label" translatable="yes">You should not reuse the password of your Matrix account as a passphrase. Otherwise, if someone manages to get your account password, they will also be able to access all your encrypted conversations and to impersonate you.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -385,7 +385,7 @@
                             <child>
                               <object class="GtkButton" id="success_confirm_btn">
                                 <property name="can-shrink">True</property>
-                                <property name="label" translatable="yes">Understood</property>
+                                <property name="label" translatable="yes">OK</property>
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="emit_completed" swapped="yes" />
                                 <style>

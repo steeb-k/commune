@@ -56,8 +56,13 @@
     <file preprocess="xml-stripblanks">icons/scalable/status/no-camera-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/notifications-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/security-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/sync-off-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/sync-on-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/sync-partial-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/users-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/verified-danger-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/verified-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/status/verified-warning-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/video-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/status/warning-symbolic.svg</file>
     <file preprocess="json-stripblanks">mapstyle/osm-liberty/sprites.json</file>

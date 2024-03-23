@@ -153,6 +153,27 @@ button.overlaid {
   margin-top: 6px;
 }
 
+.card-icon {
+  padding: 12px;
+  border-radius: 100%;
+  -gtk-icon-size: 20px;
+}
+
+.card-icon.success {
+  color: @success_color;
+  background-color: alpha(@success_bg_color,.3);
+}
+
+.card-icon.warning {
+  color: @warning_color;
+  background-color: alpha(@warning_bg_color,.3);
+}
+
+.card-icon.error {
+  color: @error_color;
+  background-color: alpha(@error_bg_color,.3);
+}
+
 
 /* Components */
 

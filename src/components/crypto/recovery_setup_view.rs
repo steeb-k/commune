@@ -171,9 +171,9 @@ mod imp {
             self.reset_page.set_title(&title);
 
             let description = if reset {
-                gettext("This will cancel the verifications of all users and sessions, and you might not be able to read your encrypted messages anymore")
+                gettext("This will invalidate the verifications of all users and sessions, and you might not be able to read your encrypted messages anymore.")
             } else {
-                gettext("You might not be able to read your encrypted messages anymore")
+                gettext("You might not be able to read your encrypted messages anymore.")
             };
             self.reset_description.set_label(&description);
         }

@@ -272,7 +272,7 @@ mod imp {
             if reset {
                 title.set_label(&gettext("Reset Crypto Identity"));
                 description_2.set_label(&gettext(
-                    "This will cancel the verifications of all users and sessions",
+                    "This will invalidate the verifications of all users and sessions.",
                 ));
                 setup_btn.remove_css_class("suggested-action");
                 setup_btn.add_css_class("destructive-action");
@@ -281,18 +281,18 @@ mod imp {
                 let is_verified =
                     session.verification_state() == SessionVerificationState::Verified;
                 let label = if is_verified {
-                    gettext("You should reset your crypto identity if a device that does not belong to you managed to be verified")
+                    gettext("You should reset your crypto identity if a device that does not belong to you managed to be verified.")
                 } else {
-                    gettext("Since no other sessions are available to verify this device and account recovery cannot be used, you need to reset your crypto identity")
+                    gettext("Since no other sessions are available to verify this device and account recovery cannot be used, you need to reset your crypto identity.")
                 };
                 description_1.set_label(&label);
             } else {
                 title.set_label(&gettext("Set Up Crypto Identity"));
                 description_1.set_label(&gettext(
-                    "You need to set up a crypto identity, since it has never been created",
+                    "You need to set up a crypto identity, since it has never been created.",
                 ));
                 description_2.set_label(&gettext(
-                    "Your crypto identity allows you to verify other Matrix accounts and automatically trust their verified sessions",
+                    "Your crypto identity allows you to verify other Matrix accounts and automatically trust their verified sessions.",
                 ));
                 setup_btn.add_css_class("suggested-action");
                 setup_btn.remove_css_class("destructive-action");
