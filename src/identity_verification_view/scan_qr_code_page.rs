@@ -207,7 +207,7 @@ impl ScanQrCodePage {
             return;
         };
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
+        spawn!(clone!(@weak self as obj => async move {
             if verification.qr_code_scanned(data).await.is_err() {
                 toast!(obj, gettext("Could not validate scanned QR Code"));
             }

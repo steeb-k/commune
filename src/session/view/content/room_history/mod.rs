@@ -326,9 +326,9 @@ mod imp {
                 clone!(@weak obj => @default-return false, move |_, value, _, _| {
                     match value.get::<gio::File>() {
                         Ok(file) => {
-                            spawn!(clone!(@weak obj => async move {
+                            spawn!(async move {
                                 obj.message_toolbar().send_file(file).await;
-                            }));
+                            });
                             true
                         }
                         Err(error) => {

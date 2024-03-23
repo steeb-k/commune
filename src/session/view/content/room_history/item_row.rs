@@ -472,15 +472,15 @@ impl ItemRow {
         action_group.add_action_entries([
             // Create a permalink.
             gio::ActionEntry::builder("permalink")
-                .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                    spawn!(clone!(@weak widget, @weak event => async move {
+                .activate(clone!(@weak self as obj, @weak event => move |_, _, _| {
+                    spawn!(async move {
                         let Some(permalink) = event.matrix_to_uri().await else {
                             return;
                         };
 
-                        widget.clipboard().set_text(&permalink.to_string());
-                        toast!(widget, gettext("Permalink copied to clipboard"));
-                    }));
+                        obj.clipboard().set_text(&permalink.to_string());
+                        toast!(obj, gettext("Permalink copied to clipboard"));
+                    });
                 }))
                 .build(),
         ]);
@@ -489,10 +489,10 @@ impl ItemRow {
             action_group.add_action_entries([
                 // Report the event.
                 gio::ActionEntry::builder("report")
-                    .activate(clone!(@weak self as widget => move |_, _, _| {
-                        spawn!(clone!(@weak widget => async move {
-                            widget.report_event().await;
-                        }));
+                    .activate(clone!(@weak self as obj => move |_, _, _| {
+                        spawn!(async move {
+                            obj.report_event().await;
+                        });
                     }))
                     .build(),
             ]);
@@ -509,9 +509,9 @@ impl ItemRow {
             {
                 action_group.add_action_entries([gio::ActionEntry::builder("remove")
                     .activate(clone!(@weak self as obj, => move |_, _, _| {
-                        spawn!(clone!(@weak obj => async move {
+                        spawn!(async move {
                             obj.redact_message().await;
-                        }));
+                        });
                     }))
                     .build()]);
             };
@@ -525,9 +525,9 @@ impl ItemRow {
                             return;
                         };
 
-                        spawn!(clone!(@weak obj => async move {
+                        spawn!(async move {
                             obj.toggle_reaction(key).await;
-                        }));
+                        });
                     }))
                     .build()]);
             }

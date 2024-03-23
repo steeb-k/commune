@@ -209,9 +209,9 @@ mod imp {
                         obj.update_history_visibility();
                         obj.update_encryption();
 
-                        spawn!(clone!(@weak obj => async move {
+                        spawn!(async move {
                             obj.update_publish().await;
-                        }));
+                        });
                     }));
             self.permissions_handler.replace(Some(permissions_handler));
 
@@ -397,18 +397,14 @@ impl GeneralPage {
     fn init_avatar(&self) {
         let avatar = &*self.imp().avatar;
         avatar.connect_edit_avatar(clone!(@weak self as obj => move |_, file| {
-            spawn!(
-                clone!(@weak obj => async move {
-                    obj.change_avatar(file).await;
-                })
-            );
+            spawn!(async move {
+                obj.change_avatar(file).await;
+            });
         }));
         avatar.connect_remove_avatar(clone!(@weak self as obj => move |_| {
-            spawn!(
-                clone!(@weak obj => async move {
-                    obj.remove_avatar().await;
-                })
-            );
+            spawn!(async move {
+                obj.remove_avatar().await;
+            });
         }));
     }
 
@@ -864,19 +860,17 @@ impl GeneralPage {
         self.set_notifications_loading(true, setting);
 
         let settings = session.notifications().settings();
-        spawn!(
-            clone!(@weak self as obj, @weak room, @weak settings => async move {
-                if settings.set_per_room_setting(room.room_id().to_owned(), setting).await.is_err() {
-                    toast!(
-                        obj,
-                        gettext("Could not change notifications setting")
-                    );
-                }
+        spawn!(clone!(@weak self as obj => async move {
+            if settings.set_per_room_setting(room.room_id().to_owned(), setting).await.is_err() {
+                toast!(
+                    obj,
+                    gettext("Could not change notifications setting")
+                );
+            }
 
-                obj.set_notifications_loading(false, setting);
-                obj.update_notifications();
-            })
-        );
+            obj.set_notifications_loading(false, setting);
+            obj.update_notifications();
+        }));
     }
 
     /// Update the button to edit addresses.

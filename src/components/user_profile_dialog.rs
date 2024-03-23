@@ -67,7 +67,7 @@ impl UserProfileDialog {
         let user = RemoteUser::new(session, user_id);
         imp.user_page.set_user(Some(user.clone()));
 
-        spawn!(clone!(@weak imp, @weak user => async move {
+        spawn!(clone!(@weak imp => async move {
             user.load_profile().await;
             imp.stack.set_visible_child_name("details");
         }));

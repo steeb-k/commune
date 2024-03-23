@@ -114,9 +114,9 @@ mod imp {
 
             let monitor = gio::NetworkMonitor::default();
             let handler_id = monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
-                spawn!(clone!(@weak obj => async move {
+                spawn!(async move {
                     obj.update_offline().await;
-                }));
+                });
             }));
 
             self.offline_handler_id.replace(Some(handler_id));

@@ -225,7 +225,7 @@ impl PublicRoomRow {
                     (id, via)
                 });
 
-            spawn!(clone!(@weak self as obj, @weak room_list => async move {
+            spawn!(clone!(@weak self as obj => async move {
                 if let Err(error) = room_list.join_by_id_or_alias(room_id, via).await {
                     toast!(obj, error);
                 }

@@ -447,9 +447,9 @@ impl Room {
         timeline
             .sdk_items()
             .connect_items_changed(clone!(@weak self as obj => move |_, _, _, _| {
-                spawn!(clone!(@weak obj => async move {
+                spawn!(async move {
                     obj.update_is_read().await;
-                }));
+                });
             }));
 
         if !matches!(self.category(), RoomType::Left | RoomType::Outdated) {

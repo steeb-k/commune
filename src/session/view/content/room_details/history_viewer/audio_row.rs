@@ -100,7 +100,7 @@ mod imp {
                     }
 
                     if let Some(session) = event.room().and_then(|r| r.session()) {
-                        spawn!(clone!(@weak obj, @weak session => async move {
+                        spawn!(clone!(@weak obj => async move {
                             obj.download_audio(audio, &session).await;
                         }));
                     }

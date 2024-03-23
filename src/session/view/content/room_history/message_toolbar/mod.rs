@@ -164,27 +164,28 @@ mod imp {
                     let formats = obj.clipboard().formats();
 
                     // We only handle files and supported images.
-                    if formats.contains_type(gio::File::static_type()) || formats.contains_type(gdk::Texture::static_type()) {
+                    if formats.contains_type(gio::File::static_type())
+                        || formats.contains_type(gdk::Texture::static_type())
+                    {
                         entry.stop_signal_emission_by_name("paste-clipboard");
-                        spawn!(
-                            clone!(@weak obj => async move {
-                                obj.read_clipboard().await;
-                        }));
+                        spawn!(async move {
+                            obj.read_clipboard().await;
+                        });
                     }
                 }));
             self.message_entry
                 .connect_copy_clipboard(clone!(@weak obj => move |entry| {
                     entry.stop_signal_emission_by_name("copy-clipboard");
 
-                    spawn!(clone!(@weak obj => async move {
+                    spawn!(async move {
                         obj.copy_buffer_selection_to_clipboard().await;
-                    }));
+                    });
                 }));
             self.message_entry
                 .connect_cut_clipboard(clone!(@weak obj => move |entry| {
                     entry.stop_signal_emission_by_name("cut-clipboard");
 
-                    spawn!(clone!(@weak obj, @weak entry => async move {
+                    spawn!(clone!(@weak entry => async move {
                         obj.copy_buffer_selection_to_clipboard().await;
                         entry.buffer().delete_selection(true, true);
                     }));
@@ -195,9 +196,9 @@ mod imp {
             key_events
                 .connect_key_pressed(clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_, key, _, modifier| {
                 if modifier.is_empty() && (key == gdk::Key::Return || key == gdk::Key::KP_Enter) {
-                    spawn!(clone!(@weak obj => async move {
+                    spawn!(async move {
                         obj.send_text_message().await;
-                    }));
+                    });
                     glib::Propagation::Stop
                 } else if modifier.is_empty() && key == gdk::Key::Escape && obj.related_event_type() != RelatedEventType::None {
                     obj.clear_related_event();

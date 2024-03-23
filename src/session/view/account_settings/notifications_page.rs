@@ -378,18 +378,16 @@ impl NotificationsPage {
 
         row.set_is_loading(true);
 
-        spawn!(
-            clone!(@weak self as obj, @weak settings, @weak row => async move {
-                if settings.remove_keyword(row.title().into()).await.is_err() {
-                    toast!(
-                        obj,
-                        gettext("Could not remove notification keyword")
-                    );
-                }
+        spawn!(clone!(@weak self as obj, @weak row => async move {
+            if settings.remove_keyword(row.title().into()).await.is_err() {
+                toast!(
+                    obj,
+                    gettext("Could not remove notification keyword")
+                );
+            }
 
-                row.set_is_loading(false);
-            })
-        );
+            row.set_is_loading(false);
+        }));
     }
 
     /// Whether we can add the keyword that is currently in the entry.

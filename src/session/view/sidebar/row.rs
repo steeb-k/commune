@@ -261,18 +261,18 @@ mod imp {
                         gio::ActionEntry::builder("accept-invite")
                             .activate(clone!(@weak obj => move |_, _, _| {
                                 if let Some(room) = obj.room() {
-                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                    spawn!(async move {
                                         obj.set_room_category(&room, RoomType::Normal).await;
-                                    }));
+                                    });
                                 }
                             }))
                             .build(),
                         gio::ActionEntry::builder("reject-invite")
                             .activate(clone!(@weak obj => move |_, _, _| {
                                 if let Some(room) = obj.room() {
-                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                    spawn!(async move {
                                         obj.set_room_category(&room, RoomType::Left).await;
-                                    }));
+                                    });
                                 }
                             }))
                             .build(),
@@ -283,9 +283,9 @@ mod imp {
                         action_group.add_action_entries([gio::ActionEntry::builder("set-normal")
                             .activate(clone!(@weak obj => move |_, _, _| {
                                 if let Some(room) = obj.room() {
-                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                    spawn!(async move {
                                         obj.set_room_category(&room, RoomType::Normal).await;
-                                    }));
+                                    });
                                 }
                             }))
                             .build()]);
@@ -297,9 +297,9 @@ mod imp {
                         )
                         .activate(clone!(@weak obj => move |_, _, _| {
                             if let Some(room) = obj.room() {
-                                spawn!(clone!(@weak obj, @weak room => async move {
+                                spawn!(async move {
                                     obj.set_room_category(&room, RoomType::Favorite).await;
-                                }));
+                                });
                             }
                         }))
                         .build()]);
@@ -311,9 +311,9 @@ mod imp {
                         )
                         .activate(clone!(@weak obj => move |_, _, _| {
                             if let Some(room) = obj.room() {
-                                spawn!(clone!(@weak obj, @weak room => async move {
+                                spawn!(async move {
                                     obj.set_room_category(&room, RoomType::LowPriority).await;
-                                }));
+                                });
                             }
                         }))
                         .build()]);
@@ -322,9 +322,9 @@ mod imp {
                     action_group.add_action_entries([gio::ActionEntry::builder("leave")
                         .activate(clone!(@weak obj => move |_, _, _| {
                             if let Some(room) = obj.room() {
-                                spawn!(clone!(@weak obj, @weak room => async move {
+                                spawn!(async move {
                                     obj.set_room_category(&room, RoomType::Left).await;
-                                }));
+                                });
                             }
                         }))
                         .build()]);
@@ -334,9 +334,9 @@ mod imp {
                         action_group.add_action_entries([gio::ActionEntry::builder("join")
                             .activate(clone!(@weak obj => move |_, _, _| {
                                 if let Some(room) = obj.room() {
-                                    spawn!(clone!(@weak obj, @weak room => async move {
+                                    spawn!(async move {
                                         obj.set_room_category(&room, RoomType::Normal).await;
-                                    }));
+                                    });
                                 }
                             }))
                             .build()]);
@@ -345,9 +345,9 @@ mod imp {
                     action_group.add_action_entries([gio::ActionEntry::builder("forget")
                         .activate(clone!(@weak obj => move |_, _, _| {
                             if let Some(room) = obj.room() {
-                                spawn!(clone!(@weak obj, @weak room => async move {
+                                spawn!(async move {
                                     obj.forget_room(&room).await;
-                                }));
+                                });
                             }
                         }))
                         .build()]);
@@ -444,14 +444,14 @@ impl Row {
         if let Ok(room) = value.get::<Room>() {
             if let Some(target_type) = self.room_type() {
                 if room.category().can_change_to(target_type) {
-                    spawn!(clone!(@weak self as obj, @weak room => async move {
+                    spawn!(clone!(@weak self as obj => async move {
                         obj.set_room_category(&room, target_type).await;
                     }));
                     ret = true;
                 }
             } else if let Some(item_type) = self.item_type() {
                 if room.category() == RoomType::Left && item_type == SidebarIconItemType::Forget {
-                    spawn!(clone!(@strong self as obj, @weak room => async move {
+                    spawn!(clone!(@strong self as obj => async move {
                         obj.forget_room(&room).await;
                     }));
                     ret = true;

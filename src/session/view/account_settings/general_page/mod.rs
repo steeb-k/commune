@@ -157,18 +157,14 @@ impl GeneralPage {
     fn init_avatar(&self) {
         let avatar = &self.imp().avatar;
         avatar.connect_edit_avatar(clone!(@weak self as obj => move |_, file| {
-            spawn!(
-                clone!(@weak obj => async move {
-                    obj.change_avatar(file).await;
-                })
-            );
+            spawn!(async move {
+                obj.change_avatar(file).await;
+            });
         }));
         avatar.connect_remove_avatar(clone!(@weak self as obj => move |_| {
-            spawn!(
-                clone!(@weak obj => async move {
-                    obj.remove_avatar().await;
-                })
-            );
+            spawn!(async move {
+                obj.remove_avatar().await;
+            });
         }));
     }
 

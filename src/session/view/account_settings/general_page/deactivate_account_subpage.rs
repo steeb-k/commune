@@ -56,24 +56,20 @@ mod imp {
             let obj = self.obj();
 
             self.confirmation
-                .connect_entry_activated(clone!(@weak obj => move|_| {
-                    spawn!(
-                        clone!(@weak obj => async move {
-                            obj.deactivate_account().await;
-                        })
-                    );
+                .connect_entry_activated(clone!(@weak obj => move |_| {
+                    spawn!(async move {
+                        obj.deactivate_account().await;
+                    });
                 }));
             self.confirmation
                 .connect_changed(clone!(@weak obj => move|_| {
                     obj.update_button();
                 }));
 
-            self.button.connect_clicked(clone!(@weak obj => move|_| {
-                spawn!(
-                    clone!(@weak obj => async move {
-                        obj.deactivate_account().await;
-                    })
-                );
+            self.button.connect_clicked(clone!(@weak obj => move |_| {
+                spawn!(async move {
+                    obj.deactivate_account().await;
+                });
             }));
         }
     }

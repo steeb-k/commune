@@ -191,9 +191,9 @@ impl NotificationsSettings {
             self.imp().api.take();
 
             session.connect_ready(clone!(@weak self as obj => move |_| {
-                spawn!(clone!(@weak obj => async move {
+                spawn!(async move {
                     obj.init_api().await;
-                }));
+                });
             }));
 
             return;
