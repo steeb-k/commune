@@ -33,7 +33,7 @@ mod imp {
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            AudioRow::static_type();
+            AudioRow::ensure_type();
 
             Self::bind_template(klass);
 

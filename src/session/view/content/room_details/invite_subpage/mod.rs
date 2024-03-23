@@ -61,7 +61,8 @@ mod imp {
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            InviteeRow::static_type();
+            InviteeRow::ensure_type();
+
             Self::bind_template(klass);
 
             klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {

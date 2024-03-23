@@ -37,7 +37,8 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            AvatarImage::static_type();
+            AvatarImage::ensure_type();
+
             Self::bind_template(klass);
 
             klass.set_accessible_role(gtk::AccessibleRole::Img);

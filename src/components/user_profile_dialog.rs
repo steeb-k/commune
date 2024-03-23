@@ -30,7 +30,7 @@ mod imp {
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::static_type();
+            Spinner::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

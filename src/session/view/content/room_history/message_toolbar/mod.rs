@@ -100,7 +100,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            CustomEntry::static_type();
+            CustomEntry::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

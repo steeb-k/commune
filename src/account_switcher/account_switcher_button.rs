@@ -34,8 +34,8 @@ mod imp {
         type ParentType = gtk::ToggleButton;
 
         fn class_init(klass: &mut Self::Class) {
-            Avatar::static_type();
-            SessionInfo::static_type();
+            Avatar::ensure_type();
+            SessionInfo::ensure_type();
 
             Self::bind_template(klass);
             TemplateCallbacks::bind_template_callbacks(klass);

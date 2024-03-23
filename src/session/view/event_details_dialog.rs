@@ -39,8 +39,8 @@ mod imp {
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            ButtonRow::static_type();
-            CopyableRow::static_type();
+            ButtonRow::ensure_type();
+            CopyableRow::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

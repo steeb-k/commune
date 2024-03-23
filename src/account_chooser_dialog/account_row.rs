@@ -41,7 +41,7 @@ mod imp {
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::static_type();
+            Spinner::ensure_type();
 
             Self::bind_template(klass);
         }

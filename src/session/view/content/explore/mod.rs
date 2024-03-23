@@ -52,10 +52,10 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            PublicRoom::static_type();
-            PublicRoomList::static_type();
-            PublicRoomRow::static_type();
-            Spinner::static_type();
+            PublicRoom::ensure_type();
+            PublicRoomList::ensure_type();
+            PublicRoomRow::ensure_type();
+            Spinner::ensure_type();
 
             Self::bind_template(klass);
 

@@ -35,7 +35,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             klass.set_layout_manager_type::<gtk::BinLayout>();
 
-            Spinner::static_type();
+            Spinner::ensure_type();
 
             Self::bind_template(klass);
         }

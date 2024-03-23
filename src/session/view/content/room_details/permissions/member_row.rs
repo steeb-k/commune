@@ -41,8 +41,8 @@ mod imp {
         type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
-            Avatar::static_type();
-            RoleBadge::static_type();
+            Avatar::ensure_type();
+            RoleBadge::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

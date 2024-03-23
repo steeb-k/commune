@@ -61,10 +61,10 @@ mod imp {
         type ParentType = adw::PreferencesDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            UserSessionsPage::static_type();
-            GeneralPage::static_type();
-            NotificationsPage::static_type();
-            SecurityPage::static_type();
+            UserSessionsPage::ensure_type();
+            GeneralPage::ensure_type();
+            NotificationsPage::ensure_type();
+            SecurityPage::ensure_type();
 
             Self::bind_template(klass);
 

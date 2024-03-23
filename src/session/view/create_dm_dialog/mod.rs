@@ -49,7 +49,7 @@ mod imp {
         type ParentType = adw::Dialog;
 
         fn class_init(klass: &mut Self::Class) {
-            PillSourceRow::static_type();
+            PillSourceRow::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

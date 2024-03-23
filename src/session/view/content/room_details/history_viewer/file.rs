@@ -33,7 +33,7 @@ mod imp {
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            FileRow::static_type();
+            FileRow::ensure_type();
 
             Self::bind_template(klass);
 

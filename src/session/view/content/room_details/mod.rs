@@ -66,7 +66,8 @@ mod imp {
         type ParentType = adw::PreferencesWindow;
 
         fn class_init(klass: &mut Self::Class) {
-            GeneralPage::static_type();
+            GeneralPage::ensure_type();
+
             Self::bind_template(klass);
 
             klass.install_action(

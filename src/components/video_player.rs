@@ -41,7 +41,8 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            VideoPlayerRenderer::static_type();
+            VideoPlayerRenderer::ensure_type();
+
             Self::bind_template(klass);
         }
 

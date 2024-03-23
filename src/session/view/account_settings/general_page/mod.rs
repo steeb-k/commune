@@ -66,7 +66,7 @@ mod imp {
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
-            ButtonRow::static_type();
+            ButtonRow::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

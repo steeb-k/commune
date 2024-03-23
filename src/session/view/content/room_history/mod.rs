@@ -125,9 +125,9 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            ItemRow::static_type();
-            VerificationInfoBar::static_type();
-            Timeline::static_type();
+            ItemRow::ensure_type();
+            VerificationInfoBar::ensure_type();
+            Timeline::ensure_type();
 
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);

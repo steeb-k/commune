@@ -37,7 +37,8 @@ mod imp {
         type ParentType = gtk::Popover;
 
         fn class_init(klass: &mut Self::Class) {
-            MemberTimestampRow::static_type();
+            MemberTimestampRow::ensure_type();
+
             Self::bind_template(klass);
         }
 

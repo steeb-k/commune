@@ -45,9 +45,11 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            Pill::static_type();
-            Avatar::static_type();
+            Pill::ensure_type();
+            Avatar::ensure_type();
+
             Self::bind_template(klass);
+
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
             klass.install_action_async("invite.decline", None, move |widget, _, _| async move {
