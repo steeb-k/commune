@@ -54,14 +54,14 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action("session.close-room", None, move |obj, _, _| {
+            klass.install_action("session.close-room", None, |obj, _, _| {
                 obj.select_room(None);
             });
 
             klass.install_action(
                 "session.show-room",
                 Some(&String::static_variant_type()),
-                move |obj, _, parameter| {
+                |obj, _, parameter| {
                     if let Ok(room_id) =
                         <&RoomId>::try_from(&*parameter.unwrap().get::<String>().unwrap())
                     {
@@ -80,15 +80,15 @@ mod imp {
                 }
             });
 
-            klass.install_action("session.show-content", None, move |obj, _, _| {
+            klass.install_action("session.show-content", None, |obj, _, _| {
                 obj.show_content();
             });
 
-            klass.install_action("session.room-creation", None, move |obj, _, _| {
+            klass.install_action("session.room-creation", None, |obj, _, _| {
                 obj.show_room_creation_dialog();
             });
 
-            klass.install_action("session.show-join-room", None, move |obj, _, _| {
+            klass.install_action("session.show-join-room", None, |obj, _, _| {
                 obj.show_join_room_dialog(None);
             });
 
@@ -102,7 +102,7 @@ mod imp {
                 "session.close-room",
             );
 
-            klass.install_action("session.toggle-room-search", None, move |obj, _, _| {
+            klass.install_action("session.toggle-room-search", None, |obj, _, _| {
                 obj.toggle_room_search();
             });
 

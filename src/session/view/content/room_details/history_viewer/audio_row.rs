@@ -42,8 +42,8 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action("audio-row.toggle-play", None, move |widget, _, _| {
-                widget.toggle_play();
+            klass.install_action("audio-row.toggle-play", None, |obj, _, _| {
+                obj.toggle_play();
             });
         }
 

@@ -46,7 +46,7 @@ mod imp {
             klass.install_action(
                 "members.show-membership-list",
                 Some(&Membership::static_variant_type()),
-                move |widget, _, param| {
+                |obj, _, param| {
                     let Some(membership) = param.and_then(|variant| variant.get::<Membership>())
                     else {
                         return;
@@ -59,32 +59,32 @@ mod imp {
                         _ => return,
                     };
 
-                    widget.imp().navigation_view.push_by_tag(subpage);
+                    obj.imp().navigation_view.push_by_tag(subpage);
                 },
             );
 
             klass.install_action(
                 "members.show-member",
                 Some(&String::static_variant_type()),
-                move |widget, _, param| {
+                |obj, _, param| {
                     let Some(user_id) = param
                         .and_then(|variant| variant.get::<String>())
                         .and_then(|s| UserId::parse(s).ok())
                     else {
                         return;
                     };
-                    let Some(room) = widget.room() else {
+                    let Some(room) = obj.room() else {
                         return;
                     };
 
                     let member = room.get_or_create_members().get_or_create(user_id);
                     let user_page = UserPage::new(&member);
-                    user_page.connect_close(clone!(@weak widget => move |_| {
-                        let _ = widget.activate_action("navigation.pop", None);
-                        toast!(widget, gettext("The user is not in the room members list anymore"));
+                    user_page.connect_close(clone!(@weak obj => move |_| {
+                        let _ = obj.activate_action("navigation.pop", None);
+                        toast!(obj, gettext("The user is not in the room members list anymore"));
                     }));
 
-                    widget.imp().navigation_view.push(&user_page);
+                    obj.imp().navigation_view.push(&user_page);
                 },
             );
         }

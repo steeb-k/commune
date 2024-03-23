@@ -71,12 +71,12 @@ mod imp {
             klass.install_action(
                 "account-settings.show-subpage",
                 Some(&AccountSettingsSubpage::static_variant_type()),
-                move |widget, _, param| {
+                |obj, _, param| {
                     let subpage = param
                         .and_then(|variant| variant.get::<AccountSettingsSubpage>())
                         .expect("The parameter should be a valid subpage name");
 
-                    widget.show_subpage(subpage);
+                    obj.show_subpage(subpage);
                 },
             );
 

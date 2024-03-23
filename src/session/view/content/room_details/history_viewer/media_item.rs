@@ -48,8 +48,8 @@ mod imp {
 
             klass.set_css_name("media-history-viewer-item");
 
-            klass.install_action("media-item.activate", None, move |widget, _, _| {
-                widget.activate();
+            klass.install_action("media-item.activate", None, |obj, _, _| {
+                obj.activate();
             });
 
             add_activate_binding_action(klass, "media-item.activate");

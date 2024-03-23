@@ -37,17 +37,13 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action(
-                "explore-servers-popover.add-server",
-                None,
-                move |obj, _, _| {
-                    obj.add_server();
-                },
-            );
+            klass.install_action("explore-servers-popover.add-server", None, |obj, _, _| {
+                obj.add_server();
+            });
             klass.install_action(
                 "explore-servers-popover.remove-server",
                 Some(&String::static_variant_type()),
-                move |obj, _, variant| {
+                |obj, _, variant| {
                     if let Some(variant) = variant.and_then(String::from_variant) {
                         obj.remove_server(&variant);
                     }

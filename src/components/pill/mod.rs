@@ -52,8 +52,8 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action("pill.activate", None, move |widget, _, _| {
-                widget.activate();
+            klass.install_action("pill.activate", None, |obj, _, _| {
+                obj.activate();
             });
 
             add_activate_binding_action(klass, "pill.activate");

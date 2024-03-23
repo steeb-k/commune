@@ -78,8 +78,8 @@ mod imp {
             klass.set_css_name("read-receipts-list");
             klass.set_accessible_role(gtk::AccessibleRole::ToggleButton);
 
-            klass.install_action("read-receipts-list.activate", None, move |widget, _, _| {
-                widget.show_popover(1, 0.0, 0.0);
+            klass.install_action("read-receipts-list.activate", None, |obj, _, _| {
+                obj.show_popover(1, 0.0, 0.0);
             });
 
             add_activate_binding_action(klass, "read-receipts-list.activate");

@@ -74,7 +74,7 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action("message-row.show-media", None, move |obj, _, _| {
+            klass.install_action("message-row.show-media", None, |obj, _, _| {
                 obj.show_media();
             });
         }

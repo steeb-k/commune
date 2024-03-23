@@ -41,15 +41,11 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action_async(
-                "file-row.save-file",
-                None,
-                move |widget, _, _| async move {
-                    widget.save_file().await;
-                },
-            );
-            klass.install_action("file-row.open-file", None, move |widget, _, _| {
-                widget.open_file();
+            klass.install_action_async("file-row.save-file", None, |obj, _, _| async move {
+                obj.save_file().await;
+            });
+            klass.install_action("file-row.open-file", None, |obj, _, _| {
+                obj.open_file();
             });
         }
 

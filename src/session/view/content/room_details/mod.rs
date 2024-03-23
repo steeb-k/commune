@@ -73,12 +73,12 @@ mod imp {
             klass.install_action(
                 "details.show-subpage",
                 Some(&String::static_variant_type()),
-                move |widget, _, param| {
+                |obj, _, param| {
                     let subpage = param
                         .and_then(|variant| variant.get::<SubpageName>())
                         .expect("The parameter should be a valid subpage name");
 
-                    widget.show_subpage(subpage, false);
+                    obj.show_subpage(subpage, false);
                 },
             );
 

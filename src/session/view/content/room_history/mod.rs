@@ -145,30 +145,30 @@ mod imp {
                 obj.forget().await;
             });
 
-            klass.install_action("room-history.try-again", None, move |widget, _, _| {
-                widget.try_again();
+            klass.install_action("room-history.try-again", None, |obj, _, _| {
+                obj.try_again();
             });
 
             klass.install_action_async("room-history.permalink", None, |obj, _, _| async move {
                 obj.permalink().await;
             });
 
-            klass.install_action("room-history.details", None, move |widget, _, _| {
-                widget.open_room_details(None);
+            klass.install_action("room-history.details", None, |obj, _, _| {
+                obj.open_room_details(None);
             });
-            klass.install_action("room-history.invite-members", None, move |widget, _, _| {
-                widget.open_room_details(Some(room_details::SubpageName::Invite));
+            klass.install_action("room-history.invite-members", None, |obj, _, _| {
+                obj.open_room_details(Some(room_details::SubpageName::Invite));
             });
 
-            klass.install_action("room-history.scroll-down", None, move |widget, _, _| {
-                widget.scroll_down();
+            klass.install_action("room-history.scroll-down", None, |obj, _, _| {
+                obj.scroll_down();
             });
             klass.install_action(
                 "room-history.scroll-to-event",
                 Some(&EventKey::static_variant_type()),
-                move |widget, _, v| {
+                |obj, _, v| {
                     if let Some(event_key) = v.and_then(EventKey::from_variant) {
-                        widget.scroll_to_event(&event_key);
+                        obj.scroll_to_event(&event_key);
                     }
                 },
             );
@@ -176,19 +176,19 @@ mod imp {
             klass.install_action(
                 "room-history.reply",
                 Some(&String::static_variant_type()),
-                move |widget, _, v| {
+                |obj, _, v| {
                     if let Some(event_id) = v
                         .and_then(String::from_variant)
                         .and_then(|s| EventId::parse(s).ok())
                     {
-                        if let Some(event) = widget
+                        if let Some(event) = obj
                             .room()
                             .and_then(|room| {
                                 room.timeline().event_by_key(&EventKey::EventId(event_id))
                             })
                             .and_downcast()
                         {
-                            widget.message_toolbar().set_reply_to(event);
+                            obj.message_toolbar().set_reply_to(event);
                         }
                     }
                 },
@@ -197,19 +197,19 @@ mod imp {
             klass.install_action(
                 "room-history.edit",
                 Some(&String::static_variant_type()),
-                move |widget, _, v| {
+                |obj, _, v| {
                     if let Some(event_id) = v
                         .and_then(String::from_variant)
                         .and_then(|s| EventId::parse(s).ok())
                     {
-                        if let Some(event) = widget
+                        if let Some(event) = obj
                             .room()
                             .and_then(|room| {
                                 room.timeline().event_by_key(&EventKey::EventId(event_id))
                             })
                             .and_downcast()
                         {
-                            widget.message_toolbar().set_edit(event);
+                            obj.message_toolbar().set_edit(event);
                         }
                     }
                 },

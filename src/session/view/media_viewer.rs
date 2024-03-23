@@ -73,7 +73,7 @@ mod imp {
 
             klass.set_css_name("media-viewer");
 
-            klass.install_action("media-viewer.close", None, move |obj, _, _| {
+            klass.install_action("media-viewer.close", None, |obj, _, _| {
                 obj.close();
             });
             klass.add_binding_action(
@@ -83,7 +83,7 @@ mod imp {
             );
 
             // Menu actions
-            klass.install_action("media-viewer.copy-image", None, move |obj, _, _| {
+            klass.install_action("media-viewer.copy-image", None, |obj, _, _| {
                 obj.copy_image();
             });
 

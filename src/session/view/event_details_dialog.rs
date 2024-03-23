@@ -45,17 +45,13 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.install_action(
-                "event-details-dialog.copy-source",
-                None,
-                move |obj, _, _| {
-                    let clipboard = obj.clipboard();
-                    let buffer = obj.imp().source_view.buffer();
-                    let (start_iter, end_iter) = buffer.bounds();
-                    clipboard.set_text(&buffer.text(&start_iter, &end_iter, true));
-                    toast!(obj, gettext("Source copied to clipboard"))
-                },
-            );
+            klass.install_action("event-details-dialog.copy-source", None, |obj, _, _| {
+                let clipboard = obj.clipboard();
+                let buffer = obj.imp().source_view.buffer();
+                let (start_iter, end_iter) = buffer.bounds();
+                clipboard.set_text(&buffer.text(&start_iter, &end_iter, true));
+                toast!(obj, gettext("Source copied to clipboard"))
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

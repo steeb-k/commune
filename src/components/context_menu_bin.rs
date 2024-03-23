@@ -54,8 +54,8 @@ mod imp {
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
 
-            klass.install_action("context-menu.activate", None, move |widget, _, _| {
-                widget.open_menu_at(0, 0)
+            klass.install_action("context-menu.activate", None, |obj, _, _| {
+                obj.open_menu_at(0, 0)
             });
             klass.add_binding_action(
                 gdk::Key::F10,
@@ -68,8 +68,8 @@ mod imp {
                 "context-menu.activate",
             );
 
-            klass.install_action("context-menu.close", None, move |widget, _, _| {
-                if let Some(popover) = widget.popover() {
+            klass.install_action("context-menu.close", None, |obj, _, _| {
+                if let Some(popover) = obj.popover() {
                     popover.popdown();
                 }
             });

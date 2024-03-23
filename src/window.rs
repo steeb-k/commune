@@ -88,14 +88,14 @@ mod imp {
 
             klass.add_binding_action(gdk::Key::v, gdk::ModifierType::CONTROL_MASK, "win.paste");
             klass.add_binding_action(gdk::Key::Insert, gdk::ModifierType::SHIFT_MASK, "win.paste");
-            klass.install_action("win.paste", None, move |obj, _, _| {
+            klass.install_action("win.paste", None, |obj, _, _| {
                 obj.imp().session.handle_paste_action();
             });
 
             klass.install_action(
                 "win.open-account-settings",
                 Some(&String::static_variant_type()),
-                move |obj, _, variant| {
+                |obj, _, variant| {
                     if let Some(session_id) = variant.and_then(|v| v.get::<String>()) {
                         obj.open_account_settings(&session_id);
                     }
