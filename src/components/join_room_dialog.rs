@@ -7,7 +7,7 @@ use crate::{
     i18n::ngettext_f,
     prelude::*,
     session::model::{RemoteRoom, Session},
-    spawn, toast,
+    toast,
     utils::{matrix::MatrixRoomIdUri, LoadingState},
     Window,
 };
@@ -290,42 +290,40 @@ impl JoinRoomDialog {
 
     /// Join the room that was entered, if it is valid.
     #[template_callback]
-    fn join_room(&self) {
+    async fn join_room(&self) {
         let Some(session) = self.session() else {
             return;
         };
-        let imp = self.imp();
 
-        let Some(room) = imp.room.borrow().clone() else {
+        let Some(room) = self.room() else {
             return;
         };
-        let uri = room.uri().clone();
 
+        let imp = self.imp();
         imp.go_back_btn.set_sensitive(false);
         imp.join_btn.set_loading(true);
 
         // Join the room with the given identifier.
         let room_list = session.room_list();
-        spawn!(clone!(@weak self as obj => async move {
-            match room_list.join_by_id_or_alias(uri.id.into(), uri.via).await {
-                Ok(room_id) => {
-                    if let Some(room) = room_list.get_wait(&room_id).await {
-                        if let Some(window) = obj.root().and_downcast_ref::<Window>() {
-                            window.session_view().select_room(Some(room));
-                        }
+        let uri = room.uri().clone();
+
+        match room_list.join_by_id_or_alias(uri.id.into(), uri.via).await {
+            Ok(room_id) => {
+                if let Some(room) = room_list.get_wait(&room_id).await {
+                    if let Some(window) = self.root().and_downcast_ref::<Window>() {
+                        window.session_view().select_room(Some(room));
                     }
-
-                    obj.close();
                 }
-                Err(error) => {
-                    toast!(obj, error);
 
-                    let imp = obj.imp();
-                    imp.join_btn.set_loading(false);
-                    imp.go_back_btn.set_sensitive(true);
-                }
+                self.close();
             }
-        }));
+            Err(error) => {
+                toast!(self, error);
+
+                imp.join_btn.set_loading(false);
+                imp.go_back_btn.set_sensitive(true);
+            }
+        }
     }
 
     /// Go back to the previous screen.

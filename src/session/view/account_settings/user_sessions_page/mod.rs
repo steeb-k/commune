@@ -7,7 +7,6 @@ mod user_session_row;
 use self::user_session_row::UserSessionRow;
 use crate::{
     session::model::{User, UserSession, UserSessionsList},
-    spawn,
     utils::{BoundObject, LoadingState},
 };
 
@@ -197,13 +196,11 @@ impl UserSessionsPage {
 
     /// Reload the user sessions list.
     #[template_callback]
-    fn reload_list(&self) {
+    async fn reload_list(&self) {
         let Some(user_sessions) = self.user_sessions() else {
             return;
         };
 
-        spawn!(clone!(@weak user_sessions => async move {
-            user_sessions.load().await;
-        }));
+        user_sessions.load().await;
     }
 }

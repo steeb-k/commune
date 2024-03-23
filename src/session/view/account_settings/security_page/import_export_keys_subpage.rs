@@ -1,16 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    gio,
-    glib::{self, clone},
-    CompositeTemplate,
-};
+use gtk::{gio, glib, CompositeTemplate};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 
-use crate::{
-    components::SpinnerButton, ngettext_f, session::model::Session, spawn, spawn_tokio, toast,
-};
+use crate::{components::SpinnerButton, ngettext_f, session::model::Session, spawn_tokio, toast};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -200,13 +194,7 @@ impl ImportExportKeysSubpage {
 
     /// Open a dialog to choose the file.
     #[template_callback]
-    fn choose_file(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.choose_file_inner().await;
-        }));
-    }
-
-    async fn choose_file_inner(&self) {
+    async fn choose_file(&self) {
         let is_export = self.mode() == ImportExportKeysSubpageMode::Export;
 
         let dialog = gtk::FileDialog::builder()
@@ -306,13 +294,7 @@ impl ImportExportKeysSubpage {
 
     /// Proceed to the import/export.
     #[template_callback]
-    fn proceed(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.proceed_inner().await;
-        }));
-    }
-
-    async fn proceed_inner(&self) {
+    async fn proceed(&self) {
         if !self.can_proceed() {
             return;
         }

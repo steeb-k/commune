@@ -1,6 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, CompositeTemplate};
+use gtk::{glib, CompositeTemplate};
 use matrix_sdk::{
     ruma::{
         api::client::{
@@ -18,7 +18,7 @@ use crate::{
     components::{SpinnerButton, ToastableDialog},
     prelude::*,
     session::model::Session,
-    spawn, spawn_tokio, toast, Window,
+    spawn_tokio, toast, Window,
 };
 
 // MAX length of room addresses
@@ -113,20 +113,18 @@ impl RoomCreation {
 
     /// Create the room, if it is allowed.
     #[template_callback]
-    fn create_room(&self) {
-        let imp = self.imp();
-
+    async fn create_room(&self) {
         if !self.can_create_room() {
             return;
         }
 
-        imp.create_button.set_loading(true);
-        imp.content.set_sensitive(false);
-
         let Some(session) = self.session() else {
             return;
         };
-        let client = session.client();
+
+        let imp = self.imp();
+        imp.create_button.set_loading(true);
+        imp.content.set_sensitive(false);
 
         let name = Some(imp.room_name.text().to_string());
         let topic = Some(imp.room_topic.text().to_string()).filter(|s| !s.is_empty());
@@ -154,29 +152,24 @@ impl RoomCreation {
             request.room_alias_name = Some(imp.room_address.text().to_string());
         };
 
+        let client = session.client();
         let handle = spawn_tokio!(async move { client.create_room(request).await });
 
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                match handle.await.unwrap() {
-                    Ok(matrix_room) => {
-                        if let Some(session) = obj.session() {
-                            let Some(window) = obj.root().and_downcast::<Window>() else {
-                                return;
-                            };
-                            let room = session.room_list().get_wait(matrix_room.room_id()).await;
-                            window.session_view().select_room(room);
-                        }
-                        obj.close();
-                    },
-                    Err(error) => {
-                        error!("Could not create a new room: {error}");
-                        obj.handle_error(error);
-                    },
+        match handle.await.unwrap() {
+            Ok(matrix_room) => {
+                let Some(window) = self.root().and_downcast::<Window>() else {
+                    return;
                 };
-            })
-        );
+                let room = session.room_list().get_wait(matrix_room.room_id()).await;
+                window.session_view().select_room(room);
+
+                self.close();
+            }
+            Err(error) => {
+                error!("Could not create a new room: {error}");
+                self.handle_error(error);
+            }
+        };
     }
 
     /// Display the error that occurred during creation.

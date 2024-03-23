@@ -13,7 +13,7 @@ use tracing::error;
 use crate::{
     components::{AuthDialog, AuthError, SpinnerButton},
     session::model::Session,
-    spawn, toast,
+    toast,
     utils::matrix::validate_password,
 };
 
@@ -205,13 +205,7 @@ impl ChangePasswordSubpage {
     }
 
     #[template_callback]
-    fn change_password(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.change_password_inner().await;
-        }));
-    }
-
-    async fn change_password_inner(&self) {
+    async fn change_password(&self) {
         let Some(session) = self.session() else {
             return;
         };

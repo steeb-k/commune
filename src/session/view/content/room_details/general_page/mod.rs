@@ -669,22 +669,16 @@ impl GeneralPage {
     }
 
     #[template_callback]
-    fn save_details_clicked(&self) {
-        self.imp().save_details_btn.set_loading(true);
-        self.enable_details(false);
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.save_details().await;
-        }));
-        self.set_edit_mode_enabled(false);
-    }
-
-    async fn save_details(&self) {
+    async fn save_details_clicked(&self) {
         let Some(room) = self.room() else {
             error!("Cannot save details with missing room");
             return;
         };
         let imp = self.imp();
+
+        imp.save_details_btn.set_loading(true);
+        self.enable_details(false);
+        self.set_edit_mode_enabled(false);
 
         let raw_name = imp.room_name_entry.text();
         let trimmed_name = raw_name.trim();
@@ -1015,7 +1009,7 @@ impl GeneralPage {
 
     /// Set the join rule of the room.
     #[template_callback]
-    fn set_join_rule(&self) {
+    async fn set_join_rule(&self) {
         let Some(room) = self.room() else {
             return;
         };
@@ -1039,12 +1033,10 @@ impl GeneralPage {
         row.set_is_loading(true);
         row.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            if join_rule.set_value(value).await.is_err() {
-                toast!(obj, gettext("Could not change who can join"));
-                obj.update_join_rule();
-            }
-        }));
+        if join_rule.set_value(value).await.is_err() {
+            toast!(self, gettext("Could not change who can join"));
+            self.update_join_rule();
+        }
     }
 
     /// Update the guest access row.
@@ -1065,7 +1057,7 @@ impl GeneralPage {
 
     /// Toggle the guest access.
     #[template_callback]
-    fn toggle_guest_access(&self) {
+    async fn toggle_guest_access(&self) {
         let Some(room) = self.room() else { return };
 
         let row = &self.imp().guest_access;
@@ -1078,23 +1070,21 @@ impl GeneralPage {
         row.set_is_loading(true);
         row.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let guest_access = if guests_allowed {
-                GuestAccess::CanJoin
-            } else {
-                GuestAccess::Forbidden
-            };
-            let content = RoomGuestAccessEventContent::new(guest_access);
+        let guest_access = if guests_allowed {
+            GuestAccess::CanJoin
+        } else {
+            GuestAccess::Forbidden
+        };
+        let content = RoomGuestAccessEventContent::new(guest_access);
 
-            let matrix_room = room.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+        let matrix_room = room.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
 
-            if let Err(error) = handle.await.unwrap() {
-                error!("Could not change guest access: {error}");
-                toast!(obj, gettext("Could not change guest access"));
-                obj.update_guest_access();
-            }
-        }));
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not change guest access: {error}");
+            toast!(self, gettext("Could not change guest access"));
+            self.update_guest_access();
+        }
     }
 
     /// Update the title of the publish row.
@@ -1156,7 +1146,7 @@ impl GeneralPage {
 
     /// Toggle whether the room is published in the room directory.
     #[template_callback]
-    fn toggle_publish(&self) {
+    async fn toggle_publish(&self) {
         let Some(room) = self.room() else { return };
 
         let imp = self.imp();
@@ -1170,32 +1160,30 @@ impl GeneralPage {
         row.set_is_loading(true);
         row.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let visibility = if publish {
-                Visibility::Public
+        let visibility = if publish {
+            Visibility::Public
+        } else {
+            Visibility::Private
+        };
+
+        let matrix_room = room.matrix_room();
+        let client = matrix_room.client();
+        let request =
+            set_room_visibility::v3::Request::new(matrix_room.room_id().to_owned(), visibility);
+
+        let handle = spawn_tokio!(async move { client.send(request, None).await });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not change directory visibility of room: {error}");
+            let text = if publish {
+                gettext("Could not publish room in directory")
             } else {
-                Visibility::Private
+                gettext("Could not unpublish room from directory")
             };
+            toast!(self, text);
+        }
 
-            let matrix_room = room.matrix_room();
-            let client = matrix_room.client();
-            let request =
-                set_room_visibility::v3::Request::new(matrix_room.room_id().to_owned(), visibility);
-
-            let handle = spawn_tokio!(async move { client.send(request, None).await });
-
-            if let Err(error) = handle.await.unwrap() {
-                error!("Could not change directory visibility of room: {error}");
-                let text = if publish {
-                    gettext("Could not publish room in directory")
-                } else {
-                    gettext("Could not unpublish room from directory")
-                };
-                toast!(obj, text);
-            }
-
-            obj.update_publish().await;
-        }));
+        self.update_publish().await;
     }
 
     /// Update the history visibility edit button.
@@ -1234,7 +1222,7 @@ impl GeneralPage {
 
     /// Set the history_visibility of the room.
     #[template_callback]
-    fn set_history_visibility(&self) {
+    async fn set_history_visibility(&self) {
         let Some(room) = self.room() else {
             return;
         };
@@ -1258,19 +1246,17 @@ impl GeneralPage {
         row.set_is_loading(true);
         row.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let content = RoomHistoryVisibilityEventContent::new(visibility.into());
+        let content = RoomHistoryVisibilityEventContent::new(visibility.into());
 
-            let matrix_room = room.matrix_room().clone();
-            let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
+        let matrix_room = room.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.send_state_event(content).await });
 
-            if let Err(error) = handle.await.unwrap() {
-                error!("Could not change room history visibility: {error}");
-                toast!(obj, gettext("Could not change who can read history"));
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not change room history visibility: {error}");
+            toast!(self, gettext("Could not change who can read history"));
 
-                obj.update_history_visibility();
-            }
-        }));
+            self.update_history_visibility();
+        }
     }
 
     /// Update the encryption row.
@@ -1295,7 +1281,7 @@ impl GeneralPage {
 
     /// Enable encryption in the room.
     #[template_callback]
-    fn enable_encryption(&self) {
+    async fn enable_encryption(&self) {
         let Some(room) = self.room() else { return };
 
         let imp = self.imp();
@@ -1309,29 +1295,27 @@ impl GeneralPage {
         row.set_is_loading(true);
         row.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            // Ask for confirmation.
-            let dialog = adw::AlertDialog::builder()
+        // Ask for confirmation.
+        let dialog = adw::AlertDialog::builder()
                 .heading(gettext("Enable Encryption?"))
                 .body(gettext("Enabling encryption will prevent new members to read the history before they arrived. This cannot be disabled later."))
                 .default_response("cancel")
                 .build();
-            dialog.add_responses(&[
-                ("cancel", &gettext("Cancel")),
-                ("enable", &gettext("Enable")),
-            ]);
-            dialog.set_response_appearance("enable", adw::ResponseAppearance::Destructive);
+        dialog.add_responses(&[
+            ("cancel", &gettext("Cancel")),
+            ("enable", &gettext("Enable")),
+        ]);
+        dialog.set_response_appearance("enable", adw::ResponseAppearance::Destructive);
 
-            if dialog.choose_future(&obj).await != "enable" {
-                obj.update_encryption();
-                return;
-            };
+        if dialog.choose_future(self).await != "enable" {
+            self.update_encryption();
+            return;
+        };
 
-            if room.enable_encryption().await.is_err() {
-                toast!(obj, gettext("Could not enable encryption"));
-                obj.update_encryption();
-            }
-        }));
+        if room.enable_encryption().await.is_err() {
+            toast!(self, gettext("Could not enable encryption"));
+            self.update_encryption();
+        }
     }
 
     /// Update the room upgrade button.
@@ -1366,13 +1350,7 @@ impl GeneralPage {
 
     /// Upgrade the room to a new version.
     #[template_callback]
-    fn upgrade(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.upgrade_inner().await;
-        }));
-    }
-
-    async fn upgrade_inner(&self) {
+    async fn upgrade(&self) {
         let Some(room) = self.room() else {
             return;
         };

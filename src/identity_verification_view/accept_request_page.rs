@@ -3,8 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
-    toast,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
 };
 
 mod imp {
@@ -149,36 +148,34 @@ impl AcceptRequestPage {
 
     /// Decline the verification request.
     #[template_callback]
-    fn decline(&self) {
+    async fn decline(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
+
         self.imp().decline_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Could not decline verification request"));
-                obj.reset();
-            }
-        }));
+        if verification.cancel().await.is_err() {
+            toast!(self, gettext("Could not decline verification request"));
+            self.reset();
+        }
     }
 
     /// Accept the verification request.
     #[template_callback]
-    fn accept(&self) {
+    async fn accept(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
+
         self.imp().accept_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.accept().await.is_err() {
-                toast!(obj, gettext("Could not accept verification request"));
-                obj.reset();
-            }
-        }));
+        if verification.accept().await.is_err() {
+            toast!(self, gettext("Could not accept verification request"));
+            self.reset();
+        }
     }
 }
 

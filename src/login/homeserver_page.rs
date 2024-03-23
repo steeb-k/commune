@@ -13,7 +13,7 @@ use crate::{
     components::{OfflineBanner, SpinnerButton},
     gettext_f,
     prelude::*,
-    spawn, spawn_tokio, toast,
+    spawn_tokio, toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -156,10 +156,8 @@ impl LoginHomeserverPage {
 
     /// Fetch the login details of the homeserver.
     #[template_callback]
-    pub fn fetch_homeserver_details(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.check_homeserver().await;
-        }));
+    pub async fn fetch_homeserver_details(&self) {
+        self.check_homeserver().await;
     }
 
     /// Check if the homeserver that was entered is valid.

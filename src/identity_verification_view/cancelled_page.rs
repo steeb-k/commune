@@ -4,8 +4,8 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use ruma::events::key::verification::cancel::CancelCode;
 
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
-    toast, utils::BoundObjectWeakRef,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -173,7 +173,7 @@ impl CancelledPage {
 
     /// Send a new request to replace the verification.
     #[template_callback]
-    fn try_again(&self) {
+    async fn try_again(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -181,12 +181,10 @@ impl CancelledPage {
         self.imp().try_again_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.restart().await.is_err() {
-                toast!(obj, gettext("Could not send a new verification request"));
-                obj.reset()
-            }
-        }));
+        if verification.restart().await.is_err() {
+            toast!(self, gettext("Could not send a new verification request"));
+            self.reset()
+        }
     }
 
     /// Dismiss the verification.

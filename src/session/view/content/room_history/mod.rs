@@ -948,7 +948,7 @@ impl RoomHistory {
 
     /// Join or view the room's successor, if possible.
     #[template_callback]
-    fn join_or_view_successor(&self) {
+    async fn join_or_view_successor(&self) {
         let Some(room) = self.room() else {
             return;
         };
@@ -967,14 +967,13 @@ impl RoomHistory {
 
             window.show_room(session.session_id(), successor.room_id());
         } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
-            spawn!(clone!(@weak self as obj, @weak session => async move {
-                if let Err(error) = session
-                    .room_list()
-                    .join_by_id_or_alias(successor_id.into(), vec![]).await
-                {
-                    toast!(obj, error);
-                }
-            }));
+            if let Err(error) = session
+                .room_list()
+                .join_by_id_or_alias(successor_id.into(), vec![])
+                .await
+            {
+                toast!(self, error);
+            }
         }
     }
 }

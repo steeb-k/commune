@@ -6,8 +6,8 @@ use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 
 use super::sas_emoji::SasEmoji;
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
-    toast, utils::BoundObjectWeakRef,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -237,7 +237,7 @@ impl SasPage {
     }
 
     #[template_callback]
-    fn data_mismatch(&self) {
+    async fn data_mismatch(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -245,16 +245,14 @@ impl SasPage {
         self.imp().mismatch_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.sas_mismatch().await.is_err() {
-                toast!(obj, gettext("Could not send that the data does not match"));
-                obj.reset_buttons();
-            }
-        }));
+        if verification.sas_mismatch().await.is_err() {
+            toast!(self, gettext("Could not send that the data does not match"));
+            self.reset_buttons();
+        }
     }
 
     #[template_callback]
-    fn data_match(&self) {
+    async fn data_match(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -262,12 +260,13 @@ impl SasPage {
         self.imp().match_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.sas_match().await.is_err() {
-                toast!(obj, gettext("Could not send confirmation that the data matches"));
-                obj.reset_buttons();
-            }
-        }));
+        if verification.sas_match().await.is_err() {
+            toast!(
+                self,
+                gettext("Could not send confirmation that the data matches")
+            );
+            self.reset_buttons();
+        }
     }
 }
 

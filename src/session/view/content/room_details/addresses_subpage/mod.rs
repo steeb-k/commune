@@ -514,28 +514,28 @@ impl AddressesSubpage {
 
     /// Activate the auto-completion of the public addresses add row.
     #[template_callback]
-    fn handle_public_addresses_add_row_activated(&self) {
+    async fn handle_public_addresses_add_row_activated(&self) {
         if !self
             .imp()
             .public_addresses_completion
             .activate_selected_row()
         {
-            self.add_public_address();
+            self.add_public_address().await;
         }
     }
 
     /// Add a an address to the public list.
     #[template_callback]
-    fn add_public_address(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let imp = self.imp();
-
+    async fn add_public_address(&self) {
         if !self.can_add_public_address() {
             return;
         }
 
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let imp = self.imp();
         let row = &imp.public_addresses_add_row;
 
         let Ok(alias) = RoomAliasId::parse(row.text()) else {
@@ -548,34 +548,32 @@ impl AddressesSubpage {
         imp.public_addresses_error_revealer.set_reveal_child(false);
 
         let aliases = room.aliases();
-
-        spawn!(clone!(@weak self as obj => async move {
-            let imp = obj.imp();
-            let row = &imp.public_addresses_add_row;
-
-            match aliases.add_alt_alias(alias).await {
-                Ok(()) => {
-                    row.set_text("");
-                }
-                Err(error) => {
-                    toast!(obj, gettext("Could not add public address"));
-
-                    let label = match error {
-                        AddAltAliasError::NotRegistered => Some(gettext("This address is not registered as a local address")),
-                        AddAltAliasError::InvalidRoomId => Some(gettext("This address does not belong to this room")),
-                        AddAltAliasError::Other => None,
-                    };
-
-                    if let Some(label) = label {
-                        imp.public_addresses_error.set_label(&label);
-                        imp.public_addresses_error_revealer.set_reveal_child(true);
-                    }
-
-                    imp.public_addresses_list.set_sensitive(true);
-                    row.set_is_loading(false);
-                }
+        match aliases.add_alt_alias(alias).await {
+            Ok(()) => {
+                row.set_text("");
             }
-        }));
+            Err(error) => {
+                toast!(self, gettext("Could not add public address"));
+
+                let label = match error {
+                    AddAltAliasError::NotRegistered => {
+                        Some(gettext("This address is not registered as a local address"))
+                    }
+                    AddAltAliasError::InvalidRoomId => {
+                        Some(gettext("This address does not belong to this room"))
+                    }
+                    AddAltAliasError::Other => None,
+                };
+
+                if let Some(label) = label {
+                    imp.public_addresses_error.set_label(&label);
+                    imp.public_addresses_error_revealer.set_reveal_child(true);
+                }
+
+                imp.public_addresses_list.set_sensitive(true);
+                row.set_is_loading(false);
+            }
+        }
     }
 
     /// Whether the user can add the current address to the public list.
@@ -693,14 +691,14 @@ impl AddressesSubpage {
 
     /// Register a local address.
     #[template_callback]
-    fn register_local_address(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
+    async fn register_local_address(&self) {
         if !self.can_register_local_address() {
             return;
         }
+
+        let Some(room) = self.room() else {
+            return;
+        };
 
         let Some(new_address) = self.new_local_address() else {
             return;
@@ -711,33 +709,30 @@ impl AddressesSubpage {
         };
 
         let imp = self.imp();
-        imp.local_addresses_add_row.set_is_loading(true);
+        let row = &imp.local_addresses_add_row;
+        row.set_is_loading(true);
         imp.local_addresses_error_revealer.set_reveal_child(false);
 
         let aliases = room.aliases();
 
-        spawn!(clone!(@weak self as obj => async move {
-            let imp = obj.imp();
-            let row = &imp.local_addresses_add_row;
+        match aliases.register_local_alias(alias).await {
+            Ok(()) => {
+                row.set_text("");
+            }
+            Err(error) => {
+                toast!(self, gettext("Could not register local address"));
 
-            match aliases.register_local_alias(alias).await {
-                Ok(()) => {
-                    row.set_text("");
-                }
-                Err(error) => {
-                    toast!(obj, gettext("Could not register local address"));
-
-                    if let RegisterLocalAliasError::AlreadyInUse = error {
-                        imp.local_addresses_error.set_label(&gettext("This address is already registered"));
-                        imp.local_addresses_error_revealer.set_reveal_child(true);
-                    }
+                if let RegisterLocalAliasError::AlreadyInUse = error {
+                    imp.local_addresses_error
+                        .set_label(&gettext("This address is already registered"));
+                    imp.local_addresses_error_revealer.set_reveal_child(true);
                 }
             }
+        }
 
-            imp.update_local_addresses().await;
+        imp.update_local_addresses().await;
 
-            row.set_is_loading(false);
-        }));
+        row.set_is_loading(false);
     }
 
     /// Whether the user can add the current address to the local list.

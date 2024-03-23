@@ -13,7 +13,7 @@ use super::{PermissionsAddMembersSubpage, PermissionsMembersSubpage, PrivilegedM
 use crate::{
     components::{ButtonCountRow, PowerLevelSelectionRow, SpinnerButton},
     session::model::{Permissions, PowerLevel},
-    spawn, toast,
+    toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -570,11 +570,7 @@ impl PermissionsSubpage {
     ///
     /// If there are changes in the page, ask the user to confirm.
     #[template_callback]
-    fn go_back(&self) {
-        spawn!(clone!(@weak self as obj => async move { obj.go_back_inner().await; }));
-    }
-
-    async fn go_back_inner(&self) {
+    async fn go_back(&self) {
         let mut reset_after = false;
 
         if self.changed() {
@@ -601,7 +597,7 @@ impl PermissionsSubpage {
                     reset_after = true;
                 }
                 "save" => {
-                    self.save();
+                    self.save().await;
                 }
                 _ => {
                     return;
@@ -618,11 +614,7 @@ impl PermissionsSubpage {
 
     /// Save the changes of this page.
     #[template_callback]
-    fn save(&self) {
-        spawn!(clone!(@weak self as obj => async move { obj.save_inner().await; }));
-    }
-
-    async fn save_inner(&self) {
+    async fn save(&self) {
         if !self.imp().compute_changed() {
             return;
         }

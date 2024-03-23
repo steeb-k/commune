@@ -6,8 +6,7 @@ use tracing::warn;
 
 use super::{idp_button::IdpButton, Login};
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, spawn, spawn_tokio, toast,
-    utils::BoundObjectWeakRef,
+    components::SpinnerButton, gettext_f, prelude::*, spawn_tokio, toast, utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -198,17 +197,11 @@ impl LoginMethodPage {
 
     /// Login with the password login type.
     #[template_callback]
-    fn login_with_password(&self) {
+    async fn login_with_password(&self) {
         if !self.can_login_with_password() {
             return;
         }
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.login_with_password_inner().await;
-        }));
-    }
-
-    async fn login_with_password_inner(&self) {
         let Some(login) = self.login() else {
             return;
         };

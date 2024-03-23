@@ -175,7 +175,10 @@ mod imp {
                 }
             };
 
-            self.obj().global_setting_changed(default);
+            let obj = self.obj();
+            spawn!(clone!(@weak obj => async move {
+                obj.global_setting_changed(default).await;
+            }));
         }
     }
 }
@@ -264,7 +267,7 @@ impl NotificationsPage {
     }
 
     #[template_callback]
-    fn account_switched(&self) {
+    async fn account_switched(&self) {
         let Some(settings) = self.notifications_settings() else {
             return;
         };
@@ -279,19 +282,17 @@ impl NotificationsPage {
         imp.account_row.set_sensitive(false);
         self.set_account_loading(true);
 
-        spawn!(clone!(@weak self as obj, @weak settings => async move {
-            if settings.set_account_enabled(enabled).await.is_err() {
-                let msg = if enabled {
-                    gettext("Could not enable account notifications")
-                } else {
-                    gettext("Could not disable account notifications")
-                };
-                toast!(obj, msg);
-            }
+        if settings.set_account_enabled(enabled).await.is_err() {
+            let msg = if enabled {
+                gettext("Could not enable account notifications")
+            } else {
+                gettext("Could not disable account notifications")
+            };
+            toast!(self, msg);
+        }
 
-            obj.set_account_loading(false);
-            obj.update_account();
-        }));
+        self.set_account_loading(false);
+        self.update_account();
     }
 
     #[template_callback]
@@ -320,7 +321,7 @@ impl NotificationsPage {
     }
 
     #[template_callback]
-    fn global_setting_changed(&self, setting: NotificationsGlobalSetting) {
+    async fn global_setting_changed(&self, setting: NotificationsGlobalSetting) {
         let Some(settings) = self.notifications_settings() else {
             return;
         };
@@ -334,17 +335,15 @@ impl NotificationsPage {
         imp.global.set_sensitive(false);
         self.set_global_loading(true, setting);
 
-        spawn!(clone!(@weak self as obj, @weak settings => async move {
-            if settings.set_global_setting(setting).await.is_err() {
-                toast!(
-                    obj,
-                    gettext("Could not change global notifications setting")
-                );
-            }
+        if settings.set_global_setting(setting).await.is_err() {
+            toast!(
+                self,
+                gettext("Could not change global notifications setting")
+            );
+        }
 
-            obj.set_global_loading(false, setting);
-            obj.update_global();
-        }));
+        self.set_global_loading(false, setting);
+        self.update_global();
     }
 
     /// Create a row in the keywords list for the given item.
@@ -441,33 +440,28 @@ impl NotificationsPage {
 
     /// Add the keyword that is currently in the entry.
     #[template_callback]
-    fn add_keyword(&self) {
-        let Some(settings) = self.notifications_settings() else {
-            return;
-        };
+    async fn add_keyword(&self) {
         if !self.can_add_keyword() {
             return;
         }
-        let imp = self.imp();
 
+        let Some(settings) = self.notifications_settings() else {
+            return;
+        };
+
+        let imp = self.imp();
         imp.keywords_add_row.set_is_loading(true);
 
-        spawn!(clone!(@weak self as obj, @weak settings => async move {
-            let imp = obj.imp();
-            let keyword = imp.keywords_add_row.text().into();
+        let keyword = imp.keywords_add_row.text().into();
 
-            if settings.add_keyword(keyword).await.is_err() {
-                toast!(
-                    obj,
-                    gettext("Could not add notification keyword")
-                );
-            } else {
-                // Adding the keyword was successful, reset the entry.
-                imp.keywords_add_row.set_text("");
-            }
+        if settings.add_keyword(keyword).await.is_err() {
+            toast!(self, gettext("Could not add notification keyword"));
+        } else {
+            // Adding the keyword was successful, reset the entry.
+            imp.keywords_add_row.set_text("");
+        }
 
-            imp.keywords_add_row.set_is_loading(false);
-            obj.update_keywords();
-        }));
+        imp.keywords_add_row.set_is_loading(false);
+        self.update_keywords();
     }
 }

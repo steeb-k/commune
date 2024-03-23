@@ -8,7 +8,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{IdentityVerification, VerificationSupportedMethods},
-    spawn, toast,
+    toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -215,7 +215,7 @@ impl ChooseMethodPage {
 
     /// Switch to the screen to scan a QR Code.
     #[template_callback]
-    fn start_qr_code_scan(&self) {
+    async fn start_qr_code_scan(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -224,17 +224,15 @@ impl ChooseMethodPage {
         imp.scan_qr_code_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.start_qr_code_scan().await.is_err() {
-                toast!(obj, gettext("Could not access camera"));
-                obj.reset();
-            }
-        }));
+        if verification.start_qr_code_scan().await.is_err() {
+            toast!(self, gettext("Could not access camera"));
+            self.reset();
+        }
     }
 
     /// Start a SAS verification.
     #[template_callback]
-    fn start_sas(&self) {
+    async fn start_sas(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -243,17 +241,15 @@ impl ChooseMethodPage {
         imp.start_sas_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.start_sas().await.is_err() {
-                toast!(obj, gettext("Could not start emoji verification"));
-                obj.reset();
-            }
-        }));
+        if verification.start_sas().await.is_err() {
+            toast!(self, gettext("Could not start emoji verification"));
+            self.reset();
+        }
     }
 
     /// Cancel the verification.
     #[template_callback]
-    fn cancel(&self) {
+    async fn cancel(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -261,11 +257,9 @@ impl ChooseMethodPage {
         self.imp().cancel_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Could not cancel the verification"));
-                obj.reset();
-            }
-        }));
+        if verification.cancel().await.is_err() {
+            toast!(self, gettext("Could not cancel the verification"));
+            self.reset();
+        }
     }
 }

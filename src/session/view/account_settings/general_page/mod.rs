@@ -354,13 +354,7 @@ impl GeneralPage {
     }
 
     #[template_callback]
-    fn change_display_name(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.change_display_name_inner().await;
-        }));
-    }
-
-    async fn change_display_name_inner(&self) {
+    async fn change_display_name(&self) {
         let Some(session) = self.session() else {
             return;
         };

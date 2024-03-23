@@ -3,8 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
-    toast,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
 };
 
 mod imp {
@@ -132,7 +131,7 @@ impl QrCodeScannedPage {
 
     /// Cancel the verification.
     #[template_callback]
-    fn cancel(&self) {
+    async fn cancel(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -140,11 +139,9 @@ impl QrCodeScannedPage {
         self.imp().cancel_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Could not cancel the verification"));
-                obj.reset();
-            }
-        }));
+        if verification.cancel().await.is_err() {
+            toast!(self, gettext("Could not cancel the verification"));
+            self.reset();
+        }
     }
 }

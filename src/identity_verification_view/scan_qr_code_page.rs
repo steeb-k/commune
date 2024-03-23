@@ -226,7 +226,7 @@ impl ScanQrCodePage {
 
     /// Start a SAS verification.
     #[template_callback]
-    fn start_sas(&self) {
+    async fn start_sas(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -235,17 +235,15 @@ impl ScanQrCodePage {
         imp.start_sas_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.start_sas().await.is_err() {
-                toast!(obj, gettext("Could not start emoji verification"));
-                obj.reset();
-            }
-        }));
+        if verification.start_sas().await.is_err() {
+            toast!(self, gettext("Could not start emoji verification"));
+            self.reset();
+        }
     }
 
     /// Cancel the verification.
     #[template_callback]
-    fn cancel(&self) {
+    async fn cancel(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -253,11 +251,9 @@ impl ScanQrCodePage {
         self.imp().cancel_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Could not cancel the verification"));
-                obj.reset();
-            }
-        }));
+        if verification.cancel().await.is_err() {
+            toast!(self, gettext("Could not cancel the verification"));
+            self.reset();
+        }
     }
 }

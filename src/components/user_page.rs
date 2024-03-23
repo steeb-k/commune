@@ -13,7 +13,7 @@ use crate::{
     ngettext_f,
     prelude::*,
     session::model::{Member, Membership, Permissions, Room, User},
-    spawn, toast,
+    toast,
     utils::{
         message_dialog::{
             confirm_mute_room_member, confirm_room_member_destructive_action,
@@ -442,7 +442,7 @@ impl UserPage {
 
     /// Set the power level of the user.
     #[template_callback]
-    fn set_power_level(&self) {
+    async fn set_power_level(&self) {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -459,40 +459,40 @@ impl UserPage {
         row.set_is_loading(true);
         row.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let permissions = member.room().permissions();
+        let permissions = member.room().permissions();
 
-            // Warn if user is muted but was not before.
-            let mute_power_level = permissions.mute_power_level();
-            let is_muted = power_level <= mute_power_level && old_power_level > mute_power_level;
-            if is_muted && !confirm_mute_room_member(&member, &obj).await {
-                obj.update_room();
-                return;
-            }
+        // Warn if user is muted but was not before.
+        let mute_power_level = permissions.mute_power_level();
+        let is_muted = power_level <= mute_power_level && old_power_level > mute_power_level;
+        if is_muted && !confirm_mute_room_member(&member, self).await {
+            self.update_room();
+            return;
+        }
 
-            // Warn if power level is set at same level as own power level.
-            let is_own_power_level = power_level == permissions.own_power_level();
-            if is_own_power_level && !confirm_set_room_member_power_level_same_as_own(&member, &obj).await {
-                obj.update_room();
-                return;
-            }
+        // Warn if power level is set at same level as own power level.
+        let is_own_power_level = power_level == permissions.own_power_level();
+        if is_own_power_level
+            && !confirm_set_room_member_power_level_same_as_own(&member, self).await
+        {
+            self.update_room();
+            return;
+        }
 
-            let user_id = member.user_id().clone();
+        let user_id = member.user_id().clone();
 
-            if permissions
-                .set_user_power_level(user_id, power_level)
-                .await
-                .is_err()
-            {
-                toast!(obj, gettext("Could not change the role"));
-                obj.update_room();
-            }
-        }));
+        if permissions
+            .set_user_power_level(user_id, power_level)
+            .await
+            .is_err()
+        {
+            toast!(self, gettext("Could not change the role"));
+            self.update_room();
+        }
     }
 
     /// Invite the user to the room.
     #[template_callback]
-    fn invite_user(&self) {
+    async fn invite_user(&self) {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -503,21 +503,19 @@ impl UserPage {
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let room = member.room();
-            let user_id = member.user_id().clone();
+        let room = member.room();
+        let user_id = member.user_id().clone();
 
-            if room.invite(&[user_id]).await.is_err() {
-                toast!(obj, gettext("Could not invite user"));
-            }
+        if room.invite(&[user_id]).await.is_err() {
+            toast!(self, gettext("Could not invite user"));
+        }
 
-            obj.reset_room()
-        }));
+        self.reset_room();
     }
 
     /// Kick the user from the room.
     #[template_callback]
-    fn kick_user(&self) {
+    async fn kick_user(&self) {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -528,36 +526,34 @@ impl UserPage {
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let Some(response) = confirm_room_member_destructive_action(
-                &member,
-                RoomMemberDestructiveAction::Kick,
-                &obj,
-            )
-            .await
-            else {
-                obj.reset_room();
-                return;
+        let Some(response) = confirm_room_member_destructive_action(
+            &member,
+            RoomMemberDestructiveAction::Kick,
+            self,
+        )
+        .await
+        else {
+            self.reset_room();
+            return;
+        };
+
+        let room = member.room();
+        let user_id = member.user_id().clone();
+        if room.kick(&[(user_id, response.reason)]).await.is_err() {
+            let error = match member.membership() {
+                Membership::Invite => gettext("Could not revoke invite of user"),
+                Membership::Knock => gettext("Could not deny access to user"),
+                _ => gettext("Could not kick user"),
             };
+            toast!(self, error);
 
-            let room = member.room();
-            let user_id = member.user_id().clone();
-            if room.kick(&[(user_id, response.reason)]).await.is_err() {
-                let error = match member.membership() {
-                    Membership::Invite => gettext("Could not revoke invite of user"),
-                    Membership::Knock => gettext("Could not deny access to user"),
-                    _ => gettext("Could not kick user"),
-                };
-                toast!(obj, error);
-
-                obj.reset_room();
-            }
-        }));
+            self.reset_room();
+        }
     }
 
     /// Ban the room member.
     #[template_callback]
-    fn ban_user(&self) {
+    async fn ban_user(&self) {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -575,40 +571,38 @@ impl UserPage {
             vec![]
         };
 
-        spawn!(clone!(@weak self as obj => async move {
-            let Some(response) = confirm_room_member_destructive_action(
-                &member,
-                RoomMemberDestructiveAction::Ban(redactable_events.len()),
-                &obj,
-            )
+        let Some(response) = confirm_room_member_destructive_action(
+            &member,
+            RoomMemberDestructiveAction::Ban(redactable_events.len()),
+            self,
+        )
+        .await
+        else {
+            self.reset_room();
+            return;
+        };
+
+        let room = member.room();
+        let user_id = member.user_id().clone();
+        if room
+            .ban(&[(user_id, response.reason.clone())])
             .await
-            else {
-                obj.reset_room();
-                return;
-            };
+            .is_err()
+        {
+            toast!(self, gettext("Could not ban user"));
+        }
 
-            let room = member.room();
-            let user_id = member.user_id().clone();
-            if room
-                .ban(&[(user_id, response.reason.clone())])
-                .await
-                .is_err()
-            {
-                toast!(obj, gettext("Could not ban user"));
-            }
+        if response.remove_events {
+            self.remove_known_messages_inner(&member.room(), redactable_events, response.reason)
+                .await;
+        }
 
-            if response.remove_events {
-                obj.remove_known_messages_inner(&member.room(), redactable_events, response.reason)
-                    .await;
-            }
-
-            obj.reset_room();
-        }));
+        self.reset_room();
     }
 
     /// Unban the room member.
     #[template_callback]
-    fn unban_user(&self) {
+    async fn unban_user(&self) {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -619,21 +613,19 @@ impl UserPage {
         imp.kick_button.set_sensitive(false);
         imp.ban_button.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj => async move {
-            let room = member.room();
-            let user_id = member.user_id().clone();
+        let room = member.room();
+        let user_id = member.user_id().clone();
 
-            if room.unban(&[(user_id, None)]).await.is_err() {
-                toast!(obj, gettext("Could not unban user"));
-            }
+        if room.unban(&[(user_id, None)]).await.is_err() {
+            toast!(self, gettext("Could not unban user"));
+        }
 
-            obj.reset_room();
-        }));
+        self.reset_room();
     }
 
     /// Remove the known events of the room member.
     #[template_callback]
-    fn remove_messages(&self) {
+    async fn remove_messages(&self) {
         let Some(member) = self.user().and_downcast::<Member>() else {
             return;
         };
@@ -643,23 +635,21 @@ impl UserPage {
 
         let redactable_events = member.redactable_events();
 
-        spawn!(clone!(@weak self as obj => async move {
-            let Some(response) = confirm_room_member_destructive_action(
-                &member,
-                RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
-                &obj,
-            )
-            .await
-            else {
-                obj.reset_room();
-                return;
-            };
+        let Some(response) = confirm_room_member_destructive_action(
+            &member,
+            RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
+            self,
+        )
+        .await
+        else {
+            self.reset_room();
+            return;
+        };
 
-            obj.remove_known_messages_inner(&member.room(), redactable_events, response.reason)
-                .await;
+        self.remove_known_messages_inner(&member.room(), redactable_events, response.reason)
+            .await;
 
-            obj.reset_room();
-        }));
+        self.reset_room();
     }
 
     async fn remove_known_messages_inner(
@@ -754,25 +744,23 @@ impl UserPage {
 
     /// Toggle whether the user is ignored or not.
     #[template_callback]
-    fn toggle_ignored(&self) {
+    async fn toggle_ignored(&self) {
         let Some(user) = self.user() else {
             return;
         };
-        let is_ignored = user.is_ignored();
 
+        let imp = self.imp();
         self.imp().ignored_button.set_loading(true);
 
-        spawn!(clone!(@weak self as obj, @weak user => async move {
-            if is_ignored {
-                if user.stop_ignoring().await.is_err() {
-                    toast!(obj, gettext("Could not stop ignoring user"));
-                }
-            } else if user.ignore().await.is_err() {
-                toast!(obj, gettext("Could not ignore user"));
+        if user.is_ignored() {
+            if user.stop_ignoring().await.is_err() {
+                toast!(self, gettext("Could not stop ignoring user"));
             }
+        } else if user.ignore().await.is_err() {
+            toast!(self, gettext("Could not ignore user"));
+        }
 
-            obj.imp().ignored_button.set_loading(false);
-        }));
+        imp.ignored_button.set_loading(false);
     }
 
     /// Connect to the signal emitted when the page should be closed.

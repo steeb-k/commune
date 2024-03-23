@@ -1,8 +1,8 @@
 use gettextrs::gettext;
-use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use ruma::UserId;
 
-use crate::{components::SpinnerButton, session::model::IgnoredUsers, spawn, toast};
+use crate::{components::SpinnerButton, session::model::IgnoredUsers, toast};
 
 mod imp {
     use std::cell::RefCell;
@@ -81,7 +81,7 @@ impl IgnoredUserRow {
 
     /// Stop ignoring the user of this row.
     #[template_callback]
-    fn stop_ignoring_user(&self) {
+    async fn stop_ignoring_user(&self) {
         let Some(user_id) = self
             .item()
             .map(|i| i.string())
@@ -93,15 +93,12 @@ impl IgnoredUserRow {
             return;
         };
 
-        self.imp().stop_ignoring_button.set_loading(true);
+        let imp = self.imp();
+        imp.stop_ignoring_button.set_loading(true);
 
-        spawn!(
-            clone!(@weak self as obj, @weak ignored_users => async move {
-                if ignored_users.remove(&user_id).await.is_err() {
-                    toast!(obj, gettext("Could not stop ignoring user"));
-                    obj.imp().stop_ignoring_button.set_loading(false);
-                }
-            })
-        );
+        if ignored_users.remove(&user_id).await.is_err() {
+            toast!(self, gettext("Could not stop ignoring user"));
+            imp.stop_ignoring_button.set_loading(false);
+        }
     }
 }

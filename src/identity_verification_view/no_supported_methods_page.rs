@@ -3,8 +3,8 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, spawn,
-    toast, utils::BoundObjectWeakRef,
+    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -175,7 +175,7 @@ impl NoSupportedMethodsPage {
 
     /// Decline the verification.
     #[template_callback]
-    fn cancel(&self) {
+    async fn cancel(&self) {
         let Some(verification) = self.verification() else {
             return;
         };
@@ -183,11 +183,9 @@ impl NoSupportedMethodsPage {
         self.imp().cancel_btn.set_loading(true);
         self.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak verification => async move {
-            if verification.cancel().await.is_err() {
-                toast!(obj, gettext("Could not decline the verification"));
-                obj.reset();
-            }
-        }));
+        if verification.cancel().await.is_err() {
+            toast!(self, gettext("Could not decline the verification"));
+            self.reset();
+        }
     }
 }

@@ -1,10 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{
-    glib::{self, clone},
-    CompositeTemplate,
-};
+use gtk::{glib, CompositeTemplate};
 
-use crate::{components::SpinnerButton, session::model::Session, spawn, toast};
+use crate::{components::SpinnerButton, session::model::Session, toast};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -62,7 +59,7 @@ impl LogOutSubpage {
     }
 
     #[template_callback]
-    fn logout_button_clicked_cb(&self) {
+    async fn logout_button_clicked_cb(&self) {
         let Some(session) = self.session() else {
             return;
         };
@@ -71,14 +68,11 @@ impl LogOutSubpage {
         imp.logout_button.set_loading(true);
         imp.make_backup_button.set_sensitive(false);
 
-        spawn!(clone!(@weak self as obj, @weak session => async move {
-            if let Err(error) = session.logout().await {
-                toast!(obj, error);
-            }
+        if let Err(error) = session.logout().await {
+            toast!(self, error);
+        }
 
-            let imp = obj.imp();
-            imp.logout_button.set_loading(false);
-            imp.make_backup_button.set_sensitive(true);
-        }));
+        imp.logout_button.set_loading(false);
+        imp.make_backup_button.set_sensitive(true);
     }
 }

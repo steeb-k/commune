@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use crate::{session::model::Room, spawn, toast, utils::BoundObjectWeakRef, Window};
+use crate::{session::model::Room, toast, utils::BoundObjectWeakRef, Window};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -93,7 +93,7 @@ impl StateTombstone {
 
     /// Join or view the successor of this event's room.
     #[template_callback]
-    fn join_or_view_successor(&self) {
+    async fn join_or_view_successor(&self) {
         let Some(room) = self.room() else {
             return;
         };
@@ -110,11 +110,12 @@ impl StateTombstone {
 
             window.session_view().select_room(Some(successor));
         } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
-            spawn!(clone!(@weak self as obj, @weak room_list => async move {
-                if let Err(error) = room_list.join_by_id_or_alias(successor_id.into(), vec![]).await {
-                    toast!(obj, error);
-                }
-            }));
+            if let Err(error) = room_list
+                .join_by_id_or_alias(successor_id.into(), vec![])
+                .await
+            {
+                toast!(self, error);
+            }
         }
     }
 }

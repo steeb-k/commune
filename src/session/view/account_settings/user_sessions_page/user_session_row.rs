@@ -6,7 +6,6 @@ use crate::{
     components::{AuthError, SpinnerButton},
     gettext_f,
     session::{model::UserSession, view::account_settings::AccountSettingsSubpage},
-    spawn,
     system_settings::ClockFormat,
     toast, Application,
 };
@@ -136,7 +135,7 @@ impl UserSessionRow {
 
     /// Disconnect the user session.
     #[template_callback]
-    fn disconnect(&self) {
+    async fn disconnect(&self) {
         let Some(user_session) = self.user_session() else {
             return;
         };
@@ -150,22 +149,25 @@ impl UserSessionRow {
             return;
         }
 
-        self.imp().disconnect_button.set_loading(true);
+        let imp = self.imp();
+        imp.disconnect_button.set_loading(true);
 
-        spawn!(clone!(@weak self as obj => async move {
-            match user_session.delete(&obj).await {
-                Ok(_) => obj.set_visible(false),
-                Err(AuthError::UserCancelled) => {},
-                Err(_) => {
-                    let device_name = user_session.display_name();
-                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    let error_message = gettext_f("Could not disconnect device “{device_name}”", &[("device_name", &device_name)]);
-                    toast!(obj, error_message);
-                },
+        match user_session.delete(self).await {
+            Ok(_) => self.set_visible(false),
+            Err(AuthError::UserCancelled) => {}
+            Err(_) => {
+                let device_name = user_session.display_name();
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                let error_message = gettext_f(
+                    "Could not disconnect device “{device_name}”",
+                    &[("device_name", &device_name)],
+                );
+                toast!(self, error_message);
             }
+        }
 
-            obj.imp().disconnect_button.set_loading(false);
-        }));
+        imp.disconnect_button.set_loading(false);
     }
 
     /// Update the last seen timestamp according to the current user session and
