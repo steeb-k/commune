@@ -38,8 +38,13 @@ pub static RUNTIME: Lazy<tokio::runtime::Runtime> =
 
 fn main() {
     // Initialize logger, debug is carried out via debug!, info!, warn! and error!.
+    // Default to the INFO level for this crate and WARN for everything else.
+    // It can be overridden with the RUST_LOG environment variable.
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("fractal=info,warn"));
+
     tracing_subscriber::registry()
-        .with(fmt::layer().with_filter(EnvFilter::from_default_env()))
+        .with(fmt::layer().with_filter(env_filter))
         .init();
 
     // Prepare i18n
