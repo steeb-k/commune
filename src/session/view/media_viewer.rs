@@ -87,28 +87,20 @@ mod imp {
                 obj.copy_image();
             });
 
-            klass.install_action("media-viewer.save-image", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.save_file().await;
-                }));
+            klass.install_action_async("media-viewer.save-image", None, |obj, _, _| async move {
+                obj.save_file().await;
             });
 
-            klass.install_action("media-viewer.save-video", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.save_file().await;
-                }));
+            klass.install_action_async("media-viewer.save-video", None, |obj, _, _| async move {
+                obj.save_file().await;
             });
 
-            klass.install_action("media-viewer.save-audio", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.save_file().await;
-                }));
+            klass.install_action_async("media-viewer.save-audio", None, |obj, _, _| async move {
+                obj.save_file().await;
             });
 
-            klass.install_action("media-viewer.permalink", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.copy_permalink().await;
-                }));
+            klass.install_action_async("media-viewer.permalink", None, |obj, _, _| async move {
+                obj.copy_permalink().await;
             });
         }
 

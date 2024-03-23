@@ -11,7 +11,7 @@ use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
     session::model::{Event, IdentityVerification, Room, Selection, Session, SidebarListModel},
-    spawn, toast,
+    toast,
     utils::matrix::{MatrixRoomId, MatrixRoomIdUri},
     Window,
 };
@@ -72,13 +72,11 @@ mod imp {
                 },
             );
 
-            klass.install_action("session.logout", None, move |obj, _, _| {
+            klass.install_action_async("session.logout", None, |obj, _, _| async move {
                 if let Some(session) = obj.session() {
-                    spawn!(clone!(@weak obj, @weak session => async move {
-                        if let Err(error) = session.logout().await {
-                            toast!(obj, error);
-                        }
-                    }));
+                    if let Err(error) = session.logout().await {
+                        toast!(obj, error);
+                    }
                 }
             });
 

@@ -11,7 +11,7 @@ use gtk::{
 use tracing::{debug, error};
 
 use super::{ActionButton, ActionState, AvatarData, AvatarImage, ImagePaintable};
-use crate::{spawn, toast, utils::expression};
+use crate::{toast, utils::expression};
 
 /// The state of the editable avatar.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -84,11 +84,13 @@ mod imp {
             Self::bind_template(klass);
             klass.set_css_name("editable-avatar");
 
-            klass.install_action("editable-avatar.edit-avatar", None, |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
+            klass.install_action_async(
+                "editable-avatar.edit-avatar",
+                None,
+                |obj, _, _| async move {
                     obj.choose_avatar().await;
-                }));
-            });
+                },
+            );
             klass.install_action("editable-avatar.remove-avatar", None, |obj, _, _| {
                 obj.emit_by_name::<()>("remove-avatar", &[]);
             });

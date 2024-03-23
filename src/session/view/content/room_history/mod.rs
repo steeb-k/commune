@@ -135,30 +135,22 @@ mod imp {
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
-            klass.install_action("room-history.leave", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.leave().await;
-                }));
+            klass.install_action_async("room-history.leave", None, |obj, _, _| async move {
+                obj.leave().await;
             });
-            klass.install_action("room-history.join", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.join().await;
-                }));
+            klass.install_action_async("room-history.join", None, |obj, _, _| async move {
+                obj.join().await;
             });
-            klass.install_action("room-history.forget", None, move |obj, _, _| {
-                spawn!(clone!(@weak obj => async move {
-                    obj.forget().await;
-                }));
+            klass.install_action_async("room-history.forget", None, |obj, _, _| async move {
+                obj.forget().await;
             });
 
             klass.install_action("room-history.try-again", None, move |widget, _, _| {
                 widget.try_again();
             });
 
-            klass.install_action("room-history.permalink", None, move |widget, _, _| {
-                spawn!(clone!(@weak widget => async move {
-                    widget.permalink().await;
-                }));
+            klass.install_action_async("room-history.permalink", None, |obj, _, _| async move {
+                obj.permalink().await;
             });
 
             klass.install_action("room-history.details", None, move |widget, _, _| {

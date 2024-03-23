@@ -6,7 +6,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{IdentityVerification, VerificationState},
-    spawn, toast, Window,
+    toast, Window,
 };
 
 mod imp {
@@ -49,7 +49,7 @@ mod imp {
 
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
-            klass.install_action("verification.accept", None, move |obj, _, _| {
+            klass.install_action_async("verification.accept", None, |obj, _, _| async move {
                 let Some(window) = obj.root().and_downcast::<Window>() else {
                     return;
                 };
@@ -57,31 +57,23 @@ mod imp {
                     return;
                 };
 
-                if verification.state() == VerificationState::Requested {
+                if verification.state() == VerificationState::Requested
+                    || verification.accept().await.is_ok()
+                {
                     window.session_view().select_verification(verification);
                 } else {
-                    spawn!(
-                        clone!(@weak obj, @weak verification, @weak window => async move {
-                            if verification.accept().await.is_err() {
-                                toast!(obj, gettext("Could not accept verification"));
-                            } else {
-                                window.session_view().select_verification(verification);
-                            }
-                        })
-                    );
+                    toast!(obj, gettext("Could not accept verification"));
                 }
             });
 
-            klass.install_action("verification.decline", None, move |obj, _, _| {
+            klass.install_action_async("verification.decline", None, |obj, _, _| async move {
                 let Some(verification) = obj.verification() else {
                     return;
                 };
 
-                spawn!(clone!(@weak obj, @weak verification => async move {
-                    if verification.cancel().await.is_err() {
-                        toast!(obj, gettext("Could not decline verification"));
-                    }
-                }));
+                if verification.cancel().await.is_err() {
+                    toast!(obj, gettext("Could not decline verification"));
+                }
             });
         }
 
