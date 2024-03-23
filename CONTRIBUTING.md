@@ -22,7 +22,7 @@ can also provide general help about using Rust in GNOME.
 
 ### Prerequisites
 
-Fractal is written in Rust, so you will need to have at least Rust 1.75 and Cargo available on your
+Fractal is written in Rust, so you will need to have at least Rust 1.76 and Cargo available on your
 system. You will also need to install the Rust nightly toolchain to be able to run our
 [pre-commit hook](#pre-commit), which can be done with:
 
