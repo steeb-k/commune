@@ -74,6 +74,18 @@
     </section>
     <section>
       <item>
+        <attribute name="label" translatable="yes">_Try Again</attribute>
+        <attribute name="action">event.retry-send</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Discard</attribute>
+        <attribute name="action">event.cancel-send</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">Rep_ort…</attribute>
         <attribute name="action">event.report</attribute>
         <attribute name="hidden-when">action-missing</attribute>
@@ -149,6 +161,18 @@
       <item>
         <attribute name="label" translatable="yes">_View Details</attribute>
         <attribute name="action">event.view-details</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Try Again</attribute>
+        <attribute name="action">event.retry-send</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Discard</attribute>
+        <attribute name="action">event.cancel-send</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>

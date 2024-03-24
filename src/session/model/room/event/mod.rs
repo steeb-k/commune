@@ -77,11 +77,16 @@ impl FromVariant for EventKey {
 #[repr(u32)]
 #[enum_type(name = "MessageState")]
 pub enum MessageState {
+    /// The message has no particular state.
     #[default]
     None = 0,
+    /// The message is being sent.
     Sending = 1,
+    /// An error occurred when sending the message.
     Error = 2,
+    /// Sending the message was cancelled.
     Cancelled = 3,
+    /// The message was edited.
     Edited = 4,
 }
 

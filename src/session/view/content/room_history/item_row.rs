@@ -11,7 +11,7 @@ use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser, Spinner},
     prelude::*,
     session::{
-        model::{Event, TimelineItem, VirtualItem, VirtualItemKind},
+        model::{Event, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
         view::EventDetailsDialog,
     },
     spawn, toast,
@@ -131,8 +131,9 @@ mod imp {
                 .downcast_ref::<Event>()
                 .filter(|event| event.is_message())
             {
+                let has_event_id = event.event_id().is_some();
                 let can_send_reaction = event.room().permissions().can_send_reaction();
-                let menu_model = if can_send_reaction {
+                let menu_model = if has_event_id && can_send_reaction {
                     event_message_menu_model_with_reactions()
                 } else {
                     event_message_menu_model_no_reactions()
@@ -207,6 +208,11 @@ mod imp {
 
             if let Some(item) = &item {
                 if let Some(event) = item.downcast_ref::<Event>() {
+                    let state_notify_handler =
+                        event.connect_state_notify(clone!(@weak obj => move |event| {
+                            obj.update_event_actions(Some(event.upcast_ref()));
+                        }));
+
                     let source_notify_handler =
                         event.connect_source_notify(clone!(@weak obj => move |event| {
                             obj.set_event_widget(event.clone());
@@ -225,6 +231,7 @@ mod imp {
                         }));
 
                     self.event_handlers.replace(vec![
+                        state_notify_handler,
                         source_notify_handler,
                         edit_source_notify_handler,
                         is_highlighted_notify_handler,
@@ -444,10 +451,7 @@ impl ItemRow {
     ///
     /// Unsets the actions if `event` is `None`.
     fn update_event_actions(&self, event: Option<&Event>) {
-        let Some(event) = event.filter(|e| {
-            // We do not offer any action until the event is sent.
-            e.event_id().is_some()
-        }) else {
+        let Some(event) = event else {
             self.insert_action_group("event", None::<&gio::ActionGroup>);
             self.set_action_group(None);
             self.set_has_context_menu(false);
@@ -456,46 +460,73 @@ impl ItemRow {
 
         let action_group = gio::SimpleActionGroup::new();
         let room = event.room();
+        let has_event_id = event.event_id().is_some();
 
-        if event.has_source() {
+        if has_event_id {
+            if event.has_source() {
+                action_group.add_action_entries([
+                    // View event details.
+                    gio::ActionEntry::builder("view-details")
+                        .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
+                            let dialog = EventDetailsDialog::new(&event);
+                            dialog.present(&widget);
+                        }))
+                        .build(),
+                ]);
+            }
+
             action_group.add_action_entries([
-                // View Event Source
-                gio::ActionEntry::builder("view-details")
-                    .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                        let dialog = EventDetailsDialog::new(&event);
-                        dialog.present(&widget);
-                    }))
-                    .build(),
-            ]);
-        }
-
-        action_group.add_action_entries([
-            // Create a permalink.
-            gio::ActionEntry::builder("permalink")
-                .activate(clone!(@weak self as obj, @weak event => move |_, _, _| {
-                    spawn!(async move {
-                        let Some(permalink) = event.matrix_to_uri().await else {
-                            return;
-                        };
-
-                        obj.clipboard().set_text(&permalink.to_string());
-                        toast!(obj, gettext("Permalink copied to clipboard"));
-                    });
-                }))
-                .build(),
-        ]);
-
-        if room.is_joined() {
-            action_group.add_action_entries([
-                // Report the event.
-                gio::ActionEntry::builder("report")
-                    .activate(clone!(@weak self as obj => move |_, _, _| {
+                // Create a permalink.
+                gio::ActionEntry::builder("permalink")
+                    .activate(clone!(@weak self as obj, @weak event => move |_, _, _| {
                         spawn!(async move {
-                            obj.report_event().await;
+                            let Some(permalink) = event.matrix_to_uri().await else {
+                                return;
+                            };
+
+                            obj.clipboard().set_text(&permalink.to_string());
+                            toast!(obj, gettext("Permalink copied to clipboard"));
                         });
                     }))
                     .build(),
             ]);
+
+            if room.is_joined() {
+                action_group.add_action_entries([
+                    // Report the event.
+                    gio::ActionEntry::builder("report")
+                        .activate(clone!(@weak self as obj => move |_, _, _| {
+                            spawn!(async move {
+                                obj.report_event().await;
+                            });
+                        }))
+                        .build(),
+                ]);
+            }
+        } else {
+            let state = event.state();
+
+            if matches!(state, MessageState::Sending | MessageState::Error) {
+                // Cancel the event.
+                action_group.add_action_entries([gio::ActionEntry::builder("cancel-send")
+                    .activate(clone!(@weak self as obj, => move |_, _, _| {
+                        spawn!(async move {
+                            obj.cancel_send().await;
+                        });
+                    }))
+                    .build()]);
+            }
+
+            if state == MessageState::Error {
+                // Retry to send the event.
+                action_group.add_action_entries([gio::ActionEntry::builder("retry-send")
+                    .activate(clone!(@weak self as obj, => move |_, _, _| {
+                        spawn!(async move {
+                            obj.retry_send().await;
+                        });
+                    }))
+                    .build()]);
+            }
         }
 
         if let TimelineItemContent::Message(message) = event.content() {
@@ -505,7 +536,9 @@ impl ItemRow {
             let permissions = room.permissions();
 
             // Redact/remove the event.
-            if (is_from_own_user && permissions.can_redact_own()) || permissions.can_redact_other()
+            if has_event_id
+                && ((is_from_own_user && permissions.can_redact_own())
+                    || permissions.can_redact_other())
             {
                 action_group.add_action_entries([gio::ActionEntry::builder("remove")
                     .activate(clone!(@weak self as obj, => move |_, _, _| {
@@ -517,7 +550,7 @@ impl ItemRow {
             };
 
             // Send/redact a reaction.
-            if permissions.can_send_reaction() {
+            if has_event_id && permissions.can_send_reaction() {
                 action_group.add_action_entries([gio::ActionEntry::builder("toggle-reaction")
                     .parameter_type(Some(&String::static_variant_type()))
                     .activate(clone!(@weak self as obj => move |_, _, variant| {
@@ -532,7 +565,7 @@ impl ItemRow {
                     .build()]);
             }
 
-            if permissions.can_send_message() {
+            if has_event_id && permissions.can_send_message() {
                 action_group.add_action_entries([
                     // Reply.
                     gio::ActionEntry::builder("reply")
@@ -561,7 +594,7 @@ impl ItemRow {
                         .build()]);
 
                     // Edit message.
-                    if is_from_own_user && permissions.can_send_message() {
+                    if has_event_id && is_from_own_user && permissions.can_send_message() {
                         action_group.add_action_entries([gio::ActionEntry::builder("edit")
                             .activate(clone!(@weak event, @weak self as widget => move |_, _, _| {
                                 if let Some(event_id) = event.event_id() {
@@ -596,7 +629,7 @@ impl ItemRow {
                         .build()]);
 
                     // Edit message.
-                    if is_from_own_user && permissions.can_send_message() {
+                    if has_event_id && is_from_own_user && permissions.can_send_message() {
                         action_group.add_action_entries([gio::ActionEntry::builder("edit")
                             .activate(clone!(@weak event, @weak self as widget => move |_, _, _| {
                                 if let Some(event_id) = event.event_id() {
@@ -782,6 +815,47 @@ impl ItemRow {
             .is_err()
         {
             toast!(self, gettext("Could not report event"));
+        }
+    }
+
+    /// Cancel sending the event of this row.
+    async fn cancel_send(&self) {
+        let Some(event) = self.item().and_downcast::<Event>() else {
+            return;
+        };
+        let Some(transaction_id) = event.transaction_id() else {
+            return;
+        };
+
+        if !event
+            .room()
+            .timeline()
+            .matrix_timeline()
+            .cancel_send(&transaction_id)
+            .await
+        {
+            toast!(self, gettext("Could not discard message"));
+        }
+    }
+
+    /// Retry sending the event of this row.
+    async fn retry_send(&self) {
+        let Some(event) = self.item().and_downcast::<Event>() else {
+            return;
+        };
+        let Some(transaction_id) = event.transaction_id() else {
+            return;
+        };
+
+        if event
+            .room()
+            .timeline()
+            .matrix_timeline()
+            .retry_send(&transaction_id)
+            .await
+            .is_err()
+        {
+            toast!(self, gettext("Could not retry to send message"));
         }
     }
 }
