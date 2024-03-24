@@ -72,6 +72,17 @@
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
       <item>
+        <!-- Translators: In this string, 'Mute' is a verb, as in 'Mute room member'. -->
+        <attribute name="label" translatable="yes">M_ute</attribute>
+        <attribute name="action">sender-avatar.mute</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Unmute</attribute>
+        <attribute name="action">sender-avatar.unmute</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
         <!-- Translators: In this string, 'Kick' is a verb. -->
         <attribute name="label" translatable="yes">_Kick</attribute>
         <attribute name="action">sender-avatar.kick</attribute>

@@ -8,13 +8,16 @@ use crate::{
     gettext_f, ngettext_f,
     prelude::*,
     session::{
-        model::{Member, Membership, User},
+        model::{Member, MemberRole, Membership, User},
         view::content::RoomHistory,
     },
     toast,
     utils::{
         add_activate_binding_action,
-        message_dialog::{confirm_room_member_destructive_action, RoomMemberDestructiveAction},
+        message_dialog::{
+            confirm_mute_room_member, confirm_room_member_destructive_action,
+            RoomMemberDestructiveAction,
+        },
         BoundObject,
     },
     Window,
@@ -110,6 +113,14 @@ mod imp {
                     widget.kick().await;
                 },
             );
+
+            klass.install_action_async("sender-avatar.mute", None, |obj, _, _| async move {
+                obj.toggle_muted().await;
+            });
+
+            klass.install_action_async("sender-avatar.unmute", None, |obj, _, _| async move {
+                obj.toggle_muted().await;
+            });
 
             klass.install_action_async("sender-avatar.kick", None, |widget, _, _| async move {
                 widget.kick().await;
@@ -271,6 +282,8 @@ mod imp {
             let membership = sender.membership();
             let sender_id = sender.user_id();
             let is_own_user = sender.is_own_user();
+            let power_level = sender.power_level();
+            let role = permissions.role(power_level);
 
             obj.action_set_enabled(
                 "sender-avatar.mention",
@@ -291,6 +304,24 @@ mod imp {
                 !is_own_user
                     && membership == Membership::Invite
                     && permissions.can_do_to_user(sender_id, PowerLevelUserAction::Kick),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.mute",
+                !is_own_user
+                    && role != MemberRole::Muted
+                    && permissions.default_power_level() > permissions.mute_power_level()
+                    && permissions
+                        .can_do_to_user(sender_id, PowerLevelUserAction::ChangePowerLevel),
+            );
+
+            obj.action_set_enabled(
+                "sender-avatar.unmute",
+                !is_own_user
+                    && role == MemberRole::Muted
+                    && permissions.default_power_level() > permissions.mute_power_level()
+                    && permissions
+                        .can_do_to_user(sender_id, PowerLevelUserAction::ChangePowerLevel),
             );
 
             obj.action_set_enabled(
@@ -543,6 +574,53 @@ impl SenderAvatar {
                 _ => gettext("Could not kick user"),
             };
             toast!(self, error);
+        }
+    }
+
+    /// (Un)mute the user in the room.
+    async fn toggle_muted(&self) {
+        let Some(sender) = self.sender() else {
+            return;
+        };
+
+        let old_power_level = sender.power_level();
+        let permissions = sender.room().permissions();
+
+        // Warn if user is muted but was not before.
+        let mute_power_level = permissions.mute_power_level();
+        let mute = old_power_level > mute_power_level;
+        if mute && !confirm_mute_room_member(&sender, self).await {
+            return;
+        }
+
+        let user_id = sender.user_id().clone();
+
+        let new_power_level = if mute {
+            toast!(self, gettext("Muting member…"));
+            mute_power_level
+        } else {
+            toast!(self, gettext("Unmuting member…"));
+            permissions.default_power_level()
+        };
+
+        match permissions
+            .set_user_power_level(user_id, new_power_level)
+            .await
+        {
+            Ok(_) => {
+                if mute {
+                    toast!(self, gettext("Member muted"));
+                } else {
+                    toast!(self, gettext("Member unmuted"));
+                }
+            }
+            Err(_) => {
+                if mute {
+                    toast!(self, gettext("Could not mute member"));
+                } else {
+                    toast!(self, gettext("Could not unmute member"));
+                }
+            }
         }
     }
 
