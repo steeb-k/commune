@@ -414,7 +414,7 @@ impl UserFacingError for oo7::portal::Error {
             ),
             oo7::portal::Error::NoParentDir(_) |
             oo7::portal::Error::NoDataDir => gettext(
-                "Could not access the secret storage file location.",
+                "Could not access the secret storage file location",
             ),
             oo7::portal::Error::Io(_) => gettext(
                 "An unknown error occurred when accessing the secret storage file.",

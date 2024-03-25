@@ -476,7 +476,7 @@ impl Row {
                 self,
                 gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Could not move {room} from {previous_category} to {new_category}.",
+                    "Could not move {room} from {previous_category} to {new_category}",
                 ),
                 @room,
                 previous_category = previous_category.to_string(),
@@ -491,7 +491,7 @@ impl Row {
             toast!(
                 self,
                 // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                gettext("Could not forget {room}."),
+                gettext("Could not forget {room}"),
                 @room,
             );
         }

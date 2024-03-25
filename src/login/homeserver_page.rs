@@ -256,7 +256,7 @@ impl LoginHomeserverPage {
             }
             Err(error) => {
                 warn!("Could not get available login types: {error}");
-                toast!(self, "Could not get available login types.");
+                toast!(self, "Could not get available login types");
 
                 // Drop the client because it is bound to the homeserver.
                 login.drop_client();

@@ -570,7 +570,7 @@ impl RoomHistory {
             toast!(
                 self,
                 // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                gettext("Could not forget {room}."),
+                gettext("Could not forget {room}"),
                 @room,
             );
         }
