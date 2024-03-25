@@ -51,7 +51,7 @@
     <child>
       <object class="AdwPreferencesGroup" id="change_password_group">
         <child>
-          <object class="ComponentsButtonRow">
+          <object class="ButtonRow">
             <property name="title" translatable="yes">Change Password</property>
             <property name="to-subpage">true</property>
             <property name="action-name">account-settings.show-subpage</property>
@@ -92,7 +92,7 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="ComponentsButtonRow">
+          <object class="ButtonRow">
             <style>
               <class name="error"/>
             </style>
@@ -107,7 +107,7 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="ComponentsButtonRow">
+          <object class="ButtonRow">
             <style>
               <class name="error"/>
             </style>

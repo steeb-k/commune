@@ -6,8 +6,10 @@ use gtk::{
     CompositeTemplate,
 };
 
+use crate::components::LoadingBin;
+
 mod imp {
-    use std::cell::Cell;
+    use std::{cell::Cell, marker::PhantomData};
 
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
@@ -18,6 +20,11 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/rows/button_row.ui")]
     #[properties(wrapper_type = super::ButtonRow)]
     pub struct ButtonRow {
+        #[template_child]
+        pub loading_bin: TemplateChild<LoadingBin>,
+        /// Whether the button row is loading.
+        #[property(get = Self::is_loading, set = Self::set_is_loading)]
+        pub is_loading: PhantomData<bool>,
         /// Whether activating this button opens a subpage.
         #[property(get, set = Self::set_to_subpage, explicit_notify)]
         pub to_subpage: Cell<bool>,
@@ -25,7 +32,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for ButtonRow {
-        const NAME: &'static str = "ComponentsButtonRow";
+        const NAME: &'static str = "ButtonRow";
         type Type = super::ButtonRow;
         type ParentType = adw::PreferencesRow;
 
@@ -66,6 +73,21 @@ mod imp {
     impl PreferencesRowImpl for ButtonRow {}
 
     impl ButtonRow {
+        /// Whether the row is loading.
+        fn is_loading(&self) -> bool {
+            self.loading_bin.is_loading()
+        }
+
+        /// Set whether the row is loading.
+        fn set_is_loading(&self, loading: bool) {
+            if self.is_loading() == loading {
+                return;
+            }
+
+            self.loading_bin.set_is_loading(loading);
+            self.obj().notify_is_loading();
+        }
+
         /// Set whether activating this button opens a subpage.
         fn set_to_subpage(&self, to_subpage: bool) {
             if self.to_subpage.get() == to_subpage {

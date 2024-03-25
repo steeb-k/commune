@@ -281,6 +281,13 @@ spinner-wrapper.large spinner {
   padding: 7px;
 }
 
+row.button-row box.header {
+  margin-left: 12px;
+  margin-right: 12px;
+  border-spacing: 6px;
+  min-height: 40px;
+}
+
 
 /* Login */
 

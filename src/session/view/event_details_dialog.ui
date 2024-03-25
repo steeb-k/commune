@@ -112,7 +112,7 @@
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="ComponentsButtonRow">
+                                      <object class="ButtonRow">
                                         <property name="title" translatable="yes">View Source</property>
                                         <property name="to-subpage">True</property>
                                         <signal name="activated" handler="show_original_source" swapped="yes"/>
@@ -173,7 +173,7 @@
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="ComponentsButtonRow">
+                                      <object class="ButtonRow">
                                         <property name="title" translatable="yes">View Source</property>
                                         <property name="to-subpage">True</property>
                                         <signal name="activated" handler="show_edit_source" swapped="yes"/>
