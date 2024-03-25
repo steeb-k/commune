@@ -15,7 +15,7 @@ use ruma::events::{room::encryption::RoomEncryptionEventContent, InitialStateEve
 use tracing::error;
 
 use crate::{
-    components::{SpinnerButton, ToastableDialog},
+    components::{SpinnerButton, SubstringEntryRow, ToastableDialog},
     prelude::*,
     session::model::Session,
     spawn_tokio, toast, Window,
@@ -49,9 +49,7 @@ mod imp {
         #[template_child]
         pub encryption: TemplateChild<adw::SwitchRow>,
         #[template_child]
-        pub room_address: TemplateChild<gtk::Entry>,
-        #[template_child]
-        pub server_name: TemplateChild<gtk::Label>,
+        pub room_address: TemplateChild<SubstringEntryRow>,
         #[template_child]
         pub room_address_error_revealer: TemplateChild<gtk::Revealer>,
         #[template_child]
@@ -89,8 +87,8 @@ mod imp {
             }
 
             if let Some(session) = &session {
-                self.server_name
-                    .set_label(&format!(":{}", session.user_id().server_name()));
+                let server_name = session.user_id().server_name();
+                self.room_address.set_suffix_text(format!(":{server_name}"));
             }
 
             self.session.set(session.as_ref());
@@ -216,12 +214,12 @@ impl RoomCreation {
         // We don't allow #, : in the room address
         let address_has_error = if room_address.contains(':') {
             imp.room_address_error
-                .set_text(&gettext("Can’t contain “:”"));
+                .set_text(&gettext("Cannot contain “:”"));
             can_create = false;
             true
         } else if room_address.contains('#') {
             imp.room_address_error
-                .set_text(&gettext("Can’t contain “#”"));
+                .set_text(&gettext("Cannot contain “#”"));
             can_create = false;
             true
         } else if room_address.len() > MAX_BYTES {
@@ -235,9 +233,6 @@ impl RoomCreation {
         } else {
             false
         };
-
-        // TODO: should we immediately check if the address is available, like element
-        // is doing?
 
         if address_has_error {
             imp.room_address.add_css_class("error");

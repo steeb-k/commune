@@ -66,6 +66,9 @@ mod imp {
         /// If it is not set, the placeholder text will be used.
         #[property(get, set = Self::set_accessible_description, explicit_notify, nullable)]
         pub accessible_description: RefCell<Option<String>>,
+        /// Whether the add button is hidden.
+        #[property(get = Self::hide_add_button, set = Self::set_hide_add_button, explicit_notify)]
+        pub hide_add_button: PhantomData<bool>,
         /// The tooltip text of the add button.
         #[property(get = Self::add_button_tooltip_text, set = Self::set_add_button_tooltip_text, explicit_notify, nullable)]
         pub add_button_tooltip_text: PhantomData<Option<glib::GString>>,
@@ -266,6 +269,21 @@ mod imp {
 
             self.update_accessible_description();
             self.obj().notify_accessible_description();
+        }
+
+        /// Whether the add button is hidden.
+        fn hide_add_button(&self) -> bool {
+            !self.add_button.is_visible()
+        }
+
+        /// Set whether the add button is hidden.
+        fn set_hide_add_button(&self, hide: bool) {
+            if self.hide_add_button() == hide {
+                return;
+            }
+
+            self.add_button.set_visible(!hide);
+            self.obj().notify_hide_add_button();
         }
 
         /// The tooltip text of the add button.
