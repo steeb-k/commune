@@ -7,7 +7,7 @@ use gtk::{
 };
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
-use super::{Avatar, PowerLevelSelectionRow, SpinnerButton};
+use super::{Avatar, ButtonRow, PowerLevelSelectionRow, SpinnerButton};
 use crate::{
     i18n::gettext_f,
     ngettext_f,
@@ -59,13 +59,19 @@ mod imp {
         #[template_child]
         pub invite_button: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub kick_button: TemplateChild<SpinnerButton>,
+        pub kick_box: TemplateChild<gtk::ListBox>,
         #[template_child]
-        pub ban_button: TemplateChild<SpinnerButton>,
+        pub kick_button: TemplateChild<ButtonRow>,
+        #[template_child]
+        pub ban_box: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        pub ban_button: TemplateChild<ButtonRow>,
         #[template_child]
         pub unban_button: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub remove_messages_button: TemplateChild<SpinnerButton>,
+        pub remove_messages_box: TemplateChild<gtk::ListBox>,
+        #[template_child]
+        pub remove_messages_button: TemplateChild<ButtonRow>,
         #[template_child]
         pub ignored_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -400,22 +406,22 @@ impl UserPage {
                 // Translators: As in, 'Kick room member'.
                 _ => gettext("Kick"),
             };
-            imp.kick_button.set_content_label(label);
-            imp.kick_button.set_visible(true);
+            imp.kick_button.set_title(&label);
+            imp.kick_box.set_visible(true);
         } else {
-            imp.kick_button.set_visible(false);
+            imp.kick_box.set_visible(false);
         }
 
         let can_ban = membership != Membership::Ban
             && permissions.can_do_to_user(user_id, PowerLevelUserAction::Ban);
-        imp.ban_button.set_visible(can_ban);
+        imp.ban_box.set_visible(can_ban);
 
         let can_unban = matches!(membership, Membership::Ban)
             && permissions.can_do_to_user(user_id, PowerLevelUserAction::Unban);
         imp.unban_button.set_visible(can_unban);
 
         let can_redact = !member.is_own_user() && permissions.can_redact_other();
-        imp.remove_messages_button.set_visible(can_redact);
+        imp.remove_messages_box.set_visible(can_redact);
 
         imp.room_box.set_visible(true);
     }
@@ -424,19 +430,19 @@ impl UserPage {
     fn reset_room(&self) {
         let imp = self.imp();
 
-        imp.kick_button.set_loading(false);
+        imp.kick_button.set_is_loading(false);
         imp.kick_button.set_sensitive(true);
 
         imp.invite_button.set_loading(false);
         imp.invite_button.set_sensitive(true);
 
-        imp.ban_button.set_loading(false);
+        imp.ban_button.set_is_loading(false);
         imp.ban_button.set_sensitive(true);
 
         imp.unban_button.set_loading(false);
         imp.unban_button.set_sensitive(true);
 
-        imp.remove_messages_button.set_loading(false);
+        imp.remove_messages_button.set_is_loading(false);
         imp.remove_messages_button.set_sensitive(true);
     }
 
@@ -521,7 +527,7 @@ impl UserPage {
         };
 
         let imp = self.imp();
-        imp.kick_button.set_loading(true);
+        imp.kick_button.set_is_loading(true);
         imp.invite_button.set_sensitive(false);
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
@@ -559,7 +565,7 @@ impl UserPage {
         };
 
         let imp = self.imp();
-        imp.ban_button.set_loading(true);
+        imp.ban_button.set_is_loading(true);
         imp.invite_button.set_sensitive(false);
         imp.kick_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
@@ -631,7 +637,7 @@ impl UserPage {
         };
 
         let imp = self.imp();
-        imp.remove_messages_button.set_loading(true);
+        imp.remove_messages_button.set_is_loading(true);
 
         let redactable_events = member.redactable_events();
 

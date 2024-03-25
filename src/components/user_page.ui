@@ -138,23 +138,37 @@
                           </object>
                         </child>
                         <child>
-                          <object class="SpinnerButton" id="kick_button">
+                          <object class="GtkListBox" id="kick_box">
                             <style>
-                              <class name="row"/>
-                              <class name="destructive-action"/>
+                              <class name="boxed-list" />
                             </style>
-                            <signal name="clicked" handler="kick_user" swapped="yes"/>
+                            <property name="accessible-role">group</property>
+                            <child>
+                              <object class="ButtonRow" id="kick_button">
+                                <style>
+                                  <class name="error"/>
+                                </style>
+                                <signal name="activated" handler="kick_user" swapped="yes"/>
+                              </object>
+                            </child>
                           </object>
                         </child>
                         <child>
-                          <object class="SpinnerButton" id="ban_button">
+                          <object class="GtkListBox" id="ban_box">
                             <style>
-                              <class name="row"/>
-                              <class name="destructive-action"/>
+                              <class name="boxed-list" />
                             </style>
-                            <!-- Translators: As in, 'Ban room member'. -->
-                            <property name="content-label" translatable="yes">Ban</property>
-                            <signal name="clicked" handler="ban_user" swapped="yes"/>
+                            <property name="accessible-role">group</property>
+                            <child>
+                              <object class="ButtonRow" id="ban_button">
+                                <style>
+                                  <class name="error"/>
+                                </style>
+                                <!-- Translators: As in, 'Ban room member'. -->
+                                <property name="title" translatable="yes">Ban</property>
+                                <signal name="activated" handler="ban_user" swapped="yes"/>
+                              </object>
+                            </child>
                           </object>
                         </child>
                         <child>
@@ -168,13 +182,20 @@
                           </object>
                         </child>
                         <child>
-                          <object class="SpinnerButton" id="remove_messages_button">
+                          <object class="GtkListBox" id="remove_messages_box">
                             <style>
-                              <class name="row"/>
-                              <class name="destructive-action"/>
+                              <class name="boxed-list" />
                             </style>
-                            <property name="content-label" translatable="yes">Remove Messages</property>
-                            <signal name="clicked" handler="remove_messages" swapped="yes"/>
+                            <property name="accessible-role">group</property>
+                            <child>
+                              <object class="ButtonRow" id="remove_messages_button">
+                                <style>
+                                  <class name="error"/>
+                                </style>
+                                <property name="title" translatable="yes">Remove Messages</property>
+                                <signal name="activated" handler="remove_messages" swapped="yes"/>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
