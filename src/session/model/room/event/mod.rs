@@ -234,6 +234,7 @@ mod imp {
             let obj = self.obj();
 
             let prev_raw = self.raw();
+            let prev_event_id = self.event_id_string();
             let was_edited = self.is_edited();
             let was_highlighted = self.is_highlighted();
             let prev_latest_edit_raw = self.latest_edit_raw();
@@ -246,6 +247,9 @@ mod imp {
 
             if !raw_eq(prev_raw.as_ref(), self.raw().as_ref()) {
                 obj.notify_source();
+            }
+            if self.event_id_string() != prev_event_id {
+                obj.notify_event_id_string();
             }
             if self.is_edited() != was_edited {
                 obj.notify_is_edited();
@@ -473,7 +477,7 @@ impl Event {
         self.imp().raw()
     }
 
-    /// The unique of this `Event` in the timeline.
+    /// The unique key of this `Event` in the timeline.
     pub fn key(&self) -> EventKey {
         let item_ref = self.imp().item.borrow();
         let item = item_ref.as_ref().unwrap();
