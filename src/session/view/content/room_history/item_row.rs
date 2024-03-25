@@ -784,7 +784,7 @@ impl ItemRow {
             .default_response("cancel")
             .heading(gettext("Report Event?"))
             .body(gettext(
-                "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator won’t be able to see the content of the event if it is encrypted or redacted.",
+                "Reporting an event will send its unique ID to the administrator of your homeserver. The administrator will not be able to see the content of the event if it is encrypted or redacted.",
             ))
             .extra_child(&list_box)
             .build();

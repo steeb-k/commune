@@ -21,7 +21,7 @@ pub async fn confirm_leave_room(room: &Room, parent: &impl IsA<gtk::Widget>) -> 
             gettext("Do you really want to decline this invite? You can join this room on your own later.")
         } else {
             gettext(
-                "Do you really want to decline this invite? You won’t be able to join this room without it.",
+                "Do you really want to decline this invite? You will not be able to join this room without it.",
             )
         };
         let response = gettext("Decline");
@@ -34,7 +34,7 @@ pub async fn confirm_leave_room(room: &Room, parent: &impl IsA<gtk::Widget>) -> 
             gettext("Do you really want to leave this room? You can come back later.")
         } else {
             gettext(
-                "Do you really want to leave this room? You won’t be able to come back without an invitation.",
+                "Do you really want to leave this room? You will not be able to come back without an invitation.",
             )
         };
         let response = gettext("Leave");
