@@ -463,18 +463,6 @@ impl ItemRow {
         let has_event_id = event.event_id().is_some();
 
         if has_event_id {
-            if event.has_source() {
-                action_group.add_action_entries([
-                    // View event details.
-                    gio::ActionEntry::builder("view-details")
-                        .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                            let dialog = EventDetailsDialog::new(&event);
-                            dialog.present(&widget);
-                        }))
-                        .build(),
-                ]);
-            }
-
             action_group.add_action_entries([
                 // Create a permalink.
                 gio::ActionEntry::builder("permalink")
@@ -487,6 +475,13 @@ impl ItemRow {
                             obj.clipboard().set_text(&permalink.to_string());
                             toast!(obj, gettext("Permalink copied to clipboard"));
                         });
+                    }))
+                    .build(),
+                // View event details.
+                gio::ActionEntry::builder("view-details")
+                    .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
+                        let dialog = EventDetailsDialog::new(&event);
+                        dialog.present(&widget);
                     }))
                     .build(),
             ]);

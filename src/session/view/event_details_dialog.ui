@@ -113,6 +113,11 @@
                                     </child>
                                     <child>
                                       <object class="ButtonRow">
+                                        <binding name="visible">
+                                          <lookup name="has-source">
+                                            <lookup name="event">EventDetailsDialog</lookup>
+                                          </lookup>
+                                        </binding>
                                         <property name="title" translatable="yes">View Source</property>
                                         <property name="to-subpage">True</property>
                                         <signal name="activated" handler="show_original_source" swapped="yes"/>
