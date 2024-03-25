@@ -274,12 +274,12 @@ mod imp {
             obj.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();
 
-            adj.connect_value_changed(clone!(@weak obj => move |adj| {
+            adj.connect_value_changed(clone!(@weak obj => move |_| {
                 let imp = obj.imp();
 
                 obj.trigger_read_receipts_update();
 
-                let is_at_bottom = adj.value() + adj.page_size() == adj.upper();
+                let is_at_bottom = obj.is_at_bottom();
                 if imp.is_auto_scrolling.get() {
                     if is_at_bottom {
                         imp.is_auto_scrolling.set(false);
@@ -719,12 +719,15 @@ impl RoomHistory {
             .scroll_to(num_events - 1, gtk::ListScrollFlags::FOCUS, None);
     }
 
+    /// Whether the GtkListView is scrolled at the bottom.
+    fn is_at_bottom(&self) -> bool {
+        let adj = self.imp().listview.vadjustment().unwrap();
+        adj.value() + adj.page_size() == adj.upper()
+    }
+
     /// Set `RoomHistory` to stick to the bottom based on scrollbar position
     pub fn enable_sticky_mode(&self) {
-        let imp = self.imp();
-        let adj = imp.listview.vadjustment().unwrap();
-        let is_at_bottom = adj.value() + adj.page_size() == adj.upper();
-        self.set_sticky(is_at_bottom);
+        self.set_sticky(self.is_at_bottom());
     }
 
     fn try_again(&self) {
@@ -826,13 +829,13 @@ impl RoomHistory {
             }),
         )));
 
-        let last_event_id = self.last_visible_event_id();
+        let Some(position) = self.receipt_position() else {
+            return;
+        };
 
-        if let Some(event_id) = last_event_id {
-            spawn!(clone!(@weak self as obj => async move {
-                obj.send_receipt(ReceiptType::Read, event_id).await;
-            }));
-        }
+        spawn!(clone!(@weak self as obj => async move {
+            obj.send_receipt(ReceiptType::Read, position).await;
+        }));
     }
 
     /// Update the read marker.
@@ -840,13 +843,24 @@ impl RoomHistory {
         let imp = self.imp();
         imp.read_timeout.take();
 
-        let last_event_id = self.last_visible_event_id();
+        let Some(position) = self.receipt_position() else {
+            return;
+        };
 
-        if let Some(event_id) = last_event_id {
-            spawn!(clone!(@weak self as obj => async move {
-                obj.send_receipt(ReceiptType::FullyRead, event_id).await;
-            }));
-        }
+        spawn!(clone!(@weak self as obj => async move {
+            obj.send_receipt(ReceiptType::FullyRead, position).await;
+        }));
+    }
+
+    /// The position where a receipt should point to.
+    fn receipt_position(&self) -> Option<ReceiptPosition> {
+        let position = if self.is_at_bottom() {
+            ReceiptPosition::End
+        } else {
+            ReceiptPosition::Event(self.last_visible_event_id()?)
+        };
+
+        Some(position)
     }
 
     /// Get the ID of the last visible event in the room history.
@@ -891,7 +905,7 @@ impl RoomHistory {
     }
 
     /// Send the given receipt.
-    async fn send_receipt(&self, receipt_type: ReceiptType, event_id: OwnedEventId) {
+    async fn send_receipt(&self, receipt_type: ReceiptType, position: ReceiptPosition) {
         let Some(room) = self.room() else {
             return;
         };
@@ -907,9 +921,14 @@ impl RoomHistory {
 
         let matrix_timeline = room.timeline().matrix_timeline();
         let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .send_single_receipt(receipt_type, ReceiptThread::Unthreaded, event_id)
-                .await
+            match position {
+                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
+                ReceiptPosition::Event(event_id) => {
+                    matrix_timeline
+                        .send_single_receipt(receipt_type, ReceiptThread::Unthreaded, event_id)
+                        .await
+                }
+            }
         });
 
         if let Err(error) = handle.await.unwrap() {
@@ -976,4 +995,12 @@ impl RoomHistory {
             }
         }
     }
+}
+
+/// The position of the receipt to send.
+enum ReceiptPosition {
+    /// We are at the end of the timeline (bottom of the view).
+    End,
+    /// We are at the event with the given ID.
+    Event(OwnedEventId),
 }
