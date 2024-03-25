@@ -23,16 +23,22 @@
     </child>
   </template>
   <object class="GtkButton" id="user_id_btn">
-    <binding name="label">
-      <lookup name="user-id-string">
-        <lookup name="sender">ContentSenderAvatar</lookup>
-      </lookup>
-    </binding>
     <property name="tooltip-text" translatable="yes">Copy Matrix User ID to Clipboard</property>
     <property name="action-name">sender-avatar.copy-user-id</property>
-    <property name="can-shrink">True</property>
     <style>
       <class name="flat"/>
+      <class name="text-button" />
     </style>
+    <property name="child">
+      <object class="GtkLabel">
+        <binding name="label">
+          <lookup name="user-id-string">
+            <lookup name="sender">ContentSenderAvatar</lookup>
+          </lookup>
+        </binding>
+        <property name="ellipsize">end</property>
+        <property name="xalign">0.0</property>
+      </object>
+    </property>
   </object>
 </interface>
