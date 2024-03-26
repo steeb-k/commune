@@ -3308,7 +3308,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk"
 version = "0.7.1"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "anymap2",
  "aquamarine",
@@ -3364,7 +3364,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-base"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "as_variant",
  "async-trait",
@@ -3388,7 +3388,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-common"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "async-trait",
  "futures-core",
@@ -3410,7 +3410,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-crypto"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "aes",
  "as_variant",
@@ -3450,7 +3450,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-indexeddb"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3475,7 +3475,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-qrcode"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "byteorder",
  "qrcode",
@@ -3487,7 +3487,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-sqlite"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "async-trait",
  "deadpool-sqlite",
@@ -3509,7 +3509,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-store-encryption"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "base64 0.21.7",
  "blake3",
@@ -3529,7 +3529,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-ui"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=95a471b0d25535c227c503b37989adc9081a7fe5#95a471b0d25535c227c503b37989adc9081a7fe5"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=ab9e4f73b1b43e0779080b714e0916496a052cc3#ab9e4f73b1b43e0779080b714e0916496a052cc3"
 dependencies = [
  "as_variant",
  "async-once-cell",
