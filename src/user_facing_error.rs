@@ -24,7 +24,7 @@ impl UserFacingError for HttpError {
                 if error.is_timeout() {
                     gettext("The connection timed out. Try again later.")
                 } else {
-                    gettext("Could not connect to the homeserver")
+                    gettext("Could not connect to the homeserver.")
                 }
             }
             HttpError::Api(FromHttpResponseError::Server(RumaApiError::ClientApi(
@@ -66,7 +66,7 @@ impl UserFacingError for HttpError {
 impl UserFacingError for Error {
     fn to_user_facing(&self) -> String {
         match self {
-            Error::DecryptorError(_) => gettext("Could not decrypt the event"),
+            Error::DecryptorError(_) => gettext("Could not decrypt the event."),
             Error::Http(http_error) => http_error.to_user_facing(),
             _ => gettext("An unknown error occurred."),
         }
@@ -76,12 +76,12 @@ impl UserFacingError for Error {
 impl UserFacingError for ClientBuildError {
     fn to_user_facing(&self) -> String {
         match self {
-            ClientBuildError::Url(_) => gettext("This is not a valid URL"),
+            ClientBuildError::Url(_) => gettext("This is not a valid URL."),
             ClientBuildError::AutoDiscovery(_) => {
                 gettext("Homeserver auto-discovery failed. Try entering the full URL manually.")
             }
             ClientBuildError::Http(err) => err.to_user_facing(),
-            ClientBuildError::SqliteStore(_) => gettext("Could not open the store"),
+            ClientBuildError::SqliteStore(_) => gettext("Could not open the store."),
             _ => gettext("An unknown error occurred."),
         }
     }
