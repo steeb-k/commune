@@ -128,6 +128,12 @@
               </object>
             </child>
             <child>
+              <object class="AdwBanner" id="security_banner">
+                <property name="revealed">False</property>
+                <signal name="button-clicked" handler="fix_security_issue" swapped="yes" />
+              </object>
+            </child>
+            <child>
               <object class="GtkScrolledWindow" id="scrolled_window">
                 <property name="vexpand">True</property>
                 <property name="hscrollbar-policy">never</property>

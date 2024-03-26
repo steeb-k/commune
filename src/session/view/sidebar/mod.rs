@@ -1,24 +1,25 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
+use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use tracing::error;
+
 mod category_row;
 mod icon_item_row;
 mod room_row;
 mod row;
 mod verification_row;
 
-use adw::{prelude::*, subclass::prelude::*};
-use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
-use tracing::error;
-
 use self::{
     category_row::CategoryRow, icon_item_row::IconItemRow, room_row::RoomRow, row::Row,
     verification_row::VerificationRow,
 };
+use super::{account_settings::AccountSettingsSubpage, AccountSettings};
 use crate::{
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
     session::model::{
-        Category, CategoryType, IdentityVerification, Room, RoomType, Selection, SidebarIconItem,
-        SidebarListModel, User,
+        Category, CategoryType, CryptoIdentityState, IdentityVerification, RecoveryState, Room,
+        RoomType, Selection, SessionVerificationState, SidebarIconItem, SidebarListModel, User,
     },
     utils::expression,
 };
@@ -37,6 +38,8 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/mod.ui")]
     #[properties(wrapper_type = super::Sidebar)]
     pub struct Sidebar {
+        #[template_child]
+        pub security_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
         #[template_child]
@@ -66,6 +69,7 @@ mod imp {
         pub list_model: glib::WeakRef<SidebarListModel>,
         pub binding: RefCell<Option<glib::Binding>>,
         pub expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
+        session_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -79,6 +83,8 @@ mod imp {
             OfflineBanner::ensure_type();
 
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
+
             klass.set_css_name("sidebar");
         }
 
@@ -146,6 +152,13 @@ mod imp {
             if let Some(expr_watch) = self.expr_watch.take() {
                 expr_watch.unwatch();
             }
+
+            if let Some(user) = self.user.take() {
+                let session = user.session();
+                for handler in self.session_handlers.take() {
+                    session.disconnect(handler);
+                }
+            }
         }
     }
 
@@ -160,7 +173,46 @@ mod imp {
                 return;
             }
 
+            if let Some(user) = prev_user {
+                let session = user.session();
+                for handler in self.session_handlers.take() {
+                    session.disconnect(handler);
+                }
+            }
+
+            if let Some(user) = &user {
+                let session = user.session();
+
+                let offline_handler =
+                    session.connect_offline_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_security_banner();
+                    }));
+                let crypto_identity_handler = session.connect_crypto_identity_state_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_security_banner();
+                    }),
+                );
+                let verification_handler = session.connect_verification_state_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_security_banner();
+                    }),
+                );
+                let recovery_handler =
+                    session.connect_recovery_state_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_security_banner();
+                    }));
+
+                self.session_handlers.replace(vec![
+                    offline_handler,
+                    crypto_identity_handler,
+                    verification_handler,
+                    recovery_handler,
+                ]);
+            }
+
             self.user.replace(user);
+
+            self.update_security_banner();
             self.obj().notify_user();
         }
 
@@ -215,6 +267,61 @@ mod imp {
                 .map(Into::into)
                 .unwrap_or_default()
         }
+
+        /// Update the security banner.
+        fn update_security_banner(&self) {
+            let Some(session) = self.user.borrow().as_ref().map(|u| u.session()) else {
+                return;
+            };
+
+            if session.offline() {
+                // Only show one banner at a time.
+                // The user will not be able to solve security issues while offline anyway.
+                self.security_banner.set_revealed(false);
+                return;
+            }
+
+            let crypto_identity_state = session.crypto_identity_state();
+            let verification_state = session.verification_state();
+            let recovery_state = session.recovery_state();
+
+            if crypto_identity_state == CryptoIdentityState::Unknown
+                || verification_state == SessionVerificationState::Unknown
+                || recovery_state == RecoveryState::Unknown
+            {
+                // Do not show the banner prematurely, unknown states should solve themselves.
+                self.security_banner.set_revealed(false);
+                return;
+            }
+
+            if verification_state == SessionVerificationState::Verified
+                && recovery_state == RecoveryState::Enabled
+            {
+                // No need for the banner.
+                self.security_banner.set_revealed(false);
+                return;
+            }
+
+            let (title, button) = if crypto_identity_state == CryptoIdentityState::Missing {
+                (gettext("No crypto identity"), gettext("Enable"))
+            } else if verification_state == SessionVerificationState::Unverified {
+                (gettext("Crypto identity incomplete"), gettext("Verify"))
+            } else {
+                match recovery_state {
+                    RecoveryState::Disabled => {
+                        (gettext("Account recovery disabled"), gettext("Enable"))
+                    }
+                    RecoveryState::Incomplete => {
+                        (gettext("Account recovery incomplete"), gettext("Recover"))
+                    }
+                    _ => unreachable!(),
+                }
+            };
+
+            self.security_banner.set_title(&title);
+            self.security_banner.set_button_label(Some(&button));
+            self.security_banner.set_revealed(true);
+        }
     }
 }
 
@@ -223,6 +330,7 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl Sidebar {
     pub fn new() -> Self {
         glib::Object::new()
@@ -230,6 +338,33 @@ impl Sidebar {
 
     pub fn room_search_bar(&self) -> gtk::SearchBar {
         self.imp().room_search.clone()
+    }
+
+    /// Open the proper security flow to fix the current issue.
+    #[template_callback]
+    fn fix_security_issue(&self) {
+        let Some(session) = self.user().map(|u| u.session()) else {
+            return;
+        };
+
+        let dialog = AccountSettings::new(&session);
+
+        // Show the security tab if the user uses the back button.
+        dialog.set_visible_page_name("security");
+
+        let crypto_identity_state = session.crypto_identity_state();
+        let verification_state = session.verification_state();
+
+        let subpage = if crypto_identity_state == CryptoIdentityState::Missing
+            || verification_state == SessionVerificationState::Unverified
+        {
+            AccountSettingsSubpage::CryptoIdentitySetup
+        } else {
+            AccountSettingsSubpage::RecoverySetup
+        };
+        dialog.show_subpage(subpage);
+
+        dialog.present(self);
     }
 
     /// The type of the source that activated drop mode.
