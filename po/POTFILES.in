@@ -77,6 +77,7 @@ src/session/view/account_settings/general_page/change_password_subpage.rs
 src/session/view/account_settings/general_page/change_password_subpage.ui
 src/session/view/account_settings/general_page/deactivate_account_subpage.rs
 src/session/view/account_settings/general_page/deactivate_account_subpage.ui
+src/session/view/account_settings/general_page/log_out_subpage.rs
 src/session/view/account_settings/general_page/log_out_subpage.ui
 src/session/view/account_settings/general_page/mod.rs
 src/session/view/account_settings/general_page/mod.ui

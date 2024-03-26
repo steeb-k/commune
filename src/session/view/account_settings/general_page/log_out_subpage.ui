@@ -31,38 +31,34 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkBox">
-                        <style>
-                          <class name="paragraphs"/>
-                        </style>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="yes">Fractal doesn’t support online backup of room encryption keys so you might lose access to your encrypted message history.</property>
-                            <property name="wrap">True</property>
-                            <property name="wrap-mode">word-char</property>
-                            <property name="xalign">0.0</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label" translatable="yes">It is recommended to backup your encryption keys before proceeding.</property>
-                            <property name="wrap">True</property>
-                            <property name="wrap-mode">word-char</property>
-                            <property name="xalign">0.0</property>
-                          </object>
-                        </child>
+                      <object class="GtkLabel">
+                        <property name="label" translatable="yes">Are you sure you want to log out of this session?</property>
+                        <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
+                        <property name="xalign">0.0</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkButton" id="make_backup_button">
-                        <style>
-                          <class name="row"/>
-                        </style>
-                        <property name="can-shrink">true</property>
-                        <property name="action-name">account-settings.show-subpage</property>
-                        <property name="action-target">'export-keys'</property>
-                        <property name="label" translatable="yes">Backup Encryption Keys</property>
+                      <object class="GtkBox" id="warning_box">
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">24</property>
+                        <child>
+                          <object class="GtkLabel" id="warning_description">
+                            <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
+                            <property name="xalign">0.0</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="warning_button">
+                            <style>
+                              <class name="row"/>
+                            </style>
+                            <property name="can-shrink">True</property>
+                            <property name="label" translatable="yes">Review Account Security</property>
+                            <signal name="clicked" handler="view_security" swapped="yes"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                     <child>
@@ -72,7 +68,7 @@
                           <class name="destructive-action"/>
                         </style>
                         <property name="content-label" translatable="yes">Continue</property>
-                        <signal name="clicked" handler="logout_button_clicked_cb" swapped="yes"/>
+                        <signal name="clicked" handler="logout" swapped="yes"/>
                       </object>
                     </child>
                   </object>

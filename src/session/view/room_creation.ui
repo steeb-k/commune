@@ -105,24 +105,6 @@
                                 <property name="subtitle" translatable="yes">Cannot be disabled later</property>
                               </object>
                             </child>
-                            <child>
-                              <object class="GtkRevealer">
-                                <property name="reveal-child" bind-source="encryption" bind-property="active" bind-flags="sync-create"/>
-                                <property name="child">
-                                  <object class="GtkLabel">
-                                    <property name="wrap">True</property>
-                                    <property name="wrap-mode">word-char</property>
-                                    <property name="xalign">0.0</property>
-                                    <property name="margin-top">6</property>
-                                    <property name="label" translatable="yes">Fractal does not support online backup for encryption keys yet, so you will need to back them up manually or your message history will be lost if you lose access to all your sessions.</property>
-                                    <style>
-                                      <class name="warning"/>
-                                      <class name="caption"/>
-                                    </style>
-                                  </object>
-                                </property>
-                              </object>
-                            </child>
                           </object>
                         </child>
                         <child>

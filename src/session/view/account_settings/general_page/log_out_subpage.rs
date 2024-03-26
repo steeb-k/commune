@@ -1,7 +1,15 @@
 use adw::{prelude::*, subclass::prelude::*};
+use gettextrs::gettext;
 use gtk::{glib, CompositeTemplate};
 
-use crate::{components::SpinnerButton, session::model::Session, toast};
+use crate::{
+    components::SpinnerButton,
+    session::{
+        model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
+        view::AccountSettings,
+    },
+    toast,
+};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -15,12 +23,16 @@ mod imp {
     #[properties(wrapper_type = super::LogOutSubpage)]
     pub struct LogOutSubpage {
         /// The current session.
-        #[property(get, set, nullable)]
+        #[property(get, set = Self::set_session, nullable)]
         pub session: glib::WeakRef<Session>,
         #[template_child]
-        pub logout_button: TemplateChild<SpinnerButton>,
+        pub warning_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub make_backup_button: TemplateChild<gtk::Button>,
+        pub warning_description: TemplateChild<gtk::Label>,
+        #[template_child]
+        pub warning_button: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub logout_button: TemplateChild<SpinnerButton>,
     }
 
     #[glib::object_subclass]
@@ -44,10 +56,47 @@ mod imp {
 
     impl WidgetImpl for LogOutSubpage {}
     impl NavigationPageImpl for LogOutSubpage {}
+
+    impl LogOutSubpage {
+        /// Set the current session.
+        fn set_session(&self, session: Option<&Session>) {
+            self.session.set(session);
+
+            self.update_warning();
+        }
+        /// Update the warning.
+        fn update_warning(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+
+            let verification_state = session.verification_state();
+            let recovery_state = session.recovery_state();
+
+            if verification_state != SessionVerificationState::Verified
+                || recovery_state != RecoveryState::Enabled
+            {
+                self.warning_description.set_label(&gettext("The crypto identity and account recovery are not set up properly. If this is your last connected session and you have no recent local backup of your encryption keys, you will not be able to restore your account."));
+                self.warning_box.set_visible(true);
+                return;
+            }
+
+            let crypto_identity_state = session.crypto_identity_state();
+
+            if crypto_identity_state == CryptoIdentityState::LastManStanding {
+                self.warning_description.set_label(&gettext("This is your last connected session. Make sure that you can still access your recovery key or passphrase, or to backup your encryption keys before logging out."));
+                self.warning_box.set_visible(true);
+                return;
+            }
+
+            // No particular problem, do not show the warning.
+            self.warning_box.set_visible(false);
+        }
+    }
 }
 
 glib::wrapper! {
-    /// Account settings page about the user and the session.
+    /// Subpage allowing a user to log out from their account.
     pub struct LogOutSubpage(ObjectSubclass<imp::LogOutSubpage>)
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
@@ -58,21 +107,36 @@ impl LogOutSubpage {
         glib::Object::builder().property("session", session).build()
     }
 
+    /// Show the security tab of the settings.
     #[template_callback]
-    async fn logout_button_clicked_cb(&self) {
+    fn view_security(&self) {
+        let Some(dialog) = self
+            .ancestor(AccountSettings::static_type())
+            .and_downcast::<AccountSettings>()
+        else {
+            return;
+        };
+
+        dialog.pop_subpage();
+        dialog.set_visible_page_name("security");
+    }
+
+    /// Log out the current session.
+    #[template_callback]
+    async fn logout(&self) {
         let Some(session) = self.session() else {
             return;
         };
 
         let imp = self.imp();
         imp.logout_button.set_loading(true);
-        imp.make_backup_button.set_sensitive(false);
+        imp.warning_button.set_sensitive(false);
 
         if let Err(error) = session.logout().await {
             toast!(self, error);
         }
 
         imp.logout_button.set_loading(false);
-        imp.make_backup_button.set_sensitive(true);
+        imp.warning_button.set_sensitive(true);
     }
 }
