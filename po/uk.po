@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-03-25 17:17+0000\n"
-"PO-Revision-Date: 2024-03-25 22:30+0200\n"
+"POT-Creation-Date: 2024-03-26 17:48+0000\n"
+"PO-Revision-Date: 2024-03-26 23:16+0200\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -198,14 +198,14 @@ msgstr "Підтвердити зміну"
 
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
-#: src/session/view/content/room_history/mod.ui:205
+#: src/session/view/content/room_history/mod.ui:216
 msgid "Try Again"
 msgstr "Повторити спробу"
 
 #: src/components/action_button.ui:67 src/components/spinner.rs:31
-#: src/login/session_setup_view.ui:13
+#: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:53
-#: src/session/view/content/room_history/mod.ui:177 src/window.ui:18
+#: src/session/view/content/room_history/mod.ui:188 src/window.ui:18
 msgid "Loading"
 msgstr "Завантаження"
 
@@ -253,6 +253,274 @@ msgstr "_Скасувати"
 #: src/components/auth_dialog.ui:44
 msgid "C_onfirm"
 msgstr "_Підтвердити"
+
+#: src/components/crypto/identity_setup_view.rs:273
+#: src/session/view/account_settings/security_page/mod.rs:241
+#| msgid "Reset Identity"
+msgid "Reset Crypto Identity"
+msgstr "Скинути криптопрофіль"
+
+#: src/components/crypto/identity_setup_view.rs:275
+msgid "This will invalidate the verifications of all users and sessions."
+msgstr ""
+"У результаті буде скасовано підтвердження перевірок усіх користувачів і"
+" сеансів."
+
+#: src/components/crypto/identity_setup_view.rs:279
+#: src/components/crypto/identity_setup_view.ui:85
+#: src/components/crypto/recovery_setup_view.ui:98
+#: src/components/crypto/recovery_setup_view.ui:189
+#: src/session/view/account_settings/security_page/mod.rs:238
+#: src/session/view/account_settings/security_page/mod.rs:306
+msgid "Reset"
+msgstr "Скинути"
+
+#: src/components/crypto/identity_setup_view.rs:284
+msgid ""
+"You should reset your crypto identity if a device that does not belong to "
+"you managed to be verified."
+msgstr ""
+"Вам слід скинути ваш криптопрофіль, якщо пристрій, який вам не належить,"
+" вдалося затвердити."
+
+#: src/components/crypto/identity_setup_view.rs:286
+#| msgid ""
+#| "No other sessions are available to verify this session. You can either "
+#| "restore cross-signing from another session and restart this process, or "
+#| "reset the encryption identity."
+msgid ""
+"Since no other sessions are available to verify this device and account "
+"recovery cannot be used, you need to reset your crypto identity."
+msgstr ""
+"Оскільки немає доступу до жодного іншого сеансу для перевірки цього"
+" пристрою, і не можна скористатися відновленням облікового запису, вам"
+" доведеться скинути ваш криптопрофіль."
+
+#: src/components/crypto/identity_setup_view.rs:290
+#: src/components/crypto/identity_setup_view.ui:125
+#| msgid "Set Up Encryption Identity"
+msgid "Set Up Crypto Identity"
+msgstr "Налаштовування криптопрофілю"
+
+#: src/components/crypto/identity_setup_view.rs:292
+#| msgid ""
+#| "You need to set up an encryption identity, since it has never been "
+#| "created."
+msgid "You need to set up a crypto identity, since it has never been created."
+msgstr ""
+"Вам слід налаштувати ваш криптопрофіль, оскільки ви ніколи його не "
+"створювали."
+
+#: src/components/crypto/identity_setup_view.rs:295
+msgid ""
+"Your crypto identity allows you to verify other Matrix accounts and "
+"automatically trust their verified sessions."
+msgstr ""
+"Ваш криптопрофіль надає вам змогу перевіряти затверджувати інші облікові"
+" записи Matrix і автоматично встановлювати довіру до їхніх перевірених"
+" сеансів."
+
+#: src/components/crypto/identity_setup_view.rs:299
+#: src/components/crypto/recovery_setup_view.ui:285
+msgid "Set Up"
+msgstr "Налаштувати"
+
+#: src/components/crypto/identity_setup_view.rs:422
+#: src/identity_verification_view/cancelled_page.rs:185
+msgid "Could not send a new verification request"
+msgstr "Не вдалося надіслати новий запит щодо перевірки"
+
+#: src/components/crypto/identity_setup_view.rs:473
+#: src/components/crypto/recovery_setup_view.rs:317
+#| msgid "Could not enable encryption"
+msgid "Could not create the crypto identity"
+msgstr "Не вдалося створити криптопрофіль"
+
+#: src/components/crypto/identity_setup_view.ui:9
+#: src/components/crypto/identity_setup_view.ui:35
+msgid "Verify Your New Session"
+msgstr "Перевірити ваш новий сеанс"
+
+#: src/components/crypto/identity_setup_view.ui:46
+msgid ""
+"Verifying your session allows you and the people you chat with to be sure "
+"that no one is trying to impersonate you or intercept your conversations."
+msgstr ""
+"Перевірка вашого сеансу надасть вам та тим, з ким ви спілкуєтеся, змогу бути "
+"певними, що ніхто не зможе втрутитися або перехопити ваш обмін "
+"повідомленнями."
+
+#: src/components/crypto/identity_setup_view.ui:55
+msgid "Verify With Another Session"
+msgstr "Перевірити за допомогою іншого сеансу"
+
+#: src/components/crypto/identity_setup_view.ui:65
+msgid "No other devices logged into this account?"
+msgstr "З цим обліковим записом не пов'язано інших пристроїв?"
+
+#: src/components/crypto/identity_setup_view.ui:74
+#: src/components/crypto/recovery_setup_view.ui:9
+#: src/components/crypto/recovery_setup_view.ui:35
+#| msgid "Deactivate Account"
+msgid "Recover Account"
+msgstr "Відновити обліковий запис"
+
+#: src/components/crypto/identity_setup_view.ui:106
+#: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:70
+msgid "Identity Verification"
+msgstr "Перевірка профілю"
+
+#: src/components/crypto/recovery_setup_view.rs:166
+#| msgid "Encryption Identity Recovery"
+msgid "Reset Crypto Identity and Account Recovery Key"
+msgstr "Скидання криптопрофілю та ключа відновлення облікового запису"
+
+#: src/components/crypto/recovery_setup_view.rs:168
+#: src/session/view/account_settings/security_page/mod.rs:309
+#| msgid "Recovery Key"
+msgid "Reset Account Recovery Key"
+msgstr "Скидання ключа відновлення облікового запису"
+
+#: src/components/crypto/recovery_setup_view.rs:174
+msgid ""
+"This will invalidate the verifications of all users and sessions, and you "
+"might not be able to read your encrypted messages anymore."
+msgstr ""
+"У результаті буде скасовано підтвердження перевірок усіх користувачів і"
+" сеансів, і ви не зможете більше читати ваші зашифровані повідомлення."
+
+#: src/components/crypto/recovery_setup_view.rs:176
+msgid "You might not be able to read your encrypted messages anymore."
+msgstr "Ви не зможете більше читати ваші зашифровані повідомлення."
+
+#: src/components/crypto/recovery_setup_view.rs:191
+msgid ""
+"Make sure to store this recovery key in a safe place. You will need it to "
+"recover your account if you lose access to all your sessions."
+msgstr ""
+"Зберігайте цей ключ відновлення у безпечному місці. Вам знадобиться цей ключ"
+" для відновлення вашого облікового запису, якщо ви втратите доступ до усіх"
+" ваших сеансів."
+
+#: src/components/crypto/recovery_setup_view.rs:193
+msgid ""
+"Make sure to remember your passphrase or to store it in a safe place. You "
+"will need it to recover your account if you lose access to all your sessions."
+msgstr ""
+"Не забудьте ваш пароль або збережіть його у безпечному місці. Вам"
+" знадобиться цей пароль для відновлення вашого облікового запису, якщо ви"
+" втратите доступ до усіх ваших сеансів."
+
+#: src/components/crypto/recovery_setup_view.rs:266
+#| msgid "The provided username or password is invalid."
+msgid "The recovery passphrase or key is invalid"
+msgstr "Пароль або ключ відновлення є некоректним"
+
+#: src/components/crypto/recovery_setup_view.rs:269
+#| msgid "Could not access camera"
+msgid "Could not access recovery data"
+msgstr "Не вдалося отримати доступ до даних відновлення"
+
+#: src/components/crypto/recovery_setup_view.rs:352
+#| msgid "Could not retrieve media"
+msgid "Could not reset account recovery key"
+msgstr "Не вдалося скинути ключ відновлення облікового запису"
+
+#: src/components/crypto/recovery_setup_view.rs:390
+#| msgid "Could not enable account notifications"
+msgid "Could not enable account recovery"
+msgstr "Не вдалося увімкнути відновлення облікового запису"
+
+#: src/components/crypto/recovery_setup_view.ui:46
+msgid "Restore full access to your account."
+msgstr "Відновити повний доступ до вашого облікового запису."
+
+#: src/components/crypto/recovery_setup_view.ui:54
+msgid ""
+"To access the recovery data, we need the recovery passphrase or the recovery "
+"key that is usually set up when you create your account."
+msgstr ""
+"Щоб отримати доступ до даних відновлення, нам знадобиться пароль або ключ"
+" для відновлення, який, зазвичай, налаштовують при створенні облікового"
+" запису."
+
+#: src/components/crypto/recovery_setup_view.ui:67
+#| msgid "Recovery Passphrase"
+msgid "Recovery Passphrase or Key"
+msgstr "Ключ або пароль для відновлення"
+
+#: src/components/crypto/recovery_setup_view.ui:77
+#: src/session/view/account_settings/security_page/mod.rs:326
+#: src/session/view/sidebar/mod.rs:315
+#| msgid "Recovery"
+msgid "Recover"
+msgstr "Відновити"
+
+#: src/components/crypto/recovery_setup_view.ui:88
+#| msgid "Recovery Passphrase"
+msgid "Lost your recovery passphrase or key?"
+msgstr "Втратили ваш пароль або ключ відновлення?"
+
+#: src/components/crypto/recovery_setup_view.ui:161
+msgid ""
+"If you do not provide a new recovery passphrase, a recovery key will be "
+"created."
+msgstr ""
+"Якщо ви не вкажете новий пароль відновлення, буде створено ключ відновлення."
+
+#: src/components/crypto/recovery_setup_view.ui:169
+#: src/components/crypto/recovery_setup_view.ui:264
+msgid ""
+"You should not reuse the password of your Matrix account as a passphrase. "
+"Otherwise, if someone manages to get your account password, they will also "
+"be able to access all your encrypted conversations and to impersonate you."
+msgstr ""
+"Вам не слід повторно використовувати пароль до вашого облікового запису"
+" Matrix. Якщо ви це зробите, хтось, хто зможе отримати пароль до вашого"
+" облікового запису, зможе отримати і доступ до усіх ваших зашифрованих"
+" повідомлень і прикидатися вами."
+
+#: src/components/crypto/recovery_setup_view.ui:182
+#: src/components/crypto/recovery_setup_view.ui:277
+#| msgid "Recovery Passphrase"
+msgid "Recovery Passphrase (Optional)"
+msgstr "Пароль для відновлення (необов'язковий)"
+
+#: src/components/crypto/recovery_setup_view.ui:211
+#: src/components/crypto/recovery_setup_view.ui:237
+#| msgid "Select an Account"
+msgid "Set Up Account Recovery"
+msgstr "Налаштувати відновлення облікового запису"
+
+#: src/components/crypto/recovery_setup_view.ui:248
+msgid ""
+"Account recovery allows you to recover your crypto identity and to be able "
+"to read your encrypted messages even if you lose access to all your sessions."
+msgstr ""
+"За допомогою засобу відновлення облікових записів ви зможете відновити ваш"
+" криптопрофіль і прочитати ваші шифровані повідомлення, навіть якщо втратите"
+" доступ до усіх ваших сеансів."
+
+#: src/components/crypto/recovery_setup_view.ui:256
+msgid ""
+"If you do not provide a recovery passphrase, a recovery key will be created."
+msgstr ""
+"Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
+
+#: src/components/crypto/recovery_setup_view.ui:307
+#: src/components/crypto/recovery_setup_view.ui:334
+#| msgid "Avatar removed successfully"
+msgid "Account Recovery Set Up Successfully"
+msgstr "Відновлення облікового запису успішно налаштовано"
+
+#: src/components/crypto/recovery_setup_view.ui:371
+#| msgid "Recovery Key"
+msgid "Copy Recovery Key"
+msgstr "Копіювати ключ відновлення"
+
+#: src/components/crypto/recovery_setup_view.ui:388
+msgid "OK"
+msgstr "Гаразд"
 
 #: src/components/editable_avatar.rs:349
 msgid "Images"
@@ -398,7 +666,7 @@ msgstr "Підтвердження нетипової ролі"
 
 #: src/components/user_page.rs:264
 #: src/session/view/account_settings/general_page/mod.ui:71
-#: src/session/view/content/room_history/sender_avatar/mod.rs:76
+#: src/session/view/content/room_history/sender_avatar/mod.rs:79
 msgid "Matrix user ID copied to clipboard"
 msgstr "Ідентифікатор користувача Matrix скопійовано до буфера обміну"
 
@@ -411,7 +679,7 @@ msgid "Create Direct Chat"
 msgstr "Створити безпосередній чат"
 
 #: src/components/user_page.rs:312
-#: src/session/view/content/room_history/sender_avatar/mod.rs:484
+#: src/session/view/content/room_history/sender_avatar/mod.rs:515
 #: src/session/view/create_dm_dialog/mod.rs:198
 msgid "Could not create a new Direct Chat"
 msgstr "Не вдалося розпочати безпосереднє спілкування"
@@ -469,39 +737,39 @@ msgid "Could not change the role"
 msgstr "Не вдалося змінити роль"
 
 #: src/components/user_page.rs:516
-#: src/session/view/content/room_history/sender_avatar/mod.rs:508
+#: src/session/view/content/room_history/sender_avatar/mod.rs:539
 msgid "Could not invite user"
 msgstr "Не вдалося запросити користувача"
 
 #: src/components/user_page.rs:550
-#: src/session/view/content/room_history/sender_avatar/mod.rs:541
+#: src/session/view/content/room_history/sender_avatar/mod.rs:572
 msgid "Could not revoke invite of user"
 msgstr "Не вдалося відкликати запрошення користувача"
 
 #: src/components/user_page.rs:551
-#: src/session/view/content/room_history/sender_avatar/mod.rs:542
+#: src/session/view/content/room_history/sender_avatar/mod.rs:573
 msgid "Could not deny access to user"
 msgstr "Не вдалося заборонити доступ для користувача"
 
 #: src/components/user_page.rs:552
-#: src/session/view/content/room_history/sender_avatar/mod.rs:543
+#: src/session/view/content/room_history/sender_avatar/mod.rs:574
 msgid "Could not kick user"
 msgstr "Не вдалося викинути користувача"
 
 #: src/components/user_page.rs:598
-#: src/session/view/content/room_history/sender_avatar/mod.rs:581
+#: src/session/view/content/room_history/sender_avatar/mod.rs:659
 msgid "Could not ban user"
 msgstr "Не вдалося заблокувати користувача"
 
 #: src/components/user_page.rs:626
-#: src/session/view/content/room_history/sender_avatar/mod.rs:601
+#: src/session/view/content/room_history/sender_avatar/mod.rs:679
 msgid "Could not unban user"
 msgstr "Не вдалося розблокувати користувача"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/user_page.rs:674
-#: src/session/view/content/room_history/sender_avatar/mod.rs:655
+#: src/session/view/content/room_history/sender_avatar/mod.rs:733
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Не вдалося вилучити {n} повідомлення, яке надіслано користувачем"
@@ -540,12 +808,12 @@ msgstr "Ігнорувати"
 
 #: src/components/user_page.rs:763
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
-#: src/session/view/content/room_history/sender_avatar/mod.rs:680
+#: src/session/view/content/room_history/sender_avatar/mod.rs:758
 msgid "Could not stop ignoring user"
 msgstr "Не вдалося припинити ігнорувати користувача"
 
 #: src/components/user_page.rs:766
-#: src/session/view/content/room_history/sender_avatar/mod.rs:683
+#: src/session/view/content/room_history/sender_avatar/mod.rs:761
 msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
@@ -586,7 +854,9 @@ msgstr "Безпека"
 
 #: src/components/user_page.ui:236
 #: src/identity_verification_view/accept_request_page.ui:58
+#: src/session/view/account_settings/security_page/mod.rs:257
 #: src/session/view/content/room_history/verification_info_bar.rs:160
+#: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
 msgstr "Перевірити"
 
@@ -734,11 +1004,6 @@ msgstr "Перевірку скасовано"
 msgid "Verification Error"
 msgstr "Помилка перевірки"
 
-#: src/identity_verification_view/cancelled_page.rs:185
-#: src/login/session_setup_view.rs:460
-msgid "Could not send a new verification request"
-msgstr "Не вдалося надіслати новий запит щодо перевірки"
-
 #: src/identity_verification_view/cancelled_page.ui:41
 msgid "Send New Request"
 msgstr "Надіслати новий запит"
@@ -871,11 +1136,6 @@ msgstr "Підтвердити"
 #: src/utils/message_dialog.rs:317 src/utils/message_dialog.rs:352
 msgid "Cancel"
 msgstr "Скасувати"
-
-#: src/identity_verification_view/mod.ui:5 src/login/session_setup_view.ui:139
-#: src/session/view/content/mod.ui:70
-msgid "Identity Verification"
-msgstr "Перевірка профілю"
 
 #: src/identity_verification_view/mod.ui:14
 msgid "New Identity Verification Request"
@@ -1142,7 +1402,6 @@ msgid "Homeserver"
 msgstr "Домашній сервер"
 
 #: src/login/homeserver_page.ui:100 src/login/method_page.ui:150
-#: src/login/session_setup_view.ui:375 src/login/session_setup_view.ui:457
 msgid "Next"
 msgstr "Далі"
 
@@ -1209,149 +1468,9 @@ msgstr "Цей сеанс готовий до надсилання і отрим
 msgid "Start Chatting"
 msgstr "Почати спілкування"
 
-#: src/login/session_setup_view.rs:376
-msgid ""
-"You need to set up an encryption identity, since it has never been created."
-msgstr ""
-"Вам слід налаштувати ваш профіль шифрування, оскільки ви ніколи його не "
-"створювали."
-
-#: src/login/session_setup_view.rs:380
-msgid "Set Up"
-msgstr "Налаштувати"
-
-#: src/login/session_setup_view.rs:383
-msgid ""
-"No other sessions are available to verify this session. You can either "
-"restore cross-signing from another session and restart this process, or "
-"reset the encryption identity."
-msgstr ""
-"Для перевірки цього сеансу немає жодного іншого сеансу. Ви можете або "
-"відновити перехресне підписування з іншого сеансу і перезапустити цей "
-"процес, або скинути профіль шифрування."
-
-#: src/login/session_setup_view.rs:386 src/login/session_setup_view.rs:392
-#: src/login/session_setup_view.ui:118
-msgid "Reset"
-msgstr "Скинути"
-
-#: src/login/session_setup_view.rs:389
-msgid ""
-"If you lost access to all other sessions, you can create a new encryption "
-"identity. Be careful because this will cancel the verifications of all users "
-"and sessions."
-msgstr ""
-"Якщо ви втратили доступ до усіх інших сеансів, ви можете створити новий "
-"криптопрофіль. Будьте дуже обережні, оскільки це призведе до скидання усіх "
-"перевірених записів користувачів."
-
-#: src/login/session_setup_view.rs:424
-msgid ""
-"You cancelled the authentication needed to create the encryption identity."
-msgstr ""
-"Вами скасовано розпізнавання, яке потрібне для створення профілю шифрування."
-
-#: src/login/session_setup_view.rs:430
-msgid "An error occurred during the creation of the encryption identity."
-msgstr "Під час створення профілю шифрування сталася помилка."
-
 #: src/login/session_setup_view.ui:5
 msgid "Session Setup"
 msgstr "Налаштовування сеансу"
-
-#: src/login/session_setup_view.ui:42 src/login/session_setup_view.ui:67
-msgid "Verify Your New Session"
-msgstr "Перевірити ваш новий сеанс"
-
-#: src/login/session_setup_view.ui:78
-msgid ""
-"Verifying your session allows you and the people you chat with to be sure "
-"that no one is trying to impersonate you or intercept your conversations."
-msgstr ""
-"Перевірка вашого сеансу надасть вам та тим, з ким ви спілкуєтеся, змогу бути "
-"певними, що ніхто не зможе втрутитися або перехопити ваш обмін "
-"повідомленнями."
-
-#: src/login/session_setup_view.ui:87
-msgid "Verify With Another Session"
-msgstr "Перевірити за допомогою іншого сеансу"
-
-#: src/login/session_setup_view.ui:97
-msgid "No other devices logged into this account?"
-msgstr "З цим обліковим записом не пов'язано інших пристроїв?"
-
-#: src/login/session_setup_view.ui:107 src/login/session_setup_view.ui:246
-msgid "Recovery"
-msgstr "Відновлення"
-
-#: src/login/session_setup_view.ui:157 src/login/session_setup_view.ui:182
-msgid "Set Up Encryption Identity"
-msgstr "Налаштовування профілю шифрування"
-
-#: src/login/session_setup_view.ui:221
-msgid "Encryption Identity Recovery"
-msgstr "Відновлення профілю шифрування"
-
-#: src/login/session_setup_view.ui:257
-msgid ""
-"Without another device you need a recovery passphrase or key to access your "
-"messages"
-msgstr ""
-"Без іншого пристрою вам знадобиться пароль чи ключ для відновлення для "
-"доступу до ваших повідомлень"
-
-#: src/login/session_setup_view.ui:266 src/login/session_setup_view.ui:339
-msgid "Recovery Passphrase"
-msgstr "Пароль для відновлення"
-
-#: src/login/session_setup_view.ui:276 src/login/session_setup_view.ui:420
-msgid "Recovery Key"
-msgstr "Ключ відновлення"
-
-#: src/login/session_setup_view.ui:285
-msgid ""
-"If you don’t have any of these you can reset your identity, but be aware "
-"this makes your old messages inaccessible forever."
-msgstr ""
-"Якщо у вас немає цих даних, ви можете скинути ваш профіль, але, варто "
-"зауважити, це призведе до втрати доступу до ваших старих повідомлень."
-
-#: src/login/session_setup_view.ui:295
-msgid "Reset Identity"
-msgstr "Скинути профіль"
-
-#: src/login/session_setup_view.ui:350
-msgid ""
-"Your Recovery Passphrase was set up when you first created this account."
-msgstr ""
-"Ваш пароль для відновлення було налаштовано під час створення цього "
-"облікового запису."
-
-#: src/login/session_setup_view.ui:358
-msgid ""
-"If you opted for a Recovery Key instead go back and choose that option."
-msgstr ""
-"Якщо ви хочете вибрати ключ відновлення, поверніться і виберіть відповідний "
-"пункт."
-
-#: src/login/session_setup_view.ui:369
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:61
-msgid "Passphrase"
-msgstr "Пароль"
-
-#: src/login/session_setup_view.ui:431
-msgid "Your Recovery Key was set up when you first created this account."
-msgstr ""
-"Ваш ключ для відновлення було налаштовано під час створення цього облікового "
-"запису."
-
-#: src/login/session_setup_view.ui:439
-msgid ""
-"If you opted for a Recovery Passphrase instead go back and choose that "
-"option."
-msgstr ""
-"Якщо ви хочете вибрати пароль для відновлення, поверніться і виберіть "
-"відповідний пункт."
 
 #: src/login/sso_page.ui:5 src/login/sso_page.ui:41
 msgid "Single Sign-On"
@@ -1500,9 +1619,10 @@ msgstr ""
 "Не вдалося отримати доступу до типової збірки. Переконайтеся, що в'язку "
 "ключів було створено і зроблено типовою."
 
-#: src/session/model/session.rs:455
-msgid "Could not log the session out."
-msgstr "Не вдалося вийти з сеансу."
+#: src/session/model/session.rs:747
+#| msgid "Could not log the session out."
+msgid "Could not log the session out"
+msgstr "Не вдалося вийти з сеансу"
 
 #: src/session/model/room/join_rule.rs:276
 msgid "Only invited users, and users can knock"
@@ -1651,27 +1771,17 @@ msgstr "Зміна пароля"
 msgid "Changing your password will log you out of your other sessions."
 msgstr "Зміна пароля призведе до виходу з інших ваших сеансів."
 
-#: src/session/view/account_settings/general_page/change_password_subpage.ui:51
-msgid ""
-"Fractal’s support for encryption is unstable so you might lose access to "
-"your encrypted message history. It is recommended to backup your encryption "
-"keys before proceeding."
-msgstr ""
-"Підтримка шифрування у «Фракталі» не є стабільною, тому ви можете втратити "
-"доступ до вашого зашифрованого журналу повідомлень. Перш ніж продовжувати, "
-"рекомендуємо створити резервну копію ваших ключів шифрування."
-
-#: src/session/view/account_settings/general_page/change_password_subpage.ui:78
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:70
 msgid "New Password"
 msgstr "Новий пароль"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.ui:124
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:116
 msgid "Confirm New Password"
 msgstr "Підтвердження нового пароля"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.ui:155
+#: src/session/view/account_settings/general_page/change_password_subpage.ui:147
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:74
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:70
 #: src/session/view/content/room_history/verification_info_bar.rs:165
 msgid "Continue"
 msgstr "Продовжити"
@@ -1705,28 +1815,38 @@ msgstr ""
 "Щоб підтвердити, що ви дійсно хочете деактивувати цей обліковий запис "
 "введіть свій ідентифікатор Matrix:"
 
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:79
+msgid ""
+"The crypto identity and account recovery are not set up properly. If this is "
+"your last connected session and you have no recent local backup of your "
+"encryption keys, you will not be able to restore your account."
+msgstr ""
+"Криптопрофіль та відновлення облікового запису не налаштовано належним"
+" чином. Якщо це ваш останній сеанс, і ви не маєте свіжої резервної копії"
+" ваших ключів шифрування, ви не зможете відновити ваш обліковий запис."
+
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:87
+msgid ""
+"This is your last connected session. Make sure that you can still access "
+"your recovery key or passphrase, or to backup your encryption keys before "
+"logging out."
+msgstr ""
+"Це ваш останній сеанс з'єднання. Переконайтеся, що у вас лишається доступ до"
+" вашого ключа або пароль відновлення, або створіть резервну копію ваших"
+" ключів шифрування до виходу з облікового запису."
+
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 msgid "Log Out of This Session"
 msgstr "Вийти з цього сеансу"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:41
-msgid ""
-"Fractal doesn’t support online backup of room encryption keys so you might "
-"lose access to your encrypted message history."
-msgstr ""
-"У «Фракталі» не передбачено підтримки інтерактивного резервного копіювання "
-"ключів шифрування кімнати, тому ви можете втратити доступ до журналу ваших "
-"шифрованих повідомлень."
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:35
+#| msgid "Are you sure you want to deny access to {user_id}?"
+msgid "Are you sure you want to log out of this session?"
+msgstr "Ви справді бажаєте вийти з цього сеансу?"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:49
-msgid "It is recommended to backup your encryption keys before proceeding."
-msgstr ""
-"Перш ніж продовжувати, рекомендуємо створити резервну копію ваших ключів "
-"шифрування."
-
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:65
-msgid "Backup Encryption Keys"
-msgstr "Створити резервну копію ключів шифрування"
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:58
+msgid "Review Account Security"
+msgstr "Перегляд захисту облікового запису"
 
 #: src/session/view/account_settings/general_page/mod.rs:189
 #: src/session/view/content/room_details/general_page/mod.rs:429
@@ -1935,7 +2055,7 @@ msgstr ""
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:168
-#: src/session/view/account_settings/security_page/mod.ui:41
+#: src/session/view/account_settings/security_page/mod.ui:167
 msgid "Export Room Encryption Keys"
 msgstr "Експортувати ключі шифрування кімнати"
 
@@ -1965,7 +2085,7 @@ msgstr "Експортувати ключі"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:180
-#: src/session/view/account_settings/security_page/mod.ui:50
+#: src/session/view/account_settings/security_page/mod.ui:176
 msgid "Import Room Encryption Keys"
 msgstr "Імпортувати ключі шифрування кімнати"
 
@@ -2036,6 +2156,10 @@ msgstr ""
 msgid "Could not import the keys"
 msgstr "Не вдалося імпортувати ключі"
 
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:61
+msgid "Passphrase"
+msgstr "Пароль"
+
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
 msgid "Confirm Passphrase"
 msgstr "Підтвердьте пароль"
@@ -2050,15 +2174,86 @@ msgstr "Файл"
 msgid "Choose…"
 msgstr "Вибрати…"
 
-#. Translators: As in "The signing key is available".
-#: src/session/view/account_settings/security_page/mod.rs:200
-msgid "Available"
-msgstr "Доступний"
+#: src/session/view/account_settings/security_page/mod.rs:209
+#| msgid "Set Up Encryption Identity"
+msgid "No Crypto Identity"
+msgstr "Немає криптопрофілю"
 
-#. Translators: As in "The signing key is not available".
-#: src/session/view/account_settings/security_page/mod.rs:205
-msgid "Not available"
-msgstr "Недоступний"
+#: src/session/view/account_settings/security_page/mod.rs:211
+msgid "Verifying your own devices or other users is not possible"
+msgstr "Засвідчення ваших власних пристроїв або інших користувачів неможливе"
+
+#: src/session/view/account_settings/security_page/mod.rs:214
+#: src/session/view/account_settings/security_page/mod.rs:287
+#: src/session/view/content/room_details/general_page/mod.rs:1300
+#: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
+msgid "Enable"
+msgstr "Увімкнути"
+
+#: src/session/view/account_settings/security_page/mod.rs:217
+#| msgid "Set Up Encryption Identity"
+msgid "Enable Crypto Identity"
+msgstr "Увімкнути криптопрофіль"
+
+#: src/session/view/account_settings/security_page/mod.rs:233
+#| msgid "Encryption Identity Recovery"
+msgid "Crypto Identity Enabled"
+msgstr "Криптопрофіль увімкнено"
+
+#: src/session/view/account_settings/security_page/mod.rs:235
+msgid "The crypto identity exists and this device is verified"
+msgstr "Існує криптопрофіль, і цей пристрій було засвідчено"
+
+#: src/session/view/account_settings/security_page/mod.rs:252
+#| msgid "Encryption Identity Recovery"
+msgid "Crypto Identity Incomplete"
+msgstr "Криптопрофіль є неповним"
+
+#: src/session/view/account_settings/security_page/mod.rs:254
+msgid "The crypto identity exists but this device is not verified"
+msgstr "Існує криптопрофіль, але цей пристрій не було засвідчено"
+
+#: src/session/view/account_settings/security_page/mod.rs:260
+#| msgid "Verify Session"
+msgid "Verify This Session"
+msgstr "Засвідчити цей сеанс"
+
+#: src/session/view/account_settings/security_page/mod.rs:282
+msgid "Account Recovery Disabled"
+msgstr "Відновлення облікового запису вимкнено"
+
+#: src/session/view/account_settings/security_page/mod.rs:284
+msgid ""
+"Enable recovery to be able to restore your account without another device"
+msgstr ""
+"Увімкніть відновлення, щоб мати змогу відновлювати ваш обліковий запис без"
+" іншого пристрою"
+
+#: src/session/view/account_settings/security_page/mod.rs:290
+#| msgid "Enable for This Account"
+msgid "Enable Account Recovery"
+msgstr "Увімкнути відновлення облікового запису"
+
+#: src/session/view/account_settings/security_page/mod.rs:301
+msgid "Account Recovery Enabled"
+msgstr "Відновлення облікового запису увімкнено"
+
+#: src/session/view/account_settings/security_page/mod.rs:303
+msgid "Your signing keys and encryption keys are synchronized"
+msgstr "Ваші ключі підписування та шифрування синхронізовано"
+
+#: src/session/view/account_settings/security_page/mod.rs:321
+msgid "Account Recovery Incomplete"
+msgstr "Відновлення облікового запису є неповним"
+
+#: src/session/view/account_settings/security_page/mod.rs:323
+msgid "Recover to synchronize your signing keys and encryption keys"
+msgstr "Відновіть для синхронізації ваших ключів підписування та шифрування"
+
+#: src/session/view/account_settings/security_page/mod.rs:329
+#| msgid "Account Avatar"
+msgid "Recover Account Data"
+msgstr "Відновити дані облікового запису"
 
 #: src/session/view/account_settings/security_page/mod.ui:9
 msgid "Privacy"
@@ -2097,26 +2292,31 @@ msgstr ""
 "проігноровано. Попри це, ви бачитимете деякі з їхніх дій, зокрема дії з "
 "долучення до кімнати або її полишення."
 
-#. Translators: 'Room encryption keys' are encryption keys for all rooms.
+#: src/session/view/account_settings/security_page/mod.ui:36
+#| msgid "Reset Identity"
+msgid "Crypto Identity"
+msgstr "Криптопрофіль"
+
 #: src/session/view/account_settings/security_page/mod.ui:37
-msgid "Room Encryption Keys"
-msgstr "Ключі шифрування кімнати"
+msgid ""
+"Allows you to verify other Matrix accounts and automatically trust their "
+"verified sessions"
+msgstr ""
+"Надає вам змогу перевіряти затверджувати інші облікові записи Matrix і"
+" автоматично встановлювати довіру до їхніх перевірених сеансів"
 
-#: src/session/view/account_settings/security_page/mod.ui:60
-msgid "Cross-Signing"
-msgstr "Перехресне підписування"
+#: src/session/view/account_settings/security_page/mod.ui:99
+#| msgid "Recovery"
+msgid "Account Recovery"
+msgstr "Відновлення облікового запису"
 
-#: src/session/view/account_settings/security_page/mod.ui:67
-msgid "Master Key"
-msgstr "Основний ключ"
-
-#: src/session/view/account_settings/security_page/mod.ui:81
-msgid "Self-Signing Key"
-msgstr "Ключ самопідписування"
-
-#: src/session/view/account_settings/security_page/mod.ui:95
-msgid "User-Signing Key"
-msgstr "Ключ підписування користувача"
+#: src/session/view/account_settings/security_page/mod.ui:100
+msgid ""
+"Allows to fully recover your account with a recovery key or passphrase, if "
+"you ever lose access to all your sessions"
+msgstr ""
+"Надає змогу повністю відновити ваш обліковий запис за допомогою ключа або"
+" пароля відновлення, якщо ви колись втратите доступ до усіх ваших сеансів"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:5
 msgid "Sessions"
@@ -2326,7 +2526,7 @@ msgid "Join a room to start chatting"
 msgstr "Увійдіть до кімнати, щоб почати спілкування"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:220
+#: src/session/view/content/room_history/mod.ui:231
 msgid "Room History"
 msgstr "Журнал кімнати"
 
@@ -2360,7 +2560,7 @@ msgstr "Вилучити «{address}»"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:408
 #: src/session/view/content/room_details/general_page/mod.rs:913
-#: src/session/view/room_creation.ui:134
+#: src/session/view/room_creation.ui:116
 msgid "Main Address"
 msgstr "Основна адреса"
 
@@ -2463,12 +2663,12 @@ msgstr "Зареєструвати локальну адресу"
 
 #. Translators: This is the placeholder for the first part of a room address, as in '@my-room:example.org'.
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:89
-#: src/session/view/room_creation.ui:136
+#: src/session/view/room_creation.ui:118
 msgid "my-room"
 msgstr "my-room"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:90
-#: src/session/view/room_creation.ui:137
+#: src/session/view/room_creation.ui:119
 msgid "First part of the address, for example “my-room”"
 msgstr "Перша частина адреси, наприклад «my-room»"
 
@@ -2572,10 +2772,6 @@ msgid ""
 msgstr ""
 "Вмикання шифрування заважатиме новим учасникам читати журнал до того, як "
 "вони з'явилися у кімнаті. Цю можливість не можна буде вимкнути пізніше."
-
-#: src/session/view/content/room_details/general_page/mod.rs:1300
-msgid "Enable"
-msgstr "Увімкнути"
 
 #: src/session/view/content/room_details/general_page/mod.rs:1310
 msgid "Could not enable encryption"
@@ -3140,19 +3336,17 @@ msgstr "С_тале посилання"
 #: src/session/view/content/room_history/event_actions.ui:70
 #: src/session/view/content/room_history/event_actions.ui:162
 #: src/session/view/content/room_history/event_actions.ui:207
-#: src/session/view/content/room_history/mod.ui:114
+#: src/session/view/content/room_history/mod.ui:125
 msgid "_View Details"
 msgstr "_Переглянути подробиці"
 
 #: src/session/view/content/room_history/event_actions.ui:77
 #: src/session/view/content/room_history/event_actions.ui:169
-#| msgid "Try Again"
 msgid "_Try Again"
 msgstr "_Повторити спробу"
 
 #: src/session/view/content/room_history/event_actions.ui:82
 #: src/session/view/content/room_history/event_actions.ui:174
-#| msgid "Discard"
 msgid "_Discard"
 msgstr "_Відкинути"
 
@@ -3197,7 +3391,7 @@ msgstr "Нові повідомлення"
 
 #: src/session/view/content/room_history/item_row.rs:476
 #: src/session/view/content/room_history/mod.rs:586
-#: src/session/view/content/room_history/sender_avatar/mod.rs:99
+#: src/session/view/content/room_history/sender_avatar/mod.rs:102
 #: src/session/view/media_viewer.rs:518
 msgid "Permalink copied to clipboard"
 msgstr "Стале посилання скопійовано до буфера обміну"
@@ -3240,10 +3434,14 @@ msgid "Report Event?"
 msgstr "Поскаржитися на подію?"
 
 #: src/session/view/content/room_history/item_row.rs:787
+#| msgid ""
+#| "Reporting an event will send its unique ID to the administrator of your "
+#| "homeserver. The administrator won’t be able to see the content of the "
+#| "event if it is encrypted or redacted."
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
-"homeserver. The administrator won’t be able to see the content of the event "
-"if it is encrypted or redacted."
+"homeserver. The administrator will not be able to see the content of the "
+"event if it is encrypted or redacted."
 msgstr ""
 "Скарга щодо події призведе до надсилання її унікального ідентифікатора "
 "адміністратору вашого домашнього сервера. Адміністратор не зможе переглянути "
@@ -3259,12 +3457,10 @@ msgid "Could not report event"
 msgstr "Не вдалося поскаржитися на подію"
 
 #: src/session/view/content/room_history/item_row.rs:832
-#| msgid "Could not send the message"
 msgid "Could not discard message"
 msgstr "Не вдалося відкинути повідомлення"
 
 #: src/session/view/content/room_history/item_row.rs:853
-#| msgid "Could not remove message"
 msgid "Could not retry to send message"
 msgstr "Не вдалося повторно надіслати повідомлення"
 
@@ -3439,8 +3635,9 @@ msgid "The location request has been cancelled."
 msgstr "Запит щодо визначення розташування було скасовано."
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:745
-msgid "Could not retrieve current location."
-msgstr "Не вдалося отримати дані щодо поточного розташування."
+#| msgid "Could not retrieve current location."
+msgid "Could not retrieve current location"
+msgstr "Не вдалося отримати дані щодо поточного розташування"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:785
 msgid "Select File"
@@ -3532,11 +3729,12 @@ msgstr "Не вдалося полишити {room}."
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:573
 #: src/session/view/sidebar/row.rs:494
-msgid "Could not forget {room}."
-msgstr "Не вдалося забути про {room}."
+#| msgid "Could not forget {room}."
+msgid "Could not forget {room}"
+msgstr "Не вдалося забути про {room}"
 
 #: src/session/view/content/room_history/mod.rs:748
-#: src/session/view/sidebar/mod.rs:283
+#: src/session/view/sidebar/mod.rs:418
 msgid "Context Menu"
 msgstr "Контекстне меню"
 
@@ -3600,54 +3798,63 @@ msgstr "З_апросити"
 msgid "Revoke _Invite"
 msgstr "Відк_ликати запрошення"
 
-#. Translators: In this string, 'Kick' is a verb.
+#. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
 #: src/session/view/content/room_history/mod.ui:76
+msgid "M_ute"
+msgstr "Ви_мкнути"
+
+#: src/session/view/content/room_history/mod.ui:81
+msgid "_Unmute"
+msgstr "С_касувати вимикання"
+
+#. Translators: In this string, 'Kick' is a verb.
+#: src/session/view/content/room_history/mod.ui:87
 msgid "_Kick"
 msgstr "Ви_кинути"
 
-#: src/session/view/content/room_history/mod.ui:81
+#: src/session/view/content/room_history/mod.ui:92
 msgid "_Deny Access"
 msgstr "Заб_оронити доступ"
 
 #. Translators: In this string, 'Ban' is a verb.
-#: src/session/view/content/room_history/mod.ui:87
+#: src/session/view/content/room_history/mod.ui:98
 msgid "_Ban"
 msgstr "За_блокувати"
 
-#: src/session/view/content/room_history/mod.ui:92
+#: src/session/view/content/room_history/mod.ui:103
 msgid "Un_ban"
 msgstr "_Розблокувати"
 
-#: src/session/view/content/room_history/mod.ui:97
+#: src/session/view/content/room_history/mod.ui:108
 msgid "_Remove Messages"
 msgstr "Ви_лучити повідомлення"
 
-#: src/session/view/content/room_history/mod.ui:102
+#: src/session/view/content/room_history/mod.ui:113
 msgid "I_gnore"
 msgstr "_Ігнорувати"
 
-#: src/session/view/content/room_history/mod.ui:107
+#: src/session/view/content/room_history/mod.ui:118
 msgid "Stop I_gnoring"
 msgstr "Припинити іг_норування"
 
-#: src/session/view/content/room_history/mod.ui:149
+#: src/session/view/content/room_history/mod.ui:160
 msgid "Room Menu"
 msgstr "Меню кімнати"
 
-#: src/session/view/content/room_history/mod.ui:193
-#: src/session/view/content/room_history/mod.ui:200
+#: src/session/view/content/room_history/mod.ui:204
+#: src/session/view/content/room_history/mod.ui:211
 msgid "Could Not Load Room"
 msgstr "Не вдалося завантажити кімнату"
 
-#: src/session/view/content/room_history/mod.ui:201
+#: src/session/view/content/room_history/mod.ui:212
 msgid "Check your network connection."
 msgstr "Перевірте ваше з'єднання з мережею."
 
-#: src/session/view/content/room_history/mod.ui:235
+#: src/session/view/content/room_history/mod.ui:246
 msgid "Scroll to Bottom"
 msgstr "Гортати до кінця"
 
-#: src/session/view/content/room_history/mod.ui:247
+#: src/session/view/content/room_history/mod.ui:258
 msgid "Drop Here to Send"
 msgstr "Скиньте сюди, щоб надіслати"
 
@@ -3667,41 +3874,71 @@ msgstr[3] "Переглянуто 1 учасником"
 msgid "Seen by {name}"
 msgstr "Переглянуто {name}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:258
+#: src/session/view/content/room_history/sender_avatar/mod.rs:269
 msgid "{user}’s avatar"
 msgstr "Аватар {user}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:479
+#: src/session/view/content/room_history/sender_avatar/mod.rs:510
 msgid "Creating a new Direct Chat…"
 msgstr "Створення безпосереднього чату…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:503
+#: src/session/view/content/room_history/sender_avatar/mod.rs:534
 msgid "Inviting user…"
 msgstr "Запрошуємо користувача…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:531
+#: src/session/view/content/room_history/sender_avatar/mod.rs:562
 msgid "Revoking invite…"
 msgstr "Відкликаємо запрошення…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:532
+#: src/session/view/content/room_history/sender_avatar/mod.rs:563
 msgid "Denying access…"
 msgstr "Забороняємо доступ…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:533
+#: src/session/view/content/room_history/sender_avatar/mod.rs:564
 msgid "Kicking user…"
 msgstr "Викидаємо користувача…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:572
+#: src/session/view/content/room_history/sender_avatar/mod.rs:599
+#| msgid "Inviting user…"
+msgid "Muting member…"
+msgstr "Вимикання учасника…"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:602
+#| msgid "Inviting user…"
+msgid "Unmuting member…"
+msgstr "Скасування вимикання учасника…"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:612
+#| msgid "Member Menu"
+msgid "Member muted"
+msgstr "Учасника вимкнено"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:614
+#| msgid "Member Menu"
+msgid "Member unmuted"
+msgstr "Вимикання учасника скасовано"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:619
+#| msgid "Could not invite user"
+msgid "Could not mute member"
+msgstr "Не вдалося вимкнути учасника"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:621
+#| msgid "Could not invite user"
+msgid "Could not unmute member"
+msgstr "Не вдалося скасувати вимикання учасника"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:650
 msgid "Banning user…"
 msgstr "Блокуємо користувача…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:596
+#: src/session/view/content/room_history/sender_avatar/mod.rs:674
 msgid "Unbanning user…"
 msgstr "Розблоковуємо користувача…"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:639
+#: src/session/view/content/room_history/sender_avatar/mod.rs:717
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "Вилучаємо {n} повідомлення, яке надіслано користувачем…"
@@ -3709,11 +3946,11 @@ msgstr[1] "Вилучаємо {n} повідомлення, які надісл�
 msgstr[2] "Вилучаємо {n} повідомлень, які надіслано користувачем…"
 msgstr[3] "Вилучаємо {n} повідомлення, яке надіслано користувачем…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:672
+#: src/session/view/content/room_history/sender_avatar/mod.rs:750
 msgid "Stop ignoring user…"
 msgstr "Припинити ігнорування користувача…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:674
+#: src/session/view/content/room_history/sender_avatar/mod.rs:752
 msgid "Ignoring user…"
 msgstr "Ігноруємо користувача…"
 
@@ -4037,12 +4274,10 @@ msgid "The address is already taken."
 msgstr "Адресу вже використано."
 
 #: src/session/view/room_creation.rs:217
-#| msgid "Can’t contain “:”"
 msgid "Cannot contain “:”"
 msgstr "Не може містити «:»"
 
 #: src/session/view/room_creation.rs:222
-#| msgid "Can’t contain “#”"
 msgid "Cannot contain “#”"
 msgstr "Не може містити «#»"
 
@@ -4086,18 +4321,7 @@ msgstr "Міжвузлове шифрування"
 msgid "Cannot be disabled later"
 msgstr "Не можна вимикати пізніше"
 
-#: src/session/view/room_creation.ui:117
-msgid ""
-"Fractal does not support online backup for encryption keys yet, so you will "
-"need to back them up manually or your message history will be lost if you "
-"lose access to all your sessions."
-msgstr ""
-"У «Фракталі» не передбачено підтримки інтерактивного резервного копіювання "
-"ключів шифрування кімнати, тому вам доведеться робити їхні резервні копії "
-"вручну, інакше ви втратите ваш журнал повідомлень, якщо втратите доступ до "
-"усіх ваших сеансів."
-
-#: src/session/view/room_creation.ui:165
+#: src/session/view/room_creation.ui:147
 msgid "_Create Room"
 msgstr "С_творити кімнату"
 
@@ -4158,6 +4382,24 @@ msgstr "Повторно увійти до кімнати"
 msgid "Rejoin Room as Low Priority"
 msgstr "Повторно увійти як до низькопріоритетної кімнати"
 
+#: src/session/view/sidebar/mod.rs:306
+#| msgid "Set Up Encryption Identity"
+msgid "No crypto identity"
+msgstr "Немає криптопрофілю"
+
+#: src/session/view/sidebar/mod.rs:308
+#| msgid "Encryption Identity Recovery"
+msgid "Crypto identity incomplete"
+msgstr "Криптопрофіль є неповним"
+
+#: src/session/view/sidebar/mod.rs:312
+msgid "Account recovery disabled"
+msgstr "Відновлення облікового запису вимкнено"
+
+#: src/session/view/sidebar/mod.rs:315
+msgid "Account recovery incomplete"
+msgstr "Відновлення облікового запису є неповним"
+
 #: src/session/view/sidebar/mod.ui:6
 msgid "New _Direct Chat…"
 msgstr "Нове _безпосереднє спілкування…"
@@ -4214,11 +4456,11 @@ msgstr "Пошук кімнати"
 msgid "Search for a room"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:143
+#: src/session/view/sidebar/mod.ui:149
 msgid "Room List"
 msgstr "Список кімнат"
 
-#: src/session/view/sidebar/mod.ui:144
+#: src/session/view/sidebar/mod.ui:150
 msgid "Allows to navigate between rooms"
 msgstr "Дозволяє навігацію між кімнатами"
 
@@ -4231,8 +4473,9 @@ msgstr "Безпосереднє спілкування з {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/row.rs:479
-msgid "Could not move {room} from {previous_category} to {new_category}."
-msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}."
+#| msgid "Could not move {room} from {previous_category} to {new_category}."
+msgid "Could not move {room} from {previous_category} to {new_category}"
+msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}"
 
 #: src/session_list/mod.rs:254
 msgid "Could not restore previous sessions"
@@ -4311,16 +4554,18 @@ msgid "An unknown connection error occurred."
 msgstr "Сталася невідома помилка з'єднання."
 
 #: src/user_facing_error.rs:69
-msgid "Could not decrypt the event"
-msgstr "Не вдалося розшифрувати подію"
+#| msgid "Could not decrypt the event"
+msgid "Could not decrypt the event."
+msgstr "Не вдалося розшифрувати подію."
 
 #: src/user_facing_error.rs:71 src/user_facing_error.rs:85
 msgid "An unknown error occurred."
 msgstr "Сталася невідома помилка."
 
 #: src/user_facing_error.rs:79
-msgid "This is not a valid URL"
-msgstr "Ця адреса є некоректною"
+#| msgid "This is not a valid URL"
+msgid "This is not a valid URL."
+msgstr "Адреса не є коректною."
 
 #: src/user_facing_error.rs:81
 msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
@@ -4402,8 +4647,11 @@ msgstr ""
 "кімнати власноруч пізніше."
 
 #: src/utils/message_dialog.rs:24
+#| msgid ""
+#| "Do you really want to decline this invite? You won’t be able to join this "
+#| "room without it."
 msgid ""
-"Do you really want to decline this invite? You won’t be able to join this "
+"Do you really want to decline this invite? You will not be able to join this "
 "room without it."
 msgstr ""
 "Ви справді хочете відхилити це запрошення? Ви не зможете долучитися до цієї "
@@ -4420,8 +4668,11 @@ msgstr ""
 "Ви справді хочете полишити цю кімнату? Ви зможете повернутися до неї пізніше."
 
 #: src/utils/message_dialog.rs:37
+#| msgid ""
+#| "Do you really want to leave this room? You won’t be able to come back "
+#| "without an invitation."
 msgid ""
-"Do you really want to leave this room? You won’t be able to come back "
+"Do you really want to leave this room? You will not be able to come back "
 "without an invitation."
 msgstr ""
 "Ви справді хочете полишити цю кімнату? Ви не зможете повернутися до неї "
@@ -4615,6 +4866,119 @@ msgstr "Розширити повноваження"
 msgid "Session"
 msgstr "Сеанс"
 
+#~ msgid ""
+#~ "If you lost access to all other sessions, you can create a new encryption "
+#~ "identity. Be careful because this will cancel the verifications of all "
+#~ "users and sessions."
+#~ msgstr ""
+#~ "Якщо ви втратили доступ до усіх інших сеансів, ви можете створити новий "
+#~ "криптопрофіль. Будьте дуже обережні, оскільки це призведе до скидання "
+#~ "усіх перевірених записів користувачів."
+
+#~ msgid ""
+#~ "You cancelled the authentication needed to create the encryption identity."
+#~ msgstr ""
+#~ "Вами скасовано розпізнавання, яке потрібне для створення профілю "
+#~ "шифрування."
+
+#~ msgid "An error occurred during the creation of the encryption identity."
+#~ msgstr "Під час створення профілю шифрування сталася помилка."
+
+#~ msgid ""
+#~ "Without another device you need a recovery passphrase or key to access "
+#~ "your messages"
+#~ msgstr ""
+#~ "Без іншого пристрою вам знадобиться пароль чи ключ для відновлення для "
+#~ "доступу до ваших повідомлень"
+
+#~ msgid ""
+#~ "If you don’t have any of these you can reset your identity, but be aware "
+#~ "this makes your old messages inaccessible forever."
+#~ msgstr ""
+#~ "Якщо у вас немає цих даних, ви можете скинути ваш профіль, але, варто "
+#~ "зауважити, це призведе до втрати доступу до ваших старих повідомлень."
+
+#~ msgid ""
+#~ "Your Recovery Passphrase was set up when you first created this account."
+#~ msgstr ""
+#~ "Ваш пароль для відновлення було налаштовано під час створення цього "
+#~ "облікового запису."
+
+#~ msgid ""
+#~ "If you opted for a Recovery Key instead go back and choose that option."
+#~ msgstr ""
+#~ "Якщо ви хочете вибрати ключ відновлення, поверніться і виберіть "
+#~ "відповідний пункт."
+
+#~ msgid "Your Recovery Key was set up when you first created this account."
+#~ msgstr ""
+#~ "Ваш ключ для відновлення було налаштовано під час створення цього "
+#~ "облікового запису."
+
+#~ msgid ""
+#~ "If you opted for a Recovery Passphrase instead go back and choose that "
+#~ "option."
+#~ msgstr ""
+#~ "Якщо ви хочете вибрати пароль для відновлення, поверніться і виберіть "
+#~ "відповідний пункт."
+
+#~ msgid ""
+#~ "Fractal’s support for encryption is unstable so you might lose access to "
+#~ "your encrypted message history. It is recommended to backup your "
+#~ "encryption keys before proceeding."
+#~ msgstr ""
+#~ "Підтримка шифрування у «Фракталі» не є стабільною, тому ви можете "
+#~ "втратити доступ до вашого зашифрованого журналу повідомлень. Перш ніж "
+#~ "продовжувати, рекомендуємо створити резервну копію ваших ключів "
+#~ "шифрування."
+
+#~ msgid ""
+#~ "Fractal doesn’t support online backup of room encryption keys so you "
+#~ "might lose access to your encrypted message history."
+#~ msgstr ""
+#~ "У «Фракталі» не передбачено підтримки інтерактивного резервного "
+#~ "копіювання ключів шифрування кімнати, тому ви можете втратити доступ до "
+#~ "журналу ваших шифрованих повідомлень."
+
+#~ msgid "It is recommended to backup your encryption keys before proceeding."
+#~ msgstr ""
+#~ "Перш ніж продовжувати, рекомендуємо створити резервну копію ваших ключів "
+#~ "шифрування."
+
+#~ msgid "Backup Encryption Keys"
+#~ msgstr "Створити резервну копію ключів шифрування"
+
+#~ msgid "Available"
+#~ msgstr "Доступний"
+
+#~ msgid "Not available"
+#~ msgstr "Недоступний"
+
+#~ msgid "Room Encryption Keys"
+#~ msgstr "Ключі шифрування кімнати"
+
+#~ msgid "Cross-Signing"
+#~ msgstr "Перехресне підписування"
+
+#~ msgid "Master Key"
+#~ msgstr "Основний ключ"
+
+#~ msgid "Self-Signing Key"
+#~ msgstr "Ключ самопідписування"
+
+#~ msgid "User-Signing Key"
+#~ msgstr "Ключ підписування користувача"
+
+#~ msgid ""
+#~ "Fractal does not support online backup for encryption keys yet, so you "
+#~ "will need to back them up manually or your message history will be lost "
+#~ "if you lose access to all your sessions."
+#~ msgstr ""
+#~ "У «Фракталі» не передбачено підтримки інтерактивного резервного "
+#~ "копіювання ключів шифрування кімнати, тому вам доведеться робити їхні "
+#~ "резервні копії вручну, інакше ви втратите ваш журнал повідомлень, якщо "
+#~ "втратите доступ до усіх ваших сеансів."
+
 #~ msgid "Room Address"
 #~ msgstr "Адреса кімнати"
 
@@ -4706,9 +5070,6 @@ msgstr "Сеанс"
 
 #~ msgid "_Forgot Password?"
 #~ msgstr "За_були пароль?"
-
-#~ msgid "Member Menu"
-#~ msgstr "Меню учасника"
 
 #~ msgid "_Verify"
 #~ msgstr "Пере_вірити"
@@ -5314,9 +5675,6 @@ msgstr "Сеанс"
 
 #~ msgid "You’ve been invited to join <b>{room_name}</b>"
 #~ msgstr "Вас запросили увійти в <b>{room_name}</b>"
-
-#~ msgid "OK"
-#~ msgstr "Гаразд"
 
 #~ msgid "Room · {} member"
 #~ msgid_plural "Room · {} members"
