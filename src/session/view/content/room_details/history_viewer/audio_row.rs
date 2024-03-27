@@ -6,7 +6,7 @@ use matrix_sdk::ruma::events::room::message::{AudioMessageEventContent, MessageT
 use tracing::warn;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, session::model::Session, spawn, spawn_tokio};
+use crate::{gettext_f, matrix_filename, session::model::Session, spawn, spawn_tokio};
 
 mod imp {
     use std::cell::RefCell;
@@ -68,9 +68,7 @@ mod imp {
 
             if let Some(event) = &event {
                 if let MessageType::Audio(audio) = event.message_content() {
-                    let filename = Some(audio.body.clone())
-                        .filter(|b| !b.is_empty())
-                        .unwrap_or_else(|| gettext("Unnamed audio"));
+                    let filename = matrix_filename!(audio, Some(mime::AUDIO));
 
                     self.title_label.set_label(&filename);
                     self.play_button

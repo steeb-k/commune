@@ -5,7 +5,7 @@ use matrix_sdk::ruma::events::room::message::MessageType;
 use tracing::error;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, prelude::*, toast};
+use crate::{gettext_f, matrix_filename, prelude::*, toast};
 
 mod imp {
     use std::cell::RefCell;
@@ -69,9 +69,7 @@ mod imp {
 
             if let Some(event) = &event {
                 if let MessageType::File(file) = event.message_content() {
-                    let filename = Some(file.body)
-                        .filter(|b| !b.is_empty())
-                        .unwrap_or_else(|| gettext("Unnamed file"));
+                    let filename = matrix_filename!(file, None);
 
                     self.title_label.set_label(&filename);
                     self.button

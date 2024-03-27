@@ -1,4 +1,3 @@
-use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
 use matrix_sdk::{
     media::{MediaEventContent, MediaThumbnailSize},
@@ -11,7 +10,10 @@ use matrix_sdk::{
 use tracing::warn;
 
 use super::{HistoryViewerEvent, MediaHistoryViewer};
-use crate::{session::model::Session, spawn, spawn_tokio, utils::add_activate_binding_action};
+use crate::{
+    matrix_filename, session::model::Session, spawn, spawn_tokio,
+    utils::add_activate_binding_action,
+};
 
 mod imp {
     use std::cell::RefCell;
@@ -130,10 +132,7 @@ impl MediaItem {
             imp.overlay.remove_overlay(&icon);
         }
 
-        let filename = Some(image.body.clone())
-            .filter(|b| !b.is_empty())
-            .unwrap_or_else(|| gettext("Unnamed image"));
-
+        let filename = matrix_filename!(image, Some(mime::IMAGE));
         self.set_tooltip_text(Some(&filename));
 
         self.load_thumbnail(image, session);
@@ -155,10 +154,7 @@ impl MediaItem {
             imp.overlay_icon.replace(Some(icon));
         }
 
-        let filename = Some(video.body.clone())
-            .filter(|b| !b.is_empty())
-            .unwrap_or_else(|| gettext("Unnamed video"));
-
+        let filename = matrix_filename!(video, Some(mime::VIDEO));
         self.set_tooltip_text(Some(&filename));
 
         self.load_thumbnail(video, session);
