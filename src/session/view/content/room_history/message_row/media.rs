@@ -123,6 +123,17 @@ mod imp {
                 (MAX_THUMBNAIL_WIDTH, MAX_THUMBNAIL_HEIGHT)
             };
 
+            // -1 means illimited size, and we know we can't go bigger than the max.
+            let for_size = if for_size == -1 {
+                if orientation == gtk::Orientation::Vertical {
+                    max_height
+                } else {
+                    max_width
+                }
+            } else {
+                for_size
+            };
+
             let (original, max, fallback, original_other, max_other) =
                 if orientation == gtk::Orientation::Vertical {
                     (
@@ -260,7 +271,13 @@ impl MessageMedia {
     }
 
     /// Display the given `image`, in a `compact` format or not.
-    pub fn image(&self, image: ImageMessageEventContent, session: &Session, format: ContentFormat) {
+    pub fn image(
+        &self,
+        image: ImageMessageEventContent,
+        filename: String,
+        session: &Session,
+        format: ContentFormat,
+    ) {
         let info = image.info.as_deref();
         let width = uint_to_i32(info.and_then(|info| info.width));
         let height = uint_to_i32(info.and_then(|info| info.height));
@@ -269,7 +286,7 @@ impl MessageMedia {
         self.set_width(width);
         self.set_height(height);
         self.set_compact(compact);
-        self.build(image, None, MediaType::Image, session);
+        self.build(image, filename, MediaType::Image, session);
     }
 
     /// Display the given `sticker`, in a `compact` format or not.
@@ -277,7 +294,7 @@ impl MessageMedia {
         let info = &sticker.info;
         let width = uint_to_i32(info.width);
         let height = uint_to_i32(info.height);
-        let body = Some(sticker.body.clone());
+        let body = sticker.body.clone();
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
 
         self.set_width(width);
@@ -287,28 +304,33 @@ impl MessageMedia {
     }
 
     /// Display the given `video`, in a `compact` format or not.
-    pub fn video(&self, video: VideoMessageEventContent, session: &Session, format: ContentFormat) {
+    pub fn video(
+        &self,
+        video: VideoMessageEventContent,
+        filename: String,
+        session: &Session,
+        format: ContentFormat,
+    ) {
         let info = &video.info.as_deref();
         let width = uint_to_i32(info.and_then(|info| info.width));
         let height = uint_to_i32(info.and_then(|info| info.height));
-        let body = Some(video.body.clone());
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
 
         self.set_width(width);
         self.set_height(height);
         self.set_compact(compact);
-        self.build(video, body, MediaType::Video, session);
+        self.build(video, filename, MediaType::Video, session);
     }
 
-    fn build<C>(&self, content: C, body: Option<String>, media_type: MediaType, session: &Session)
+    fn build<C>(&self, content: C, filename: String, media_type: MediaType, session: &Session)
     where
         C: MediaEventContent + Send + Sync + Clone + 'static,
     {
-        let accessible_label = if let Some(filename) = &body {
+        let accessible_label = if !filename.is_empty() {
             match media_type {
-                MediaType::Image => gettext_f("Image: {filename}", &[("filename", filename)]),
-                MediaType::Sticker => gettext_f("Sticker: {filename}", &[("filename", filename)]),
-                MediaType::Video => gettext_f("Video: {filename}", &[("filename", filename)]),
+                MediaType::Image => gettext_f("Image: {filename}", &[("filename", &filename)]),
+                MediaType::Sticker => gettext_f("Sticker: {filename}", &[("filename", &filename)]),
+                MediaType::Video => gettext_f("Video: {filename}", &[("filename", &filename)]),
             }
         } else {
             match media_type {
@@ -373,7 +395,7 @@ impl MessageMedia {
                                             };
                                             child.set_paintable(Some(&texture));
 
-                                            child.set_tooltip_text(body.as_deref());
+                                            child.set_tooltip_text(Some(&filename));
                                             if media_type == MediaType::Sticker {
                                                 if imp.media.has_css_class("content-thumbnail") {
                                                     imp.media.remove_css_class("content-thumbnail");

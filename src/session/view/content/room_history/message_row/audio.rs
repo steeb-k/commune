@@ -29,9 +29,9 @@ mod imp {
     )]
     #[properties(wrapper_type = super::MessageAudio)]
     pub struct MessageAudio {
-        /// The body of the audio message.
+        /// The filename of the audio file.
         #[property(get)]
-        pub body: RefCell<Option<String>>,
+        pub filename: RefCell<Option<String>>,
         /// The state of the audio file.
         #[property(get, builder(MediaState::default()))]
         pub state: Cell<MediaState>,
@@ -82,22 +82,22 @@ impl MessageAudio {
         glib::Object::new()
     }
 
-    /// Set the body of the audio message.
-    fn set_body(&self, body: Option<String>) {
-        if self.body() == body {
+    /// Set the filename of the audio file.
+    fn set_filename(&self, filename: Option<String>) {
+        if self.filename() == filename {
             return;
         }
 
-        let accessible_label = if let Some(filename) = &body {
+        let accessible_label = if let Some(filename) = &filename {
             gettext_f("Audio: {filename}", &[("filename", filename)])
         } else {
             gettext("Audio")
         };
         self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
 
-        self.imp().body.replace(body);
+        self.imp().filename.replace(filename);
 
-        self.notify_body();
+        self.notify_filename();
     }
 
     /// Set the compact format of this audio message.
@@ -150,8 +150,14 @@ impl MessageAudio {
     }
 
     /// Display the given `audio` message.
-    pub fn audio(&self, audio: AudioMessageEventContent, session: &Session, format: ContentFormat) {
-        self.set_body(Some(audio.body.clone()));
+    pub fn audio(
+        &self,
+        audio: AudioMessageEventContent,
+        filename: String,
+        session: &Session,
+        format: ContentFormat,
+    ) {
+        self.set_filename(Some(filename));
 
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
         self.set_compact(compact);

@@ -6,13 +6,12 @@ use ruma::events::room::message::MessageType;
 use tracing::{error, warn};
 
 use super::{
-    audio::MessageAudio, file::MessageFile, location::MessageLocation, media::MessageMedia,
-    reply::MessageReply, text::MessageText,
+    audio::MessageAudio, caption::MessageCaption, file::MessageFile, location::MessageLocation,
+    media::MessageMedia, reply::MessageReply, text::MessageText,
 };
 use crate::{
     session::model::{content_can_show_header, Event, Member, Room},
     spawn,
-    utils::media::filename_for_mime,
 };
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -181,19 +180,52 @@ fn build_content(
         return;
     };
 
-    let parent = parent.upcast_ref();
+    /// Show the caption of the file if applicable.
+    macro_rules! with_caption {
+        ($parent:ident, $message:ident, $widget_type:ty, $mime_fallback:expr) => {{
+            let filename = $crate::matrix_filename!($message, $mime_fallback);
+            let caption = $crate::matrix_caption!($message);
+
+            let child = if let Some((caption, formatted_caption)) = caption {
+                let caption_widget = if let Some(caption_widget) =
+                    $parent.child().and_downcast::<MessageCaption>()
+                {
+                    caption_widget
+                } else {
+                    let caption_widget = MessageCaption::new();
+                    $parent.set_child(Some(&caption_widget));
+                    caption_widget
+                };
+
+                caption_widget.set_caption(caption, formatted_caption, room, format);
+
+                if let Some(child) = caption_widget.child().and_downcast::<$widget_type>() {
+                    child
+                } else {
+                    let child = <$widget_type>::new();
+                    caption_widget.set_child(Some(child.clone()));
+                    child
+                }
+            } else if let Some(child) = $parent.child().and_downcast::<$widget_type>() {
+                child
+            } else {
+                let child = <$widget_type>::new();
+                $parent.set_child(Some(&child));
+                child
+            };
+
+            (child, filename)
+        }};
+    }
+
     match content {
         TimelineItemContent::Message(message) => {
             match message.msgtype() {
                 MessageType::Audio(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageAudio>() {
-                        child
-                    } else {
-                        let child = MessageAudio::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.audio(message.clone(), &session, format);
+                    let (child, filename) =
+                        with_caption!(parent, message, MessageAudio, Some(mime::AUDIO));
+
+                    child.audio(message.clone(), filename, &session, format);
                 }
                 MessageType::Emote(message) => {
                     let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
@@ -212,36 +244,16 @@ fn build_content(
                     );
                 }
                 MessageType::File(message) => {
-                    let info = message.info.as_ref();
-                    let filename = message
-                        .filename
-                        .clone()
-                        .filter(|name| !name.is_empty())
-                        .or_else(|| Some(message.body.clone()))
-                        .filter(|name| !name.is_empty())
-                        .unwrap_or_else(|| {
-                            filename_for_mime(info.and_then(|info| info.mimetype.as_deref()), None)
-                        });
+                    let (child, filename) = with_caption!(parent, message, MessageFile, None);
 
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageFile>() {
-                        child
-                    } else {
-                        let child = MessageFile::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
                     child.set_filename(Some(filename));
                     child.set_format(format);
                 }
                 MessageType::Image(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageMedia>() {
-                        child
-                    } else {
-                        let child = MessageMedia::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.image(message.clone(), &session, format);
+                    let (child, filename) =
+                        with_caption!(parent, message, MessageMedia, Some(mime::IMAGE));
+
+                    child.image(message.clone(), filename, &session, format);
                 }
                 MessageType::Location(message) => {
                     let child =
@@ -295,14 +307,10 @@ fn build_content(
                     );
                 }
                 MessageType::Video(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageMedia>() {
-                        child
-                    } else {
-                        let child = MessageMedia::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.video(message.clone(), &session, format);
+                    let (child, filename) =
+                        with_caption!(parent, message, MessageMedia, Some(mime::VIDEO));
+
+                    child.video(message.clone(), filename, &session, format);
                 }
                 MessageType::VerificationRequest(_) => {
                     // TODO: show more information about the verification

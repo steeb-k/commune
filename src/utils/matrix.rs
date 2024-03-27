@@ -27,7 +27,6 @@ use ruma::{
 };
 use thiserror::Error;
 
-use super::media::filename_for_mime;
 use crate::{
     components::{Pill, DEFAULT_PLACEHOLDER},
     gettext_f,
@@ -321,70 +320,25 @@ pub async fn get_media_content(
 
     match message {
         MessageType::File(content) => {
-            let filename = content
-                .filename
-                .as_ref()
-                .filter(|name| !name.is_empty())
-                .or(Some(&content.body))
-                .filter(|name| !name.is_empty())
-                .cloned()
-                .unwrap_or_else(|| {
-                    filename_for_mime(
-                        content
-                            .info
-                            .as_ref()
-                            .and_then(|info| info.mimetype.as_deref()),
-                        None,
-                    )
-                });
+            let filename = crate::matrix_filename!(content, None);
             let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }
         MessageType::Image(content) => {
-            let filename = if content.body.is_empty() {
-                filename_for_mime(
-                    content
-                        .info
-                        .as_ref()
-                        .and_then(|info| info.mimetype.as_deref()),
-                    Some(mime::IMAGE),
-                )
-            } else {
-                content.body.clone()
-            };
+            let filename = crate::matrix_filename!(content, Some(mime::IMAGE));
             let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }
         MessageType::Video(content) => {
-            let filename = if content.body.is_empty() {
-                filename_for_mime(
-                    content
-                        .info
-                        .as_ref()
-                        .and_then(|info| info.mimetype.as_deref()),
-                    Some(mime::VIDEO),
-                )
-            } else {
-                content.body.clone()
-            };
+            let filename = crate::matrix_filename!(content, Some(mime::VIDEO));
             let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
         }
         MessageType::Audio(content) => {
-            let filename = if content.body.is_empty() {
-                filename_for_mime(
-                    content
-                        .info
-                        .as_ref()
-                        .and_then(|info| info.mimetype.as_deref()),
-                    Some(mime::AUDIO),
-                )
-            } else {
-                content.body.clone()
-            };
+            let filename = crate::matrix_filename!(content, Some(mime::AUDIO));
             let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
             let data = handle.await.unwrap()?.unwrap();
             Ok((filename, data))
@@ -393,6 +347,42 @@ pub async fn get_media_content(
             panic!("Trying to get the media content of a message of incompatible type");
         }
     }
+}
+
+/// The filename of the given media message.
+///
+/// Uses the given mimetype to generate a fallback filename if none exists.
+#[macro_export]
+macro_rules! matrix_filename {
+    ($message:ident, $mime_fallback:expr) => {{
+        let mut filename = match &$message.filename {
+            Some(filename) if *filename != $message.body => filename.clone(),
+            _ => $message.body.clone(),
+        };
+
+        if filename.is_empty() {
+            let mimetype = $message
+                .info
+                .as_ref()
+                .and_then(|info| info.mimetype.as_deref());
+
+            filename = $crate::utils::media::filename_for_mime(mimetype, $mime_fallback);
+        }
+
+        filename
+    }};
+}
+
+/// The caption of the given media message, if any.
+#[macro_export]
+macro_rules! matrix_caption {
+    ($message:ident) => {{
+        $message
+            .filename
+            .as_deref()
+            .filter(|filename| *filename != $message.body)
+            .map(|_| ($message.body.clone(), $message.formatted.clone()))
+    }};
 }
 
 /// Extract mentions from the given string.

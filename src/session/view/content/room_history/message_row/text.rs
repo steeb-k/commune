@@ -327,6 +327,12 @@ impl MessageText {
     }
 }
 
+impl Default for MessageText {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Transform URLs into links.
 fn linkify(text: &str) -> String {
     hoverify_links(&markup_links(&html_escape(text)))

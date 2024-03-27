@@ -1,4 +1,10 @@
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, glib::clone, CompositeTemplate};
+use matrix_sdk::ruma::events::room::message::MessageType;
+use tracing::warn;
+
 mod audio;
+mod caption;
 mod content;
 mod file;
 mod location;
@@ -8,11 +14,6 @@ mod reaction;
 mod reaction_list;
 mod reply;
 mod text;
-
-use adw::{prelude::*, subclass::prelude::*};
-use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use matrix_sdk::ruma::events::room::message::MessageType;
-use tracing::warn;
 
 pub use self::content::{ContentFormat, MessageContent};
 use self::{
