@@ -48,7 +48,17 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for AttachmentDialog {}
+    impl WidgetImpl for AttachmentDialog {
+        fn grab_focus(&self) -> bool {
+            let loading = !self.send_button.is_sensitive();
+
+            if loading {
+                self.cancel_button.grab_focus()
+            } else {
+                self.send_button.grab_focus()
+            }
+        }
+    }
 
     impl AdwDialogImpl for AttachmentDialog {
         fn closed(&self) {
@@ -60,12 +70,7 @@ mod imp {
         /// Set whether this dialog is loading.
         pub(super) fn set_loading(&self, loading: bool) {
             self.send_button.set_sensitive(!loading);
-
-            if loading {
-                self.cancel_button.grab_focus();
-            } else {
-                self.send_button.grab_focus();
-            }
+            self.grab_focus();
         }
 
         /// Sent the given response.
