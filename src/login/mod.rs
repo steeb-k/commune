@@ -239,17 +239,6 @@ impl Login {
         glib::Object::new()
     }
 
-    /// Set the visible page.
-    fn set_visible_page(&self, page: LoginPage) {
-        let navigation = &self.imp().navigation;
-
-        if page == LoginPage::Greeter {
-            navigation.pop_to_tag(page.as_ref());
-        } else {
-            navigation.push_by_tag(page.as_ref());
-        }
-    }
-
     /// The visible page changed.
     fn visible_page_changed(&self) {
         let imp = self.imp();
@@ -271,12 +260,6 @@ impl Login {
             }
             _ => {}
         }
-    }
-
-    fn parent_window(&self) -> Window {
-        self.root()
-            .and_downcast()
-            .expect("Login needs to have a parent window")
     }
 
     /// The Matrix client.
@@ -314,7 +297,7 @@ impl Login {
     /// Drop the session and clean up its data from the system.
     fn drop_session(&self) {
         if let Some(session) = self.imp().session.take() {
-            glib::MainContext::default().block_on(async move {
+            spawn!(async move {
                 let _ = session.logout().await;
             });
         }
@@ -381,7 +364,9 @@ impl Login {
     /// Show the appropriate login screen given the current login types.
     fn show_login_screen(&self) {
         if self.supports_password() {
-            self.set_visible_page(LoginPage::Method);
+            self.imp()
+                .navigation
+                .push_by_tag(LoginPage::Method.as_ref());
         } else {
             spawn!(clone!(@weak self as obj => async move {
                 obj.login_with_sso(None).await;
@@ -391,7 +376,8 @@ impl Login {
 
     /// Log in with the SSO login type.
     async fn login_with_sso(&self, idp_id: Option<String>) {
-        self.set_visible_page(LoginPage::Sso);
+        let imp = self.imp();
+        imp.navigation.push_by_tag(LoginPage::Sso.as_ref());
         let client = self.client().await.unwrap();
 
         let handle = spawn_tokio!(async move {
@@ -428,7 +414,7 @@ impl Login {
             Err(error) => {
                 warn!("Could not log in: {error}");
                 toast!(self, error.to_user_facing());
-                self.imp().navigation.pop();
+                imp.navigation.pop();
             }
         }
     }
@@ -457,8 +443,8 @@ impl Login {
         let imp = self.imp();
 
         let setup_view = SessionSetupView::new(&session);
-        setup_view.connect_completed(clone!(@weak self as obj => move |_| {
-            obj.show_completed();
+        setup_view.connect_completed(clone!(@weak imp => move |_| {
+            imp.navigation.push_by_tag(LoginPage::Completed.as_ref());
         }));
         imp.navigation.push(&setup_view);
 
@@ -482,20 +468,16 @@ impl Login {
         session.prepare().await;
     }
 
-    /// Show the completed page.
-    #[template_callback]
-    pub fn show_completed(&self) {
-        let imp = self.imp();
-
-        self.set_visible_page(LoginPage::Completed);
-        imp.done_button.grab_focus();
-    }
-
     /// Finish the login process and show the session.
     #[template_callback]
     fn finish_login(&self) {
-        let session = self.imp().session.take().unwrap();
-        self.parent_window().add_session(session);
+        let Some(window) = self.root().and_downcast::<Window>() else {
+            return;
+        };
+
+        if let Some(session) = self.imp().session.take() {
+            window.add_session(session);
+        }
 
         self.clean();
     }
@@ -517,7 +499,7 @@ impl Login {
         self.drop_session();
 
         // Reinitialize UI.
-        self.set_visible_page(LoginPage::Greeter);
+        imp.navigation.pop_to_tag(LoginPage::Greeter.as_ref());
         self.unfreeze();
     }
 
