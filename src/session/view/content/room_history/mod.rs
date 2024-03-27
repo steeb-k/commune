@@ -714,9 +714,12 @@ impl RoomHistory {
 
         imp.is_auto_scrolling.set(true);
 
-        let num_events = self.selection_model().n_items();
-        imp.listview
-            .scroll_to(num_events - 1, gtk::ListScrollFlags::FOCUS, None);
+        let n_items = self.selection_model().n_items();
+
+        if n_items > 0 {
+            imp.listview
+                .scroll_to(n_items - 1, gtk::ListScrollFlags::FOCUS, None);
+        }
     }
 
     /// Whether the GtkListView is scrolled at the bottom.
