@@ -777,12 +777,24 @@ sender-avatar:hover {
   background-color: alpha(currentColor, .07);
 }
 
+sender-avatar:hover image {
+  filter: brightness(1.07) ;
+}
+
 sender-avatar:active {
   background-color: alpha(currentColor, .16);
 }
 
+sender-avatar:hover image {
+  filter: brightness(1.16) ;
+}
+
 sender-avatar:checked {
   background-color: alpha(currentColor, .1);
+}
+
+sender-avatar:hover image {
+  filter: brightness(1.1) ;
 }
 
 sender-avatar popover button.text-button {
