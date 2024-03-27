@@ -60,7 +60,11 @@ mod imp {
         }
     }
 
-    impl NavigationPageImpl for LoginMethodPage {}
+    impl NavigationPageImpl for LoginMethodPage {
+        fn shown(&self) {
+            self.grab_focus();
+        }
+    }
 
     impl LoginMethodPage {
         /// Set the parent `Login` object.

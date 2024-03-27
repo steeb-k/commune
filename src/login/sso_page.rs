@@ -27,7 +27,12 @@ mod imp {
 
     impl ObjectImpl for LoginSsoPage {}
     impl WidgetImpl for LoginSsoPage {}
-    impl NavigationPageImpl for LoginSsoPage {}
+
+    impl NavigationPageImpl for LoginSsoPage {
+        fn shown(&self) {
+            self.grab_focus();
+        }
+    }
 }
 
 glib::wrapper! {

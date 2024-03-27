@@ -64,7 +64,11 @@ mod imp {
         }
     }
 
-    impl NavigationPageImpl for LoginHomeserverPage {}
+    impl NavigationPageImpl for LoginHomeserverPage {
+        fn shown(&self) {
+            self.grab_focus();
+        }
+    }
 
     impl LoginHomeserverPage {
         /// Set the parent `Login` object.

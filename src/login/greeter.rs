@@ -34,9 +34,14 @@ mod imp {
     }
 
     impl ObjectImpl for Greeter {}
-
     impl WidgetImpl for Greeter {}
-    impl NavigationPageImpl for Greeter {}
+
+    impl NavigationPageImpl for Greeter {
+        fn shown(&self) {
+            self.grab_focus();
+        }
+    }
+
     impl AccessibleImpl for Greeter {}
 }
 

@@ -98,7 +98,11 @@ mod imp {
         }
     }
 
-    impl NavigationPageImpl for SessionSetupView {}
+    impl NavigationPageImpl for SessionSetupView {
+        fn shown(&self) {
+            self.grab_focus();
+        }
+    }
 
     impl SessionSetupView {
         /// The visible page of the stack.
