@@ -741,7 +741,8 @@ impl MessageToolbar {
     /// Show a toast for the given location error;
     fn location_error_toast(&self, error: LocationError) {
         let msg = match error {
-            LocationError::Cancelled => gettext("The location request has been cancelled."),
+            LocationError::Cancelled => gettext("The location request has been cancelled"),
+            LocationError::Disabled => gettext("The location services are disabled"),
             LocationError::Other => gettext("Could not retrieve current location"),
         };
 

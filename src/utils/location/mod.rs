@@ -13,6 +13,8 @@ mod linux;
 pub enum LocationError {
     /// The user cancelled the request to get the location.
     Cancelled,
+    /// The location services are disabled on the system.
+    Disabled,
     /// Another error occurred.
     Other,
 }

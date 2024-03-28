@@ -19,6 +19,7 @@ impl From<ashpd::Error> for LocationError {
     fn from(value: ashpd::Error) -> Self {
         match value {
             ashpd::Error::Response(ashpd::desktop::ResponseError::Cancelled) => Self::Cancelled,
+            ashpd::Error::Portal(ashpd::PortalError::NotAllowed(_)) => Self::Disabled,
             _ => Self::Other,
         }
     }
