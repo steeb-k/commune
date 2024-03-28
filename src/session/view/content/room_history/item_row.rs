@@ -9,6 +9,7 @@ use tracing::error;
 use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
 use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser, Spinner},
+    matrix_caption,
     prelude::*,
     session::{
         model::{Event, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
@@ -584,7 +585,7 @@ impl ItemRow {
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
                         .activate(clone!(@weak self as widget => move |_, _, _| {
                             widget.clipboard().set_text(&body);
-                            toast!(widget, gettext("Message copied to clipboard"));
+                            toast!(widget, gettext("Text copied to clipboard"));
                         }))
                         .build()]);
 
@@ -602,13 +603,23 @@ impl ItemRow {
                             .build()]);
                     }
                 }
-                MessageType::File(_) => {
+                MessageType::File(content) => {
                     // Save message's file.
                     action_group.add_action_entries([gio::ActionEntry::builder("file-save")
                         .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
                             widget.save_event_file(event);
                         }))
                         .build()]);
+
+                    if let Some((caption, _)) = matrix_caption!(content) {
+                        // Copy caption.
+                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
+                            .activate(clone!(@weak self as widget => move |_, _, _| {
+                                widget.clipboard().set_text(&caption);
+                                toast!(widget, gettext("Text copied to clipboard"));
+                            }))
+                            .build()]);
+                    }
                 }
                 MessageType::Emote(message) => {
                     // Copy text message.
@@ -619,7 +630,7 @@ impl ItemRow {
                             let display_name = event.sender().display_name();
                             let message = format!("{display_name} {}", message.body);
                             widget.clipboard().set_text(&message);
-                            toast!(widget, gettext("Message copied to clipboard"));
+                            toast!(widget, gettext("Text copied to clipboard"));
                         }))
                         .build()]);
 
@@ -644,11 +655,11 @@ impl ItemRow {
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
                         .activate(clone!(@weak self as widget => move |_, _, _| {
                             widget.clipboard().set_text(&body);
-                            toast!(widget, gettext("Message copied to clipboard"));
+                            toast!(widget, gettext("Text copied to clipboard"));
                         }))
                         .build()]);
                 }
-                MessageType::Image(_) => {
+                MessageType::Image(content) => {
                     action_group.add_action_entries([
                         // Copy the texture to the clipboard.
                         gio::ActionEntry::builder("copy-image")
@@ -669,22 +680,52 @@ impl ItemRow {
                             }))
                             .build(),
                     ]);
+
+                    if let Some((caption, _)) = matrix_caption!(content) {
+                        // Copy caption.
+                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
+                            .activate(clone!(@weak self as widget => move |_, _, _| {
+                                widget.clipboard().set_text(&caption);
+                                toast!(widget, gettext("Text copied to clipboard"));
+                            }))
+                            .build()]);
+                    }
                 }
-                MessageType::Video(_) => {
+                MessageType::Video(content) => {
                     // Save the video to a file.
                     action_group.add_action_entries([gio::ActionEntry::builder("save-video")
                         .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
                             widget.save_event_file(event);
                         }))
                         .build()]);
+
+                    if let Some((caption, _)) = matrix_caption!(content) {
+                        // Copy caption.
+                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
+                            .activate(clone!(@weak self as widget => move |_, _, _| {
+                                widget.clipboard().set_text(&caption);
+                                toast!(widget, gettext("Text copied to clipboard"));
+                            }))
+                            .build()]);
+                    }
                 }
-                MessageType::Audio(_) => {
+                MessageType::Audio(content) => {
                     // Save the audio to a file.
                     action_group.add_action_entries([gio::ActionEntry::builder("save-audio")
                         .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
                             widget.save_event_file(event);
                         }))
                         .build()]);
+
+                    if let Some((caption, _)) = matrix_caption!(content) {
+                        // Copy caption.
+                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
+                            .activate(clone!(@weak self as widget => move |_, _, _| {
+                                widget.clipboard().set_text(&caption);
+                                toast!(widget, gettext("Text copied to clipboard"));
+                            }))
+                            .build()]);
+                    }
                 }
                 _ => {}
             }
