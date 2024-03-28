@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use crate::{components::Spinner, utils::bool_to_accessible_tristate};
 
 mod imp {
-    use std::marker::PhantomData;
+    use std::{cell::Cell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
 
@@ -24,6 +24,9 @@ mod imp {
         /// Whether the row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
         pub is_loading: PhantomData<bool>,
+        /// Whether the row is read-only.
+        #[property(get, set = Self::set_read_only, explicit_notify)]
+        pub read_only: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -34,6 +37,8 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_accessible_role(gtk::AccessibleRole::Switch);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -94,6 +99,19 @@ mod imp {
 
             self.spinner.set_visible(loading);
             self.obj().notify_is_loading();
+        }
+
+        /// Set whether the row is read-only.
+        fn set_read_only(&self, read_only: bool) {
+            if self.read_only.get() == read_only {
+                return;
+            }
+            let obj = self.obj();
+
+            self.read_only.set(read_only);
+
+            obj.update_property(&[gtk::accessible::Property::ReadOnly(read_only)]);
+            obj.notify_read_only();
         }
     }
 }

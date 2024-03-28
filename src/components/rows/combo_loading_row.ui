@@ -2,7 +2,7 @@
 <interface>
   <template class="ComboLoadingRow" parent="AdwActionRow">
     <property name="selectable">False</property>
-    <property name="activatable">True</property>
+    <property name="activatable" bind-source="ComboLoadingRow" bind-property="read-only" bind-flags="sync-create | invert-boolean" />
     <style>
       <class name="combo"/>
       <class name="property"/>
@@ -14,6 +14,7 @@
           <object class="LoadingBin" id="loading_bin">
             <property name="child">
               <object class="GtkImage">
+                <property name="visible" bind-source="ComboLoadingRow" bind-property="read-only" bind-flags="sync-create | invert-boolean" />
                 <property name="icon_name">pan-down-symbolic</property>
                 <property name="accessible-role">presentation</property>
                 <style>

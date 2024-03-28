@@ -65,6 +65,8 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
+            klass.set_accessible_role(gtk::AccessibleRole::ComboBox);
+
             klass.install_action("power-level-selection-row.popup", None, |obj, _, _| {
                 if !obj.read_only() && !obj.is_loading() {
                     obj.imp().popover.popup();
@@ -197,13 +199,7 @@ mod imp {
 
             self.read_only.set(read_only);
 
-            let role = if read_only {
-                gtk::AccessibleRole::ListItem
-            } else {
-                gtk::AccessibleRole::ComboBox
-            };
-            obj.set_accessible_role(role);
-
+            obj.update_property(&[gtk::accessible::Property::ReadOnly(read_only)]);
             obj.notify_read_only();
         }
     }

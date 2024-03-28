@@ -997,7 +997,7 @@ impl GeneralPage {
         let can_change =
             permissions.is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomJoinRules));
 
-        row.set_sensitive(is_supported_join_rule && can_change);
+        row.set_read_only(!is_supported_join_rule || !can_change);
         row.set_selected_string(Some(join_rule.display_name()));
     }
 
@@ -1025,7 +1025,7 @@ impl GeneralPage {
         }
 
         row.set_is_loading(true);
-        row.set_sensitive(false);
+        row.set_read_only(true);
 
         if join_rule.set_value(value).await.is_err() {
             toast!(self, gettext("Could not change who can join"));
@@ -1046,7 +1046,7 @@ impl GeneralPage {
         let can_change = room
             .permissions()
             .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomGuestAccess));
-        row.set_sensitive(can_change);
+        row.set_read_only(!can_change);
     }
 
     /// Toggle the guest access.
@@ -1062,7 +1062,7 @@ impl GeneralPage {
         }
 
         row.set_is_loading(true);
-        row.set_sensitive(false);
+        row.set_read_only(true);
 
         let guest_access = if guests_allowed {
             GuestAccess::CanJoin
@@ -1116,7 +1116,7 @@ impl GeneralPage {
             .is_allowed_to(PowerLevelAction::SendState(
                 StateEventType::RoomCanonicalAlias,
             ));
-        row.set_sensitive(can_change);
+        row.set_read_only(!can_change);
 
         let matrix_room = room.matrix_room();
         let client = matrix_room.client();
@@ -1152,7 +1152,7 @@ impl GeneralPage {
         }
 
         row.set_is_loading(true);
-        row.set_sensitive(false);
+        row.set_read_only(true);
 
         let visibility = if publish {
             Visibility::Public
@@ -1211,7 +1211,7 @@ impl GeneralPage {
                 StateEventType::RoomHistoryVisibility,
             ));
 
-        row.set_sensitive(is_supported && can_change);
+        row.set_read_only(!is_supported || !can_change);
     }
 
     /// Set the history_visibility of the room.
@@ -1238,7 +1238,7 @@ impl GeneralPage {
         }
 
         row.set_is_loading(true);
-        row.set_sensitive(false);
+        row.set_read_only(true);
 
         let content = RoomHistoryVisibilityEventContent::new(visibility.into());
 
@@ -1270,7 +1270,7 @@ impl GeneralPage {
             && room
                 .permissions()
                 .is_allowed_to(PowerLevelAction::SendState(StateEventType::RoomEncryption));
-        row.set_sensitive(can_change);
+        row.set_read_only(!can_change);
     }
 
     /// Enable encryption in the room.
@@ -1287,7 +1287,7 @@ impl GeneralPage {
         }
 
         row.set_is_loading(true);
-        row.set_sensitive(false);
+        row.set_read_only(true);
 
         // Ask for confirmation.
         let dialog = adw::AlertDialog::builder()
