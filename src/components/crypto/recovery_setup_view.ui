@@ -245,7 +245,7 @@
                             </child>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label" translatable="yes">Account recovery allows you to recover your crypto identity and to be able to read your encrypted messages even if you lose access to all your sessions.</property>
+                                <property name="label" translatable="yes">Account recovery allows you to recover your crypto identity and to read your encrypted messages even if you lose access to all your sessions.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
