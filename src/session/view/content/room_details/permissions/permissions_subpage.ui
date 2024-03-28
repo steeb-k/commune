@@ -276,7 +276,7 @@
                         </child>
                         <child>
                           <object class="ButtonCountRow" id="members_privileged_button">
-                            <property name="title" translatable="yes">Members With Custom Power Levels</property>
+                            <property name="title" translatable="yes">Members With Assigned Power Levels</property>
                             <property name="action-name">navigation.push</property>
                             <property name="action-target">'members'</property>
                           </object>

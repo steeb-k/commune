@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="RoomDetailsPermissionsMembersSubpage" parent="AdwNavigationPage">
-    <property name="title" translatable="yes">Members With Custom Power Levels</property>
+    <property name="title" translatable="yes">Members With Assigned Power Levels</property>
     <child>
       <object class="AdwToolbarView">
         <child type="top">
