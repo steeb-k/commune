@@ -59,6 +59,8 @@ impl DmUser {
         display_name: Option<&str>,
         avatar_url: Option<OwnedMxcUri>,
     ) -> Self {
+        let display_name = display_name.unwrap_or_else(|| user_id.localpart());
+
         let obj: Self = glib::Object::builder()
             .property("session", session)
             .property("display-name", display_name)
