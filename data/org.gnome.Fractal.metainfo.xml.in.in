@@ -71,6 +71,52 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="7~beta" type="development" date="2024-03-28">
+      <description>
+        <p>
+          Spring is here in Fractal land. Birds chirping, flowers blooming, and a new beta for you
+          to try!
+        </p>
+        <p>
+          Staff’s picks:
+        </p>
+        <ul>
+          <li>
+            Encryption support has been extended, with server-side key backup and account recovery.
+          </li>
+          <li>
+            Messages that failed to send can now be retried or discarded.
+          </li>
+          <li>
+            Messages can be reported to server admins for moderation.
+          </li>
+          <li>
+            Room details are now considered complete, with the addition of room address management,
+            permissions, and version upgrade.
+          </li>
+          <li>
+            A new member menu appears when clicking on an avatar in the room history. It offers a
+            quick way to do many actions related to that person, including opening a direct chat
+            with them and moderating them.
+          </li>
+          <li>
+            Pills are clickable and allow to directly go to a room or member profile.
+          </li>
+          <li>
+            Many more improvements on the accessibility front, for better navigability with a screen
+            reader.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, there might be a slight risk of regressions, but it should be
+          mostly stable. If all goes well the next step is the release candidate!
+        </p>
+      </description>
+    </release>
     <release version="6" type="stable" date="2024-01-18">
       <description>
         <p>

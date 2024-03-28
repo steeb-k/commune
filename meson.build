@@ -1,6 +1,6 @@
 project('fractal',
         'rust',
-        version: '6',
+        version: '7.beta',
         license: 'GPL-3.0-or-later',
         meson_version: '>= 0.59')
 
@@ -10,8 +10,8 @@ gnome = import('gnome')
 base_id = 'org.gnome.Fractal'
 application_id = base_id
 
-major_version = '6'
-pre_release_version = ''
+major_version = '7'
+pre_release_version = 'beta'
 
 version = major_version
 if pre_release_version != ''
@@ -23,7 +23,7 @@ dependency('glib-2.0', version: '>= 2.76') # update when changing gtk version
 dependency('gio-2.0', version: '>= 2.76') # always same version as glib
 dependency('gtk4', version: '>= 4.12.0')
 dependency(
-  'libadwaita-1', version: '>= 1.5.beta',
+  'libadwaita-1', version: '>= 1.5',
   fallback: ['libadwaita', 'libadwaita_dep'],
   default_options: ['tests=false', 'examples=false', 'vapi=false']
 )
