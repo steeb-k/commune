@@ -31,7 +31,7 @@ release-tarball:
 
 test-tarball:
   stage: test
-  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-45'
+  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-46'
   tags:
     - flatpak
   script:
