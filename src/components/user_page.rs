@@ -385,7 +385,7 @@ impl UserPage {
 
         let can_change_power_level = !member.is_own_user()
             && permissions.can_do_to_user(user_id, PowerLevelUserAction::ChangePowerLevel);
-        imp.power_level_row.set_sensitive(can_change_power_level);
+        imp.power_level_row.set_read_only(!can_change_power_level);
 
         let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
         if can_invite {
@@ -463,7 +463,7 @@ impl UserPage {
         }
 
         row.set_is_loading(true);
-        row.set_sensitive(false);
+        row.set_read_only(true);
 
         let permissions = member.room().permissions();
 
