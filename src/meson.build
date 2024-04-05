@@ -39,7 +39,12 @@ else
   message('Building in release mode')
 endif
 
-cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
+if get_option('sandboxed')
+  # This is the path used by flatpak-cargo-generator in flatpak-builder-tools
+  cargo_env = [ 'CARGO_HOME=' + meson.project_source_root() / 'cargo' ]
+else
+  cargo_env = [ 'CARGO_HOME=' + meson.project_build_root() / 'cargo-home' ]
+endif
 
 custom_target(
   'cargo-build',
