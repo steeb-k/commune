@@ -2,7 +2,7 @@ project('fractal',
         'rust',
         version: '7.beta',
         license: 'GPL-3.0-or-later',
-        meson_version: '>= 0.59')
+        meson_version: '>= 1.1')
 
 i18n = import('i18n')
 gnome = import('gnome')
