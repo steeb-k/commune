@@ -5,7 +5,7 @@ checks:
   stage: check
   image: "rustlang/rust:nightly-slim"
   script:
-    - scripts/checks.sh --verbose --force-install
+    - hooks/checks.sh --verbose --force-install
 
 # Lint the code
 cargo-clippy:
