@@ -322,14 +322,21 @@ impl GeneralPage {
     /// Update the view when the text of the display name changed.
     #[template_callback]
     fn display_name_changed(&self) {
+        self.imp()
+            .display_name_button
+            .set_visible(self.has_display_name_changed());
+    }
+
+    /// Whether the display name in the entry row is different than the user's.
+    fn has_display_name_changed(&self) -> bool {
         let Some(session) = self.session() else {
-            return;
+            return false;
         };
         let imp = self.imp();
         let text = imp.display_name.text();
         let display_name = session.user().display_name();
 
-        imp.display_name_button.set_visible(text != display_name);
+        text != display_name
     }
 
     /// Update the view when the user's display name changed.
@@ -363,6 +370,10 @@ impl GeneralPage {
     /// Change the display name of the user.
     #[template_callback]
     async fn change_display_name(&self) {
+        if !self.has_display_name_changed() {
+            // Nothing to do.
+            return;
+        }
         let Some(session) = self.session() else {
             return;
         };
