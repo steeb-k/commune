@@ -79,16 +79,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for GeneralPage {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            obj.init_avatar();
-            obj.init_display_name();
-            obj.init_change_password();
-        }
-    }
+    impl ObjectImpl for GeneralPage {}
 
     impl WidgetImpl for GeneralPage {}
     impl PreferencesPageImpl for GeneralPage {}
@@ -127,17 +118,44 @@ mod imp {
             let user = session.user();
             let avatar_uri_handler = user.avatar_data().image().unwrap().connect_uri_notify(
                 clone!(@weak obj => move |avatar_image| {
-                    obj.avatar_changed(avatar_image.uri());
+                    obj.user_avatar_changed(avatar_image.uri());
                 }),
             );
             self.avatar_uri_handler.replace(Some(avatar_uri_handler));
 
             let display_name_handler =
                 user.connect_display_name_notify(clone!(@weak obj => move |user| {
-                    obj.display_name_changed(user.display_name());
+                    obj.user_display_name_changed(user.display_name());
                 }));
             self.display_name_handler
                 .replace(Some(display_name_handler));
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(@weak self as imp => async move {
+                    imp.load_can_change_password().await;
+                })
+            );
+        }
+
+        /// Load whether the user can change their password.
+        async fn load_can_change_password(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
+            };
+            let client = session.client();
+
+            // Check whether the user can change their password.
+            let handle = spawn_tokio!(async move { client.get_capabilities().await });
+            let can_change_password = match handle.await.unwrap() {
+                Ok(capabilities) => capabilities.change_password.enabled,
+                Err(error) => {
+                    error!("Could not get server capabilities: {error}");
+                    false
+                }
+            };
+
+            self.change_password_group.set_visible(can_change_password);
         }
     }
 }
@@ -154,21 +172,8 @@ impl GeneralPage {
         glib::Object::builder().property("session", session).build()
     }
 
-    fn init_avatar(&self) {
-        let avatar = &self.imp().avatar;
-        avatar.connect_edit_avatar(clone!(@weak self as obj => move |_, file| {
-            spawn!(async move {
-                obj.change_avatar(file).await;
-            });
-        }));
-        avatar.connect_remove_avatar(clone!(@weak self as obj => move |_| {
-            spawn!(async move {
-                obj.remove_avatar().await;
-            });
-        }));
-    }
-
-    fn avatar_changed(&self, uri: Option<String>) {
+    /// Update the view when the user's avatar changed.
+    fn user_avatar_changed(&self, uri: Option<String>) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_avatar.borrow().as_ref() {
@@ -192,6 +197,8 @@ impl GeneralPage {
         }
     }
 
+    /// Change the avatar of the user with the one in the given file.
+    #[template_callback]
     async fn change_avatar(&self, file: gio::File) {
         let Some(session) = self.session() else {
             return;
@@ -237,15 +244,15 @@ impl GeneralPage {
             Ok(_) => {
                 // If the user is in no rooms, we won't receive the update via sync, so change
                 // the avatar manually if this request succeeds before the avatar is updated.
-                // Because this action can finish in avatar_changed, we must only act if this is
-                // still the current action.
+                // Because this action can finish in user_avatar_changed, we must only act if
+                // this is still the current action.
                 if weak_action.is_ongoing() {
                     session.user().set_avatar_url(Some(uri))
                 }
             }
             Err(error) => {
-                // Because this action can finish in avatar_changed, we must only act if this is
-                // still the current action.
+                // Because this action can finish in user_avatar_changed, we must only act if
+                // this is still the current action.
                 if weak_action.is_ongoing() {
                     imp.changing_avatar.take();
                     error!("Could not change user avatar: {error}");
@@ -256,6 +263,8 @@ impl GeneralPage {
         }
     }
 
+    /// Remove the current avatar of the user.
+    #[template_callback]
     async fn remove_avatar(&self) {
         let Some(session) = self.session() else {
             return;
@@ -310,19 +319,21 @@ impl GeneralPage {
         }
     }
 
-    fn init_display_name(&self) {
+    /// Update the view when the text of the display name changed.
+    #[template_callback]
+    fn display_name_changed(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
         let imp = self.imp();
-        let entry = &imp.display_name;
-        entry.connect_changed(clone!(@weak self as obj => move |entry| {
-            let Some(session) = obj.session() else {
-                return;
-            };
+        let text = imp.display_name.text();
+        let display_name = session.user().display_name();
 
-            obj.imp().display_name_button.set_visible(entry.text() != session.user().display_name());
-        }));
+        imp.display_name_button.set_visible(text != display_name);
     }
 
-    fn display_name_changed(&self, name: String) {
+    /// Update the view when the user's display name changed.
+    fn user_display_name_changed(&self, name: String) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_display_name.borrow().as_ref() {
@@ -349,6 +360,7 @@ impl GeneralPage {
         toast!(self, gettext("Name changed successfully"));
     }
 
+    /// Change the display name of the user.
     #[template_callback]
     async fn change_display_name(&self) {
         let Some(session) = self.session() else {
@@ -380,15 +392,15 @@ impl GeneralPage {
             Ok(_) => {
                 // If the user is in no rooms, we won't receive the update via sync, so change
                 // the avatar manually if this request succeeds before the avatar is updated.
-                // Because this action can finish in display_name_changed, we must only act if
-                // this is still the current action.
+                // Because this action can finish in user_display_name_changed, we must only act
+                // if this is still the current action.
                 if weak_action.is_ongoing() {
                     session.user().set_name(Some(display_name));
                 }
             }
             Err(error) => {
-                // Because this action can finish in display_name_changed, we must only act if
-                // this is still the current action.
+                // Because this action can finish in user_display_name_changed, we must only act
+                // if this is still the current action.
                 if weak_action.is_ongoing() {
                     imp.changing_display_name.take();
                     error!("Could not change user display name: {error}");
@@ -399,28 +411,5 @@ impl GeneralPage {
                 }
             }
         }
-    }
-
-    fn init_change_password(&self) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let client = session.client();
-
-        spawn!(
-            glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                // Check whether the user can change their password.
-                let handle = spawn_tokio!(async move {
-                    client.get_capabilities().await
-                });
-                match handle.await.unwrap() {
-                    Ok(capabilities) => {
-                        obj.imp().change_password_group.set_visible(capabilities.change_password.enabled);
-                    }
-                    Err(error) => error!("Could not get server capabilities: {error}"),
-                }
-            })
-        );
     }
 }

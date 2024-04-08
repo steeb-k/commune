@@ -19,6 +19,8 @@
               </lookup>
             </binding>
             <property name="editable">true</property>
+            <signal name="edit-avatar" handler="change_avatar" swapped="yes" />
+            <signal name="remove-avatar" handler="remove_avatar" swapped="yes" />
           </object>
         </child>
       </object>
@@ -36,6 +38,7 @@
                 </lookup>
               </lookup>
             </binding>
+            <signal name="changed" handler="display_name_changed" swapped="yes" />
             <signal name="entry-activated" handler="change_display_name" swapped="yes"/>
             <child type="suffix">
               <object class="ComponentsActionButton" id="display_name_button">
