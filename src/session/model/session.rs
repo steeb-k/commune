@@ -21,6 +21,7 @@ use ruma::{
     api::client::{
         error::ErrorKind,
         filter::{FilterDefinition, LazyLoadOptions, RoomEventFilter, RoomFilter},
+        search::search_events::v3::UserProfile,
         session::logout,
     },
     assign,
@@ -47,6 +48,8 @@ use crate::{
     },
     Application,
 };
+
+const SESSION_PROFILE_KEY: &str = "session_profile";
 
 /// The state of the session.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, glib::Enum)]
@@ -337,6 +340,9 @@ impl Session {
         spawn!(
             glib::Priority::LOW,
             clone!(@weak self as obj => async move {
+                // First, load the profile from the cache, it will be quicker.
+                obj.init_user_profile().await;
+                // Then, check if the profile changed.
                 obj.update_user_profile().await;
             })
         );
@@ -624,22 +630,96 @@ impl Session {
         self.sidebar_list_model().item_list().verification_list()
     }
 
+    /// Load the cached profile of this session’s user.
+    async fn init_user_profile(&self) {
+        let client = self.client();
+        let handle = spawn_tokio!(async move {
+            client
+                .store()
+                .get_custom_value(SESSION_PROFILE_KEY.as_bytes())
+                .await
+        });
+
+        let profile = match handle.await.unwrap() {
+            Ok(Some(bytes)) => match serde_json::from_slice::<UserProfile>(&bytes) {
+                Ok(profile) => profile,
+                Err(error) => {
+                    error!("Failed to deserialize session profile: {error}");
+                    return;
+                }
+            },
+            Ok(None) => return,
+            Err(error) => {
+                error!("Could not load cached session profile: {error}");
+                return;
+            }
+        };
+
+        let user = self.user();
+
+        user.set_name(profile.displayname);
+        user.set_avatar_url(profile.avatar_url);
+    }
+
     /// Update the profile of this session’s user.
     ///
     /// Fetches the updated profile and updates the local data.
     async fn update_user_profile(&self) {
         let client = self.client();
-        let handle = spawn_tokio!(async move { client.account().fetch_user_profile().await });
+        let client_clone = client.clone();
+        let handle = spawn_tokio!(async move { client_clone.account().fetch_user_profile().await });
 
-        match handle.await.unwrap() {
+        let profile = match handle.await.unwrap() {
             Ok(res) => {
-                let user = self.user();
+                let mut profile = UserProfile::new();
+                profile.displayname = res.displayname;
+                profile.avatar_url = res.avatar_url;
 
-                user.set_name(res.displayname);
-                user.set_avatar_url(res.avatar_url);
+                profile
             }
-            Err(error) => error!("Could not fetch account metadata: {error}"),
+            Err(error) => {
+                error!("Could not fetch session profile: {error}");
+                return;
+            }
+        };
+
+        let user = self.user();
+
+        if Some(user.display_name()) == profile.displayname
+            && user.avatar_data().image().is_some_and(|i| {
+                i.uri().as_deref() == profile.avatar_url.as_ref().map(|url| url.as_str())
+            })
+        {
+            // Nothing to update.
+            return;
         }
+
+        // Serialize first for caching to avoid a clone.
+        let value = serde_json::to_vec(&profile);
+
+        // Update the profile for the UI.
+        user.set_name(profile.displayname);
+        user.set_avatar_url(profile.avatar_url);
+
+        // Update the cache.
+        let value = match value {
+            Ok(value) => value,
+            Err(error) => {
+                error!("Failed to serialize session profile: {error}");
+                return;
+            }
+        };
+
+        let handle = spawn_tokio!(async move {
+            client
+                .store()
+                .set_custom_value(SESSION_PROFILE_KEY.as_bytes(), value)
+                .await
+        });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not cache session profile: {error}");
+        };
     }
 
     /// The Matrix client.
