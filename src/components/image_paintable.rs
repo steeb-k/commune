@@ -208,8 +208,8 @@ impl ImagePaintable {
             image::ImageFormat::Png => {
                 let decoder = PngDecoder::new(read)?;
 
-                if decoder.is_apng() {
-                    let decoder = decoder.apng();
+                if decoder.is_apng().unwrap_or_default() {
+                    let decoder = decoder.apng()?;
                     let frames = decoder
                         .into_frames()
                         .collect_frames()?
