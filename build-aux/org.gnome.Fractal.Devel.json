@@ -17,7 +17,8 @@
         "--device=dri",
         "--env=RUST_LOG=fractal=debug,warn",
         "--env=G_MESSAGES_DEBUG=none",
-        "--env=RUST_BACKTRACE=1"
+        "--env=RUST_BACKTRACE=1",
+        "--env=NO_POINTER_VIEWPORT=1"
     ],
     "build-options": {
         "append-ld-library-path": "/usr/lib/sdk/llvm16/lib",
