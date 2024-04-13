@@ -31,6 +31,8 @@ mod imp {
     #[properties(wrapper_type = super::ReadReceiptsList)]
     pub struct ReadReceiptsList {
         #[template_child]
+        pub content: TemplateChild<gtk::Box>,
+        #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
         pub avatar_list: TemplateChild<OverlappingAvatars>,
@@ -54,6 +56,7 @@ mod imp {
     impl Default for ReadReceiptsList {
         fn default() -> Self {
             Self {
+                content: Default::default(),
                 label: Default::default(),
                 avatar_list: Default::default(),
                 active: Default::default(),
@@ -69,9 +72,11 @@ mod imp {
     impl ObjectSubclass for ReadReceiptsList {
         const NAME: &'static str = "ContentReadReceiptsList";
         type Type = super::ReadReceiptsList;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
+            klass.set_layout_manager_type::<gtk::BinLayout>();
+
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
@@ -112,10 +117,13 @@ mod imp {
 
             obj.set_pressed_state(false);
         }
+
+        fn dispose(&self) {
+            self.content.unparent();
+        }
     }
 
     impl WidgetImpl for ReadReceiptsList {}
-    impl BinImpl for ReadReceiptsList {}
 
     impl AccessibleImpl for ReadReceiptsList {
         fn first_accessible_child(&self) -> Option<gtk::Accessible> {
@@ -145,7 +153,7 @@ mod imp {
 glib::wrapper! {
     /// A widget displaying the read receipts on a message.
     pub struct ReadReceiptsList(ObjectSubclass<imp::ReadReceiptsList>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]

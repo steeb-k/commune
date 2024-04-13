@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentReadReceiptsList" parent="AdwBin">
+  <template class="ContentReadReceiptsList" parent="GtkWidget">
     <property name="focusable">True</property>
     <property name="halign">end</property>
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="content">
         <property name="spacing">6</property>
         <child>
           <object class="GtkLabel" id="label">
