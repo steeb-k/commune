@@ -404,6 +404,91 @@
             </property>
           </object>
         </child>
+        <child>
+          <object class="AdwNavigationPage">
+            <property name="tag">incomplete</property>
+            <property name="title" translatable="yes">Account Recovery Incomplete</property>
+            <property name="can-pop">False</property>
+            <signal name="shown" handler="grab_focus" swapped="yes" />
+            <property name="child">
+              <object class="AdwToolbarView">
+                <child type="top">
+                  <object class="AdwHeaderBar">
+                    <property name="show-title">False</property>
+                  </object>
+                </child>
+                <property name="content">
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="propagate-natural-height">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="child">
+                      <object class="AdwClamp">
+                        <property name="maximum-size">400</property>
+                        <property name="tightening-threshold">300</property>
+                        <property name="child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <property name="spacing">18</property>
+                            <property name="valign">center</property>
+                            <property name="halign">center</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Account Recovery Incomplete</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="justify">center</property>
+                                <style>
+                                  <class name="title-1"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">The recovery was successful but the recovery data was incomplete.</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="justify">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">To fix this, you should reset the recovery from a session that has all the data, and attempt to recover this session again.</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="justify">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Note that account recovery can have a different name in other Matrix clients, like “key backup” or “secure backup”.</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="justify">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="incomplete_confirm_btn">
+                                <property name="can-shrink">True</property>
+                                <property name="label" translatable="yes">OK</property>
+                                <property name="halign">center</property>
+                                <signal name="clicked" handler="emit_completed" swapped="yes" />
+                                <style>
+                                  <class name="suggested-action"/>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
       </object>
     </property>
   </template>

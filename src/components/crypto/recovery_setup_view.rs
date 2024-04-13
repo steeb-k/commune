@@ -1,7 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::closure_local, CompositeTemplate};
-use matrix_sdk::encryption::{recovery::RecoveryError, secret_storage::SecretStorageError};
+use matrix_sdk::encryption::{
+    recovery::{RecoveryError, RecoveryState as SdkRecoveryState},
+    secret_storage::SecretStorageError,
+};
 use tracing::{debug, error};
 
 use crate::{
@@ -20,8 +23,10 @@ enum CryptoRecoverySetupPage {
     Reset,
     /// Enable recovery.
     Enable,
-    /// The recovery was successful enabled.
+    /// The recovery was successfully enabled.
     Success,
+    /// The recovery was successful but is still incomplete.
+    Incomplete,
 }
 
 /// The initial page of the [`CryptoRecoverySetupView`].
@@ -80,6 +85,8 @@ mod imp {
         pub success_key_copy_btn: TemplateChild<gtk::Button>,
         #[template_child]
         pub success_confirm_btn: TemplateChild<gtk::Button>,
+        #[template_child]
+        pub incomplete_confirm_btn: TemplateChild<gtk::Button>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
@@ -126,6 +133,7 @@ mod imp {
                 CryptoRecoverySetupPage::Reset => self.reset_entry.grab_focus(),
                 CryptoRecoverySetupPage::Enable => self.enable_entry.grab_focus(),
                 CryptoRecoverySetupPage::Success => self.success_confirm_btn.grab_focus(),
+                CryptoRecoverySetupPage::Incomplete => self.incomplete_confirm_btn.grab_focus(),
             }
         }
     }
@@ -253,11 +261,22 @@ impl CryptoRecoverySetupView {
 
         imp.recover_btn.set_loading(true);
 
-        let recovery = session.client().encryption().recovery();
+        let encryption = session.client().encryption();
+        let recovery = encryption.recovery();
         let handle = spawn_tokio!(async move { recovery.recover(&key).await });
 
         match handle.await.unwrap() {
-            Ok(_) => self.emit_completed(),
+            Ok(_) => {
+                // Even if recovery was successful, the recovery data may not have been
+                // complete. Because the SDK uses multiple threads, we are only
+                // sure of the SDK's recovery state at this point, not the Session's.
+                if encryption.recovery().state() == SdkRecoveryState::Incomplete {
+                    imp.navigation
+                        .push_by_tag(CryptoRecoverySetupPage::Incomplete.as_ref());
+                } else {
+                    self.emit_completed();
+                }
+            }
             Err(error) => {
                 error!("Could not recover account: {error}");
 
