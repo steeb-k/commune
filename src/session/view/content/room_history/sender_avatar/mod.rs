@@ -37,6 +37,8 @@ mod imp {
     #[properties(wrapper_type = super::SenderAvatar)]
     pub struct SenderAvatar {
         #[template_child]
+        pub avatar: TemplateChild<Avatar>,
+        #[template_child]
         pub user_id_btn: TemplateChild<gtk::Button>,
         /// Whether this avatar is active.
         ///
@@ -55,14 +57,13 @@ mod imp {
     impl ObjectSubclass for SenderAvatar {
         const NAME: &'static str = "ContentSenderAvatar";
         type Type = super::SenderAvatar;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
-            Avatar::ensure_type();
-
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
+            klass.set_layout_manager_type::<gtk::BinLayout>();
             klass.set_css_name("sender-avatar");
             klass.set_accessible_role(gtk::AccessibleRole::ToggleButton);
 
@@ -192,11 +193,12 @@ mod imp {
                 popover.unparent();
                 popover.remove_child(&*self.user_id_btn);
             }
+
+            self.avatar.unparent();
         }
     }
 
     impl WidgetImpl for SenderAvatar {}
-    impl BinImpl for SenderAvatar {}
 
     impl AccessibleImpl for SenderAvatar {
         fn first_accessible_child(&self) -> Option<gtk::Accessible> {
@@ -413,7 +415,7 @@ mod imp {
 glib::wrapper! {
     /// An avatar with a popover menu for room members.
     pub struct SenderAvatar(ObjectSubclass<imp::SenderAvatar>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]

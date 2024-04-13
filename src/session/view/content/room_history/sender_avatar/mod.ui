@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentSenderAvatar" parent="AdwBin">
+  <template class="ContentSenderAvatar" parent="GtkWidget">
     <accessibility>
       <property name="description" translatable="yes">Open Sender Context Menu</property>
     </accessibility>
+    <property name="focusable">true</property>
     <property name="valign">start</property>
     <child>
       <object class="ComponentsAvatar" id="avatar">
