@@ -31,6 +31,8 @@ mod imp {
     #[properties(wrapper_type = super::Pill)]
     pub struct Pill {
         #[template_child]
+        pub content: TemplateChild<gtk::Box>,
+        #[template_child]
         pub display_name: TemplateChild<gtk::Label>,
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
@@ -47,10 +49,13 @@ mod imp {
     impl ObjectSubclass for Pill {
         const NAME: &'static str = "Pill";
         type Type = super::Pill;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_layout_manager_type::<gtk::BinLayout>();
+            klass.set_css_name("inline-pill");
 
             klass.install_action("pill.activate", None, |obj, _, _| {
                 obj.activate();
@@ -65,10 +70,19 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Pill {}
+    impl ObjectImpl for Pill {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.update_activatable_state();
+        }
+
+        fn dispose(&self) {
+            self.content.unparent();
+        }
+    }
 
     impl WidgetImpl for Pill {}
-    impl BinImpl for Pill {}
 
     impl Pill {
         /// Set the source of the data displayed by this widget.
@@ -117,9 +131,29 @@ mod imp {
                 self.gesture_click.replace(Some(gesture_click));
             }
 
+            self.update_activatable_state();
+            obj.notify_activatable();
+        }
+
+        fn update_activatable_state(&self) {
+            let obj = self.obj();
+            let activatable = self.activatable.get();
+
             obj.action_set_enabled("pill.activate", activatable);
             obj.set_focusable(activatable);
-            obj.notify_activatable();
+
+            let role = if activatable {
+                gtk::AccessibleRole::Link
+            } else {
+                gtk::AccessibleRole::Group
+            };
+            obj.set_accessible_role(role);
+
+            if activatable {
+                obj.add_css_class("activatable");
+            } else {
+                obj.remove_css_class("activatable");
+            }
         }
 
         /// Set the display name of this pill.

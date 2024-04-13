@@ -177,10 +177,37 @@ button.overlaid {
 
 /* Components */
 
-.inline-pill {
+inline-pill {
   border-radius: 9999px;
   background-color: alpha(@view_fg_color, 0.1);
   padding-right: 6px;
+  transition-property: outline, outline-width, outline-offset, outline-color;
+  transition-duration: 300ms;
+  animation-timing-function: ease-in-out;
+  outline: 0 solid transparent;
+  outline-offset: 2px;
+}
+
+inline-pill:focus {
+  outline-color: alpha(@accent_color, 0.5);
+  outline-width: 2px;
+  outline-offset: -2px;
+}
+
+inline-pill.activatable:hover {
+  background-color: alpha(currentColor, .17);
+}
+
+inline-pill.activatable:hover image {
+  filter: brightness(1.07) ;
+}
+
+inline-pill.activatable:active {
+  background-color: alpha(currentColor, .26);
+}
+
+inline-pill.activatable:active image {
+  filter: brightness(1.16) ;
 }
 
 .app-notification {
@@ -188,7 +215,7 @@ button.overlaid {
   padding-left: 24px;
 }
 
-.app-notification .inline-pill {
+.app-notification inline-pill {
   background-color: alpha(@window_bg_color, 0.2);
 }
 
@@ -239,7 +266,7 @@ location-viewer .map-marker {
   color: @accent_color;
 }
 
-entry .inline-pill {
+entry inline-pill {
 	margin-bottom: -0.5em;
 }
 
@@ -785,7 +812,7 @@ sender-avatar:active {
   background-color: alpha(currentColor, .16);
 }
 
-sender-avatar:hover image {
+sender-avatar:active image {
   filter: brightness(1.16) ;
 }
 
@@ -793,7 +820,7 @@ sender-avatar:checked {
   background-color: alpha(currentColor, .1);
 }
 
-sender-avatar:hover image {
+sender-avatar:checked image {
   filter: brightness(1.1) ;
 }
 

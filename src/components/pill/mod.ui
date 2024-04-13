@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="Pill" parent="AdwBin">
-    <property name="focusable">True</property>
+  <template class="Pill" parent="GtkWidget">
     <property name="valign">center</property>
-    <style>
-      <class name="inline-pill"/>
-    </style>
     <child>
-      <object class="GtkBox">
+      <object class="GtkBox" id="content">
         <property name="spacing">6</property>
         <child>
           <object class="ComponentsAvatar" id="avatar">
