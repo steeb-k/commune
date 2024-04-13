@@ -641,28 +641,16 @@ impl MessageToolbar {
             return;
         }
 
-        // Show the dialog as loading first.
+        // Listen whether the user cancels before the location API is initialized.
+        if let Err(error) = location.init().await {
+            self.location_error_toast(error);
+            return;
+        }
+
+        // Show the dialog as loading.
         let dialog = AttachmentDialog::new(&gettext("Your Location"));
         let response_fut = dialog.response_future(self);
         pin_mut!(response_fut);
-
-        // Listen whether the user cancels before the location API is initialized.
-        let location_init_fut = location.init();
-        pin_mut!(location_init_fut);
-        let response_fut = match future::select(location_init_fut, response_fut).await {
-            future::Either::Left((init_res, response_fut)) => match init_res {
-                Ok(_) => response_fut,
-                Err(error) => {
-                    dialog.close();
-                    self.location_error_toast(error);
-                    return;
-                }
-            },
-            future::Either::Right(_) => {
-                // The only possible response at this stage should be cancel.
-                return;
-            }
-        };
 
         // Listen whether the user cancels before the location stream is ready.
         let location_stream_fut = location.updates_stream();
