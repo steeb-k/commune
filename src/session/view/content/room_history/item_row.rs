@@ -90,7 +90,6 @@ mod imp {
     }
 
     impl WidgetImpl for ItemRow {}
-    impl BinImpl for ItemRow {}
 
     impl ContextMenuBinImpl for ItemRow {
         fn menu_opened(&self) {
@@ -351,14 +350,13 @@ mod imp {
 glib::wrapper! {
     /// A row presenting an item in the room history.
     pub struct ItemRow(ObjectSubclass<imp::ItemRow>)
-        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
 }
 
 impl ItemRow {
     pub fn new(room_history: &RoomHistory) -> Self {
         glib::Object::builder()
             .property("room-history", room_history)
-            .property("focusable", true)
             .build()
     }
 

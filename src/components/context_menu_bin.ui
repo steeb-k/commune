@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContextMenuBin" parent="AdwBin">
+  <template class="ContextMenuBin" parent="GtkWidget">
     <property name="focusable">True</property>
     <child>
       <object class="GtkGestureClick" id="click_gesture">

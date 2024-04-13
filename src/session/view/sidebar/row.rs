@@ -81,7 +81,6 @@ mod imp {
     }
 
     impl WidgetImpl for Row {}
-    impl BinImpl for Row {}
 
     impl ContextMenuBinImpl for Row {
         fn menu_opened(&self) {
@@ -363,15 +362,12 @@ mod imp {
 glib::wrapper! {
     /// A row of the sidebar.
     pub struct Row(ObjectSubclass<imp::Row>)
-        @extends gtk::Widget, adw::Bin, ContextMenuBin, @implements gtk::Accessible;
+        @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
 }
 
 impl Row {
     pub fn new(sidebar: &Sidebar) -> Self {
-        glib::Object::builder()
-            .property("sidebar", sidebar)
-            .property("focusable", true)
-            .build()
+        glib::Object::builder().property("sidebar", sidebar).build()
     }
 
     /// Get the `Room` of this item, if this is a room row.

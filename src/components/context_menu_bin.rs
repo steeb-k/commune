@@ -4,7 +4,7 @@ use gtk::{gdk, glib, glib::clone, prelude::*, CompositeTemplate};
 use crate::utils::BoundObject;
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -41,6 +41,9 @@ mod imp {
         /// The popover displaying the context menu.
         #[property(get, set = Self::set_popover, explicit_notify, nullable)]
         pub popover: BoundObject<gtk::PopoverMenu>,
+        /// The child widget.
+        #[property(get, set = Self::set_child, explicit_notify, nullable)]
+        pub child: RefCell<Option<gtk::Widget>>,
     }
 
     #[glib::object_subclass]
@@ -48,11 +51,13 @@ mod imp {
         const NAME: &'static str = "ContextMenuBin";
         const ABSTRACT: bool = true;
         type Type = super::ContextMenuBin;
-        type ParentType = adw::Bin;
+        type ParentType = gtk::Widget;
         type Class = ContextMenuBinClass;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_layout_manager_type::<gtk::BinLayout>();
 
             klass.install_action("context-menu.activate", None, |obj, _, _| {
                 obj.open_menu_at(0, 0)
@@ -113,11 +118,14 @@ mod imp {
             if let Some(popover) = self.popover.obj() {
                 popover.unparent();
             }
+
+            if let Some(child) = self.child.take() {
+                child.unparent();
+            }
         }
     }
 
     impl WidgetImpl for ContextMenuBin {}
-    impl BinImpl for ContextMenuBin {}
 
     impl ContextMenuBin {
         /// Set whether this widget has a context menu.
@@ -171,13 +179,35 @@ mod imp {
 
             obj.notify_popover();
         }
+
+        /// The child widget.
+        fn child(&self) -> Option<gtk::Widget> {
+            self.child.borrow().clone()
+        }
+
+        /// Set the child widget.
+        fn set_child(&self, child: Option<gtk::Widget>) {
+            if self.child() == child {
+                return;
+            }
+
+            if let Some(child) = &child {
+                child.set_parent(&*self.obj());
+            }
+
+            if let Some(old_child) = self.child.replace(child) {
+                old_child.unparent();
+            }
+
+            self.obj().notify_child();
+        }
     }
 }
 
 glib::wrapper! {
     /// A Bin widget that can have a context menu.
     pub struct ContextMenuBin(ObjectSubclass<imp::ContextMenuBin>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 impl ContextMenuBin {
@@ -210,6 +240,13 @@ pub trait ContextMenuBinExt: 'static {
     /// Set the `PopoverMenu` used in the context menu.
     fn set_popover(&self, popover: Option<gtk::PopoverMenu>);
 
+    /// Get the child widget.
+    #[allow(dead_code)]
+    fn child(&self) -> Option<gtk::Widget>;
+
+    /// Set the child widget.
+    fn set_child(&self, child: Option<&impl IsA<gtk::Widget>>);
+
     /// Called when the menu was requested to open but before the menu is shown.
     fn menu_opened(&self);
 }
@@ -231,6 +268,15 @@ impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
         self.upcast_ref().set_popover(popover);
     }
 
+    fn child(&self) -> Option<gtk::Widget> {
+        self.upcast_ref().child()
+    }
+
+    fn set_child(&self, child: Option<&impl IsA<gtk::Widget>>) {
+        self.upcast_ref()
+            .set_child(child.map(|w| w.clone().upcast()));
+    }
+
     fn menu_opened(&self) {
         imp::context_menu_bin_menu_opened(self.upcast_ref())
     }
@@ -241,7 +287,7 @@ impl<O: IsA<ContextMenuBin>> ContextMenuBinExt for O {
 ///
 /// Overriding a method from this Trait overrides also its behavior in
 /// `ContextMenuBinExt`.
-pub trait ContextMenuBinImpl: BinImpl {
+pub trait ContextMenuBinImpl: WidgetImpl {
     /// Called when the menu was requested to open but before the menu is shown.
     ///
     /// This method should be used to set the popover dynamically.
