@@ -28,6 +28,8 @@ mod imp {
         #[template_child]
         pub instructions: TemplateChild<gtk::Label>,
         #[template_child]
+        pub trust: TemplateChild<gtk::Label>,
+        #[template_child]
         pub cancel_btn: TemplateChild<SpinnerButton>,
     }
 
@@ -121,13 +123,14 @@ impl WaitForOtherPage {
             imp.instructions.set_label(&gettext(
                 "Accept the verification request from another session or device.",
             ));
+            imp.trust.set_visible(false);
         } else {
             let name = verification.user().display_name();
             imp.title.set_markup(&gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
                 // variable name.
                 "Waiting for {user}",
-                &[("user", &format!("<b>{name}</b>"))],
+                &[("user", &name)],
             ));
             imp.instructions.set_markup(&gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
@@ -135,6 +138,7 @@ impl WaitForOtherPage {
                 "Ask {user} to accept the verification request.",
                 &[("user", &format!("<b>{name}</b>"))],
             ));
+            imp.trust.set_visible(true);
         }
     }
 

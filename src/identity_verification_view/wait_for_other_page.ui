@@ -37,6 +37,14 @@
                   </object>
                 </child>
                 <child>
+                  <object class="GtkLabel" id="trust">
+                    <property name="label" translatable="yes">To be secure, the verification should happen in person or use a trusted way of communication.</property>
+                    <property name="wrap">True</property>
+                    <property name="wrap-mode">word-char</property>
+                    <property name="justify">center</property>
+                  </object>
+                </child>
+                <child>
                   <object class="GtkPicture">
                     <property name="file">resource:///org/gnome/Fractal/icons/scalable/status/other-device.svg</property>
                     <property name="accessible-role">presentation</property>
