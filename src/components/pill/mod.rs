@@ -175,7 +175,7 @@ mod imp {
 glib::wrapper! {
     /// Inline widget displaying an emphasized `PillSource`.
     pub struct Pill(ObjectSubclass<imp::Pill>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 impl Pill {
