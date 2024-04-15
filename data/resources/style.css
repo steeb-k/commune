@@ -481,7 +481,7 @@ sidebar-row category:not(:checked) image.arrow:dir(rtl) {
   transform: rotate(0.5turn);
 }
 
-sidebar-row room .notification_count {
+sidebar-row .notification-count {
   font-weight: bold;
   font-size: 0.8em;
   border-radius: 10px;
@@ -491,7 +491,7 @@ sidebar-row room .notification_count {
   background-color: alpha(currentColor, 0.15);
 }
 
-sidebar-row room .highlight {
+sidebar-row .highlight {
   color: @accent_fg_color;
   background-color: @accent_bg_color;
 }

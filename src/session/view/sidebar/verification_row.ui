@@ -27,7 +27,7 @@
             <property name="yalign">1.0</property>
             <property name="label">•</property>
             <style>
-              <class name="notification_count"/>
+              <class name="notification-count"/>
               <class name="highlight"/>
             </style>
           </object>
@@ -36,4 +36,3 @@
     </child>
   </template>
 </interface>
-

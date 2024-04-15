@@ -47,7 +47,7 @@
               </lookup>
             </binding>
             <style>
-              <class name="notification_count"/>
+              <class name="notification-count"/>
             </style>
           </object>
         </child>
