@@ -134,8 +134,8 @@ impl TypingRow {
             gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', these are
                 // variable names.
-                "<b>{user}</b> is typing…",
-                &[("user", &user)],
+                "{user} is typing…",
+                &[("user", &format!("<b>{user}</b>"))],
             )
         } else {
             ngettext_f(
