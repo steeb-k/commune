@@ -15,7 +15,7 @@ use crate::{
 
 // Keep in sync with the `max-avatars` property of the `avatar_list` in the
 // UI file.
-const MAX_RECEIPTS_SHOWN: u32 = 10;
+const MAX_RECEIPTS_SHOWN: u32 = 5;
 
 mod imp {
     use std::cell::{Cell, RefCell};
