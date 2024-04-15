@@ -3,16 +3,19 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
+    components::SpinnerButton,
     gettext_f,
     prelude::*,
     session::model::{IdentityVerification, VerificationState},
-    toast, Window,
+    toast,
+    utils::BoundObjectWeakRef,
+    Window,
 };
 
 mod imp {
     use std::cell::RefCell;
 
-    use glib::{subclass::InitializingObject, SignalHandlerId};
+    use glib::subclass::InitializingObject;
 
     use super::*;
 
@@ -27,14 +30,13 @@ mod imp {
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub accept_btn: TemplateChild<gtk::Button>,
+        pub accept_btn: TemplateChild<SpinnerButton>,
         #[template_child]
-        pub cancel_btn: TemplateChild<gtk::Button>,
+        pub cancel_btn: TemplateChild<SpinnerButton>,
         /// The identity verification presented by this info bar.
         #[property(get, set = Self::set_verification, explicit_notify)]
-        pub verification: RefCell<Option<IdentityVerification>>,
-        pub state_handler: RefCell<Option<SignalHandlerId>>,
-        pub user_handler: RefCell<Option<SignalHandlerId>>,
+        pub verification: BoundObjectWeakRef<IdentityVerification>,
+        pub user_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -44,9 +46,9 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            klass.set_css_name("infobar");
             Self::bind_template(klass);
 
+            klass.set_css_name("infobar");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
 
             klass.install_action_async("verification.accept", None, |obj, _, _| async move {
@@ -56,24 +58,35 @@ mod imp {
                 let Some(verification) = obj.verification() else {
                     return;
                 };
+                let imp = obj.imp();
 
-                if verification.state() == VerificationState::Requested
-                    || verification.accept().await.is_ok()
-                {
-                    window.session_view().select_verification(verification);
-                } else {
-                    toast!(obj, gettext("Could not accept verification"));
+                if verification.state() == VerificationState::Requested {
+                    imp.accept_btn.set_loading(true);
+
+                    if verification.accept().await.is_err() {
+                        toast!(obj, gettext("Could not accept verification"));
+                        imp.accept_btn.set_loading(false);
+                        return;
+                    }
                 }
+
+                window.session_view().select_verification(verification);
+                imp.accept_btn.set_loading(false);
             });
 
             klass.install_action_async("verification.decline", None, |obj, _, _| async move {
                 let Some(verification) = obj.verification() else {
                     return;
                 };
+                let imp = obj.imp();
+
+                imp.cancel_btn.set_loading(true);
 
                 if verification.cancel().await.is_err() {
                     toast!(obj, gettext("Could not decline verification"));
                 }
+
+                imp.cancel_btn.set_loading(false);
             });
         }
 
@@ -83,7 +96,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for VerificationInfoBar {}
+    impl ObjectImpl for VerificationInfoBar {
+        fn dispose(&self) {
+            if let Some(verification) = self.verification.obj() {
+                if let Some(handler) = self.user_handler.take() {
+                    verification.user().disconnect(handler);
+                }
+            }
+        }
+    }
 
     impl WidgetImpl for VerificationInfoBar {}
     impl BinImpl for VerificationInfoBar {}
@@ -91,42 +112,65 @@ mod imp {
     impl VerificationInfoBar {
         /// Set the identity verification presented by this info bar.
         fn set_verification(&self, verification: Option<IdentityVerification>) {
-            if *self.verification.borrow() == verification {
+            let prev_verification = self.verification.obj();
+
+            if prev_verification == verification {
                 return;
             }
-            let obj = self.obj();
 
-            if let Some(old_verification) = &*self.verification.borrow() {
-                if let Some(handler) = self.state_handler.take() {
-                    old_verification.disconnect(handler);
-                }
-
+            if let Some(verification) = prev_verification {
                 if let Some(handler) = self.user_handler.take() {
-                    old_verification.user().disconnect(handler);
+                    verification.user().disconnect(handler);
                 }
             }
+            self.verification.disconnect_signals();
 
             if let Some(verification) = &verification {
-                let handler = verification.connect_state_notify(clone!(@weak obj => move |_| {
-                    obj.update_view();
-                }));
+                let user_handler = verification.user().connect_display_name_notify(
+                    clone!(@weak self as imp => move |_| {
+                        imp.update_bar();
+                    }),
+                );
+                self.user_handler.replace(Some(user_handler));
 
-                self.state_handler.replace(Some(handler));
+                let state_handler =
+                    verification.connect_state_notify(clone!(@weak self as imp => move |_| {
+                        imp.update_bar();
+                    }));
 
-                let handler =
-                    verification
-                        .user()
-                        .connect_display_name_notify(clone!(@weak obj => move |_| {
-                            obj.update_view();
-                        }));
-
-                self.user_handler.replace(Some(handler));
+                self.verification.set(verification, vec![state_handler]);
             }
 
-            self.verification.replace(verification);
+            self.update_bar();
+            self.obj().notify_verification();
+        }
 
-            obj.update_view();
-            obj.notify_verification();
+        /// Update the bar for the current verification state.
+        fn update_bar(&self) {
+            let Some(verification) = self.verification.obj().filter(|v| !v.is_finished()) else {
+                self.revealer.set_reveal_child(false);
+                return;
+            };
+
+            if matches!(verification.state(), VerificationState::Requested) {
+                self.label.set_markup(&gettext_f(
+                    // Translators: Do NOT translate the content between '{' and '}', this is a
+                    // variable name.
+                    "{user_name} wants to be verified",
+                    &[(
+                        "user_name",
+                        &format!("<b>{}</b>", verification.user().display_name()),
+                    )],
+                ));
+                self.accept_btn.set_label(&gettext("Verify"));
+                self.cancel_btn.set_label(&gettext("Decline"));
+            } else {
+                self.label.set_label(&gettext("Verification in progress"));
+                self.accept_btn.set_label(&gettext("Continue"));
+                self.cancel_btn.set_label(&gettext("Cancel"));
+            }
+
+            self.revealer.set_reveal_child(true);
         }
     }
 }
@@ -138,38 +182,7 @@ glib::wrapper! {
 }
 
 impl VerificationInfoBar {
-    pub fn new(label: String) -> Self {
-        glib::Object::builder().property("label", &label).build()
-    }
-
-    pub fn update_view(&self) {
-        let imp = self.imp();
-        let visible = if let Some(verification) = self.verification() {
-            if verification.is_finished() {
-                false
-            } else if matches!(verification.state(), VerificationState::Requested) {
-                imp.label.set_markup(&gettext_f(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a
-                    // variable name.
-                    "{user_name} wants to be verified",
-                    &[(
-                        "user_name",
-                        &format!("<b>{}</b>", verification.user().display_name()),
-                    )],
-                ));
-                imp.accept_btn.set_label(&gettext("Verify"));
-                imp.cancel_btn.set_label(&gettext("Decline"));
-                true
-            } else {
-                imp.label.set_label(&gettext("Verification in progress"));
-                imp.accept_btn.set_label(&gettext("Continue"));
-                imp.cancel_btn.set_label(&gettext("Cancel"));
-                true
-            }
-        } else {
-            false
-        };
-
-        imp.revealer.set_reveal_child(visible);
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 }

@@ -949,8 +949,8 @@ impl IdentityVerification {
     ///
     /// Also removes it from the verification list.
     pub fn dismiss(&self) {
-        self.emit_by_name::<()>("dismiss", &[]);
         self.remove_from_list();
+        self.emit_by_name::<()>("dismiss", &[]);
     }
 
     /// The verification can be removed from the verification list.

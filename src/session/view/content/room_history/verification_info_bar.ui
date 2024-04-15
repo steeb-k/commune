@@ -18,7 +18,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="accept_btn">
+              <object class="SpinnerButton" id="accept_btn">
                 <property name="action-name">verification.accept</property>
                 <property name="valign">center</property>
                 <style>
@@ -27,7 +27,7 @@
               </object>
             </child>
             <child type="end">
-              <object class="GtkButton" id="cancel_btn">
+              <object class="SpinnerButton" id="cancel_btn">
                 <property name="margin-end">12</property>
                 <property name="action-name">verification.decline</property>
                 <property name="valign">center</property>
@@ -39,4 +39,3 @@
     </child>
   </template>
 </interface>
-

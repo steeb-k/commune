@@ -229,6 +229,9 @@ impl VerificationList {
         }
 
         let verification = IdentityVerification::new(request, member.upcast_ref(), Some(&room));
+
+        room.set_verification(Some(&verification));
+
         self.add(verification);
     }
 
@@ -271,6 +274,14 @@ impl VerificationList {
         let list = self.imp().list.borrow();
         list.values()
             .find(|v| v.is_self_verification() && !v.is_finished())
+            .cloned()
+    }
+
+    // Returns the ongoing verification in the given room, if any.
+    pub fn ongoing_room_verification(&self, room_id: &RoomId) -> Option<IdentityVerification> {
+        let list = self.imp().list.borrow();
+        list.values()
+            .find(|v| v.room().is_some_and(|room| room.room_id() == room_id) && !v.is_finished())
             .cloned()
     }
 

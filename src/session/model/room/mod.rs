@@ -66,6 +66,7 @@ use crate::{
     gettext_f,
     prelude::*,
     spawn, spawn_tokio,
+    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -165,9 +166,9 @@ mod imp {
         /// successor was joined.
         #[property(get)]
         pub successor: glib::WeakRef<super::Room>,
-        /// The most recent verification request event.
-        #[property(get, set)]
-        pub verification: RefCell<Option<IdentityVerification>>,
+        /// An ongoing identity verification in this room.
+        #[property(get, set = Self::set_verification, nullable, explicit_notify)]
+        pub verification: BoundObjectWeakRef<IdentityVerification>,
         /// Whether this room is encrypted.
         #[property(get)]
         pub is_encrypted: Cell<bool>,
@@ -322,6 +323,43 @@ mod imp {
         /// The ID of the successor of this Room, if this room was upgraded.
         fn successor_id_string(&self) -> Option<String> {
             self.successor_id.get().map(ToString::to_string)
+        }
+
+        /// Set an ongoing verification in this room.
+        fn set_verification(&self, verification: Option<IdentityVerification>) {
+            if self.verification.obj().is_some() && verification.is_some() {
+                // Just keep the same verification until it is dropped. Then we will look if
+                // there is an ongoing verification in the room.
+                return;
+            }
+
+            self.verification.disconnect_signals();
+
+            let verification = verification.or_else(|| {
+                // Look if there is an ongoing verification to replace it with.
+                let room_id = self.matrix_room().room_id();
+                self.session
+                    .upgrade()
+                    .map(|s| s.verification_list())
+                    .and_then(|list| list.ongoing_room_verification(room_id))
+            });
+
+            if let Some(verification) = &verification {
+                let state_handler =
+                    verification.connect_is_finished_notify(clone!(@weak self as imp => move |_| {
+                        imp.set_verification(None);
+                    }));
+
+                let dismiss_handler =
+                    verification.connect_dismiss(clone!(@weak self as imp => move |_| {
+                        imp.set_verification(None);
+                    }));
+
+                self.verification
+                    .set(verification, vec![state_handler, dismiss_handler]);
+            }
+
+            self.obj().notify_verification();
         }
 
         /// Set the notifications setting for this room.
