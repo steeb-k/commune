@@ -564,7 +564,6 @@ impl Timeline {
                                         | MessageType::ServerNotice(_)
                                         | MessageType::Text(_)
                                         | MessageType::Video(_)
-                                        | MessageType::VerificationRequest(_)
                                 )
                             }
                             AnySyncMessageLikeEvent::Sticker(SyncMessageLikeEvent::Original(_))

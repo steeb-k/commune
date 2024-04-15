@@ -219,123 +219,109 @@ fn build_content(
     }
 
     match content {
-        TimelineItemContent::Message(message) => {
-            match message.msgtype() {
-                MessageType::Audio(message) => {
-                    let (child, filename) =
-                        with_caption!(parent, message, MessageAudio, Some(mime::AUDIO));
+        TimelineItemContent::Message(message) => match message.msgtype() {
+            MessageType::Audio(message) => {
+                let (child, filename) =
+                    with_caption!(parent, message, MessageAudio, Some(mime::AUDIO));
 
-                    child.audio(message.clone(), filename, &session, format);
-                }
-                MessageType::Emote(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                        child
-                    } else {
-                        let child = MessageText::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.with_emote(
-                        message.formatted.clone(),
-                        message.body.clone(),
-                        sender,
-                        room,
-                        format,
-                    );
-                }
-                MessageType::File(message) => {
-                    let (child, filename) = with_caption!(parent, message, MessageFile, None);
-
-                    child.set_filename(Some(filename));
-                    child.set_format(format);
-                }
-                MessageType::Image(message) => {
-                    let (child, filename) =
-                        with_caption!(parent, message, MessageMedia, Some(mime::IMAGE));
-
-                    child.image(message.clone(), filename, &session, format);
-                }
-                MessageType::Location(message) => {
-                    let child =
-                        if let Some(child) = parent.child().and_downcast::<MessageLocation>() {
-                            child
-                        } else {
-                            let child = MessageLocation::new();
-                            parent.set_child(Some(&child));
-                            child
-                        };
-                    child.set_geo_uri(&message.geo_uri, format);
-                }
-                MessageType::Notice(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                        child
-                    } else {
-                        let child = MessageText::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.with_markup(
-                        message.formatted.clone(),
-                        message.body.clone(),
-                        room,
-                        format,
-                    );
-                }
-                MessageType::ServerNotice(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                        child
-                    } else {
-                        let child = MessageText::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.with_text(message.body.clone(), format);
-                }
-                MessageType::Text(message) => {
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                        child
-                    } else {
-                        let child = MessageText::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.with_markup(
-                        message.formatted.clone(),
-                        message.body.clone(),
-                        room,
-                        format,
-                    );
-                }
-                MessageType::Video(message) => {
-                    let (child, filename) =
-                        with_caption!(parent, message, MessageMedia, Some(mime::VIDEO));
-
-                    child.video(message.clone(), filename, &session, format);
-                }
-                MessageType::VerificationRequest(_) => {
-                    // TODO: show more information about the verification
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                        child
-                    } else {
-                        let child = MessageText::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.with_text(gettext("Identity verification was started"), format);
-                }
-                msgtype => {
-                    warn!("Event not supported: {msgtype:?}");
-                    let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                        child
-                    } else {
-                        let child = MessageText::new();
-                        parent.set_child(Some(&child));
-                        child
-                    };
-                    child.with_text(gettext("Unsupported event"), format);
-                }
+                child.audio(message.clone(), filename, &session, format);
             }
-        }
+            MessageType::Emote(message) => {
+                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    parent.set_child(Some(&child));
+                    child
+                };
+                child.with_emote(
+                    message.formatted.clone(),
+                    message.body.clone(),
+                    sender,
+                    room,
+                    format,
+                );
+            }
+            MessageType::File(message) => {
+                let (child, filename) = with_caption!(parent, message, MessageFile, None);
+
+                child.set_filename(Some(filename));
+                child.set_format(format);
+            }
+            MessageType::Image(message) => {
+                let (child, filename) =
+                    with_caption!(parent, message, MessageMedia, Some(mime::IMAGE));
+
+                child.image(message.clone(), filename, &session, format);
+            }
+            MessageType::Location(message) => {
+                let child = if let Some(child) = parent.child().and_downcast::<MessageLocation>() {
+                    child
+                } else {
+                    let child = MessageLocation::new();
+                    parent.set_child(Some(&child));
+                    child
+                };
+                child.set_geo_uri(&message.geo_uri, format);
+            }
+            MessageType::Notice(message) => {
+                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    parent.set_child(Some(&child));
+                    child
+                };
+                child.with_markup(
+                    message.formatted.clone(),
+                    message.body.clone(),
+                    room,
+                    format,
+                );
+            }
+            MessageType::ServerNotice(message) => {
+                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    parent.set_child(Some(&child));
+                    child
+                };
+                child.with_text(message.body.clone(), format);
+            }
+            MessageType::Text(message) => {
+                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    parent.set_child(Some(&child));
+                    child
+                };
+                child.with_markup(
+                    message.formatted.clone(),
+                    message.body.clone(),
+                    room,
+                    format,
+                );
+            }
+            MessageType::Video(message) => {
+                let (child, filename) =
+                    with_caption!(parent, message, MessageMedia, Some(mime::VIDEO));
+
+                child.video(message.clone(), filename, &session, format);
+            }
+            msgtype => {
+                warn!("Event not supported: {msgtype:?}");
+                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                    child
+                } else {
+                    let child = MessageText::new();
+                    parent.set_child(Some(&child));
+                    child
+                };
+                child.with_text(gettext("Unsupported event"), format);
+            }
+        },
         TimelineItemContent::Sticker(sticker) => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageMedia>() {
                 child
