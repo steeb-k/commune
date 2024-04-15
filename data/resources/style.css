@@ -336,6 +336,11 @@ row.button-row box.header {
   min-height: 40px;
 }
 
+crop-circle > .mask {
+  background: black;
+  border-radius: 9999px;
+}
+
 
 /* Login */
 
@@ -685,12 +690,6 @@ read-receipts-list:checked {
   background-color: alpha(currentColor, .1);
 }
 
-read-receipts-list .cutout {
-  background-color: @view_bg_color;
-  border-radius: 999px;
-  padding: 1px;
-}
-
 .divider-row {
   font-size: 0.9em;
   font-weight: bold;
@@ -728,12 +727,6 @@ typing-row {
   padding: 0 6px;
   min-height: 30px;
   font-style: italic;
-}
-
-typing-row .cutout {
-  background-color: @view_bg_color;
-  border-radius: 999px;
-  padding: 2px;
 }
 
 room-history-row .h1, .related-event-content .h1 {

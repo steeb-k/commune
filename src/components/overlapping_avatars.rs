@@ -1,7 +1,7 @@
 use adw::prelude::*;
 use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*};
 
-use super::{Avatar, AvatarData};
+use super::{Avatar, AvatarData, CropCircle};
 use crate::utils::BoundObject;
 
 /// Compute the overlap according to the child's size.
@@ -20,11 +20,14 @@ mod imp {
     #[derive(Default, glib::Properties)]
     #[properties(wrapper_type = super::OverlappingAvatars)]
     pub struct OverlappingAvatars {
-        /// The child avatars.
-        pub avatars: RefCell<Vec<adw::Bin>>,
+        /// The children containing the avatars.
+        pub children: RefCell<Vec<CropCircle>>,
         /// The size of the avatars.
         #[property(get, set = Self::set_avatar_size, explicit_notify)]
         pub avatar_size: Cell<i32>,
+        /// The spacing between the avatars.
+        #[property(get, set = Self::set_spacing, explicit_notify)]
+        pub spacing: Cell<u32>,
         /// The maximum number of avatars to display.
         ///
         /// `0` means that all avatars are displayed.
@@ -51,61 +54,48 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for OverlappingAvatars {
         fn dispose(&self) {
-            for avatar in self.avatars.take() {
-                avatar.unparent();
+            for child in self.children.take() {
+                child.unparent();
             }
         }
     }
 
     impl WidgetImpl for OverlappingAvatars {
         fn measure(&self, orientation: gtk::Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
-            let mut size = 0;
-            // child_size = avatar_size + cutout_borders
-            let child_size = self.avatar_size.get() + 2;
+            if self.children.borrow().is_empty() {
+                return (0, 0, -1, 1);
+            }
+
+            let avatar_size = self.avatar_size.get();
 
             if orientation == gtk::Orientation::Vertical {
-                if self.avatars.borrow().is_empty() {
-                    return (0, 0, -1, 1);
-                } else {
-                    return (child_size, child_size, -1, -1);
-                }
+                return (avatar_size, avatar_size, -1, -1);
             }
 
-            let overlap = overlap(child_size);
+            let n_children = self.children.borrow().len() as i32;
+            let overlap = overlap(avatar_size);
+            let spacing = self.spacing.get() as i32;
 
-            for avatar in self.avatars.borrow().iter() {
-                if !avatar.should_layout() {
-                    continue;
-                }
-
-                size += child_size - overlap;
-            }
-
-            // The last child doesn't have an overlap.
-            if size > 0 {
-                size += overlap;
-            }
+            // The last avatar has no overlap.
+            let mut size = (n_children - 1) * (avatar_size - overlap + spacing);
+            size += avatar_size;
 
             (size, size, -1, -1)
         }
 
         fn size_allocate(&self, _width: i32, _height: i32, _baseline: i32) {
-            let mut pos = 0;
-            // child_size = avatar_size + cutout_borders
-            let child_size = self.avatar_size.get() + 2;
-            let overlap = overlap(child_size);
+            let mut next_pos = 0;
+            let avatar_size = self.avatar_size.get();
+            let overlap = overlap(avatar_size);
+            let spacing = self.spacing.get() as i32;
 
-            for avatar in self.avatars.borrow().iter() {
-                if !avatar.should_layout() {
-                    continue;
-                }
+            for child in self.children.borrow().iter() {
+                let x = next_pos;
 
-                let x = pos;
-                pos += child_size - overlap;
+                let allocation = gdk::Rectangle::new(x, 0, avatar_size, avatar_size);
+                child.size_allocate(&allocation, -1);
 
-                let allocation = gdk::Rectangle::new(x, 0, child_size, child_size);
-
-                avatar.size_allocate(&allocation, -1);
+                next_pos += avatar_size - overlap + spacing;
             }
         }
     }
@@ -126,18 +116,32 @@ mod imp {
             let obj = self.obj();
 
             self.avatar_size.set(size);
-            obj.notify_avatar_size();
 
             // Update the sizes of the avatars.
-            for avatar in self
-                .avatars
-                .borrow()
-                .iter()
-                .filter_map(|bin| bin.child().and_downcast::<Avatar>())
-            {
-                avatar.set_size(size);
+            let overlap = overlap(size);
+            for child in self.children.borrow().iter() {
+                child.set_cropped_width(overlap as u32);
+
+                if let Some(avatar) = child.child().and_downcast::<Avatar>() {
+                    avatar.set_size(size);
+                }
             }
             obj.queue_resize();
+
+            obj.notify_avatar_size();
+        }
+
+        /// Set the spacing between the avatars.
+        fn set_spacing(&self, spacing: u32) {
+            if self.spacing.get() == spacing {
+                return;
+            }
+
+            self.spacing.set(spacing);
+
+            let obj = self.obj();
+            obj.queue_resize();
+            obj.notify_avatar_size();
         }
 
         /// Set the maximum number of avatars to display.
@@ -150,12 +154,19 @@ mod imp {
             let obj = self.obj();
 
             self.max_avatars.set(max_avatars);
-            if max_avatars != 0 && self.avatars.borrow().len() > max_avatars as usize {
+            if max_avatars != 0 && self.children.borrow().len() > max_avatars as usize {
                 // We have more children than we should, remove them.
-                let children = self.avatars.borrow_mut().split_off(max_avatars as usize);
-                for widget in children {
-                    widget.unparent()
+                let children = self.children.borrow_mut().split_off(max_avatars as usize);
+
+                for child in children {
+                    child.unparent();
                 }
+
+                if let Some(child) = self.children.borrow().last() {
+                    child.set_is_cropped(false);
+                }
+
+                obj.queue_resize();
             } else if max_avatars == 0 || (old_max_avatars != 0 && max_avatars > old_max_avatars) {
                 let Some(model) = self.bound_model.obj() else {
                     return;
@@ -194,8 +205,8 @@ impl OverlappingAvatars {
         let imp = self.imp();
 
         imp.bound_model.disconnect_signals();
-        for avatar in imp.avatars.take() {
-            avatar.unparent();
+        for child in imp.children.take() {
+            child.unparent();
         }
         imp.extract_avatar_data_fn.take();
 
@@ -232,18 +243,20 @@ impl OverlappingAvatars {
         }
 
         let imp = self.imp();
-        let mut avatars = imp.avatars.borrow_mut();
-        let avatar_size = self.avatar_size();
+        let mut children = imp.children.borrow_mut();
         let extract_avatar_data_fn_borrow = imp.extract_avatar_data_fn.borrow();
         let extract_avatar_data_fn = extract_avatar_data_fn_borrow.as_ref().unwrap();
 
+        let avatar_size = self.avatar_size();
+        let cropped_width = overlap(avatar_size) as u32;
+
         while removed > 0 {
-            if position as usize >= avatars.len() {
+            if position as usize >= children.len() {
                 break;
             }
 
-            let avatar = avatars.remove(position as usize);
-            avatar.unparent();
+            let child = children.remove(position as usize);
+            child.unparent();
             removed -= 1;
         }
 
@@ -259,13 +272,18 @@ impl OverlappingAvatars {
             avatar.set_data(Some(avatar_data));
             avatar.set_size(avatar_size);
 
-            let cutout = adw::Bin::builder()
-                .child(&avatar)
-                .css_classes(["cutout"])
-                .build();
-            cutout.set_parent(self);
+            let child = CropCircle::new();
+            child.set_child(Some(avatar));
+            child.set_cropped_width(cropped_width);
+            child.set_parent(self);
 
-            avatars.insert(i as usize, cutout);
+            children.insert(i as usize, child);
+        }
+
+        // Make sure that only the last avatar is not cropped.
+        let last_pos = children.len().saturating_sub(1);
+        for (i, child) in children.iter().enumerate() {
+            child.set_is_cropped(i != last_pos);
         }
 
         self.queue_resize();

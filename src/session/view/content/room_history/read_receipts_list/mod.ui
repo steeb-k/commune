@@ -17,6 +17,7 @@
         <child>
           <object class="OverlappingAvatars" id="avatar_list">
             <property name="avatar-size">20</property>
+            <property name="spacing">1</property>
             <property name="max-avatars">10</property>
           </object>
         </child>

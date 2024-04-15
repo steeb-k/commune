@@ -3,6 +3,7 @@ mod audio_player;
 mod auth_dialog;
 mod avatar;
 mod context_menu_bin;
+mod crop_circle;
 pub mod crypto;
 mod custom_entry;
 mod drag_overlay;
@@ -36,6 +37,7 @@ pub use self::{
     auth_dialog::{AuthDialog, AuthError},
     avatar::{Avatar, AvatarData, AvatarImage, AvatarUriSource},
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    crop_circle::CropCircle,
     custom_entry::CustomEntry,
     drag_overlay::DragOverlay,
     editable_avatar::EditableAvatar,
