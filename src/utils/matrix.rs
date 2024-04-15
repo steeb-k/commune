@@ -207,7 +207,7 @@ pub fn get_message_event_body(
                     "{user} sent a verification request.",
                     &[("user", sender_name)],
                 ),
-                _ => unimplemented!(),
+                _ => return None,
             };
             Some(body)
         }
