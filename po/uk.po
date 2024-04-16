@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-04-14 09:31+0000\n"
-"PO-Revision-Date: 2024-04-14 18:14+0300\n"
+"POT-Creation-Date: 2024-04-16 09:49+0000\n"
+"PO-Revision-Date: 2024-04-16 20:10+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -515,17 +515,17 @@ msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
 msgstr ""
-"Щоб виправити це, вам слід скинути дані до сеансу, де вони були повними, і"
-" спробувати повторити відновлення."
+"Щоб виправити це, вам слід скинути дані до сеансу, де вони були повними, і "
+"спробувати повторити відновлення."
 
 #: src/components/crypto/recovery_setup_view.ui:464
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
 msgstr ""
-"Зауважте, що відновлення облікового запису може називатися інакше у інших"
-" клієнтах Matrix, зокрема «резервне копіювання ключа» (“key backup”) або"
-" «захисне резервне копіювання» (“secure backup”)."
+"Зауважте, що відновлення облікового запису може називатися інакше у інших "
+"клієнтах Matrix, зокрема «резервне копіювання ключа» (“key backup”) або "
+"«захисне резервне копіювання» (“secure backup”)."
 
 #: src/components/editable_avatar.rs:349
 msgid "Images"
@@ -860,7 +860,7 @@ msgstr "Безпека"
 #: src/components/user_page.ui:236
 #: src/identity_verification_view/accept_request_page.ui:58
 #: src/session/view/account_settings/security_page/mod.rs:257
-#: src/session/view/content/room_history/verification_info_bar.rs:160
+#: src/session/view/content/room_history/verification_info_bar.rs:165
 #: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
 msgstr "Перевірити"
@@ -964,7 +964,7 @@ msgid "Could not accept verification request"
 msgstr "Не вдалося прийняти запит щодо перевірки."
 
 #: src/identity_verification_view/accept_request_page.ui:47
-#: src/session/view/content/room_history/verification_info_bar.rs:161
+#: src/session/view/content/room_history/verification_info_bar.rs:166
 #: src/utils/message_dialog.rs:27
 msgid "Decline"
 msgstr "Відхилити"
@@ -1056,7 +1056,7 @@ msgstr "Не вдалося почати перевірку емодзі"
 #: src/identity_verification_view/confirm_qr_code_page.rs:175
 #: src/identity_verification_view/qr_code_scanned_page.rs:143
 #: src/identity_verification_view/scan_qr_code_page.rs:255
-#: src/identity_verification_view/wait_for_other_page.rs:158
+#: src/identity_verification_view/wait_for_other_page.rs:162
 msgid "Could not cancel the verification"
 msgstr "Не вдалося скасувати перевірку"
 
@@ -1136,7 +1136,7 @@ msgstr "Підтвердити"
 #: src/session/view/content/room_history/item_row.rs:831
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
-#: src/session/view/content/room_history/verification_info_bar.rs:166
+#: src/session/view/content/room_history/verification_info_bar.rs:170
 #: src/utils/message_dialog.rs:51 src/utils/message_dialog.rs:259
 #: src/utils/message_dialog.rs:317 src/utils/message_dialog.rs:352
 msgid "Cancel"
@@ -1317,31 +1317,39 @@ msgstr "Сканований QR-код не пройшов перевірки"
 msgid "Show a QR code to scan with another device"
 msgstr "Показати QR-код для скасування за допомогою іншого пристрою"
 
-#: src/identity_verification_view/wait_for_other_page.rs:120
+#: src/identity_verification_view/wait_for_other_page.rs:122
 msgid "Get Another Device"
 msgstr "Отримати з іншого пристрою"
 
-#: src/identity_verification_view/wait_for_other_page.rs:122
+#: src/identity_verification_view/wait_for_other_page.rs:124
 msgid "Accept the verification request from another session or device."
 msgstr "Прийняти запит щодо перевірки з іншого сеансу або пристрою."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:129
+#: src/identity_verification_view/wait_for_other_page.rs:132
 msgid "Waiting for {user}"
 msgstr "Очікуємо на {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:135
+#: src/identity_verification_view/wait_for_other_page.rs:138
 msgid "Ask {user} to accept the verification request."
 msgstr "Попросити {user} прийняти запит щодо перевірки."
 
-#: src/identity_verification_view/wait_for_other_page.ui:47
+#: src/identity_verification_view/wait_for_other_page.ui:41
+msgid ""
+"To be secure, the verification should happen in person or use a trusted way "
+"of communication."
+msgstr ""
+"Для забезпечення безпеки перевірку слід виконувати особисто або за допомогою"
+" надійного способу спілкування."
+
+#: src/identity_verification_view/wait_for_other_page.ui:55
 msgid "The request is not showing up on the other device?"
 msgstr "Запит не показано на іншому пристрої?"
 
-#: src/identity_verification_view/wait_for_other_page.ui:56
+#: src/identity_verification_view/wait_for_other_page.ui:64
 msgid "Cancel Verification Request"
 msgstr "Скасувати запит щодо перевірки"
 
@@ -1657,17 +1665,17 @@ msgstr "Будь-який зареєстрований користувач"
 msgid "Unsupported rule"
 msgstr "Непідтримуване правило"
 
-#: src/session/model/room/mod.rs:1140
+#: src/session/model/room/mod.rs:1178
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1143
+#: src/session/model/room/mod.rs:1181
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1153
+#: src/session/model/room/mod.rs:1191
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -1786,7 +1794,7 @@ msgstr "Підтвердження нового пароля"
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:70
-#: src/session/view/content/room_history/verification_info_bar.rs:165
+#: src/session/view/content/room_history/verification_info_bar.rs:169
 msgid "Continue"
 msgstr "Продовжити"
 
@@ -3454,16 +3462,12 @@ msgstr "Не вдалося отримати звуковий файл"
 msgid "Error reading audio file"
 msgstr "Помилка під час читання звукового файла"
 
-#: src/session/view/content/room_history/message_row/content.rs:324
-msgid "Identity verification was started"
-msgstr "Розпочато перевірку профілю"
-
-#: src/session/view/content/room_history/message_row/content.rs:335
-#: src/session/view/content/room_history/message_row/content.rs:378
+#: src/session/view/content/room_history/message_row/content.rs:322
+#: src/session/view/content/room_history/message_row/content.rs:364
 msgid "Unsupported event"
 msgstr "Непідтримувана подія"
 
-#: src/session/view/content/room_history/message_row/content.rs:357
+#: src/session/view/content/room_history/message_row/content.rs:343
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3471,7 +3475,7 @@ msgstr ""
 "Не вдалося розшифрувати це повідомлення, але програма повторить спробу, "
 "щойно стануть доступними ключі."
 
-#: src/session/view/content/room_history/message_row/content.rs:367
+#: src/session/view/content/room_history/message_row/content.rs:353
 msgid "This message was removed."
 msgstr "Це повідомлення було вилучено."
 
@@ -4079,8 +4083,9 @@ msgstr "{user} змінено аватар."
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
 #: src/session/view/content/room_history/typing_row.rs:137
-msgid "<b>{user}</b> is typing…"
-msgstr "<b>{user}</b> вводить повідомлення…"
+#| msgid "<b>{user}</b> is typing…"
+msgid "{user} is typing…"
+msgstr "{user} вводить повідомлення…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
@@ -4092,21 +4097,21 @@ msgstr[1] "<b>{n}</b> учасники вводять повідомлення�
 msgstr[2] "<b>{n}</b> учасників вводять повідомлення…"
 msgstr[3] "<b>{n}</b> учасник вводить повідомлення…"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:65
+#: src/session/view/content/room_history/verification_info_bar.rs:67
 msgid "Could not accept verification"
 msgstr "Не вдалося прийняти перевірку"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:75
+#: src/session/view/content/room_history/verification_info_bar.rs:86
 msgid "Could not decline verification"
 msgstr "Не вдалося відхилити перевірку"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:154
+#: src/session/view/content/room_history/verification_info_bar.rs:159
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} хоче пройти перевірку"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:164
+#: src/session/view/content/room_history/verification_info_bar.rs:168
 msgid "Verification in progress"
 msgstr "Виконуємо перевірку"
 
@@ -4827,6 +4832,9 @@ msgstr "Розширити повноваження"
 #: src/window.ui:66
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "Identity verification was started"
+#~ msgstr "Розпочато перевірку профілю"
 
 #~ msgid "Unnamed audio"
 #~ msgstr "Звук без назви"
