@@ -71,6 +71,37 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="7~rc" type="development" date="2024-04-18">
+      <description>
+        <ul>
+          <li>
+            Account recovery, introduced during this cycle, could lead to an unclear situation where
+            it was still incomplete even after successfully going through the process. We added some
+            explanations on how to solve this. Thanks to anyone who tried it in the beta and
+            provided us with feedback!
+          </li>
+          <li>
+            After fixing a focus issue upstream in GtkListView, we got rid of more focus issues in
+            our widgets. That should make the room history completely accessible with keyboard
+            navigation.
+          </li>
+          <li>
+            Third party verification, that happens in a direct chat, was partly broken as the banner
+            about an ongoing verification was not showing up anymore. The culprit was found and we
+            took that opportunity to improve the security instructions. Along with this bugfix, a
+            coat of polish has been applied.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, it should be mostly stable and we expect to only include minor
+          improvements until the release of Fractal 7.
+        </p>
+      </description>
+    </release>
     <release version="7~beta" type="development" date="2024-03-28">
       <description>
         <p>

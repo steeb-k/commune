@@ -48,7 +48,7 @@ You can get the official Fractal Flatpak from Flathub.
 
 ### Beta version
 
-The current beta version is 6, same as the stable version (released January 18th 2024).
+The current beta version is 7.rc (released April 18th 2024).
 
 It is available as a Flatpak on Flathub Beta.
 
