@@ -6,7 +6,7 @@
 
   <name xml:lang="en">Fractal</name>
   <shortdesc xml:lang="en">Chat on Matrix</shortdesc>
-  <description xmi:lang="en">
+  <description xml:lang="en">
     Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
     collaboration in large groups, such as free software projects, and will fit all screens, big or small.
 
@@ -27,12 +27,12 @@
 
   <maintainer>
     <foaf:Person>
-      <foaf:name>Julian Sparber</foaf:name>
-      <gnome:userid>jsparber</gnome:userid>
+      <foaf:name>Kévin Commaille</foaf:name>
+      <gnome:userid>kcommaille</gnome:userid>
       <foaf:account>
         <foaf:OnlineAccount>
           <foaf:accountServiceHomepage rdf:resource="https://gitlab.gnome.org"/>
-          <foaf:accountName>jsparber</foaf:accountName>
+          <foaf:accountName>kcommaille</foaf:accountName>
         </foaf:OnlineAccount>
       </foaf:account>
     </foaf:Person>
@@ -51,12 +51,12 @@
   </maintainer>
   <maintainer>
     <foaf:Person>
-      <foaf:name>Kévin Commaille</foaf:name>
-      <gnome:userid>kcommaille</gnome:userid>
+      <foaf:name>Julian Sparber</foaf:name>
+      <gnome:userid>jsparber</gnome:userid>
       <foaf:account>
         <foaf:OnlineAccount>
           <foaf:accountServiceHomepage rdf:resource="https://gitlab.gnome.org"/>
-          <foaf:accountName>kcommaille</foaf:accountName>
+          <foaf:accountName>jsparber</foaf:accountName>
         </foaf:OnlineAccount>
       </foaf:account>
     </foaf:Person>
