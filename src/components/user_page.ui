@@ -34,6 +34,7 @@
                           <object class="GtkLabel">
                             <property name="wrap">true</property>
                             <property name="wrap-mode">word-char</property>
+                            <property name="justify">center</property>
                             <binding name="label">
                               <lookup name="display-name">
                                 <lookup name="user">UserPage</lookup>
