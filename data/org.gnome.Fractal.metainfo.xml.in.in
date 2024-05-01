@@ -71,50 +71,16 @@
   </content_rating>
 
   <releases>@development-release@
-    <release version="7~rc" type="development" date="2024-04-18">
-      <description>
-        <ul>
-          <li>
-            Account recovery, introduced during this cycle, could lead to an unclear situation where
-            it was still incomplete even after successfully going through the process. We added some
-            explanations on how to solve this. Thanks to anyone who tried it in the beta and
-            provided us with feedback!
-          </li>
-          <li>
-            After fixing a focus issue upstream in GtkListView, we got rid of more focus issues in
-            our widgets. That should make the room history completely accessible with keyboard
-            navigation.
-          </li>
-          <li>
-            Third party verification, that happens in a direct chat, was partly broken as the banner
-            about an ongoing verification was not showing up anymore. The culprit was found and we
-            took that opportunity to improve the security instructions. Along with this bugfix, a
-            coat of polish has been applied.
-          </li>
-        </ul>
-        <p>
-          As usual, this release includes other improvements, fixes and new translations thanks to
-          all our contributors, and our upstream projects.
-        </p>
-        <p>
-          As the version implies, it should be mostly stable and we expect to only include minor
-          improvements until the release of Fractal 7.
-        </p>
-      </description>
-    </release>
-    <release version="7~beta" type="development" date="2024-03-28">
+    <release version="7" type="stable" date="2024-05-02">
       <description>
         <p>
-          Spring is here in Fractal land. Birds chirping, flowers blooming, and a new beta for you
-          to try!
-        </p>
-        <p>
-          Staff’s picks:
+          Here comes Fractal 7, with extended encryption support and improved accessibility.
+          Server-side key backup and account recovery have been added, bringing greater security.
+          Third-party verification has received some bug fixes and improvements. Amongst the many
+          accessibility improvements, navigability has increased, especially in the room history.
+          But that’s not all we’ve been up to in the past three months:
         </p>
         <ul>
-          <li>
-            Encryption support has been extended, with server-side key backup and account recovery.
-          </li>
           <li>
             Messages that failed to send can now be retried or discarded.
           </li>
@@ -123,7 +89,7 @@
           </li>
           <li>
             Room details are now considered complete, with the addition of room address management,
-            permissions, and version upgrade.
+            permissions, and room upgrade.
           </li>
           <li>
             A new member menu appears when clicking on an avatar in the room history. It offers a
@@ -133,18 +99,15 @@
           <li>
             Pills are clickable and allow to directly go to a room or member profile.
           </li>
-          <li>
-            Many more improvements on the accessibility front, for better navigability with a screen
-            reader.
-          </li>
         </ul>
         <p>
           As usual, this release includes other improvements, fixes and new translations thanks to
           all our contributors, and our upstream projects.
         </p>
         <p>
-          As the version implies, there might be a slight risk of regressions, but it should be
-          mostly stable. If all goes well the next step is the release candidate!
+          We want to address special thanks to the translators who worked on this version. We know
+          this is a huge undertaking and have a deep appreciation for what you’ve done. If you want
+          to help with this effort, head over to Damned Lies.
         </p>
       </description>
     </release>
