@@ -46,13 +46,11 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkBox">
-                            <property name="spacing">12</property>
-                            <property name="halign">center</property>
-                            <child>
+                          <object class="GtkCenterBox">
+                            <child type="center">
                               <object class="GtkLabel" id="user_id">
-                                <property name="margin-start">46</property><!-- Size of button + spacing -->
                                 <property name="ellipsize">end</property>
+                                <property name="justify">center</property>
                                 <binding name="label">
                                   <lookup name="user-id-string">
                                     <lookup name="user">UserPage</lookup>
@@ -63,11 +61,14 @@
                                 </style>
                               </object>
                             </child>
-                            <child>
+                            <child type="end">
                               <object class="GtkButton">
                                 <property name="icon-name">copy-symbolic</property>
                                 <property name="tooltip-text" translatable="yes">Copy Matrix User ID to Clipboard</property>
                                 <property name="valign">center</property>
+                                <property name="hexpand">True</property>
+                                <property name="halign">start</property>
+                                <property name="margin-start">6</property>
                                 <signal name="clicked" handler="copy_user_id" swapped="yes"/>
                                 <style>
                                   <class name="flat"/>
