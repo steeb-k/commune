@@ -8,8 +8,8 @@ use futures_util::StreamExt;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::Error as MatrixError;
 use matrix_sdk_ui::timeline::{
-    default_event_filter, AnyOtherFullStateEventContent, BackPaginationStatus, PaginationOptions,
-    RoomExt, Timeline as SdkTimeline, TimelineItem as SdkTimelineItem, TimelineItemContent,
+    default_event_filter, AnyOtherFullStateEventContent, PaginationStatus, RoomExt,
+    Timeline as SdkTimeline, TimelineItem as SdkTimelineItem, TimelineItemContent,
 };
 use ruma::{
     events::{
@@ -48,12 +48,12 @@ pub enum TimelineState {
     Complete,
 }
 
-impl From<BackPaginationStatus> for TimelineState {
-    fn from(value: BackPaginationStatus) -> Self {
+impl From<PaginationStatus> for TimelineState {
+    fn from(value: PaginationStatus) -> Self {
         match value {
-            BackPaginationStatus::Idle => Self::Ready,
-            BackPaginationStatus::Paginating => Self::Loading,
-            BackPaginationStatus::TimelineStartReached => Self::Complete,
+            PaginationStatus::Idle => Self::Ready,
+            PaginationStatus::Paginating => Self::Loading,
+            PaginationStatus::TimelineEndReached => Self::Complete,
         }
     }
 }
@@ -453,14 +453,8 @@ impl Timeline {
         self.set_state(TimelineState::Loading);
 
         let matrix_timeline = self.matrix_timeline();
-        let handle = spawn_tokio!(async move {
-            matrix_timeline
-                .paginate_backwards(PaginationOptions::until_num_items(
-                    MAX_BATCH_SIZE,
-                    MAX_BATCH_SIZE,
-                ))
-                .await
-        });
+        let handle =
+            spawn_tokio!(async move { matrix_timeline.paginate_backwards(MAX_BATCH_SIZE).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not load timeline: {error}");

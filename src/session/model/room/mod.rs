@@ -1162,7 +1162,7 @@ impl Room {
     /// Load the display name from the SDK.
     async fn load_display_name(&self) {
         let matrix_room = self.matrix_room().clone();
-        let handle = spawn_tokio!(async move { matrix_room.display_name().await });
+        let handle = spawn_tokio!(async move { matrix_room.computed_display_name().await });
 
         // FIXME: We should retry if the request failed
         match handle.await.unwrap() {

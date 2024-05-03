@@ -1,13 +1,14 @@
+use std::time::{Duration, SystemTime};
+
 use gettextrs::gettext;
-use matrix_sdk::{
-    ruma::api::{
-        client::error::{
-            Error as ClientApiError, ErrorBody,
-            ErrorKind::{Forbidden, LimitExceeded, UserDeactivated},
-        },
-        error::FromHttpResponseError,
+use matrix_sdk::{ClientBuildError, Error, HttpError, RumaApiError};
+use ruma::api::{
+    client::error::{
+        Error as ClientApiError, ErrorBody,
+        ErrorKind::{Forbidden, LimitExceeded, UserDeactivated},
+        RetryAfter,
     },
-    ClientBuildError, Error, HttpError, RumaApiError,
+    error::FromHttpResponseError,
 };
 
 use crate::ngettext_f;
@@ -34,11 +35,20 @@ impl UserFacingError for HttpError {
                 },
             ))) => {
                 match kind {
-                    Forbidden => gettext("The provided username or password is invalid."),
+                    Forbidden { .. } => gettext("The provided username or password is invalid."),
                     UserDeactivated => gettext("The account is deactivated."),
-                    LimitExceeded { retry_after_ms } => {
-                        if let Some(ms) = retry_after_ms {
-                            let secs = ms.as_secs() as u32;
+                    LimitExceeded { retry_after } => {
+                        if let Some(retry_after) = retry_after {
+                            let duration = match retry_after {
+                                RetryAfter::Delay(duration) => *duration,
+                                RetryAfter::DateTime(until) => until
+                                    .duration_since(SystemTime::now())
+                                    // An error means that the date provided is in the past, which
+                                    // doesn't make sense. Let's not panic anyway and default to 1
+                                    // second.
+                                    .unwrap_or_else(|_| Duration::from_secs(1)),
+                            };
+                            let secs = duration.as_secs() as u32;
                             ngettext_f(
                                 // Translators: Do NOT translate the content between '{' and '}',
                                 // this is a variable name.
