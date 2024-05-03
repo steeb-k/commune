@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-04-27 22:37+0000\n"
-"PO-Revision-Date: 2024-05-03 08:04+0200\n"
+"PO-Revision-Date: 2024-05-03 12:35+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -71,7 +71,6 @@ msgid "Session settings"
 msgstr "Nastavitve seje"
 
 #: data/org.gnome.Fractal.gschema.xml.in:24
-#, fuzzy
 msgid "Serialized list of settings per session"
 msgstr "Serijski seznam nastavitev na sejo"
 
@@ -84,19 +83,14 @@ msgid "Chat on Matrix"
 msgstr "Klepet v Matrixu"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:10
-#, fuzzy
-#| msgid ""
-#| "Fractal is a Matrix messaging app for GNOME written in Rust. Its "
-#| "interface is optimized for collaboration in large groups, such as free "
-#| "software projects."
 msgid ""
 "Fractal is a Matrix messaging app for GNOME written in Rust. Its interface "
 "is optimized for collaboration in large groups, such as free software "
 "projects, and will fit all screens, big or small."
 msgstr ""
-"Fractal je program za GNOME s podporo za protokol sporočanja Matrix, napisan "
+"Fraktal je program za GNOME s podporo za protokol sporočanja Matrix, napisan "
 "pa je v jeziku Rust. Vmesnik je prilagojen za sodelovalno delo velikih "
-"skupin, kot so projekti proste programske opreme."
+"skupin, kot so projekti prostega programja."
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
@@ -117,22 +111,21 @@ msgstr ""
 "lokacijo"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:18
-#, fuzzy
 msgid ""
 "Reply to specific messages, react with emoji, mention users or rooms, edit "
 "or remove messages"
 msgstr ""
-"Odgovarjajte na določena sporočila, reagirajte s čustvenimi simboli, omenite "
-"uporabnike ali sobe, urejajte ali odstranjujte sporočila"
+"Odgovarjajte na določena sporočila, odzivajte se s čustvenimi simboli, "
+"omenite uporabnike ali sobe oz. klepetalnice, urejajte ali odstranjujte "
+"sporočila"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:19
-#, fuzzy
-#| msgid "An image has been added to the conversation."
 msgid "View images, and play audio and video directly in the conversation"
-msgstr "V pogovor je dodana slika."
+msgstr ""
+"Oglejte si slike ter predvajajte zvočne in videoposnetke neposredno v "
+"pogovoru"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:20
-#, fuzzy
 msgid "See who has read messages, and who is typing"
 msgstr "Oglejte si, kdo je prebral sporočila in kdo tipka"
 
@@ -148,33 +141,27 @@ msgstr "Fraktalovo glavno okno"
 #: data/org.gnome.Fractal.metainfo.xml.in.in:43
 #, fuzzy
 msgid "View the media history of a Matrix room"
-msgstr "Ogled medijske zgodovine matrične sobe"
+msgstr "Oglejte si medijsko zgodovino sobe Matrix"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:47
-#, fuzzy
 msgid "Fractal’s interface adapts to small screens"
-msgstr "Fractalov vmesnik se prilagaja majhnim zaslonom"
+msgstr "Fraktalov vmesnik se prilagaja majhnim zaslonom"
 
 #: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:33
 msgid "Select an Account"
 msgstr "Izberite račun"
 
 #: src/account_chooser_dialog/mod.ui:62
-#, fuzzy
 msgid "Select the account you want to open the URI with"
 msgstr "Izberite račun, s katerim želite odpreti URI"
 
 #: src/account_switcher/account_switcher_button.ui:14
-#, fuzzy
-#| msgid "Deactivate Account"
 msgid "Switch Accounts"
-msgstr "Izbriši račun"
+msgstr "Preklopi med računi"
 
 #: src/account_switcher/account_switcher_popover.ui:38
-#, fuzzy
-#| msgid "_Create Account"
 msgid "_Add Account"
-msgstr "Dodaj račun"
+msgstr "_Dodaj račun"
 
 #: src/account_switcher/session_item.ui:56
 #: src/account_switcher/session_item.ui:58
@@ -183,10 +170,8 @@ msgid "Account Settings"
 msgstr "Nastavitve računa"
 
 #: src/application.rs:192
-#, fuzzy
-#| msgid "Fractal"
 msgid "The Fractal Team"
-msgstr "Fractal"
+msgstr "Ekipa Fraktala"
 
 #: src/application.rs:198
 msgid "© 2017-2024 The Fractal Team"
@@ -255,9 +240,8 @@ msgid "Authentication"
 msgstr "Overitev"
 
 #: src/components/auth_dialog.ui:20
-#, fuzzy
 msgid "Authenticate via Browser"
-msgstr "Preverjanje pristnosti prek brskalnika"
+msgstr "Preveri pristnost prek brskalnika"
 
 #: src/components/auth_dialog.ui:43
 #: src/session/view/content/room_details/invite_subpage/mod.ui:13
@@ -271,12 +255,10 @@ msgstr "P_otrdi"
 
 #: src/components/crypto/identity_setup_view.rs:273
 #: src/session/view/account_settings/security_page/mod.rs:241
-#, fuzzy
 msgid "Reset Crypto Identity"
-msgstr "Ponastavite kripto identiteto"
+msgstr "Ponastavi kripto identiteto"
 
 #: src/components/crypto/identity_setup_view.rs:275
-#, fuzzy
 msgid "This will invalidate the verifications of all users and sessions."
 msgstr "To bo razveljavilo preverjanja vseh uporabnikov in sej."
 
@@ -862,12 +844,10 @@ msgstr[2] ""
 msgstr[3] ""
 
 #: src/components/user_page.rs:691
-#, fuzzy
 msgid "Identity verified"
 msgstr "Preverjena identiteta"
 
 #: src/components/user_page.rs:698
-#, fuzzy
 msgid "Identity not verified"
 msgstr "Identiteta ni preverjena"
 
@@ -1036,28 +1016,24 @@ msgstr "Preverite novo sejo iz trenutne seje."
 #: src/identity_verification_view/choose_method_page.rs:178
 #: src/identity_verification_view/sas_page.rs:155
 #: src/identity_verification_view/scan_qr_code_page.rs:167
-#, fuzzy
-#| msgid "Notification sounds"
 msgid "Verification Request"
-msgstr "Zvočna obvestila"
+msgstr "Zahtevek za preverjanje"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/accept_request_page.rs:137
-#, fuzzy
 msgid ""
 "{user} asked to be verified. Verifying a user increases the security of the "
 "conversation."
 msgstr ""
-"{user} zahteval preverjanje. Preverjanje uporabnika poveča varnost pogovora."
+"Uporabnik {user} je zahteval preverjanje. Preverjanje uporabnika poveča "
+"varnost pogovora."
 
 #: src/identity_verification_view/accept_request_page.rs:160
-#, fuzzy
 msgid "Could not decline verification request"
 msgstr "Zahteve za preverjanje ni bilo mogoče zavrniti"
 
 #: src/identity_verification_view/accept_request_page.rs:176
-#, fuzzy
 msgid "Could not accept verification request"
 msgstr "Zahteve za preverjanje ni bilo mogoče sprejeti"
 
@@ -1068,7 +1044,6 @@ msgid "Decline"
 msgstr "Zavrni"
 
 #: src/identity_verification_view/cancelled_page.rs:134
-#, fuzzy
 msgid "The verification was cancelled from the other session."
 msgstr "Preverjanje je bilo preklicano iz druge seje."
 
@@ -1085,24 +1060,18 @@ msgid "The verification process failed because it reached a timeout."
 msgstr "Postopek preverjanja ni uspel, ker je dosegel časovno omejitev."
 
 #: src/identity_verification_view/cancelled_page.rs:148
-#, fuzzy
 msgid "You accepted the request from another session."
 msgstr "Zahtevo ste sprejeli z druge seje."
 
 #: src/identity_verification_view/cancelled_page.rs:151
-#, fuzzy
-#| msgid "The passwords do not match."
 msgid "The emoji did not match."
-msgstr "Gesli se ne skladata."
+msgstr "Emoji se ni ujemal."
 
 #: src/identity_verification_view/cancelled_page.rs:153
-#, fuzzy
-#| msgid "The passwords do not match."
 msgid "The numbers did not match."
-msgstr "Gesli se ne skladata."
+msgstr "Številke se niso ujemale."
 
 #: src/identity_verification_view/cancelled_page.rs:156
-#, fuzzy
 msgid "An unexpected error happened during the verification process."
 msgstr "Med postopkom preverjanja je prišlo do nepričakovane napake."
 
@@ -1196,7 +1165,6 @@ msgstr "Primerjava emojijev"
 #: src/identity_verification_view/no_supported_methods_page.rs:163
 #: src/identity_verification_view/qr_code_scanned_page.ui:48
 #: src/identity_verification_view/scan_qr_code_page.ui:77
-#, fuzzy
 msgid "Cancel Verification"
 msgstr "Prekliči preverjanje"
 
