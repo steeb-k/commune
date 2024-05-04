@@ -460,8 +460,7 @@ impl Login {
         let session_info = session.info().clone();
         let handle = spawn_tokio!(async move { store_session(session_info).await });
 
-        if let Err(error) = handle.await.unwrap() {
-            error!("Could not store session: {error}");
+        if handle.await.unwrap().is_err() {
             toast!(self, gettext("Could not store session"));
         }
 

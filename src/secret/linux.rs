@@ -19,8 +19,18 @@ pub const CURRENT_VERSION: u8 = 5;
 /// The attribute to identify the schema in the Secret Service.
 const SCHEMA_ATTRIBUTE: &str = "xdg:schema";
 
-/// Retrieves all sessions stored to the `SecretService`
+/// Retrieves all sessions stored to the `SecretService`.
 pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
+    match restore_sessions_inner().await {
+        Ok(sessions) => Ok(sessions),
+        Err(error) => {
+            error!("Could not restore previous sessions: {error}");
+            Err(error.into())
+        }
+    }
+}
+
+async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
     let keyring = Keyring::new().await?;
 
     keyring.unlock().await?;
@@ -77,6 +87,16 @@ pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
 /// Write the given session to the `SecretService`, overwriting any previously
 /// stored session with the same attributes.
 pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
+    match store_session_inner(session).await {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            error!("Could not store session: {error}");
+            Err(error.into())
+        }
+    }
+}
+
+async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
     let keyring = Keyring::new().await?;
 
     let attributes = session.attributes();
@@ -322,7 +342,7 @@ impl StoredSession {
                 error!("Could not remove outdated session: {error}");
             }
 
-            if let Err(error) = store_session(clone).await {
+            if let Err(error) = store_session_inner(clone).await {
                 error!("Could not store updated session: {error}");
             }
         })

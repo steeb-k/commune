@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use gettextrs::gettext;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use indexmap::map::IndexMap;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 mod failed_session;
 mod new_session;
@@ -247,8 +247,6 @@ impl SessionList {
                 self.set_state(LoadingState::Ready)
             }
             Err(error) => {
-                error!("Could not restore previous sessions: {error}");
-
                 let message = format!(
                     "{}\n\n{}",
                     gettext("Could not restore previous sessions"),
@@ -270,7 +268,7 @@ impl SessionList {
                 self.insert(session);
             }
             Err(error) => {
-                warn!("Could not restore previous session: {error}");
+                error!("Could not restore previous session: {error}");
                 self.insert(FailedSession::new(session_info, error));
             }
         }
