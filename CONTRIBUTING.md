@@ -66,19 +66,10 @@ environment from the command line and execute commands in that environment.
 First, install fenv:
 
 ```sh
-# Clone the project somewhere on your system
-git clone https://gitlab.gnome.org/ZanderBrown/fenv.git
-
-# Move into the folder
-cd fenv
-
-# Install fenv with Cargo
-cargo install --path .
+cargo install --git https://gitlab.gnome.org/ZanderBrown/fenv fenv
 ```
 
-You can now discard the `fenv` directory if you want.
-
-After that, move into the directory where you cloned Fractal and setup the project:
+After that, setup the project:
 
 ```sh
 # Setup the flatpak environment
