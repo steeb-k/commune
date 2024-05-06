@@ -1,12 +1,11 @@
 //! Linux API to store the data of a session, using the Secret Service or Secret
 //! portal.
 
-use std::{collections::HashMap, fs, path::PathBuf, string::FromUtf8Error};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use gettextrs::gettext;
 use oo7::{Item, Keyring};
 use ruma::{OwnedDeviceId, UserId};
-use serde_json::error::Error as JsonError;
 use thiserror::Error;
 use tracing::{debug, error, info};
 use url::Url;
@@ -384,25 +383,6 @@ pub enum LinuxSecretError {
     /// Trying to restore a session with the wrong profile.
     #[error("Session found for wrong profile")]
     WrongProfile,
-}
-
-/// A possible error value when converting a `Secret` from a UTF-8 byte vector.
-#[derive(Debug)]
-pub enum FromUtf8SecretError {
-    Str(FromUtf8Error),
-    Json(JsonError),
-}
-
-impl From<FromUtf8Error> for FromUtf8SecretError {
-    fn from(err: FromUtf8Error) -> Self {
-        Self::Str(err)
-    }
-}
-
-impl From<JsonError> for FromUtf8SecretError {
-    fn from(err: JsonError) -> Self {
-        Self::Json(err)
-    }
 }
 
 impl From<oo7::Error> for SecretError {
