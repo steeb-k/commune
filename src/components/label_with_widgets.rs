@@ -1,6 +1,5 @@
 use gtk::{glib, pango, prelude::*, subclass::prelude::*};
 
-pub const DEFAULT_PLACEHOLDER: &str = "<widget>";
 const OBJECT_REPLACEMENT_CHARACTER: &str = "\u{FFFC}";
 
 mod imp {
@@ -150,6 +149,8 @@ glib::wrapper! {
 }
 
 impl LabelWithWidgets {
+    pub const DEFAULT_PLACEHOLDER: &'static str = "<widget>";
+
     /// Create an empty `LabelWithWidget`.
     pub fn new() -> Self {
         glib::Object::new()
@@ -308,7 +309,7 @@ impl LabelWithWidgets {
 
         let new_label = if let Some(label) = imp.label.borrow().as_ref() {
             let placeholder = imp.placeholder.borrow();
-            let placeholder = placeholder.as_deref().unwrap_or(DEFAULT_PLACEHOLDER);
+            let placeholder = placeholder.as_deref().unwrap_or(Self::DEFAULT_PLACEHOLDER);
             let label = label.replace(placeholder, OBJECT_REPLACEMENT_CHARACTER);
 
             if new_ellipsize {

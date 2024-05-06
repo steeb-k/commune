@@ -124,7 +124,7 @@ macro_rules! toast {
 
                 for (start, key) in matches {
                     swapped_label.push_str(&message[last_end..start]);
-                    swapped_label.push_str($crate::components::DEFAULT_PLACEHOLDER);
+                    swapped_label.push_str($crate::components::LabelWithWidgets::DEFAULT_PLACEHOLDER);
                     last_end = start + key.len() + 2;
                     widgets.push(pill_vars.get(key).unwrap().clone())
                 }

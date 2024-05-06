@@ -28,7 +28,7 @@ use ruma::{
 use thiserror::Error;
 
 use crate::{
-    components::{Pill, DEFAULT_PLACEHOLDER},
+    components::{LabelWithWidgets, Pill},
     gettext_f,
     prelude::*,
     secret::StoredSession,
@@ -406,7 +406,7 @@ pub fn extract_mentions(s: &str, room: &Room) -> (String, Vec<(Pill, String)>) {
                         .and_then(|s| parse_pill(&s, room, &session))
                     {
                         mention = Some((pill, String::new()));
-                        new_string.push_str(DEFAULT_PLACEHOLDER);
+                        new_string.push_str(LabelWithWidgets::DEFAULT_PLACEHOLDER);
                         continue;
                     }
                 }

@@ -43,7 +43,7 @@ pub use self::{
     editable_avatar::EditableAvatar,
     image_paintable::ImagePaintable,
     join_room_dialog::JoinRoomDialog,
-    label_with_widgets::{LabelWithWidgets, DEFAULT_PLACEHOLDER},
+    label_with_widgets::LabelWithWidgets,
     loading_bin::LoadingBin,
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
