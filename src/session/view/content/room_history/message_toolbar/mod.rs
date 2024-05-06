@@ -32,7 +32,7 @@ use crate::{
     session::model::{Event, Member, Room},
     spawn, toast,
     utils::{
-        matrix::extract_mentions,
+        matrix::find_html_mentions,
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
@@ -420,7 +420,7 @@ impl MessageToolbar {
         let mentions = if let Some(html) =
             formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
         {
-            let (_, mentions) = extract_mentions(&html, &event.room());
+            let mentions = find_html_mentions(&html, &event.room());
             let mut pos = 0;
             // This is looking for the mention link's inner text in the Markdown
             // so it is not super reliable: if there is other text that matches
@@ -431,7 +431,7 @@ impl MessageToolbar {
             mentions
                 .into_iter()
                 .filter_map(|(pill, s)| {
-                    text[pos..].find(&s).map(|index| {
+                    text[pos..].find(s.as_ref()).map(|index| {
                         let start = pos + index;
                         let end = start + s.len();
                         pos = end;

@@ -12,6 +12,7 @@ pub use self::{
 };
 use super::{Avatar, JoinRoomDialog, UserProfileDialog};
 use crate::{
+    prelude::*,
     session::{
         model::{Member, RemoteRoom, Room},
         view::SessionView,
@@ -164,7 +165,7 @@ mod imp {
 
             let is_ellipsized = maybe_ellipsized.len() < label.len();
             if is_ellipsized {
-                maybe_ellipsized.push('…');
+                maybe_ellipsized.append_ellipsis();
             }
 
             self.display_name.set_label(&maybe_ellipsized);

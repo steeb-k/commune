@@ -27,11 +27,9 @@ futures-channel = "0.3"
 futures-util = "0.3"
 geo-uri = "0.2"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
-html-escape = "0.2"
-html2pango = "0.6"
-html5gum = "0.5"
 image = "0.25"
 indexmap = "2"
+linkify = "0.10.0"
 mime = "0.3"
 mime_guess = "2"
 once_cell = "1"
@@ -94,7 +92,7 @@ features = [
     "compat-optional",
     "compat-unset-avatar",
     "compat-get-3pids",
-    "html",
+    "html-matrix",
 ]
 
 # Linux-only dependencies.

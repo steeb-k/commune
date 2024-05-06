@@ -1,12 +1,7 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::{
-    fmt::{self, Write},
-    str::FromStr,
-};
+use std::{fmt, str::FromStr};
 
-use html2pango::html_escape;
-use html5gum::{HtmlString, Token, Tokenizer};
 use matrix_sdk::{
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
@@ -19,20 +14,23 @@ use ruma::{
         AnyMessageLikeEventContent, AnyStrippedStateEvent, AnySyncMessageLikeEvent,
         AnySyncTimelineEvent,
     },
-    html::{HtmlSanitizerMode, RemoveReplyFallback},
+    html::{
+        matrix::{AnchorUri, MatrixElement},
+        Children, Html, HtmlSanitizerMode, NodeRef, RemoveReplyFallback, StrTendril,
+    },
     matrix_uri::MatrixId,
     serde::Raw,
-    EventId, IdParseError, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId,
-    OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomOrAliasId, UserId,
+    EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, OwnedEventId, OwnedRoomAliasId,
+    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomOrAliasId, UserId,
 };
 use thiserror::Error;
 
 use crate::{
-    components::{LabelWithWidgets, Pill},
+    components::Pill,
     gettext_f,
     prelude::*,
     secret::StoredSession,
-    session::model::{RemoteRoom, Room, Session},
+    session::model::{RemoteRoom, Room},
     spawn_tokio,
 };
 
@@ -385,96 +383,57 @@ macro_rules! matrix_caption {
     }};
 }
 
-/// Extract mentions from the given string.
+/// Find mentions in the given HTML string.
 ///
-/// Returns a new string with placeholders and the corresponding widgets and the
-/// string they are replacing.
-pub fn extract_mentions(s: &str, room: &Room) -> (String, Vec<(Pill, String)>) {
-    let session = room.session().unwrap();
+/// Returns a list of `(pill, mention_content)` tuples.
+pub fn find_html_mentions(html: &str, room: &Room) -> Vec<(Pill, StrTendril)> {
     let mut mentions = Vec::new();
-    let mut mention = None;
-    let mut new_string = String::new();
+    let html = Html::parse(html);
 
-    for token in Tokenizer::new(s).infallible() {
-        match token {
-            Token::StartTag(tag) => {
-                if tag.name == HtmlString(b"a".to_vec()) && !tag.self_closing {
-                    if let Some(pill) = tag
-                        .attributes
-                        .get(&HtmlString(b"href".to_vec()))
-                        .map(|href| String::from_utf8_lossy(href))
-                        .and_then(|s| parse_pill(&s, room, &session))
-                    {
-                        mention = Some((pill, String::new()));
-                        new_string.push_str(LabelWithWidgets::DEFAULT_PLACEHOLDER);
-                        continue;
-                    }
-                }
+    append_children_mentions(&mut mentions, html.children(), room);
 
-                mention = None;
-
-                // Restore HTML.
-                write!(new_string, "<{}", String::from_utf8_lossy(&tag.name)).unwrap();
-                for (attr_name, attr_value) in &tag.attributes {
-                    write!(
-                        new_string,
-                        r#" {}="{}""#,
-                        String::from_utf8_lossy(attr_name),
-                        html_escape(&String::from_utf8_lossy(attr_value)),
-                    )
-                    .unwrap();
-                }
-                if tag.self_closing {
-                    write!(new_string, " /").unwrap();
-                }
-                write!(new_string, ">").unwrap();
-            }
-            Token::String(s) => {
-                if let Some((_, string)) = &mut mention {
-                    write!(string, "{}", String::from_utf8_lossy(&s)).unwrap();
-                    continue;
-                }
-
-                write!(new_string, "{}", html_escape(&String::from_utf8_lossy(&s))).unwrap();
-            }
-            Token::EndTag(tag) => {
-                if let Some(mention) = mention.take() {
-                    mentions.push(mention);
-                    continue;
-                }
-
-                write!(new_string, "</{}>", String::from_utf8_lossy(&tag.name)).unwrap();
-            }
-            _ => {}
-        }
-    }
-
-    (new_string, mentions)
+    mentions
 }
 
-/// Try to parse the given string to a Matrix URI and generate a pill for it.
-fn parse_pill(s: &str, room: &Room, session: &Session) -> Option<Pill> {
-    let uri = html_escape::decode_html_entities(s);
+/// Find mentions in the given child nodes and append them to the given list.
+fn append_children_mentions(
+    mentions: &mut Vec<(Pill, StrTendril)>,
+    children: Children<'_>,
+    room: &Room,
+) {
+    for node in children {
+        if let Some(mention) = node_as_mention(node, room) {
+            mentions.push(mention);
+            continue;
+        }
 
-    let Ok(id) = MatrixIdUri::parse(&uri) else {
+        append_children_mentions(mentions, node.children(), room);
+    }
+}
+
+/// Try to convert the given node to a mention.
+///
+/// This does not recurse into children.
+fn node_as_mention(node: NodeRef<'_>, room: &Room) -> Option<(Pill, StrTendril)> {
+    // Mentions are links.
+    let MatrixElement::A(anchor) = node.as_element()?.to_matrix().element else {
         return None;
     };
 
-    match id {
-        MatrixIdUri::Room(room_uri) => session
-            .room_list()
-            .get_by_identifier(&room_uri.id)
-            .as_ref()
-            .map(Pill::new)
-            .or_else(|| Some(Pill::new(&RemoteRoom::new(session, room_uri)))),
-        MatrixIdUri::User(user_id) => {
-            // We should have a strong reference to the list wherever we show a user pill,
-            // so we can use `get_or_create_members()`.
-            let user = room.get_or_create_members().get_or_create(user_id);
-            Some(Pill::new(&user))
-        }
-        _ => None,
+    // Mentions contain Matrix URIs.
+    let id = MatrixIdUri::try_from(anchor.href?).ok()?;
+
+    // Mentions contain one text child node.
+    let child = node.children().next()?;
+
+    if child.next_sibling().is_some() {
+        return None;
     }
+
+    let content = child.as_text()?.clone();
+    let pill = id.into_pill(room)?;
+
+    Some((pill, content))
 }
 
 /// Compare two raw JSON sources.
@@ -611,6 +570,28 @@ impl MatrixIdUri {
 
         MatrixUri::parse(s)?.try_into()
     }
+
+    /// Try to construct a [`Pill`] from this ID in the given room.
+    pub fn into_pill(self, room: &Room) -> Option<Pill> {
+        match self {
+            Self::Room(room_uri) => {
+                let session = room.session()?;
+                session
+                    .room_list()
+                    .get_by_identifier(&room_uri.id)
+                    .as_ref()
+                    .map(Pill::new)
+                    .or_else(|| Some(Pill::new(&RemoteRoom::new(&session, room_uri))))
+            }
+            MatrixIdUri::User(user_id) => {
+                // We should have a strong reference to the list wherever we show a user pill,
+                // so we can use `get_or_create_members()`.
+                let user = room.get_or_create_members().get_or_create(user_id);
+                Some(Pill::new(&user))
+            }
+            _ => None,
+        }
+    }
 }
 
 impl TryFrom<&MatrixUri> for MatrixIdUri {
@@ -653,6 +634,35 @@ impl FromStr for MatrixIdUri {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::parse(s)
+    }
+}
+
+impl TryFrom<&str> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        Self::parse(s)
+    }
+}
+
+impl TryFrom<&AnchorUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(value: &AnchorUri) -> Result<Self, Self::Error> {
+        match value {
+            AnchorUri::Matrix(uri) => MatrixIdUri::try_from(uri),
+            AnchorUri::MatrixTo(uri) => MatrixIdUri::try_from(uri),
+            // The same error that should be returned by `parse()` when parsing a non-Matrix URI.
+            _ => Err(IdParseError::InvalidMatrixUri(MatrixUriError::WrongScheme).into()),
+        }
+    }
+}
+
+impl TryFrom<AnchorUri> for MatrixIdUri {
+    type Error = MatrixIdUriParseError;
+
+    fn try_from(value: AnchorUri) -> Result<Self, Self::Error> {
+        Self::try_from(&value)
     }
 }
 

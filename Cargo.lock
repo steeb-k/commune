@@ -84,19 +84,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
-name = "ammonia"
-version = "3.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64e6d1c7838db705c9b756557ee27c384ce695a1c51a6fe528784cb1c6840170"
-dependencies = [
- "html5ever 0.26.0",
- "maplit",
- "once_cell",
- "tendril",
- "url",
-]
-
-[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1466,13 +1453,11 @@ dependencies = [
  "gstreamer-play",
  "gstreamer-video",
  "gtk4",
- "html-escape",
- "html2pango",
- "html5gum",
  "image",
  "indexmap",
  "libadwaita",
  "libshumate",
+ "linkify",
  "matrix-sdk",
  "matrix-sdk-ui",
  "mime",
@@ -2343,45 +2328,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "html-escape"
-version = "0.2.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d1ad449764d627e22bfd7cd5e8868264fc9236e07c752972b4080cd351cb476"
-dependencies = [
- "utf8-width",
-]
-
-[[package]]
-name = "html2pango"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a5f061cc3c0538033f81a94417f209e2b1908e3dab8b87b205d84e6109c8091b"
-dependencies = [
- "ammonia",
- "anyhow",
- "html5ever 0.26.0",
- "linkify",
- "maplit",
- "markup5ever_rcdom",
- "once_cell",
- "regex",
-]
-
-[[package]]
-name = "html5ever"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bea68cab48b8459f17cf1c944c67ddc572d272d9f2b274140f223ecb1da4a3b7"
-dependencies = [
- "log",
- "mac",
- "markup5ever 0.11.0",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "html5ever"
 version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2389,19 +2335,10 @@ checksum = "c13771afe0e6e846f1e67d038d4cb29998a6779f93c809212e4e9c32efd244d4"
 dependencies = [
  "log",
  "mac",
- "markup5ever 0.12.1",
+ "markup5ever",
  "proc-macro2",
  "quote",
  "syn 2.0.61",
-]
-
-[[package]]
-name = "html5gum"
-version = "0.5.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c4e556171a058ba117bbe88b059fb37b6289023e007d2903ea6dca3a3cbff14"
-dependencies = [
- "jetscii",
 ]
 
 [[package]]
@@ -2718,12 +2655,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
-name = "jetscii"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47f142fe24a9c9944451e8349de0a56af5f3e7226dc46f3ed4d4ecc0b85af75e"
-
-[[package]]
 name = "jobserver"
 version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2942,9 +2873,9 @@ dependencies = [
 
 [[package]]
 name = "linkify"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96dd5884008358112bc66093362197c7248ece00d46624e2cf71e50029f8cff5"
+checksum = "f1dfa36d52c581e9ec783a7ce2a5e0143da6237be5811a0b3153fedfdbe9f780"
 dependencies = [
  "memchr",
 ]
@@ -3072,42 +3003,16 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "markup5ever"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a2629bb1404f3d34c2e921f21fd34ba00b206124c81f65c50b43b6aaefeb016"
-dependencies = [
- "log",
- "phf 0.10.1",
- "phf_codegen 0.10.0",
- "string_cache",
- "string_cache_codegen",
- "tendril",
-]
-
-[[package]]
-name = "markup5ever"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16ce3abbeba692c8b8441d036ef91aea6df8da2c6b6e21c7e14d3c18e526be45"
 dependencies = [
  "log",
- "phf 0.11.2",
- "phf_codegen 0.11.2",
+ "phf",
+ "phf_codegen",
  "string_cache",
  "string_cache_codegen",
  "tendril",
-]
-
-[[package]]
-name = "markup5ever_rcdom"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9521dd6750f8e80ee6c53d65e2e4656d7de37064f3a7a5d2d11d05df93839c2"
-dependencies = [
- "html5ever 0.26.0",
- "markup5ever 0.11.0",
- "tendril",
- "xml5ever",
 ]
 
 [[package]]
@@ -3887,31 +3792,12 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "phf"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fabbf1ead8a5bcbc20f5f8b939ee3f5b0f6f281b6ad3468b84656b658b455259"
-dependencies = [
- "phf_shared 0.10.0",
-]
-
-[[package]]
-name = "phf"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ade2d8b8f33c7333b51bcf0428d37e217e9f32192ae4772156f65063b8ce03dc"
 dependencies = [
  "phf_macros",
  "phf_shared 0.11.2",
-]
-
-[[package]]
-name = "phf_codegen"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fb1c3a8bc4dd4e5cfce29b44ffc14bedd2ee294559a294e2a4d4c9e9a6a13cd"
-dependencies = [
- "phf_generator 0.10.0",
- "phf_shared 0.10.0",
 ]
 
 [[package]]
@@ -4654,8 +4540,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb6d948779da5fb4d1fc2d4c7a3f0cab21453dd14765a72fbee38ef758613d7f"
 dependencies = [
  "as_variant",
- "html5ever 0.27.0",
- "phf 0.11.2",
+ "html5ever",
+ "phf",
+ "ruma-common",
  "tracing",
  "wildmatch",
 ]
@@ -5679,12 +5566,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
-name = "utf8-width"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86bd8d4e895da8537e5315b8254664e6b769c4ff3db18321b297a1e7004392e3"
-
-[[package]]
 name = "uuid"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6113,17 +5994,6 @@ checksum = "21e5a325c3cb8398ad6cf859c1135b25dd29e186679cf2da7581d9679f63b38e"
 dependencies = [
  "libc",
  "winapi",
-]
-
-[[package]]
-name = "xml5ever"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4034e1d05af98b51ad7214527730626f019682d797ba38b51689212118d8e650"
-dependencies = [
- "log",
- "mac",
- "markup5ever 0.11.0",
 ]
 
 [[package]]

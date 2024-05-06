@@ -10,6 +10,7 @@ pub mod media;
 pub mod message_dialog;
 pub mod notifications;
 pub mod sourceview;
+pub mod string;
 pub mod template_callbacks;
 
 use std::{

@@ -1,6 +1,7 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, CompositeTemplate};
-use html2pango::markup;
+
+use crate::{prelude::*, utils::string::linkify};
 
 mod imp {
     use std::cell::RefCell;
@@ -51,8 +52,7 @@ mod imp {
     impl RoomTitle {
         /// Set the title of the room.
         fn set_title(&self, title: Option<String>) {
-            // Parse and escape markup in title.
-            let title = title.map(|s| markup(&s));
+            let title = title.map(|s| to_pango_markup(&s));
 
             if *self.title.borrow() == title {
                 return;
@@ -66,8 +66,7 @@ mod imp {
 
         /// Set the subtitle of the room.
         pub fn set_subtitle(&self, subtitle: Option<String>) {
-            // Parse and escape markup in subtitle.
-            let subtitle = subtitle.map(|s| markup(&s));
+            let subtitle = subtitle.map(|s| to_pango_markup(&s));
 
             if *self.subtitle.borrow() == subtitle {
                 return;
@@ -98,4 +97,14 @@ impl Default for RoomTitle {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Convert the given string to be used by Pango.
+///
+/// This linkifies the text, removes newlines, escapes markup and removes
+/// trailing spaces.
+fn to_pango_markup(s: &str) -> String {
+    let mut result = linkify(s).replace('\n', " ");
+    result.truncate_end_whitespaces();
+    result
 }

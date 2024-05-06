@@ -287,7 +287,7 @@ fn build_content(
                     parent.set_child(Some(&child));
                     child
                 };
-                child.with_text(message.body.clone(), format);
+                child.with_plain_text(message.body.clone(), format);
             }
             MessageType::Text(message) => {
                 let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
@@ -319,7 +319,7 @@ fn build_content(
                     parent.set_child(Some(&child));
                     child
                 };
-                child.with_text(gettext("Unsupported event"), format);
+                child.with_plain_text(gettext("Unsupported event"), format);
             }
         },
         TimelineItemContent::Sticker(sticker) => {
@@ -340,7 +340,7 @@ fn build_content(
                 parent.set_child(Some(&child));
                 child
             };
-            child.with_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
+            child.with_plain_text(gettext("Could not decrypt this message, decryption will be retried once the keys are available."), format);
         }
         TimelineItemContent::RedactedMessage => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
@@ -350,7 +350,7 @@ fn build_content(
                 parent.set_child(Some(&child));
                 child
             };
-            child.with_text(gettext("This message was removed."), format);
+            child.with_plain_text(gettext("This message was removed."), format);
         }
         content => {
             warn!("Unsupported event content: {content:?}");
@@ -361,7 +361,7 @@ fn build_content(
                 parent.set_child(Some(&child));
                 child
             };
-            child.with_text(gettext("Unsupported event"), format);
+            child.with_plain_text(gettext("Unsupported event"), format);
         }
     }
 }
