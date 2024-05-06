@@ -422,72 +422,79 @@ impl UserFacingError for oo7::Error {
 
 impl UserFacingError for oo7::portal::Error {
     fn to_user_facing(&self) -> String {
+        use oo7::portal::Error;
+
         match self {
-            oo7::portal::Error::FileHeaderMismatch(_) |
-            oo7::portal::Error::VersionMismatch(_) |
-            oo7::portal::Error::NoData |
-            oo7::portal::Error::MacError |
-            oo7::portal::Error::HashedAttributeMac(_) |
-            oo7::portal::Error::GVariantDeserialization(_) |
-            oo7::portal::Error::SaltSizeMismatch(_, _) => gettext(
+            Error::FileHeaderMismatch(_) |
+            Error::VersionMismatch(_) |
+            Error::NoData |
+            Error::MacError |
+            Error::HashedAttributeMac(_) |
+            Error::GVariantDeserialization(_) |
+            Error::SaltSizeMismatch(_, _) |
+            Error::ChecksumMismatch |
+            Error::AlgorithmMismatch(_) |
+            Error::Utf8(_) => gettext(
                 "The secret storage file is corrupted.",
             ),
-            oo7::portal::Error::NoParentDir(_) |
-            oo7::portal::Error::NoDataDir => gettext(
+            Error::NoParentDir(_) |
+            Error::NoDataDir => gettext(
                 "Could not access the secret storage file location.",
             ),
-            oo7::portal::Error::Io(_) => gettext(
+            Error::Io(_) => gettext(
                 "An unknown error occurred when accessing the secret storage file.",
             ),
-            oo7::portal::Error::TargetFileChanged(_) => gettext(
+            Error::TargetFileChanged(_) => gettext(
                 "The secret storage file has been changed by another process.",
             ),
-            oo7::portal::Error::PortalBus(_) => gettext(
+            Error::PortalBus(_) => gettext(
                 "An unknown error occurred when interacting with the D-Bus Secret Portal backend.",
             ),
-            oo7::portal::Error::CancelledPortalRequest => gettext(
+            Error::CancelledPortalRequest => gettext(
                 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
             ),
-            oo7::portal::Error::PortalNotAvailable => gettext(
+            Error::PortalNotAvailable => gettext(
                 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is installed, and it is at least at version 1.5.0.",
             ),
-            oo7::portal::Error::WeakKey(_) => gettext(
+            Error::WeakKey(_) => gettext(
                 "The Flatpak Secret Portal provided a key that is too weak to be secure.",
             ),
             // Can only occur when using the `replace_item_index` or `delete_item_index` methods.
-            oo7::portal::Error::InvalidItemIndex(_) => unreachable!(),
+            Error::InvalidItemIndex(_) => unreachable!(),
         }
     }
 }
 
 impl UserFacingError for oo7::dbus::Error {
     fn to_user_facing(&self) -> String {
+        use oo7::dbus::{Error, ServiceError};
+
         match self {
-            oo7::dbus::Error::Deleted => gettext(
+            Error::Deleted => gettext(
                 "The item was deleted.",
             ),
-            oo7::dbus::Error::Service(s) => match s {
-                oo7::dbus::ServiceError::ZBus(_) => gettext(
+            Error::Service(s) => match s {
+                ServiceError::ZBus(_) => gettext(
                     "An unknown error occurred when interacting with the D-Bus Secret Service.",
                 ),
-                oo7::dbus::ServiceError::IsLocked => gettext(
+                ServiceError::IsLocked => gettext(
                     "The collection or item is locked.",
                 ),
-                oo7::dbus::ServiceError::NoSession => gettext(
+                ServiceError::NoSession => gettext(
                     "The D-Bus Secret Service session does not exist.",
                 ),
-                oo7::dbus::ServiceError::NoSuchObject => gettext(
+                ServiceError::NoSuchObject => gettext(
                     "The collection or item does not exist.",
                 ),
             },
-            oo7::dbus::Error::Dismissed => gettext(
+            Error::Dismissed => gettext(
                 "The request to the D-Bus Secret Service was cancelled. Make sure to accept any prompt asking to access it.",
             ),
-            oo7::dbus::Error::NotFound(_) => gettext(
+            Error::NotFound(_) => gettext(
                 "Could not access the default collection. Make sure a keyring was created and set as default.",
             ),
-            oo7::dbus::Error::Zbus(_) |
-            oo7::dbus::Error::IO(_) => gettext(
+            Error::Zbus(_) |
+            Error::IO(_) => gettext(
                 "An unknown error occurred when interacting with the D-Bus Secret Service.",
             ),
         }
