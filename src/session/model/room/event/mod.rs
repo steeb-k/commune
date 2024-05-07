@@ -7,7 +7,11 @@ use matrix_sdk_ui::timeline::{
     RepliedToEvent, TimelineDetails, TimelineItemContent,
 };
 use ruma::{
-    events::{receipt::Receipt, room::message::MessageType, AnySyncTimelineEvent},
+    events::{
+        receipt::Receipt,
+        room::message::{MessageType, OriginalSyncRoomMessageEvent},
+        AnySyncTimelineEvent,
+    },
     serde::Raw,
     EventId, MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
     OwnedUserId,
@@ -674,6 +678,17 @@ impl Event {
         }
     }
 
+    /// Get the event this `Event` replies to, if any.
+    ///
+    /// Returns `None(_)` if this event is not a reply or if the event was not
+    /// found locally.
+    pub fn reply_to_event(&self) -> Option<Event> {
+        let event_id = self.reply_to_id()?;
+        self.room()
+            .timeline()
+            .event_by_key(&EventKey::EventId(event_id))
+    }
+
     /// Fetch missing details for this event.
     ///
     /// This is a no-op if called for a local event.
@@ -721,6 +736,14 @@ impl Event {
             self.content(),
             TimelineItemContent::Message(_) | TimelineItemContent::Sticker(_)
         )
+    }
+
+    /// Deserialize this `Event` as an `OriginalSyncRoomMessageEvent`, if
+    /// possible.
+    pub fn as_message(&self) -> Option<OriginalSyncRoomMessageEvent> {
+        self.raw()?
+            .deserialize_as::<OriginalSyncRoomMessageEvent>()
+            .ok()
     }
 
     /// Whether this `Event` can count as an unread message.

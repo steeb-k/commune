@@ -6,18 +6,12 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::{
-    attachment::{AttachmentInfo, BaseFileInfo, BaseImageInfo},
-    ruma::events::{
-        room::message::{EmoteMessageEventContent, FormattedBody, MessageType},
-        AnySyncMessageLikeEvent, AnySyncTimelineEvent, SyncMessageLikeEvent,
-    },
-};
+use matrix_sdk::attachment::{AttachmentInfo, BaseFileInfo, BaseImageInfo};
 use ruma::{
     events::{
         room::message::{
-            AddMentions, ForwardThread, LocationMessageEventContent, MessageFormat,
-            OriginalSyncRoomMessageEvent, RoomMessageEventContent,
+            AddMentions, EmoteMessageEventContent, FormattedBody, ForwardThread,
+            LocationMessageEventContent, MessageFormat, MessageType, RoomMessageEventContent,
         },
         AnyMessageLikeEventContent,
     },
@@ -35,7 +29,7 @@ use crate::{
     components::{CustomEntry, LabelWithWidgets, Pill},
     gettext_f,
     prelude::*,
-    session::model::{Event, EventKey, Member, Room},
+    session::model::{Event, Member, Room},
     spawn, toast,
     utils::{
         matrix::extract_mentions,
@@ -549,7 +543,7 @@ impl MessageToolbar {
         let html_body = if is_markdown {
             FormattedBody::markdown(formatted_body).map(|b| b.body)
         } else if has_mentions {
-            // Already formatted with HTML
+            // Already formatted with HTML.
             Some(formatted_body)
         } else {
             None
@@ -562,57 +556,44 @@ impl MessageToolbar {
                 EmoteMessageEventContent::plain(plain_body)
             })
             .into()
+        } else if let Some(html_body) = html_body {
+            RoomMessageEventContent::text_html(plain_body, html_body)
         } else {
-            let mut content = if let Some(html_body) = html_body {
-                RoomMessageEventContent::text_html(plain_body, html_body)
-            } else {
-                RoomMessageEventContent::text_plain(plain_body)
-            };
+            RoomMessageEventContent::text_plain(plain_body)
+        };
 
-            if self.related_event_type() == RelatedEventType::Reply {
-                let related_event = self
-                    .related_event()
-                    .unwrap()
-                    .raw()
-                    .unwrap()
-                    .deserialize()
-                    .unwrap();
-                if let AnySyncTimelineEvent::MessageLike(AnySyncMessageLikeEvent::RoomMessage(
-                    SyncMessageLikeEvent::Original(related_message_event),
-                )) = related_event
+        // Handle related event.
+        match self.related_event_type() {
+            RelatedEventType::Reply => {
+                if let Some(related_message) =
+                    self.related_event().and_then(|event| event.as_message())
                 {
-                    let full_related_message_event = related_message_event
-                        .into_full_event(self.room().unwrap().room_id().to_owned());
+                    let full_related_message =
+                        related_message.into_full_event(room.room_id().to_owned());
                     content = content.make_reply_to(
-                        &full_related_message_event,
+                        &full_related_message,
                         ForwardThread::Yes,
                         AddMentions::No,
                     )
                 }
             }
+            RelatedEventType::Edit => {
+                if let Some((related_event, related_message)) = self
+                    .related_event()
+                    .and_then(|event| event.as_message().map(|message| (event, message)))
+                {
+                    // Try to get the replied to message of the original event if it's available
+                    // locally.
+                    let replied_to_message = related_event
+                        .reply_to_event()
+                        .and_then(|e| e.as_message())
+                        .map(|m| m.into_full_event(room.room_id().to_owned()));
 
-            content
-        };
-
-        // Handle edit.
-        if self.related_event_type() == RelatedEventType::Edit {
-            let related_event = self.related_event().unwrap();
-            let related_message = related_event
-                .raw()
-                .unwrap()
-                .deserialize_as::<OriginalSyncRoomMessageEvent>()
-                .unwrap();
-
-            // Try to get the replied to message of the original event if it's available
-            // locally.
-            let replied_to_message = related_event
-                .reply_to_id()
-                .and_then(|id| room.timeline().event_by_key(&EventKey::EventId(id)))
-                .and_then(|e| e.raw())
-                .and_then(|r| r.deserialize_as::<OriginalSyncRoomMessageEvent>().ok())
-                .map(|e| e.into_full_event(room.room_id().to_owned()));
-
-            content = content.make_replacement(&related_message, replied_to_message.as_ref());
+                    content =
+                        content.make_replacement(&related_message, replied_to_message.as_ref());
+                }
+            }
+            RelatedEventType::None => {}
         }
 
         room.send_room_message_event(content);
