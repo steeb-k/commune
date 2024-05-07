@@ -215,6 +215,17 @@ impl Application {
         // This can't be added via the builder
         dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
 
+        // If the user wants our support room, try to open it ourselves.
+        dialog.connect_activate_link(clone!(@weak self as obj, @weak dialog => @default-return false, move |_, uri| {
+            if uri == "https://matrix.to/#/#fractal:gnome.org" && obj.session_list().has_session_ready() {
+                obj.process_uri(uri);
+                dialog.close();
+                return true;
+            }
+
+            false
+        }));
+
         dialog.present(&self.present_main_window());
     }
 

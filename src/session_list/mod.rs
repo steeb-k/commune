@@ -123,6 +123,16 @@ impl SessionList {
             .any(|s| s.is::<NewSession>())
     }
 
+    /// Whether at least one session is ready.
+    pub fn has_session_ready(&self) -> bool {
+        self.imp()
+            .list
+            .borrow()
+            .values()
+            .filter_map(|s| s.downcast_ref::<Session>())
+            .any(|s| s.state() == SessionState::Ready)
+    }
+
     /// The session with the given ID, if any.
     pub fn get(&self, session_id: &str) -> Option<SessionInfo> {
         self.imp().list.borrow().get(session_id).cloned()
