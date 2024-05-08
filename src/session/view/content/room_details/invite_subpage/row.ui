@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentInviteInviteeRow" parent="AdwBin">
+  <template class="RoomDetailsInviteRow" parent="AdwBin">
     <property name="margin-top">12</property>
     <property name="margin-bottom">12</property>
     <property name="margin-start">12</property>
@@ -15,8 +15,10 @@
           <object class="ComponentsAvatar">
             <property name="size">32</property>
             <binding name="data">
-              <lookup name="avatar-data" type="Invitee">
-                <lookup name="user">ContentInviteInviteeRow</lookup>
+              <lookup name="avatar-data">
+                <lookup name="user">
+                  <lookup name="item">RoomDetailsInviteRow</lookup>
+                </lookup>
               </lookup>
             </binding>
             <property name="accessible-role">presentation</property>
@@ -33,8 +35,10 @@
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <binding name="label">
-                  <lookup name="display-name" type="Invitee">
-                    <lookup name="user">ContentInviteInviteeRow</lookup>
+                  <lookup name="display-name">
+                    <lookup name="user">
+                      <lookup name="item">RoomDetailsInviteRow</lookup>
+                    </lookup>
                   </lookup>
                 </binding>
                 <style>
@@ -48,8 +52,10 @@
                 <property name="halign">start</property>
                 <property name="ellipsize">end</property>
                 <binding name="label">
-                  <lookup name="user-id-string" type="Invitee">
-                    <lookup name="user">ContentInviteInviteeRow</lookup>
+                  <lookup name="user-id-string">
+                    <lookup name="user">
+                      <lookup name="item">RoomDetailsInviteRow</lookup>
+                    </lookup>
                   </lookup>
                 </binding>
                 <style>
@@ -62,22 +68,18 @@
         <child>
           <object class="GtkCheckButton" id="check_button">
             <binding name="visible">
-                <closure type="gboolean" function="invert_boolean">
-                  <closure type="gboolean" function="string_not_empty">
-                    <lookup name="invite-exception" type="Invitee">
-                      <lookup name="user">ContentInviteInviteeRow</lookup>
-                    </lookup>
-                  </closure>
-                </closure>
+              <lookup name="can-invite">
+                <lookup name="item">RoomDetailsInviteRow</lookup>
+              </lookup>
           </binding>
           </object>
         </child>
         <child>
           <object class="GtkLabel">
             <binding name="visible">
-              <closure type="gboolean" function="string_not_empty">
-                <lookup name="invite-exception" type="Invitee">
-                  <lookup name="user">ContentInviteInviteeRow</lookup>
+              <closure type="gboolean" function="invert_boolean">
+                <lookup name="can-invite">
+                  <lookup name="item">RoomDetailsInviteRow</lookup>
                 </lookup>
               </closure>
             </binding>
@@ -85,8 +87,8 @@
             <property name="halign">end</property>
             <property name="ellipsize">end</property>
             <binding name="label">
-              <lookup name="invite-exception" type="Invitee">
-                <lookup name="user">ContentInviteInviteeRow</lookup>
+              <lookup name="invite-exception">
+                <lookup name="item">RoomDetailsInviteRow</lookup>
               </lookup>
             </binding>
             <style>

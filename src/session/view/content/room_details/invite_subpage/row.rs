@@ -1,7 +1,7 @@
 use adw::subclass::prelude::BinImpl;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
-use super::Invitee;
+use super::InviteItem;
 
 mod imp {
     use std::cell::RefCell;
@@ -13,22 +13,22 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/invite_subpage/invitee_row.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/invite_subpage/row.ui"
     )]
-    #[properties(wrapper_type = super::InviteeRow)]
-    pub struct InviteeRow {
-        /// The user displayed by this row.
-        #[property(get, set = Self::set_user, explicit_notify, nullable)]
-        pub user: RefCell<Option<Invitee>>,
+    #[properties(wrapper_type = super::InviteRow)]
+    pub struct InviteRow {
+        /// The item displayed by this row.
+        #[property(get, set = Self::set_item, explicit_notify, nullable)]
+        pub item: RefCell<Option<InviteItem>>,
         pub binding: RefCell<Option<glib::Binding>>,
         #[template_child]
         pub check_button: TemplateChild<gtk::CheckButton>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for InviteeRow {
-        const NAME: &'static str = "ContentInviteInviteeRow";
-        type Type = super::InviteeRow;
+    impl ObjectSubclass for InviteRow {
+        const NAME: &'static str = "RoomDetailsInviteRow";
+        type Type = super::InviteRow;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
@@ -42,15 +42,15 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for InviteeRow {}
+    impl ObjectImpl for InviteRow {}
 
-    impl WidgetImpl for InviteeRow {}
-    impl BinImpl for InviteeRow {}
+    impl WidgetImpl for InviteRow {}
+    impl BinImpl for InviteRow {}
 
-    impl InviteeRow {
-        /// Set the user displayed by this row.
-        fn set_user(&self, user: Option<Invitee>) {
-            if *self.user.borrow() == user {
+    impl InviteRow {
+        /// Set the item displayed by this row.
+        fn set_item(&self, item: Option<InviteItem>) {
+            if *self.item.borrow() == item {
                 return;
             }
 
@@ -58,10 +58,10 @@ mod imp {
                 binding.unbind();
             }
 
-            if let Some(user) = &user {
+            if let Some(item) = &item {
                 // We can't use `gtk::Expression` because we need a bidirectional binding
-                let binding = user
-                    .bind_property("invited", &*self.check_button, "active")
+                let binding = item
+                    .bind_property("is-invitee", &*self.check_button, "active")
                     .sync_create()
                     .bidirectional()
                     .build();
@@ -69,20 +69,20 @@ mod imp {
                 self.binding.replace(Some(binding));
             }
 
-            self.user.replace(user);
-            self.obj().notify_user();
+            self.item.replace(item);
+            self.obj().notify_item();
         }
     }
 }
 
 glib::wrapper! {
-    /// A row presenting a possible invitee.
-    pub struct InviteeRow(ObjectSubclass<imp::InviteeRow>)
+    /// A row presenting an item of the result of a search in the user directory.
+    pub struct InviteRow(ObjectSubclass<imp::InviteRow>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl InviteeRow {
-    pub fn new(user: &Invitee) -> Self {
-        glib::Object::builder().property("user", user).build()
+impl InviteRow {
+    pub fn new(item: &InviteItem) -> Self {
+        glib::Object::builder().property("item", item).build()
     }
 }

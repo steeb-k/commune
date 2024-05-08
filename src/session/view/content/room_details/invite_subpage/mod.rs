@@ -1,24 +1,27 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::ngettext;
 use gtk::{gdk, glib, glib::clone, CompositeTemplate};
-use ruma::OwnedUserId;
+use tracing::error;
 
-mod invitee;
-use self::invitee::Invitee;
-mod invitee_list;
-mod invitee_row;
+mod item;
+mod list;
+mod row;
+
 use self::{
-    invitee_list::{InviteeList, InviteeListState},
-    invitee_row::InviteeRow,
+    item::InviteItem,
+    list::{InviteList, InviteListState},
+    row::InviteRow,
 };
 use crate::{
-    components::{PillSearchEntry, Spinner, SpinnerButton},
+    components::{PillSearchEntry, PillSource, Spinner, SpinnerButton},
     prelude::*,
-    session::model::Room,
-    spawn, toast,
+    session::model::{Room, User},
+    toast,
 };
 
 mod imp {
+    use std::cell::OnceCell;
+
     use glib::subclass::InitializingObject;
 
     use super::*;
@@ -29,9 +32,6 @@ mod imp {
     )]
     #[properties(wrapper_type = super::InviteSubpage)]
     pub struct InviteSubpage {
-        /// The room users will be invited to.
-        #[property(get, set = Self::set_room, construct_only)]
-        pub room: glib::WeakRef<Room>,
         #[template_child]
         pub search_entry: TemplateChild<PillSearchEntry>,
         #[template_child]
@@ -52,18 +52,25 @@ mod imp {
         pub error_page: TemplateChild<adw::StatusPage>,
         #[template_child]
         pub loading_page: TemplateChild<Spinner>,
+        /// The room users will be invited to.
+        #[property(get, set = Self::set_room, construct_only)]
+        pub room: glib::WeakRef<Room>,
+        /// The list managing the invited users.
+        #[property(get)]
+        pub invite_list: OnceCell<InviteList>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for InviteSubpage {
-        const NAME: &'static str = "ContentInviteSubpage";
+        const NAME: &'static str = "RoomDetailsInviteSubpage";
         type Type = super::InviteSubpage;
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
-            InviteeRow::ensure_type();
+            InviteRow::ensure_type();
 
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
 
             klass.add_binding(gdk::Key::Escape, gdk::ModifierType::empty(), |obj| {
                 obj.close();
@@ -77,40 +84,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for InviteSubpage {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            self.cancel_button
-                .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.close();
-                }));
-
-            self.search_entry.connect_pill_removed(|_, source| {
-                if let Ok(user) = source.downcast::<Invitee>() {
-                    user.set_invited(false);
-                }
-            });
-
-            self.invite_button
-                .connect_clicked(clone!(@weak obj => move |_| {
-                    obj.invite();
-                }));
-
-            self.list_view.connect_activate(|list_view, index| {
-                let Some(invitee) = list_view
-                    .model()
-                    .and_then(|m| m.item(index))
-                    .and_downcast::<Invitee>()
-                else {
-                    return;
-                };
-
-                invitee.set_invited(!invitee.invited());
-            });
-        }
-    }
+    impl ObjectImpl for InviteSubpage {}
 
     impl WidgetImpl for InviteSubpage {}
     impl NavigationPageImpl for InviteSubpage {}
@@ -120,34 +94,53 @@ mod imp {
         fn set_room(&self, room: Room) {
             let obj = self.obj();
 
-            let user_list = InviteeList::new(&room);
-            user_list.connect_invitee_added(clone!(@weak self as imp => move |_, invitee| {
-                imp.search_entry.add_pill(invitee);
+            let invite_list = self.invite_list.get_or_init(|| InviteList::new(&room));
+            invite_list.connect_invitee_added(clone!(@weak self as imp => move |_, invitee| {
+                imp.search_entry.add_pill(&invitee.user());
             }));
 
-            user_list.connect_invitee_removed(clone!(@weak self as imp => move |_, invitee| {
-                imp.search_entry.remove_pill(&invitee.identifier());
+            invite_list.connect_invitee_removed(clone!(@weak self as imp => move |_, invitee| {
+                imp.search_entry.remove_pill(&invitee.user().identifier());
             }));
 
-            user_list.connect_state_notify(clone!(@weak obj => move |_| {
-                obj.update_view();
+            invite_list.connect_state_notify(clone!(@weak self as imp => move |_| {
+                imp.update_view();
             }));
 
             self.search_entry
-                .bind_property("text", &user_list, "search-term")
+                .bind_property("text", invite_list, "search-term")
                 .sync_create()
                 .build();
 
-            user_list
-                .bind_property("has-selected", &*self.invite_button, "sensitive")
+            invite_list
+                .bind_property("has-invitees", &*self.invite_button, "sensitive")
                 .sync_create()
                 .build();
 
             self.list_view
-                .set_model(Some(&gtk::NoSelection::new(Some(user_list))));
+                .set_model(Some(&gtk::NoSelection::new(Some(invite_list.clone()))));
 
             self.room.set(Some(&room));
             obj.notify_room();
+        }
+
+        /// Update the view for the current state of the list.
+        fn update_view(&self) {
+            let state = self
+                .invite_list
+                .get()
+                .expect("Can't update view without an InviteeList")
+                .state();
+
+            let page = match state {
+                InviteListState::Initial => "no-search",
+                InviteListState::Loading => "loading",
+                InviteListState::NoMatching => "no-results",
+                InviteListState::Matching => "results",
+                InviteListState::Error => "error",
+            };
+
+            self.stack.set_visible_child_name(page);
         }
     }
 }
@@ -158,11 +151,15 @@ glib::wrapper! {
         @extends gtk::Widget, gtk::Window, adw::NavigationPage, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl InviteSubpage {
+    /// Construct a new `InviteSubpage` with the given room.
     pub fn new(room: &Room) -> Self {
         glib::Object::builder().property("room", room).build()
     }
 
+    /// Close this subpage.
+    #[template_callback]
     fn close(&self) {
         let window = self
             .root()
@@ -175,91 +172,72 @@ impl InviteSubpage {
         }
     }
 
-    fn invitee_list(&self) -> Option<InviteeList> {
-        self.imp()
-            .list_view
-            .model()
-            .and_downcast::<gtk::NoSelection>()?
-            .model()
-            .and_downcast::<InviteeList>()
+    /// Toggle the invited state of the item at the given index.
+    #[template_callback]
+    fn toggle_item_is_invitee(&self, index: u32) {
+        let Some(item) = self.invite_list().item(index).and_downcast::<InviteItem>() else {
+            return;
+        };
+
+        item.set_is_invitee(!item.is_invitee());
+    }
+
+    /// Uninvite the user from the given pill source.
+    #[template_callback]
+    fn remove_pill_invitee(&self, source: PillSource) {
+        if let Ok(user) = source.downcast::<User>() {
+            self.invite_list().remove_invitee(user.user_id());
+        }
     }
 
     /// Invite the selected users to the room.
-    fn invite(&self) {
-        self.imp().invite_button.set_loading(true);
-
-        spawn!(clone!(@weak self as obj => async move {
-            obj.invite_inner().await;
-        }));
-    }
-
-    async fn invite_inner(&self) {
+    #[template_callback]
+    async fn invite(&self) {
         let Some(room) = self.room() else {
             return;
         };
-        let Some(user_list) = self.invitee_list() else {
-            return;
-        };
 
-        let invitees: Vec<OwnedUserId> = user_list
-            .invitees()
-            .into_iter()
-            .map(|i| i.user_id().clone())
-            .collect();
+        self.imp().invite_button.set_loading(true);
+
+        let invite_list = self.invite_list();
+        let invitees = invite_list.invitees_ids();
 
         match room.invite(&invitees).await {
             Ok(()) => {
                 self.close();
             }
             Err(failed_users) => {
-                for invitee in &invitees {
-                    if !failed_users.contains(&invitee.as_ref()) {
-                        user_list.remove_invitee(invitee)
-                    }
+                invite_list.retain_invitees(&failed_users);
+
+                let n_failed = failed_users.len();
+                let n = invite_list.n_invitees();
+                if n != n_failed {
+                    // This should not be possible.
+                    error!("The number of failed users does not match the number of remaining invitees: expected {n_failed}, got {n}");
                 }
 
-                let n = failed_users.len();
-                let first_failed = failed_users
-                    .first()
-                    .and_then(|user_id| {
-                        user_list
-                            .invitees()
-                            .into_iter()
-                            .find(|i| i.user_id() == *user_id)
-                    })
-                    .unwrap();
+                if n == 0 {
+                    self.close();
+                } else {
+                    let first_failed = invite_list.first_invitee().map(|item| item.user()).unwrap();
 
-                toast!(
-                    self,
-                    ngettext(
-                        // Translators: Do NOT translate the content between '{' and '}', these
-                        // are variable names.
-                        "Could not invite {user} to {room}. Try again later.",
-                        "Could not invite {n} users to {room}. Try again later.",
-                        n as u32,
-                    ),
-                    @user = first_failed,
-                    @room,
-                    n = n.to_string(),
-                );
+                    toast!(
+                        self,
+                        ngettext(
+                            // Translators: Do NOT translate the content between '{' and '}', these
+                            // are variable names.
+                            "Could not invite {user} to {room}. Try again later.",
+                            "Could not invite {n} users to {room}. Try again later.",
+                            n as u32,
+                        ),
+                        @user = first_failed,
+                        @room,
+                        n = n.to_string(),
+                    );
+                }
             }
         }
 
         self.imp().invite_button.set_loading(false);
-    }
-
-    fn update_view(&self) {
-        let imp = self.imp();
-        match self
-            .invitee_list()
-            .expect("Can't update view without an InviteeList")
-            .state()
-        {
-            InviteeListState::Initial => imp.stack.set_visible_child(&*imp.no_search_page),
-            InviteeListState::Loading => imp.stack.set_visible_child(&*imp.loading_page),
-            InviteeListState::NoMatching => imp.stack.set_visible_child(&*imp.no_matching_page),
-            InviteeListState::Matching => imp.stack.set_visible_child(&*imp.matching_page),
-            InviteeListState::Error => imp.stack.set_visible_child(&*imp.error_page),
-        }
     }
 }
