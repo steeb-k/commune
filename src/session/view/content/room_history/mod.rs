@@ -989,9 +989,15 @@ impl RoomHistory {
 
             window.show_room(session.session_id(), successor.room_id());
         } else if let Some(successor_id) = room.successor_id().map(ToOwned::to_owned) {
+            let via = successor_id
+                .server_name()
+                .map(ToOwned::to_owned)
+                .into_iter()
+                .collect();
+
             if let Err(error) = session
                 .room_list()
-                .join_by_id_or_alias(successor_id.into(), vec![])
+                .join_by_id_or_alias(successor_id.into(), via)
                 .await
             {
                 toast!(self, error);
