@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-04-18 12:38+0000\n"
-"PO-Revision-Date: 2024-05-01 15:02+0200\n"
+"POT-Creation-Date: 2024-05-03 12:03+0000\n"
+"PO-Revision-Date: 2024-05-09 16:16+0200\n"
 "Last-Translator: Alexandre Franke <afranke@gnome.org>\n"
 "Language-Team: French - France <gnomefr@traduc.org>\n"
 "Language: fr_FR\n"
@@ -518,8 +518,8 @@ msgid ""
 "data, and attempt to recover this session again."
 msgstr ""
 "Pour résoudre ça, vous devriez réinitialiser la restauration depuis une "
-"session qui a toutes les données et réessayer la restauration depuis la session "
-"actuelle."
+"session qui a toutes les données et réessayer la restauration depuis la "
+"session actuelle."
 
 #: src/components/crypto/recovery_setup_view.ui:464
 msgid ""
@@ -820,42 +820,42 @@ msgstr "Impossible d’arrêter d’ignorer l’utilisateur"
 msgid "Could not ignore user"
 msgstr "Impossible d’ignorer l’utilisateur"
 
-#: src/components/user_page.ui:68
+#: src/components/user_page.ui:67
 #: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
 msgid "Copy Matrix User ID to Clipboard"
 msgstr "Copier l’identifiant utilisateur Matrix vers le presse-papiers"
 
-#: src/components/user_page.ui:113
+#: src/components/user_page.ui:115
 msgid "Role"
 msgstr "Role"
 
-#: src/components/user_page.ui:126
+#: src/components/user_page.ui:128
 msgid "Power Level"
 msgstr "Niveau de pouvoir"
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/user_page.ui:168
+#: src/components/user_page.ui:170
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 #: src/utils/message_dialog.rs:92
 msgid "Ban"
 msgstr "Bannir"
 
 #. Translators: As in, 'Unban room member'.
-#: src/components/user_page.ui:180
+#: src/components/user_page.ui:182
 msgid "Unban"
 msgstr "Annuler le bannissement"
 
-#: src/components/user_page.ui:195
+#: src/components/user_page.ui:197
 msgid "Remove Messages"
 msgstr "Supprimer le message"
 
-#: src/components/user_page.ui:209
+#: src/components/user_page.ui:211
 #: src/session/view/account_settings/security_page/mod.ui:5
 msgid "Security"
 msgstr "Sécurité"
 
-#: src/components/user_page.ui:236
+#: src/components/user_page.ui:238
 #: src/identity_verification_view/accept_request_page.ui:58
 #: src/session/view/account_settings/security_page/mod.rs:257
 #: src/session/view/content/room_history/verification_info_bar.rs:165
@@ -3856,7 +3856,7 @@ msgstr "Refus de l’accès…"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:566
 msgid "Kicking user…"
-msgstr "Expulsion de {user}…"
+msgstr "Expulsion de l’utilisateur…"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:601
 msgid "Muting member…"
@@ -3884,11 +3884,11 @@ msgstr "Impossible de rendre la parole au membre"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:652
 msgid "Banning user…"
-msgstr "Bannissement de {user}…"
+msgstr "Bannissement de l’utilisateur…"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:676
 msgid "Unbanning user…"
-msgstr "Annulation du bannissement de {user}…"
+msgstr "Annulation du bannissement de l’utilisateur…"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -4455,25 +4455,25 @@ msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Fermer le salon"
 
-#: src/user_facing_error.rs:25
+#: src/user_facing_error.rs:26
 msgid "The connection timed out. Try again later."
 msgstr "Délai d’attente de la connexion dépassé. Réessayez plus tard."
 
-#: src/user_facing_error.rs:27
+#: src/user_facing_error.rs:28
 msgid "Could not connect to the homeserver."
 msgstr "Impossible de se connecter au serveur d’accueil."
 
-#: src/user_facing_error.rs:37
+#: src/user_facing_error.rs:38
 msgid "The provided username or password is invalid."
 msgstr "Le nom d’utilisateur ou le mot de passe est invalide."
 
-#: src/user_facing_error.rs:38
+#: src/user_facing_error.rs:39
 msgid "The account is deactivated."
 msgstr "Le compte est désactivé."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/user_facing_error.rs:45
+#: src/user_facing_error.rs:55
 msgid "You exceeded the homeserver’s rate limit, retry in 1 second."
 msgid_plural "You exceeded the homeserver’s rate limit, retry in {n} seconds."
 msgstr[0] ""
@@ -4483,35 +4483,35 @@ msgstr[1] ""
 "Vous avez dépassé la limite de tentatives du serveur d’accueil, réessayez "
 "dans {n} secondes."
 
-#: src/user_facing_error.rs:51
+#: src/user_facing_error.rs:61
 msgid "You exceeded the homeserver’s rate limit, try again later."
 msgstr ""
 "Vous avez dépassé la limite de tentatives du serveur d’accueil, réessayez "
 "plus tard."
 
-#: src/user_facing_error.rs:61
+#: src/user_facing_error.rs:71
 msgid "An unknown connection error occurred."
 msgstr "Une erreur de connexion inconnue s’est produite."
 
-#: src/user_facing_error.rs:69
+#: src/user_facing_error.rs:79
 msgid "Could not decrypt the event."
 msgstr "Impossible de déchiffrer l’évènement."
 
-#: src/user_facing_error.rs:71 src/user_facing_error.rs:85
+#: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unknown error occurred."
 msgstr "Une erreur inconnue s’est produite."
 
-#: src/user_facing_error.rs:79
+#: src/user_facing_error.rs:89
 msgid "This is not a valid URL."
 msgstr "Ce n’est pas une URL valide."
 
-#: src/user_facing_error.rs:81
+#: src/user_facing_error.rs:91
 msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
 msgstr ""
 "La découverte automatique de serveur d’accueil a échoué. Essayez de saisir "
 "l’URL complète manuellement."
 
-#: src/user_facing_error.rs:84
+#: src/user_facing_error.rs:94
 msgid "Could not open the store."
 msgstr "Impossible d’ouvrir le stockage."
 
