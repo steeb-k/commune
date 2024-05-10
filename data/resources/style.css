@@ -759,6 +759,14 @@ room-history-row .h6, .related-event-content .h6  {
   font-size: 11pt;
 }
 
+room-history-row expander-widget > box > title {
+  border-spacing: 6px;
+}
+
+room-history-row expander-widget > box > :not(title) {
+  padding: 12px;
+}
+
 roomtitle {
   margin-top: -6px;
   margin-bottom: -6px;

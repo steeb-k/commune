@@ -385,6 +385,8 @@ const SUPPORTED_BLOCK_ELEMENTS: &[&str] = &[
     "hr",
     "div",
     "pre",
+    "details",
+    "summary",
 ];
 
 /// HTML sanitizer config for HTML messages.

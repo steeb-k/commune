@@ -6,7 +6,7 @@ use ruma::html::{
     matrix::{AnchorUri, MatrixElement, SpanData},
     Children, NodeData, NodeRef,
 };
-use tracing::warn;
+use tracing::debug;
 
 use crate::{
     components::Pill,
@@ -181,7 +181,10 @@ impl<'a> InlineHtmlBuilder<'a> {
                     MatrixElement::Span(span) => {
                         self.append_span(&span, node.children(), should_linkify);
                     }
-                    element => warn!("Got unexpected inline HTML element: {element:?}"),
+                    element => {
+                        debug!("Unexpected HTML inline element: {element:?}");
+                        self.append_nodes(node.children(), should_linkify);
+                    }
                 }
             }
             NodeData::Text(text) => {
@@ -200,7 +203,7 @@ impl<'a> InlineHtmlBuilder<'a> {
                 }
             }
             data => {
-                warn!("Got HTML node that should have been sanitized: {data:?}");
+                debug!("Unexpected HTML node: {data:?}");
             }
         }
     }
@@ -251,8 +254,8 @@ impl<'a> InlineHtmlBuilder<'a> {
                 self.inner.append_link_opening_tag(uri);
                 true
             }
-            _ => {
-                warn!("Got unknown anchor URI format");
+            uri => {
+                debug!("Unsupported anchor URI format: {uri:?}");
                 false
             }
         }

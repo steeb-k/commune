@@ -1,11 +1,13 @@
 //! Build HTML messages.
 
+use gettextrs::gettext;
 use gtk::{pango, prelude::*};
 use ruma::html::{
     matrix::{MatrixElement, OrderedListData},
     Children, NodeRef,
 };
 use sourceview::prelude::*;
+use tracing::debug;
 
 use super::{inline_html::InlineHtmlBuilder, SUPPORTED_BLOCK_ELEMENTS};
 use crate::{components::LabelWithWidgets, prelude::*, session::model::Room};
@@ -209,7 +211,7 @@ fn widget_for_html_block(
             w.add_css_class("quote");
             w
         }
-        MatrixElement::P | MatrixElement::Div | MatrixElement::Li => {
+        MatrixElement::P | MatrixElement::Div | MatrixElement::Li | MatrixElement::Summary => {
             widget_for_html_nodes(node.children(), room, ellipsize, add_ellipsis, sender_name)?
         }
         MatrixElement::Ul => widget_for_list(
@@ -226,7 +228,13 @@ fn widget_for_html_block(
         MatrixElement::Pre => {
             widget_for_preformatted_text(node.children(), ellipsize, add_ellipsis)?
         }
-        _ => return None,
+        MatrixElement::Details => {
+            widget_for_details(node.children(), room, ellipsize, add_ellipsis)?
+        }
+        element => {
+            debug!("Unexpected HTML block element: {element:?}");
+            return None;
+        }
     };
 
     Some(widget)
@@ -389,4 +397,74 @@ fn widget_for_preformatted_text(
     scrolled.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Never);
     scrolled.set_child(Some(&view));
     Some(scrolled.upcast())
+}
+
+/// Create a widget for a details disclosure element.
+fn widget_for_details(
+    children: Children<'_>,
+    room: &Room,
+    ellipsize: bool,
+    add_ellipsis: bool,
+) -> Option<gtk::Widget> {
+    let (summary, other_children) = children.partition::<Vec<_>, _>(|node| {
+        node.as_element()
+            .is_some_and(|element| element.name.local.as_ref() == "summary")
+    });
+
+    let content = widget_for_html_nodes(other_children, room, ellipsize, add_ellipsis, &mut None);
+
+    let summary = summary.into_iter().next().and_then(|node| {
+        widget_for_details_summary(node.children(), room, ellipsize, add_ellipsis)
+    });
+
+    if let Some(content) = content {
+        let summary = summary.unwrap_or_else(|| {
+            let label = new_message_label();
+            // Translators: this is the fallback title for an expander.
+            label.set_label(&gettext("Details"));
+            label.upcast()
+        });
+
+        let expander = gtk::Expander::builder()
+            .label_widget(&summary)
+            .child(&content)
+            .build();
+        Some(expander.upcast())
+    } else {
+        summary
+    }
+}
+
+/// Create a widget for a details disclosure element's summary.
+fn widget_for_details_summary(
+    children: Children<'_>,
+    room: &Room,
+    ellipsize: bool,
+    add_ellipsis: bool,
+) -> Option<gtk::Widget> {
+    let children = children.collect::<Vec<_>>();
+
+    if children.is_empty() {
+        return None;
+    }
+
+    // Only inline elements or a single header element are allowed in summary.
+    if children.len() == 1 {
+        if let Some(node) = children.first().filter(|node| {
+            node.as_element().is_some_and(|element| {
+                matches!(
+                    element.name.local.as_ref(),
+                    "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
+                )
+            })
+        }) {
+            if let Some(widget) =
+                widget_for_html_block(*node, room, ellipsize, add_ellipsis, &mut None)
+            {
+                return Some(widget);
+            }
+        }
+    }
+
+    label_for_inline_html(children, room, ellipsize, add_ellipsis, &mut None)
 }
