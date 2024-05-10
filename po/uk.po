@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-09 15:32+0000\n"
-"PO-Revision-Date: 2024-05-09 19:37+0300\n"
+"POT-Creation-Date: 2024-05-10 15:54+0000\n"
+"PO-Revision-Date: 2024-05-10 19:36+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -2481,7 +2481,7 @@ msgstr "Вилучити сервер"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/invite.rs:83 src/utils/matrix.rs:249
+#: src/session/view/content/invite.rs:83 src/utils/matrix.rs:247
 msgid "{user} invited you"
 msgstr "{user} запросив/запросила вас"
 
@@ -3007,7 +3007,6 @@ msgid "Search for users to invite them to this room"
 msgstr "Шукати користувачів для запрошення їх до цієї кімнати"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:73
-#| msgid "Matrix User ID"
 msgid "Matching Users"
 msgstr "Відповідні користувачі"
 
@@ -3027,7 +3026,6 @@ msgid "An error occurred while searching for matches"
 msgstr "Під час пошуку відповідників сталася помилка"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:149
-#| msgid "Search for ignored users"
 msgid "Searching for Users"
 msgstr "Пошук користувачів"
 
@@ -3588,6 +3586,12 @@ msgstr "Реакції"
 #: src/session/view/content/room_history/message_row/reply.ui:9
 msgid "In Reply To"
 msgstr "У відповідь на"
+
+#. Translators: this is the fallback title for an expander.
+#: src/session/view/content/room_history/message_row/text/widgets.rs:424
+#| msgid "Room Details"
+msgid "Details"
+msgstr "Подробиці"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
@@ -4562,35 +4566,35 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Не вдалося відкрити сховище."
 
-#: src/utils/matrix.rs:184
+#: src/utils/matrix.rs:182
 msgid "{user} sent an audio file."
 msgstr "Користувачем {user} надіслано звуковий файл."
 
-#: src/utils/matrix.rs:187
+#: src/utils/matrix.rs:185
 msgid "{user} sent a file."
 msgstr "Користувачем {user} надіслано файл."
 
-#: src/utils/matrix.rs:189
+#: src/utils/matrix.rs:187
 msgid "{user} sent an image."
 msgstr "Користувачем {user} надіслано зображення."
 
-#: src/utils/matrix.rs:192
+#: src/utils/matrix.rs:190
 msgid "{user} sent their location."
 msgstr "Користувачем {user} надіслано дані щодо місця перебування."
 
-#: src/utils/matrix.rs:204
+#: src/utils/matrix.rs:202
 msgid "{user} sent a video."
 msgstr "Користувачем {user} надіслано відео."
 
-#: src/utils/matrix.rs:207
+#: src/utils/matrix.rs:205
 msgid "{user} sent a verification request."
 msgstr "Користувачем {user} надіслано запит щодо перевірки."
 
-#: src/utils/matrix.rs:215
+#: src/utils/matrix.rs:213
 msgid "{user} sent a sticker."
 msgstr "Користувачем {user} надіслано наліпку."
 
-#: src/utils/matrix.rs:225
+#: src/utils/matrix.rs:223
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
