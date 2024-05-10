@@ -154,11 +154,12 @@ impl PublicRoom {
 
         matrix_public_room
             .name
-            .clone()
+            .as_deref()
             .or(matrix_public_room
                 .canonical_alias
                 .as_ref()
-                .map(ToString::to_string))
-            .unwrap_or_else(|| matrix_public_room.room_id.to_string())
+                .map(|a| a.as_str()))
+            .unwrap_or_else(|| matrix_public_room.room_id.as_str())
+            .to_owned()
     }
 }
