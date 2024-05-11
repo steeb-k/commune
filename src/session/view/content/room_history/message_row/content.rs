@@ -10,6 +10,7 @@ use super::{
     media::MessageMedia, reply::MessageReply, text::MessageText,
 };
 use crate::{
+    prelude::*,
     session::model::{content_can_show_header, Event, Member, Room},
     spawn,
 };
@@ -101,6 +102,8 @@ impl MessageContent {
 
     pub fn update_for_event(&self, event: &Event) {
         let room = event.room();
+        let detect_at_room = event.can_contain_at_room() && event.sender().can_notify_room();
+
         let format = self.format();
         if format == ContentFormat::Natural {
             if let Some(related_content) = event.reply_to_event_content() {
@@ -128,6 +131,8 @@ impl MessageContent {
                             .get_or_create_members()
                             .get_or_create(replied_to_event.sender().to_owned());
                         let replied_to_content = replied_to_event.content();
+                        let replied_to_detect_at_room = replied_to_content.can_contain_at_room()
+                            && replied_to_sender.can_notify_room();
 
                         let reply = MessageReply::new();
                         reply.set_show_related_content_header(content_can_show_header(
@@ -140,6 +145,7 @@ impl MessageContent {
                             ContentFormat::Compact,
                             replied_to_sender,
                             &room,
+                            replied_to_detect_at_room,
                         );
                         build_content(
                             reply.content(),
@@ -147,6 +153,7 @@ impl MessageContent {
                             ContentFormat::Natural,
                             event.sender(),
                             &room,
+                            detect_at_room,
                         );
                         self.set_child(Some(&reply));
 
@@ -157,7 +164,14 @@ impl MessageContent {
             }
         }
 
-        build_content(self, event.content(), format, event.sender(), &room);
+        build_content(
+            self,
+            event.content(),
+            format,
+            event.sender(),
+            &room,
+            detect_at_room,
+        );
     }
 
     /// Get the texture displayed by this widget, if any.
@@ -175,6 +189,7 @@ fn build_content(
     format: ContentFormat,
     sender: Member,
     room: &Room,
+    detect_at_room: bool,
 ) {
     let Some(session) = room.session() else {
         return;
@@ -197,7 +212,13 @@ fn build_content(
                     caption_widget
                 };
 
-                caption_widget.set_caption(caption, formatted_caption, room, format);
+                caption_widget.set_caption(
+                    caption,
+                    formatted_caption,
+                    room,
+                    format,
+                    detect_at_room,
+                );
 
                 if let Some(child) = caption_widget.child().and_downcast::<$widget_type>() {
                     child
@@ -240,6 +261,7 @@ fn build_content(
                     sender,
                     room,
                     format,
+                    detect_at_room,
                 );
             }
             MessageType::File(message) => {
@@ -277,6 +299,7 @@ fn build_content(
                     message.body.clone(),
                     room,
                     format,
+                    detect_at_room,
                 );
             }
             MessageType::ServerNotice(message) => {
@@ -302,6 +325,7 @@ fn build_content(
                     message.body.clone(),
                     room,
                     format,
+                    detect_at_room,
                 );
             }
             MessageType::Video(message) => {

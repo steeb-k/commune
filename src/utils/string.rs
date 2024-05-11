@@ -5,9 +5,10 @@ use std::fmt::{self, Write};
 use gtk::glib::markup_escape_text;
 use linkify::{LinkFinder, LinkKind};
 
-use super::matrix::MatrixIdUri;
+use super::matrix::{find_at_room, MatrixIdUri, AT_ROOM};
 use crate::{
     components::{LabelWithWidgets, Pill},
+    prelude::*,
     session::model::Room,
 };
 
@@ -109,6 +110,11 @@ pub trait PangoStrMutExt {
     /// Returns the created [`Pill`], it the URI was added as a mention.
     fn maybe_append_mention(&mut self, uri: impl TryInto<MatrixIdUri>, room: &Room)
         -> Option<Pill>;
+
+    /// Append the given string and replace `@room` with a mention.
+    ///
+    /// Returns the created [`Pill`], it `@room` was found.
+    fn append_and_replace_at_room(&mut self, s: &str, room: &Room) -> Option<Pill>;
 }
 
 impl PangoStrMutExt for String {
@@ -136,6 +142,19 @@ impl PangoStrMutExt for String {
         self.push_str(LabelWithWidgets::DEFAULT_PLACEHOLDER);
 
         Some(pill)
+    }
+
+    fn append_and_replace_at_room(&mut self, s: &str, room: &Room) -> Option<Pill> {
+        if let Some(pos) = find_at_room(s) {
+            self.push_str(&(&s[..pos]).escape_markup());
+            self.push_str(LabelWithWidgets::DEFAULT_PLACEHOLDER);
+            self.push_str(&(&s[pos + AT_ROOM.len()..]).escape_markup());
+
+            Some(room.at_room().to_pill())
+        } else {
+            self.push_str(&s.escape_markup());
+            None
+        }
     }
 }
 
@@ -167,8 +186,20 @@ impl<'a> Linkifier<'a> {
 
     /// Enable mentions detection in the given room and add pills to the given
     /// list.
-    pub fn detect_mentions(mut self, room: &'a Room, pills: &'a mut Vec<Pill>) -> Self {
-        self.mentions = MentionsMode::WithMentions { pills, room };
+    ///
+    /// If `detect_at_room` is `true`, it will also try to detect `@room`
+    /// mentions.
+    pub fn detect_mentions(
+        mut self,
+        room: &'a Room,
+        pills: &'a mut Vec<Pill>,
+        detect_at_room: bool,
+    ) -> Self {
+        self.mentions = MentionsMode::WithMentions {
+            pills,
+            room,
+            detect_at_room,
+        };
         self
     }
 
@@ -183,7 +214,7 @@ impl<'a> Linkifier<'a> {
 
             let uri = match span.kind() {
                 Some(LinkKind::Url) => {
-                    if let MentionsMode::WithMentions { pills, room } = &mut self.mentions {
+                    if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
                         if let Some(pill) = self.inner.maybe_append_mention(span_text, room) {
                             pills.push(pill);
 
@@ -200,7 +231,22 @@ impl<'a> Linkifier<'a> {
                     prefix: Some("mailto:"),
                     uri: span_text,
                 }),
-                _ => None,
+                _ => {
+                    if let MentionsMode::WithMentions {
+                        pills,
+                        room,
+                        detect_at_room: true,
+                    } = &mut self.mentions
+                    {
+                        if let Some(pill) = self.inner.append_and_replace_at_room(span_text, room) {
+                            pills.push(pill);
+                        }
+
+                        continue;
+                    }
+
+                    None
+                }
             };
 
             if let Some(uri) = uri {
@@ -228,6 +274,8 @@ enum MentionsMode<'a> {
         pills: &'a mut Vec<Pill>,
         /// The room containing the mentions.
         room: &'a Room,
+        /// Whether to detect `@room` mentions.
+        detect_at_room: bool,
     },
 }
 

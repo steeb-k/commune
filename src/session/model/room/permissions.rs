@@ -603,6 +603,14 @@ impl Permissions {
         }
     }
 
+    /// Whether the user with the given ID is allowed to do the given action.
+    pub fn user_is_allowed_to(&self, user_id: &UserId, room_action: PowerLevelAction) -> bool {
+        self.imp()
+            .power_levels
+            .borrow()
+            .user_can_do(user_id, room_action)
+    }
+
     /// Connect to the signal emitted when the permissions changed.
     pub fn connect_changed<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(

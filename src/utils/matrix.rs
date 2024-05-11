@@ -8,6 +8,7 @@ use matrix_sdk::{
     encryption::{BackupDownloadStrategy, EncryptionSettings},
     Client, ClientBuildError,
 };
+use matrix_sdk_ui::timeline::TimelineItemContent;
 use ruma::{
     events::{
         room::{member::MembershipState, message::MessageType},
@@ -776,4 +777,28 @@ pub enum MatrixIdUriParseError {
     /// Unsupported Matrix ID.
     #[error("unsupported Matrix ID: {0:?}")]
     UnsupportedId(MatrixId),
+}
+
+/// Helper trait for [`TimelineItemContent`].
+pub trait TimelineItemContentExt {
+    /// Whether this event might contain an `@room` mention.
+    ///
+    /// This means that either it doesn't have intentional mentions, or it has
+    /// intentional mentions and `room` is set to `true`.
+    fn can_contain_at_room(&self) -> bool;
+}
+
+impl TimelineItemContentExt for TimelineItemContent {
+    fn can_contain_at_room(&self) -> bool {
+        match self {
+            TimelineItemContent::Message(msg) => {
+                let Some(mentions) = msg.mentions() else {
+                    return true;
+                };
+
+                mentions.room
+            }
+            _ => false,
+        }
+    }
 }

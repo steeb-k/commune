@@ -1,6 +1,12 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::room::RoomMember;
-use ruma::{events::room::member::MembershipState, OwnedEventId, OwnedUserId};
+use ruma::{
+    events::room::{
+        member::MembershipState,
+        power_levels::{NotificationPowerLevelType, PowerLevelAction},
+    },
+    OwnedEventId, OwnedUserId,
+};
 use tracing::{debug, error};
 
 use super::{
@@ -221,5 +227,13 @@ impl Member {
     /// The IDs of the events sent by this member that can be redacted.
     pub fn redactable_events(&self) -> Vec<OwnedEventId> {
         self.room().timeline().redactable_events_for(self.user_id())
+    }
+
+    /// Whether this room member can notify the whole room.
+    pub fn can_notify_room(&self) -> bool {
+        self.room().permissions().user_is_allowed_to(
+            self.user_id(),
+            PowerLevelAction::TriggerNotification(NotificationPowerLevelType::Room),
+        )
     }
 }

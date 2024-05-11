@@ -49,10 +49,14 @@ impl<'a> InlineHtmlBuilder<'a> {
     }
 
     /// Enable mentions detection in the given room.
-    pub(super) fn detect_mentions(mut self, room: &'a Room) -> Self {
+    ///
+    /// If `detect_at_room` is `true`, it will also try to detect `@room`
+    /// mentions.
+    pub(super) fn detect_mentions(mut self, room: &'a Room, detect_at_room: bool) -> Self {
         self.mentions = MentionsMode::WithMentions {
             room,
             pills: Vec::new(),
+            detect_at_room,
         };
         self
     }
@@ -124,7 +128,9 @@ impl<'a> InlineHtmlBuilder<'a> {
                     MatrixElement::A(anchor) => {
                         // First, check if it's a mention, if we detect mentions.
                         if let Some(uri) = &anchor.href {
-                            if let MentionsMode::WithMentions { pills, room } = &mut self.mentions {
+                            if let MentionsMode::WithMentions { pills, room, .. } =
+                                &mut self.mentions
+                            {
                                 if let Some(pill) = self.inner.maybe_append_mention(uri, room) {
                                     pills.push(pill);
 
@@ -191,9 +197,14 @@ impl<'a> InlineHtmlBuilder<'a> {
                 let text = text.remove_newlines();
 
                 if should_linkify {
-                    if let MentionsMode::WithMentions { pills, room } = &mut self.mentions {
+                    if let MentionsMode::WithMentions {
+                        pills,
+                        room,
+                        detect_at_room,
+                    } = &mut self.mentions
+                    {
                         Linkifier::new(&mut self.inner)
-                            .detect_mentions(room, pills)
+                            .detect_mentions(room, pills, *detect_at_room)
                             .linkify(&text);
                     } else {
                         Linkifier::new(&mut self.inner).linkify(&text);
@@ -339,5 +350,7 @@ enum MentionsMode<'a> {
         pills: Vec<Pill>,
         /// The room containing the mentions.
         room: &'a Room,
+        /// Whether to detect `@room` mentions.
+        detect_at_room: bool,
     },
 }

@@ -12,10 +12,10 @@ mod inline_html;
 mod tests;
 mod widgets;
 
-use self::widgets::{new_message_label, widget_for_html_nodes};
+use self::widgets::{new_message_label, widget_for_html_nodes, HtmlWidgetConfig};
 use super::ContentFormat;
 use crate::{
-    components::LabelWithWidgets,
+    components::{AtRoom, LabelWithWidgets},
     prelude::*,
     session::model::{Member, Room},
     utils::{
@@ -43,6 +43,8 @@ mod imp {
         /// The text format.
         #[property(get, builder(ContentFormat::default()))]
         pub format: Cell<ContentFormat>,
+        /// Whether the message might contain an `@room` mention.
+        pub detect_at_room: Cell<bool>,
         /// The sender of the message, if we need to listen to changes.
         pub sender: BoundObjectWeakRef<Member>,
     }
@@ -100,7 +102,10 @@ impl MessageText {
         body: String,
         room: &Room,
         format: ContentFormat,
+        detect_at_room: bool,
     ) {
+        self.set_detect_at_room(detect_at_room);
+
         if let Some(formatted) = formatted.filter(formatted_body_is_html).map(|f| f.body) {
             if !self.original_text_changed(&formatted) && !self.format_changed(format) {
                 return;
@@ -136,7 +141,10 @@ impl MessageText {
         sender: Member,
         room: &Room,
         format: ContentFormat,
+        detect_at_room: bool,
     ) {
+        self.set_detect_at_room(detect_at_room);
+
         if let Some(formatted) = formatted.filter(formatted_body_is_html).map(|f| f.body) {
             if !self.original_text_changed(&body)
                 && !self.format_changed(format)
@@ -241,16 +249,20 @@ impl MessageText {
     ///
     /// We will try to detect URIs in the text.
     ///
-    /// If `sender` is provided, it is added as a prefix. This is used for
+    /// If `detect_at_room` is `true`, we will try to detect `@room` in the
+    /// text.
+    ///
+    /// If `sender_name` is provided, it is added as a prefix. This is used for
     /// emotes.
     fn build_text(&self, text: &str, room: &Room, mut sender_name: Option<&str>) {
+        let detect_at_room = self.detect_at_room();
         let mut result = String::with_capacity(text.len());
 
         result.maybe_append_emote_name(&mut sender_name);
 
         let mut pills = Vec::new();
         Linkifier::new(&mut result)
-            .detect_mentions(room, &mut pills)
+            .detect_mentions(room, &mut pills, detect_at_room)
             .linkify(text);
 
         result.truncate_end_whitespaces();
@@ -262,8 +274,10 @@ impl MessageText {
 
         let ellipsize = self.format() == ContentFormat::Ellipsized;
         pills.iter().for_each(|p| {
-            // Show the profile on click.
-            p.set_activatable(true);
+            if !p.source().is_some_and(|s| s.is::<AtRoom>()) {
+                // Show the profile on click.
+                p.set_activatable(true);
+            }
         });
 
         let child = if let Some(child) = self.child().and_downcast::<LabelWithWidgets>() {
@@ -284,11 +298,15 @@ impl MessageText {
     ///
     /// We will try to detect URIs in the text.
     ///
-    /// If `sender` is provided, it is added as a prefix. This is used for
+    /// If `detect_at_room` is `true`, we will try to detect `@room` in the
+    /// text.
+    ///
+    /// If `sender_name` is provided, it is added as a prefix. This is used for
     /// emotes.
     ///
     /// Returns an error if the HTML string doesn't contain any HTML.
     fn build_html(&self, html: &str, room: &Room, mut sender_name: Option<&str>) -> Result<(), ()> {
+        let detect_at_room = self.detect_at_room();
         let ellipsize = self.format() == ContentFormat::Ellipsized;
 
         let mut html = Html::parse(html.trim_matches('\n'));
@@ -298,9 +316,16 @@ impl MessageText {
             return Err(());
         }
 
-        let Some(child) =
-            widget_for_html_nodes(html.children(), room, ellipsize, false, &mut sender_name)
-        else {
+        let Some(child) = widget_for_html_nodes(
+            html.children(),
+            HtmlWidgetConfig {
+                room,
+                detect_at_room,
+                ellipsize,
+            },
+            false,
+            &mut sender_name,
+        ) else {
             return Err(());
         };
 
@@ -339,6 +364,16 @@ impl MessageText {
     fn set_format(&self, format: ContentFormat) {
         self.imp().format.set(format);
         self.notify_format();
+    }
+
+    /// Set whether the message might contain an `@room` mention.
+    fn detect_at_room(&self) -> bool {
+        self.imp().detect_at_room.get()
+    }
+
+    /// Set whether the message might contain an `@room` mention.
+    fn set_detect_at_room(&self, detect_at_room: bool) {
+        self.imp().detect_at_room.set(detect_at_room);
     }
 
     /// Whether the sender of the message changed.

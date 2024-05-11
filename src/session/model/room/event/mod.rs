@@ -28,6 +28,7 @@ use super::{
     Member, Room,
 };
 use crate::{
+    prelude::*,
     spawn_tokio,
     utils::matrix::{get_media_content, raw_eq},
 };
@@ -576,19 +577,16 @@ impl Event {
 
     /// Whether this event might contain an `@room` mention.
     ///
-    /// THis means that either it doesn't have intentional mentions, or it has
+    /// This means that either it doesn't have intentional mentions, or it has
     /// intentional mentions and `room` is set to `true`.
     pub fn can_contain_at_room(&self) -> bool {
-        match self.imp().item.borrow().as_ref().unwrap().content() {
-            TimelineItemContent::Message(msg) => {
-                let Some(mentions) = msg.mentions() else {
-                    return true;
-                };
-
-                mentions.room
-            }
-            _ => false,
-        }
+        self.imp()
+            .item
+            .borrow()
+            .as_ref()
+            .unwrap()
+            .content()
+            .can_contain_at_room()
     }
 
     /// Compute the current state of this `Event`.

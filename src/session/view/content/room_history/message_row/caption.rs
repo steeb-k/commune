@@ -91,9 +91,14 @@ impl MessageCaption {
         formatted_caption: Option<FormattedBody>,
         room: &Room,
         format: ContentFormat,
+        detect_at_room: bool,
     ) {
-        self.imp()
-            .caption_widget
-            .with_markup(formatted_caption, caption, room, format);
+        self.imp().caption_widget.with_markup(
+            formatted_caption,
+            caption,
+            room,
+            format,
+            detect_at_room,
+        );
     }
 }

@@ -10,7 +10,19 @@ use sourceview::prelude::*;
 use tracing::debug;
 
 use super::{inline_html::InlineHtmlBuilder, SUPPORTED_BLOCK_ELEMENTS};
-use crate::{components::LabelWithWidgets, prelude::*, session::model::Room};
+use crate::{
+    components::{AtRoom, LabelWithWidgets},
+    prelude::*,
+    session::model::Room,
+};
+
+/// The immutable config fields to build a HTML widget tree.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct HtmlWidgetConfig<'a> {
+    pub(super) room: &'a Room,
+    pub(super) detect_at_room: bool,
+    pub(super) ellipsize: bool,
+}
 
 /// Construct a new label for displaying a message's content.
 pub(super) fn new_message_label() -> gtk::Label {
@@ -25,6 +37,8 @@ pub(super) fn new_message_label() -> gtk::Label {
 
 /// Create a widget for the given HTML nodes in the given room.
 ///
+/// If `detect_at_room` is `true`, we will try to detect `@room` in the text.
+///
 /// If `ellipsize` is true, we will only render the first block.
 ///
 /// If the sender name is set, it will be added as soon as possible.
@@ -32,8 +46,7 @@ pub(super) fn new_message_label() -> gtk::Label {
 /// Returns `None` if the widget would have been empty.
 pub(super) fn widget_for_html_nodes<'a>(
     nodes: impl IntoIterator<Item = NodeRef<'a>>,
-    room: &Room,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'a>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
@@ -49,19 +62,19 @@ pub(super) fn widget_for_html_nodes<'a>(
     let mut children = Vec::new();
     for (i, group) in groups.into_iter().enumerate() {
         let is_last = i == (len - 1);
-        let add_ellipsis = add_ellipsis || (ellipsize && !is_last);
+        let add_ellipsis = add_ellipsis || (config.ellipsize && !is_last);
 
         match group {
             NodeGroup::Inline(inline_nodes) => {
                 if let Some(widget) =
-                    label_for_inline_html(inline_nodes, room, ellipsize, add_ellipsis, sender_name)
+                    label_for_inline_html(inline_nodes, config, add_ellipsis, sender_name)
                 {
                     children.push(widget);
                 }
             }
             NodeGroup::Block(block_node) => {
                 let Some(widget) =
-                    widget_for_html_block(block_node, room, ellipsize, add_ellipsis, sender_name)
+                    widget_for_html_block(block_node, config, add_ellipsis, sender_name)
                 else {
                     continue;
                 };
@@ -81,7 +94,7 @@ pub(super) fn widget_for_html_nodes<'a>(
             }
         }
 
-        if ellipsize {
+        if config.ellipsize {
             // Stop at the first constructed child.
             break;
         }
@@ -150,13 +163,12 @@ fn group_inline_nodes(nodes: Vec<NodeRef<'_>>) -> Vec<NodeGroup<'_>> {
 /// Returns `None` if the label would have been empty.
 fn label_for_inline_html<'a>(
     nodes: impl IntoIterator<Item = NodeRef<'a>>,
-    room: &'a Room,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'a>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
-    let (text, widgets) = InlineHtmlBuilder::new(ellipsize, add_ellipsis)
-        .detect_mentions(room)
+    let (text, widgets) = InlineHtmlBuilder::new(config.ellipsize, add_ellipsis)
+        .detect_mentions(config.room, config.detect_at_room)
         .append_emote_with_name(sender_name)
         .build_with_nodes(nodes);
 
@@ -166,17 +178,19 @@ fn label_for_inline_html<'a>(
 
     if let Some(widgets) = widgets {
         widgets.iter().for_each(|p| {
-            // Show the profile on click.
-            p.set_activatable(true);
+            if !p.source().is_some_and(|s| s.is::<AtRoom>()) {
+                // Show the profile on click.
+                p.set_activatable(true);
+            }
         });
         let w = LabelWithWidgets::with_label_and_widgets(&text, widgets);
         w.set_use_markup(true);
-        w.set_ellipsize(ellipsize);
+        w.set_ellipsize(config.ellipsize);
         Some(w.upcast())
     } else {
         let w = new_message_label();
         w.set_markup(&text);
-        w.set_ellipsize(if ellipsize {
+        w.set_ellipsize(if config.ellipsize {
             pango::EllipsizeMode::End
         } else {
             pango::EllipsizeMode::None
@@ -188,49 +202,40 @@ fn label_for_inline_html<'a>(
 /// Create a widget for the given HTML block node.
 fn widget_for_html_block(
     node: NodeRef<'_>,
-    room: &Room,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
     let widget = match node.as_element()?.to_matrix().element {
         MatrixElement::H(heading) => {
             // Heading should only have inline elements as children.
-            let w =
-                label_for_inline_html(node.children(), room, ellipsize, add_ellipsis, sender_name)
-                    .unwrap_or_else(|| {
-                        // We should show an empty title.
-                        new_message_label().upcast()
-                    });
+            let w = label_for_inline_html(node.children(), config, add_ellipsis, sender_name)
+                .unwrap_or_else(|| {
+                    // We should show an empty title.
+                    new_message_label().upcast()
+                });
             w.add_css_class(&format!("h{}", heading.level.value()));
             w
         }
         MatrixElement::Blockquote => {
-            let w =
-                widget_for_html_nodes(node.children(), room, ellipsize, add_ellipsis, &mut None)?;
+            let w = widget_for_html_nodes(node.children(), config, add_ellipsis, &mut None)?;
             w.add_css_class("quote");
             w
         }
         MatrixElement::P | MatrixElement::Div | MatrixElement::Li | MatrixElement::Summary => {
-            widget_for_html_nodes(node.children(), room, ellipsize, add_ellipsis, sender_name)?
+            widget_for_html_nodes(node.children(), config, add_ellipsis, sender_name)?
         }
-        MatrixElement::Ul => widget_for_list(
-            ListType::Unordered,
-            node.children(),
-            room,
-            ellipsize,
-            add_ellipsis,
-        )?,
+        MatrixElement::Ul => {
+            widget_for_list(ListType::Unordered, node.children(), config, add_ellipsis)?
+        }
         MatrixElement::Ol(list) => {
-            widget_for_list(list.into(), node.children(), room, ellipsize, add_ellipsis)?
+            widget_for_list(list.into(), node.children(), config, add_ellipsis)?
         }
         MatrixElement::Hr => gtk::Separator::new(gtk::Orientation::Horizontal).upcast(),
         MatrixElement::Pre => {
-            widget_for_preformatted_text(node.children(), ellipsize, add_ellipsis)?
+            widget_for_preformatted_text(node.children(), config.ellipsize, add_ellipsis)?
         }
-        MatrixElement::Details => {
-            widget_for_details(node.children(), room, ellipsize, add_ellipsis)?
-        }
+        MatrixElement::Details => widget_for_details(node.children(), config, add_ellipsis)?,
         element => {
             debug!("Unexpected HTML block element: {element:?}");
             return None;
@@ -244,8 +249,7 @@ fn widget_for_html_block(
 fn widget_for_list(
     list_type: ListType,
     list_items: Children<'_>,
-    room: &Room,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
     let list_items = list_items
@@ -271,9 +275,9 @@ fn widget_for_list(
 
     for (pos, li) in list_items.into_iter().enumerate() {
         let is_last = pos == (len - 1);
-        let add_ellipsis = add_ellipsis || (ellipsize && !is_last);
+        let add_ellipsis = add_ellipsis || (config.ellipsize && !is_last);
 
-        let w = widget_for_html_nodes(li.children(), room, ellipsize, add_ellipsis, &mut None)
+        let w = widget_for_html_nodes(li.children(), config, add_ellipsis, &mut None)
             // We should show an empty list item.
             .unwrap_or_else(|| new_message_label().upcast());
 
@@ -282,7 +286,7 @@ fn widget_for_list(
         grid.attach(&bullet, 0, pos as i32, 1, 1);
         grid.attach(&w, 1, pos as i32, 1, 1);
 
-        if ellipsize {
+        if config.ellipsize {
             break;
         }
     }
@@ -402,8 +406,7 @@ fn widget_for_preformatted_text(
 /// Create a widget for a details disclosure element.
 fn widget_for_details(
     children: Children<'_>,
-    room: &Room,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
     let (summary, other_children) = children.partition::<Vec<_>, _>(|node| {
@@ -411,11 +414,12 @@ fn widget_for_details(
             .is_some_and(|element| element.name.local.as_ref() == "summary")
     });
 
-    let content = widget_for_html_nodes(other_children, room, ellipsize, add_ellipsis, &mut None);
+    let content = widget_for_html_nodes(other_children, config, add_ellipsis, &mut None);
 
-    let summary = summary.into_iter().next().and_then(|node| {
-        widget_for_details_summary(node.children(), room, ellipsize, add_ellipsis)
-    });
+    let summary = summary
+        .into_iter()
+        .next()
+        .and_then(|node| widget_for_details_summary(node.children(), config, add_ellipsis));
 
     if let Some(content) = content {
         let summary = summary.unwrap_or_else(|| {
@@ -438,8 +442,7 @@ fn widget_for_details(
 /// Create a widget for a details disclosure element's summary.
 fn widget_for_details_summary(
     children: Children<'_>,
-    room: &Room,
-    ellipsize: bool,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
     let children = children.collect::<Vec<_>>();
@@ -458,13 +461,11 @@ fn widget_for_details_summary(
                 )
             })
         }) {
-            if let Some(widget) =
-                widget_for_html_block(*node, room, ellipsize, add_ellipsis, &mut None)
-            {
+            if let Some(widget) = widget_for_html_block(*node, config, add_ellipsis, &mut None) {
                 return Some(widget);
             }
         }
     }
 
-    label_for_inline_html(children, room, ellipsize, add_ellipsis, &mut None)
+    label_for_inline_html(children, config, add_ellipsis, &mut None)
 }
