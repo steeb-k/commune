@@ -1,11 +1,13 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 
+mod at_room;
 mod search_entry;
 mod source;
 mod source_row;
 
 pub use self::{
+    at_room::AtRoom,
     search_entry::PillSearchEntry,
     source::{PillSource, PillSourceExt, PillSourceImpl},
     source_row::PillSourceRow,

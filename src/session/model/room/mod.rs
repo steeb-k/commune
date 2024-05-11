@@ -62,7 +62,7 @@ use super::{
     Session, User,
 };
 use crate::{
-    components::{AvatarImage, AvatarUriSource, PillSource},
+    components::{AtRoom, AvatarImage, AvatarUriSource, PillSource},
     gettext_f,
     prelude::*,
     spawn, spawn_tokio,
@@ -2113,6 +2113,19 @@ impl Room {
 
         self.imp().history_visibility.set(visibility);
         self.notify_history_visibility();
+    }
+
+    /// Constructs an `AtRoom` for this room.
+    pub fn at_room(&self) -> AtRoom {
+        let at_room = AtRoom::new(self.room_id().to_owned());
+
+        // Bind the avatar image so it always looks the same.
+        self.avatar_data()
+            .bind_property("image", &at_room.avatar_data(), "image")
+            .sync_create()
+            .build();
+
+        at_room
     }
 }
 

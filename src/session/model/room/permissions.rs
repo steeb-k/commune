@@ -84,6 +84,7 @@ mod imp {
 
     use glib::subclass::Signal;
     use once_cell::sync::Lazy;
+    use ruma::events::room::power_levels::NotificationPowerLevelType;
 
     use super::*;
 
@@ -131,6 +132,9 @@ mod imp {
         /// Whether our own member can redact the event of another user.
         #[property(get)]
         pub can_redact_other: Cell<bool>,
+        /// Whether our own member can notify the whole room.
+        #[property(get)]
+        pub can_notify_room: Cell<bool>,
     }
 
     impl Default for Permissions {
@@ -151,6 +155,7 @@ mod imp {
                 can_send_reaction: Default::default(),
                 can_redact_own: Default::default(),
                 can_redact_other: Default::default(),
+                can_notify_room: Default::default(),
             }
         }
     }
@@ -286,6 +291,7 @@ mod imp {
             self.update_can_send_reaction();
             self.update_can_redact_own();
             self.update_can_redact_other();
+            self.update_can_notify_room();
             self.obj().emit_by_name::<()>("changed", &[]);
         }
 
@@ -448,7 +454,7 @@ mod imp {
             self.obj().notify_can_redact_own();
         }
 
-        /// Whether our own member can redact the event of another user.
+        /// Update whether our own member can redact the event of another user.
         fn update_can_redact_other(&self) {
             let can_redact_other = self.is_allowed_to(PowerLevelAction::RedactOther);
 
@@ -458,6 +464,20 @@ mod imp {
 
             self.can_redact_other.set(can_redact_other);
             self.obj().notify_can_redact_other();
+        }
+
+        /// Update whether our own member can notify the whole room.
+        fn update_can_notify_room(&self) {
+            let can_notify_room = self.is_allowed_to(PowerLevelAction::TriggerNotification(
+                NotificationPowerLevelType::Room,
+            ));
+
+            if self.can_notify_room.get() == can_notify_room {
+                return;
+            };
+
+            self.can_notify_room.set(can_notify_room);
+            self.obj().notify_can_notify_room();
         }
     }
 }

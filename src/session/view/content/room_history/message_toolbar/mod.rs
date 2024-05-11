@@ -26,7 +26,7 @@ mod completion;
 use self::{attachment_dialog::AttachmentDialog, completion::CompletionPopover};
 use super::message_row::MessageContent;
 use crate::{
-    components::{CustomEntry, LabelWithWidgets, Pill},
+    components::{AtRoom, CustomEntry, LabelWithWidgets, Pill},
     gettext_f,
     prelude::*,
     session::model::{Event, Member, Room},
@@ -38,6 +38,8 @@ use crate::{
         Location, LocationError, TokioDrop,
     },
 };
+
+const AT_ROOM: &str = "@room";
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(i32)]
@@ -443,6 +445,8 @@ impl MessageToolbar {
             Vec::new()
         };
 
+        // TODO: Detect @room if event can have it and if user can send it.
+
         imp.related_event_header.set_widgets::<gtk::Widget>(vec![]);
         imp.related_event_header
             // Translators: In this string, 'Edit' is a noun.
@@ -505,7 +509,7 @@ impl MessageToolbar {
         let body_len = buffer.text(&start_iter, &end_iter, true).len();
 
         let is_markdown = self.markdown_enabled();
-        let mut has_mentions = false;
+        let mut has_rich_mentions = false;
         let mut plain_body = String::with_capacity(body_len);
         // formatted_body is Markdown if is_markdown is true, and HTML if false.
         let mut formatted_body = String::with_capacity(body_len);
@@ -517,14 +521,18 @@ impl MessageToolbar {
                     plain_body.push_str(&text);
                     formatted_body.push_str(&text);
                 }
-                MentionChunk::Mention { name, uri } => {
-                    has_mentions = true;
+                MentionChunk::RichMention { name, uri } => {
+                    has_rich_mentions = true;
                     plain_body.push_str(&name);
                     formatted_body.push_str(&if is_markdown {
                         format!("[{name}]({uri})")
                     } else {
                         format!("<a href=\"{uri}\">{name}</a>")
                     });
+                }
+                MentionChunk::AtRoom => {
+                    plain_body.push_str(AT_ROOM);
+                    formatted_body.push_str(AT_ROOM);
                 }
             }
         }
@@ -542,7 +550,7 @@ impl MessageToolbar {
 
         let html_body = if is_markdown {
             FormattedBody::markdown(formatted_body).map(|b| b.body)
-        } else if has_mentions {
+        } else if has_rich_mentions {
             // Already formatted with HTML.
             Some(formatted_body)
         } else {
@@ -902,8 +910,11 @@ impl MessageToolbar {
                 MentionChunk::Text(text) => {
                     body.push_str(&text);
                 }
-                MentionChunk::Mention { name, .. } => {
+                MentionChunk::RichMention { name, .. } => {
                     body.push_str(&name);
+                }
+                MentionChunk::AtRoom => {
+                    body.push_str(AT_ROOM);
                 }
             }
         }
@@ -931,13 +942,15 @@ impl MessageToolbar {
 enum MentionChunk {
     /// Some text.
     Text(String),
-    /// A mention.
-    Mention {
+    /// A rich mention (a mention that has a HTML representation).
+    RichMention {
         /// The string representation of the mention.
         name: String,
         /// The URI of the mention.
         uri: String,
     },
+    /// An `@room` mention.
+    AtRoom,
 }
 
 /// An iterator over the chunks of a message.
@@ -953,32 +966,42 @@ impl SplitMentions {
             return None;
         }
 
-        if let Some(pill) = self
+        if let Some(source) = self
             .iter
             .child_anchor()
             .map(|anchor| anchor.widgets())
             .as_ref()
             .and_then(|widgets| widgets.first())
             .and_then(|widget| widget.downcast_ref::<Pill>())
+            .and_then(|p| p.source())
         {
             // This chunk is a mention.
-            let (name, uri) = if let Some(user) = pill.source().and_downcast_ref::<Member>() {
-                (user.display_name(), user.matrix_to_uri().to_string())
-            } else if let Some(room) = pill.source().and_downcast_ref::<Room>() {
+            let chunk = if let Some(user) = source.downcast_ref::<Member>() {
+                MentionChunk::RichMention {
+                    name: user.display_name(),
+                    uri: user.matrix_to_uri().to_string(),
+                }
+            } else if let Some(room) = source.downcast_ref::<Room>() {
                 let matrix_to_uri = room.matrix_to_uri().await;
                 let string_repr = match matrix_to_uri.id() {
                     MatrixId::Room(room_id) => room_id.to_string(),
                     MatrixId::RoomAlias(alias) => alias.to_string(),
                     _ => unreachable!(),
                 };
-                (string_repr, matrix_to_uri.to_string())
+
+                MentionChunk::RichMention {
+                    name: string_repr,
+                    uri: matrix_to_uri.to_string(),
+                }
+            } else if source.is::<AtRoom>() {
+                MentionChunk::AtRoom
             } else {
                 unreachable!()
             };
 
             self.iter.forward_cursor_position();
 
-            return Some(MentionChunk::Mention { name, uri });
+            return Some(chunk);
         }
 
         // This chunk is not a mention. Go forward until the next mention or the
