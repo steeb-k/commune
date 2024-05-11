@@ -436,6 +436,41 @@ fn node_as_mention(node: NodeRef<'_>, room: &Room) -> Option<(Pill, StrTendril)>
     Some((pill, content))
 }
 
+/// The textual representation of a room mention.
+pub const AT_ROOM: &str = "@room";
+
+/// Find `@room` in the given string.
+///
+/// This uses the same algorithm as the pushrules from the Matrix spec to detect
+/// it in the `body`.
+///
+/// Returns the position of the first match.
+pub fn find_at_room(s: &str) -> Option<usize> {
+    for (pos, _) in s.match_indices(AT_ROOM) {
+        let is_at_word_start = pos == 0 || s[..pos].ends_with(char_is_ascii_word_boundary);
+        if !is_at_word_start {
+            continue;
+        }
+
+        let pos_after_match = pos + 5;
+        let is_at_word_end = pos_after_match == s.len()
+            || s[pos_after_match..].starts_with(char_is_ascii_word_boundary);
+        if is_at_word_end {
+            return Some(pos);
+        }
+    }
+
+    None
+}
+
+/// Whether the given `char` is a word boundary, according to the Matrix spec.
+///
+/// A word boundary is any character not in the sets `[A-Z]`, `[a-z]`, `[0-9]`
+/// or `_`.
+fn char_is_ascii_word_boundary(c: char) -> bool {
+    !c.is_ascii_alphanumeric() && c != '_'
+}
+
 /// Compare two raw JSON sources.
 pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
     let Some(lhs) = lhs else {

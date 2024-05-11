@@ -32,14 +32,12 @@ use crate::{
     session::model::{Event, Member, Room},
     spawn, toast,
     utils::{
-        matrix::find_html_mentions,
+        matrix::{find_at_room, find_html_mentions, AT_ROOM},
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
     },
 };
-
-const AT_ROOM: &str = "@room";
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(i32)]
@@ -405,6 +403,10 @@ impl MessageToolbar {
 
     /// Set the event to edit.
     pub fn set_edit(&self, event: Event) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
         let imp = self.imp();
         if !imp.can_send_message() {
             return;
@@ -419,7 +421,8 @@ impl MessageToolbar {
             return;
         };
 
-        let mentions = if let Some(html) =
+        // Try to detect rich mentions.
+        let mut mentions = if let Some(html) =
             formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
         {
             let mentions = find_html_mentions(&html, &event.room());
@@ -437,7 +440,7 @@ impl MessageToolbar {
                         let start = pos + index;
                         let end = start + s.len();
                         pos = end;
-                        (pill, (start, end))
+                        DetectedMention { pill, start, end }
                     })
                 })
                 .collect::<Vec<_>>()
@@ -445,7 +448,17 @@ impl MessageToolbar {
             Vec::new()
         };
 
-        // TODO: Detect @room if event can have it and if user can send it.
+        // Try to detect `@room` mentions.
+        if room.permissions().can_notify_room() && event.can_contain_at_room() {
+            if let Some(start) = find_at_room(&text) {
+                let pill = room.at_room().to_pill();
+                let end = start + AT_ROOM.len();
+                mentions.push(DetectedMention { pill, start, end });
+
+                // Make sure the list is sorted.
+                mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
+            }
+        }
 
         imp.related_event_header.set_widgets::<gtk::Widget>(vec![]);
         imp.related_event_header
@@ -464,13 +477,13 @@ impl MessageToolbar {
             buffer.set_text(&text);
         } else {
             // Place the pills instead of the text at the appropriate places in
-            // the TextView.
+            // the GtkSourceView.
             buffer.set_text("");
 
             let mut pos = 0;
             let mut iter = buffer.iter_at_offset(0);
 
-            for (pill, (start, end)) in mentions {
+            for DetectedMention { pill, start, end } in mentions {
                 if pos != start {
                     buffer.insert(&mut iter, &text[pos..start]);
                 }
@@ -936,6 +949,16 @@ impl MessageToolbar {
 
         room.send_typing_notification(typing);
     }
+}
+
+/// A mention that was detected in a message.
+struct DetectedMention {
+    /// The pill to represent the mention.
+    pill: Pill,
+    /// The start of the mention in the text.
+    start: usize,
+    /// The end of the mention in the text.
+    end: usize,
 }
 
 /// A chunk of a message.

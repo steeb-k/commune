@@ -10,7 +10,7 @@ use ruma::{
     events::{
         receipt::Receipt,
         room::message::{MessageType, OriginalSyncRoomMessageEvent},
-        AnySyncTimelineEvent,
+        AnySyncTimelineEvent, Mentions,
     },
     serde::Raw,
     EventId, MatrixToUri, MatrixUri, MilliSecondsSinceUnixEpoch, OwnedEventId, OwnedTransactionId,
@@ -563,6 +563,31 @@ impl Event {
         match self.imp().item.borrow().as_ref().unwrap().content() {
             TimelineItemContent::Message(msg) => Some(msg.msgtype().clone()),
             _ => None,
+        }
+    }
+
+    /// The mentions from this message, if any.
+    pub fn mentions(&self) -> Option<Mentions> {
+        match self.imp().item.borrow().as_ref().unwrap().content() {
+            TimelineItemContent::Message(msg) => msg.mentions().cloned(),
+            _ => None,
+        }
+    }
+
+    /// Whether this event might contain an `@room` mention.
+    ///
+    /// THis means that either it doesn't have intentional mentions, or it has
+    /// intentional mentions and `room` is set to `true`.
+    pub fn can_contain_at_room(&self) -> bool {
+        match self.imp().item.borrow().as_ref().unwrap().content() {
+            TimelineItemContent::Message(msg) => {
+                let Some(mentions) = msg.mentions() else {
+                    return true;
+                };
+
+                mentions.room
+            }
+            _ => false,
         }
     }
 
