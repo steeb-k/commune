@@ -189,16 +189,16 @@ impl MessageText {
         self.add_css_class("emote");
         self.set_is_html(false);
 
+        let sender_name = sender.disambiguated_name();
+        self.build_text(&body, room, Some(&sender_name));
+        self.set_original_text(body);
+
         let handler = sender.connect_disambiguated_name_notify(
             clone!(@weak self as obj, @weak room => move |sender| {
                 obj.update_emote(&room, &sender.disambiguated_name());
             }),
         );
         self.imp().sender.set(&sender, vec![handler]);
-
-        let sender_name = sender.disambiguated_name();
-        self.build_text(&body, room, Some(&sender_name));
-        self.set_original_text(body);
     }
 
     fn update_emote(&self, room: &Room, sender_name: &str) {
@@ -208,7 +208,7 @@ impl MessageText {
             return;
         }
 
-        self.build_text(&text, room, None);
+        self.build_text(&text, room, Some(sender_name));
     }
 
     /// Build the message for the given plain text.
