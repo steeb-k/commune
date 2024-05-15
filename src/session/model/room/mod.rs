@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashSet, io::Cursor};
+use std::{cell::RefCell, collections::HashSet};
 
 use futures_util::StreamExt;
 use gettextrs::gettext;
@@ -9,7 +9,6 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    attachment::{generate_image_thumbnail, AttachmentConfig, AttachmentInfo, Thumbnail},
     deserialized_responses::{AmbiguityChange, MemberEvent, SyncTimelineEvent},
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
@@ -26,8 +25,8 @@ use ruma::{
         },
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
-        AnyMessageLikeEventContent, AnyRoomAccountDataEvent, AnySyncStateEvent,
-        AnySyncTimelineEvent, SyncEphemeralRoomEvent, SyncStateEvent,
+        AnyRoomAccountDataEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncEphemeralRoomEvent,
+        SyncStateEvent,
     },
     EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedUserId,
     RoomId, UserId,
@@ -1326,21 +1325,6 @@ impl Room {
         self.notify_latest_activity();
     }
 
-    /// Send a message with the given `content` in this room.
-    pub fn send_room_message_event(&self, content: impl Into<AnyMessageLikeEventContent>) {
-        let timeline = self.timeline().matrix_timeline();
-        let content = content.into();
-
-        let handle = spawn_tokio!(async move { timeline.send(content).await });
-
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                handle.await.unwrap();
-            })
-        );
-    }
-
     /// Toggle a `key` reaction for the `relates_to` event ID in this room.
     pub async fn toggle_reaction(&self, key: String, relates_to: OwnedEventId) -> Result<(), ()> {
         let timeline = self.timeline().matrix_timeline();
@@ -1644,54 +1628,6 @@ impl Room {
         }
 
         false
-    }
-
-    pub fn send_attachment(
-        &self,
-        bytes: Vec<u8>,
-        mime: mime::Mime,
-        body: &str,
-        info: AttachmentInfo,
-    ) {
-        let matrix_room = self.matrix_room();
-        if matrix_room.state() != RoomState::Joined {
-            return;
-        };
-
-        let matrix_room = matrix_room.clone();
-        let body = body.to_string();
-        spawn_tokio!(async move {
-            // Needed to hold the thumbnail data until it is sent.
-            let data_slot;
-
-            // The method will filter compatible mime types so we don't need to
-            // since we ignore errors.
-            let thumbnail = match generate_image_thumbnail(&mime, Cursor::new(&bytes), None) {
-                Ok((data, info)) => {
-                    data_slot = data;
-                    Some(Thumbnail {
-                        data: data_slot,
-                        content_type: mime::IMAGE_JPEG,
-                        info: Some(info),
-                    })
-                }
-                _ => None,
-            };
-
-            let config = if let Some(thumbnail) = thumbnail {
-                AttachmentConfig::with_thumbnail(thumbnail)
-            } else {
-                AttachmentConfig::new()
-            }
-            .info(info);
-
-            matrix_room
-                // TODO This should be added to pending messages instead of
-                // sending it directly.
-                .send_attachment(&body, &mime, bytes, config)
-                .await
-                .unwrap();
-        });
     }
 
     /// Invite the given users to this room.

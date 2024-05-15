@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use adw::{prelude::*, subclass::prelude::*};
 use futures_util::{future, pin_mut, StreamExt};
 use gettextrs::{gettext, pgettext};
@@ -6,7 +8,10 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::attachment::{AttachmentInfo, BaseFileInfo, BaseImageInfo};
+use matrix_sdk::attachment::{
+    generate_image_thumbnail, AttachmentConfig, AttachmentInfo, BaseFileInfo, BaseImageInfo,
+    Thumbnail,
+};
 use ruma::{
     events::{
         room::message::{
@@ -14,7 +19,7 @@ use ruma::{
             MessageFormat, MessageType, RoomMessageEventContent,
             RoomMessageEventContentWithoutRelation,
         },
-        AnyMessageLikeEventContent, Mentions,
+        Mentions,
     },
     matrix_uri::MatrixId,
     OwnedUserId,
@@ -165,7 +170,7 @@ mod imp {
                     {
                         entry.stop_signal_emission_by_name("paste-clipboard");
                         spawn!(async move {
-                            obj.read_clipboard().await;
+                            obj.read_clipboard_file().await;
                         });
                     }
                 }));
@@ -372,6 +377,7 @@ impl MessageToolbar {
         self.notify_related_event();
     }
 
+    /// Remove the related event.
     pub fn clear_related_event(&self) {
         if self.related_event_type() == RelatedEventType::Edit {
             // Clean up the entry.
@@ -382,6 +388,7 @@ impl MessageToolbar {
         self.set_related_event_type(RelatedEventType::default());
     }
 
+    /// Set the event to reply to.
     pub fn set_reply_to(&self, event: Event) {
         let imp = self.imp();
         if !imp.can_send_message() {
@@ -637,6 +644,7 @@ impl MessageToolbar {
         self.clear_related_event();
     }
 
+    /// Open the emoji chooser in the message entry.
     fn open_emoji(&self) {
         let imp = self.imp();
         if !imp.can_send_message() {
@@ -645,6 +653,10 @@ impl MessageToolbar {
         imp.message_entry.emit_insert_emoji();
     }
 
+    /// Send the current location of the user.
+    ///
+    /// Shows a preview of the location first and asks the user to confirm the
+    /// action.
     async fn send_location(&self) {
         if !self.imp().can_send_message() {
             return;
@@ -735,12 +747,18 @@ impl MessageToolbar {
                 ),
             ],
         );
-        room.send_room_message_event(AnyMessageLikeEventContent::RoomMessage(
-            RoomMessageEventContent::new(MessageType::Location(LocationMessageEventContent::new(
-                location_body,
-                geo_uri_string,
-            ))),
-        ));
+
+        let content = RoomMessageEventContent::new(MessageType::Location(
+            LocationMessageEventContent::new(location_body, geo_uri_string),
+        ))
+        // To avoid triggering legacy pushrules, we must always include the mentions,
+        // even if they are empty.
+        .add_mentions(Mentions::default());
+
+        let matrix_timeline = room.timeline().matrix_timeline();
+        spawn_tokio!(async move { matrix_timeline.send(content.into()).await })
+            .await
+            .unwrap();
     }
 
     /// Show a toast for the given location error;
@@ -754,6 +772,53 @@ impl MessageToolbar {
         toast!(self, msg);
     }
 
+    /// Send the attachment with the given data.
+    async fn send_attachment(
+        &self,
+        bytes: Vec<u8>,
+        mime: mime::Mime,
+        body: String,
+        info: AttachmentInfo,
+    ) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let matrix_room = room.matrix_room().clone();
+
+        let handle = spawn_tokio!(async move {
+            // The method will filter compatible mime types so we don't need to,
+            // since we ignore errors.
+            let thumbnail = match generate_image_thumbnail(&mime, Cursor::new(&bytes), None) {
+                Ok((data, info)) => Some(Thumbnail {
+                    data,
+                    content_type: mime.clone(),
+                    info: Some(info),
+                }),
+                _ => None,
+            };
+
+            let config = if let Some(thumbnail) = thumbnail {
+                AttachmentConfig::with_thumbnail(thumbnail)
+            } else {
+                AttachmentConfig::new()
+            }
+            .info(info);
+
+            matrix_room
+                .send_attachment(&body, &mime, bytes, config)
+                .await
+        });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Failed to send attachment: {error}");
+        }
+    }
+
+    /// Send the given texture as an image.
+    ///
+    /// Shows a preview of the image first and asks the user to confirm the
+    /// action.
     async fn send_image(&self, image: gdk::Texture) {
         if !self.imp().can_send_message() {
             return;
@@ -767,10 +832,6 @@ impl MessageToolbar {
             return;
         }
 
-        let Some(room) = self.room() else {
-            return;
-        };
-
         let bytes = image.save_to_png_bytes();
         let info = AttachmentInfo::Image(BaseImageInfo {
             width: Some((image.width() as u32).into()),
@@ -779,9 +840,11 @@ impl MessageToolbar {
             blurhash: None,
         });
 
-        room.send_attachment(bytes.to_vec(), mime::IMAGE_PNG, &filename, info);
+        self.send_attachment(bytes.to_vec(), mime::IMAGE_PNG, filename, info)
+            .await;
     }
 
+    /// Select a file to send.
     pub async fn select_file(&self) {
         if !self.imp().can_send_message() {
             return;
@@ -811,55 +874,57 @@ impl MessageToolbar {
         };
     }
 
+    /// Send the given file.
+    ///
+    /// Shows a preview of the file first, if possible, and asks the user to
+    /// confirm the action.
     pub async fn send_file(&self, file: gio::File) {
         if !self.imp().can_send_message() {
             return;
         }
 
-        match load_file(&file).await {
-            Ok((bytes, file_info)) => {
-                let dialog = AttachmentDialog::new(&file_info.filename);
-                dialog.set_file(&file);
-
-                if dialog.response_future(self).await != gtk::ResponseType::Ok {
-                    return;
-                }
-
-                let Some(room) = self.room() else {
-                    error!("Cannot send file without a room");
-                    return;
-                };
-
-                let size = file_info.size.map(Into::into);
-                let info = match file_info.mime.type_() {
-                    mime::IMAGE => {
-                        let mut info = get_image_info(&file).await;
-                        info.size = size;
-                        AttachmentInfo::Image(info)
-                    }
-                    mime::VIDEO => {
-                        let mut info = get_video_info(&file).await;
-                        info.size = size;
-                        AttachmentInfo::Video(info)
-                    }
-                    mime::AUDIO => {
-                        let mut info = get_audio_info(&file).await;
-                        info.size = size;
-                        AttachmentInfo::Audio(info)
-                    }
-                    _ => AttachmentInfo::File(BaseFileInfo { size }),
-                };
-
-                room.send_attachment(bytes, file_info.mime, &file_info.filename, info);
-            }
+        let (bytes, file_info) = match load_file(&file).await {
+            Ok(data) => data,
             Err(error) => {
                 warn!("Could not read file: {error}");
                 toast!(self, gettext("Error reading file"));
+                return;
             }
+        };
+
+        let dialog = AttachmentDialog::new(&file_info.filename);
+        dialog.set_file(&file);
+
+        if dialog.response_future(self).await != gtk::ResponseType::Ok {
+            return;
         }
+
+        let size = file_info.size.map(Into::into);
+        let info = match file_info.mime.type_() {
+            mime::IMAGE => {
+                let mut info = get_image_info(&file).await;
+                info.size = size;
+                AttachmentInfo::Image(info)
+            }
+            mime::VIDEO => {
+                let mut info = get_video_info(&file).await;
+                info.size = size;
+                AttachmentInfo::Video(info)
+            }
+            mime::AUDIO => {
+                let mut info = get_audio_info(&file).await;
+                info.size = size;
+                AttachmentInfo::Audio(info)
+            }
+            _ => AttachmentInfo::File(BaseFileInfo { size }),
+        };
+
+        self.send_attachment(bytes, file_info.mime, file_info.filename, info)
+            .await;
     }
 
-    async fn read_clipboard(&self) {
+    /// Read the file data from the clipboard and send it.
+    async fn read_clipboard_file(&self) {
         let clipboard = self.clipboard();
         let formats = clipboard.formats();
 
@@ -900,6 +965,9 @@ impl MessageToolbar {
         }
     }
 
+    /// Handle a click on the related event.
+    ///
+    /// Scrolls to the corresponding event.
     #[template_callback]
     fn handle_related_event_click(&self) {
         if let Some(event) = &*self.imp().related_event.borrow() {
@@ -911,13 +979,14 @@ impl MessageToolbar {
         }
     }
 
+    /// Handle a paste action.
     pub fn handle_paste_action(&self) {
         if !self.imp().can_send_message() {
             return;
         }
 
-        spawn!(glib::clone!(@weak self as obj => async move {
-            obj.read_clipboard().await;
+        spawn!(clone!(@weak self as obj => async move {
+            obj.read_clipboard_file().await;
         }));
     }
 
@@ -950,6 +1019,7 @@ impl MessageToolbar {
         self.clipboard().set_text(&body);
     }
 
+    /// Send a typing notification for the given typing state.
     fn send_typing_notification(&self, typing: bool) {
         let Some(room) = self.room() else {
             return;
