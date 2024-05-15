@@ -476,6 +476,11 @@ impl Event {
         false
     }
 
+    /// The underlying SDK timeline item.
+    pub fn item(&self) -> EventTimelineItem {
+        self.imp().item.borrow().clone().unwrap()
+    }
+
     /// The raw JSON source for this `Event`, if it has been echoed back
     /// by the server.
     pub fn raw(&self) -> Option<Raw<AnySyncTimelineEvent>> {

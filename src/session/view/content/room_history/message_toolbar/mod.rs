@@ -10,12 +10,14 @@ use matrix_sdk::attachment::{AttachmentInfo, BaseFileInfo, BaseImageInfo};
 use ruma::{
     events::{
         room::message::{
-            AddMentions, EmoteMessageEventContent, FormattedBody, ForwardThread,
-            LocationMessageEventContent, MessageFormat, MessageType, RoomMessageEventContent,
+            EmoteMessageEventContent, FormattedBody, ForwardThread, LocationMessageEventContent,
+            MessageFormat, MessageType, RoomMessageEventContent,
+            RoomMessageEventContentWithoutRelation,
         },
-        AnyMessageLikeEventContent,
+        AnyMessageLikeEventContent, Mentions,
     },
     matrix_uri::MatrixId,
+    OwnedUserId,
 };
 use sourceview::prelude::*;
 use tracing::{debug, error, warn};
@@ -30,7 +32,7 @@ use crate::{
     gettext_f,
     prelude::*,
     session::model::{Event, Member, Room},
-    spawn, toast,
+    spawn, spawn_tokio, toast,
     utils::{
         matrix::{find_at_room, find_html_mentions, AT_ROOM},
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
@@ -508,6 +510,7 @@ impl MessageToolbar {
         SplitMentions { iter: start, end }
     }
 
+    /// Send the text message that is currently in the message entry.
     async fn send_text_message(&self) {
         let imp = self.imp();
         if !imp.can_send_message() {
@@ -526,6 +529,7 @@ impl MessageToolbar {
         let mut plain_body = String::with_capacity(body_len);
         // formatted_body is Markdown if is_markdown is true, and HTML if false.
         let mut formatted_body = String::with_capacity(body_len);
+        let mut mentions = Mentions::new();
 
         let mut split_mentions = self.split_buffer_mentions(start_iter, end_iter);
         while let Some(chunk) = split_mentions.next().await {
@@ -534,7 +538,7 @@ impl MessageToolbar {
                     plain_body.push_str(&text);
                     formatted_body.push_str(&text);
                 }
-                MentionChunk::RichMention { name, uri } => {
+                MentionChunk::RichMention { name, uri, user_id } => {
                     has_rich_mentions = true;
                     plain_body.push_str(&name);
                     formatted_body.push_str(&if is_markdown {
@@ -542,10 +546,16 @@ impl MessageToolbar {
                     } else {
                         format!("<a href=\"{uri}\">{name}</a>")
                     });
+
+                    if let Some(user_id) = user_id {
+                        mentions.user_ids.insert(user_id);
+                    }
                 }
                 MentionChunk::AtRoom => {
                     plain_body.push_str(AT_ROOM);
                     formatted_body.push_str(AT_ROOM);
+
+                    mentions.room = true;
                 }
             }
         }
@@ -578,46 +588,51 @@ impl MessageToolbar {
             })
             .into()
         } else if let Some(html_body) = html_body {
-            RoomMessageEventContent::text_html(plain_body, html_body)
+            RoomMessageEventContentWithoutRelation::text_html(plain_body, html_body)
         } else {
-            RoomMessageEventContent::text_plain(plain_body)
+            RoomMessageEventContentWithoutRelation::text_plain(plain_body)
         };
 
-        // Handle related event.
-        match self.related_event_type() {
-            RelatedEventType::Reply => {
-                if let Some(related_message) =
-                    self.related_event().and_then(|event| event.as_message())
-                {
-                    let full_related_message =
-                        related_message.into_full_event(room.room_id().to_owned());
-                    content = content.make_reply_to(
-                        &full_related_message,
-                        ForwardThread::Yes,
-                        AddMentions::No,
-                    )
-                }
-            }
-            RelatedEventType::Edit => {
-                if let Some((related_event, related_message)) = self
-                    .related_event()
-                    .and_then(|event| event.as_message().map(|message| (event, message)))
-                {
-                    // Try to get the replied to message of the original event if it's available
-                    // locally.
-                    let replied_to_message = related_event
-                        .reply_to_event()
-                        .and_then(|e| e.as_message())
-                        .map(|m| m.into_full_event(room.room_id().to_owned()));
+        // To avoid triggering legacy pushrules, we must always include the mentions,
+        // even if they are empty.
+        content = content.add_mentions(mentions);
 
-                    content =
-                        content.make_replacement(&related_message, replied_to_message.as_ref());
+        let matrix_timeline = room.timeline().matrix_timeline();
+
+        // Send event depending on relation.
+        match self
+            .related_event()
+            .map(|event| (self.related_event_type(), event.item()))
+        {
+            Some((RelatedEventType::Reply, reply_item)) => {
+                let handle = spawn_tokio!(async move {
+                    matrix_timeline
+                        .send_reply(content, &reply_item, ForwardThread::Yes)
+                        .await
+                });
+                if let Err(error) = handle.await.unwrap() {
+                    error!("Could not send reply: {error}");
                 }
             }
-            RelatedEventType::None => {}
+            Some((RelatedEventType::Edit, edit_item)) => {
+                let handle =
+                    spawn_tokio!(async move { matrix_timeline.edit(content, &edit_item).await });
+                if let Err(error) = handle.await.unwrap() {
+                    error!("Could not send edit: {error}");
+                }
+            }
+            _ => {
+                spawn_tokio!(async move {
+                    matrix_timeline
+                        .send(content.with_relation(None).into())
+                        .await
+                })
+                .await
+                .unwrap();
+            }
         }
 
-        room.send_room_message_event(content);
+        // Clear the message entry.
         buffer.set_text("");
         self.clear_related_event();
     }
@@ -971,12 +986,14 @@ enum MentionChunk {
         name: String,
         /// The URI of the mention.
         uri: String,
+        /// The user ID, if this is a user mention.
+        user_id: Option<OwnedUserId>,
     },
     /// An `@room` mention.
     AtRoom,
 }
 
-/// An iterator over the chunks of a message.
+/// An iterator over the chunks of a message in a `GtkTextBuffer`.
 struct SplitMentions {
     iter: gtk::TextIter,
     end: gtk::TextIter,
@@ -1003,6 +1020,7 @@ impl SplitMentions {
                 MentionChunk::RichMention {
                     name: user.display_name(),
                     uri: user.matrix_to_uri().to_string(),
+                    user_id: Some(user.user_id().clone()),
                 }
             } else if let Some(room) = source.downcast_ref::<Room>() {
                 let matrix_to_uri = room.matrix_to_uri().await;
@@ -1015,6 +1033,7 @@ impl SplitMentions {
                 MentionChunk::RichMention {
                     name: string_repr,
                     uri: matrix_to_uri.to_string(),
+                    user_id: None,
                 }
             } else if source.is::<AtRoom>() {
                 MentionChunk::AtRoom
