@@ -33,6 +33,7 @@ src/components/user_page.ui
 src/components/user_profile_dialog.ui
 src/contrib/qr_code_scanner/mod.ui
 src/contrib/qr_code.rs
+src/error_page.rs
 src/error_page.ui
 src/identity_verification_view/accept_request_page.rs
 src/identity_verification_view/accept_request_page.ui
