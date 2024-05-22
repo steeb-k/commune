@@ -80,7 +80,7 @@ mod imp {
                     let member = room.get_or_create_members().get_or_create(user_id);
                     let user_page = UserPage::new(&member);
                     user_page.connect_close(clone!(@weak obj => move |_| {
-                        let _ = obj.activate_action("navigation.pop", None);
+                        obj.imp().navigation_view.pop();
                         toast!(obj, gettext("The user is not in the room members list anymore"));
                     }));
 
