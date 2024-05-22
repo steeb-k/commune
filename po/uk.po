@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-11 15:20+0000\n"
-"PO-Revision-Date: 2024-05-12 17:54+0300\n"
+"POT-Creation-Date: 2024-05-21 15:46+0000\n"
+"PO-Revision-Date: 2024-05-22 09:44+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -660,7 +660,6 @@ msgid "More Reactions"
 msgstr "Інші реакції"
 
 #: src/components/pill/at_room.rs:29
-#| msgid "Notify Entire Room"
 msgid "Notify the whole room"
 msgstr "Сповістити усю кімнату"
 
@@ -892,39 +891,69 @@ msgstr "Видошукач"
 msgid "QR Code"
 msgstr "QR-код"
 
+#: src/error_page.rs:98
+#| msgid "Image copied to clipboard"
+msgid "Command copied to clipboard"
+msgstr "Команду скопійовано до буфера обміну"
+
 #: src/error_page.ui:25
-msgid "Secret Service Error"
-msgstr "Помилка «Секретної служби»"
+#| msgid "Secret Service Error"
+msgid "Secret Portal Error"
+msgstr "Помилка «Секретного порталу»"
 
 #: src/error_page.ui:39
+#| msgid ""
+#| "Fractal relies on a Secret Service Provider to manage your sensitive "
+#| "session information and an error occurred while we were trying to store "
+#| "or get your session."
 msgid ""
-"Fractal relies on a Secret Service Provider to manage your sensitive session "
-"information and an error occurred while we were trying to store or get your "
-"session."
+"Fractal relies on a Secret Portal to manage your sensitive session "
+"information and an error occurred while we were trying to restore your "
+"sessions."
 msgstr ""
 "«Фрактал» у керуванні конфіденційними даними ваших сеансів покладається на "
-"«Секретну службу». Під час спроби зберегти або отримати дані вашого сеансу "
-"сталася помилка."
+"«Секретний портал». Під час спроби відновити ваші сеанси сталася помилка."
 
 #: src/error_page.ui:51
+#| msgid ""
+#| "Here are a few things that might help you fix issues with the Secret "
+#| "Service:"
 msgid ""
-"Here are a few things that might help you fix issues with the Secret Service:"
+"Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr ""
-"Ось декілька порад, які можуть допомогти вам виправити проблеми із "
-"«Секретною службою»:"
+"Ось декілька порад, які можуть допомогти вам усунути проблеми із «Секретним"
+" порталом»:"
 
 #: src/error_page.ui:68
+#| msgid ""
+#| "Make sure you have a Secret Service Provider installed, like gnome-"
+#| "keyring."
 msgid ""
-"Make sure you have a Secret Service Provider installed, like gnome-keyring."
+"Make sure you have a Secret Portal Backend Provider installed, like gnome-"
+"keyring."
 msgstr ""
-"Переконайтеся, що встановлено обгортку «Секретної служби», наприклад gnome-"
+"Переконайтеся, що встановлено модуль надання даних «Секретного порталу»,"
+" наприклад gnome-"
 "keyring."
 
-#: src/error_page.ui:87
+#: src/error_page.ui:91
+msgid ""
+"If you prefer to use a Secret Service Provider instead, you need to allow "
+"Fractal to interact with it, like this:"
+msgstr ""
+"Якщо ви надаєте перевагу використанню надавача послуг «Секретної служби»,"
+" вам слід дозволити «Фрактал» взаємодію зі службою, ось так:"
+
+#: src/error_page.ui:113
+#| msgid "Copy Room ID to Clipboard"
+msgid "Copy Command to Clipboard"
+msgstr "Копіювати команду до буфера обміну даними"
+
+#: src/error_page.ui:148
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr "Перевірте, чи є у вас типова в'язка ключів і чи її розблоковано."
 
-#: src/error_page.ui:99
+#: src/error_page.ui:160
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
@@ -932,7 +961,7 @@ msgstr ""
 "Ознайомтеся із журналом програми та документацією до вашого дистрибутива, "
 "щоб дізнатися більше."
 
-#: src/error_page.ui:115
+#: src/error_page.ui:176
 msgid "Could Not Initialize Session"
 msgstr "Не вдалося ініціалізувати сеанс"
 
@@ -1671,17 +1700,17 @@ msgstr "Будь-який зареєстрований користувач"
 msgid "Unsupported rule"
 msgstr "Непідтримуване правило"
 
-#: src/session/model/room/mod.rs:1178
+#: src/session/model/room/mod.rs:1177
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1181
+#: src/session/model/room/mod.rs:1180
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1191
+#: src/session/model/room/mod.rs:1190
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -3611,60 +3640,60 @@ msgstr "Автодоповнення згадки учасника кімнат�
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:394
+#: src/session/view/content/room_history/message_toolbar/mod.rs:403
 msgid "Reply to {user}"
 msgstr "Відповідь {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:466
+#: src/session/view/content/room_history/message_toolbar/mod.rs:475
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Редагування"
 
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:653
+#: src/session/view/content/room_history/message_toolbar/mod.rs:680
 msgid "Your Location"
 msgstr "Ваше місце перебування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:714
+#: src/session/view/content/room_history/message_toolbar/mod.rs:741
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Розташування користувача {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:734
+#: src/session/view/content/room_history/message_toolbar/mod.rs:767
 msgid "The location request has been cancelled"
 msgstr "Запит щодо визначення розташування було скасовано"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:735
+#: src/session/view/content/room_history/message_toolbar/mod.rs:768
 msgid "The location services are disabled"
 msgstr "Служби визначення розташування вимкнено"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:736
+#: src/session/view/content/room_history/message_toolbar/mod.rs:769
 msgid "Could not retrieve current location"
 msgstr "Не вдалося отримати дані щодо поточного розташування"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:776
+#: src/session/view/content/room_history/message_toolbar/mod.rs:854
 msgid "Select File"
 msgstr "Виберіть файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:778
+#: src/session/view/content/room_history/message_toolbar/mod.rs:856
 msgid "Select"
 msgstr "Вибрати"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:793
+#: src/session/view/content/room_history/message_toolbar/mod.rs:871
 msgid "Could not open file"
 msgstr "Не вдалося відкрити файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:842
+#: src/session/view/content/room_history/message_toolbar/mod.rs:890
 msgid "Error reading file"
 msgstr "Помилка при зчитуванні файла"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:867
+#: src/session/view/content/room_history/message_toolbar/mod.rs:947
 msgid "Error getting image from clipboard"
 msgstr "Помилка під час отримання зображення з буфера обміну"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:884
+#: src/session/view/content/room_history/message_toolbar/mod.rs:964
 msgid "Error getting file from clipboard"
 msgstr "Помилка під час отримання файла з буфера обміну"
 
