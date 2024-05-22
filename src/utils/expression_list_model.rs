@@ -63,8 +63,9 @@ impl ExpressionListModel {
     }
 
     /// Set the underlying model.
-    pub fn set_model(&self, model: Option<gio::ListModel>) {
+    pub fn set_model(&self, model: Option<impl IsA<gio::ListModel>>) {
         let imp = self.imp();
+        let model = model.and_upcast();
 
         let removed = self.n_items();
 

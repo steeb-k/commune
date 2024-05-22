@@ -134,7 +134,7 @@ mod imp {
                 return;
             }
 
-            self.rooms_expr.set_model(rooms.and_upcast());
+            self.rooms_expr.set_model(rooms);
             self.obj().notify_rooms();
         }
     }

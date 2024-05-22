@@ -99,7 +99,7 @@ mod imp {
 
                 let latest_activity_expr_model = ExpressionListModel::new();
                 latest_activity_expr_model.set_expressions(vec![room_latest_activity.upcast()]);
-                latest_activity_expr_model.set_model(Some(filter_model.upcast()));
+                latest_activity_expr_model.set_model(Some(filter_model));
 
                 let sort_model =
                     gtk::SortListModel::new(Some(latest_activity_expr_model), Some(sorter));

@@ -200,7 +200,7 @@ mod imp {
                 self.permissions_handler.replace(Some(permissions_handler));
             }
 
-            self.members_expr.set_model(members.and_upcast());
+            self.members_expr.set_model(members);
             self.update_at_room_model();
             self.obj().notify_members();
         }
