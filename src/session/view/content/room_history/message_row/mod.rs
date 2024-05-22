@@ -16,9 +16,7 @@ mod reply;
 mod text;
 
 pub use self::content::{ContentFormat, MessageContent};
-use self::{
-    media::MessageMedia, message_state_stack::MessageStateStack, reaction_list::MessageReactionList,
-};
+use self::{message_state_stack::MessageStateStack, reaction_list::MessageReactionList};
 use super::{ReadReceiptsList, SenderAvatar};
 use crate::{
     gettext_f, session::model::Event, system_settings::ClockFormat, utils::BoundObject,
@@ -270,12 +268,7 @@ impl MessageRow {
         };
 
         if matches!(message, MessageType::Image(_) | MessageType::Video(_)) {
-            let Some(media_widget) = self
-                .imp()
-                .content
-                .content_widget()
-                .and_downcast::<MessageMedia>()
-            else {
+            let Some(media_widget) = self.imp().content.media_widget() else {
                 warn!("Trying to show media of a non-media message");
                 return;
             };

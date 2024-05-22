@@ -86,18 +86,25 @@ impl MessageContent {
         glib::Object::new()
     }
 
-    /// Access the widget with the own content of the event.
+    /// Access the widget with the media content of the event, if any.
     ///
     /// This allows to access the descendant content while discarding the
-    /// content of a related message, like a replied-to event.
-    pub fn content_widget(&self) -> Option<gtk::Widget> {
-        let child = self.child()?;
+    /// content of a related message, like a replied-to event, or the caption of
+    /// the event.
+    pub fn media_widget(&self) -> Option<MessageMedia> {
+        let mut child = self.child()?;
 
+        // If it is a reply, the media is in the main content.
         if let Some(reply) = child.downcast_ref::<MessageReply>() {
-            reply.content().child()
-        } else {
-            Some(child)
+            child = reply.content().child()?;
         }
+
+        // If it is a caption, the media is the child of the caption.
+        if let Some(caption) = child.downcast_ref::<MessageCaption>() {
+            child = caption.child()?;
+        }
+
+        child.downcast::<MessageMedia>().ok()
     }
 
     pub fn update_for_event(&self, event: &Event) {
@@ -176,9 +183,7 @@ impl MessageContent {
 
     /// Get the texture displayed by this widget, if any.
     pub fn texture(&self) -> Option<gdk::Texture> {
-        self.content_widget()?
-            .downcast_ref::<MessageMedia>()?
-            .texture()
+        self.media_widget()?.texture()
     }
 }
 
