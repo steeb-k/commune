@@ -14,6 +14,7 @@ use crate::{
     components::UserPage,
     session::model::{Member, Membership, Room},
     toast,
+    utils::ExpressionListModel,
 };
 
 mod imp {
@@ -128,22 +129,33 @@ impl MembersPage {
         let imp = self.imp();
 
         // Sort the members list by power level, then display name.
+        let power_level_expr = Member::this_expression("power-level");
         let sorter = gtk::MultiSorter::new();
         sorter.append(
             gtk::NumericSorter::builder()
-                .expression(Member::this_expression("power-level"))
+                .expression(&power_level_expr)
                 .sort_order(gtk::SortType::Descending)
                 .build(),
         );
 
-        sorter.append(gtk::StringSorter::new(Some(Member::this_expression(
-            "display-name",
-        ))));
+        let display_name_expr = Member::this_expression("display-name");
+        sorter.append(gtk::StringSorter::new(Some(&display_name_expr)));
 
         // We should have a strong reference to the list in the main page so we can use
         // `get_or_create_members()`.
         let members = room.get_or_create_members();
-        let sorted_members = gtk::SortListModel::new(Some(members.clone()), Some(sorter));
+
+        // We need to notify when a watched property changes so the filter and sorter
+        // can update the list.
+        let expr_members = ExpressionListModel::new();
+        expr_members.set_expressions(vec![
+            power_level_expr.upcast(),
+            display_name_expr.upcast(),
+            Member::this_expression("membership").upcast(),
+        ]);
+        expr_members.set_model(Some(members.clone()));
+
+        let sorted_members = gtk::SortListModel::new(Some(expr_members), Some(sorter));
 
         let joined_members = self.build_filtered_list(sorted_members.clone(), Membership::Join);
         let invited_members = self.build_filtered_list(sorted_members.clone(), Membership::Invite);
