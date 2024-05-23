@@ -64,7 +64,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for MediaContentViewer {
-        const NAME: &'static str = "ComponentsMediaContentViewer";
+        const NAME: &'static str = "MediaContentViewer";
         type Type = super::MediaContentViewer;
         type ParentType = adw::Bin;
 

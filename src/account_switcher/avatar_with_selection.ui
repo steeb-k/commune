@@ -5,7 +5,7 @@
     <property name="child">
       <object class="GtkOverlay">
         <child>
-          <object class="ComponentsAvatar" id="child_avatar"></object>
+          <object class="Avatar" id="child_avatar"></object>
         </child>
         <child type="overlay">
           <object class="GtkImage" id="checkmark">

@@ -28,7 +28,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for LocationViewer {
-        const NAME: &'static str = "ComponentsLocationViewer";
+        const NAME: &'static str = "LocationViewer";
         type Type = super::LocationViewer;
         type ParentType = adw::Bin;
 

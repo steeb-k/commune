@@ -18,7 +18,7 @@
       <class name="image-button"/>
     </style>
     <property name="child">
-      <object class="ComponentsAvatar">
+      <object class="Avatar">
         <property name="size">24</property>
         <binding name="data">
           <lookup name="avatar-data" type="SessionInfo">

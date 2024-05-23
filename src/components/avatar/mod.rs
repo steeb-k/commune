@@ -37,7 +37,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for Avatar {
-        const NAME: &'static str = "ComponentsAvatar";
+        const NAME: &'static str = "Avatar";
         type Type = super::Avatar;
         type ParentType = adw::Bin;
 

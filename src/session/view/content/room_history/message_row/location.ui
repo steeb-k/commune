@@ -11,7 +11,7 @@
     <child>
       <object class="GtkOverlay" id="overlay">
         <child>
-          <object class="ComponentsLocationViewer" id="location"/>
+          <object class="LocationViewer" id="location"/>
         </child>
         <child type="overlay">
           <object class="GtkImage" id="overlay_error">

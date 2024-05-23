@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ComponentsEditableAvatar" parent="AdwBin">
+  <template class="EditableAvatar" parent="AdwBin">
     <property name="accessible-role">group</property>
     <child>
       <object class="GtkOverlay">
@@ -12,9 +12,9 @@
               <object class="GtkStackPage">
                 <property name="name">default</property>
                 <property name="child">
-                  <object class="ComponentsAvatar">
+                  <object class="Avatar">
                     <property name="size">128</property>
-                    <property name="data" bind-source="ComponentsEditableAvatar" bind-property="data" bind-flags="sync-create"/>
+                    <property name="data" bind-source="EditableAvatar" bind-property="data" bind-flags="sync-create"/>
                   </object>
                 </property>
               </object>
@@ -29,11 +29,11 @@
                     <binding name="text">
                       <lookup name="display-name">
                         <lookup name="data">
-                          ComponentsEditableAvatar
+                          EditableAvatar
                         </lookup>
                       </lookup>
                     </binding>
-                    <property name="custom-image" bind-source="ComponentsEditableAvatar" bind-property="temp-image" bind-flags="sync-create"/>
+                    <property name="custom-image" bind-source="EditableAvatar" bind-property="temp-image" bind-flags="sync-create"/>
                   </object>
                 </property>
               </object>
@@ -48,7 +48,7 @@
             <property name="halign">end</property>
             <property name="valign">start</property>
             <child>
-              <object class="ComponentsActionButton" id="button_remove">
+              <object class="ActionButton" id="button_remove">
                 <property name="icon-name">remove-symbolic</property>
                 <property name="action-name">editable-avatar.remove-avatar</property>
                 <property name="default-state-tooltip-text" translatable="yes">Remove Avatar</property>
@@ -61,11 +61,11 @@
             <style>
               <class name="cutout" />
             </style>
-            <property name="visible" bind-source="ComponentsEditableAvatar" bind-property="editable" bind-flags="sync-create"/>
+            <property name="visible" bind-source="EditableAvatar" bind-property="editable" bind-flags="sync-create"/>
             <property name="halign">end</property>
             <property name="valign">end</property>
             <child>
-              <object class="ComponentsActionButton" id="button_edit">
+              <object class="ActionButton" id="button_edit">
                 <property name="icon-name">edit-symbolic</property>
                 <property name="action-name">editable-avatar.edit-avatar</property>
                 <property name="default-state-tooltip-text" translatable="yes">Select New Avatar</property>

@@ -132,7 +132,7 @@
                             <property name="valign">center</property>
                             <property name="spacing">12</property>
                             <child>
-                              <object class="ComponentsAvatar" id="room_avatar">
+                              <object class="Avatar" id="room_avatar">
                                 <property name="size">128</property>
                                 <property name="accessible-role">presentation</property>
                               </object>

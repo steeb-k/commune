@@ -24,7 +24,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for AudioPlayer {
-        const NAME: &'static str = "ComponentsAudioPlayer";
+        const NAME: &'static str = "AudioPlayer";
         type Type = super::AudioPlayer;
         type ParentType = adw::Bin;
 

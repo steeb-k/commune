@@ -14,7 +14,7 @@
           <class name="header"/>
         </style>
         <child>
-          <object class="ComponentsAvatar">
+          <object class="Avatar">
             <property name="size">32</property>
             <binding name="data">
               <lookup name="avatar-data">

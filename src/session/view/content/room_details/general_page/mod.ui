@@ -8,7 +8,7 @@
           <class name="room-details-group"/>
         </style>
         <child>
-          <object class="ComponentsEditableAvatar" id="avatar">
+          <object class="EditableAvatar" id="avatar">
             <accessibility>
               <property name="label" translatable="yes">Room Avatar</property>
             </accessibility>

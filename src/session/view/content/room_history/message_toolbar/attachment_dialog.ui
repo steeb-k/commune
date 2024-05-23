@@ -29,7 +29,7 @@
           </object>
         </child>
         <property name="content">
-          <object class="ComponentsMediaContentViewer" id="media"/>
+          <object class="MediaContentViewer" id="media"/>
         </property>
       </object>
     </property>

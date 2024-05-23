@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ComponentsAudioPlayer" parent="AdwBin">
+  <template class="AudioPlayer" parent="AdwBin">
     <child>
       <object class="GtkMediaControls">
-        <property name="media-stream" bind-source="ComponentsAudioPlayer" bind-property="media-file" bind-flags="sync-create"/>
+        <property name="media-stream" bind-source="AudioPlayer" bind-property="media-file" bind-flags="sync-create"/>
       </object>
     </child>
   </template>

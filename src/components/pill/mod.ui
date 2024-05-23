@@ -6,7 +6,7 @@
       <object class="GtkBox" id="content">
         <property name="spacing">6</property>
         <child>
-          <object class="ComponentsAvatar" id="avatar">
+          <object class="Avatar" id="avatar">
             <property name="size">24</property>
             <property name="accessible-role">presentation</property>
             <binding name="data">

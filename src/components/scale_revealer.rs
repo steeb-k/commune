@@ -27,7 +27,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for ScaleRevealer {
-        const NAME: &'static str = "ComponentsScaleRevealer";
+        const NAME: &'static str = "ScaleRevealer";
         type Type = super::ScaleRevealer;
         type ParentType = adw::Bin;
     }

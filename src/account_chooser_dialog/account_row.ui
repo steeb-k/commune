@@ -6,7 +6,7 @@
       <object class="GtkBox">
         <property name="spacing">10</property>
         <child>
-          <object class="ComponentsAvatar" id="avatar">
+          <object class="Avatar" id="avatar">
             <property name="size">40</property>
           </object>
         </child>

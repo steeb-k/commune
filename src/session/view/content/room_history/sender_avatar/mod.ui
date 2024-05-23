@@ -7,7 +7,7 @@
     <property name="focusable">true</property>
     <property name="valign">start</property>
     <child>
-      <object class="ComponentsAvatar" id="avatar">
+      <object class="Avatar" id="avatar">
         <property name="size">36</property>
         <property name="accessible-role">presentation</property>
         <binding name="data">

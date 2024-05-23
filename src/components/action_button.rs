@@ -73,7 +73,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for ActionButton {
-        const NAME: &'static str = "ComponentsActionButton";
+        const NAME: &'static str = "ActionButton";
         type Type = super::ActionButton;
         type ParentType = adw::Bin;
         type Interfaces = (gtk::Actionable,);

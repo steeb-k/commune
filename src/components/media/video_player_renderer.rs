@@ -20,7 +20,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for VideoPlayerRenderer {
-        const NAME: &'static str = "ComponentsVideoPlayerRenderer";
+        const NAME: &'static str = "VideoPlayerRenderer";
         type Type = super::VideoPlayerRenderer;
         type Interfaces = (PlayVideoRenderer,);
     }

@@ -33,7 +33,7 @@
           </object>
         </child>
         <child>
-          <object class="ComponentsAudioPlayer" id="player">
+          <object class="AudioPlayer" id="player">
             <property name="visible" bind-source="ContentMessageAudio" bind-property="compact" bind-flags="sync-create|invert-boolean"/>
           </object>
         </child>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ComponentsAuthDialog" parent="AdwAlertDialog">
+  <template class="AuthDialog" parent="AdwAlertDialog">
     <property name="heading" translatable="yes">Authentication</property>
     <property name="default-response">confirm</property>
     <property name="close-response">cancel</property>

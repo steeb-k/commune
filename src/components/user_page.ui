@@ -21,7 +21,7 @@
                   <object class="GtkBox" id="box">
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="ComponentsAvatar" id="avatar">
+                      <object class="Avatar" id="avatar">
                         <property name="size">128</property>
                         <property name="accessible-role">presentation</property>
                       </object>

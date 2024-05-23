@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ComponentsReactionChooser" parent="AdwBin">
+  <template class="ReactionChooser" parent="AdwBin">
     <property name="child">
       <object class="GtkGrid" id="reaction_grid">
         <accessibility>

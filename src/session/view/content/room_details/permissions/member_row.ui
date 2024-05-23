@@ -4,7 +4,7 @@
     <property name="focusable">True</property>
     <property name="spacing">12</property>
     <child>
-      <object class="ComponentsAvatar">
+      <object class="Avatar">
         <property name="size">32</property>
         <binding name="data">
           <lookup name="avatar-data">

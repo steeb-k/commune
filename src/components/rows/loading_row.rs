@@ -34,7 +34,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for LoadingRow {
-        const NAME: &'static str = "ComponentsLoadingRow";
+        const NAME: &'static str = "LoadingRow";
         type Type = super::LoadingRow;
         type ParentType = gtk::ListBoxRow;
 

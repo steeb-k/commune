@@ -7,7 +7,7 @@
     <child>
       <object class="AdwPreferencesGroup">
         <child>
-          <object class="ComponentsEditableAvatar" id="avatar">
+          <object class="EditableAvatar" id="avatar">
             <accessibility>
               <property name="label" translatable="yes">Account Avatar</property>
             </accessibility>
@@ -41,7 +41,7 @@
             <signal name="changed" handler="display_name_changed" swapped="yes" />
             <signal name="entry-activated" handler="change_display_name" swapped="yes"/>
             <child type="suffix">
-              <object class="ComponentsActionButton" id="display_name_button">
+              <object class="ActionButton" id="display_name_button">
                 <property name="visible">False</property>
                 <property name="state">confirm</property>
                 <signal name="clicked" handler="change_display_name" swapped="yes"/>

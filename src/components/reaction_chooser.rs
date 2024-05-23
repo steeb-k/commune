@@ -68,7 +68,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for ReactionChooser {
-        const NAME: &'static str = "ComponentsReactionChooser";
+        const NAME: &'static str = "ReactionChooser";
         type Type = super::ReactionChooser;
         type ParentType = adw::Bin;
 

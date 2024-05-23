@@ -7,7 +7,7 @@
       <class name="map-marker" />
     </style>
   </object>
-  <template class="ComponentsLocationViewer" parent="AdwBin">
+  <template class="LocationViewer" parent="AdwBin">
     <property name="child">
       <object class="ShumateSimpleMap" id="map">
         <property name="overflow">hidden</property>

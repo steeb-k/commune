@@ -36,7 +36,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for VideoPlayer {
-        const NAME: &'static str = "ComponentsVideoPlayer";
+        const NAME: &'static str = "VideoPlayer";
         type Type = super::VideoPlayer;
         type ParentType = adw::Bin;
 

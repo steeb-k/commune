@@ -80,7 +80,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for EditableAvatar {
-        const NAME: &'static str = "ComponentsEditableAvatar";
+        const NAME: &'static str = "EditableAvatar";
         type Type = super::EditableAvatar;
         type ParentType = adw::Bin;
 

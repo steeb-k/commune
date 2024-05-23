@@ -10,7 +10,7 @@
         </binding>
         <property name="spacing">12</property>
         <child>
-          <object class="ComponentsAvatar" id="avatar">
+          <object class="Avatar" id="avatar">
             <property name="size">24</property>
             <binding name="data">
               <lookup name="avatar-data">

@@ -75,7 +75,7 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for AuthDialog {
-        const NAME: &'static str = "ComponentsAuthDialog";
+        const NAME: &'static str = "AuthDialog";
         type Type = super::AuthDialog;
         type ParentType = adw::AlertDialog;
 
