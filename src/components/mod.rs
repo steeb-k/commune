@@ -9,7 +9,7 @@ mod drag_overlay;
 mod image_paintable;
 mod join_room_dialog;
 mod label_with_widgets;
-mod loading_bin;
+mod loading;
 mod location_viewer;
 mod media_content_viewer;
 mod offline_banner;
@@ -20,8 +20,6 @@ mod role_badge;
 mod room_title;
 mod rows;
 mod scale_revealer;
-mod spinner;
-mod spinner_button;
 mod toastable_dialog;
 mod user_page;
 mod user_profile_dialog;
@@ -39,7 +37,7 @@ pub use self::{
     image_paintable::ImagePaintable,
     join_room_dialog::JoinRoomDialog,
     label_with_widgets::LabelWithWidgets,
-    loading_bin::LoadingBin,
+    loading::*,
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
     offline_banner::OfflineBanner,
@@ -50,8 +48,6 @@ pub use self::{
     room_title::RoomTitle,
     rows::*,
     scale_revealer::ScaleRevealer,
-    spinner::Spinner,
-    spinner_button::SpinnerButton,
     toastable_dialog::{ToastableDialog, ToastableDialogExt, ToastableDialogImpl},
     user_page::UserPage,
     user_profile_dialog::UserProfileDialog,

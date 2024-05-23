@@ -11,7 +11,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/loading_bin.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/loading/bin.ui")]
     #[properties(wrapper_type = super::LoadingBin)]
     pub struct LoadingBin {
         #[template_child]

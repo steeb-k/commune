@@ -16,7 +16,7 @@
     <file compressed="true" preprocess="xml-stripblanks">components/crypto/identity_setup_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/crypto/recovery_setup_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/join_room_dialog.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/loading_bin.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/loading/bin.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/location_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/media_content_viewer.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/pill/mod.ui</file>
