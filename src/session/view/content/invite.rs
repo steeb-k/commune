@@ -3,11 +3,10 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{Avatar, LabelWithWidgets, LoadingButton, Pill},
+    components::{confirm_leave_room_dialog, Avatar, LabelWithWidgets, LoadingButton, Pill},
     gettext_f,
     session::model::{MemberList, Room, RoomType},
     toast,
-    utils::message_dialog,
 };
 
 mod imp {
@@ -223,7 +222,7 @@ impl Invite {
         };
         let imp = self.imp();
 
-        if !message_dialog::confirm_leave_room(&room, self).await {
+        if !confirm_leave_room_dialog(&room, self).await {
             return;
         }
 

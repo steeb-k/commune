@@ -4,7 +4,10 @@ use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
 use crate::{
-    components::{Avatar, UserProfileDialog},
+    components::{
+        confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog, Avatar,
+        RoomMemberDestructiveAction, UserProfileDialog,
+    },
     gettext_f, ngettext_f,
     prelude::*,
     session::{
@@ -12,14 +15,7 @@ use crate::{
         view::content::RoomHistory,
     },
     toast,
-    utils::{
-        add_activate_binding_action,
-        message_dialog::{
-            confirm_mute_room_member, confirm_room_member_destructive_action,
-            RoomMemberDestructiveAction,
-        },
-        BoundObject,
-    },
+    utils::{add_activate_binding_action, BoundObject},
     Window,
 };
 
@@ -548,7 +544,7 @@ impl SenderAvatar {
             return;
         };
 
-        let Some(response) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action_dialog(
             &sender,
             RoomMemberDestructiveAction::Kick,
             self,
@@ -591,7 +587,7 @@ impl SenderAvatar {
         // Warn if user is muted but was not before.
         let mute_power_level = permissions.mute_power_level();
         let mute = old_power_level > mute_power_level;
-        if mute && !confirm_mute_room_member(&sender, self).await {
+        if mute && !confirm_mute_room_member_dialog(&sender, self).await {
             return;
         }
 
@@ -639,7 +635,7 @@ impl SenderAvatar {
             vec![]
         };
 
-        let Some(response) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action_dialog(
             &sender,
             RoomMemberDestructiveAction::Ban(redactable_events.len()),
             self,
@@ -690,7 +686,7 @@ impl SenderAvatar {
 
         let redactable_events = sender.redactable_events();
 
-        let Some(response) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action_dialog(
             &sender,
             RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
             self,

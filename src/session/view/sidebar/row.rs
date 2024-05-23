@@ -4,13 +4,15 @@ use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
 
 use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
 use crate::{
-    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
+    components::{
+        confirm_leave_room_dialog, ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl,
+    },
     session::model::{
         Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
         SidebarIconItemType,
     },
     spawn, toast,
-    utils::{message_dialog, BoundObjectWeakRef},
+    utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -462,7 +464,7 @@ impl Row {
 
     /// Change the category of the given room room.
     async fn set_room_category(&self, room: &Room, category: RoomType) {
-        if category == RoomType::Left && !message_dialog::confirm_leave_room(room, self).await {
+        if category == RoomType::Left && !confirm_leave_room_dialog(room, self).await {
             return;
         }
 

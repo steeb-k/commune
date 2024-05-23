@@ -2,8 +2,9 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use super::{Avatar, LoadingButton, Spinner, ToastableDialog};
+use super::ToastableDialog;
 use crate::{
+    components::{Avatar, LoadingButton, Spinner},
     i18n::ngettext_f,
     prelude::*,
     session::model::{RemoteRoom, Session},
@@ -20,7 +21,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/join_room_dialog.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/join_room.ui")]
     #[properties(wrapper_type = super::JoinRoomDialog)]
     pub struct JoinRoomDialog {
         #[template_child]

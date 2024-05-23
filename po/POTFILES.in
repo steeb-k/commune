@@ -10,17 +10,19 @@ src/account_switcher/account_switcher_popover.ui
 src/account_switcher/session_item.ui
 src/application.rs
 src/components/action_button.ui
-src/components/auth_dialog.rs
-src/components/auth_dialog.ui
 src/components/avatar/editable.rs
 src/components/avatar/editable.ui
 src/components/crypto/identity_setup_view.rs
 src/components/crypto/identity_setup_view.ui
 src/components/crypto/recovery_setup_view.rs
 src/components/crypto/recovery_setup_view.ui
+src/components/dialogs/auth.rs
+src/components/dialogs/auth.ui
+src/components/dialogs/join_room.rs
+src/components/dialogs/join_room.ui
+src/components/dialogs/message_dialogs.rs
+src/components/dialogs/user_profile.ui
 src/components/offline_banner.rs
-src/components/join_room_dialog.rs
-src/components/join_room_dialog.ui
 src/components/loading/spinner.rs
 src/components/location_viewer.rs
 src/components/media_content_viewer.rs
@@ -30,7 +32,6 @@ src/components/power_level_selection/popover.ui
 src/components/rows/loading_row.ui
 src/components/user_page.rs
 src/components/user_page.ui
-src/components/user_profile_dialog.ui
 src/contrib/qr_code_scanner/mod.ui
 src/contrib/qr_code.rs
 src/error_page.rs
@@ -181,5 +182,4 @@ src/shortcuts.ui
 src/user_facing_error.rs
 src/utils/matrix.rs
 src/utils/media.rs
-src/utils/message_dialog.rs
 src/window.ui

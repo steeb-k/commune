@@ -7,7 +7,6 @@ mod location;
 pub mod macros;
 pub mod matrix;
 pub mod media;
-pub mod message_dialog;
 pub mod notifications;
 pub mod sourceview;
 pub mod string;

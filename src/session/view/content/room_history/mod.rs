@@ -29,14 +29,14 @@ use self::{
 };
 use super::{room_details, RoomDetails};
 use crate::{
-    components::{DragOverlay, ReactionChooser, RoomTitle, Spinner},
+    components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser, RoomTitle, Spinner},
     i18n::gettext_f,
     prelude::*,
     session::model::{
         Event, EventKey, MemberList, Membership, Room, RoomType, Timeline, TimelineState,
     },
     spawn, spawn_tokio, toast,
-    utils::{message_dialog, template_callbacks::TemplateCallbacks, BoundObject},
+    utils::{template_callbacks::TemplateCallbacks, BoundObject},
     Window,
 };
 
@@ -525,7 +525,7 @@ impl RoomHistory {
             return;
         };
 
-        if !message_dialog::confirm_leave_room(&room, self).await {
+        if !confirm_leave_room_dialog(&room, self).await {
             return;
         }
 

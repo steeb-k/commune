@@ -2,8 +2,9 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 use ruma::OwnedUserId;
 
-use super::{Spinner, ToastableDialog, UserPage};
+use super::ToastableDialog;
 use crate::{
+    components::{Spinner, UserPage},
     prelude::*,
     session::model::{Member, RemoteUser, Session, User},
     spawn,
@@ -15,7 +16,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/user_profile_dialog.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/user_profile.ui")]
     pub struct UserProfileDialog {
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,

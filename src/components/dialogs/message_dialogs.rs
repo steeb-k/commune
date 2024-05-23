@@ -13,7 +13,7 @@ use crate::{
 /// Show a dialog to confirm leaving a room.
 ///
 /// This supports both leaving a joined room and rejecting an invite.
-pub async fn confirm_leave_room(room: &Room, parent: &impl IsA<gtk::Widget>) -> bool {
+pub async fn confirm_leave_room_dialog(room: &Room, parent: &impl IsA<gtk::Widget>) -> bool {
     let (heading, body, response) = if room.category() == RoomType::Invited {
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
@@ -73,7 +73,7 @@ pub enum RoomMemberDestructiveAction {
 /// member.
 ///
 /// Returns `None` if the user did not confirm.
-pub async fn confirm_room_member_destructive_action(
+pub async fn confirm_room_member_destructive_action_dialog(
     member: &Member,
     action: RoomMemberDestructiveAction,
     parent: &impl IsA<gtk::Widget>,
@@ -293,7 +293,10 @@ pub struct ConfirmRoomMemberDestructiveActionResponse {
 }
 
 /// Show a dialog to confirm muting a room member.
-pub async fn confirm_mute_room_member(member: &Member, parent: &impl IsA<gtk::Widget>) -> bool {
+pub async fn confirm_mute_room_member_dialog(
+    member: &Member,
+    parent: &impl IsA<gtk::Widget>,
+) -> bool {
     let heading = gettext_f(
         // Translators: Do NOT translate the content between '{' and '}',
         // this is a variable name.
@@ -325,7 +328,7 @@ pub async fn confirm_mute_room_member(member: &Member, parent: &impl IsA<gtk::Wi
 
 /// Show a dialog to confirm setting the power level of a room member with the
 /// same value as our own.
-pub async fn confirm_set_room_member_power_level_same_as_own(
+pub async fn confirm_set_room_member_power_level_same_as_own_dialog(
     member: &Member,
     parent: &impl IsA<gtk::Widget>,
 ) -> bool {

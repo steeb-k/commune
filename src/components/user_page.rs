@@ -9,18 +9,16 @@ use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
 use super::{Avatar, ButtonRow, LoadingButton, PowerLevelSelectionRow};
 use crate::{
+    components::{
+        confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog,
+        confirm_set_room_member_power_level_same_as_own_dialog, RoomMemberDestructiveAction,
+    },
     i18n::gettext_f,
     ngettext_f,
     prelude::*,
     session::model::{Member, Membership, Permissions, Room, User},
     toast,
-    utils::{
-        message_dialog::{
-            confirm_mute_room_member, confirm_room_member_destructive_action,
-            confirm_set_room_member_power_level_same_as_own, RoomMemberDestructiveAction,
-        },
-        BoundObject,
-    },
+    utils::BoundObject,
     Window,
 };
 
@@ -470,7 +468,7 @@ impl UserPage {
         // Warn if user is muted but was not before.
         let mute_power_level = permissions.mute_power_level();
         let is_muted = power_level <= mute_power_level && old_power_level > mute_power_level;
-        if is_muted && !confirm_mute_room_member(&member, self).await {
+        if is_muted && !confirm_mute_room_member_dialog(&member, self).await {
             self.update_room();
             return;
         }
@@ -478,7 +476,7 @@ impl UserPage {
         // Warn if power level is set at same level as own power level.
         let is_own_power_level = power_level == permissions.own_power_level();
         if is_own_power_level
-            && !confirm_set_room_member_power_level_same_as_own(&member, self).await
+            && !confirm_set_room_member_power_level_same_as_own_dialog(&member, self).await
         {
             self.update_room();
             return;
@@ -532,7 +530,7 @@ impl UserPage {
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
 
-        let Some(response) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action_dialog(
             &member,
             RoomMemberDestructiveAction::Kick,
             self,
@@ -577,7 +575,7 @@ impl UserPage {
             vec![]
         };
 
-        let Some(response) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action_dialog(
             &member,
             RoomMemberDestructiveAction::Ban(redactable_events.len()),
             self,
@@ -641,7 +639,7 @@ impl UserPage {
 
         let redactable_events = member.redactable_events();
 
-        let Some(response) = confirm_room_member_destructive_action(
+        let Some(response) = confirm_room_member_destructive_action_dialog(
             &member,
             RoomMemberDestructiveAction::RemoveMessages(redactable_events.len()),
             self,

@@ -1,13 +1,12 @@
 mod action_button;
 mod audio_player;
-mod auth_dialog;
 mod avatar;
 mod context_menu_bin;
 pub mod crypto;
 mod custom_entry;
+mod dialogs;
 mod drag_overlay;
 mod image_paintable;
-mod join_room_dialog;
 mod label_with_widgets;
 mod loading;
 mod location_viewer;
@@ -20,22 +19,19 @@ mod role_badge;
 mod room_title;
 mod rows;
 mod scale_revealer;
-mod toastable_dialog;
 mod user_page;
-mod user_profile_dialog;
 mod video_player;
 mod video_player_renderer;
 
 pub use self::{
     action_button::{ActionButton, ActionState},
     audio_player::AudioPlayer,
-    auth_dialog::{AuthDialog, AuthError},
     avatar::*,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
     custom_entry::CustomEntry,
+    dialogs::*,
     drag_overlay::DragOverlay,
     image_paintable::ImagePaintable,
-    join_room_dialog::JoinRoomDialog,
     label_with_widgets::LabelWithWidgets,
     loading::*,
     location_viewer::LocationViewer,
@@ -48,9 +44,7 @@ pub use self::{
     room_title::RoomTitle,
     rows::*,
     scale_revealer::ScaleRevealer,
-    toastable_dialog::{ToastableDialog, ToastableDialogExt, ToastableDialogImpl},
     user_page::UserPage,
-    user_profile_dialog::UserProfileDialog,
     video_player::VideoPlayer,
     video_player_renderer::VideoPlayerRenderer,
 };

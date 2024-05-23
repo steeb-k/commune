@@ -54,7 +54,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/auth_dialog.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/auth.ui")]
     #[properties(wrapper_type = super::AuthDialog)]
     pub struct AuthDialog {
         #[template_child]

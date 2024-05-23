@@ -9,7 +9,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/toastable_dialog.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/dialogs/toastable.ui")]
     #[properties(wrapper_type = super::ToastableDialog)]
     pub struct ToastableDialog {
         #[template_child]
