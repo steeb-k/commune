@@ -1,7 +1,7 @@
 use adw::prelude::*;
 use gtk::{gdk, gio, glib, glib::clone, subclass::prelude::*};
 
-use super::{Avatar, AvatarData, CropCircle};
+use super::{crop_circle::CropCircle, Avatar, AvatarData};
 use crate::utils::BoundObject;
 
 /// Compute the overlap according to the child's size.

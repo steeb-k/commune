@@ -3,11 +3,9 @@ mod audio_player;
 mod auth_dialog;
 mod avatar;
 mod context_menu_bin;
-mod crop_circle;
 pub mod crypto;
 mod custom_entry;
 mod drag_overlay;
-mod editable_avatar;
 mod image_paintable;
 mod join_room_dialog;
 mod label_with_widgets;
@@ -15,7 +13,6 @@ mod loading_bin;
 mod location_viewer;
 mod media_content_viewer;
 mod offline_banner;
-mod overlapping_avatars;
 mod pill;
 mod power_level_selection;
 mod reaction_chooser;
@@ -35,12 +32,10 @@ pub use self::{
     action_button::{ActionButton, ActionState},
     audio_player::AudioPlayer,
     auth_dialog::{AuthDialog, AuthError},
-    avatar::{Avatar, AvatarData, AvatarImage, AvatarUriSource},
+    avatar::*,
     context_menu_bin::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl},
-    crop_circle::CropCircle,
     custom_entry::CustomEntry,
     drag_overlay::DragOverlay,
-    editable_avatar::EditableAvatar,
     image_paintable::ImagePaintable,
     join_room_dialog::JoinRoomDialog,
     label_with_widgets::LabelWithWidgets,
@@ -48,7 +43,6 @@ pub use self::{
     location_viewer::LocationViewer,
     media_content_viewer::{ContentType, MediaContentViewer},
     offline_banner::OfflineBanner,
-    overlapping_avatars::OverlappingAvatars,
     pill::*,
     power_level_selection::*,
     reaction_chooser::ReactionChooser,

@@ -10,8 +10,12 @@ use gtk::{
 };
 use tracing::{debug, error};
 
-use super::{ActionButton, ActionState, AvatarData, AvatarImage, ImagePaintable};
-use crate::{toast, utils::expression};
+use super::{AvatarData, AvatarImage};
+use crate::{
+    components::{ActionButton, ActionState, ImagePaintable},
+    toast,
+    utils::expression,
+};
 
 /// The state of the editable avatar.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -38,7 +42,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/editable_avatar.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/avatar/editable.ui")]
     #[properties(wrapper_type = super::EditableAvatar)]
     pub struct EditableAvatar {
         /// The [`AvatarData`] to display.

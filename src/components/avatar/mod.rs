@@ -1,12 +1,17 @@
 use adw::subclass::prelude::*;
 use gtk::{glib, prelude::*, CompositeTemplate};
 
+mod crop_circle;
 mod data;
+mod editable;
 mod image;
+mod overlapping;
 
 pub use self::{
     data::AvatarData,
+    editable::EditableAvatar,
     image::{AvatarImage, AvatarUriSource},
+    overlapping::OverlappingAvatars,
 };
 
 mod imp {

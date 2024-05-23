@@ -12,12 +12,12 @@ src/application.rs
 src/components/action_button.ui
 src/components/auth_dialog.rs
 src/components/auth_dialog.ui
+src/components/avatar/editable.rs
+src/components/avatar/editable.ui
 src/components/crypto/identity_setup_view.rs
 src/components/crypto/identity_setup_view.ui
 src/components/crypto/recovery_setup_view.rs
 src/components/crypto/recovery_setup_view.ui
-src/components/editable_avatar.rs
-src/components/editable_avatar.ui
 src/components/offline_banner.rs
 src/components/join_room_dialog.rs
 src/components/join_room_dialog.ui
