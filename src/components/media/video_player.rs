@@ -4,7 +4,7 @@ use gst_play::{Play as GstPlay, PlayMessage};
 use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 use tracing::{error, warn};
 
-use super::VideoPlayerRenderer;
+use super::video_player_renderer::VideoPlayerRenderer;
 
 mod imp {
     use std::cell::{Cell, OnceCell, RefCell};
@@ -14,7 +14,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/video_player.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/media/video_player.ui")]
     #[properties(wrapper_type = super::VideoPlayer)]
     pub struct VideoPlayer {
         /// Whether this player should be displayed in a compact format.

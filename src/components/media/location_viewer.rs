@@ -13,7 +13,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/location_viewer.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/media/location_viewer.ui")]
     #[properties(wrapper_type = super::LocationViewer)]
     pub struct LocationViewer {
         #[template_child]

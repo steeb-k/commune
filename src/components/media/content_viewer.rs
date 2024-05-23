@@ -4,8 +4,8 @@ use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use tracing::warn;
 
-use super::{AudioPlayer, ImagePaintable, LocationViewer, Spinner};
-use crate::spawn;
+use super::{AudioPlayer, ImagePaintable, LocationViewer};
+use crate::{components::Spinner, spawn};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum ContentType {
@@ -46,7 +46,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/media_content_viewer.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/media/content_viewer.ui")]
     #[properties(wrapper_type = super::MediaContentViewer)]
     pub struct MediaContentViewer {
         /// Whether to play the media content automatically.

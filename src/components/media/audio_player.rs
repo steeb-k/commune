@@ -11,7 +11,7 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/audio_player.ui")]
+    #[template(resource = "/org/gnome/Fractal/ui/components/media/audio_player.ui")]
     #[properties(wrapper_type = super::AudioPlayer)]
     pub struct AudioPlayer {
         /// The media file to play.
