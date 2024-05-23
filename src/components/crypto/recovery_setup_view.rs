@@ -259,7 +259,7 @@ impl CryptoRecoverySetupView {
             return;
         }
 
-        imp.recover_btn.set_loading(true);
+        imp.recover_btn.set_is_loading(true);
 
         let encryption = session.client().encryption();
         let recovery = encryption.recovery();
@@ -291,7 +291,7 @@ impl CryptoRecoverySetupView {
             }
         }
 
-        imp.recover_btn.set_loading(false);
+        imp.recover_btn.set_is_loading(false);
     }
 
     /// Reset recovery and optionally cross-signing.
@@ -299,17 +299,17 @@ impl CryptoRecoverySetupView {
     async fn reset(&self) {
         let imp = self.imp();
 
-        imp.reset_btn.set_loading(true);
+        imp.reset_btn.set_is_loading(true);
 
         if self.reset_identity() && self.bootstrap_cross_signing().await.is_err() {
-            imp.reset_btn.set_loading(false);
+            imp.reset_btn.set_is_loading(false);
             return;
         }
 
         let passphrase = imp.reset_entry.text();
         self.reset_recovery(passphrase).await;
 
-        imp.reset_btn.set_loading(false);
+        imp.reset_btn.set_is_loading(false);
     }
 
     async fn bootstrap_cross_signing(&self) -> Result<(), ()> {
@@ -381,7 +381,7 @@ impl CryptoRecoverySetupView {
         };
         let imp = self.imp();
 
-        imp.enable_btn.set_loading(true);
+        imp.enable_btn.set_is_loading(true);
 
         let passphrase = Some(imp.enable_entry.text()).filter(|s| !s.is_empty());
         let has_passphrase = passphrase.is_some();
@@ -410,7 +410,7 @@ impl CryptoRecoverySetupView {
             }
         }
 
-        imp.enable_btn.set_loading(false);
+        imp.enable_btn.set_is_loading(false);
     }
 
     /// Copy the recovery key to the clipboard.

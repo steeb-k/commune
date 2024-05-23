@@ -181,8 +181,8 @@ impl SasPage {
     fn reset_buttons(&self) {
         let imp = self.imp();
 
-        imp.mismatch_btn.set_loading(false);
-        imp.match_btn.set_loading(false);
+        imp.mismatch_btn.set_is_loading(false);
+        imp.match_btn.set_is_loading(false);
         self.set_sensitive(true);
     }
 
@@ -242,7 +242,7 @@ impl SasPage {
             return;
         };
 
-        self.imp().mismatch_btn.set_loading(true);
+        self.imp().mismatch_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.sas_mismatch().await.is_err() {
@@ -257,7 +257,7 @@ impl SasPage {
             return;
         };
 
-        self.imp().match_btn.set_loading(true);
+        self.imp().match_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.sas_match().await.is_err() {

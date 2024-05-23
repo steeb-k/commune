@@ -25,8 +25,8 @@ mod imp {
         /// Whether to display the loading spinner.
         ///
         /// If this is `false`, the text or icon will be displayed.
-        #[property(get = Self::is_loading, set = Self::set_loading, explicit_notify)]
-        pub loading: PhantomData<bool>,
+        #[property(get = Self::is_loading, set = Self::set_is_loading, explicit_notify)]
+        pub is_loading: PhantomData<bool>,
     }
 
     #[glib::object_subclass]
@@ -133,7 +133,7 @@ mod imp {
         }
 
         /// Set whether to display the loading spinner.
-        fn set_loading(&self, is_loading: bool) {
+        fn set_is_loading(&self, is_loading: bool) {
             if self.is_loading() == is_loading {
                 return;
             }
@@ -147,7 +147,7 @@ mod imp {
 
             self.loading_bin.set_is_loading(is_loading);
 
-            obj.notify_loading();
+            obj.notify_is_loading();
         }
     }
 }

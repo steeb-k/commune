@@ -206,9 +206,9 @@ impl ChooseMethodPage {
     pub fn reset(&self) {
         let imp = self.imp();
 
-        imp.scan_qr_code_btn.set_loading(false);
-        imp.start_sas_btn.set_loading(false);
-        imp.cancel_btn.set_loading(false);
+        imp.scan_qr_code_btn.set_is_loading(false);
+        imp.start_sas_btn.set_is_loading(false);
+        imp.cancel_btn.set_is_loading(false);
 
         self.set_sensitive(true);
     }
@@ -221,7 +221,7 @@ impl ChooseMethodPage {
         };
         let imp = self.imp();
 
-        imp.scan_qr_code_btn.set_loading(true);
+        imp.scan_qr_code_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.start_qr_code_scan().await.is_err() {
@@ -238,7 +238,7 @@ impl ChooseMethodPage {
         };
         let imp = self.imp();
 
-        imp.start_sas_btn.set_loading(true);
+        imp.start_sas_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.start_sas().await.is_err() {
@@ -254,7 +254,7 @@ impl ChooseMethodPage {
             return;
         };
 
-        self.imp().cancel_btn.set_loading(true);
+        self.imp().cancel_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.cancel().await.is_err() {

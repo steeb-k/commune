@@ -180,7 +180,7 @@ mod imp {
             self.button
                 .update_property(&[gtk::accessible::Property::Description(&accessible_desc)]);
 
-            self.button.set_loading(public_room.pending());
+            self.button.set_is_loading(public_room.pending());
         }
     }
 }

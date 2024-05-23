@@ -150,7 +150,7 @@ impl UserSessionRow {
         }
 
         let imp = self.imp();
-        imp.disconnect_button.set_loading(true);
+        imp.disconnect_button.set_is_loading(true);
 
         match user_session.delete(self).await {
             Ok(_) => self.set_visible(false),
@@ -167,7 +167,7 @@ impl UserSessionRow {
             }
         }
 
-        imp.disconnect_button.set_loading(false);
+        imp.disconnect_button.set_is_loading(false);
     }
 
     /// Update the last seen timestamp according to the current user session and

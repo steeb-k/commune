@@ -141,8 +141,8 @@ impl AcceptRequestPage {
     /// Reset the UI to its initial state.
     pub fn reset(&self) {
         let imp = self.imp();
-        imp.accept_btn.set_loading(false);
-        imp.decline_btn.set_loading(false);
+        imp.accept_btn.set_is_loading(false);
+        imp.decline_btn.set_is_loading(false);
         self.set_sensitive(true);
     }
 
@@ -153,7 +153,7 @@ impl AcceptRequestPage {
             return;
         };
 
-        self.imp().decline_btn.set_loading(true);
+        self.imp().decline_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.cancel().await.is_err() {
@@ -169,7 +169,7 @@ impl AcceptRequestPage {
             return;
         };
 
-        self.imp().accept_btn.set_loading(true);
+        self.imp().accept_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.accept().await.is_err() {

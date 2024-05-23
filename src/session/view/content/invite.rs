@@ -109,12 +109,12 @@ mod imp {
                 Some(room) if self.accept_requests.borrow().contains(room) => {
                     obj.action_set_enabled("invite.accept", false);
                     obj.action_set_enabled("invite.decline", false);
-                    self.accept_button.set_loading(true);
+                    self.accept_button.set_is_loading(true);
                 }
                 Some(room) if self.decline_requests.borrow().contains(room) => {
                     obj.action_set_enabled("invite.accept", false);
                     obj.action_set_enabled("invite.decline", false);
-                    self.decline_button.set_loading(true);
+                    self.decline_button.set_is_loading(true);
                 }
                 _ => obj.reset(),
             }
@@ -181,8 +181,8 @@ impl Invite {
 
     fn reset(&self) {
         let imp = self.imp();
-        imp.accept_button.set_loading(false);
-        imp.decline_button.set_loading(false);
+        imp.accept_button.set_is_loading(false);
+        imp.decline_button.set_is_loading(false);
         self.action_set_enabled("invite.accept", true);
         self.action_set_enabled("invite.decline", true);
     }
@@ -196,7 +196,7 @@ impl Invite {
 
         self.action_set_enabled("invite.accept", false);
         self.action_set_enabled("invite.decline", false);
-        imp.accept_button.set_loading(true);
+        imp.accept_button.set_is_loading(true);
         imp.accept_requests.borrow_mut().insert(room.clone());
 
         let result = room.accept_invite().await;
@@ -229,7 +229,7 @@ impl Invite {
 
         self.action_set_enabled("invite.accept", false);
         self.action_set_enabled("invite.decline", false);
-        imp.decline_button.set_loading(true);
+        imp.decline_button.set_is_loading(true);
         imp.decline_requests.borrow_mut().insert(room.clone());
 
         let result = room.decline_invite().await;

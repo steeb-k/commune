@@ -211,7 +211,7 @@ impl LoginMethodPage {
         };
         let imp = self.imp();
 
-        imp.next_button.set_loading(true);
+        imp.next_button.set_is_loading(true);
         login.freeze();
 
         let username = self.username();
@@ -237,7 +237,7 @@ impl LoginMethodPage {
             }
         }
 
-        imp.next_button.set_loading(false);
+        imp.next_button.set_is_loading(false);
         login.unfreeze();
     }
 
@@ -246,7 +246,7 @@ impl LoginMethodPage {
         let imp = self.imp();
         imp.username_entry.set_text("");
         imp.password_entry.set_text("");
-        imp.next_button.set_loading(false);
+        imp.next_button.set_is_loading(false);
         self.update_next_state();
         self.clean_idp_box();
     }

@@ -61,17 +61,17 @@ mod imp {
                 let imp = obj.imp();
 
                 if verification.state() == VerificationState::Requested {
-                    imp.accept_btn.set_loading(true);
+                    imp.accept_btn.set_is_loading(true);
 
                     if verification.accept().await.is_err() {
                         toast!(obj, gettext("Could not accept verification"));
-                        imp.accept_btn.set_loading(false);
+                        imp.accept_btn.set_is_loading(false);
                         return;
                     }
                 }
 
                 window.session_view().select_verification(verification);
-                imp.accept_btn.set_loading(false);
+                imp.accept_btn.set_is_loading(false);
             });
 
             klass.install_action_async("verification.decline", None, |obj, _, _| async move {
@@ -80,13 +80,13 @@ mod imp {
                 };
                 let imp = obj.imp();
 
-                imp.cancel_btn.set_loading(true);
+                imp.cancel_btn.set_is_loading(true);
 
                 if verification.cancel().await.is_err() {
                     toast!(obj, gettext("Could not decline verification"));
                 }
 
-                imp.cancel_btn.set_loading(false);
+                imp.cancel_btn.set_is_loading(false);
             });
         }
 

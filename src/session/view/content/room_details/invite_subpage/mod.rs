@@ -197,7 +197,7 @@ impl InviteSubpage {
             return;
         };
 
-        self.imp().invite_button.set_loading(true);
+        self.imp().invite_button.set_is_loading(true);
 
         let invite_list = self.invite_list();
         let invitees = invite_list.invitees_ids();
@@ -238,6 +238,6 @@ impl InviteSubpage {
             }
         }
 
-        self.imp().invite_button.set_loading(false);
+        self.imp().invite_button.set_is_loading(false);
     }
 }

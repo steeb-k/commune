@@ -282,7 +282,7 @@ mod imp {
                 row.set_is_loading(false);
 
                 if let Some(button) = row.extra_suffix().and_downcast::<LoadingButton>() {
-                    button.set_loading(false);
+                    button.set_is_loading(false);
                 }
             }
 
@@ -496,12 +496,12 @@ impl AddressesSubpage {
         let aliases = room.aliases();
 
         imp.public_addresses_list.set_sensitive(false);
-        button.set_loading(true);
+        button.set_is_loading(true);
 
         if aliases.set_canonical_alias(alias).await.is_err() {
             toast!(self, gettext("Could not set main public address"));
             imp.public_addresses_list.set_sensitive(true);
-            button.set_loading(false);
+            button.set_is_loading(false);
         }
     }
 

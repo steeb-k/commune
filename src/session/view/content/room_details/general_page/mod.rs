@@ -610,7 +610,7 @@ impl GeneralPage {
         }
 
         self.set_edit_mode_enabled(false);
-        imp.save_details_btn.set_loading(false);
+        imp.save_details_btn.set_is_loading(false);
     }
 
     fn name_changed(&self, name: Option<String>) {
@@ -672,7 +672,7 @@ impl GeneralPage {
         };
         let imp = self.imp();
 
-        imp.save_details_btn.set_loading(true);
+        imp.save_details_btn.set_is_loading(true);
         self.enable_details(false);
         self.set_edit_mode_enabled(false);
 
@@ -726,7 +726,7 @@ impl GeneralPage {
                     error!("Could not change room name: {error}");
                     toast!(self, gettext("Could not change room name"));
                     self.enable_details(true);
-                    imp.save_details_btn.set_loading(false);
+                    imp.save_details_btn.set_is_loading(false);
                     return;
                 }
             }
@@ -750,7 +750,7 @@ impl GeneralPage {
                     error!("Could not change room topic: {error}");
                     toast!(self, gettext("Could not change room topic"));
                     self.enable_details(true);
-                    imp.save_details_btn.set_loading(false);
+                    imp.save_details_btn.set_is_loading(false);
                 }
             }
         }
@@ -1351,11 +1351,11 @@ impl GeneralPage {
         let imp = self.imp();
 
         // TODO: Hide upgrade button if room already upgraded?
-        imp.upgrade_button.set_loading(true);
+        imp.upgrade_button.set_is_loading(true);
         let room_versions_capability = imp.capabilities.borrow().room_versions.clone();
 
         let Some(new_version) = confirm_room_upgrade(room_versions_capability, self).await else {
-            imp.upgrade_button.set_loading(false);
+            imp.upgrade_button.set_is_loading(false);
             return;
         };
 
@@ -1371,7 +1371,7 @@ impl GeneralPage {
             Err(error) => {
                 error!("Could not upgrade room: {error}");
                 toast!(self, gettext("Could not upgrade room"));
-                imp.upgrade_button.set_loading(false);
+                imp.upgrade_button.set_is_loading(false);
             }
         }
     }

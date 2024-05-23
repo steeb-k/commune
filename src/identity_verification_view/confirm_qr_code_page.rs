@@ -140,8 +140,8 @@ impl ConfirmQrCodePage {
     pub fn reset(&self) {
         let imp = self.imp();
 
-        imp.confirm_btn.set_loading(false);
-        imp.cancel_btn.set_loading(false);
+        imp.confirm_btn.set_is_loading(false);
+        imp.cancel_btn.set_is_loading(false);
         self.set_sensitive(true);
     }
 
@@ -152,7 +152,7 @@ impl ConfirmQrCodePage {
             return;
         };
 
-        self.imp().confirm_btn.set_loading(true);
+        self.imp().confirm_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.confirm_qr_code_scanned().await.is_err() {
@@ -168,7 +168,7 @@ impl ConfirmQrCodePage {
             return;
         };
 
-        self.imp().cancel_btn.set_loading(true);
+        self.imp().cancel_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.cancel().await.is_err() {

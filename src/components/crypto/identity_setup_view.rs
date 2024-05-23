@@ -412,7 +412,7 @@ impl CryptoIdentitySetupView {
         };
 
         let imp = self.imp();
-        imp.send_request_btn.set_loading(true);
+        imp.send_request_btn.set_is_loading(true);
 
         match session.verification_list().create(None).await {
             Ok(_) => {
@@ -423,7 +423,7 @@ impl CryptoIdentitySetupView {
             }
         }
 
-        imp.send_request_btn.set_loading(false);
+        imp.send_request_btn.set_is_loading(false);
     }
 
     /// Reset cross-signing and optionally recovery.
@@ -453,7 +453,7 @@ impl CryptoIdentitySetupView {
         };
 
         let imp = self.imp();
-        imp.bootstrap_btn.set_loading(true);
+        imp.bootstrap_btn.set_is_loading(true);
 
         let dialog = AuthDialog::new(&session);
 
@@ -474,7 +474,7 @@ impl CryptoIdentitySetupView {
             }
         }
 
-        imp.bootstrap_btn.set_loading(false);
+        imp.bootstrap_btn.set_is_loading(false);
     }
 
     /// Recover the data.

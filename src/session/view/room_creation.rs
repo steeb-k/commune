@@ -121,7 +121,7 @@ impl RoomCreation {
         };
 
         let imp = self.imp();
-        imp.create_button.set_loading(true);
+        imp.create_button.set_is_loading(true);
         imp.content.set_sensitive(false);
 
         let name = Some(imp.room_name.text().to_string());
@@ -174,7 +174,7 @@ impl RoomCreation {
     fn handle_error(&self, error: Error) {
         let imp = self.imp();
 
-        imp.create_button.set_loading(false);
+        imp.create_button.set_is_loading(false);
         imp.content.set_sensitive(true);
 
         // Handle the room address already taken error.

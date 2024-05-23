@@ -129,14 +129,14 @@ impl LogOutSubpage {
         };
 
         let imp = self.imp();
-        imp.logout_button.set_loading(true);
+        imp.logout_button.set_is_loading(true);
         imp.warning_button.set_sensitive(false);
 
         if let Err(error) = session.logout().await {
             toast!(self, error);
         }
 
-        imp.logout_button.set_loading(false);
+        imp.logout_button.set_is_loading(false);
         imp.warning_button.set_sensitive(true);
     }
 }

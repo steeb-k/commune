@@ -168,7 +168,7 @@ mod imp {
             self.update_member_actions();
             self.update_members_power_levels();
 
-            self.save_button.set_loading(false);
+            self.save_button.set_is_loading(false);
 
             self.update_in_progress.set(false);
             self.update_changed();
@@ -624,7 +624,7 @@ impl PermissionsSubpage {
         };
         let imp = self.imp();
 
-        imp.save_button.set_loading(true);
+        imp.save_button.set_is_loading(true);
 
         let Some(power_levels) = self.collect_power_levels() else {
             return;
@@ -632,7 +632,7 @@ impl PermissionsSubpage {
 
         if permissions.set_power_levels(power_levels).await.is_err() {
             toast!(self, gettext("Could not save permissions"));
-            imp.save_button.set_loading(false);
+            imp.save_button.set_is_loading(false);
         }
     }
 

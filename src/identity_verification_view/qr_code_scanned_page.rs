@@ -125,7 +125,7 @@ impl QrCodeScannedPage {
 
     /// Reset the UI to its initial state.
     pub fn reset(&self) {
-        self.imp().cancel_btn.set_loading(false);
+        self.imp().cancel_btn.set_is_loading(false);
         self.set_sensitive(true);
     }
 
@@ -136,7 +136,7 @@ impl QrCodeScannedPage {
             return;
         };
 
-        self.imp().cancel_btn.set_loading(true);
+        self.imp().cancel_btn.set_is_loading(true);
         self.set_sensitive(false);
 
         if verification.cancel().await.is_err() {

@@ -134,7 +134,7 @@ impl LoginHomeserverPage {
     pub fn clean(&self) {
         let imp = self.imp();
         imp.homeserver_entry.set_text("");
-        imp.next_button.set_loading(false);
+        imp.next_button.set_is_loading(false);
         self.update_next_state();
     }
 
@@ -175,7 +175,7 @@ impl LoginHomeserverPage {
         };
         let imp = self.imp();
 
-        imp.next_button.set_loading(true);
+        imp.next_button.set_is_loading(true);
         login.freeze();
 
         let autodiscovery = login.autodiscovery();
@@ -202,7 +202,7 @@ impl LoginHomeserverPage {
             }
         };
 
-        imp.next_button.set_loading(false);
+        imp.next_button.set_is_loading(false);
         login.unfreeze();
     }
 

@@ -40,7 +40,7 @@
                 <property name="hexpand">True</property>
                 <child>
                   <object class="PillSearchEntry" id="search_entry">
-                    <property name="editable" bind-source="invite_button" bind-property="loading" bind-flags="sync-create | invert-boolean"/>
+                    <property name="editable" bind-source="invite_button" bind-property="is-loading" bind-flags="sync-create | invert-boolean"/>
                     <signal name="pill-removed" handler="remove_pill_invitee" swapped="yes" />
                   </object>
                 </child>

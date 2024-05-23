@@ -295,7 +295,7 @@ impl UserPage {
     /// Set whether the direct chat button is loading.
     fn set_direct_chat_loading(&self, loading: bool) {
         self.action_set_enabled("user-page.open-direct-chat", !loading);
-        self.imp().direct_chat_button.set_loading(loading);
+        self.imp().direct_chat_button.set_is_loading(loading);
     }
 
     /// Open a direct chat with the current user.
@@ -433,13 +433,13 @@ impl UserPage {
         imp.kick_button.set_is_loading(false);
         imp.kick_button.set_sensitive(true);
 
-        imp.invite_button.set_loading(false);
+        imp.invite_button.set_is_loading(false);
         imp.invite_button.set_sensitive(true);
 
         imp.ban_button.set_is_loading(false);
         imp.ban_button.set_sensitive(true);
 
-        imp.unban_button.set_loading(false);
+        imp.unban_button.set_is_loading(false);
         imp.unban_button.set_sensitive(true);
 
         imp.remove_messages_button.set_is_loading(false);
@@ -504,7 +504,7 @@ impl UserPage {
         };
 
         let imp = self.imp();
-        imp.invite_button.set_loading(true);
+        imp.invite_button.set_is_loading(true);
         imp.kick_button.set_sensitive(false);
         imp.ban_button.set_sensitive(false);
         imp.unban_button.set_sensitive(false);
@@ -614,7 +614,7 @@ impl UserPage {
         };
 
         let imp = self.imp();
-        imp.unban_button.set_loading(true);
+        imp.unban_button.set_is_loading(true);
         imp.invite_button.set_sensitive(false);
         imp.kick_button.set_sensitive(false);
         imp.ban_button.set_sensitive(false);
@@ -707,13 +707,13 @@ impl UserPage {
         let imp = self.imp();
 
         self.action_set_enabled("user-page.verify-user", false);
-        imp.verify_button.set_loading(true);
+        imp.verify_button.set_is_loading(true);
         let verification = match user.verify_identity().await {
             Ok(verification) => verification,
             Err(()) => {
                 toast!(self, gettext("Could not start user verification"));
                 self.action_set_enabled("user-page.verify-user", true);
-                imp.verify_button.set_loading(false);
+                imp.verify_button.set_is_loading(false);
                 return;
             }
         };
@@ -756,7 +756,7 @@ impl UserPage {
         };
 
         let imp = self.imp();
-        self.imp().ignored_button.set_loading(true);
+        self.imp().ignored_button.set_is_loading(true);
 
         if user.is_ignored() {
             if user.stop_ignoring().await.is_err() {
@@ -766,7 +766,7 @@ impl UserPage {
             toast!(self, gettext("Could not ignore user"));
         }
 
-        imp.ignored_button.set_loading(false);
+        imp.ignored_button.set_is_loading(false);
     }
 
     /// Connect to the signal emitted when the page should be closed.

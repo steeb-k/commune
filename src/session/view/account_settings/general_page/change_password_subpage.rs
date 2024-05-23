@@ -217,7 +217,7 @@ impl ChangePasswordSubpage {
         let imp = self.imp();
         let password = imp.password.text();
 
-        imp.button.set_loading(true);
+        imp.button.set_is_loading(true);
         imp.password.set_sensitive(false);
         imp.confirm_password.set_sensitive(false);
 
@@ -256,7 +256,7 @@ impl ChangePasswordSubpage {
                 }
             },
         }
-        imp.button.set_loading(false);
+        imp.button.set_is_loading(false);
         imp.password.set_sensitive(true);
         imp.confirm_password.set_sensitive(true);
     }

@@ -60,7 +60,7 @@ mod imp {
             self.obj().notify_item();
 
             // Reset the state of the button.
-            self.stop_ignoring_button.set_loading(false);
+            self.stop_ignoring_button.set_is_loading(false);
         }
     }
 }
@@ -94,11 +94,11 @@ impl IgnoredUserRow {
         };
 
         let imp = self.imp();
-        imp.stop_ignoring_button.set_loading(true);
+        imp.stop_ignoring_button.set_is_loading(true);
 
         if ignored_users.remove(&user_id).await.is_err() {
             toast!(self, gettext("Could not stop ignoring user"));
-            imp.stop_ignoring_button.set_loading(false);
+            imp.stop_ignoring_button.set_is_loading(false);
         }
     }
 }

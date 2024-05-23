@@ -120,7 +120,7 @@ impl DeactivateAccountSubpage {
         }
 
         let imp = self.imp();
-        imp.button.set_loading(true);
+        imp.button.set_is_loading(true);
         imp.confirmation.set_sensitive(false);
 
         let dialog = AuthDialog::new(&session);
@@ -148,7 +148,7 @@ impl DeactivateAccountSubpage {
                 toast!(self, gettext("Could not deactivate account"));
             }
         }
-        imp.button.set_loading(false);
+        imp.button.set_is_loading(false);
         imp.confirmation.set_sensitive(true);
     }
 }

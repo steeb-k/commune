@@ -304,7 +304,7 @@ impl ImportExportKeysSubpage {
         let passphrase = imp.passphrase.text();
         let is_export = self.is_export();
 
-        imp.proceed_button.set_loading(true);
+        imp.proceed_button.set_is_loading(true);
         imp.file_button.set_sensitive(false);
         imp.passphrase.set_sensitive(false);
         imp.confirm_passphrase.set_sensitive(false);
@@ -367,7 +367,7 @@ impl ImportExportKeysSubpage {
                 }
             }
         }
-        imp.proceed_button.set_loading(false);
+        imp.proceed_button.set_is_loading(false);
         imp.file_button.set_sensitive(true);
         imp.passphrase.set_sensitive(true);
         imp.confirm_passphrase.set_sensitive(true);

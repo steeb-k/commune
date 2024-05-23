@@ -89,7 +89,7 @@ mod imp {
 
         /// Whether this row is loading.
         fn is_loading(&self) -> bool {
-            self.add_button.loading()
+            self.add_button.is_loading()
         }
 
         /// Set whether this row is loading.
@@ -98,7 +98,7 @@ mod imp {
                 return;
             }
 
-            self.add_button.set_loading(is_loading);
+            self.add_button.set_is_loading(is_loading);
 
             let obj = self.obj();
             obj.set_sensitive(!is_loading);

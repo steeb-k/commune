@@ -209,7 +209,7 @@ impl JoinRoomDialog {
             return;
         };
 
-        imp.look_up_btn.set_loading(true);
+        imp.look_up_btn.set_is_loading(true);
         imp.entry_page.set_sensitive(false);
 
         // Join or view the room with the given identifier.
@@ -228,7 +228,7 @@ impl JoinRoomDialog {
 
         // Reset state before switching to possible pages.
         imp.go_back_btn.set_sensitive(true);
-        imp.join_btn.set_loading(false);
+        imp.join_btn.set_is_loading(false);
 
         let room = RemoteRoom::new(&session, uri);
         imp.set_room(Some(room));
@@ -301,7 +301,7 @@ impl JoinRoomDialog {
 
         let imp = self.imp();
         imp.go_back_btn.set_sensitive(false);
-        imp.join_btn.set_loading(true);
+        imp.join_btn.set_is_loading(true);
 
         // Join the room with the given identifier.
         let room_list = session.room_list();
@@ -320,7 +320,7 @@ impl JoinRoomDialog {
             Err(error) => {
                 toast!(self, error);
 
-                imp.join_btn.set_loading(false);
+                imp.join_btn.set_is_loading(false);
                 imp.go_back_btn.set_sensitive(true);
             }
         }
@@ -335,7 +335,7 @@ impl JoinRoomDialog {
 
         if imp.can_go_back() {
             // There is only one screen to go back to.
-            imp.look_up_btn.set_loading(false);
+            imp.look_up_btn.set_is_loading(false);
             imp.entry_page.set_sensitive(true);
             imp.set_visible_page("entry");
         } else {
