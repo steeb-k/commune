@@ -10,7 +10,7 @@ use url::Url;
 
 use super::Login;
 use crate::{
-    components::{OfflineBanner, SpinnerButton},
+    components::{LoadingButton, OfflineBanner},
     gettext_f,
     prelude::*,
     spawn_tokio, toast,
@@ -31,7 +31,7 @@ mod imp {
         #[template_child]
         pub homeserver_help: TemplateChild<gtk::Label>,
         #[template_child]
-        pub next_button: TemplateChild<SpinnerButton>,
+        pub next_button: TemplateChild<LoadingButton>,
         /// The parent `Login` object.
         #[property(get, set = Self::set_login, explicit_notify, nullable)]
         pub login: BoundObjectWeakRef<Login>,

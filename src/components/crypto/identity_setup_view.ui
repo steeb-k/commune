@@ -50,7 +50,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="SpinnerButton" id="send_request_btn">
+                              <object class="LoadingButton" id="send_request_btn">
                                 <property name="can-shrink">true</property>
                                 <property name="content-label" translatable="yes">Verify With Another Session</property>
                                 <property name="halign">center</property>
@@ -171,7 +171,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="SpinnerButton" id="bootstrap_btn">
+                              <object class="LoadingButton" id="bootstrap_btn">
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="bootstrap_cross_signing" swapped="yes"/>
                                 <style>

@@ -5,7 +5,7 @@
     <property name="selectable">False</property>
     <signal name="changed" handler="update_add_button" swapped="yes"/>
     <child>
-      <object class="SpinnerButton" id="add_button">
+      <object class="LoadingButton" id="add_button">
         <property name="sensitive">False</property>
         <property name="content-icon-name">add-symbolic</property>
         <property name="valign">center</property>

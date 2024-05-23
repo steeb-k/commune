@@ -8,7 +8,7 @@ use matrix_sdk::ruma::{api::client::account::deactivate, assign};
 use tracing::error;
 
 use crate::{
-    components::{AuthDialog, SpinnerButton},
+    components::{AuthDialog, LoadingButton},
     prelude::*,
     session::model::Session,
     spawn, toast,
@@ -31,7 +31,7 @@ mod imp {
         #[template_child]
         pub confirmation: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub button: TemplateChild<SpinnerButton>,
+        pub button: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

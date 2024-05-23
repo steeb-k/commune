@@ -29,7 +29,7 @@ use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{
         AvatarData, AvatarImage, ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow,
-        CustomEntry, EditableAvatar, SpinnerButton, SwitchLoadingRow,
+        CustomEntry, EditableAvatar, LoadingButton, SwitchLoadingRow,
     },
     gettext_f,
     prelude::*,
@@ -78,7 +78,7 @@ mod imp {
         #[template_child]
         pub edit_details_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub save_details_btn: TemplateChild<SpinnerButton>,
+        pub save_details_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub members_row: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -110,7 +110,7 @@ mod imp {
         #[template_child]
         pub encryption: TemplateChild<SwitchLoadingRow>,
         #[template_child]
-        pub upgrade_button: TemplateChild<SpinnerButton>,
+        pub upgrade_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
         /// Whether edit mode is enabled.

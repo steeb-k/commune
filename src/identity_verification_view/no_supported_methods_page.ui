@@ -45,7 +45,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="SpinnerButton" id="cancel_btn">
+                  <object class="LoadingButton" id="cancel_btn">
                     <property name="halign">center</property>
                     <signal name="clicked" handler="cancel" swapped="yes"/>
                     <style>

@@ -6,7 +6,7 @@ use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
 
 use super::sas_emoji::SasEmoji;
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -34,9 +34,9 @@ mod imp {
         #[template_child]
         pub row_2: TemplateChild<gtk::Box>,
         #[template_child]
-        pub mismatch_btn: TemplateChild<SpinnerButton>,
+        pub mismatch_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub match_btn: TemplateChild<SpinnerButton>,
+        pub match_btn: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

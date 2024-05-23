@@ -71,7 +71,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="SpinnerButton" id="recover_btn">
+                              <object class="LoadingButton" id="recover_btn">
                                 <property name="sensitive">False</property>
                                 <property name="can-shrink">True</property>
                                 <property name="label" translatable="yes">Recover</property>
@@ -185,7 +185,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="SpinnerButton" id="reset_btn">
+                              <object class="LoadingButton" id="reset_btn">
                                 <property name="label" translatable="yes">Reset</property>
                                 <property name="halign">center</property>
                                 <signal name="clicked" handler="reset" swapped="yes"/>
@@ -280,7 +280,7 @@
                               </object>
                             </child>
                             <child>
-                              <object class="SpinnerButton" id="enable_btn">
+                              <object class="LoadingButton" id="enable_btn">
                                 <property name="can-shrink">True</property>
                                 <property name="label" translatable="yes">Set Up</property>
                                 <property name="halign">center</property>

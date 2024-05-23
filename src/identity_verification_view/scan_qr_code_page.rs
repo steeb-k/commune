@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use matrix_sdk::encryption::verification::QrVerificationData;
 
 use crate::{
-    components::SpinnerButton,
+    components::LoadingButton,
     contrib::QrCodeScanner,
     gettext_f,
     prelude::*,
@@ -37,9 +37,9 @@ mod imp {
         #[template_child]
         pub show_qr_code_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub start_sas_btn: TemplateChild<SpinnerButton>,
+        pub start_sas_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub cancel_btn: TemplateChild<SpinnerButton>,
+        pub cancel_btn: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

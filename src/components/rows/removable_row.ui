@@ -6,7 +6,7 @@
       <object class="AdwBin" id="extra_suffix_bin"/>
     </child>
     <child>
-      <object class="SpinnerButton" id="remove_button">
+      <object class="LoadingButton" id="remove_button">
         <property name="content-icon-name">close-symbolic</property>
         <property name="valign">center</property>
         <property name="halign">center</property>

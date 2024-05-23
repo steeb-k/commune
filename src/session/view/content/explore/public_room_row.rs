@@ -5,7 +5,7 @@ use ruma::ServerName;
 
 use super::PublicRoom;
 use crate::{
-    components::{Avatar, Spinner, SpinnerButton},
+    components::{Avatar, LoadingButton, Spinner},
     gettext_f, ngettext_f,
     prelude::*,
     spawn, toast,
@@ -40,7 +40,7 @@ mod imp {
         #[template_child]
         pub members_count_box: TemplateChild<gtk::Box>,
         #[template_child]
-        pub button: TemplateChild<SpinnerButton>,
+        pub button: TemplateChild<LoadingButton>,
         pub original_child: RefCell<Option<gtk::Widget>>,
     }
 

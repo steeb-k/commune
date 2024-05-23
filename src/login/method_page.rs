@@ -6,7 +6,7 @@ use tracing::warn;
 
 use super::{idp_button::IdpButton, Login};
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, spawn_tokio, toast, utils::BoundObjectWeakRef,
+    components::LoadingButton, gettext_f, prelude::*, spawn_tokio, toast, utils::BoundObjectWeakRef,
 };
 
 mod imp {
@@ -29,7 +29,7 @@ mod imp {
         #[template_child]
         pub more_sso_btn: TemplateChild<gtk::Button>,
         #[template_child]
-        pub next_button: TemplateChild<SpinnerButton>,
+        pub next_button: TemplateChild<LoadingButton>,
         /// The parent `Login` object.
         #[property(get, set = Self::set_login, nullable)]
         pub login: BoundObjectWeakRef<Login>,

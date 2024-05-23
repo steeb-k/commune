@@ -43,7 +43,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="SpinnerButton" id="confirm_btn">
+                  <object class="LoadingButton" id="confirm_btn">
                     <property name="content-label" translatable="yes">Confirm</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="confirm_scanned" swapped="yes"/>
@@ -57,7 +57,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="SpinnerButton" id="cancel_btn">
+                  <object class="LoadingButton" id="cancel_btn">
                     <property name="content-label" translatable="yes">Cancel</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="cancel" swapped="yes"/>

@@ -4,7 +4,7 @@ use gtk::{gio, glib, CompositeTemplate};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 
-use crate::{components::SpinnerButton, ngettext_f, session::model::Session, spawn_tokio, toast};
+use crate::{components::LoadingButton, ngettext_f, session::model::Session, spawn_tokio, toast};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -53,7 +53,7 @@ mod imp {
         #[template_child]
         pub file_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub proceed_button: TemplateChild<SpinnerButton>,
+        pub proceed_button: TemplateChild<LoadingButton>,
         /// The path of the file for the encryption keys.
         #[property(get)]
         pub file_path: RefCell<Option<gio::File>>,

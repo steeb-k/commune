@@ -7,7 +7,7 @@ use gtk::{
 };
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
-use super::{Avatar, ButtonRow, PowerLevelSelectionRow, SpinnerButton};
+use super::{Avatar, ButtonRow, LoadingButton, PowerLevelSelectionRow};
 use crate::{
     i18n::gettext_f,
     ngettext_f,
@@ -39,13 +39,13 @@ mod imp {
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
         #[template_child]
-        pub direct_chat_button: TemplateChild<SpinnerButton>,
+        pub direct_chat_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub verified_row: TemplateChild<adw::ActionRow>,
         #[template_child]
         pub verified_stack: TemplateChild<gtk::Stack>,
         #[template_child]
-        pub verify_button: TemplateChild<SpinnerButton>,
+        pub verify_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub room_box: TemplateChild<gtk::Box>,
         #[template_child]
@@ -57,7 +57,7 @@ mod imp {
         #[template_child]
         pub power_level_row: TemplateChild<PowerLevelSelectionRow>,
         #[template_child]
-        pub invite_button: TemplateChild<SpinnerButton>,
+        pub invite_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub kick_box: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -67,7 +67,7 @@ mod imp {
         #[template_child]
         pub ban_button: TemplateChild<ButtonRow>,
         #[template_child]
-        pub unban_button: TemplateChild<SpinnerButton>,
+        pub unban_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub remove_messages_box: TemplateChild<gtk::ListBox>,
         #[template_child]
@@ -75,7 +75,7 @@ mod imp {
         #[template_child]
         pub ignored_row: TemplateChild<adw::ActionRow>,
         #[template_child]
-        pub ignored_button: TemplateChild<SpinnerButton>,
+        pub ignored_button: TemplateChild<LoadingButton>,
         /// The current user.
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: BoundObject<User>,

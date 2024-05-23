@@ -143,7 +143,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="SpinnerButton" id="create_button">
+                      <object class="LoadingButton" id="create_button">
                         <property name="content-label" translatable="yes">_Create Room</property>
                         <property name="use_underline">True</property>
                         <property name="sensitive">False</property>

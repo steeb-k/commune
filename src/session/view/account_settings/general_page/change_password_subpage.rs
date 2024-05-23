@@ -11,7 +11,7 @@ use matrix_sdk::ruma::{
 use tracing::error;
 
 use crate::{
-    components::{AuthDialog, AuthError, SpinnerButton},
+    components::{AuthDialog, AuthError, LoadingButton},
     session::model::Session,
     toast,
     utils::matrix::validate_password,
@@ -46,7 +46,7 @@ mod imp {
         #[template_child]
         pub confirm_password_error: TemplateChild<gtk::Label>,
         #[template_child]
-        pub button: TemplateChild<SpinnerButton>,
+        pub button: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

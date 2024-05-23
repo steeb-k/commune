@@ -60,7 +60,7 @@
           <object class="GtkBox">
             <property name="spacing">6</property>
             <child>
-              <object class="SpinnerButton" id="disconnect_button">
+              <object class="LoadingButton" id="disconnect_button">
                 <signal name="clicked" handler="disconnect" swapped="yes"/>
                 <style>
                   <class name="label-button"/>
@@ -69,7 +69,7 @@
               </object>
             </child>
             <child>
-              <object class="SpinnerButton" id="verify_button">
+              <object class="LoadingButton" id="verify_button">
                 <property name="visible">False</property>
                 <property name="content-label" translatable="yes">Verify Session</property>
               </object>

@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton,
+    components::LoadingButton,
     gettext_f,
     prelude::*,
     session::model::{IdentityVerification, VerificationState},
@@ -30,9 +30,9 @@ mod imp {
         #[template_child]
         pub label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub accept_btn: TemplateChild<SpinnerButton>,
+        pub accept_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub cancel_btn: TemplateChild<SpinnerButton>,
+        pub cancel_btn: TemplateChild<LoadingButton>,
         /// The identity verification presented by this info bar.
         #[property(get, set = Self::set_verification, explicit_notify)]
         pub verification: BoundObjectWeakRef<IdentityVerification>,

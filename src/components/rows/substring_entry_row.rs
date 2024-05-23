@@ -5,7 +5,7 @@ use gtk::{
     pango, CompositeTemplate,
 };
 
-use crate::components::SpinnerButton;
+use crate::components::LoadingButton;
 
 mod imp {
     use std::{
@@ -39,7 +39,7 @@ mod imp {
         #[template_child]
         pub entry_suffix_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub add_button: TemplateChild<SpinnerButton>,
+        pub add_button: TemplateChild<LoadingButton>,
         /// The input hints of the entry.
         #[property(get = Self::input_hints, set = Self::set_input_hints, explicit_notify)]
         pub input_hints: PhantomData<gtk::InputHints>,

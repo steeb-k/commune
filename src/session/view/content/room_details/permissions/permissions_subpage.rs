@@ -11,7 +11,7 @@ use ruma::{
 
 use super::{PermissionsAddMembersSubpage, PermissionsMembersSubpage, PrivilegedMembers};
 use crate::{
-    components::{ButtonCountRow, PowerLevelSelectionRow, SpinnerButton},
+    components::{ButtonCountRow, LoadingButton, PowerLevelSelectionRow},
     session::model::{Permissions, PowerLevel},
     toast,
     utils::BoundObjectWeakRef,
@@ -31,7 +31,7 @@ mod imp {
     #[properties(wrapper_type = super::PermissionsSubpage)]
     pub struct PermissionsSubpage {
         #[template_child]
-        pub save_button: TemplateChild<SpinnerButton>,
+        pub save_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub messages_row: TemplateChild<PowerLevelSelectionRow>,
         #[template_child]

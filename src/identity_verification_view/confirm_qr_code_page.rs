@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
 };
 
 mod imp {
@@ -26,9 +26,9 @@ mod imp {
         #[template_child]
         pub question: TemplateChild<gtk::Label>,
         #[template_child]
-        pub confirm_btn: TemplateChild<SpinnerButton>,
+        pub confirm_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub cancel_btn: TemplateChild<SpinnerButton>,
+        pub cancel_btn: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

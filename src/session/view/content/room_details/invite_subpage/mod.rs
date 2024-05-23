@@ -13,7 +13,7 @@ use self::{
     row::InviteRow,
 };
 use crate::{
-    components::{PillSearchEntry, PillSource, Spinner, SpinnerButton},
+    components::{LoadingButton, PillSearchEntry, PillSource, Spinner},
     prelude::*,
     session::model::{Room, User},
     toast,
@@ -37,7 +37,7 @@ mod imp {
         #[template_child]
         pub list_view: TemplateChild<gtk::ListView>,
         #[template_child]
-        pub invite_button: TemplateChild<SpinnerButton>,
+        pub invite_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub cancel_button: TemplateChild<gtk::Button>,
         #[template_child]

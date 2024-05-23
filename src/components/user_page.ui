@@ -80,7 +80,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="SpinnerButton" id="direct_chat_button">
+                      <object class="LoadingButton" id="direct_chat_button">
                         <style>
                           <class name="row"/>
                         </style>
@@ -132,7 +132,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="SpinnerButton" id="invite_button">
+                          <object class="LoadingButton" id="invite_button">
                             <style>
                               <class name="row"/>
                             </style>
@@ -174,7 +174,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="SpinnerButton" id="unban_button">
+                          <object class="LoadingButton" id="unban_button">
                             <style>
                               <class name="row"/>
                             </style>
@@ -233,7 +233,7 @@
                                       <object class="GtkStackPage">
                                         <property name="name">button</property>
                                         <property name="child">
-                                          <object class="SpinnerButton" id="verify_button">
+                                          <object class="LoadingButton" id="verify_button">
                                             <property name="sensitive">False</property>
                                             <property name="content-label" translatable="yes">Verify</property>
                                             <property name="action-name">user-page.verify-user</property>
@@ -265,7 +265,7 @@
                               <object class="AdwActionRow" id="ignored_row">
                                 <property name="selectable">False</property>
                                 <child>
-                                  <object class="SpinnerButton" id="ignored_button">
+                                  <object class="LoadingButton" id="ignored_button">
                                     <property name="valign">center</property>
                                     <signal name="clicked" handler="toggle_ignored" swapped="yes"/>
                                   </object>

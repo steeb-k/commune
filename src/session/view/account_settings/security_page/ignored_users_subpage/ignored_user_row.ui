@@ -24,7 +24,7 @@
       </object>
     </child>
     <child>
-      <object class="SpinnerButton" id="stop_ignoring_button">
+      <object class="LoadingButton" id="stop_ignoring_button">
         <property name="halign">end</property>
         <property name="valign">center</property>
         <property name="content-label" translatable="yes">Stop Ignoring</property>

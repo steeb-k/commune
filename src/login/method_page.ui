@@ -146,7 +146,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="SpinnerButton" id="next_button">
+                          <object class="LoadingButton" id="next_button">
                             <property name="content-label" translatable="yes">Next</property>
                             <property name="halign">center</property>
                             <signal name="clicked" handler="login_with_password" swapped="yes"/>

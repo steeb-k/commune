@@ -9,7 +9,7 @@ use tracing::{debug, error};
 
 use super::{CryptoRecoverySetupInitialPage, CryptoRecoverySetupView};
 use crate::{
-    components::{AuthDialog, AuthError, SpinnerButton},
+    components::{AuthDialog, AuthError, LoadingButton},
     identity_verification_view::IdentityVerificationView,
     session::model::{
         CryptoIdentityState, IdentityVerification, RecoveryState, Session, SessionVerificationState,
@@ -59,7 +59,7 @@ mod imp {
         #[template_child]
         pub navigation: TemplateChild<adw::NavigationView>,
         #[template_child]
-        pub send_request_btn: TemplateChild<SpinnerButton>,
+        pub send_request_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub use_recovery_btn: TemplateChild<gtk::Button>,
         #[template_child]
@@ -71,7 +71,7 @@ mod imp {
         #[template_child]
         pub bootstrap_description_2: TemplateChild<gtk::Label>,
         #[template_child]
-        pub bootstrap_btn: TemplateChild<SpinnerButton>,
+        pub bootstrap_btn: TemplateChild<LoadingButton>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,

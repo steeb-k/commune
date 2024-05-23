@@ -24,7 +24,7 @@
                       </object>
                     </child>
                     <child type="end">
-                      <object class="SpinnerButton" id="save_button">
+                      <object class="LoadingButton" id="save_button">
                         <property name="visible" bind-source="RoomDetailsPermissionsSubpage" bind-property="editable" bind-flags="sync-create" />
                         <property name="sensitive" bind-source="RoomDetailsPermissionsSubpage" bind-property="changed" bind-flags="sync-create" />
                         <property name="label" translatable="yes">_Save</property>

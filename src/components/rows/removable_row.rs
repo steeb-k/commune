@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::closure_local, CompositeTemplate};
 
-use crate::components::SpinnerButton;
+use crate::components::LoadingButton;
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -16,7 +16,7 @@ mod imp {
     #[properties(wrapper_type = super::RemovableRow)]
     pub struct RemovableRow {
         #[template_child]
-        pub remove_button: TemplateChild<SpinnerButton>,
+        pub remove_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub extra_suffix_bin: TemplateChild<adw::Bin>,
         /// The tooltip text of the remove button.

@@ -62,7 +62,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="SpinnerButton" id="logout_button">
+                      <object class="LoadingButton" id="logout_button">
                         <style>
                           <class name="row"/>
                           <class name="destructive-action"/>

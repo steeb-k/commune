@@ -2,7 +2,7 @@ use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use ruma::UserId;
 
-use crate::{components::SpinnerButton, session::model::IgnoredUsers, toast};
+use crate::{components::LoadingButton, session::model::IgnoredUsers, toast};
 
 mod imp {
     use std::cell::RefCell;
@@ -18,7 +18,7 @@ mod imp {
     #[properties(wrapper_type = super::IgnoredUserRow)]
     pub struct IgnoredUserRow {
         #[template_child]
-        pub stop_ignoring_button: TemplateChild<SpinnerButton>,
+        pub stop_ignoring_button: TemplateChild<LoadingButton>,
         /// The item containing the user ID presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: RefCell<Option<gtk::StringObject>>,

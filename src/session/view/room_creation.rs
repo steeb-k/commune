@@ -15,7 +15,7 @@ use ruma::events::{room::encryption::RoomEncryptionEventContent, InitialStateEve
 use tracing::error;
 
 use crate::{
-    components::{SpinnerButton, SubstringEntryRow, ToastableDialog},
+    components::{LoadingButton, SubstringEntryRow, ToastableDialog},
     prelude::*,
     session::model::Session,
     spawn_tokio, toast, Window,
@@ -37,7 +37,7 @@ mod imp {
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         pub session: glib::WeakRef<Session>,
         #[template_child]
-        pub create_button: TemplateChild<SpinnerButton>,
+        pub create_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub content: TemplateChild<gtk::Box>,
         #[template_child]

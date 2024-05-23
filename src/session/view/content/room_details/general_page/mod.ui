@@ -109,7 +109,7 @@
               </object>
             </child>
             <child>
-              <object class="SpinnerButton" id="save_details_btn">
+              <object class="LoadingButton" id="save_details_btn">
                 <property name="visible" bind-source="ContentRoomDetailsGeneralPage" bind-property="edit-mode-enabled" bind-flags="sync-create"/>
                 <property name="halign">center</property>
                 <property name="content-label" translatable="yes">Save Details</property>
@@ -322,7 +322,7 @@
               <class name="property"/>
             </style>
             <child>
-              <object class="SpinnerButton" id="upgrade_button">
+              <object class="LoadingButton" id="upgrade_button">
                 <!-- Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'. -->
                 <property name="content-label" translatable="yes">Upgrade</property>
                 <property name="valign">center</property>

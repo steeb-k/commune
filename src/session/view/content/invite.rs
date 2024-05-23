@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{Avatar, LabelWithWidgets, Pill, SpinnerButton},
+    components::{Avatar, LabelWithWidgets, LoadingButton, Pill},
     gettext_f,
     session::model::{MemberList, Room, RoomType},
     toast,
@@ -33,9 +33,9 @@ mod imp {
         #[template_child]
         pub inviter: TemplateChild<LabelWithWidgets>,
         #[template_child]
-        pub accept_button: TemplateChild<SpinnerButton>,
+        pub accept_button: TemplateChild<LoadingButton>,
         #[template_child]
-        pub decline_button: TemplateChild<SpinnerButton>,
+        pub decline_button: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

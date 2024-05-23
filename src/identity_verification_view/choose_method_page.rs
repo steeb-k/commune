@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton,
+    components::LoadingButton,
     contrib::QRCode,
     gettext_f,
     prelude::*,
@@ -36,11 +36,11 @@ mod imp {
         #[template_child]
         pub cannot_scan_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub scan_qr_code_btn: TemplateChild<SpinnerButton>,
+        pub scan_qr_code_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub start_sas_btn: TemplateChild<SpinnerButton>,
+        pub start_sas_btn: TemplateChild<LoadingButton>,
         #[template_child]
-        pub cancel_btn: TemplateChild<SpinnerButton>,
+        pub cancel_btn: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

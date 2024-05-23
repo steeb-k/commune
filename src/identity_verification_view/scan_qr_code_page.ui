@@ -62,7 +62,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="SpinnerButton" id="start_sas_btn">
+                  <object class="LoadingButton" id="start_sas_btn">
                     <property name="content-label" translatable="yes">Compare Emoji</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="start_sas" swapped="yes"/>
@@ -72,7 +72,7 @@
                   </object>
                 </child>
                 <child>
-                  <object class="SpinnerButton" id="cancel_btn">
+                  <object class="LoadingButton" id="cancel_btn">
                     <property name="halign">center</property>
                     <property name="content-label" translatable="yes">Cancel Verification</property>
                     <signal name="clicked" handler="cancel" swapped="yes"/>

@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use ruma::events::key::verification::cancel::CancelCode;
 
 use crate::{
-    components::SpinnerButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
+    components::LoadingButton, gettext_f, prelude::*, session::model::IdentityVerification, toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -28,7 +28,7 @@ mod imp {
         #[template_child]
         pub message: TemplateChild<gtk::Label>,
         #[template_child]
-        pub try_again_btn: TemplateChild<SpinnerButton>,
+        pub try_again_btn: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

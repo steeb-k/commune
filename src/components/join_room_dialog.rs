@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use super::{Avatar, Spinner, SpinnerButton, ToastableDialog};
+use super::{Avatar, LoadingButton, Spinner, ToastableDialog};
 use crate::{
     i18n::ngettext_f,
     prelude::*,
@@ -32,7 +32,7 @@ mod imp {
         #[template_child]
         pub search_entry: TemplateChild<gtk::SearchEntry>,
         #[template_child]
-        pub look_up_btn: TemplateChild<SpinnerButton>,
+        pub look_up_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub room_avatar: TemplateChild<Avatar>,
         #[template_child]
@@ -46,7 +46,7 @@ mod imp {
         #[template_child]
         pub room_members_count: TemplateChild<gtk::Label>,
         #[template_child]
-        pub join_btn: TemplateChild<SpinnerButton>,
+        pub join_btn: TemplateChild<LoadingButton>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,

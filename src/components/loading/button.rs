@@ -9,8 +9,8 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::SpinnerButton)]
-    pub struct SpinnerButton {
+    #[properties(wrapper_type = super::LoadingButton)]
+    pub struct LoadingButton {
         pub loading_bin: LoadingBin,
         /// The label of the content of the button.
         ///
@@ -30,14 +30,14 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for SpinnerButton {
-        const NAME: &'static str = "SpinnerButton";
-        type Type = super::SpinnerButton;
+    impl ObjectSubclass for LoadingButton {
+        const NAME: &'static str = "LoadingButton";
+        type Type = super::LoadingButton;
         type ParentType = gtk::Button;
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for SpinnerButton {
+    impl ObjectImpl for LoadingButton {
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -45,10 +45,10 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for SpinnerButton {}
-    impl ButtonImpl for SpinnerButton {}
+    impl WidgetImpl for LoadingButton {}
+    impl ButtonImpl for LoadingButton {}
 
-    impl SpinnerButton {
+    impl LoadingButton {
         /// The label of the content of the button.
         fn content_label(&self) -> Option<glib::GString> {
             self.loading_bin
@@ -156,17 +156,17 @@ glib::wrapper! {
     /// Button showing either a spinner or a label.
     ///
     /// Use the `content-label` and `content-icon-name` properties instead of `label` and `icon-name` respectively, otherwise the spinner will not appear.
-    pub struct SpinnerButton(ObjectSubclass<imp::SpinnerButton>)
+    pub struct LoadingButton(ObjectSubclass<imp::LoadingButton>)
         @extends gtk::Widget, gtk::Button, @implements gtk::Accessible, gtk::Actionable;
 }
 
-impl SpinnerButton {
+impl LoadingButton {
     pub fn new() -> Self {
         glib::Object::new()
     }
 }
 
-impl Default for SpinnerButton {
+impl Default for LoadingButton {
     fn default() -> Self {
         Self::new()
     }

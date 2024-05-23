@@ -9,7 +9,7 @@ mod public_address;
 
 use self::{completion_popover::CompletionPopover, public_address::PublicAddress};
 use crate::{
-    components::{EntryAddRow, RemovableRow, SpinnerButton, SubstringEntryRow},
+    components::{EntryAddRow, LoadingButton, RemovableRow, SubstringEntryRow},
     gettext_f,
     prelude::*,
     session::model::{AddAltAliasError, RegisterLocalAliasError, Room},
@@ -281,7 +281,7 @@ mod imp {
 
                 row.set_is_loading(false);
 
-                if let Some(button) = row.extra_suffix().and_downcast::<SpinnerButton>() {
+                if let Some(button) = row.extra_suffix().and_downcast::<LoadingButton>() {
                     button.set_loading(false);
                 }
             }
@@ -425,8 +425,8 @@ impl AddressesSubpage {
                 &[label.upcast_ref()],
             )]);
             row.set_extra_suffix(Some(main_box));
-        } else if !is_main && !row.extra_suffix().is_some_and(|w| w.is::<SpinnerButton>()) {
-            let button = SpinnerButton::new();
+        } else if !is_main && !row.extra_suffix().is_some_and(|w| w.is::<LoadingButton>()) {
+            let button = LoadingButton::new();
             button.set_content_icon_name("checkmark-symbolic");
             button.add_css_class("flat");
             button.set_tooltip_text(Some(&gettext("Set as main address")));
@@ -484,7 +484,7 @@ impl AddressesSubpage {
         let Some(room) = self.room() else {
             return;
         };
-        let Some(button) = row.extra_suffix().and_downcast::<SpinnerButton>() else {
+        let Some(button) = row.extra_suffix().and_downcast::<LoadingButton>() else {
             return;
         };
         let Ok(alias) = RoomAliasId::parse(row.title()) else {

@@ -127,7 +127,7 @@
                       </object>
                     </child>
                     <child>
-                      <object class="SpinnerButton" id="proceed_button">
+                      <object class="LoadingButton" id="proceed_button">
                         <style>
                           <class name="row"/>
                           <class name="suggested-action"/>

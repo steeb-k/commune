@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, CompositeTemplate};
 
 use crate::{
-    components::SpinnerButton,
+    components::LoadingButton,
     session::{
         model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
         view::AccountSettings,
@@ -32,7 +32,7 @@ mod imp {
         #[template_child]
         pub warning_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub logout_button: TemplateChild<SpinnerButton>,
+        pub logout_button: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]

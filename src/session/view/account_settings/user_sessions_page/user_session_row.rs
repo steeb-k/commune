@@ -3,7 +3,7 @@ use gettextrs::gettext;
 use gtk::{glib, glib::clone, subclass::prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{AuthError, SpinnerButton},
+    components::{AuthError, LoadingButton},
     gettext_f,
     session::{model::UserSession, view::account_settings::AccountSettingsSubpage},
     system_settings::ClockFormat,
@@ -32,9 +32,9 @@ mod imp {
         #[template_child]
         pub last_seen_ts: TemplateChild<gtk::Label>,
         #[template_child]
-        pub disconnect_button: TemplateChild<SpinnerButton>,
+        pub disconnect_button: TemplateChild<LoadingButton>,
         #[template_child]
-        pub verify_button: TemplateChild<SpinnerButton>,
+        pub verify_button: TemplateChild<LoadingButton>,
         /// The user session displayed by this row.
         #[property(get, set = Self::set_user_session, construct_only)]
         pub user_session: RefCell<Option<UserSession>>,

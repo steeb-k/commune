@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::closure_local, CompositeTemplate};
 
-use crate::components::SpinnerButton;
+use crate::components::LoadingButton;
 
 mod imp {
     use std::{cell::Cell, marker::PhantomData};
@@ -16,7 +16,7 @@ mod imp {
     #[properties(wrapper_type = super::EntryAddRow)]
     pub struct EntryAddRow {
         #[template_child]
-        pub add_button: TemplateChild<SpinnerButton>,
+        pub add_button: TemplateChild<LoadingButton>,
         /// The tooltip text of the add button.
         #[property(get = Self::add_button_tooltip_text, set = Self::set_add_button_tooltip_text, explicit_notify, nullable)]
         pub add_button_tooltip_text: PhantomData<Option<glib::GString>>,

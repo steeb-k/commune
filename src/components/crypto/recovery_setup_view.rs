@@ -8,7 +8,7 @@ use matrix_sdk::encryption::{
 use tracing::{debug, error};
 
 use crate::{
-    components::{AuthDialog, AuthError, SpinnerButton},
+    components::{AuthDialog, AuthError, LoadingButton},
     session::model::{RecoveryState, Session},
     spawn_tokio, toast,
 };
@@ -60,7 +60,7 @@ mod imp {
         #[template_child]
         pub recover_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub recover_btn: TemplateChild<SpinnerButton>,
+        pub recover_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub reset_page: TemplateChild<adw::NavigationPage>,
         #[template_child]
@@ -70,11 +70,11 @@ mod imp {
         #[template_child]
         pub reset_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub reset_btn: TemplateChild<SpinnerButton>,
+        pub reset_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub enable_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
-        pub enable_btn: TemplateChild<SpinnerButton>,
+        pub enable_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub success_description: TemplateChild<gtk::Label>,
         #[template_child]
