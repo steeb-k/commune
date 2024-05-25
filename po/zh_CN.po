@@ -1,16 +1,16 @@
 # Chinese (China) translation for fractal.
 # Copyright (C) 2018 fractal's COPYRIGHT HOLDER
 # This file is distributed under the same license as the fractal package.
-# WodeShengli <wodeshengli@disroot.org>, 2024.
 # lumingzh <lumingzh@qq.com>, 2018-2024.
+# WodeShengli <wodeshengli@disroot.org>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-21 15:46+0000\n"
-"PO-Revision-Date: 2024-05-24 20:26+0800\n"
-"Last-Translator: lumingzh <lumingzh@qq.com>\n"
+"POT-Creation-Date: 2024-05-24 12:29+0000\n"
+"PO-Revision-Date: 2024-05-25 15:57+0800\n"
+"Last-Translator: WodeShengli <wodeshengli@disroot.org>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -192,7 +192,7 @@ msgstr "确认更改"
 msgid "Try Again"
 msgstr "重试"
 
-#: src/components/action_button.ui:67 src/components/spinner.rs:31
+#: src/components/action_button.ui:67 src/components/loading/spinner.rs:31
 #: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:53
 #: src/session/view/content/room_history/mod.ui:188 src/window.ui:18
@@ -215,33 +215,38 @@ msgstr "警告"
 msgid "Error"
 msgstr "错误"
 
-#: src/components/auth_dialog.rs:236
-msgid "Please authenticate the operation with your password"
-msgstr "请使用您的密码认证该操作"
+#: src/components/avatar/editable.rs:353
+msgid "Images"
+msgstr "图像"
 
-#: src/components/auth_dialog.rs:275
-msgid ""
-"Please authenticate the operation via the browser and, once completed, press "
-"confirm"
-msgstr "请通过浏览器认证该操作并在完成后按确认"
+#: src/components/avatar/editable.rs:358
+msgid "Choose Avatar"
+msgstr "选择头像"
 
-#: src/components/auth_dialog.ui:4
-msgid "Authentication"
-msgstr "认证"
+#: src/components/avatar/editable.rs:360
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
+msgid "Choose"
+msgstr "选择"
 
-#: src/components/auth_dialog.ui:20
-msgid "Authenticate via Browser"
-msgstr "通过浏览器认证"
+#: src/components/avatar/editable.rs:374
+msgid "Could not open avatar file"
+msgstr "无法打开头像文件"
 
-#: src/components/auth_dialog.ui:43
-#: src/session/view/content/room_details/invite_subpage/mod.ui:13
-#: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
-msgid "_Cancel"
-msgstr "取消(_C)"
+#: src/components/avatar/editable.rs:395
+msgid "The chosen file is not an image"
+msgstr "选择的文件不是图像"
 
-#: src/components/auth_dialog.ui:44
-msgid "C_onfirm"
-msgstr "确认(_O)"
+#: src/components/avatar/editable.rs:401
+msgid "Could not determine the type of the chosen file"
+msgstr "无法判断选择文件的类型"
+
+#: src/components/avatar/editable.ui:54
+msgid "Remove Avatar"
+msgstr "移除头像"
+
+#: src/components/avatar/editable.ui:71
+msgid "Select New Avatar"
+msgstr "选择新头像"
 
 #: src/components/crypto/identity_setup_view.rs:273
 #: src/session/view/account_settings/security_page/mod.rs:241
@@ -394,11 +399,11 @@ msgstr "恢复对您账号的全面访问。"
 msgid ""
 "To access the recovery data, we need the recovery passphrase or the recovery "
 "key that is usually set up when you create your account."
-msgstr "为了访问恢复数据，我们需要您创建账号时通常会设置的恢复密语或恢复密钥。"
+msgstr "为了访问恢复数据，我们需要您创建账号时通常会设置的恢复口令或恢复密钥。"
 
 #: src/components/crypto/recovery_setup_view.ui:67
 msgid "Recovery Passphrase or Key"
-msgstr "恢复密语或密钥"
+msgstr "恢复口令或密钥"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:326
@@ -408,13 +413,13 @@ msgstr "恢复"
 
 #: src/components/crypto/recovery_setup_view.ui:88
 msgid "Lost your recovery passphrase or key?"
-msgstr "弄丢了您的恢复密语或密钥？"
+msgstr "弄丢了您的恢复口令或密钥？"
 
 #: src/components/crypto/recovery_setup_view.ui:161
 msgid ""
 "If you do not provide a new recovery passphrase, a recovery key will be "
 "created."
-msgstr "如果您不提供一个新的恢复密语，将创建一个恢复密钥。"
+msgstr "如果您不提供一个新的恢复口令，将创建一个恢复密钥。"
 
 #: src/components/crypto/recovery_setup_view.ui:169
 #: src/components/crypto/recovery_setup_view.ui:264
@@ -423,13 +428,13 @@ msgid ""
 "Otherwise, if someone manages to get your account password, they will also "
 "be able to access all your encrypted conversations and to impersonate you."
 msgstr ""
-"您不应该重复使用您的Matrix账号密码作为密语。否则，如果有人设法获得您的帐户密"
+"您不应该重复使用您的Matrix账号密码作为口令。否则，如果有人设法获得您的帐户密"
 "码，他们也将能够访问您的所有的加密对话并冒充您。"
 
 #: src/components/crypto/recovery_setup_view.ui:182
 #: src/components/crypto/recovery_setup_view.ui:277
 msgid "Recovery Passphrase (Optional)"
-msgstr "恢复密语（可选）"
+msgstr "恢复口令（可选）"
 
 #: src/components/crypto/recovery_setup_view.ui:211
 #: src/components/crypto/recovery_setup_view.ui:237
@@ -447,7 +452,7 @@ msgstr ""
 #: src/components/crypto/recovery_setup_view.ui:256
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
-msgstr "如果您不提供一个恢复密语，将会创建一个恢复密钥。"
+msgstr "如果您不提供一个恢复口令，将会创建一个恢复密钥。"
 
 #: src/components/crypto/recovery_setup_view.ui:307
 #: src/components/crypto/recovery_setup_view.ui:334
@@ -489,38 +494,337 @@ msgstr ""
 "请注意，账号备份在其他 Matrix 客户端中会有不同的名称，如“密钥备份”或“安全备"
 "份”。"
 
-#: src/components/editable_avatar.rs:349
-msgid "Images"
-msgstr "图像"
+#: src/components/dialogs/auth.rs:236
+msgid "Please authenticate the operation with your password"
+msgstr "请使用您的密码认证该操作"
 
-#: src/components/editable_avatar.rs:354
-msgid "Choose Avatar"
-msgstr "选择头像"
+#: src/components/dialogs/auth.rs:275
+msgid ""
+"Please authenticate the operation via the browser and, once completed, press "
+"confirm"
+msgstr "请通过浏览器认证该操作并在完成后按确认"
 
-#: src/components/editable_avatar.rs:356
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
-msgid "Choose"
-msgstr "选择"
+#: src/components/dialogs/auth.ui:4
+msgid "Authentication"
+msgstr "认证"
 
-#: src/components/editable_avatar.rs:370
-msgid "Could not open avatar file"
-msgstr "无法打开头像文件"
+#: src/components/dialogs/auth.ui:20
+msgid "Authenticate via Browser"
+msgstr "通过浏览器认证"
 
-#: src/components/editable_avatar.rs:391
-msgid "The chosen file is not an image"
-msgstr "选择的文件不是图像"
+#: src/components/dialogs/auth.ui:43
+#: src/session/view/content/room_details/invite_subpage/mod.ui:13
+#: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
+msgid "_Cancel"
+msgstr "取消(_C)"
 
-#: src/components/editable_avatar.rs:397
-msgid "Could not determine the type of the chosen file"
-msgstr "无法判断选择文件的类型"
+#: src/components/dialogs/auth.ui:44
+msgid "C_onfirm"
+msgstr "确认(_O)"
 
-#: src/components/editable_avatar.ui:54
-msgid "Remove Avatar"
-msgstr "移除头像"
+#. Translators: This is a verb, as in 'View Room'.
+#: src/components/dialogs/join_room.rs:192
+#: src/session/view/content/explore/public_room_row.rs:168
+#: src/session/view/content/room_history/mod.rs:959
+#: src/session/view/content/room_history/state_row/tombstone.rs:88
+msgid "View"
+msgstr "查看"
 
-#: src/components/editable_avatar.ui:71
-msgid "Select New Avatar"
-msgstr "选择新头像"
+#. Translators: This is a verb, as in 'Look up Room'.
+#: src/components/dialogs/join_room.rs:195
+#: src/components/dialogs/join_room.ui:91
+msgid "Look Up"
+msgstr "查找"
+
+#: src/components/dialogs/join_room.rs:258
+msgid ""
+"The room details cannot be previewed. It can be because the room is not "
+"known by the homeserver or because its details are private. You can still "
+"try to join it."
+msgstr ""
+"该聊天室详情无法预览。可能是因为该聊天室不被主服务器所知或其详情为隐私。您仍"
+"然可以尝试加入它。"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/join_room.rs:280
+#: src/session/view/content/explore/public_room_row.rs:149
+msgid "1 member"
+msgid_plural "{n} members"
+msgstr[0] "{n} 个成员"
+
+#: src/components/dialogs/join_room.ui:4 src/components/dialogs/join_room.ui:38
+msgid "Join a Room"
+msgstr "加入聊天室"
+
+#: src/components/dialogs/join_room.ui:17 src/login/greeter.ui:16
+#: src/login/greeter.ui:18
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
+#: src/session/view/media_viewer.ui:56 src/session/view/media_viewer.ui:58
+msgid "Back"
+msgstr "返回"
+
+#: src/components/dialogs/join_room.ui:72
+msgid "Enter a room ID, room alias, or permalink to look up a room"
+msgstr "输入聊天室标识、别名或永久链接来查找聊天室"
+
+#: src/components/dialogs/join_room.ui:191
+#: src/session/view/content/explore/public_room_row.rs:170
+#: src/session/view/content/room_history/mod.rs:962
+#: src/session/view/content/room_history/state_row/tombstone.rs:90
+msgid "Join"
+msgstr "加入"
+
+#. We are rejecting an invite.
+#: src/components/dialogs/message_dialogs.rs:19
+msgid "Decline Invite?"
+msgstr "拒绝邀请吗？"
+
+#: src/components/dialogs/message_dialogs.rs:21
+msgid ""
+"Do you really want to decline this invite? You can join this room on your "
+"own later."
+msgstr "您确定想要拒绝该邀请吗？您可以随后自行加入该聊天室。"
+
+#: src/components/dialogs/message_dialogs.rs:24
+msgid ""
+"Do you really want to decline this invite? You will not be able to join this "
+"room without it."
+msgstr "您确定想要拒绝该邀请吗？您将无法在未受邀请的情况下加入该聊天室。"
+
+#: src/components/dialogs/message_dialogs.rs:27
+#: src/identity_verification_view/accept_request_page.ui:47
+#: src/session/view/content/room_history/verification_info_bar.rs:166
+msgid "Decline"
+msgstr "拒绝"
+
+#. We are leaving a room that was joined.
+#: src/components/dialogs/message_dialogs.rs:32
+msgid "Leave Room?"
+msgstr "离开聊天室吗？"
+
+#: src/components/dialogs/message_dialogs.rs:34
+msgid "Do you really want to leave this room? You can come back later."
+msgstr "您确定想要离开该聊天室吗？您可以随后再回来。"
+
+#: src/components/dialogs/message_dialogs.rs:37
+msgid ""
+"Do you really want to leave this room? You will not be able to come back "
+"without an invitation."
+msgstr "您确定想要离开该聊天室吗？您将无法在未受邀请的情况下回来。"
+
+#: src/components/dialogs/message_dialogs.rs:40
+msgid "Leave"
+msgstr "离开"
+
+#: src/components/dialogs/message_dialogs.rs:51
+#: src/components/dialogs/message_dialogs.rs:259
+#: src/components/dialogs/message_dialogs.rs:320
+#: src/components/dialogs/message_dialogs.rs:355
+#: src/identity_verification_view/confirm_qr_code_page.ui:61
+#: src/session/view/account_settings/general_page/mod.rs:280
+#: src/session/view/content/room_details/general_page/mod.rs:525
+#: src/session/view/content/room_details/general_page/mod.rs:1299
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:588
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:80
+#: src/session/view/content/room_history/item_row.rs:774
+#: src/session/view/content/room_history/item_row.rs:831
+#: src/session/view/content/room_history/message_toolbar/mod.ui:78
+#: src/session/view/content/room_history/message_toolbar/mod.ui:80
+#: src/session/view/content/room_history/verification_info_bar.rs:170
+msgid "Cancel"
+msgstr "取消"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:85
+msgid "Ban {user}?"
+msgstr "封禁 {user}？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:89
+msgid ""
+"Are you sure you want to ban {user_id}? They will not be able to join the "
+"room again until someone unbans them."
+msgstr "您确定想要封禁 {user_id} 吗？他们在被解封之前将无法再次加入该聊天室。"
+
+#. Translators: As in, 'Ban room member'.
+#: src/components/dialogs/message_dialogs.rs:92 src/components/user_page.ui:170
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
+msgid "Ban"
+msgstr "封禁"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:103
+msgid "Revoke Invite for {user}?"
+msgstr "撤消邀请 {user}？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:110
+msgid ""
+"Are you sure you want to revoke the invite for {user_id}? They will still be "
+"able to join the room on their own."
+msgstr "您确定想要撤消对 {user_id} 的邀请吗？他们仍将可以自行加入该聊天室。"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:117
+msgid ""
+"Are you sure you want to revoke the invite for {user_id}? They will not be "
+"able to join the room again until someone reinvites them."
+msgstr ""
+"您确定想要撤消对 {user_id} 的邀请吗？他们在收到重新邀请前将无法再次加入该聊天"
+"室。"
+
+#: src/components/dialogs/message_dialogs.rs:121
+#: src/components/user_page.rs:402
+msgid "Revoke Invite"
+msgstr "撤消邀请"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:128
+msgid "Deny Access to {user}?"
+msgstr "拒绝 {user} 的访问吗？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:134
+msgid "Are you sure you want to deny access to {user_id}?"
+msgstr "您确定想要拒绝 {user_id} 的访问吗？"
+
+#: src/components/dialogs/message_dialogs.rs:137
+#: src/components/user_page.rs:403
+msgid "Deny Access"
+msgstr "拒绝访问"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:143
+msgid "Kick {user}?"
+msgstr "踢出 {user}？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:148
+msgid ""
+"Are you sure you want to kick {user_id}? They will still be able to join the "
+"room again on their own."
+msgstr "您确定想要踢出 {user_id} 吗？他们仍将可以自行再次加入该聊天室。"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:155
+msgid ""
+"Are you sure you want to kick {user_id}? They will not be able to join the "
+"room again until someone invites them."
+msgstr "您确定想要踢出 {user_id} 吗？他们在收到邀请前将无法再次加入该聊天室。"
+
+#. Translators: As in, 'Kick room member'.
+#. // Translators: As in, 'Kick room member'.
+#: src/components/dialogs/message_dialogs.rs:159
+#: src/components/user_page.rs:405
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
+msgid "Kick"
+msgstr "踢出"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:170
+msgid "Remove Messages Sent by {user}?"
+msgstr "移除由 {user} 发送的消息吗？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:176
+msgid ""
+"This removes all the messages received from the homeserver. Are you sure you "
+"want to remove 1 message sent by {user_id}? This cannot be undone."
+msgid_plural ""
+"This removes all the messages received from the homeserver. Are you sure you "
+"want to remove {n} messages sent by {user_id}? This cannot be undone."
+msgstr[0] ""
+"这将移除所有从该主服务器接收的消息。您确定想要移除由 {user_id} 发送的 {n} 条"
+"消息吗？该操作无法撤消。"
+
+#: src/components/dialogs/message_dialogs.rs:181
+#: src/session/view/account_settings/general_page/mod.rs:281
+#: src/session/view/content/room_details/general_page/mod.rs:526
+#: src/session/view/content/room_history/item_row.rs:775
+msgid "Remove"
+msgstr "移除"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:187
+msgid "No Messages Sent by {user}"
+msgstr "{user} 无发送的消息"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:193
+msgid ""
+"There are no messages received from the homeserver sent by {user_id}. You "
+"can try to load more by going further back in the room history."
+msgstr ""
+"没有从该主服务器接收的由 {user_id} 发送的消息。您可以尝试在聊天室历史中回溯更"
+"早来加载更多历史。"
+
+#: src/components/dialogs/message_dialogs.rs:208
+#: src/session/view/content/room_history/item_row.rs:813
+msgid "Reason (optional)"
+msgstr "原因（可选）"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:232
+msgid "Remove the latest message sent by the user"
+msgid_plural "Remove the {n} latest messages sent by the user"
+msgstr[0] "移除由该用户发送的 {n} 条最新消息"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:303
+msgid "Mute {user}?"
+msgstr "禁言 {user} 吗？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:309
+msgid ""
+"Are you sure you want to mute {user_id}? They will not be able to send new "
+"messages."
+msgstr "您确定想要禁言 {user_id} 吗？他们将不能发送新消息。"
+
+#. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
+#: src/components/dialogs/message_dialogs.rs:322
+msgid "Mute"
+msgstr "禁言"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:338
+msgid "Promote {user}?"
+msgstr "晋升 {user} 吗？"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:344
+msgid ""
+"If you promote {user_id} to the same level as yours, you will not be able to "
+"demote them in the future."
+msgstr "如果您将 {user_id} 晋升至与您相同的级别，未来您将不能再降级他们。"
+
+#: src/components/dialogs/message_dialogs.rs:356
+msgid "Promote"
+msgstr "晋升"
+
+#: src/components/dialogs/user_profile.ui:4
+msgid "User Profile"
+msgstr "用户配置"
 
 #: src/components/offline_banner.rs:96
 msgid "Offline"
@@ -534,77 +838,25 @@ msgstr "无网络连接"
 msgid "No Internet connection"
 msgstr "没有互联网连接"
 
-#. Translators: This is a verb, as in 'View Room'.
-#: src/components/join_room_dialog.rs:191
-#: src/session/view/content/explore/public_room_row.rs:168
-#: src/session/view/content/room_history/mod.rs:959
-#: src/session/view/content/room_history/state_row/tombstone.rs:88
-msgid "View"
-msgstr "查看"
-
-#. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/join_room_dialog.rs:194 src/components/join_room_dialog.ui:91
-msgid "Look Up"
-msgstr "查找"
-
-#: src/components/join_room_dialog.rs:257
-msgid ""
-"The room details cannot be previewed. It can be because the room is not "
-"known by the homeserver or because its details are private. You can still "
-"try to join it."
-msgstr ""
-"该聊天室详情无法预览。可能是因为该聊天室不被主服务器所知或其详情为隐私。您仍"
-"然可以尝试加入它。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/components/join_room_dialog.rs:279
-#: src/session/view/content/explore/public_room_row.rs:149
-msgid "1 member"
-msgid_plural "{n} members"
-msgstr[0] "{n} 个成员"
-
-#: src/components/join_room_dialog.ui:4 src/components/join_room_dialog.ui:38
-msgid "Join a Room"
-msgstr "加入聊天室"
-
-#: src/components/join_room_dialog.ui:17 src/login/greeter.ui:16
-#: src/login/greeter.ui:18
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:56 src/session/view/media_viewer.ui:58
-msgid "Back"
-msgstr "返回"
-
-#: src/components/join_room_dialog.ui:72
-msgid "Enter a room ID, room alias, or permalink to look up a room"
-msgstr "输入聊天室标识、别名或永久链接来查找聊天室"
-
-#: src/components/join_room_dialog.ui:191
-#: src/session/view/content/explore/public_room_row.rs:170
-#: src/session/view/content/room_history/mod.rs:962
-#: src/session/view/content/room_history/state_row/tombstone.rs:90
-msgid "Join"
-msgstr "加入"
-
-#: src/components/location_viewer.rs:135
-msgid "Location at latitude {latitude} and longitude {longitude}"
-msgstr "位置在纬度 {latitude} 和经度 {longitude}"
-
-#: src/components/media_content_viewer.rs:132
+#: src/components/media/content_viewer.rs:132
 msgid "Image not Viewable"
 msgstr "图像无法查看"
 
-#: src/components/media_content_viewer.rs:133
+#: src/components/media/content_viewer.rs:133
 msgid "Audio Clip not Playable"
 msgstr "音频片段无法播放"
 
-#: src/components/media_content_viewer.rs:134
+#: src/components/media/content_viewer.rs:134
 msgid "Video not Playable"
 msgstr "视频无法播放"
 
-#: src/components/media_content_viewer.rs:135
+#: src/components/media/content_viewer.rs:135
 msgid "File not Viewable"
 msgstr "文件无法查看"
+
+#: src/components/media/location_viewer.rs:135
+msgid "Location at latitude {latitude} and longitude {longitude}"
+msgstr "位置在纬度 {latitude} 和经度 {longitude}"
 
 #: src/components/reaction_chooser.ui:7
 msgid "Send a Reaction"
@@ -629,153 +881,137 @@ msgstr "自定义"
 msgid "Confirm Custom Role"
 msgstr "确认自定义角色"
 
-#: src/components/user_page.rs:264
+#: src/components/user_page.rs:262
 #: src/session/view/account_settings/general_page/mod.ui:74
-#: src/session/view/content/room_history/sender_avatar/mod.rs:80
+#: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matrix 用户标识已复制到剪贴板"
 
-#: src/components/user_page.rs:286
+#: src/components/user_page.rs:284
 msgid "Open Direct Chat"
 msgstr "打开直接聊天"
 
-#: src/components/user_page.rs:288
+#: src/components/user_page.rs:286
 msgid "Create Direct Chat"
 msgstr "创建直接聊天"
 
-#: src/components/user_page.rs:312
-#: src/session/view/content/room_history/sender_avatar/mod.rs:517
+#: src/components/user_page.rs:310
+#: src/session/view/content/room_history/sender_avatar/mod.rs:513
 #: src/session/view/create_dm_dialog/mod.rs:198
 msgid "Could not create a new Direct Chat"
 msgstr "无法创建新的直接聊天"
 
-#: src/components/user_page.rs:345
+#: src/components/user_page.rs:343
 msgid "In {room_name}"
 msgstr "在 {room_name} 中"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:356
+#: src/components/user_page.rs:354
 msgctxt "member"
 msgid "Invited"
 msgstr "已邀请"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:361
+#: src/components/user_page.rs:359
 msgctxt "member"
 msgid "Banned"
 msgstr "已封禁"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:366
+#: src/components/user_page.rs:364
 msgctxt "member"
 msgid "Knocked"
 msgstr "已敲门"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:371
+#: src/components/user_page.rs:369
 msgctxt "member"
 msgid "Unknown"
 msgstr "未知"
 
-#: src/components/user_page.rs:392
+#: src/components/user_page.rs:390
 msgid "Allow Access"
 msgstr "允许访问"
 
-#: src/components/user_page.rs:404 src/utils/message_dialog.rs:121
-msgid "Revoke Invite"
-msgstr "撤消邀请"
-
-#: src/components/user_page.rs:405 src/utils/message_dialog.rs:137
-msgid "Deny Access"
-msgstr "拒绝访问"
-
-#. Translators: As in, 'Kick room member'.
-#. // Translators: As in, 'Kick room member'.
-#: src/components/user_page.rs:407
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
-#: src/utils/message_dialog.rs:159
-msgid "Kick"
-msgstr "踢出"
-
-#: src/components/user_page.rs:494
+#: src/components/user_page.rs:492
 msgid "Could not change the role"
 msgstr "无法更改角色"
 
-#: src/components/user_page.rs:516
-#: src/session/view/content/room_history/sender_avatar/mod.rs:541
+#: src/components/user_page.rs:514
+#: src/session/view/content/room_history/sender_avatar/mod.rs:537
 msgid "Could not invite user"
 msgstr "无法邀请用户"
 
-#: src/components/user_page.rs:550
-#: src/session/view/content/room_history/sender_avatar/mod.rs:574
+#: src/components/user_page.rs:548
+#: src/session/view/content/room_history/sender_avatar/mod.rs:570
 msgid "Could not revoke invite of user"
 msgstr "无法撤消邀请用户"
 
-#: src/components/user_page.rs:551
-#: src/session/view/content/room_history/sender_avatar/mod.rs:575
+#: src/components/user_page.rs:549
+#: src/session/view/content/room_history/sender_avatar/mod.rs:571
 msgid "Could not deny access to user"
 msgstr "无法拒绝用户访问"
 
-#: src/components/user_page.rs:552
-#: src/session/view/content/room_history/sender_avatar/mod.rs:576
+#: src/components/user_page.rs:550
+#: src/session/view/content/room_history/sender_avatar/mod.rs:572
 msgid "Could not kick user"
 msgstr "无法踢出用户"
 
-#: src/components/user_page.rs:598
-#: src/session/view/content/room_history/sender_avatar/mod.rs:661
+#: src/components/user_page.rs:596
+#: src/session/view/content/room_history/sender_avatar/mod.rs:657
 msgid "Could not ban user"
 msgstr "无法封禁用户"
 
-#: src/components/user_page.rs:626
-#: src/session/view/content/room_history/sender_avatar/mod.rs:681
+#: src/components/user_page.rs:624
+#: src/session/view/content/room_history/sender_avatar/mod.rs:677
 msgid "Could not unban user"
 msgstr "无法解封用户"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:674
-#: src/session/view/content/room_history/sender_avatar/mod.rs:735
+#: src/components/user_page.rs:672
+#: src/session/view/content/room_history/sender_avatar/mod.rs:731
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "无法移除由该用户发送的 {n} 条消息"
 
-#: src/components/user_page.rs:691
+#: src/components/user_page.rs:689
 msgid "Identity verified"
 msgstr "身份已验证"
 
-#: src/components/user_page.rs:698
+#: src/components/user_page.rs:696
 msgid "Identity not verified"
 msgstr "身份未验证"
 
-#: src/components/user_page.rs:714
+#: src/components/user_page.rs:712
 msgid "Could not start user verification"
 msgstr "无法开始用户验证"
 
-#: src/components/user_page.rs:740
+#: src/components/user_page.rs:738
 msgid "Ignored"
 msgstr "已忽略"
 
-#: src/components/user_page.rs:742
+#: src/components/user_page.rs:740
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "停止忽略"
 
-#: src/components/user_page.rs:745
+#: src/components/user_page.rs:743
 msgid "Not Ignored"
 msgstr "未忽略"
 
-#: src/components/user_page.rs:746
+#: src/components/user_page.rs:744
 msgid "Ignore"
 msgstr "忽略"
 
-#: src/components/user_page.rs:763
+#: src/components/user_page.rs:761
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
-#: src/session/view/content/room_history/sender_avatar/mod.rs:760
+#: src/session/view/content/room_history/sender_avatar/mod.rs:756
 msgid "Could not stop ignoring user"
 msgstr "无法停止忽略用户"
 
-#: src/components/user_page.rs:766
-#: src/session/view/content/room_history/sender_avatar/mod.rs:763
+#: src/components/user_page.rs:764
+#: src/session/view/content/room_history/sender_avatar/mod.rs:759
 msgid "Could not ignore user"
 msgstr "无法忽略用户"
 
@@ -792,13 +1028,6 @@ msgstr "角色"
 #: src/components/user_page.ui:128
 msgid "Power Level"
 msgstr "权力等级"
-
-#. Translators: As in, 'Ban room member'.
-#: src/components/user_page.ui:170
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
-#: src/utils/message_dialog.rs:92
-msgid "Ban"
-msgstr "封禁"
 
 #. Translators: As in, 'Unban room member'.
 #: src/components/user_page.ui:182
@@ -821,10 +1050,6 @@ msgstr "安全"
 #: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
 msgstr "验证"
-
-#: src/components/user_profile_dialog.ui:4
-msgid "User Profile"
-msgstr "用户配置"
 
 #: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
 msgid "Could Not Connect to Camera"
@@ -926,12 +1151,6 @@ msgstr "无法拒绝验证请求"
 #: src/identity_verification_view/accept_request_page.rs:176
 msgid "Could not accept verification request"
 msgstr "无法接受验证请求"
-
-#: src/identity_verification_view/accept_request_page.ui:47
-#: src/session/view/content/room_history/verification_info_bar.rs:166
-#: src/utils/message_dialog.rs:27
-msgid "Decline"
-msgstr "拒绝"
 
 #: src/identity_verification_view/cancelled_page.rs:134
 msgid "The verification was cancelled from the other session."
@@ -1085,22 +1304,6 @@ msgstr "确认扫描"
 #: src/identity_verification_view/confirm_qr_code_page.ui:47
 msgid "Confirm"
 msgstr "确认"
-
-#: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:280
-#: src/session/view/content/room_details/general_page/mod.rs:525
-#: src/session/view/content/room_details/general_page/mod.rs:1299
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:588
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:774
-#: src/session/view/content/room_history/item_row.rs:831
-#: src/session/view/content/room_history/message_toolbar/mod.ui:78
-#: src/session/view/content/room_history/message_toolbar/mod.ui:80
-#: src/session/view/content/room_history/verification_info_bar.rs:170
-#: src/utils/message_dialog.rs:51 src/utils/message_dialog.rs:259
-#: src/utils/message_dialog.rs:317 src/utils/message_dialog.rs:352
-msgid "Cancel"
-msgstr "取消"
 
 #: src/identity_verification_view/mod.ui:14
 msgid "New Identity Verification Request"
@@ -1753,7 +1956,7 @@ msgid ""
 "your recovery key or passphrase, or to backup your encryption keys before "
 "logging out."
 msgstr ""
-"这是您最后一次连接的会话。确保您还能访问恢复密钥或者密语，或者尝试在登出时备"
+"这是您最后一次连接的会话。确保您还能访问恢复密钥或者口令，或者尝试在登出时备"
 "份加密密钥。"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
@@ -1801,13 +2004,6 @@ msgstr "移除头像吗？"
 #: src/session/view/account_settings/general_page/mod.rs:277
 msgid "Do you really want to remove your avatar?"
 msgstr "您确定想要移除您的头像吗？"
-
-#: src/session/view/account_settings/general_page/mod.rs:281
-#: src/session/view/content/room_details/general_page/mod.rs:526
-#: src/session/view/content/room_history/item_row.rs:775
-#: src/utils/message_dialog.rs:181
-msgid "Remove"
-msgstr "移除"
 
 #: src/session/view/account_settings/general_page/mod.rs:315
 #: src/session/view/content/room_details/general_page/mod.rs:552
@@ -2035,7 +2231,7 @@ msgstr "无法访问文件"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:261
 msgid "Passphrases do not match"
-msgstr "密语不匹配"
+msgstr "口令不匹配"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:333
 msgid "Room encryption keys exported successfully"
@@ -2060,11 +2256,11 @@ msgstr "无法导入该密钥"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:61
 msgid "Passphrase"
-msgstr "密语"
+msgstr "口令"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:81
 msgid "Confirm Passphrase"
-msgstr "确认密语"
+msgstr "确认口令"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.ui:116
 #: src/session/view/content/room_details/history_viewer/file.ui:4
@@ -2360,19 +2556,19 @@ msgstr "移除服务器"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/invite.rs:83 src/utils/matrix.rs:248
+#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:248
 msgid "{user} invited you"
 msgstr "{user} 邀请了您"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:209
+#: src/session/view/content/invite.rs:208
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "无法接受 {room} 的邀请。请稍后重试。"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:242
+#: src/session/view/content/invite.rs:241
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "无法拒绝 {room} 的邀请。请稍后重试。"
 
@@ -2945,7 +3141,7 @@ msgstr "切换聊天室成员搜索"
 msgid "Search for room members"
 msgstr "搜索聊天室成员"
 
-#: src/session/view/content/room_details/members_page/mod.rs:84
+#: src/session/view/content/room_details/members_page/mod.rs:85
 msgid "The user is not in the room members list anymore"
 msgstr "该用户不再在聊天室成员列表中"
 
@@ -3230,7 +3426,7 @@ msgstr "新消息"
 
 #: src/session/view/content/room_history/item_row.rs:475
 #: src/session/view/content/room_history/mod.rs:586
-#: src/session/view/content/room_history/sender_avatar/mod.rs:103
+#: src/session/view/content/room_history/sender_avatar/mod.rs:99
 #: src/session/view/media_viewer.rs:518
 msgid "Permalink copied to clipboard"
 msgstr "永久链接已复制到剪贴板"
@@ -3264,11 +3460,6 @@ msgstr "无法移除消息"
 #: src/session/view/content/room_history/item_row.rs:798
 msgid "Could not toggle reaction"
 msgstr "无法切换回应"
-
-#: src/session/view/content/room_history/item_row.rs:813
-#: src/utils/message_dialog.rs:208
-msgid "Reason (optional)"
-msgstr "原因（可选）"
 
 #: src/session/view/content/room_history/item_row.rs:824
 msgid "Report Event?"
@@ -3313,18 +3504,18 @@ msgstr "无法找回音频文件"
 msgid "Error reading audio file"
 msgstr "读取音频文件时出错"
 
-#: src/session/view/content/room_history/message_row/content.rs:346
-#: src/session/view/content/room_history/message_row/content.rs:388
+#: src/session/view/content/room_history/message_row/content.rs:351
+#: src/session/view/content/room_history/message_row/content.rs:393
 msgid "Unsupported event"
 msgstr "不支持的事件"
 
-#: src/session/view/content/room_history/message_row/content.rs:367
+#: src/session/view/content/room_history/message_row/content.rs:372
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
 msgstr "无法解密该消息，但将在密钥可用时重试。"
 
-#: src/session/view/content/room_history/message_row/content.rs:377
+#: src/session/view/content/room_history/message_row/content.rs:382
 msgid "This message was removed."
 msgstr "该消息已被移除。"
 
@@ -3399,7 +3590,7 @@ msgstr "已发送"
 msgid "Edited"
 msgstr "已编辑"
 
-#: src/session/view/content/room_history/message_row/mod.rs:242
+#: src/session/view/content/room_history/message_row/mod.rs:240
 msgid "Sent at {time}"
 msgstr "在 {time} 发送"
 
@@ -3563,7 +3754,7 @@ msgstr "无法离开 {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:573
-#: src/session/view/sidebar/row.rs:490
+#: src/session/view/sidebar/row.rs:492
 msgid "Could not forget {room}"
 msgstr "无法忘记 {room}"
 
@@ -3705,74 +3896,74 @@ msgstr[0] "{n} 个成员已阅"
 msgid "Seen by {name}"
 msgstr "{name} 已阅"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:271
+#: src/session/view/content/room_history/sender_avatar/mod.rs:267
 msgid "{user}’s avatar"
 msgstr "{user} 的头像"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:512
+#: src/session/view/content/room_history/sender_avatar/mod.rs:508
 msgid "Creating a new Direct Chat…"
 msgstr "正在创建新的直接聊天…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:536
+#: src/session/view/content/room_history/sender_avatar/mod.rs:532
 msgid "Inviting user…"
 msgstr "正在邀请用户…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:564
+#: src/session/view/content/room_history/sender_avatar/mod.rs:560
 msgid "Revoking invite…"
 msgstr "正在撤消邀请…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:565
+#: src/session/view/content/room_history/sender_avatar/mod.rs:561
 msgid "Denying access…"
 msgstr "正在拒绝访问…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:566
+#: src/session/view/content/room_history/sender_avatar/mod.rs:562
 msgid "Kicking user…"
 msgstr "正在踢出用户…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:601
+#: src/session/view/content/room_history/sender_avatar/mod.rs:597
 msgid "Muting member…"
 msgstr "正在禁言成员…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:604
+#: src/session/view/content/room_history/sender_avatar/mod.rs:600
 msgid "Unmuting member…"
 msgstr "正在解除禁言成员…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:614
+#: src/session/view/content/room_history/sender_avatar/mod.rs:610
 msgid "Member muted"
 msgstr "成员已被禁言"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:616
+#: src/session/view/content/room_history/sender_avatar/mod.rs:612
 msgid "Member unmuted"
 msgstr "成员已被解除禁言"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:621
+#: src/session/view/content/room_history/sender_avatar/mod.rs:617
 msgid "Could not mute member"
 msgstr "无法禁言成员"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:623
+#: src/session/view/content/room_history/sender_avatar/mod.rs:619
 msgid "Could not unmute member"
 msgstr "无法解除禁言成员"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:652
+#: src/session/view/content/room_history/sender_avatar/mod.rs:648
 msgid "Banning user…"
 msgstr "正在封禁用户…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:676
+#: src/session/view/content/room_history/sender_avatar/mod.rs:672
 msgid "Unbanning user…"
 msgstr "正在解封用户…"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:719
+#: src/session/view/content/room_history/sender_avatar/mod.rs:715
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "正在移除由该用户发送的 {n} 条消息…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:752
+#: src/session/view/content/room_history/sender_avatar/mod.rs:748
 msgid "Stop ignoring user…"
 msgstr "停止忽略用户…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:754
+#: src/session/view/content/room_history/sender_avatar/mod.rs:750
 msgid "Ignoring user…"
 msgstr "正在忽略用户…"
 
@@ -4289,7 +4480,7 @@ msgid "Direct chat with {name}"
 msgstr "与 {name} 的直接聊天"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:475
+#: src/session/view/sidebar/row.rs:477
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "无法将 {room} 从 {previous_category} 移至 {new_category}"
 
@@ -4429,193 +4620,6 @@ msgstr "文件"
 #: src/utils/media.rs:210
 msgid "Could not save file"
 msgstr "无法保存文件"
-
-#. We are rejecting an invite.
-#: src/utils/message_dialog.rs:19
-msgid "Decline Invite?"
-msgstr "拒绝邀请吗？"
-
-#: src/utils/message_dialog.rs:21
-msgid ""
-"Do you really want to decline this invite? You can join this room on your "
-"own later."
-msgstr "您确定想要拒绝该邀请吗？您可以随后自行加入该聊天室。"
-
-#: src/utils/message_dialog.rs:24
-msgid ""
-"Do you really want to decline this invite? You will not be able to join this "
-"room without it."
-msgstr "您确定想要拒绝该邀请吗？您将无法在未受邀请的情况下加入该聊天室。"
-
-#. We are leaving a room that was joined.
-#: src/utils/message_dialog.rs:32
-msgid "Leave Room?"
-msgstr "离开聊天室吗？"
-
-#: src/utils/message_dialog.rs:34
-msgid "Do you really want to leave this room? You can come back later."
-msgstr "您确定想要离开该聊天室吗？您可以随后再回来。"
-
-#: src/utils/message_dialog.rs:37
-msgid ""
-"Do you really want to leave this room? You will not be able to come back "
-"without an invitation."
-msgstr "您确定想要离开该聊天室吗？您将无法在未受邀请的情况下回来。"
-
-#: src/utils/message_dialog.rs:40
-msgid "Leave"
-msgstr "离开"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:85
-msgid "Ban {user}?"
-msgstr "封禁 {user}？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:89
-msgid ""
-"Are you sure you want to ban {user_id}? They will not be able to join the "
-"room again until someone unbans them."
-msgstr "您确定想要封禁 {user_id} 吗？他们在被解封之前将无法再次加入该聊天室。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:103
-msgid "Revoke Invite for {user}?"
-msgstr "撤消邀请 {user}？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:110
-msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will still be "
-"able to join the room on their own."
-msgstr "您确定想要撤消对 {user_id} 的邀请吗？他们仍将可以自行加入该聊天室。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:117
-msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will not be "
-"able to join the room again until someone reinvites them."
-msgstr ""
-"您确定想要撤消对 {user_id} 的邀请吗？他们在收到重新邀请前将无法再次加入该聊天"
-"室。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:128
-msgid "Deny Access to {user}?"
-msgstr "拒绝 {user} 的访问吗？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:134
-msgid "Are you sure you want to deny access to {user_id}?"
-msgstr "您确定想要拒绝 {user_id} 的访问吗？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:143
-msgid "Kick {user}?"
-msgstr "踢出 {user}？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:148
-msgid ""
-"Are you sure you want to kick {user_id}? They will still be able to join the "
-"room again on their own."
-msgstr "您确定想要踢出 {user_id} 吗？他们仍将可以自行再次加入该聊天室。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:155
-msgid ""
-"Are you sure you want to kick {user_id}? They will not be able to join the "
-"room again until someone invites them."
-msgstr "您确定想要踢出 {user_id} 吗？他们在收到邀请前将无法再次加入该聊天室。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:170
-msgid "Remove Messages Sent by {user}?"
-msgstr "移除由 {user} 发送的消息吗？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:176
-msgid ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove 1 message sent by {user_id}? This cannot be undone."
-msgid_plural ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove {n} messages sent by {user_id}? This cannot be undone."
-msgstr[0] ""
-"这将移除所有从该主服务器接收的消息。您确定想要移除由 {user_id} 发送的 {n} 条"
-"消息吗？该操作无法撤消。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:187
-msgid "No Messages Sent by {user}"
-msgstr "{user} 无发送的消息"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:193
-msgid ""
-"There are no messages received from the homeserver sent by {user_id}. You "
-"can try to load more by going further back in the room history."
-msgstr ""
-"没有从该主服务器接收的由 {user_id} 发送的消息。您可以尝试在聊天室历史中回溯更"
-"早来加载更多历史。"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:232
-msgid "Remove the latest message sent by the user"
-msgid_plural "Remove the {n} latest messages sent by the user"
-msgstr[0] "移除由该用户发送的 {n} 条最新消息"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:300
-msgid "Mute {user}?"
-msgstr "禁言 {user} 吗？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:306
-msgid ""
-"Are you sure you want to mute {user_id}? They will not be able to send new "
-"messages."
-msgstr "您确定想要禁言 {user_id} 吗？他们将不能发送新消息。"
-
-#. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
-#: src/utils/message_dialog.rs:319
-msgid "Mute"
-msgstr "禁言"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:335
-msgid "Promote {user}?"
-msgstr "晋升 {user} 吗？"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:341
-msgid ""
-"If you promote {user_id} to the same level as yours, you will not be able to "
-"demote them in the future."
-msgstr "如果您将 {user_id} 晋升至与您相同的级别，未来您将不能再降级他们。"
-
-#: src/utils/message_dialog.rs:353
-msgid "Promote"
-msgstr "晋升"
 
 #: src/window.ui:66
 msgid "Session"
