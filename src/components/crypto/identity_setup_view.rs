@@ -28,6 +28,8 @@ enum CryptoIdentitySetupPage {
     Verify,
     /// Bootstrap cross-signing.
     Bootstrap,
+    /// Reset cross-signing.
+    Reset,
     /// Use recovery or reset cross-signing and recovery.
     Recovery,
 }
@@ -65,13 +67,9 @@ mod imp {
         #[template_child]
         pub verification_page: TemplateChild<IdentityVerificationView>,
         #[template_child]
-        pub bootstrap_title: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub bootstrap_description_1: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub bootstrap_description_2: TemplateChild<gtk::Label>,
-        #[template_child]
         pub bootstrap_btn: TemplateChild<LoadingButton>,
+        #[template_child]
+        pub reset_btn: TemplateChild<gtk::Button>,
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
@@ -136,6 +134,7 @@ mod imp {
                 CryptoIdentitySetupPage::ChooseMethod => self.send_request_btn.grab_focus(),
                 CryptoIdentitySetupPage::Verify => self.verification_page.grab_focus(),
                 CryptoIdentitySetupPage::Bootstrap => self.bootstrap_btn.grab_focus(),
+                CryptoIdentitySetupPage::Reset => self.reset_btn.grab_focus(),
                 CryptoIdentitySetupPage::Recovery => self.recovery_view().grab_focus(),
             }
         }
@@ -160,7 +159,7 @@ mod imp {
                     .session
                     .upgrade()
                     .expect("Session should still have a strong reference");
-                let recovery_view = CryptoRecoverySetupView::new(&session, true);
+                let recovery_view = CryptoRecoverySetupView::new(&session);
 
                 let obj = self.obj();
                 recovery_view.connect_completed(clone!(@weak obj => move |_| {
@@ -201,14 +200,11 @@ mod imp {
                 return;
             };
 
-            // Initialize bootstrap/reset page.
-            self.update_bootstrap();
-
             // If the session is already verified, offer to reset it.
             let verification_state = session.verification_state();
             if verification_state == SessionVerificationState::Verified {
                 self.navigation
-                    .replace_with_tags(&[CryptoIdentitySetupPage::Bootstrap.as_ref()]);
+                    .replace_with_tags(&[CryptoIdentitySetupPage::Reset.as_ref()]);
                 return;
             }
 
@@ -224,15 +220,14 @@ mod imp {
 
             // If there is no other session available, we can only use recovery or reset.
             if crypto_identity_state == CryptoIdentityState::LastManStanding {
-                // If recovery is disabled, we can only reset.
-                if recovery_state == RecoveryState::Disabled {
-                    self.navigation
-                        .replace_with_tags(&[CryptoIdentitySetupPage::Bootstrap.as_ref()]);
-                    return;
-                }
+                let recovery_view = if recovery_state == RecoveryState::Disabled {
+                    // If recovery is disabled, we can only reset.
+                    self.recovery_page(CryptoRecoverySetupInitialPage::Reset)
+                } else {
+                    // We can recover or reset.
+                    self.recovery_page(CryptoRecoverySetupInitialPage::Recover)
+                };
 
-                // We can recover or reset.
-                let recovery_view = self.recovery_page(CryptoRecoverySetupInitialPage::Recover);
                 self.navigation.replace(&[recovery_view]);
 
                 return;
@@ -254,50 +249,6 @@ mod imp {
 
             let can_recover = session.recovery_state() != RecoveryState::Disabled;
             self.use_recovery_btn.set_visible(can_recover);
-        }
-
-        /// Update the cross-signing bootstrap page for the current state.
-        fn update_bootstrap(&self) {
-            let Some(session) = self.session.upgrade() else {
-                return;
-            };
-
-            let reset = session.crypto_identity_state() != CryptoIdentityState::Missing;
-
-            let title = &self.bootstrap_title;
-            let description_1 = &self.bootstrap_description_1;
-            let description_2 = &self.bootstrap_description_2;
-            let setup_btn = &self.bootstrap_btn;
-
-            if reset {
-                title.set_label(&gettext("Reset Crypto Identity"));
-                description_2.set_label(&gettext(
-                    "This will invalidate the verifications of all users and sessions.",
-                ));
-                setup_btn.remove_css_class("suggested-action");
-                setup_btn.add_css_class("destructive-action");
-                setup_btn.set_content_label(gettext("Reset"));
-
-                let is_verified =
-                    session.verification_state() == SessionVerificationState::Verified;
-                let label = if is_verified {
-                    gettext("You should reset your crypto identity if a device that does not belong to you managed to be verified.")
-                } else {
-                    gettext("Since no other sessions are available to verify this device and account recovery cannot be used, you need to reset your crypto identity.")
-                };
-                description_1.set_label(&label);
-            } else {
-                title.set_label(&gettext("Set Up Crypto Identity"));
-                description_1.set_label(&gettext(
-                    "You need to set up a crypto identity, since it has never been created.",
-                ));
-                description_2.set_label(&gettext(
-                    "Your crypto identity allows you to verify other Matrix accounts and automatically trust their verified sessions.",
-                ));
-                setup_btn.add_css_class("suggested-action");
-                setup_btn.remove_css_class("destructive-action");
-                setup_btn.set_content_label(gettext("Set Up"));
-            }
         }
 
         /// Set the ongoing identity verification.

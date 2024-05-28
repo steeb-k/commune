@@ -8,7 +8,7 @@ use matrix_sdk::encryption::{
 use tracing::{debug, error};
 
 use crate::{
-    components::{AuthDialog, AuthError, LoadingButton},
+    components::{AuthDialog, AuthError, LoadingButton, SwitchLoadingRow},
     session::model::{RecoveryState, Session},
     spawn_tokio, toast,
 };
@@ -44,8 +44,6 @@ pub enum CryptoRecoverySetupInitialPage {
 }
 
 mod imp {
-    use std::cell::Cell;
-
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
 
@@ -64,9 +62,9 @@ mod imp {
         #[template_child]
         pub reset_page: TemplateChild<adw::NavigationPage>,
         #[template_child]
-        pub reset_title: TemplateChild<gtk::Label>,
+        pub reset_identity_row: TemplateChild<SwitchLoadingRow>,
         #[template_child]
-        pub reset_description: TemplateChild<gtk::Label>,
+        pub reset_backup_row: TemplateChild<SwitchLoadingRow>,
         #[template_child]
         pub reset_entry: TemplateChild<adw::PasswordEntryRow>,
         #[template_child]
@@ -90,9 +88,6 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, construct_only)]
         pub session: glib::WeakRef<Session>,
-        /// Whether resetting should also reset the crypto identity.
-        #[property(get, set = Self::set_reset_identity, construct_only)]
-        pub reset_identity: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -163,27 +158,45 @@ mod imp {
                 RecoveryState::Incomplete => CryptoRecoverySetupInitialPage::Recover,
             };
 
+            self.update_reset();
             self.set_initial_page(initial_page);
         }
 
-        /// Set whether resetting should also reset the crypto identity.
-        fn set_reset_identity(&self, reset: bool) {
-            self.reset_identity.set(reset);
-
-            let title = if reset {
-                gettext("Reset Crypto Identity and Account Recovery Key")
-            } else {
-                gettext("Reset Account Recovery Key")
+        /// Update the reset page for the current state.
+        pub(super) fn update_reset(&self) {
+            let Some(session) = self.session.upgrade() else {
+                return;
             };
-            self.reset_title.set_label(&title);
-            self.reset_page.set_title(&title);
 
-            let description = if reset {
-                gettext("This will invalidate the verifications of all users and sessions, and you might not be able to read your encrypted messages anymore.")
+            let (required, description) = if session.cross_signing_keys_available() {
+                (
+                    false,
+                    gettext("Invalidates the verifications of all users and sessions"),
+                )
             } else {
-                gettext("You might not be able to read your encrypted messages anymore.")
+                (
+                    true,
+                    gettext("Required because the crypto identity in the recovery data is incomplete. Invalidates the verifications of all users and sessions."),
+                )
             };
-            self.reset_description.set_label(&description);
+            self.reset_identity_row.set_read_only(required);
+            self.reset_identity_row.set_is_active(required);
+            self.reset_identity_row.set_subtitle(&description);
+
+            let (required, description) = if session.backup_enabled() {
+                (
+                    false,
+                    gettext("You might not be able to read your past encrypted messages anymore"),
+                )
+            } else {
+                (
+                    true,
+                    gettext("Required because the backup is not set up properly. You might not be able to read your past encrypted messages anymore."),
+                )
+            };
+            self.reset_backup_row.set_read_only(required);
+            self.reset_backup_row.set_is_active(required);
+            self.reset_backup_row.set_subtitle(&description);
         }
 
         /// Set the initial page of this view.
@@ -218,11 +231,8 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl CryptoRecoverySetupView {
-    pub fn new(session: &Session, reset_identity: bool) -> Self {
-        glib::Object::builder()
-            .property("session", session)
-            .property("reset-identity", reset_identity)
-            .build()
+    pub fn new(session: &Session) -> Self {
+        glib::Object::builder().property("session", session).build()
     }
 
     /// Set the initial page of this view.
@@ -294,24 +304,32 @@ impl CryptoRecoverySetupView {
         imp.recover_btn.set_is_loading(false);
     }
 
-    /// Reset recovery and optionally cross-signing.
+    /// Reset recovery and optionally cross-signing and room keys backup.
     #[template_callback]
     async fn reset(&self) {
         let imp = self.imp();
 
         imp.reset_btn.set_is_loading(true);
 
-        if self.reset_identity() && self.bootstrap_cross_signing().await.is_err() {
+        let reset_identity = imp.reset_identity_row.is_active();
+        if reset_identity && self.bootstrap_cross_signing().await.is_err() {
             imp.reset_btn.set_is_loading(false);
             return;
         }
 
         let passphrase = imp.reset_entry.text();
-        self.reset_recovery(passphrase).await;
+
+        let reset_backup = imp.reset_backup_row.is_active();
+        if reset_backup {
+            self.reset_backup_and_recovery(passphrase).await;
+        } else {
+            self.reset_recovery(passphrase).await;
+        }
 
         imp.reset_btn.set_is_loading(false);
     }
 
+    /// Reset the cross-signing identity.
     async fn bootstrap_cross_signing(&self) -> Result<(), ()> {
         let Some(session) = self.session() else {
             return Err(());
@@ -332,13 +350,62 @@ impl CryptoRecoverySetupView {
                 Err(())
             }
             Err(error) => {
-                error!("Could not bootstrap cross-signing: {error:?}");
-                toast!(self, gettext("Could not create the crypto identity",));
+                error!("Could not bootstrap cross-signing: {error}");
+                toast!(self, gettext("Could not reset the crypto identity"));
                 Err(())
             }
         }
     }
 
+    /// Reset the room keys backup and the account recovery key.
+    async fn reset_backup_and_recovery(&self, passphrase: glib::GString) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let passphrase = Some(passphrase).filter(|s| !s.is_empty());
+        let has_passphrase = passphrase.is_some();
+
+        let encryption = session.client().encryption();
+
+        // There is no method to reset the room keys backup, so we need to disable
+        // recovery and re-enable it.
+        let recovery = encryption.recovery();
+        let handle = spawn_tokio!(async move { recovery.disable().await });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not disable recovery: {error}");
+            toast!(self, gettext("Could not reset account recovery"));
+            return;
+        }
+
+        let recovery = encryption.recovery();
+        let handle = spawn_tokio!(async move {
+            let mut enable = recovery.enable();
+            if let Some(passphrase) = passphrase.as_deref() {
+                enable = enable.with_passphrase(passphrase);
+            }
+
+            enable.await
+        });
+
+        match handle.await.unwrap() {
+            Ok(key) => {
+                let imp = self.imp();
+                let key = if has_passphrase { None } else { Some(key) };
+
+                imp.update_success(key);
+                imp.navigation
+                    .push_by_tag(CryptoRecoverySetupPage::Success.as_ref());
+            }
+            Err(error) => {
+                error!("Could not re-enable account recovery: {error}");
+                toast!(self, gettext("Could not reset account recovery"));
+            }
+        }
+    }
+
+    /// Reset the account recovery key.
     async fn reset_recovery(&self, passphrase: glib::GString) {
         let Some(session) = self.session() else {
             return;
@@ -428,6 +495,15 @@ impl CryptoRecoverySetupView {
     #[template_callback]
     fn emit_completed(&self) {
         self.emit_by_name::<()>("completed", &[]);
+    }
+
+    // Show the reset page, after updating it.
+    #[template_callback]
+    fn show_reset(&self) {
+        let imp = self.imp();
+        imp.update_reset();
+        imp.navigation
+            .push_by_tag(CryptoRecoverySetupPage::Reset.as_ref());
     }
 
     /// Connect to the signal emitted when the recovery was successfully

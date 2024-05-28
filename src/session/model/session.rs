@@ -177,6 +177,12 @@ mod imp {
         /// The state of recovery for this session.
         #[property(get, builder(RecoveryState::default()))]
         pub recovery_state: Cell<RecoveryState>,
+        /// Whether all the cross-signing keys are available.
+        #[property(get)]
+        pub cross_signing_keys_available: Cell<bool>,
+        /// Whether the room keys backup is enabled.
+        #[property(get)]
+        pub backup_enabled: Cell<bool>,
         pub sync_handle: RefCell<Option<AbortHandle>>,
         pub abort_handles: RefCell<Vec<AbortHandle>>,
         pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
@@ -279,6 +285,26 @@ mod imp {
 
             self.recovery_state.set(state);
             self.obj().notify_recovery_state();
+        }
+
+        /// Set whether all the cross-signing keys are available.
+        pub(super) fn set_cross_signing_keys_available(&self, available: bool) {
+            if self.cross_signing_keys_available.get() == available {
+                return;
+            }
+
+            self.cross_signing_keys_available.set(available);
+            self.obj().notify_cross_signing_keys_available();
+        }
+
+        /// Set whether the room keys backup is enabled.
+        pub(super) fn set_backup_enabled(&self, enabled: bool) {
+            if self.backup_enabled.get() == enabled {
+                return;
+            }
+
+            self.backup_enabled.set(enabled);
+            self.obj().notify_backup_enabled();
         }
     }
 }
@@ -584,7 +610,7 @@ impl Session {
                 ctx.spawn(async move {
                     spawn!(async move {
                         if let Some(obj) = obj_weak.upgrade() {
-                            obj.imp().set_recovery_state(state.into());
+                            obj.update_recovery_state(state.into()).await;
                         }
                     });
                 });
@@ -593,6 +619,33 @@ impl Session {
 
         let abort_handle = spawn_tokio!(fut).abort_handle();
         self.imp().abort_handles.borrow_mut().push(abort_handle);
+    }
+
+    /// Update the session for the given recovery state.
+    async fn update_recovery_state(&self, state: RecoveryState) {
+        let imp = self.imp();
+
+        match state {
+            RecoveryState::Enabled => {
+                imp.set_cross_signing_keys_available(true);
+                imp.set_backup_enabled(true);
+            }
+            _ => {
+                let encryption = self.client().encryption();
+                let backups = encryption.backups();
+
+                let handle = spawn_tokio!(async move { encryption.cross_signing_status().await });
+                let cross_signing_keys_available =
+                    handle.await.unwrap().is_some_and(|s| s.is_complete());
+                imp.set_cross_signing_keys_available(cross_signing_keys_available);
+
+                let handle = spawn_tokio!(async move { backups.are_enabled().await });
+                let backup_enabled = handle.await.unwrap();
+                imp.set_backup_enabled(backup_enabled);
+            }
+        }
+
+        imp.set_recovery_state(state);
     }
 
     /// Start listening to notifications.

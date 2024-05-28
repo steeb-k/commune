@@ -178,7 +178,7 @@ impl AccountSettings {
                 page
             }
             AccountSettingsSubpage::RecoverySetup => {
-                let view = CryptoRecoverySetupView::new(&session, false);
+                let view = CryptoRecoverySetupView::new(&session);
                 view.connect_completed(clone!(@weak self as obj => move |_| {
                     obj.pop_subpage();
                 }));

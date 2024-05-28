@@ -141,7 +141,7 @@ mod imp {
                     .session
                     .upgrade()
                     .expect("Session should still have a strong reference");
-                let recovery_view = CryptoRecoverySetupView::new(&session, false);
+                let recovery_view = CryptoRecoverySetupView::new(&session);
 
                 let obj = self.obj();
                 recovery_view.connect_completed(clone!(@weak obj => move |_| {

@@ -116,6 +116,7 @@
         <child>
           <object class="AdwNavigationPage" id="reset_page">
             <property name="tag">reset</property>
+            <property name="title" translatable="yes">Reset Account Recovery</property>
             <signal name="shown" handler="grab_focus" swapped="yes" />
             <property name="child">
               <object class="AdwToolbarView">
@@ -140,7 +141,8 @@
                             <property name="valign">center</property>
                             <property name="halign">center</property>
                             <child>
-                              <object class="GtkLabel" id="reset_title">
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Reset Account Recovery</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
@@ -150,10 +152,28 @@
                               </object>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="reset_description">
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Resetting account recovery can allow you to fix or reset part or all of your recovery setup.</property>
                                 <property name="wrap">True</property>
                                 <property name="wrap-mode">word-char</property>
                                 <property name="justify">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkListBox">
+                                <style>
+                                  <class name="boxed-list" />
+                                </style>
+                                <child>
+                                  <object class="SwitchLoadingRow" id="reset_identity_row">
+                                    <property name="title" translatable="yes">Reset Crypto Identity</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="SwitchLoadingRow" id="reset_backup_row">
+                                    <property name="title" translatable="yes">Reset Room Encryption Keys Backup</property>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                             <child>
@@ -475,6 +495,25 @@
                                 <signal name="clicked" handler="emit_completed" swapped="yes" />
                                 <style>
                                   <class name="suggested-action"/>
+                                  <class name="pill"/>
+                                </style>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Alternatively, you can reset Account Recovery</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="justify">center</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkButton">
+                                <property name="can-shrink">true</property>
+                                <property name="label" translatable="yes">Reset</property>
+                                <property name="halign">center</property>
+                                <signal name="clicked" handler="show_reset" swapped="yes" />
+                                <style>
                                   <class name="pill"/>
                                 </style>
                               </object>
