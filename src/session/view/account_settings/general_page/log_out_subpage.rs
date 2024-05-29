@@ -26,6 +26,8 @@ mod imp {
         #[property(get, set = Self::set_session, nullable)]
         pub session: glib::WeakRef<Session>,
         #[template_child]
+        pub stack: TemplateChild<gtk::Stack>,
+        #[template_child]
         pub warning_box: TemplateChild<gtk::Box>,
         #[template_child]
         pub warning_description: TemplateChild<gtk::Label>,
@@ -33,6 +35,10 @@ mod imp {
         pub warning_button: TemplateChild<gtk::Button>,
         #[template_child]
         pub logout_button: TemplateChild<LoadingButton>,
+        #[template_child]
+        pub try_again_button: TemplateChild<LoadingButton>,
+        #[template_child]
+        pub remove_button: TemplateChild<LoadingButton>,
     }
 
     #[glib::object_subclass]
@@ -64,6 +70,7 @@ mod imp {
 
             self.update_warning();
         }
+
         /// Update the warning.
         fn update_warning(&self) {
             let Some(session) = self.session.upgrade() else {
@@ -129,14 +136,46 @@ impl LogOutSubpage {
         };
 
         let imp = self.imp();
-        imp.logout_button.set_is_loading(true);
-        imp.warning_button.set_sensitive(false);
+        let is_logout_page = imp
+            .stack
+            .visible_child_name()
+            .is_some_and(|name| name == "logout");
 
-        if let Err(error) = session.logout().await {
-            toast!(self, error);
+        if is_logout_page {
+            imp.logout_button.set_is_loading(true);
+            imp.warning_button.set_sensitive(false);
+        } else {
+            imp.try_again_button.set_is_loading(true);
         }
 
-        imp.logout_button.set_is_loading(false);
-        imp.warning_button.set_sensitive(true);
+        if let Err(error) = session.logout().await {
+            if is_logout_page {
+                imp.stack.set_visible_child_name("failed");
+            } else {
+                toast!(self, error);
+            }
+        }
+
+        if is_logout_page {
+            imp.logout_button.set_is_loading(false);
+            imp.warning_button.set_sensitive(true);
+        } else {
+            imp.try_again_button.set_is_loading(false);
+        }
+    }
+
+    /// Remove the current session.
+    #[template_callback]
+    async fn remove(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+
+        let imp = self.imp();
+        imp.remove_button.set_is_loading(true);
+
+        session.clean_up().await;
+
+        imp.remove_button.set_is_loading(false);
     }
 }

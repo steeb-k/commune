@@ -870,7 +870,7 @@ impl Session {
 
         match handle.await.unwrap() {
             Ok(_) => {
-                self.cleanup_session().await;
+                self.clean_up().await;
 
                 Ok(())
             }
@@ -892,13 +892,13 @@ impl Session {
         spawn!(
             glib::Priority::LOW,
             clone!(@strong self as obj => async move {
-                obj.cleanup_session().await;
+                obj.clean_up().await;
             })
         );
     }
 
     /// Clean up this session after it was logged out.
-    async fn cleanup_session(&self) {
+    pub async fn clean_up(&self) {
         let imp = self.imp();
 
         self.set_state(SessionState::LoggedOut);

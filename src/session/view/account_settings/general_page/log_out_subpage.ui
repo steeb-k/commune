@@ -4,79 +4,156 @@
     <style>
       <class name="form-page"/>
     </style>
-    <property name="title" translatable="yes">Log Out of This Session</property>
+    <property name="title" translatable="yes">Log Out</property>
     <property name="child">
-      <object class="AdwToolbarView">
-        <child type="top">
-          <object class="AdwHeaderBar"/>
-        </child>
-        <property name="content">
-          <object class="GtkScrolledWindow" id="scrolled_window">
-            <property name="hscrollbar-policy">never</property>
-            <property name="propagate-natural-height">True</property>
-            <property name="vexpand">True</property>
+      <object class="GtkStack" id="stack">
+        <property name="transition-type">slide-left</property>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">logout</property>
+            <property name="title" translatable="yes">Log Out of This Session</property>
             <property name="child">
-              <object class="AdwClamp">
-                <property name="maximum-size">444</property>
-                <property name="child">
-                  <object class="GtkBox" id="box">
-                    <property name="orientation">vertical</property>
-                    <child>
-                      <object class="GtkImage">
-                        <style>
-                          <class name="extra-large-icon"/>
-                          <class name="error"/>
-                        </style>
-                        <property name="icon-name">warning-symbolic</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="label" translatable="yes">Are you sure you want to log out of this session?</property>
-                        <property name="wrap">True</property>
-                        <property name="wrap-mode">word-char</property>
-                        <property name="xalign">0.0</property>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="GtkBox" id="warning_box">
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">24</property>
-                        <child>
-                          <object class="GtkLabel" id="warning_description">
-                            <property name="wrap">True</property>
-                            <property name="wrap-mode">word-char</property>
-                            <property name="xalign">0.0</property>
+              <object class="AdwToolbarView">
+                <child type="top">
+                  <object class="AdwHeaderBar"/>
+                </child>
+                <property name="content">
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="propagate-natural-height">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="child">
+                      <object class="AdwClamp">
+                        <property name="maximum-size">444</property>
+                        <property name="child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkImage">
+                                <style>
+                                  <class name="extra-large-icon"/>
+                                  <class name="error"/>
+                                </style>
+                                <property name="icon-name">warning-symbolic</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Are you sure you want to log out of this session?</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="xalign">0.0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkBox" id="warning_box">
+                                <property name="orientation">vertical</property>
+                                <property name="spacing">24</property>
+                                <child>
+                                  <object class="GtkLabel" id="warning_description">
+                                    <property name="wrap">True</property>
+                                    <property name="wrap-mode">word-char</property>
+                                    <property name="xalign">0.0</property>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="warning_button">
+                                    <style>
+                                      <class name="row"/>
+                                    </style>
+                                    <property name="can-shrink">True</property>
+                                    <property name="label" translatable="yes">Review Account Security</property>
+                                    <signal name="clicked" handler="view_security" swapped="yes"/>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="LoadingButton" id="logout_button">
+                                <style>
+                                  <class name="row"/>
+                                  <class name="destructive-action"/>
+                                </style>
+                                <property name="content-label" translatable="yes">Continue</property>
+                                <signal name="clicked" handler="logout" swapped="yes"/>
+                              </object>
+                            </child>
                           </object>
-                        </child>
-                        <child>
-                          <object class="GtkButton" id="warning_button">
-                            <style>
-                              <class name="row"/>
-                            </style>
-                            <property name="can-shrink">True</property>
-                            <property name="label" translatable="yes">Review Account Security</property>
-                            <signal name="clicked" handler="view_security" swapped="yes"/>
-                          </object>
-                        </child>
+                        </property>
                       </object>
-                    </child>
-                    <child>
-                      <object class="LoadingButton" id="logout_button">
-                        <style>
-                          <class name="row"/>
-                          <class name="destructive-action"/>
-                        </style>
-                        <property name="content-label" translatable="yes">Continue</property>
-                        <signal name="clicked" handler="logout" swapped="yes"/>
-                      </object>
-                    </child>
+                    </property>
                   </object>
                 </property>
               </object>
             </property>
           </object>
-        </property>
+        </child>
+        <child>
+          <object class="GtkStackPage">
+            <property name="name">failed</property>
+            <property name="title" translatable="yes">Logout Failed</property>
+            <property name="child">
+              <object class="AdwToolbarView">
+                <child type="top">
+                  <object class="AdwHeaderBar"/>
+                </child>
+                <property name="content">
+                  <object class="GtkScrolledWindow">
+                    <property name="hscrollbar-policy">never</property>
+                    <property name="propagate-natural-height">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="child">
+                      <object class="AdwClamp">
+                        <property name="maximum-size">444</property>
+                        <property name="child">
+                          <object class="GtkBox">
+                            <property name="orientation">vertical</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Logging out of this session failed. You can try again, or, if this is a permanent error, you can remove the session.</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="xalign">0.0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="LoadingButton" id="try_again_button">
+                                <style>
+                                  <class name="row"/>
+                                  <class name="destructive-action"/>
+                                </style>
+                                <property name="content-label" translatable="yes">Try Again</property>
+                                <signal name="clicked" handler="logout" swapped="yes"/>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label" translatable="yes">Removing the session deletes the associated data from the system, but your homeserver and other sessions will not be aware that this session was logged out.</property>
+                                <property name="wrap">True</property>
+                                <property name="wrap-mode">word-char</property>
+                                <property name="xalign">0.0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="LoadingButton" id="remove_button">
+                                <style>
+                                  <class name="row"/>
+                                  <class name="destructive-action"/>
+                                </style>
+                                <property name="content-label" translatable="yes">Remove Session</property>
+                                <signal name="clicked" handler="remove" swapped="yes"/>
+                              </object>
+                            </child>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
+          </object>
+        </child>
       </object>
     </property>
   </template>
