@@ -1,16 +1,16 @@
 # Chinese (China) translation for fractal.
 # Copyright (C) 2018 fractal's COPYRIGHT HOLDER
 # This file is distributed under the same license as the fractal package.
-# lumingzh <lumingzh@qq.com>, 2018-2024.
 # WodeShengli <wodeshengli@disroot.org>, 2024.
+# lumingzh <lumingzh@qq.com>, 2018-2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-24 12:29+0000\n"
-"PO-Revision-Date: 2024-05-25 15:57+0800\n"
-"Last-Translator: WodeShengli <wodeshengli@disroot.org>\n"
+"POT-Creation-Date: 2024-05-29 10:47+0000\n"
+"PO-Revision-Date: 2024-05-29 20:35+0800\n"
+"Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
@@ -248,64 +248,12 @@ msgstr "移除头像"
 msgid "Select New Avatar"
 msgstr "选择新头像"
 
-#: src/components/crypto/identity_setup_view.rs:273
-#: src/session/view/account_settings/security_page/mod.rs:241
-msgid "Reset Crypto Identity"
-msgstr "重置加密身份"
-
-#: src/components/crypto/identity_setup_view.rs:275
-msgid "This will invalidate the verifications of all users and sessions."
-msgstr "这将会使所有用户和会话的认证无效。"
-
-#: src/components/crypto/identity_setup_view.rs:279
-#: src/components/crypto/identity_setup_view.ui:85
-#: src/components/crypto/recovery_setup_view.ui:98
-#: src/components/crypto/recovery_setup_view.ui:189
-#: src/session/view/account_settings/security_page/mod.rs:238
-#: src/session/view/account_settings/security_page/mod.rs:306
-msgid "Reset"
-msgstr "重置"
-
-#: src/components/crypto/identity_setup_view.rs:284
-msgid ""
-"You should reset your crypto identity if a device that does not belong to "
-"you managed to be verified."
-msgstr "如果有不属于您的设备成功认证了，您应该重置加密身份。"
-
-#: src/components/crypto/identity_setup_view.rs:286
-msgid ""
-"Since no other sessions are available to verify this device and account "
-"recovery cannot be used, you need to reset your crypto identity."
-msgstr ""
-"当您没有其他会话用于认证此设备，并且账号恢复无法使用，您需要重置加密身份。"
-
-#: src/components/crypto/identity_setup_view.rs:290
-#: src/components/crypto/identity_setup_view.ui:125
-msgid "Set Up Crypto Identity"
-msgstr "设置加密身份"
-
-#: src/components/crypto/identity_setup_view.rs:292
-msgid "You need to set up a crypto identity, since it has never been created."
-msgstr "由于从未创建加密身份，您需要设置一个。"
-
-#: src/components/crypto/identity_setup_view.rs:295
-msgid ""
-"Your crypto identity allows you to verify other Matrix accounts and "
-"automatically trust their verified sessions."
-msgstr "您的加密身份允许您去认证其他Matrix账号并自动的信任他们通过认证的会话。"
-
-#: src/components/crypto/identity_setup_view.rs:299
-#: src/components/crypto/recovery_setup_view.ui:285
-msgid "Set Up"
-msgstr "设置"
-
-#: src/components/crypto/identity_setup_view.rs:422
+#: src/components/crypto/identity_setup_view.rs:373
 #: src/identity_verification_view/cancelled_page.rs:185
 msgid "Could not send a new verification request"
 msgstr "无法发送新的验证请求"
 
-#: src/components/crypto/identity_setup_view.rs:473
-#: src/components/crypto/recovery_setup_view.rs:336
+#: src/components/crypto/identity_setup_view.rs:424
 msgid "Could not create the crypto identity"
 msgstr "无法创建加密身份"
 
@@ -334,32 +282,80 @@ msgstr "没有其它设备已登录该账号吗？"
 msgid "Recover Account"
 msgstr "恢复账号"
 
+#: src/components/crypto/identity_setup_view.ui:85
+#: src/components/crypto/identity_setup_view.ui:262
+#: src/components/crypto/recovery_setup_view.ui:98
+#: src/components/crypto/recovery_setup_view.ui:209
+#: src/components/crypto/recovery_setup_view.ui:513
+#: src/session/view/account_settings/security_page/mod.rs:238
+#: src/session/view/account_settings/security_page/mod.rs:306
+msgid "Reset"
+msgstr "重置"
+
 #: src/components/crypto/identity_setup_view.ui:106
 #: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:70
 msgid "Identity Verification"
 msgstr "身份验证"
 
-#: src/components/crypto/recovery_setup_view.rs:174
-msgid "Reset Crypto Identity and Account Recovery Key"
-msgstr "重置加密身份和账号恢复密钥"
+#: src/components/crypto/identity_setup_view.ui:125
+#: src/components/crypto/identity_setup_view.ui:151
+msgid "Set Up Crypto Identity"
+msgstr "设置加密身份"
 
-#: src/components/crypto/recovery_setup_view.rs:176
-#: src/session/view/account_settings/security_page/mod.rs:309
-msgid "Reset Account Recovery Key"
-msgstr "重置账号恢复密钥"
-
-#: src/components/crypto/recovery_setup_view.rs:182
+#: src/components/crypto/identity_setup_view.ui:162
+#: src/components/crypto/identity_setup_view.ui:237
 msgid ""
-"This will invalidate the verifications of all users and sessions, and you "
-"might not be able to read your encrypted messages anymore."
-msgstr ""
-"这将使所有用户和会话的验证无效，并且您可能再也无法读取您先前加密的消息。"
+"Your crypto identity allows you to verify other Matrix accounts and "
+"automatically trust their verified sessions."
+msgstr "您的加密身份允许您去认证其他Matrix账号并自动的信任他们通过认证的会话。"
 
-#: src/components/crypto/recovery_setup_view.rs:184
-msgid "You might not be able to read your encrypted messages anymore."
-msgstr "您可能再也无法阅读您先前加密的信息了。"
+#: src/components/crypto/identity_setup_view.ui:170
+msgid "You need to set up a crypto identity, since it has never been created."
+msgstr "由于从未创建加密身份，您需要设置一个。"
 
-#: src/components/crypto/recovery_setup_view.rs:199
+#: src/components/crypto/identity_setup_view.ui:178
+#: src/components/crypto/recovery_setup_view.ui:305
+msgid "Set Up"
+msgstr "设置"
+
+#: src/components/crypto/identity_setup_view.ui:200
+#: src/components/crypto/identity_setup_view.ui:226
+#: src/components/crypto/recovery_setup_view.ui:169
+#: src/session/view/account_settings/security_page/mod.rs:241
+msgid "Reset Crypto Identity"
+msgstr "重置加密身份"
+
+#: src/components/crypto/identity_setup_view.ui:245
+msgid ""
+"You should reset your crypto identity if a device that does not belong to "
+"you managed to be verified."
+msgstr "如果有不属于您的设备成功认证了，您应该重置加密身份。"
+
+#: src/components/crypto/identity_setup_view.ui:253
+msgid "To proceed, you will also need to reset your account recovery key."
+msgstr "要继续进行，您将需要重置您的账号恢复密钥。"
+
+#: src/components/crypto/recovery_setup_view.rs:174
+msgid "Invalidates the verifications of all users and sessions"
+msgstr "使所有用户和会话的认证失效"
+
+#: src/components/crypto/recovery_setup_view.rs:179
+msgid ""
+"Required because the crypto identity in the recovery data is incomplete. "
+"Invalidates the verifications of all users and sessions."
+msgstr "由于恢复数据中的加密身份不完整需要该操作。使所有用户和会话的认证失效。"
+
+#: src/components/crypto/recovery_setup_view.rs:189
+msgid "You might not be able to read your past encrypted messages anymore"
+msgstr "您可能再也无法阅读您先前加密的消息了。"
+
+#: src/components/crypto/recovery_setup_view.rs:194
+msgid ""
+"Required because the backup is not set up properly. You might not be able to "
+"read your past encrypted messages anymore."
+msgstr "由于备份未正确部署需要该操作。您可能再也无法阅读您先前加密的消息了。"
+
+#: src/components/crypto/recovery_setup_view.rs:212
 msgid ""
 "Make sure to store this recovery key in a safe place. You will need it to "
 "recover your account if you lose access to all your sessions."
@@ -367,7 +363,7 @@ msgstr ""
 "确保您的恢复密钥储存在一个安全的地方。您会在您失去了对所有会话的访问的时候需"
 "要它。"
 
-#: src/components/crypto/recovery_setup_view.rs:201
+#: src/components/crypto/recovery_setup_view.rs:214
 msgid ""
 "Make sure to remember your passphrase or to store it in a safe place. You "
 "will need it to recover your account if you lose access to all your sessions."
@@ -375,19 +371,28 @@ msgstr ""
 "确保您的口令储存在一个安全的地方。您会在您失去了对所有会话的访问的时候需要"
 "它。"
 
-#: src/components/crypto/recovery_setup_view.rs:285
+#: src/components/crypto/recovery_setup_view.rs:295
 msgid "The recovery passphrase or key is invalid"
 msgstr "提供的恢复口令或密钥无效"
 
-#: src/components/crypto/recovery_setup_view.rs:288
+#: src/components/crypto/recovery_setup_view.rs:298
 msgid "Could not access recovery data"
 msgstr "无法访问恢复数据"
 
-#: src/components/crypto/recovery_setup_view.rs:371
+#: src/components/crypto/recovery_setup_view.rs:354
+msgid "Could not reset the crypto identity"
+msgstr "无法重置加密身份"
+
+#: src/components/crypto/recovery_setup_view.rs:378
+#: src/components/crypto/recovery_setup_view.rs:403
+msgid "Could not reset account recovery"
+msgstr "无法重置账号恢复"
+
+#: src/components/crypto/recovery_setup_view.rs:438
 msgid "Could not reset account recovery key"
 msgstr "无法重置账号恢复密钥"
 
-#: src/components/crypto/recovery_setup_view.rs:409
+#: src/components/crypto/recovery_setup_view.rs:476
 msgid "Could not enable account recovery"
 msgstr "无法启用账号恢复"
 
@@ -415,14 +420,29 @@ msgstr "恢复"
 msgid "Lost your recovery passphrase or key?"
 msgstr "弄丢了您的恢复口令或密钥？"
 
-#: src/components/crypto/recovery_setup_view.ui:161
+#: src/components/crypto/recovery_setup_view.ui:119
+#: src/components/crypto/recovery_setup_view.ui:145
+msgid "Reset Account Recovery"
+msgstr "重置账号恢复"
+
+#: src/components/crypto/recovery_setup_view.ui:156
+msgid ""
+"Resetting account recovery can allow you to fix or reset part or all of your "
+"recovery setup."
+msgstr "重置账号恢复可让您修复或重置您的部分或全部恢复部署。"
+
+#: src/components/crypto/recovery_setup_view.ui:174
+msgid "Reset Room Encryption Keys Backup"
+msgstr "重置聊天室加密密钥备份"
+
+#: src/components/crypto/recovery_setup_view.ui:181
 msgid ""
 "If you do not provide a new recovery passphrase, a recovery key will be "
 "created."
 msgstr "如果您不提供一个新的恢复口令，将创建一个恢复密钥。"
 
-#: src/components/crypto/recovery_setup_view.ui:169
-#: src/components/crypto/recovery_setup_view.ui:264
+#: src/components/crypto/recovery_setup_view.ui:189
+#: src/components/crypto/recovery_setup_view.ui:284
 msgid ""
 "You should not reuse the password of your Matrix account as a passphrase. "
 "Otherwise, if someone manages to get your account password, they will also "
@@ -431,17 +451,17 @@ msgstr ""
 "您不应该重复使用您的Matrix账号密码作为口令。否则，如果有人设法获得您的帐户密"
 "码，他们也将能够访问您的所有的加密对话并冒充您。"
 
-#: src/components/crypto/recovery_setup_view.ui:182
-#: src/components/crypto/recovery_setup_view.ui:277
+#: src/components/crypto/recovery_setup_view.ui:202
+#: src/components/crypto/recovery_setup_view.ui:297
 msgid "Recovery Passphrase (Optional)"
 msgstr "恢复口令（可选）"
 
-#: src/components/crypto/recovery_setup_view.ui:211
-#: src/components/crypto/recovery_setup_view.ui:237
+#: src/components/crypto/recovery_setup_view.ui:231
+#: src/components/crypto/recovery_setup_view.ui:257
 msgid "Set Up Account Recovery"
 msgstr "设置账号恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:248
+#: src/components/crypto/recovery_setup_view.ui:268
 msgid ""
 "Account recovery allows you to recover your crypto identity and to read your "
 "encrypted messages even if you lose access to all your sessions."
@@ -449,36 +469,36 @@ msgstr ""
 "即使无法访问所有您的会话，账号恢复使您能恢复您的加密身份并且读取您之前所有的"
 "加密信息。"
 
-#: src/components/crypto/recovery_setup_view.ui:256
+#: src/components/crypto/recovery_setup_view.ui:276
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr "如果您不提供一个恢复口令，将会创建一个恢复密钥。"
 
-#: src/components/crypto/recovery_setup_view.ui:307
-#: src/components/crypto/recovery_setup_view.ui:334
+#: src/components/crypto/recovery_setup_view.ui:327
+#: src/components/crypto/recovery_setup_view.ui:354
 msgid "Account Recovery Set Up Successfully"
 msgstr "成功设置账号恢复"
 
-#: src/components/crypto/recovery_setup_view.ui:371
+#: src/components/crypto/recovery_setup_view.ui:391
 msgid "Copy Recovery Key"
 msgstr "复制恢复密钥"
 
-#: src/components/crypto/recovery_setup_view.ui:388
-#: src/components/crypto/recovery_setup_view.ui:473
+#: src/components/crypto/recovery_setup_view.ui:408
+#: src/components/crypto/recovery_setup_view.ui:493
 msgid "OK"
 msgstr "确定"
 
-#: src/components/crypto/recovery_setup_view.ui:410
-#: src/components/crypto/recovery_setup_view.ui:437
+#: src/components/crypto/recovery_setup_view.ui:430
+#: src/components/crypto/recovery_setup_view.ui:457
 #: src/session/view/account_settings/security_page/mod.rs:321
 msgid "Account Recovery Incomplete"
 msgstr "账号恢复未完成"
 
-#: src/components/crypto/recovery_setup_view.ui:448
+#: src/components/crypto/recovery_setup_view.ui:468
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr "恢复成功，但恢复数据不完整。"
 
-#: src/components/crypto/recovery_setup_view.ui:456
+#: src/components/crypto/recovery_setup_view.ui:476
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
@@ -486,13 +506,17 @@ msgstr ""
 "要解决这个问题，您应该从具有所有数据的会话中重新设置备份，并尝试使用该备份恢"
 "复本会话。"
 
-#: src/components/crypto/recovery_setup_view.ui:464
+#: src/components/crypto/recovery_setup_view.ui:484
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
 msgstr ""
 "请注意，账号备份在其他 Matrix 客户端中会有不同的名称，如“密钥备份”或“安全备"
 "份”。"
+
+#: src/components/crypto/recovery_setup_view.ui:504
+msgid "Alternatively, you can reset Account Recovery"
+msgstr "或者，您可以重置账号恢复"
 
 #: src/components/dialogs/auth.rs:236
 msgid "Please authenticate the operation with your password"
@@ -1751,7 +1775,7 @@ msgid ""
 "set as default."
 msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默认。"
 
-#: src/session/model/session.rs:827
+#: src/session/model/session.rs:880
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
@@ -2331,6 +2355,10 @@ msgstr "账号恢复已启用"
 #: src/session/view/account_settings/security_page/mod.rs:303
 msgid "Your signing keys and encryption keys are synchronized"
 msgstr "您的签名和加密密钥已同步"
+
+#: src/session/view/account_settings/security_page/mod.rs:309
+msgid "Reset Account Recovery Key"
+msgstr "重置账号恢复密钥"
 
 #: src/session/view/account_settings/security_page/mod.rs:323
 msgid "Recover to synchronize your signing keys and encryption keys"
@@ -4625,6 +4653,21 @@ msgstr "无法保存文件"
 msgid "Session"
 msgstr "会话"
 
+#~ msgid ""
+#~ "Since no other sessions are available to verify this device and account "
+#~ "recovery cannot be used, you need to reset your crypto identity."
+#~ msgstr ""
+#~ "当您没有其他会话用于认证此设备，并且账号恢复无法使用，您需要重置加密身份。"
+
+#~ msgid "Reset Crypto Identity and Account Recovery Key"
+#~ msgstr "重置加密身份和账号恢复密钥"
+
+#~ msgid ""
+#~ "This will invalidate the verifications of all users and sessions, and you "
+#~ "might not be able to read your encrypted messages anymore."
+#~ msgstr ""
+#~ "这将使所有用户和会话的验证无效，并且您可能再也无法读取您先前加密的消息。"
+
 #~ msgid "Try again"
 #~ msgstr "重试"
 
@@ -4666,9 +4709,6 @@ msgstr "会话"
 
 #~ msgid "Not available"
 #~ msgstr "不可用"
-
-#~ msgid "Room Encryption Keys"
-#~ msgstr "聊天室加密密钥"
 
 #~ msgid "Cross-Signing"
 #~ msgstr "交叉签名"
