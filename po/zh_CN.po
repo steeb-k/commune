@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-29 10:47+0000\n"
-"PO-Revision-Date: 2024-05-29 20:35+0800\n"
+"POT-Creation-Date: 2024-05-29 14:44+0000\n"
+"PO-Revision-Date: 2024-05-30 18:50+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -187,6 +187,7 @@ msgid "Confirm Change"
 msgstr "确认更改"
 
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
 #: src/session/view/content/room_history/mod.ui:216
 msgid "Try Again"
@@ -1935,7 +1936,7 @@ msgstr "确认新密码"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:70
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:77
 #: src/session/view/content/room_history/verification_info_bar.rs:169
 msgid "Continue"
 msgstr "继续"
@@ -1965,7 +1966,7 @@ msgid ""
 "Matrix user ID:"
 msgstr "为确认您真要停用该账号请输入您的 Matrix 用户标识："
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:79
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:86
 msgid ""
 "The crypto identity and account recovery are not set up properly. If this is "
 "your last connected session and you have no recent local backup of your "
@@ -1974,7 +1975,7 @@ msgstr ""
 "加密身份和账号恢复未正确设置。如果这是您最后一个连接的会话和您没有目前的加密"
 "密钥本地备份，您将会无法恢复您的账号。"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:87
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:94
 msgid ""
 "This is your last connected session. Make sure that you can still access "
 "your recovery key or passphrase, or to backup your encryption keys before "
@@ -1984,16 +1985,46 @@ msgstr ""
 "份加密密钥。"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:102
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:108
+msgid "Log Out"
+msgstr "登出"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:14
 msgid "Log Out of This Session"
 msgstr "登出该会话"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:35
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:42
 msgid "Are you sure you want to log out of this session?"
 msgstr "您确认想要登出该会话吗？"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:58
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:65
 msgid "Review Account Security"
 msgstr "检查账号安全性"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:94
+msgid "Logout Failed"
+msgstr "登出失败"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:113
+msgid ""
+"Logging out of this session failed. You can try again, or, if this is a "
+"permanent error, you can remove the session."
+msgstr ""
+"该会话登出失败。您可以重试，或者如果这是一个持久错误，您可以移除该会话。"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:131
+msgid ""
+"Removing the session deletes the associated data from the system, but your "
+"homeserver and other sessions will not be aware that this session was logged "
+"out."
+msgstr ""
+"移除该会话会从系统删除关联数据，但您的主服务器和其它会话将不会知道该会话已登"
+"出。"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:143
+msgid "Remove Session"
+msgstr "移除会话"
 
 #: src/session/view/account_settings/general_page/mod.rs:194
 #: src/session/view/content/room_details/general_page/mod.rs:429
@@ -2083,11 +2114,6 @@ msgstr "将会话标识复制到剪贴板"
 #: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
 msgstr "会话标识已复制到剪贴板"
-
-#: src/session/view/account_settings/general_page/mod.ui:102
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:108
-msgid "Log Out"
-msgstr "登出"
 
 #: src/session/view/account_settings/notifications_page.rs:287
 msgid "Could not enable account notifications"
