@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-06-02 21:26+0000\n"
-"PO-Revision-Date: 2024-06-04 19:32+0200\n"
+"PO-Revision-Date: 2024-06-04 19:37+0200\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -1805,8 +1805,8 @@ msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
 msgstr ""
-"Flatpak-innloggingsportalen er ikke tilgjengelig. Sørg for at “xdg-desktop-"
-"portal” er installert, og at versjonsnummeret er minst 1.5.0."
+"Flatpak-innloggingsportalen er ikke tilgjengelig. Sørg for at «xdg-desktop-"
+"portal» er installert, og at versjonsnummeret er minst 1.5.0."
 
 #: src/secret/linux.rs:440
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
@@ -2211,7 +2211,7 @@ msgstr "Endring av varslingsinnstilling mislyktes"
 
 #: src/session/view/account_settings/notifications_page.rs:358
 msgid "Remove “{keyword}”"
-msgstr "Fjern “{keyword}”"
+msgstr "Fjern «{keyword}»"
 
 #: src/session/view/account_settings/notifications_page.rs:385
 msgid "Could not remove notification keyword"
@@ -2563,7 +2563,7 @@ msgstr "Koble fra økt"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:163
 msgid "Could not disconnect device “{device_name}”"
-msgstr "Frakobling av “{device_name}” mislyktes"
+msgstr "Frakobling av «{device_name}» mislyktes"
 
 #. Translators: Time in 24h format, i.e. "23:04".
 #. Do not change the time format as it will follow the system settings.
@@ -4453,11 +4453,11 @@ msgstr "Adressen er opptatt."
 
 #: src/session/view/room_creation.rs:217
 msgid "Cannot contain “:”"
-msgstr "Kan ikke inneholde “:”"
+msgstr "Kan ikke inneholde «:»"
 
 #: src/session/view/room_creation.rs:222
 msgid "Cannot contain “#”"
-msgstr "Kan ikke inneholde “#”"
+msgstr "Kan ikke inneholde «#»"
 
 #: src/session/view/room_creation.rs:227
 msgid "Too long. Use a shorter address."
