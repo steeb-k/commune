@@ -13,7 +13,7 @@ use tracing::{debug, error};
 
 use super::{load_supported_verification_methods, VerificationKey};
 use crate::{
-    session::model::{IdentityVerification, Member, Session, User},
+    session::model::{IdentityVerification, Member, Membership, Session, User},
     spawn, spawn_tokio,
 };
 
@@ -197,6 +197,14 @@ impl VerificationList {
             );
             return;
         };
+
+        if matches!(
+            room.own_member().membership(),
+            Membership::Leave | Membership::Ban
+        ) {
+            // Ignore requests where the user is not in the room anymore.
+            return;
+        }
 
         let other_user_id = request.other_user_id().to_owned();
         let member = room

@@ -8,6 +8,7 @@ mod completed_page;
 mod confirm_qr_code_page;
 mod no_supported_methods_page;
 mod qr_code_scanned_page;
+mod room_left_page;
 mod sas_emoji;
 mod sas_page;
 mod scan_qr_code_page;
@@ -17,8 +18,8 @@ use self::{
     accept_request_page::AcceptRequestPage, cancelled_page::CancelledPage,
     choose_method_page::ChooseMethodPage, completed_page::CompletedPage,
     confirm_qr_code_page::ConfirmQrCodePage, no_supported_methods_page::NoSupportedMethodsPage,
-    qr_code_scanned_page::QrCodeScannedPage, sas_page::SasPage, scan_qr_code_page::ScanQrCodePage,
-    wait_for_other_page::WaitForOtherPage,
+    qr_code_scanned_page::QrCodeScannedPage, room_left_page::RoomLeftPage, sas_page::SasPage,
+    scan_qr_code_page::ScanQrCodePage, wait_for_other_page::WaitForOtherPage,
 };
 use crate::{
     session::model::{IdentityVerification, VerificationState},
@@ -59,6 +60,8 @@ mod imp {
         pub completed_page: TemplateChild<CompletedPage>,
         #[template_child]
         pub cancelled_page: TemplateChild<CancelledPage>,
+        #[template_child]
+        pub room_left_page: TemplateChild<RoomLeftPage>,
     }
 
     #[glib::object_subclass]
@@ -106,6 +109,7 @@ mod imp {
                 "sas" => self.sas_page.grab_focus(),
                 "completed" => self.completed_page.grab_focus(),
                 "cancelled" => self.cancelled_page.grab_focus(),
+                "room-left" => self.room_left_page.grab_focus(),
                 _ => false,
             }
         }
@@ -202,6 +206,9 @@ impl IdentityVerificationView {
             VerificationState::Cancelled | VerificationState::Error => {
                 imp.cancelled_page.reset();
                 imp.main_stack.set_visible_child_name("cancelled");
+            }
+            VerificationState::RoomLeft => {
+                imp.main_stack.set_visible_child_name("room-left");
             }
             // Nothing to do, this view should be closed.
             VerificationState::Dismissed => {}

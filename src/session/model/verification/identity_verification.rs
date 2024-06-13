@@ -21,7 +21,7 @@ use super::{load_supported_verification_methods, VerificationKey};
 use crate::{
     contrib::Camera,
     prelude::*,
-    session::model::{Member, Room, Session, User},
+    session::model::{Member, Membership, Room, Session, User},
     spawn, spawn_tokio,
     utils::BoundConstructOnlyObject,
 };
@@ -109,6 +109,8 @@ pub enum VerificationState {
     ///
     /// Happens when a received request is not accepted by us after 2 minutes.
     Dismissed,
+    /// The verification was happening in-room but the room was left.
+    RoomLeft,
     /// An unexpected error happened.
     Error,
 }
@@ -138,8 +140,9 @@ mod imp {
         #[property(get, set = Self::set_user, construct_only)]
         pub user: BoundConstructOnlyObject<User>,
         /// The room of this verification, if any.
-        #[property(get, construct_only)]
+        #[property(get, set = Self::set_room, construct_only)]
         pub room: glib::WeakRef<Room>,
+        membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         /// The state of this verification
         #[property(get, set = Self::set_state, construct_only, builder(VerificationState::default()))]
         pub state: Cell<VerificationState>,
@@ -222,6 +225,11 @@ mod imp {
         fn dispose(&self) {
             let obj = self.obj();
 
+            if let Some(handler) = self.membership_handler.take() {
+                if let Some(room) = self.room.upgrade() {
+                    room.own_member().disconnect(handler);
+                }
+            }
             if let Some(handle) = self.request_changes_abort_handle.take() {
                 handle.abort();
             }
@@ -288,6 +296,30 @@ mod imp {
             self.user.set(user, handlers);
         }
 
+        /// Set the room of the verification, if any.
+        fn set_room(&self, room: Option<&Room>) {
+            let Some(room) = room else {
+                // Nothing to do if there is no room.
+                return;
+            };
+
+            let handler = room.own_member().connect_membership_notify(
+                clone!(@weak self as imp => move |own_member| {
+                    if matches!(own_member.membership(), Membership::Leave | Membership::Ban) {
+                        // If the user is not in the room anymore, nothing can be done with this verification.
+                        imp.set_state(VerificationState::RoomLeft);
+
+                        if let Some(handler) = imp.membership_handler.take() {
+                            own_member.disconnect(handler);
+                        }
+                    }
+                }),
+            );
+            self.membership_handler.replace(Some(handler));
+
+            self.room.set(Some(room));
+        }
+
         /// Set the state of this verification.
         pub fn set_state(&self, state: VerificationState) {
             if self.state.get() == state {
@@ -319,6 +351,7 @@ mod imp {
                     | VerificationState::Dismissed
                     | VerificationState::Done
                     | VerificationState::Error
+                    | VerificationState::RoomLeft
             )
         }
 

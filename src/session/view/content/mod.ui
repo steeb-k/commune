@@ -76,11 +76,7 @@
                   </object>
                 </child>
                 <property name="content">
-                  <object class="GtkScrolledWindow">
-                    <child>
-                      <object class="IdentityVerificationView" id="identity_verification_widget"/>
-                    </child>
-                  </object>
+                  <object class="IdentityVerificationView" id="identity_verification_widget"/>
                 </property>
               </object>
             </property>

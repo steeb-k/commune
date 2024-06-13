@@ -51,6 +51,7 @@ src/identity_verification_view/no_supported_methods_page.rs
 src/identity_verification_view/no_supported_methods_page.ui
 src/identity_verification_view/qr_code_scanned_page.rs
 src/identity_verification_view/qr_code_scanned_page.ui
+src/identity_verification_view/room_left_page.ui
 src/identity_verification_view/sas_page.rs
 src/identity_verification_view/sas_page.ui
 src/identity_verification_view/scan_qr_code_page.rs
