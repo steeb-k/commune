@@ -88,7 +88,7 @@ mod imp {
 
             // Transformation to avoid stretching the camera. We translate and scale the
             // image.
-            let aspect = width / height.max(std::f64::EPSILON); // Do not divide by zero.
+            let aspect = width / height.max(f64::EPSILON); // Do not divide by zero.
             let image_aspect = image.intrinsic_aspect_ratio();
 
             if image_aspect == 0.0 {
