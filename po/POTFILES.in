@@ -71,6 +71,7 @@ src/login/session_setup_view.ui
 src/login/sso_page.ui
 src/secret/linux.rs
 src/session/model/session.rs
+src/session/model/notifications/mod.rs
 src/session/model/room/join_rule.rs
 src/session/model/room/mod.rs
 src/session/model/room/permissions.rs

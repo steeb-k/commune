@@ -28,7 +28,5 @@ pub use self::{
     },
     user::{User, UserExt},
     user_sessions_list::{UserSession, UserSessionsList},
-    verification::{
-        IdentityVerification, VerificationList, VerificationState, VerificationSupportedMethods,
-    },
+    verification::*,
 };

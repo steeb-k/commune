@@ -1,9 +1,12 @@
 use std::borrow::Cow;
 
 use gtk::{glib, prelude::*};
-use ruma::{OwnedRoomId, OwnedUserId, RoomId};
+use ruma::{OwnedRoomId, OwnedUserId, RoomId, UserId};
 
-use crate::utils::matrix::{MatrixIdUri, MatrixRoomIdUri};
+use crate::{
+    session::model::VerificationKey,
+    utils::matrix::{MatrixIdUri, MatrixRoomIdUri},
+};
 
 /// An intent when opening or activating the application.
 ///
@@ -37,6 +40,8 @@ impl From<MatrixIdUri> for AppIntent {
 pub enum SessionIntent {
     /// Show an existing room.
     ShowRoom(ShowRoomPayload),
+    /// Show an ongoing identity verification.
+    ShowIdentityVerification(ShowIdentityVerificationPayload),
     /// Join a room.
     JoinRoom(JoinRoomPayload),
     /// Show a user.
@@ -67,6 +72,7 @@ impl SessionIntent {
     pub fn session_id(&self) -> &str {
         match self {
             Self::ShowRoom(p) => &p.session_id,
+            Self::ShowIdentityVerification(p) => &p.session_id,
             Self::JoinRoom(p) => &p.session_id,
             Self::ShowUser(p) => &p.session_id,
         }
@@ -99,6 +105,41 @@ impl FromVariant for ShowRoomPayload {
         Some(Self {
             session_id,
             room_id,
+        })
+    }
+}
+
+/// The payload to show an ongoing identity verification.
+#[derive(Debug)]
+pub struct ShowIdentityVerificationPayload {
+    pub session_id: String,
+    pub key: VerificationKey,
+}
+
+impl StaticVariantType for ShowIdentityVerificationPayload {
+    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
+        <(String, String, String)>::static_variant_type()
+    }
+}
+
+impl ToVariant for ShowIdentityVerificationPayload {
+    fn to_variant(&self) -> glib::Variant {
+        (
+            &self.session_id,
+            self.key.user_id.as_str(),
+            &self.key.flow_id,
+        )
+            .to_variant()
+    }
+}
+
+impl FromVariant for ShowIdentityVerificationPayload {
+    fn from_variant(variant: &glib::Variant) -> Option<Self> {
+        let (session_id, user_id, flow_id) = variant.get::<(String, String, String)>()?;
+        let user_id = UserId::parse(user_id).ok()?;
+        Some(Self {
+            session_id,
+            key: VerificationKey::new(user_id, flow_id),
         })
     }
 }

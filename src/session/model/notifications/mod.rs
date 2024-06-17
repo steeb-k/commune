@@ -1,16 +1,17 @@
+use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::{sync::Notification, Room as MatrixRoom};
-use ruma::{EventId, OwnedRoomId, RoomId};
-use tracing::{debug, error, warn};
+use ruma::{api::client::device::get_device, OwnedRoomId, RoomId};
+use tracing::{debug, warn};
 
 mod notifications_settings;
 
 pub use self::notifications_settings::{
     NotificationsGlobalSetting, NotificationsRoomSetting, NotificationsSettings,
 };
-use super::{Room, Session};
+use super::{IdentityVerification, Session, VerificationKey};
 use crate::{
-    intent,
+    gettext_f, intent,
     prelude::*,
     spawn_tokio,
     utils::matrix::{get_event_body, AnySyncOrStrippedTimelineEvent},
@@ -18,7 +19,10 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, collections::HashMap};
+    use std::{
+        cell::RefCell,
+        collections::{HashMap, HashSet},
+    };
 
     use super::*;
 
@@ -28,8 +32,14 @@ mod imp {
         /// The current session.
         #[property(get, set = Self::set_session, explicit_notify, nullable)]
         pub session: glib::WeakRef<Session>,
+        /// The push notifications that were presented.
+        ///
         /// A map of room ID to list of notification IDs.
-        pub list: RefCell<HashMap<OwnedRoomId, Vec<String>>>,
+        pub push: RefCell<HashMap<OwnedRoomId, HashSet<String>>>,
+        /// The identity verification notifications that were presented.
+        ///
+        /// A map of verification key to notification ID.
+        pub identity_verifications: RefCell<HashMap<VerificationKey, String>>,
         /// The notifications settings for this session.
         #[property(get)]
         pub settings: NotificationsSettings,
@@ -69,26 +79,32 @@ impl Notifications {
         glib::Object::new()
     }
 
-    /// Ask the system to show the given notification, if applicable.
+    /// Whether notifications are enabled for the current session.
+    pub fn enabled(&self) -> bool {
+        let settings = self.settings();
+        settings.account_enabled() && settings.session_enabled()
+    }
+
+    /// Ask the system to show the given push notification, if applicable.
     ///
-    /// The notification won't be shown if the application is active and this
-    /// session is displayed.
-    pub async fn show(&self, matrix_notification: Notification, matrix_room: MatrixRoom) {
+    /// The notification will not be shown if the application is active and the
+    /// room of the event is displayed.
+    pub async fn show_push(&self, matrix_notification: Notification, matrix_room: MatrixRoom) {
+        // Do not show notifications if they are disabled.
+        if !self.enabled() {
+            return;
+        }
+
         let Some(session) = self.session() else {
             return;
         };
-
-        // Don't show notifications if they are disabled.
-        if !session.settings().notifications_enabled() {
-            return;
-        }
 
         let app = Application::default();
         let window = app.active_window().and_downcast::<Window>();
         let session_id = session.session_id();
         let room_id = matrix_room.room_id();
 
-        // Don't show notifications for the current room in the current session if the
+        // Do not show notifications for the current room in the current session if the
         // window is active.
         if window.is_some_and(|w| {
             w.is_active()
@@ -124,7 +140,7 @@ impl Notifications {
         let sender = match handle.await.unwrap() {
             Ok(member) => member,
             Err(error) => {
-                error!("Could not get member for notification: {error}");
+                warn!("Could not get member for notification: {error}");
                 None
             }
         };
@@ -169,29 +185,167 @@ impl Notifications {
             notification.set_icon(&icon);
         }
 
-        let id = notification_id(session_id, &room_id, event_id);
+        let id = if let Some(event_id) = event_id {
+            format!("{session_id}//{room_id}//{event_id}")
+        } else {
+            let random_id = glib::uuid_string_random();
+            format!("{session_id}//{room_id}//{random_id}")
+        };
+
         app.send_notification(Some(&id), &notification);
 
         self.imp()
-            .list
+            .push
             .borrow_mut()
             .entry(room_id)
             .or_default()
-            .push(id);
+            .insert(id);
     }
 
-    /// Ask the system to remove the known notifications for the given room.
+    /// Show a notification for the given in-room identity verification.
+    pub fn show_in_room_identity_verification(&self, verification: &IdentityVerification) {
+        // Do not show notifications if they are disabled.
+        if !self.enabled() {
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+        let Some(room) = verification.room() else {
+            return;
+        };
+
+        let room_id = room.room_id().to_owned();
+        let session_id = session.session_id();
+        let flow_id = verification.flow_id();
+
+        // In-room verifications should only happen for other users.
+        let user = verification.user();
+        let user_id = user.user_id();
+
+        let title = gettext("Verification Request");
+        let body = gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            "{user} sent a verification request",
+            &[("user", &user.display_name())],
+        );
+
+        let notification = gio::Notification::new(&title);
+        notification.set_priority(gio::NotificationPriority::High);
+
+        let payload = intent::ShowIdentityVerificationPayload {
+            session_id: session_id.to_owned(),
+            key: verification.key(),
+        };
+
+        notification.set_default_action_and_target_value(
+            "app.show-identity-verification",
+            Some(&payload.to_variant()),
+        );
+        notification.set_body(Some(&body));
+
+        if let Some(icon) = user.avatar_data().as_notification_icon() {
+            notification.set_icon(&icon);
+        }
+
+        let id = format!("{session_id}//{room_id}//{user_id}//{flow_id}");
+
+        Application::default().send_notification(Some(&id), &notification);
+
+        self.imp()
+            .identity_verifications
+            .borrow_mut()
+            .insert(verification.key(), id);
+    }
+
+    /// Show a notification for the given to-device identity verification.
+    pub async fn show_to_device_identity_verification(&self, verification: &IdentityVerification) {
+        // Do not show notifications if they are disabled.
+        if !self.enabled() {
+            return;
+        }
+
+        let Some(session) = self.session() else {
+            return;
+        };
+        // To-device verifications should only happen for other sessions.
+        let Some(other_device_id) = verification.other_device_id() else {
+            return;
+        };
+
+        let session_id = session.session_id();
+        let flow_id = verification.flow_id();
+
+        let client = session.client();
+        let request = get_device::v3::Request::new(other_device_id.clone());
+        let handle = spawn_tokio!(async move { client.send(request, None).await });
+
+        let display_name = match handle.await.unwrap() {
+            Ok(res) => res.device.display_name,
+            Err(error) => {
+                warn!("Could not get device for notification: {error}");
+                None
+            }
+        };
+        let display_name = display_name
+            .as_deref()
+            .unwrap_or_else(|| other_device_id.as_str());
+
+        let title = gettext("Login Request From Another Session");
+        let body = gettext_f(
+            // Translators: Do NOT translate the content between '{' and '}', this is a
+            // variable name.
+            "Verify your new session “{name}”",
+            &[("name", display_name)],
+        );
+
+        let notification = gio::Notification::new(&title);
+        notification.set_priority(gio::NotificationPriority::High);
+
+        let payload = intent::ShowIdentityVerificationPayload {
+            session_id: session_id.to_owned(),
+            key: verification.key(),
+        };
+
+        notification.set_default_action_and_target_value(
+            "app.show-identity-verification",
+            Some(&payload.to_variant()),
+        );
+        notification.set_body(Some(&body));
+
+        let id = format!("{session_id}//{other_device_id}//{flow_id}");
+
+        Application::default().send_notification(Some(&id), &notification);
+
+        self.imp()
+            .identity_verifications
+            .borrow_mut()
+            .insert(verification.key(), id);
+    }
+
+    /// Ask the system to remove the known notifications for the room with the
+    /// given ID.
     ///
     /// Only the notifications that were shown since the application's startup
     /// are known, older ones might still be present.
-    pub fn withdraw_all_for_room(&self, room: &Room) {
-        let room_id = room.room_id();
-        if let Some(notifications) = self.imp().list.borrow_mut().remove(room_id) {
+    pub fn withdraw_all_for_room(&self, room_id: &RoomId) {
+        if let Some(notifications) = self.imp().push.borrow_mut().remove(room_id) {
             let app = Application::default();
 
             for id in notifications {
                 app.withdraw_notification(&id);
             }
+        }
+    }
+
+    /// Ask the system to remove the known notification for the identity
+    /// verification with the given key.
+    pub fn withdraw_identity_verification(&self, key: &VerificationKey) {
+        if let Some(id) = self.imp().identity_verifications.borrow_mut().remove(key) {
+            let app = Application::default();
+            app.withdraw_notification(&id);
         }
     }
 
@@ -202,7 +356,10 @@ impl Notifications {
     pub fn clear(&self) {
         let app = Application::default();
 
-        for id in self.imp().list.take().values().flatten() {
+        for id in self.imp().push.take().values().flatten() {
+            app.withdraw_notification(id);
+        }
+        for id in self.imp().identity_verifications.take().values() {
             app.withdraw_notification(id);
         }
     }
@@ -211,14 +368,5 @@ impl Notifications {
 impl Default for Notifications {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-fn notification_id(session_id: &str, room_id: &RoomId, event_id: Option<&EventId>) -> String {
-    if let Some(event_id) = event_id {
-        format!("{session_id}//{room_id}//{event_id}")
-    } else {
-        let random_id = glib::uuid_string_random();
-        format!("{session_id}//{room_id}//{random_id}")
     }
 }

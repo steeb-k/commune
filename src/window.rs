@@ -446,11 +446,12 @@ impl Window {
         self.set_visible_page(WindowPage::Error);
     }
 
-    /// Show the verification with the given flow ID for the user with the given
-    /// ID for the given session.
-    pub fn show_verification(&self, session_id: &str, verification: IdentityVerification) {
+    /// Show the given identity verification for the session with the given ID.
+    pub fn show_identity_verification(&self, session_id: &str, verification: IdentityVerification) {
         if self.set_current_session_by_id(session_id) {
-            self.imp().session.select_verification(verification);
+            self.imp()
+                .session
+                .select_identity_verification(verification);
 
             self.present();
         }
@@ -481,6 +482,9 @@ impl Window {
         match intent {
             intent::SessionIntent::ShowRoom(p) => {
                 session_view.select_room_by_id(&p.room_id);
+            }
+            intent::SessionIntent::ShowIdentityVerification(p) => {
+                session_view.select_identity_verification_by_id(&p.key);
             }
             intent::SessionIntent::JoinRoom(p) => {
                 session_view.show_join_room_dialog(Some(p.room_uri));

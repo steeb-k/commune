@@ -10,7 +10,9 @@ use tracing::{error, warn};
 use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
-    session::model::{Event, IdentityVerification, Room, Selection, Session, SidebarListModel},
+    session::model::{
+        Event, IdentityVerification, Room, Selection, Session, SidebarListModel, VerificationKey,
+    },
     toast,
     utils::matrix::{MatrixRoomId, MatrixRoomIdUri},
     Window,
@@ -133,15 +135,8 @@ mod imp {
 
             self.content
                 .connect_item_notify(clone!(@weak obj => move |_| {
-                    let Some(session) = obj.session() else {
-                        return;
-                    };
-                    let Some(room) = obj.selected_room() else {
-                        return;
-                    };
-
-                    // When switching to a room, withdraw its notifications.
-                    session.notifications().withdraw_all_for_room(&room);
+                    // Withdraw the notifications of the newly selected item.
+                    obj.withdraw_selected_item_notifications();
                 }));
 
             obj.connect_root_notify(|obj| {
@@ -154,16 +149,10 @@ mod imp {
                         if !window.is_active() {
                             return;
                         }
-                        let Some(session) = obj.session() else {
-                            return;
-                        };
-                        let Some(room) = obj.selected_room() else {
-                            return;
-                        };
 
                         // When the window becomes active, withdraw the notifications
-                        // of the room that is displayed.
-                        session.notifications().withdraw_all_for_room(&room);
+                        // of the selected item.
+                        obj.withdraw_selected_item_notifications();
                     }));
                 obj.imp().window_active_handler_id.replace(Some(handler_id));
             });
@@ -206,15 +195,12 @@ impl SessionView {
         glib::Object::new()
     }
 
-    /// The currently selected room, if any.
-    pub fn selected_room(&self) -> Option<Room> {
-        self.imp().content.item().and_downcast()
+    /// The currently selected item, if any.
+    pub fn selected_item(&self) -> Option<glib::Object> {
+        self.imp().content.item()
     }
 
-    pub fn select_room(&self, room: Option<Room>) {
-        self.select_item(room);
-    }
-
+    /// Select the given item.
     pub fn select_item(&self, item: Option<impl IsA<glib::Object>>) {
         let Some(session) = self.session() else {
             return;
@@ -224,6 +210,16 @@ impl SessionView {
             .sidebar_list_model()
             .selection_model()
             .set_selected_item(item);
+    }
+
+    /// The currently selected room, if any.
+    pub fn selected_room(&self) -> Option<Room> {
+        self.selected_item().and_downcast()
+    }
+
+    /// Select the given room.
+    pub fn select_room(&self, room: Option<Room>) {
+        self.select_item(room);
     }
 
     /// Select the room with the given ID in this view.
@@ -250,8 +246,20 @@ impl SessionView {
         }
     }
 
-    /// Select the given verification in this view.
-    pub fn select_verification(&self, verification: IdentityVerification) {
+    /// Select the identity verification with the given key in this view.
+    pub fn select_identity_verification_by_id(&self, key: &VerificationKey) {
+        if let Some(verification) = self.session().and_then(|s| s.verification_list().get(key)) {
+            self.select_identity_verification(verification);
+        } else {
+            warn!(
+                "An identity verification for user {} with flow ID {} could not be found",
+                key.user_id, key.flow_id
+            );
+        }
+    }
+
+    /// Select the given identity verification in this view.
+    pub fn select_identity_verification(&self, verification: IdentityVerification) {
         self.select_item(Some(verification));
     }
 
@@ -343,5 +351,23 @@ impl SessionView {
         let dialog = UserProfileDialog::new();
         dialog.load_user(&session, user_id);
         dialog.present(self);
+    }
+
+    /// Withdraw the notifications for the currently selected item.
+    fn withdraw_selected_item_notifications(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+        let Some(item) = self.selected_item() else {
+            return;
+        };
+
+        let notifications = session.notifications();
+
+        if let Some(room) = item.downcast_ref::<Room>() {
+            notifications.withdraw_all_for_room(room.room_id());
+        } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+            notifications.withdraw_identity_verification(&verification.key());
+        }
     }
 }

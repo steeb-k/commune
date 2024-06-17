@@ -164,7 +164,7 @@ impl Application {
                     app.show_about_dialog();
                 })
                 .build(),
-            // Show a room. This is the action triggered when clicking a notification.
+            // Show a room. This is the action triggered when clicking a notification about a message.
             gio::ActionEntry::builder("show-room")
                 .parameter_type(Some(&intent::ShowRoomPayload::static_variant_type()))
                 .activate(|app: &Application, _, v| {
@@ -174,6 +174,18 @@ impl Application {
                     };
 
                     app.process_intent(intent::SessionIntent::ShowRoom(payload));
+                })
+                .build(),
+            // Show an identity verification. This is the action triggered when clicking a notification about a new verification.
+            gio::ActionEntry::builder("show-identity-verification")
+                .parameter_type(Some(&intent::ShowIdentityVerificationPayload::static_variant_type()))
+                .activate(|app: &Application, _, v| {
+                    let Some(payload) = v.and_then(|v| v.get::<intent::ShowIdentityVerificationPayload>()) else {
+                        error!("Triggered `show-identity-verification` action without the proper payload");
+                        return;
+                    };
+
+                    app.process_intent(intent::SessionIntent::ShowIdentityVerification(payload));
                 })
                 .build(),
         ]);

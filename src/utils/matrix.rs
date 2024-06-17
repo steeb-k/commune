@@ -202,10 +202,6 @@ pub fn get_message_event_body(
                 MessageType::Video(_) => {
                     gettext_f("{user} sent a video.", &[("user", sender_name)])
                 }
-                MessageType::VerificationRequest(_) => gettext_f(
-                    "{user} sent a verification request.",
-                    &[("user", sender_name)],
-                ),
                 _ => return None,
             };
             Some(body)

@@ -661,7 +661,7 @@ impl Session {
                         ctx.spawn(async move {
                             spawn!(async move {
                                 if let Some(obj) = obj_weak.upgrade() {
-                                    obj.notifications().show(notification, room).await;
+                                    obj.notifications().show_push(notification, room).await;
                                 }
                             });
                         });

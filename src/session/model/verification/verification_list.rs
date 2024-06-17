@@ -11,7 +11,7 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use super::{load_supported_verification_methods, VerificationKey};
+use super::{load_supported_verification_methods, VerificationKey, VerificationState};
 use crate::{
     session::model::{IdentityVerification, Member, Membership, Session, User},
     spawn, spawn_tokio,
@@ -122,7 +122,7 @@ impl VerificationList {
                     ctx.spawn(async move {
                         spawn!(async move {
                             if let Some(obj) = obj_weak.upgrade() {
-                                obj.add_to_device_request(request);
+                                obj.add_to_device_request(request).await;
                             }
                         });
                     });
@@ -165,7 +165,7 @@ impl VerificationList {
     }
 
     /// Add a verification received via a to-device event.
-    fn add_to_device_request(&self, request: VerificationRequest) {
+    async fn add_to_device_request(&self, request: VerificationRequest) {
         if request.is_done() || request.is_cancelled() || request.is_passive() {
             // Ignore requests that are already finished.
             return;
@@ -175,8 +175,15 @@ impl VerificationList {
             return;
         };
 
-        let verification = IdentityVerification::new(request, &session.user(), None);
-        self.add(verification);
+        let verification = IdentityVerification::new(request, &session.user(), None).await;
+        self.add(verification.clone());
+
+        if verification.state() == VerificationState::Requested {
+            session
+                .notifications()
+                .show_to_device_identity_verification(&verification)
+                .await;
+        }
     }
 
     /// Add a verification received via an in-room event.
@@ -236,11 +243,18 @@ impl VerificationList {
             }
         }
 
-        let verification = IdentityVerification::new(request, member.upcast_ref(), Some(&room));
+        let verification =
+            IdentityVerification::new(request, member.upcast_ref(), Some(&room)).await;
 
         room.set_verification(Some(&verification));
 
-        self.add(verification);
+        self.add(verification.clone());
+
+        if verification.state() == VerificationState::Requested {
+            session
+                .notifications()
+                .show_in_room_identity_verification(&verification);
+        }
     }
 
     /// Add the given verification to the list.
@@ -270,6 +284,10 @@ impl VerificationList {
         };
 
         self.items_changed(pos as u32, 1, 0);
+
+        if let Some(session) = self.session() {
+            session.notifications().withdraw_identity_verification(key);
+        }
     }
 
     /// Get the verification with the given key.
@@ -334,7 +352,7 @@ impl VerificationList {
                     None
                 };
 
-                let verification = IdentityVerification::new(request, &user, room.as_ref());
+                let verification = IdentityVerification::new(request, &user, room.as_ref()).await;
                 self.add(verification.clone());
 
                 Ok(verification)

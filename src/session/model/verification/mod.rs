@@ -16,9 +16,9 @@ use crate::{contrib::Camera, prelude::*};
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct VerificationKey {
     /// The ID of the user being verified.
-    user_id: OwnedUserId,
+    pub user_id: OwnedUserId,
     /// The ID of the verification.
-    flow_id: String,
+    pub flow_id: String,
 }
 
 impl VerificationKey {

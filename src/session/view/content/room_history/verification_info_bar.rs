@@ -70,7 +70,9 @@ mod imp {
                     }
                 }
 
-                window.session_view().select_verification(verification);
+                window
+                    .session_view()
+                    .select_identity_verification(verification);
                 imp.accept_btn.set_is_loading(false);
             });
 

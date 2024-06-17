@@ -12,8 +12,9 @@ use matrix_sdk::encryption::verification::{
     SasVerification, Verification, VerificationRequest, VerificationRequestState,
 };
 use qrcode::QrCode;
-use ruma::events::key::verification::{
-    cancel::CancelCode, VerificationMethod, REQUEST_RECEIVED_TIMEOUT,
+use ruma::{
+    events::key::verification::{cancel::CancelCode, VerificationMethod, REQUEST_RECEIVED_TIMEOUT},
+    OwnedDeviceId,
 };
 use tracing::{debug, error};
 
@@ -215,13 +216,6 @@ mod imp {
             SIGNALS.as_ref()
         }
 
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            obj.init();
-        }
-
         fn dispose(&self) {
             let obj = self.obj();
 
@@ -397,12 +391,15 @@ glib::wrapper! {
 
 impl IdentityVerification {
     /// Construct a verification for the given request.
-    pub fn new(request: VerificationRequest, user: &User, room: Option<&Room>) -> Self {
-        glib::Object::builder()
+    pub async fn new(request: VerificationRequest, user: &User, room: Option<&Room>) -> Self {
+        let obj = glib::Object::builder::<Self>()
             .property("request", BoxedVerificationRequest(request))
             .property("user", user)
             .property("room", room)
-            .build()
+            .build();
+
+        obj.init().await;
+        obj
     }
 
     /// The current session.
@@ -425,6 +422,28 @@ impl IdentityVerification {
         self.request().is_self_verification()
     }
 
+    /// The ID of the other device that is being verified.
+    pub fn other_device_id(&self) -> Option<OwnedDeviceId> {
+        let verification = match self.request().state() {
+            VerificationRequestState::Requested {
+                other_device_id, ..
+            }
+            | VerificationRequestState::Ready {
+                other_device_id, ..
+            } => return Some(other_device_id),
+            VerificationRequestState::Transitioned { verification } => verification,
+            VerificationRequestState::Created { .. }
+            | VerificationRequestState::Done
+            | VerificationRequestState::Cancelled(_) => return None,
+        };
+
+        match verification {
+            Verification::SasV1(sas) => Some(sas.other_device().device_id().to_owned()),
+            Verification::QrV1(qr) => Some(qr.other_device().device_id().to_owned()),
+            _ => None,
+        }
+    }
+
     /// Set whether this request was accepted.
     fn set_was_accepted(&self, was_accepted: bool) {
         if !was_accepted || self.was_accepted() {
@@ -443,7 +462,7 @@ impl IdentityVerification {
 
     /// Initialize this verification to listen to changes in the request's
     /// state.
-    fn init(&self) {
+    async fn init(&self) {
         let request = self.request();
 
         let obj_weak = glib::SendWeakRef::from(self.downgrade());
@@ -467,9 +486,7 @@ impl IdentityVerification {
             .replace(Some(handle));
 
         let state = request.state();
-        spawn!(clone!(@weak self as obj => async move {
-            obj.handle_request_state(state).await;
-        }));
+        self.handle_request_state(state).await;
     }
 
     /// Handle a change in the request's state.
