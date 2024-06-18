@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-29 14:44+0000\n"
-"PO-Revision-Date: 2024-05-30 18:50+0800\n"
+"POT-Creation-Date: 2024-06-17 13:39+0000\n"
+"PO-Revision-Date: 2024-06-18 20:10+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -159,26 +159,26 @@ msgstr "添加账号(_A)"
 msgid "Account Settings"
 msgstr "账号设置"
 
-#: src/application.rs:192
+#: src/application.rs:204
 msgid "The Fractal Team"
 msgstr "Fractal 团队"
 
-#: src/application.rs:198
+#: src/application.rs:210
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Fractal 团队"
 
-#: src/application.rs:212
+#: src/application.rs:224
 msgid "translator-credits"
 msgstr ""
 "lumingzh <lumingzh@qq.com>, 2018-2024\n"
 "WodeShengli <wodeshengli@disroot.org>, 2024"
 
 #. This can't be added via the builder
-#: src/application.rs:216
+#: src/application.rs:228
 msgid "Name by"
 msgstr "名字"
 
-#: src/application.rs:313
+#: src/application.rs:325
 msgid "Session not found"
 msgstr "会话未找到"
 
@@ -619,7 +619,7 @@ msgstr "您确定想要拒绝该邀请吗？您将无法在未受邀请的情况
 
 #: src/components/dialogs/message_dialogs.rs:27
 #: src/identity_verification_view/accept_request_page.ui:47
-#: src/session/view/content/room_history/verification_info_bar.rs:166
+#: src/session/view/content/room_history/verification_info_bar.rs:168
 msgid "Decline"
 msgstr "拒绝"
 
@@ -656,7 +656,7 @@ msgstr "离开"
 #: src/session/view/content/room_history/item_row.rs:831
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
-#: src/session/view/content/room_history/verification_info_bar.rs:170
+#: src/session/view/content/room_history/verification_info_bar.rs:172
 msgid "Cancel"
 msgstr "取消"
 
@@ -1071,7 +1071,7 @@ msgstr "安全"
 #: src/components/user_page.ui:238
 #: src/identity_verification_view/accept_request_page.ui:58
 #: src/session/view/account_settings/security_page/mod.rs:257
-#: src/session/view/content/room_history/verification_info_bar.rs:165
+#: src/session/view/content/room_history/verification_info_bar.rs:167
 #: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
 msgstr "验证"
@@ -1147,6 +1147,7 @@ msgid "Could Not Initialize Session"
 msgstr "无法初始化会话"
 
 #: src/identity_verification_view/accept_request_page.rs:128
+#: src/session/model/notifications/mod.rs:296
 msgid "Login Request From Another Session"
 msgstr "来自另一个会话的登录请求"
 
@@ -1158,6 +1159,7 @@ msgstr "从当前会话验证新会话。"
 #: src/identity_verification_view/choose_method_page.rs:178
 #: src/identity_verification_view/sas_page.rs:155
 #: src/identity_verification_view/scan_qr_code_page.rs:167
+#: src/session/model/notifications/mod.rs:227
 msgid "Verification Request"
 msgstr "验证请求"
 
@@ -1209,6 +1211,8 @@ msgstr "验证过程中发生了预期外的错误。"
 
 #: src/identity_verification_view/cancelled_page.rs:161
 #: src/identity_verification_view/mod.ui:113
+#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "验证已取消"
 
@@ -1222,6 +1226,7 @@ msgstr "发送新请求"
 
 #: src/identity_verification_view/cancelled_page.ui:52
 #: src/identity_verification_view/completed_page.ui:47
+#: src/identity_verification_view/room_left_page.ui:43
 msgid "Dismiss"
 msgstr "拒绝"
 
@@ -1424,6 +1429,10 @@ msgid ""
 "You scanned the QR code successfully. {user} may need to confirm the "
 "verification."
 msgstr "您已成功扫描该二维码。{user} 可能需要确认该验证。"
+
+#: src/identity_verification_view/room_left_page.ui:37
+msgid "You are no longer in the room where the verification was taking place"
+msgstr "您已不在验证发生的聊天室中"
 
 #: src/identity_verification_view/sas_page.rs:146
 msgid "Check if the same emoji appear in the same order on the other client."
@@ -1780,6 +1789,18 @@ msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:231
+msgid "{user} sent a verification request"
+msgstr "{user} 发送了一个验证请求"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:300
+msgid "Verify your new session “{name}”"
+msgstr "验证您的新会话“{name}”"
+
 #: src/session/model/room/join_rule.rs:276
 msgid "Only invited users, and users can knock"
 msgstr "仅邀请的和可以敲门的用户"
@@ -1937,7 +1958,7 @@ msgstr "确认新密码"
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:77
-#: src/session/view/content/room_history/verification_info_bar.rs:169
+#: src/session/view/content/room_history/verification_info_bar.rs:171
 msgid "Continue"
 msgstr "继续"
 
@@ -2610,7 +2631,7 @@ msgstr "移除服务器"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:248
+#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:244
 msgid "{user} invited you"
 msgstr "{user} 邀请了您"
 
@@ -4187,17 +4208,17 @@ msgstr[0] "{n} 个成员正在输入…"
 msgid "Could not accept verification"
 msgstr "无法接受验证"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:86
+#: src/session/view/content/room_history/verification_info_bar.rs:88
 msgid "Could not decline verification"
 msgstr "无法拒绝验证"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:159
+#: src/session/view/content/room_history/verification_info_bar.rs:161
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} 想要被验证"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:168
+#: src/session/view/content/room_history/verification_info_bar.rs:170
 msgid "Verification in progress"
 msgstr "验证进行中"
 
@@ -4639,15 +4660,11 @@ msgstr "{user} 发送了他们的位置。"
 msgid "{user} sent a video."
 msgstr "{user} 发送了一段视频。"
 
-#: src/utils/matrix.rs:206
-msgid "{user} sent a verification request."
-msgstr "{user} 发送了一个验证请求。"
-
-#: src/utils/matrix.rs:214
+#: src/utils/matrix.rs:210
 msgid "{user} sent a sticker."
 msgstr "{user} 发送了一张贴纸。"
 
-#: src/utils/matrix.rs:224
+#: src/utils/matrix.rs:220
 msgid "{user}: {message}"
 msgstr "{user}：{message}"
 
