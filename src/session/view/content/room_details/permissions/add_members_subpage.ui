@@ -47,7 +47,7 @@
                 <property name="halign">center</property>
                 <child>
                   <object class="GtkLabel" id="power_level_combo_label">
-                    <property name="label" translatable="yes">Assign Power Level</property>
+                    <property name="label" translatable="yes" comments="Translators: value used to assign room member roles">Assign Power Level</property>
                     <property name="xalign">0</property>
                     <property name="ellipsize">end</property>
                   </object>

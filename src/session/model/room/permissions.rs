@@ -67,9 +67,9 @@ pub enum MemberRole {
 impl fmt::Display for MemberRole {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
-            // Translators: As in 'Default power level'.
+            // Translators: As in 'Default power level', meaning permissions.
             Self::Default => write!(f, "{}", gettext("Default")),
-            // Translators: As in, 'Custom power level'.
+            // Translators: As in, 'Custom power level', meaning permissions.
             Self::Custom => write!(f, "{}", gettext("Custom")),
             Self::Moderator => write!(f, "{}", gettext("Moderator")),
             Self::Administrator => write!(f, "{}", gettext("Admin")),

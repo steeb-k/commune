@@ -42,7 +42,7 @@
                     <child>
                       <object class="AdwPreferencesGroup" id="room_actions_group">
                         <property name="title" translatable="yes">Room Actions</property>
-                        <property name="description" translatable="yes">Power level required to perform different actions in the room</property>
+                        <property name="description" translatable="yes" comments="Translators: value used to assign room member roles">Power level required to perform different actions in the room</property>
                         <child>
                           <object class="PowerLevelSelectionRow" id="messages_row">
                             <property name="title" translatable="yes">Send Messages</property>
@@ -202,7 +202,7 @@
                     <child>
                       <object class="AdwPreferencesGroup" id="member_actions_group">
                         <property name="title" translatable="yes">Member Actions</property>
-                        <property name="description" translatable="yes">Power level required to perform different actions on room members</property>
+                        <property name="description" translatable="yes" comments="Translators: value used to assign room member roles">Power level required to perform different actions on room members</property>
                         <child>
                           <object class="PowerLevelSelectionRow" id="invite_row">
                             <!-- Translators: This is a verb. -->
@@ -243,11 +243,11 @@
                     </child>
                     <child>
                       <object class="AdwPreferencesGroup" id="members_group">
-                        <property name="title" translatable="yes">Members Power Levels</property>
-                        <property name="description" translatable="yes">Power levels defined for all members of the room</property>
+                        <property name="title" translatable="yes" comments="Translators: value used to assign room member roles">Members Power Levels</property>
+                        <property name="description" translatable="yes" comments="Translators: value used to assign room member roles">Power levels defined for all members of the room</property>
                         <child>
                           <object class="AdwSpinRow" id="members_default_spin_row">
-                            <property name="title" translatable="yes">Default Power Level</property>
+                            <property name="title" translatable="yes" comments="Translators: value used to assign room member roles">Default Power Level</property>
                             <property name="numeric">True</property>
                             <property name="adjustment">
                               <object class="GtkAdjustment" id="members_default_adjustment">
@@ -263,7 +263,7 @@
                         <child>
                           <object class="AdwActionRow" id="members_default_text_row">
                             <property name="selectable">False</property>
-                            <property name="title" translatable="yes">Default Power Level</property>
+                            <property name="title" translatable="yes" comments="Translators: value used to assign room member roles">Default Power Level</property>
                             <accessibility>
                               <relation name="described-by">members_default_label</relation>
                             </accessibility>
@@ -276,7 +276,7 @@
                         </child>
                         <child>
                           <object class="ButtonCountRow" id="members_privileged_button">
-                            <property name="title" translatable="yes">Members With Assigned Power Levels</property>
+                            <property name="title" translatable="yes" comments="Translators: value used to assign room member roles">Members With Assigned Power Levels</property>
                             <property name="action-name">navigation.push</property>
                             <property name="action-target">'members'</property>
                           </object>
