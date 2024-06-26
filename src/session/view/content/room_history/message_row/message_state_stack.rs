@@ -1,5 +1,4 @@
 use adw::subclass::prelude::*;
-use gettextrs::gettext;
 use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 use crate::session::model::MessageState;
@@ -26,8 +25,6 @@ mod imp {
         pub state: Cell<MessageState>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub error_image: TemplateChild<gtk::Image>,
     }
 
     #[glib::object_subclass]
@@ -67,7 +64,9 @@ mod imp {
                 MessageState::None => {
                     if matches!(
                         prev_state,
-                        MessageState::Sending | MessageState::Error | MessageState::Cancelled
+                        MessageState::Sending
+                            | MessageState::RecoverableError
+                            | MessageState::PermanentError
                     ) {
                         // Show the sent icon.
                         stack.set_visible_child_name("sent");
@@ -90,23 +89,20 @@ mod imp {
                     stack.set_visible_child_name("sending");
                     obj.set_visible(true);
                 }
-                MessageState::Error => {
-                    self.error_image
-                        .set_tooltip_text(Some(&gettext("Could not send the message")));
-                    stack.set_visible_child_name("error");
+                MessageState::RecoverableError => {
+                    stack.set_visible_child_name("warning");
                     obj.set_visible(true);
                 }
-                MessageState::Cancelled => {
-                    self.error_image.set_tooltip_text(Some(&gettext(
-                        "An error occurred with the sending queue",
-                    )));
+                MessageState::PermanentError => {
                     stack.set_visible_child_name("error");
                     obj.set_visible(true);
                 }
                 MessageState::Edited => {
                     if matches!(
                         prev_state,
-                        MessageState::Sending | MessageState::Error | MessageState::Cancelled
+                        MessageState::Sending
+                            | MessageState::RecoverableError
+                            | MessageState::PermanentError
                     ) {
                         // Show the sent icon.
                         stack.set_visible_child_name("sent");

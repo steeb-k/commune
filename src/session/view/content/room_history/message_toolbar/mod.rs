@@ -8,10 +8,12 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
+use image::ImageFormat;
 use matrix_sdk::attachment::{
     generate_image_thumbnail, AttachmentConfig, AttachmentInfo, BaseFileInfo, BaseImageInfo,
-    Thumbnail,
+    ThumbnailFormat,
 };
+use matrix_sdk_ui::timeline::{EditInfo, RepliedToInfo};
 use ruma::{
     events::{
         room::message::{
@@ -540,6 +542,20 @@ impl MessageToolbar {
         imp.message_entry.grab_focus();
     }
 
+    /// The relation to send with the current message.
+    fn send_relation(&self) -> Option<SendRelation> {
+        let related_event_item = self.related_event()?.item();
+        match self.related_event_type() {
+            RelatedEventType::None => None,
+            RelatedEventType::Reply => Some(SendRelation::Reply(
+                related_event_item.replied_to_info().ok()?,
+            )),
+            RelatedEventType::Edit => {
+                Some(SendRelation::Edit(related_event_item.edit_info().ok()?))
+            }
+        }
+    }
+
     /// Get an iterator over chunks of the message entry's text between the
     /// given start and end, split by mentions.
     fn split_buffer_mentions(&self, start: gtk::TextIter, end: gtk::TextIter) -> SplitMentions {
@@ -636,35 +652,36 @@ impl MessageToolbar {
         let matrix_timeline = room.timeline().matrix_timeline();
 
         // Send event depending on relation.
-        match self
-            .related_event()
-            .map(|event| (self.related_event_type(), event.item()))
-        {
-            Some((RelatedEventType::Reply, reply_item)) => {
+        match self.send_relation() {
+            Some(SendRelation::Reply(replied_to_info)) => {
                 let handle = spawn_tokio!(async move {
                     matrix_timeline
-                        .send_reply(content, &reply_item, ForwardThread::Yes)
+                        .send_reply(content, replied_to_info, ForwardThread::Yes)
                         .await
                 });
                 if let Err(error) = handle.await.unwrap() {
                     error!("Could not send reply: {error}");
+                    toast!(self, gettext("Could not send reply"));
                 }
             }
-            Some((RelatedEventType::Edit, edit_item)) => {
+            Some(SendRelation::Edit(edit_info)) => {
                 let handle =
-                    spawn_tokio!(async move { matrix_timeline.edit(content, &edit_item).await });
+                    spawn_tokio!(async move { matrix_timeline.edit(content, edit_info).await });
                 if let Err(error) = handle.await.unwrap() {
                     error!("Could not send edit: {error}");
+                    toast!(self, gettext("Could not send edit"));
                 }
             }
             _ => {
-                spawn_tokio!(async move {
+                let handle = spawn_tokio!(async move {
                     matrix_timeline
                         .send(content.with_relation(None).into())
                         .await
-                })
-                .await
-                .unwrap();
+                });
+                if let Err(error) = handle.await.unwrap() {
+                    error!("Could not send message: {error}");
+                    toast!(self, gettext("Could not send message"));
+                }
             }
         }
 
@@ -785,9 +802,12 @@ impl MessageToolbar {
         .add_mentions(Mentions::default());
 
         let matrix_timeline = room.timeline().matrix_timeline();
-        spawn_tokio!(async move { matrix_timeline.send(content.into()).await })
-            .await
-            .unwrap();
+        let handle = spawn_tokio!(async move { matrix_timeline.send(content.into()).await });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not send location: {error}");
+            toast!(self, gettext("Could not send location"))
+        }
     }
 
     /// Show a toast for the given location error;
@@ -818,14 +838,13 @@ impl MessageToolbar {
         let handle = spawn_tokio!(async move {
             // The method will filter compatible mime types so we don't need to,
             // since we ignore errors.
-            let thumbnail = match generate_image_thumbnail(&mime, Cursor::new(&bytes), None) {
-                Ok((data, info)) => Some(Thumbnail {
-                    data,
-                    content_type: mime.clone(),
-                    info: Some(info),
-                }),
-                _ => None,
-            };
+            let thumbnail = generate_image_thumbnail(
+                &mime,
+                Cursor::new(&bytes),
+                None,
+                ThumbnailFormat::Fallback(ImageFormat::Jpeg),
+            )
+            .ok();
 
             let config = if let Some(thumbnail) = thumbnail {
                 AttachmentConfig::with_thumbnail(thumbnail)
@@ -840,7 +859,8 @@ impl MessageToolbar {
         });
 
         if let Err(error) = handle.await.unwrap() {
-            error!("Failed to send attachment: {error}");
+            error!("Could not send file: {error}");
+            toast!(self, gettext("Could not send file"));
         }
     }
 
@@ -1176,4 +1196,14 @@ impl SplitMentions {
             Some(MentionChunk::Text(text.into()))
         }
     }
+}
+
+/// The possible relations to send with a message.
+#[derive(Debug)]
+enum SendRelation {
+    /// Send a reply with the given replied to info.
+    Reply(RepliedToInfo),
+
+    /// Send an edit with the given edit info.
+    Edit(EditInfo),
 }

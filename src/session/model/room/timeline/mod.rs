@@ -3,13 +3,15 @@ mod virtual_item;
 
 use std::{collections::HashMap, sync::Arc};
 
-use eyeball_im::VectorDiff;
 use futures_util::StreamExt;
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::Error as MatrixError;
-use matrix_sdk_ui::timeline::{
-    default_event_filter, AnyOtherFullStateEventContent, PaginationStatus, RoomExt,
-    Timeline as SdkTimeline, TimelineItem as SdkTimelineItem, TimelineItemContent,
+use matrix_sdk_ui::{
+    eyeball_im::VectorDiff,
+    timeline::{
+        default_event_filter, AnyOtherFullStateEventContent, LiveBackPaginationStatus, RoomExt,
+        Timeline as SdkTimeline, TimelineItem as SdkTimelineItem, TimelineItemContent,
+    },
 };
 use ruma::{
     events::{
@@ -48,12 +50,16 @@ pub enum TimelineState {
     Complete,
 }
 
-impl From<PaginationStatus> for TimelineState {
-    fn from(value: PaginationStatus) -> Self {
+impl From<LiveBackPaginationStatus> for TimelineState {
+    fn from(value: LiveBackPaginationStatus) -> Self {
         match value {
-            PaginationStatus::Idle => Self::Ready,
-            PaginationStatus::Paginating => Self::Loading,
-            PaginationStatus::TimelineEndReached => Self::Complete,
+            LiveBackPaginationStatus::Idle {
+                hit_start_of_timeline: false,
+            } => Self::Ready,
+            LiveBackPaginationStatus::Idle {
+                hit_start_of_timeline: true,
+            } => Self::Complete,
+            LiveBackPaginationStatus::Paginating => Self::Loading,
         }
     }
 }
@@ -636,12 +642,15 @@ impl Timeline {
         let room_id = room.room_id().to_owned();
         let matrix_timeline = self.matrix_timeline();
 
-        let mut subscriber = matrix_timeline.back_pagination_status();
+        let (status, stream) = matrix_timeline
+            .live_back_pagination_status()
+            .await
+            .expect("Timeline should be in live mode");
 
-        self.set_state(subscriber.next_now().into());
+        self.set_state(status.into());
 
         let obj_weak = glib::SendWeakRef::from(self.downgrade());
-        let fut = subscriber.for_each(move |status| {
+        let fut = stream.for_each(move |status| {
             let obj_weak = obj_weak.clone();
             let room_id = room_id.clone();
             async move {

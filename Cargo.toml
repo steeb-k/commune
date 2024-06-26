@@ -22,7 +22,6 @@ codegen-units = 16
 # Please keep dependencies sorted.
 [dependencies]
 djb_hash = "0.1"
-eyeball-im = "0.4"
 futures-channel = "0.3"
 futures-util = "0.3"
 geo-uri = "0.2"
@@ -33,7 +32,7 @@ linkify = "0.10.0"
 mime = "0.3"
 mime_guess = "2"
 once_cell = "1"
-pulldown-cmark = "0.10"
+pulldown-cmark = "0.11"
 qrcode = "0.14"
 rand = "0.8"
 regex = "1"
@@ -64,7 +63,7 @@ sourceview = { package = "sourceview5", version = "0.8" }
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "64c5a83e3368b33e53f17d167d8bc3aa646438cc"
+rev = "38a18c3c8e3be2951967d463ade1f6607228e6a7"
 features = [
     "socks",
     "sso-login",
@@ -75,14 +74,14 @@ features = [
 
 [dependencies.matrix-sdk-ui]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "64c5a83e3368b33e53f17d167d8bc3aa646438cc"
+rev = "38a18c3c8e3be2951967d463ade1f6607228e6a7"
 default-features = false
 features = ["e2e-encryption", "native-tls"]
 
 [dependencies.ruma]
-version = "0.10"
-# git = "https://github.com/ruma/ruma.git"
-# rev = "b6200c01a120120faf9f744ab4f171ff3beefd72"
+# version = "0.10"
+git = "https://github.com/ruma/ruma.git"
+rev = "e5a370f7e5fcebb0da6e4945e51c5fafba9aa5f0"
 features = [
     "unstable-unspecified",
     "client-api-c",

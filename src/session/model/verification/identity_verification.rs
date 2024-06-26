@@ -174,9 +174,6 @@ mod imp {
         /// have access to the camera.
         #[property(get)]
         pub camera_paintable: RefCell<Option<gdk::Paintable>>,
-        /// Whether we started the SAS verification.
-        #[property(get)]
-        pub we_started_sas: Cell<bool>,
         /// Whether this verification was viewed by the user.
         #[property(get, set = Self::set_was_viewed, explicit_notify)]
         pub was_viewed: Cell<bool>,
@@ -769,13 +766,12 @@ impl IdentityVerification {
         let imp = self.imp();
 
         match state {
+            SasState::Created { .. } => {}
             SasState::Started { .. } => {
-                if !self.we_started_sas() {
-                    let handle = spawn_tokio!(async move { sas_verification.accept().await });
-                    if let Err(error) = handle.await.unwrap() {
-                        error!("Could not accept SAS verification: {error}");
-                        imp.set_state(VerificationState::Error);
-                    }
+                let handle = spawn_tokio!(async move { sas_verification.accept().await });
+                if let Err(error) = handle.await.unwrap() {
+                    error!("Could not accept SAS verification: {error}");
+                    imp.set_state(VerificationState::Error);
                 }
             }
             SasState::Accepted { .. } => {}
@@ -819,12 +815,6 @@ impl IdentityVerification {
             Verification::SasV1(v) => v.decimals(),
             _ => None,
         }
-    }
-
-    /// Set whether we started the SAS verification.
-    fn set_we_started_sas(&self, we_started: bool) {
-        self.imp().we_started_sas.set(we_started);
-        self.notify_we_started_sas();
     }
 
     /// Try to load the QR Code.
@@ -927,25 +917,16 @@ impl IdentityVerification {
     /// Start a SAS verification.
     pub async fn start_sas(&self) -> Result<(), ()> {
         let request = self.request().clone();
-
-        // We need to set this first, to make sure we have it when we handle the state
-        // change.
-        self.set_we_started_sas(true);
-
         let handle = spawn_tokio!(async move { request.start_sas().await });
 
         match handle.await.unwrap() {
             Ok(Some(_)) => Ok(()),
             Ok(None) => {
                 error!("Could not start SAS verification: unknown reason");
-                // Unset it because it didn't work.
-                self.set_we_started_sas(false);
                 Err(())
             }
             Err(error) => {
                 error!("Could not start SAS verification: {error}");
-                // Unset it because it didn't work.
-                self.set_we_started_sas(false);
                 Err(())
             }
         }

@@ -73,11 +73,6 @@
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Try Again</attribute>
-        <attribute name="action">event.retry-send</attribute>
-        <attribute name="hidden-when">action-missing</attribute>
-      </item>
-      <item>
         <attribute name="label" translatable="yes">_Discard</attribute>
         <attribute name="action">event.cancel-send</attribute>
         <attribute name="hidden-when">action-missing</attribute>
@@ -163,11 +158,6 @@
       </item>
     </section>
     <section>
-      <item>
-        <attribute name="label" translatable="yes">_Try Again</attribute>
-        <attribute name="action">event.retry-send</attribute>
-        <attribute name="hidden-when">action-missing</attribute>
-      </item>
       <item>
         <attribute name="label" translatable="yes">_Discard</attribute>
         <attribute name="action">event.cancel-send</attribute>

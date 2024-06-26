@@ -222,7 +222,7 @@ fn widget_for_html_block(
             w.add_css_class("quote");
             w
         }
-        MatrixElement::P | MatrixElement::Div | MatrixElement::Li | MatrixElement::Summary => {
+        MatrixElement::P | MatrixElement::Div(_) | MatrixElement::Li | MatrixElement::Summary => {
             widget_for_html_nodes(node.children(), config, add_ellipsis, sender_name)?
         }
         MatrixElement::Ul => {

@@ -79,20 +79,23 @@ impl FromVariant for EventKey {
 }
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
 #[enum_type(name = "MessageState")]
 pub enum MessageState {
     /// The message has no particular state.
     #[default]
-    None = 0,
+    None,
     /// The message is being sent.
-    Sending = 1,
-    /// An error occurred when sending the message.
-    Error = 2,
-    /// Sending the message was cancelled.
-    Cancelled = 3,
+    Sending,
+    /// A transient error occurred when sending the message.
+    ///
+    /// The user can try to send it again.
+    RecoverableError,
+    /// A permanent error occurred when sending the message.
+    ///
+    /// The message can only be cancelled.
+    PermanentError,
     /// The message was edited.
-    Edited = 4,
+    Edited,
 }
 
 /// A user's read receipt.
@@ -604,14 +607,25 @@ impl Event {
         if let Some(send_state) = item.send_state() {
             match send_state {
                 EventSendState::NotSentYet => return MessageState::Sending,
-                EventSendState::SendingFailed { error } => {
-                    if self.state() != MessageState::Error {
+                EventSendState::SendingFailed {
+                    error,
+                    is_recoverable,
+                } => {
+                    if !matches!(
+                        self.state(),
+                        MessageState::PermanentError | MessageState::RecoverableError,
+                    ) {
                         error!("Could not send message: {error}");
                     }
 
-                    return MessageState::Error;
+                    let new_state = if *is_recoverable {
+                        MessageState::RecoverableError
+                    } else {
+                        MessageState::PermanentError
+                    };
+
+                    return new_state;
                 }
-                EventSendState::Cancelled => return MessageState::Cancelled,
                 EventSendState::Sent { .. } => {}
             }
         }

@@ -553,7 +553,12 @@ impl ItemRow {
         } else {
             let state = event.state();
 
-            if matches!(state, MessageState::Sending | MessageState::Error) {
+            if matches!(
+                state,
+                MessageState::Sending
+                    | MessageState::RecoverableError
+                    | MessageState::PermanentError
+            ) {
                 // Cancel the event.
                 action_group.add_action_entries([gio::ActionEntry::builder("cancel-send")
                     .activate(clone!(
@@ -562,21 +567,6 @@ impl ItemRow {
                         move |_, _, _| {
                             spawn!(async move {
                                 obj.cancel_send().await;
-                            });
-                        }
-                    ))
-                    .build()]);
-            }
-
-            if state == MessageState::Error {
-                // Retry to send the event.
-                action_group.add_action_entries([gio::ActionEntry::builder("retry-send")
-                    .activate(clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        move |_, _, _| {
-                            spawn!(async move {
-                                obj.retry_send().await;
                             });
                         }
                     ))
@@ -1007,39 +997,16 @@ impl ItemRow {
         let Some(event) = self.item().and_downcast::<Event>() else {
             return;
         };
-        let Some(transaction_id) = event.transaction_id() else {
-            return;
-        };
 
-        if !event
+        if let Err(error) = event
             .room()
             .timeline()
             .matrix_timeline()
-            .cancel_send(&transaction_id)
+            .redact(&event.item(), None)
             .await
         {
+            error!("Could not discard local event: {error}");
             toast!(self, gettext("Could not discard message"));
-        }
-    }
-
-    /// Retry sending the event of this row.
-    async fn retry_send(&self) {
-        let Some(event) = self.item().and_downcast::<Event>() else {
-            return;
-        };
-        let Some(transaction_id) = event.transaction_id() else {
-            return;
-        };
-
-        if event
-            .room()
-            .timeline()
-            .matrix_timeline()
-            .retry_send(&transaction_id)
-            .await
-            .is_err()
-        {
-            toast!(self, gettext("Could not retry to send message"));
         }
     }
 }
