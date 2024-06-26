@@ -116,8 +116,10 @@ mod imp {
             self.list_view.set_model(Some(&gtk::NoSelection::new(Some(
                 self.filtered_model.clone(),
             ))));
-            self.list_view
-                .connect_activate(clone!(@weak obj => move |_, pos| {
+            self.list_view.connect_activate(clone!(
+                #[weak]
+                obj,
+                move |_, pos| {
                     let Some(item) = obj.imp().filtered_model.item(pos) else {
                         return;
                     };
@@ -135,7 +137,8 @@ mod imp {
                         )
                         .unwrap();
                     }
-                }));
+                }
+            ));
 
             obj.connect_tag_notify(|obj| {
                 obj.imp().update_title();
@@ -176,10 +179,13 @@ mod imp {
             }
 
             if let Some(model) = &model {
-                let items_changed_handler =
-                    model.connect_items_changed(clone!(@weak self as imp => move |_, _, _, _| {
+                let items_changed_handler = model.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _, _| {
                         imp.update_title();
-                    }));
+                    }
+                ));
                 self.items_changed_handler
                     .replace(Some(items_changed_handler));
             }

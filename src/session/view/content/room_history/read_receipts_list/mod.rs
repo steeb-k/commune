@@ -109,11 +109,14 @@ mod imp {
                         .unwrap()
                 });
 
-            self.list
-                .connect_items_changed(clone!(@weak obj => move |_, _,_,_| {
+            self.list.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |_, _, _, _| {
                     obj.update_tooltip();
                     obj.update_label();
-                }));
+                }
+            ));
 
             obj.set_pressed_state(false);
         }
@@ -193,11 +196,13 @@ impl ReadReceiptsList {
     pub fn set_source(&self, source: &gio::ListStore) {
         let imp = self.imp();
 
-        let items_changed_handler_id = source.connect_items_changed(
-            clone!(@weak self as obj => move |source, pos, removed, added| {
+        let items_changed_handler_id = source.connect_items_changed(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |source, pos, removed, added| {
                 obj.items_changed(source, pos, removed, added);
-            }),
-        );
+            }
+        ));
         self.items_changed(source, 0, self.list().n_items(), source.n_items());
 
         imp.source.set(source, vec![items_changed_handler_id]);
@@ -241,10 +246,13 @@ impl ReadReceiptsList {
                 .and_then(|r| r.member())
             {
                 // Listen to changes of the display name.
-                let handler_id =
-                    member.connect_display_name_notify(clone!(@weak self as obj => move |member| {
+                let handler_id = member.connect_display_name_notify(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    move |member| {
                         obj.update_member_tooltip(member);
-                    }));
+                    }
+                ));
 
                 imp.receipt_member.set(&member, vec![handler_id]);
                 self.update_member_tooltip(&member);
@@ -301,10 +309,14 @@ impl ReadReceiptsList {
         let popover = ReadReceiptsPopover::new(&list);
         popover.set_parent(self);
         popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 0, 0)));
-        popover.connect_closed(clone!(@weak self as obj => move |popover| {
-            popover.unparent();
-            obj.set_active(false);
-        }));
+        popover.connect_closed(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |popover| {
+                popover.unparent();
+                obj.set_active(false);
+            }
+        ));
 
         popover.popup();
     }

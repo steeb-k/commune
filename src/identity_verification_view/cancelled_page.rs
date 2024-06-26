@@ -84,19 +84,23 @@ mod imp {
             self.verification.disconnect_signals();
 
             if let Some(verification) = verification {
-                let display_name_handler =
-                    verification
-                        .user()
-                        .connect_display_name_notify(clone!(@weak obj => move |_| {
-                            obj.update_message();
-                        }));
+                let display_name_handler = verification.user().connect_display_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_message();
+                    }
+                ));
                 self.display_name_handler
                     .replace(Some(display_name_handler));
 
-                let cancel_info_changed_handler =
-                    verification.connect_cancel_info_changed(clone!(@weak obj => move |_| {
+                let cancel_info_changed_handler = verification.connect_cancel_info_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_message();
-                    }));
+                    }
+                ));
 
                 self.verification
                     .set(&verification, vec![cancel_info_changed_handler]);

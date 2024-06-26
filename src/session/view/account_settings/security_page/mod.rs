@@ -114,11 +114,14 @@ mod imp {
 
             if let Some(session) = &session {
                 let ignored_users = session.ignored_users();
-                let ignored_users_count_handler = ignored_users.connect_items_changed(
-                    clone!(@weak self as imp => move |ignored_users, _, _, _| {
-                        imp.ignored_users_row.set_count(ignored_users.n_items().to_string());
-                    }),
-                );
+                let ignored_users_count_handler = ignored_users.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |ignored_users, _, _, _| {
+                        imp.ignored_users_row
+                            .set_count(ignored_users.n_items().to_string());
+                    }
+                ));
                 self.ignored_users_row
                     .set_count(ignored_users.n_items().to_string());
 
@@ -146,17 +149,27 @@ mod imp {
                     .replace(vec![public_read_receipts_binding, typing_binding]);
 
                 let crypto_identity_state_handler =
-                    session.connect_crypto_identity_state_notify(clone!(@weak obj => move |_| {
+                    session.connect_crypto_identity_state_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_crypto_identity();
+                        }
+                    ));
+                let verification_state_handler = session.connect_verification_state_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_crypto_identity();
-                    }));
-                let verification_state_handler =
-                    session.connect_verification_state_notify(clone!(@weak obj => move |_| {
-                        obj.update_crypto_identity();
-                    }));
-                let recovery_state_handler =
-                    session.connect_recovery_state_notify(clone!(@weak obj => move |_| {
+                    }
+                ));
+                let recovery_state_handler = session.connect_recovery_state_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_recovery();
-                    }));
+                    }
+                ));
 
                 self.session.set(
                     session,

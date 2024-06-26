@@ -68,10 +68,13 @@ mod imp {
             });
 
             if let Some(selection) = &selection {
-                let selected_handler =
-                    selection.connect_selected_item_notify(clone!(@weak obj => move |selection| {
+                let selected_handler = selection.connect_selected_item_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |selection| {
                         obj.update_selected_item(selection.selected());
-                    }));
+                    }
+                ));
                 obj.update_selected_item(selection.selected());
 
                 self.session_selection

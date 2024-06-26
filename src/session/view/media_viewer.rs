@@ -115,48 +115,68 @@ mod imp {
             self.parent_constructed();
 
             let obj = self.obj();
-            let target = adw::CallbackAnimationTarget::new(clone!(@weak obj => move |value| {
-                // This is needed to fade the header bar content
-                obj.imp().header_bar.set_opacity(value);
+            let target = adw::CallbackAnimationTarget::new(clone!(
+                #[weak]
+                obj,
+                move |value| {
+                    // This is needed to fade the header bar content
+                    obj.imp().header_bar.set_opacity(value);
 
-                obj.queue_draw();
-            }));
+                    obj.queue_draw();
+                }
+            ));
             let animation = adw::TimedAnimation::new(&*obj, 0.0, 1.0, ANIMATION_DURATION, target);
             self.animation.set(animation).unwrap();
 
             let swipe_tracker = adw::SwipeTracker::new(&*obj);
             swipe_tracker.set_orientation(gtk::Orientation::Vertical);
-            swipe_tracker.connect_update_swipe(clone!(@weak obj => move |_, progress| {
-                obj.imp().header_bar.set_opacity(0.0);
-                obj.imp().swipe_progress.set(progress);
-                obj.queue_allocate();
-                obj.queue_draw();
-            }));
-            swipe_tracker.connect_end_swipe(clone!(@weak obj => move |_, _, to| {
-                if to == 0.0 {
-                    let target = adw::CallbackAnimationTarget::new(clone!(@weak obj => move |value| {
-                        obj.imp().swipe_progress.set(value);
-                        obj.queue_allocate();
-                        obj.queue_draw();
-                    }));
-                    let swipe_progress = obj.imp().swipe_progress.get();
-                    let animation = adw::TimedAnimation::new(
-                        &obj,
-                        swipe_progress,
-                        0.0,
-                        CANCEL_SWIPE_ANIMATION_DURATION,
-                        target,
-                    );
-                    animation.set_easing(adw::Easing::EaseOutCubic);
-                    animation.connect_done(clone!(@weak obj => move |_| {
-                        obj.imp().header_bar.set_opacity(1.0);
-                    }));
-                    animation.play();
-                } else {
-                    obj.close();
-                    obj.imp().header_bar.set_opacity(1.0);
+            swipe_tracker.connect_update_swipe(clone!(
+                #[weak]
+                obj,
+                move |_, progress| {
+                    obj.imp().header_bar.set_opacity(0.0);
+                    obj.imp().swipe_progress.set(progress);
+                    obj.queue_allocate();
+                    obj.queue_draw();
                 }
-            }));
+            ));
+            swipe_tracker.connect_end_swipe(clone!(
+                #[weak]
+                obj,
+                move |_, _, to| {
+                    if to == 0.0 {
+                        let target = adw::CallbackAnimationTarget::new(clone!(
+                            #[weak]
+                            obj,
+                            move |value| {
+                                obj.imp().swipe_progress.set(value);
+                                obj.queue_allocate();
+                                obj.queue_draw();
+                            }
+                        ));
+                        let swipe_progress = obj.imp().swipe_progress.get();
+                        let animation = adw::TimedAnimation::new(
+                            &obj,
+                            swipe_progress,
+                            0.0,
+                            CANCEL_SWIPE_ANIMATION_DURATION,
+                            target,
+                        );
+                        animation.set_easing(adw::Easing::EaseOutCubic);
+                        animation.connect_done(clone!(
+                            #[weak]
+                            obj,
+                            move |_| {
+                                obj.imp().header_bar.set_opacity(1.0);
+                            }
+                        ));
+                        animation.play();
+                    } else {
+                        obj.close();
+                        obj.imp().header_bar.set_opacity(1.0);
+                    }
+                }
+            ));
             self.swipe_tracker.set(swipe_tracker).unwrap();
 
             // Bind `fullscreened` to the window property of the same name.
@@ -169,12 +189,15 @@ mod imp {
                 }
             });
 
-            self.revealer
-                .connect_transition_done(clone!(@weak obj => move |revealer| {
+            self.revealer.connect_transition_done(clone!(
+                #[weak]
+                obj,
+                move |revealer| {
                     if !revealer.reveal_child() {
                         obj.set_visible(false);
                     }
-                }));
+                }
+            ));
 
             obj.update_menu_actions();
         }
@@ -370,24 +393,33 @@ impl MediaViewer {
 
                 spawn!(
                     glib::Priority::LOW,
-                    clone!(@weak self as obj => async move {
-                        let imp = obj.imp();
+                    clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        async move {
+                            let imp = obj.imp();
 
-                        match get_media_content(client, message).await {
-                            Ok(( _, data)) => {
-                                match ImagePaintable::from_bytes(&glib::Bytes::from(&data), image.info.and_then(|info| info.mimetype).as_deref()) {
-                                    Ok(texture) => {
-                                        imp.media.view_image(&texture);
-                                        return;
+                            match get_media_content(client, message).await {
+                                Ok((_, data)) => {
+                                    match ImagePaintable::from_bytes(
+                                        &glib::Bytes::from(&data),
+                                        image.info.and_then(|info| info.mimetype).as_deref(),
+                                    ) {
+                                        Ok(texture) => {
+                                            imp.media.view_image(&texture);
+                                            return;
+                                        }
+                                        Err(error) => {
+                                            warn!("Could not load GdkTexture from file: {error}")
+                                        }
                                     }
-                                    Err(error) => warn!("Could not load GdkTexture from file: {error}"),
                                 }
+                                Err(error) => warn!("Could not retrieve image file: {error}"),
                             }
-                            Err(error) => warn!("Could not retrieve image file: {error}"),
-                        }
 
-                        imp.media.show_fallback(ContentType::Image);
-                    })
+                            imp.media.show_fallback(ContentType::Image);
+                        }
+                    )
                 );
             }
             MessageType::Video(video) => {
@@ -395,32 +427,36 @@ impl MediaViewer {
 
                 spawn!(
                     glib::Priority::LOW,
-                    clone!(@weak self as obj => async move {
-                        let imp = obj.imp();
+                    clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        async move {
+                            let imp = obj.imp();
 
-                        match get_media_content(client, message).await {
-                            Ok(( _, data)) => {
-                                // The GStreamer backend of GtkVideo doesn't work with input streams so
-                                // we need to store the file.
-                                // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                                let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                                file.replace_contents(
-                                    &data,
-                                    None,
-                                    false,
-                                    gio::FileCreateFlags::REPLACE_DESTINATION,
-                                    gio::Cancellable::NONE,
-                                )
-                                .unwrap();
+                            match get_media_content(client, message).await {
+                                Ok((_, data)) => {
+                                    // The GStreamer backend of GtkVideo doesn't work with input
+                                    // streams so we need to
+                                    // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
+                                    let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
+                                    file.replace_contents(
+                                        &data,
+                                        None,
+                                        false,
+                                        gio::FileCreateFlags::REPLACE_DESTINATION,
+                                        gio::Cancellable::NONE,
+                                    )
+                                    .unwrap();
 
-                                imp.media.view_file(file);
-                            }
-                            Err(error) => {
-                                warn!("Could not retrieve video file: {error}");
-                                imp.media.show_fallback(ContentType::Video);
+                                    imp.media.view_file(file);
+                                }
+                                Err(error) => {
+                                    warn!("Could not retrieve video file: {error}");
+                                    imp.media.show_fallback(ContentType::Video);
+                                }
                             }
                         }
-                    })
+                    )
                 );
             }
             _ => {}

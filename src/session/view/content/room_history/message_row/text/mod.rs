@@ -166,11 +166,15 @@ impl MessageText {
                 self.set_is_html(true);
                 self.set_original_text(formatted);
 
-                let handler = sender.connect_disambiguated_name_notify(
-                    clone!(@weak self as obj, @weak room => move |sender| {
+                let handler = sender.connect_disambiguated_name_notify(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    #[weak]
+                    room,
+                    move |sender| {
                         obj.update_emote(&room, &sender.disambiguated_name());
-                    }),
-                );
+                    }
+                ));
                 self.imp().sender.set(&sender, vec![handler]);
 
                 return;
@@ -193,11 +197,15 @@ impl MessageText {
         self.build_text(&body, room, Some(&sender_name));
         self.set_original_text(body);
 
-        let handler = sender.connect_disambiguated_name_notify(
-            clone!(@weak self as obj, @weak room => move |sender| {
+        let handler = sender.connect_disambiguated_name_notify(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            #[weak]
+            room,
+            move |sender| {
                 obj.update_emote(&room, &sender.disambiguated_name());
-            }),
-        );
+            }
+        ));
         self.imp().sender.set(&sender, vec![handler]);
     }
 

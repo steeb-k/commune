@@ -74,27 +74,36 @@ mod imp {
             let obj = self.obj();
             let adj = self.scrolled_window.vadjustment();
 
-            adj.connect_value_changed(clone!(@weak self as imp => move |adj| {
-                if adj.upper() - adj.value() < adj.page_size() * 2.0 {
-                    if let Some(public_room_list) = &*imp.public_room_list.borrow() {
-                        public_room_list.load_public_rooms(false);
+            adj.connect_value_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |adj| {
+                    if adj.upper() - adj.value() < adj.page_size() * 2.0 {
+                        if let Some(public_room_list) = &*imp.public_room_list.borrow() {
+                            public_room_list.load_public_rooms(false);
+                        }
                     }
                 }
-            }));
+            ));
 
-            self.search_entry
-                .connect_search_changed(clone!(@weak obj => move |_| {
+            self.search_entry.connect_search_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.trigger_search();
-                }));
+                }
+            ));
 
-            self.servers_popover.connect_selected_server_changed(
-                clone!(@weak obj => move |_, server| {
+            self.servers_popover.connect_selected_server_changed(clone!(
+                #[weak]
+                obj,
+                move |_, server| {
                     if let Some(server) = server {
                         obj.imp().servers_button.set_label(&server.name());
                         obj.trigger_search();
                     }
-                }),
-            );
+                }
+            ));
         }
     }
 
@@ -114,13 +123,21 @@ mod imp {
                 self.listview
                     .set_model(Some(&gtk::NoSelection::new(Some(public_room_list.clone()))));
 
-                public_room_list.connect_loading_notify(clone!(@weak obj => move |_| {
-                    obj.update_visible_child();
-                }));
+                public_room_list.connect_loading_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_visible_child();
+                    }
+                ));
 
-                public_room_list.connect_empty_notify(clone!(@weak obj => move |_| {
-                    obj.update_visible_child();
-                }));
+                public_room_list.connect_empty_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_visible_child();
+                    }
+                ));
 
                 self.public_room_list.replace(Some(public_room_list));
                 obj.update_visible_child();

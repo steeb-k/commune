@@ -173,45 +173,53 @@ impl MessageAudio {
 
         spawn!(
             glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                match handle.await.unwrap() {
-                    Ok(Some(data)) => {
-                        // The GStreamer backend doesn't work with input streams so
-                        // we need to store the file.
-                        // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                        let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                        file.replace_contents(
-                            &data,
-                            None,
-                            false,
-                            gio::FileCreateFlags::REPLACE_DESTINATION,
-                            gio::Cancellable::NONE,
-                        )
-                        .unwrap();
-                        obj.display_file(file);
-                    }
-                    Ok(None) => {
-                        warn!("Could not retrieve invalid audio file");
-                        obj.set_error(gettext("Could not retrieve audio file"));
-                    }
-                    Err(error) => {
-                        warn!("Could not retrieve audio file: {error}");
-                        obj.set_error(gettext("Could not retrieve audio file"));
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    match handle.await.unwrap() {
+                        Ok(Some(data)) => {
+                            // The GStreamer backend doesn't work with input streams so
+                            // we need to store the file.
+                            // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
+                            let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
+                            file.replace_contents(
+                                &data,
+                                None,
+                                false,
+                                gio::FileCreateFlags::REPLACE_DESTINATION,
+                                gio::Cancellable::NONE,
+                            )
+                            .unwrap();
+                            obj.display_file(file);
+                        }
+                        Ok(None) => {
+                            warn!("Could not retrieve invalid audio file");
+                            obj.set_error(gettext("Could not retrieve audio file"));
+                        }
+                        Err(error) => {
+                            warn!("Could not retrieve audio file: {error}");
+                            obj.set_error(gettext("Could not retrieve audio file"));
+                        }
                     }
                 }
-            })
+            )
         );
     }
 
     fn display_file(&self, file: gio::File) {
         let media_file = gtk::MediaFile::for_file(&file);
 
-        media_file.connect_error_notify(clone!(@weak self as obj => move |media_file| {
-            if let Some(error) = media_file.error() {
-                warn!("Error reading audio file: {error}");
-                obj.set_error(gettext("Error reading audio file"));
+        media_file.connect_error_notify(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |media_file| {
+                if let Some(error) = media_file.error() {
+                    warn!("Error reading audio file: {error}");
+                    obj.set_error(gettext("Error reading audio file"));
+                }
             }
-        }));
+        ));
 
         self.imp().player.set_media_file(Some(media_file));
         self.set_state(MediaState::Ready);

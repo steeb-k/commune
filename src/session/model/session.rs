@@ -206,11 +206,15 @@ mod imp {
             self.user_sessions.init(&obj, obj.user_id().clone());
 
             let monitor = gio::NetworkMonitor::default();
-            let handler_id = monitor.connect_network_changed(clone!(@weak obj => move |_, _| {
-                spawn!(async move {
-                    obj.update_offline().await;
-                });
-            }));
+            let handler_id = monitor.connect_network_changed(clone!(
+                #[weak]
+                obj,
+                move |_, _| {
+                    spawn!(async move {
+                        obj.update_offline().await;
+                    });
+                }
+            ));
             self.offline_handler_id.replace(Some(handler_id));
         }
 
@@ -365,12 +369,16 @@ impl Session {
     pub async fn prepare(&self) {
         spawn!(
             glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                // First, load the profile from the cache, it will be quicker.
-                obj.init_user_profile().await;
-                // Then, check if the profile changed.
-                obj.update_user_profile().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    // First, load the profile from the cache, it will be quicker.
+                    obj.init_user_profile().await;
+                    // Then, check if the profile changed.
+                    obj.update_user_profile().await;
+                }
+            )
         );
         self.update_offline().await;
 
@@ -380,9 +388,13 @@ impl Session {
         self.init_verification_state();
         self.init_recovery_state();
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.init_crypto_identity_state().await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.init_crypto_identity_state().await;
+            }
+        ));
 
         self.set_state(SessionState::InitialSync);
         self.sync();
@@ -891,9 +903,13 @@ impl Session {
 
         spawn!(
             glib::Priority::LOW,
-            clone!(@strong self as obj => async move {
-                obj.clean_up().await;
-            })
+            clone!(
+                #[strong(rename_to = obj)]
+                self,
+                async move {
+                    obj.clean_up().await;
+                }
+            )
         );
     }
 

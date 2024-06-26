@@ -79,12 +79,14 @@ mod imp {
             if let Some(item) = &item {
                 let model = item.model();
 
-                let items_changed_handler = model.connect_items_changed(
-                    clone!(@weak self as imp => move |model, _, _, _| {
+                let items_changed_handler = model.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |model, _, _, _| {
                         imp.member_count_changed(model.n_items());
                         imp.obj().notify_label();
-                    }),
-                );
+                    }
+                ));
                 self.items_changed_handler
                     .replace(Some(items_changed_handler));
 

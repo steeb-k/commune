@@ -56,12 +56,15 @@ mod imp {
     impl MemberPowerLevel {
         /// Set the room member.
         fn set_permissions(&self, permissions: &Permissions) {
-            let changed_handler =
-                permissions.connect_changed(clone!(@weak self as imp => move |_| {
+            let changed_handler = permissions.connect_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
                     imp.update_power_level();
                     imp.update_role();
                     imp.update_editable();
-                }));
+                }
+            ));
             self.permissions.set(permissions, vec![changed_handler]);
         }
 

@@ -183,8 +183,8 @@ impl LinuxCameraPaintable {
         gst::Element::link_many([&queue2, &videoconvert2, &sink]).unwrap();
 
         let bus = pipeline.bus().unwrap();
-        let bus_guard = bus.add_watch_local(
-            clone!(@weak self as paintable => @default-return glib::ControlFlow::Break, move |_, msg| {
+        let bus_guard = bus
+            .add_watch_local(move |_, msg| {
                 if let gst::MessageView::Error(err) = msg.view() {
                     error!(
                         "Error from {:?}: {} ({:?})",
@@ -194,9 +194,8 @@ impl LinuxCameraPaintable {
                     );
                 }
                 glib::ControlFlow::Continue
-            }),
-        )
-        .expect("Could not add bus watch");
+            })
+            .expect("Could not add bus watch");
 
         let paintable = sink.property::<gdk::Paintable>("paintable");
 
@@ -224,13 +223,21 @@ impl LinuxCameraPaintable {
     fn set_sink_paintable(&self, paintable: gdk::Paintable) {
         let imp = self.imp();
 
-        paintable.connect_invalidate_contents(clone!(@weak self as obj => move |_| {
-            obj.invalidate_contents();
-        }));
+        paintable.connect_invalidate_contents(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_| {
+                obj.invalidate_contents();
+            }
+        ));
 
-        paintable.connect_invalidate_size(clone!(@weak self as obj => move |_| {
-            obj.invalidate_size();
-        }));
+        paintable.connect_invalidate_size(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_| {
+                obj.invalidate_size();
+            }
+        ));
 
         imp.sink_paintable.replace(Some(paintable));
 

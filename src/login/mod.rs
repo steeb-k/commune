@@ -137,15 +137,22 @@ mod imp {
             self.parent_constructed();
 
             let monitor = gio::NetworkMonitor::default();
-            monitor.connect_network_changed(clone!(@weak obj => move |_, available| {
-                obj.action_set_enabled("login.sso", available);
-            }));
+            monitor.connect_network_changed(clone!(
+                #[weak]
+                obj,
+                move |_, available| {
+                    obj.action_set_enabled("login.sso", available);
+                }
+            ));
             obj.action_set_enabled("login.sso", monitor.is_network_available());
 
-            self.navigation
-                .connect_visible_page_notify(clone!(@weak obj => move |_| {
+            self.navigation.connect_visible_page_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.visible_page_changed();
-                }));
+                }
+            ));
         }
 
         fn dispose(&self) {
@@ -368,9 +375,13 @@ impl Login {
                 .navigation
                 .push_by_tag(LoginPage::Method.as_ref());
         } else {
-            spawn!(clone!(@weak self as obj => async move {
-                obj.login_with_sso(None).await;
-            }));
+            spawn!(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.login_with_sso(None).await;
+                }
+            ));
         }
     }
 
@@ -443,9 +454,13 @@ impl Login {
         let imp = self.imp();
 
         let setup_view = SessionSetupView::new(&session);
-        setup_view.connect_completed(clone!(@weak imp => move |_| {
-            imp.navigation.push_by_tag(LoginPage::Completed.as_ref());
-        }));
+        setup_view.connect_completed(clone!(
+            #[weak]
+            imp,
+            move |_| {
+                imp.navigation.push_by_tag(LoginPage::Completed.as_ref());
+            }
+        ));
         imp.navigation.push(&setup_view);
 
         self.drop_client();

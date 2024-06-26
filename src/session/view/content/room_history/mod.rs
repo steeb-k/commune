@@ -252,17 +252,21 @@ mod imp {
             let obj = self.obj();
 
             let factory = gtk::SignalListItemFactory::new();
-            factory.connect_setup(clone!(@weak obj => move |_, item| {
-                let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-                    error!("List item factory did not receive a list item: {item:?}");
-                    return;
-                };
-                let row = ItemRow::new(&obj);
-                item.set_child(Some(&row));
-                item.bind_property("item", &row, "item").build();
-                item.set_activatable(false);
-                item.set_selectable(false);
-            }));
+            factory.connect_setup(clone!(
+                #[weak]
+                obj,
+                move |_, item| {
+                    let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                        error!("List item factory did not receive a list item: {item:?}");
+                        return;
+                    };
+                    let row = ItemRow::new(&obj);
+                    item.set_child(Some(&row));
+                    item.bind_property("item", &row, "item").build();
+                    item.set_activatable(false);
+                    item.set_selectable(false);
+                }
+            ));
             self.listview.set_factory(Some(&factory));
 
             // Needed to use the natural height of GtkPictures
@@ -274,44 +278,56 @@ mod imp {
             obj.set_sticky(true);
             let adj = self.listview.vadjustment().unwrap();
 
-            adj.connect_value_changed(clone!(@weak obj => move |_| {
-                let imp = obj.imp();
+            adj.connect_value_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    let imp = obj.imp();
 
-                obj.trigger_read_receipts_update();
+                    obj.trigger_read_receipts_update();
 
-                let is_at_bottom = obj.is_at_bottom();
-                if imp.is_auto_scrolling.get() {
-                    if is_at_bottom {
-                        imp.is_auto_scrolling.set(false);
-                        obj.set_sticky(true);
+                    let is_at_bottom = obj.is_at_bottom();
+                    if imp.is_auto_scrolling.get() {
+                        if is_at_bottom {
+                            imp.is_auto_scrolling.set(false);
+                            obj.set_sticky(true);
+                        } else {
+                            obj.scroll_down();
+                        }
                     } else {
+                        obj.set_sticky(is_at_bottom);
+                    }
+
+                    // Remove the typing row if we scroll up.
+                    if !is_at_bottom {
+                        if let Some(room) = obj.room() {
+                            room.timeline().remove_empty_typing_row();
+                        }
+                    }
+
+                    obj.start_loading();
+                }
+            ));
+            adj.connect_upper_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    if obj.sticky() {
                         obj.scroll_down();
                     }
-                } else {
-                    obj.set_sticky(is_at_bottom);
+                    obj.start_loading();
                 }
-
-                // Remove the typing row if we scroll up.
-                if !is_at_bottom {
-                    if let Some(room) = obj.room() {
-                        room.timeline().remove_empty_typing_row();
+            ));
+            adj.connect_page_size_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    if obj.sticky() {
+                        obj.scroll_down();
                     }
+                    obj.start_loading();
                 }
-
-                obj.start_loading();
-            }));
-            adj.connect_upper_notify(clone!(@weak obj => move |_| {
-                if obj.sticky() {
-                    obj.scroll_down();
-                }
-                obj.start_loading();
-            }));
-            adj.connect_page_size_notify(clone!(@weak obj => move |_| {
-                if obj.sticky() {
-                    obj.scroll_down();
-                }
-                obj.start_loading();
-            }));
+            ));
         }
 
         fn setup_drop_target(&self) {
@@ -322,8 +338,12 @@ mod imp {
                 gdk::DragAction::COPY | gdk::DragAction::MOVE,
             );
 
-            target.connect_drop(
-                clone!(@weak obj => @default-return false, move |_, value, _, _| {
+            target.connect_drop(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                false,
+                move |_, value, _, _| {
                     match value.get::<gio::File>() {
                         Ok(file) => {
                             spawn!(async move {
@@ -333,16 +353,13 @@ mod imp {
                         }
                         Err(error) => {
                             warn!("Could not get file from drop: {error:?}");
-                            toast!(
-                                obj,
-                                gettext("Error getting file from drop")
-                            );
+                            toast!(obj, gettext("Error getting file from drop"));
 
                             false
                         }
                     }
-                }),
-            );
+                }
+            ));
 
             self.drag_overlay.set_drop_target(target);
         }
@@ -393,34 +410,47 @@ mod imp {
                 self.room_members
                     .replace(Some(room.get_or_create_members()));
 
-                let membership_handler =
-                    room.own_member()
-                        .connect_membership_notify(clone!(@weak obj => move |_| {
-                            obj.update_room_menu();
-                        }));
+                let membership_handler = room.own_member().connect_membership_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_room_menu();
+                    }
+                ));
                 self.membership_handler.replace(Some(membership_handler));
 
-                let join_rule_handler =
-                    room.join_rule()
-                        .connect_we_can_join_notify(clone!(@weak obj => move |_| {
-                            obj.update_room_menu();
-                        }));
+                let join_rule_handler = room.join_rule().connect_we_can_join_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_room_menu();
+                    }
+                ));
                 self.join_rule_handler.replace(Some(join_rule_handler));
 
-                let tombstoned_handler =
-                    room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
+                let tombstoned_handler = room.connect_is_tombstoned_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_tombstoned_banner();
-                    }));
+                    }
+                ));
 
-                let successor_handler =
-                    room.connect_successor_id_string_notify(clone!(@weak obj => move |_| {
+                let successor_handler = room.connect_successor_id_string_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_tombstoned_banner();
-                    }));
+                    }
+                ));
 
-                let successor_room_handler =
-                    room.connect_successor_notify(clone!(@weak obj => move |_| {
+                let successor_room_handler = room.connect_successor_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_tombstoned_banner();
-                    }));
+                    }
+                ));
 
                 self.room.set(
                     room,
@@ -431,19 +461,26 @@ mod imp {
                     ],
                 );
 
-                let empty_handler = timeline.connect_empty_notify(clone!(@weak obj => move |_| {
-                    obj.update_view();
-                }));
+                let empty_handler = timeline.connect_empty_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_view();
+                    }
+                ));
 
-                let state_handler =
-                    timeline.connect_state_notify(clone!(@weak obj => move |timeline| {
+                let state_handler = timeline.connect_state_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |timeline| {
                         obj.update_view();
 
                         // Always test if we need to load more when timeline is ready.
                         if timeline.state() == TimelineState::Ready {
                             obj.start_loading();
                         }
-                    }));
+                    }
+                ));
 
                 self.timeline_handlers
                     .replace(vec![empty_handler, state_handler]);
@@ -592,10 +629,13 @@ impl RoomHistory {
         };
         let permissions = room.permissions();
 
-        let can_invite_handler =
-            permissions.connect_can_invite_notify(clone!(@weak self as obj => move |permissions| {
+        let can_invite_handler = permissions.connect_can_invite_notify(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |permissions| {
                 obj.action_set_enabled("room-history.invite-members", permissions.can_invite());
-            }));
+            }
+        ));
         self.imp()
             .can_invite_handler
             .replace(Some(can_invite_handler));
@@ -809,9 +849,13 @@ impl RoomHistory {
             imp.scroll_timeout
                 .replace(Some(glib::timeout_add_local_once(
                     SCROLL_TIMEOUT,
-                    clone!(@weak self as obj => move || {
-                        obj.update_read_receipts();
-                    }),
+                    clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        move || {
+                            obj.update_read_receipts();
+                        }
+                    ),
                 )));
         }
     }
@@ -827,18 +871,26 @@ impl RoomHistory {
 
         imp.read_timeout.replace(Some(glib::timeout_add_local_once(
             READ_TIMEOUT,
-            clone!(@weak self as obj => move || {
-                obj.update_read_marker();
-            }),
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move || {
+                    obj.update_read_marker();
+                }
+            ),
         )));
 
         let Some(position) = self.receipt_position() else {
             return;
         };
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.send_receipt(ReceiptType::Read, position).await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.send_receipt(ReceiptType::Read, position).await;
+            }
+        ));
     }
 
     /// Update the read marker.
@@ -850,9 +902,13 @@ impl RoomHistory {
             return;
         };
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.send_receipt(ReceiptType::FullyRead, position).await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.send_receipt(ReceiptType::FullyRead, position).await;
+            }
+        ));
     }
 
     /// The position where a receipt should point to.

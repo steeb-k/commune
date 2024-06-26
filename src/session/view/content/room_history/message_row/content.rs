@@ -118,11 +118,15 @@ impl MessageContent {
                     TimelineDetails::Unavailable => {
                         spawn!(
                             glib::Priority::HIGH,
-                            clone!(@weak event => async move {
-                                if let Err(error) = event.fetch_missing_details().await {
-                                    error!("Could not fetch event details: {error}");
+                            clone!(
+                                #[weak]
+                                event,
+                                async move {
+                                    if let Err(error) = event.fetch_missing_details().await {
+                                        error!("Could not fetch event details: {error}");
+                                    }
                                 }
-                            })
+                            )
                         );
                     }
                     TimelineDetails::Error(error) => {

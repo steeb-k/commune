@@ -109,8 +109,10 @@ mod imp {
             self.is_own_user.set(*session.user_id() == user_id);
 
             let ignored_users = session.ignored_users();
-            let ignored_handler = ignored_users.connect_items_changed(
-                clone!(@weak self as imp => move |ignored_users, _, _, _| {
+            let ignored_handler = ignored_users.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |ignored_users, _, _, _| {
                     let user_id = imp.user_id.get().unwrap();
                     let is_ignored = ignored_users.contains(user_id);
 
@@ -118,8 +120,8 @@ mod imp {
                         imp.is_ignored.set(is_ignored);
                         imp.obj().notify_is_ignored();
                     }
-                }),
-            );
+                }
+            ));
             self.is_ignored.set(ignored_users.contains(&user_id));
             self.ignored_handler.replace(Some(ignored_handler));
 
@@ -170,16 +172,20 @@ impl User {
 
     /// Load whether this user is verified.
     fn init_is_verified(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            let verified = obj.crypto_identity().await.is_some_and(|i| i.is_verified());
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                let verified = obj.crypto_identity().await.is_some_and(|i| i.is_verified());
 
-            if verified == obj.verified() {
-                return;
+                if verified == obj.verified() {
+                    return;
+                }
+
+                obj.imp().verified.set(verified);
+                obj.notify_verified();
             }
-
-            obj.imp().verified.set(verified);
-            obj.notify_verified();
-        }));
+        ));
     }
 
     /// The existing direct chat with this user, if any.

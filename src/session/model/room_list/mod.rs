@@ -251,9 +251,13 @@ impl RoomList {
             let position = list.len().saturating_sub(added);
 
             for (_room_id, room) in list.iter().skip(position) {
-                room.connect_room_forgotten(clone!(@weak self as obj => move |room| {
-                    obj.remove(room.room_id());
-                }));
+                room.connect_room_forgotten(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    move |room| {
+                        obj.remove(room.room_id());
+                    }
+                ));
             }
 
             let mut to_remove = Vec::new();

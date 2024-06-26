@@ -88,9 +88,13 @@ mod imp {
 
                 // We don't need to disconnect this signal since the `DmUserList` will be
                 // disposed once unbound from the `gtk::ListBox`
-                user_list.connect_state_notify(clone!(@weak obj => move |model| {
-                    obj.update_view(model);
-                }));
+                user_list.connect_state_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |model| {
+                        obj.update_view(model);
+                    }
+                ));
 
                 self.search_entry
                     .bind_property("text", &user_list, "search-term")

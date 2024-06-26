@@ -68,10 +68,14 @@ impl UserProfileDialog {
         let user = RemoteUser::new(session, user_id);
         imp.user_page.set_user(Some(user.clone()));
 
-        spawn!(clone!(@weak imp => async move {
-            user.load_profile().await;
-            imp.stack.set_visible_child_name("details");
-        }));
+        spawn!(clone!(
+            #[weak]
+            imp,
+            async move {
+                user.load_profile().await;
+                imp.stack.set_visible_child_name("details");
+            }
+        ));
     }
 
     /// Set the member to present.

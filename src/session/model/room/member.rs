@@ -103,16 +103,22 @@ mod imp {
         fn set_room(&self, room: Room) {
             let obj = self.obj();
 
-            let default_pl_handler = room.permissions().connect_default_power_level_notify(
-                clone!(@weak obj => move |_| {
-                    obj.update_role();
-                }),
-            );
-            let mute_pl_handler =
-                room.permissions()
-                    .connect_mute_power_level_notify(clone!(@weak obj => move |_| {
+            let default_pl_handler = room
+                .permissions()
+                .connect_default_power_level_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_role();
-                    }));
+                    }
+                ));
+            let mute_pl_handler = room.permissions().connect_mute_power_level_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_role();
+                }
+            ));
             self.power_level_handlers
                 .replace(vec![default_pl_handler, mute_pl_handler]);
 
@@ -201,9 +207,13 @@ impl Member {
 
     /// Update this member with the SDK's data.
     pub fn update(&self) {
-        spawn!(clone!(@weak self as obj => async move {
-            obj.update_inner().await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.update_inner().await;
+            }
+        ));
     }
 
     async fn update_inner(&self) {

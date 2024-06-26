@@ -94,20 +94,24 @@ mod imp {
             self.verification.disconnect_signals();
 
             if let Some(verification) = &verification {
-                let display_name_handler =
-                    verification
-                        .user()
-                        .connect_display_name_notify(clone!(@weak obj => move |_| {
-                            obj.update_labels();
-                        }));
+                let display_name_handler = verification.user().connect_display_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_labels();
+                    }
+                ));
                 self.display_name_handler
                     .replace(Some(display_name_handler));
 
-                let sas_data_changed_handler =
-                    verification.connect_sas_data_changed(clone!(@weak obj => move |_| {
+                let sas_data_changed_handler = verification.connect_sas_data_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_labels();
                         obj.fill_rows();
-                    }));
+                    }
+                ));
 
                 self.verification
                     .set(verification, vec![sas_data_changed_handler]);

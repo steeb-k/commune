@@ -56,18 +56,23 @@ mod imp {
             app.set_up_gactions();
             app.set_up_accels();
 
-            self.session_list
-                .connect_error_notify(clone!(@weak app => move |session_list| {
+            self.session_list.connect_error_notify(clone!(
+                #[weak]
+                app,
+                move |session_list| {
                     if let Some(message) = session_list.error() {
                         let window = app.present_main_window();
                         window.show_secret_error(&message);
                     }
-                }));
-            spawn!(
-                clone!(@weak self.session_list as session_list => async move {
+                }
+            ));
+            spawn!(clone!(
+                #[weak(rename_to = session_list)]
+                self.session_list,
+                async move {
                     session_list.restore_sessions().await;
-                })
-            );
+                }
+            ));
         }
     }
 
@@ -228,15 +233,25 @@ impl Application {
         dialog.add_credit_section(Some(&gettext("Name by")), &["Regina Bíró"]);
 
         // If the user wants our support room, try to open it ourselves.
-        dialog.connect_activate_link(clone!(@weak self as obj, @weak dialog => @default-return false, move |_, uri| {
-            if uri == "https://matrix.to/#/#fractal:gnome.org" && obj.session_list().has_session_ready() {
-                obj.process_uri(uri);
-                dialog.close();
-                return true;
-            }
+        dialog.connect_activate_link(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            #[weak]
+            dialog,
+            #[upgrade_or]
+            false,
+            move |_, uri| {
+                if uri == "https://matrix.to/#/#fractal:gnome.org"
+                    && obj.session_list().has_session_ready()
+                {
+                    obj.process_uri(uri);
+                    dialog.close();
+                    return true;
+                }
 
-            false
-        }));
+                false
+            }
+        ));
 
         dialog.present(&self.present_main_window());
     }
@@ -277,26 +292,34 @@ impl Application {
                         self.process_session_intent(session_intent);
                     }
                     _ => {
-                        spawn!(clone!(@weak self as obj => async move {
-                            obj.choose_session_for_uri(matrix_uri).await;
-                        }));
+                        spawn!(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            async move {
+                                obj.choose_session_for_uri(matrix_uri).await;
+                            }
+                        ));
                     }
                 },
             }
         } else {
             // Wait for the list to be ready.
             let cell = Rc::new(RefCell::new(Some(intent)));
-            let handler = session_list.connect_state_notify(
-                clone!(@weak self as app, @strong cell => move |session_list| {
+            let handler = session_list.connect_state_notify(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                #[strong]
+                cell,
+                move |session_list| {
                     if session_list.state() == LoadingState::Ready {
-                        app.imp().intent_handler.disconnect_signals();
+                        obj.imp().intent_handler.disconnect_signals();
 
                         if let Some(intent) = cell.take() {
-                            app.process_intent(intent);
+                            obj.process_intent(intent);
                         }
                     }
-                }),
-            );
+                }
+            ));
             self.imp()
                 .intent_handler
                 .set(session_list.upcast_ref(), vec![handler]);
@@ -335,17 +358,22 @@ impl Application {
             } else {
                 // Wait for the session to be ready.
                 let cell = Rc::new(RefCell::new(Some(intent)));
-                let handler = session.connect_state_notify(
-                    clone!(@weak self as app, @strong cell => move |session| {
+                let handler = session.connect_state_notify(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    #[strong]
+                    cell,
+                    move |session| {
                         if session.state() == SessionState::Ready {
-                            app.imp().intent_handler.disconnect_signals();
+                            obj.imp().intent_handler.disconnect_signals();
 
                             if let Some(intent) = cell.take() {
-                                app.present_main_window().process_session_intent_ready(intent);
+                                obj.present_main_window()
+                                    .process_session_intent_ready(intent);
                             }
                         }
-                    }),
-                );
+                    }
+                ));
                 self.imp()
                     .intent_handler
                     .set(session.upcast_ref(), vec![handler]);
@@ -354,31 +382,38 @@ impl Application {
             // Wait for the session to be a `Session`.
             let session_list = self.session_list();
             let cell = Rc::new(RefCell::new(Some(intent)));
-            let handler = session_list.connect_items_changed(
-                clone!(@weak self as app, @strong cell => move |session_list, pos, _, added| {
+            let handler = session_list.connect_items_changed(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                #[strong]
+                cell,
+                move |session_list, pos, _, added| {
                     if added == 0 {
                         return;
                     }
-                    let Some(session_id) = cell.borrow().as_ref().map(|i| i.session_id().to_owned()) else {
+                    let Some(session_id) =
+                        cell.borrow().as_ref().map(|i| i.session_id().to_owned())
+                    else {
                         return;
                     };
 
                     for i in pos..pos + added {
-                        let Some(session_info) = session_list.item(i).and_downcast::<SessionInfo>() else {
+                        let Some(session_info) = session_list.item(i).and_downcast::<SessionInfo>()
+                        else {
                             break;
                         };
 
                         if session_info.session_id() == session_id {
-                            app.imp().intent_handler.disconnect_signals();
+                            obj.imp().intent_handler.disconnect_signals();
 
                             if let Some(intent) = cell.take() {
-                                app.process_session_intent(intent);
+                                obj.process_session_intent(intent);
                             }
                             break;
                         }
                     }
-                }),
-            );
+                }
+            ));
             self.imp()
                 .intent_handler
                 .set(session_list.upcast_ref(), vec![handler]);

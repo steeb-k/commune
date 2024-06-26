@@ -61,19 +61,25 @@ mod imp {
             self.senders.set(Some(&senders));
             self.list
                 .set_model(Some(&gtk::NoSelection::new(Some(senders))));
-            self.list
-                .connect_activate(clone!(@weak obj => move |_, pos| {
-                    let Some(member) = obj.senders()
+            self.list.connect_activate(clone!(
+                #[weak]
+                obj,
+                move |_, pos| {
+                    let Some(member) = obj
+                        .senders()
                         .and_then(|list| list.item(pos))
                         .and_downcast::<MemberTimestamp>()
                         .and_then(|ts| ts.member())
-                        else { return; };
+                    else {
+                        return;
+                    };
 
                     let dialog = UserProfileDialog::new();
                     dialog.set_room_member(member);
                     dialog.present(&obj);
                     obj.popdown();
-                }));
+                }
+            ));
         }
     }
 }

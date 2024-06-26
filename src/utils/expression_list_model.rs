@@ -75,12 +75,14 @@ impl ExpressionListModel {
         }
 
         let added = if let Some(model) = model {
-            let items_changed_handler = model.connect_items_changed(
-                clone!(@strong self as obj => move |_, pos, removed, added| {
+            let items_changed_handler = model.connect_items_changed(clone!(
+                #[strong(rename_to = obj)]
+                self,
+                move |_, pos, removed, added| {
                     obj.watch_items(pos, removed, added);
                     obj.items_changed(pos, removed, added);
-                }),
-            );
+                }
+            ));
 
             let added = model.n_items();
             imp.model.set(model, vec![items_changed_handler]);
@@ -136,9 +138,15 @@ impl ExpressionListModel {
             for expression in &expressions {
                 item_watches.push(expression.watch(
                     Some(&item),
-                    clone!(@strong self as obj, @weak item => move || {
-                        obj.item_expr_changed(&item);
-                    }),
+                    clone!(
+                        #[strong(rename_to = obj)]
+                        self,
+                        #[weak]
+                        item,
+                        move || {
+                            obj.item_expr_changed(&item);
+                        }
+                    ),
                 ));
             }
 

@@ -98,9 +98,13 @@ mod imp {
                     }
 
                     if let Some(session) = event.room().and_then(|r| r.session()) {
-                        spawn!(clone!(@weak obj => async move {
-                            obj.download_audio(audio, &session).await;
-                        }));
+                        spawn!(clone!(
+                            #[weak]
+                            obj,
+                            async move {
+                                obj.download_audio(audio, &session).await;
+                            }
+                        ));
                     }
                 }
             }
@@ -150,16 +154,22 @@ impl AudioRow {
     fn prepare_audio(&self, file: gio::File) {
         let media_file = gtk::MediaFile::for_file(&file);
 
-        media_file.connect_error_notify(clone!(@weak self as obj => move |media_file| {
+        media_file.connect_error_notify(|media_file| {
             if let Some(error) = media_file.error() {
                 warn!("Error reading audio file: {}", error);
             }
-        }));
-        media_file.connect_ended_notify(clone!(@weak self as obj => move |media_file| {
-            if media_file.is_ended() {
-                obj.imp().play_button.set_icon_name("media-playback-start-symbolic");
+        });
+        media_file.connect_ended_notify(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |media_file| {
+                if media_file.is_ended() {
+                    obj.imp()
+                        .play_button
+                        .set_icon_name("media-playback-start-symbolic");
+                }
             }
-        }));
+        ));
 
         self.imp().media_file.replace(Some(media_file));
     }

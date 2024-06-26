@@ -156,18 +156,24 @@ mod imp {
             self.room.set(room.as_ref());
 
             if let Some(room) = room {
-                room.typing_list().connect_items_changed(
-                    clone!(@weak obj => move |list, _, _, _| {
+                room.typing_list().connect_items_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |list, _, _, _| {
                         if !list.is_empty() {
                             obj.add_typing_row();
                         }
-                    }),
-                );
+                    }
+                ));
             }
 
-            spawn!(clone!(@weak obj => async move {
-                obj.setup_timeline().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.setup_timeline().await;
+                }
+            ));
         }
 
         /// Whether the timeline is empty.

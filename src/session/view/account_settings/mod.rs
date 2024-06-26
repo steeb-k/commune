@@ -120,9 +120,13 @@ mod imp {
             self.session.disconnect_signals();
 
             if let Some(session) = session {
-                let logged_out_handler = session.connect_logged_out(clone!(@weak obj => move |_| {
-                    obj.close();
-                }));
+                let logged_out_handler = session.connect_logged_out(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.close();
+                    }
+                ));
                 self.session.set(&session, vec![logged_out_handler]);
             }
 
@@ -163,33 +167,49 @@ impl AccountSettings {
             }
             AccountSettingsSubpage::CryptoIdentitySetup => {
                 let view = CryptoIdentitySetupView::new(&session);
-                view.connect_completed(clone!(@weak self as obj => move |_, _| {
-                    obj.pop_subpage();
-                }));
+                view.connect_completed(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    move |_, _| {
+                        obj.pop_subpage();
+                    }
+                ));
 
                 let page = adw::NavigationPage::builder()
                     .tag(AccountSettingsSubpage::CryptoIdentitySetup.as_ref())
                     .child(&view)
                     .build();
-                page.connect_shown(clone!(@weak view => move |_| {
-                    view.grab_focus();
-                }));
+                page.connect_shown(clone!(
+                    #[weak]
+                    view,
+                    move |_| {
+                        view.grab_focus();
+                    }
+                ));
 
                 page
             }
             AccountSettingsSubpage::RecoverySetup => {
                 let view = CryptoRecoverySetupView::new(&session);
-                view.connect_completed(clone!(@weak self as obj => move |_| {
-                    obj.pop_subpage();
-                }));
+                view.connect_completed(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    move |_| {
+                        obj.pop_subpage();
+                    }
+                ));
 
                 let page = adw::NavigationPage::builder()
                     .tag(AccountSettingsSubpage::RecoverySetup.as_ref())
                     .child(&view)
                     .build();
-                page.connect_shown(clone!(@weak view => move |_| {
-                    view.grab_focus();
-                }));
+                page.connect_shown(clone!(
+                    #[weak]
+                    view,
+                    move |_| {
+                        view.grab_focus();
+                    }
+                ));
 
                 page
             }

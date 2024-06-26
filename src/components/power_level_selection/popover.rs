@@ -84,24 +84,30 @@ mod imp {
             self.permissions.disconnect_signals();
 
             if let Some(permissions) = permissions {
-                let own_pl_handler = permissions.connect_own_power_level_notify(
-                    clone!(@weak self as imp => move |_| {
+                let own_pl_handler = permissions.connect_own_power_level_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update();
-                    }),
-                );
-                let default_pl_handler = permissions.connect_default_power_level_notify(
-                    clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let default_pl_handler = permissions.connect_default_power_level_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_default();
                         imp.update_muted();
                         imp.update_selection();
-                    }),
-                );
-                let muted_pl_handler = permissions.connect_mute_power_level_notify(
-                    clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let muted_pl_handler = permissions.connect_mute_power_level_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_muted();
                         imp.update_selection();
-                    }),
-                );
+                    }
+                ));
 
                 self.permissions.set(
                     permissions,

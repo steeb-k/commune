@@ -120,20 +120,26 @@ mod imp {
                 .set_model(Some(&gtk::NoSelection::new(Some(sorted_model))));
 
             let factory = gtk::SignalListItemFactory::new();
-            factory.connect_setup(clone!(@weak obj => move |_, item| {
-                let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-                    error!("List item factory did not receive a list item: {item:?}");
-                    return;
-                };
-                let Some(permissions) = obj.list().and_then(|l| l.permissions()) else {
-                    return;
-                };
-                let row = PermissionsMemberRow::new(&permissions);
-                item.set_child(Some(&row));
-                item.bind_property("item", &row, "member").sync_create().build();
-                item.set_activatable(false);
-                item.set_selectable(false);
-            }));
+            factory.connect_setup(clone!(
+                #[weak]
+                obj,
+                move |_, item| {
+                    let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                        error!("List item factory did not receive a list item: {item:?}");
+                        return;
+                    };
+                    let Some(permissions) = obj.list().and_then(|l| l.permissions()) else {
+                        return;
+                    };
+                    let row = PermissionsMemberRow::new(&permissions);
+                    item.set_child(Some(&row));
+                    item.bind_property("item", &row, "member")
+                        .sync_create()
+                        .build();
+                    item.set_activatable(false);
+                    item.set_selectable(false);
+                }
+            ));
             self.list_view.set_factory(Some(&factory));
         }
     }

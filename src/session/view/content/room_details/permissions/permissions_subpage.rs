@@ -126,10 +126,13 @@ mod imp {
     impl PermissionsSubpage {
         /// Set the permissions to watch.
         fn set_permissions(&self, permissions: &Permissions) {
-            let changed_handler =
-                permissions.connect_changed(clone!(@weak self as imp => move |_| {
+            let changed_handler = permissions.connect_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
                     imp.update();
-                }));
+                }
+            ));
 
             self.permissions.set(permissions, vec![changed_handler]);
 
@@ -138,9 +141,13 @@ mod imp {
                 .set(privileged_members.clone())
                 .unwrap();
 
-            privileged_members.connect_changed_notify(clone!(@weak self as imp => move |_| {
-                imp.update_changed();
-            }));
+            privileged_members.connect_changed_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_changed();
+                }
+            ));
 
             self.members_subpage
                 .set_list(Some(privileged_members.clone()));

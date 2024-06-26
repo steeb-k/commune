@@ -259,12 +259,16 @@ mod imp {
             if matches!(request.state(), VerificationRequestState::Requested { .. }) {
                 let source_id = glib::timeout_add_local_once(
                     REQUEST_RECEIVED_TIMEOUT,
-                    clone!(@weak self as imp => move || {
-                        imp.received_timeout_source.take();
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            imp.received_timeout_source.take();
 
-                        imp.set_state(VerificationState::Dismissed);
-                        imp.obj().dismiss();
-                    }),
+                            imp.set_state(VerificationState::Dismissed);
+                            imp.obj().dismiss();
+                        }
+                    ),
                 );
                 self.received_timeout_source.replace(Some(source_id));
             }
@@ -280,10 +284,13 @@ mod imp {
             // to keep track of their name since it's used as the display name.
             if user.is::<Member>() {
                 let obj = self.obj();
-                let display_name_handler =
-                    user.connect_display_name_notify(clone!(@weak obj => move |_| {
+                let display_name_handler = user.connect_display_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.notify_display_name();
-                    }));
+                    }
+                ));
                 handlers.push(display_name_handler);
             }
 
@@ -297,18 +304,21 @@ mod imp {
                 return;
             };
 
-            let handler = room.own_member().connect_membership_notify(
-                clone!(@weak self as imp => move |own_member| {
+            let handler = room.own_member().connect_membership_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |own_member| {
                     if matches!(own_member.membership(), Membership::Leave | Membership::Ban) {
-                        // If the user is not in the room anymore, nothing can be done with this verification.
+                        // If the user is not in the room anymore, nothing can be done with this
+                        // verification.
                         imp.set_state(VerificationState::RoomLeft);
 
                         if let Some(handler) = imp.membership_handler.take() {
                             own_member.disconnect(handler);
                         }
                     }
-                }),
-            );
+                }
+            ));
             self.membership_handler.replace(Some(handler));
 
             self.room.set(Some(room));

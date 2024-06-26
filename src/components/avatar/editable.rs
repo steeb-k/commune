@@ -213,9 +213,13 @@ mod imp {
                     obj.set_edit_state(ActionState::Success);
                     glib::timeout_add_local_once(
                         Duration::from_secs(2),
-                        clone!(@weak obj => move || {
-                            obj.set_state(EditableAvatarState::Default);
-                        }),
+                        clone!(
+                            #[weak]
+                            obj,
+                            move || {
+                                obj.set_state(EditableAvatarState::Default);
+                            }
+                        ),
                     );
                 }
                 EditableAvatarState::RemovalInProgress => {

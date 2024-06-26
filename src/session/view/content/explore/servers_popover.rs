@@ -62,14 +62,16 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.server_entry
-                .connect_changed(clone!(@weak obj => move |_| {
-                    obj.update_add_server_state()
-                }));
-            self.server_entry
-                .connect_activate(clone!(@weak obj => move |_| {
-                    obj.add_server()
-                }));
+            self.server_entry.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| obj.update_add_server_state()
+            ));
+            self.server_entry.connect_activate(clone!(
+                #[weak]
+                obj,
+                move |_| obj.add_server()
+            ));
 
             obj.update_add_server_state();
         }
@@ -135,11 +137,17 @@ impl ExploreServersPopover {
         &self,
         f: F,
     ) -> glib::SignalHandlerId {
-        self.imp()
-            .listbox
-            .connect_row_selected(clone!(@weak self as obj => move |_, row| {
-                f(&obj, row.and_then(|row| row.downcast_ref::<ExploreServerRow>()).and_then(|row| row.server()));
-            }))
+        self.imp().listbox.connect_row_selected(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_, row| {
+                f(
+                    &obj,
+                    row.and_then(|row| row.downcast_ref::<ExploreServerRow>())
+                        .and_then(|row| row.server()),
+                );
+            }
+        ))
     }
 
     /// Whether the server currently in the text entry can be added.

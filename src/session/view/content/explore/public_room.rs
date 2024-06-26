@@ -58,15 +58,20 @@ mod imp {
 
             self.avatar_data.set(avatar_data).unwrap();
 
-            obj.room_list()
-                .connect_pending_rooms_changed(clone!(@weak obj => move |_| {
+            obj.room_list().connect_pending_rooms_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     let Some(matrix_public_room) = obj.matrix_public_room() else {
                         return;
                     };
 
-                        obj.set_pending(obj.room_list()
-                            .is_pending_room((*matrix_public_room.room_id).into()));
-                }));
+                    obj.set_pending(
+                        obj.room_list()
+                            .is_pending_room((*matrix_public_room.room_id).into()),
+                    );
+                }
+            ));
         }
 
         fn dispose(&self) {
@@ -121,16 +126,18 @@ impl PublicRoom {
             self.set_room(room);
         } else {
             let room_id = room.room_id.clone();
-            let handler_id = self.room_list().connect_items_changed(
-                clone!(@weak self as obj => move |room_list, _, _, _| {
+            let handler_id = self.room_list().connect_items_changed(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |room_list, _, _, _| {
                     if let Some(room) = room_list.get(&room_id) {
                         if let Some(handler_id) = obj.imp().room_handler.take() {
                             obj.set_room(room);
                             room_list.disconnect(handler_id);
                         }
                     }
-                }),
-            );
+                }
+            ));
 
             imp.room_handler.replace(Some(handler_id));
         }

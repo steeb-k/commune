@@ -116,25 +116,38 @@ mod imp {
             self.session_id.set_subtitle(session.device_id().as_str());
 
             let user = session.user();
-            let avatar_uri_handler = user.avatar_data().image().unwrap().connect_uri_notify(
-                clone!(@weak obj => move |avatar_image| {
-                    obj.user_avatar_changed(avatar_image.uri());
-                }),
-            );
+            let avatar_uri_handler =
+                user.avatar_data()
+                    .image()
+                    .unwrap()
+                    .connect_uri_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |avatar_image| {
+                            obj.user_avatar_changed(avatar_image.uri());
+                        }
+                    ));
             self.avatar_uri_handler.replace(Some(avatar_uri_handler));
 
-            let display_name_handler =
-                user.connect_display_name_notify(clone!(@weak obj => move |user| {
+            let display_name_handler = user.connect_display_name_notify(clone!(
+                #[weak]
+                obj,
+                move |user| {
                     obj.user_display_name_changed(user.display_name());
-                }));
+                }
+            ));
             self.display_name_handler
                 .replace(Some(display_name_handler));
 
             spawn!(
                 glib::Priority::LOW,
-                clone!(@weak self as imp => async move {
-                    imp.load_can_change_password().await;
-                })
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        imp.load_can_change_password().await;
+                    }
+                )
             );
         }
 

@@ -80,9 +80,13 @@ mod imp {
 
             self.search_term.replace(search_term);
 
-            spawn!(clone!(@weak obj => async move {
-                obj.search_users().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.search_users().await;
+                }
+            ));
 
             obj.notify_search_term();
         }
@@ -181,9 +185,13 @@ impl DmUserList {
                     // If it is the "custom user" from the search term, fetch the avatar
                     // and display name
                     if add_custom && *user.user_id() == search_term {
-                        spawn!(clone!(@weak user => async move {
-                            user.load_profile().await;
-                        }));
+                        spawn!(clone!(
+                            #[weak]
+                            user,
+                            async move {
+                                user.load_profile().await;
+                            }
+                        ));
                     }
 
                     users.push(user);

@@ -156,8 +156,10 @@ mod imp {
             let obj = self.obj();
 
             // Clipboard.
-            self.message_entry
-                .connect_paste_clipboard(clone!(@weak obj => move |entry| {
+            self.message_entry.connect_paste_clipboard(clone!(
+                #[weak]
+                obj,
+                move |entry| {
                     if !obj.imp().can_send_message() {
                         return;
                     }
@@ -173,41 +175,61 @@ mod imp {
                             obj.read_clipboard_file().await;
                         });
                     }
-                }));
-            self.message_entry
-                .connect_copy_clipboard(clone!(@weak obj => move |entry| {
+                }
+            ));
+            self.message_entry.connect_copy_clipboard(clone!(
+                #[weak]
+                obj,
+                move |entry| {
                     entry.stop_signal_emission_by_name("copy-clipboard");
 
                     spawn!(async move {
                         obj.copy_buffer_selection_to_clipboard().await;
                     });
-                }));
-            self.message_entry
-                .connect_cut_clipboard(clone!(@weak obj => move |entry| {
+                }
+            ));
+            self.message_entry.connect_cut_clipboard(clone!(
+                #[weak]
+                obj,
+                move |entry| {
                     entry.stop_signal_emission_by_name("cut-clipboard");
 
-                    spawn!(clone!(@weak entry => async move {
-                        obj.copy_buffer_selection_to_clipboard().await;
-                        entry.buffer().delete_selection(true, true);
-                    }));
-                }));
+                    spawn!(clone!(
+                        #[weak]
+                        entry,
+                        async move {
+                            obj.copy_buffer_selection_to_clipboard().await;
+                            entry.buffer().delete_selection(true, true);
+                        }
+                    ));
+                }
+            ));
 
             // Key bindings.
             let key_events = gtk::EventControllerKey::new();
-            key_events
-                .connect_key_pressed(clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_, key, _, modifier| {
-                if modifier.is_empty() && (key == gdk::Key::Return || key == gdk::Key::KP_Enter) {
-                    spawn!(async move {
-                        obj.send_text_message().await;
-                    });
-                    glib::Propagation::Stop
-                } else if modifier.is_empty() && key == gdk::Key::Escape && obj.related_event_type() != RelatedEventType::None {
-                    obj.clear_related_event();
-                    glib::Propagation::Stop
-                } else {
-                    glib::Propagation::Proceed
+            key_events.connect_key_pressed(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, key, _, modifier| {
+                    if modifier.is_empty() && (key == gdk::Key::Return || key == gdk::Key::KP_Enter)
+                    {
+                        spawn!(async move {
+                            obj.send_text_message().await;
+                        });
+                        glib::Propagation::Stop
+                    } else if modifier.is_empty()
+                        && key == gdk::Key::Escape
+                        && obj.related_event_type() != RelatedEventType::None
+                    {
+                        obj.clear_related_event();
+                        glib::Propagation::Stop
+                    } else {
+                        glib::Propagation::Proceed
+                    }
                 }
-            }));
+            ));
             self.message_entry.add_controller(key_events);
 
             let buffer = self
@@ -219,12 +241,16 @@ mod imp {
             crate::utils::sourceview::setup_style_scheme(&buffer);
 
             // Actions on changes in message entry.
-            buffer.connect_text_notify(clone!(@weak obj => move |buffer| {
-               let (start_iter, end_iter) = buffer.bounds();
-               let is_empty = start_iter == end_iter;
-               obj.action_set_enabled("message-toolbar.send-text-message", !is_empty);
-               obj.send_typing_notification(!is_empty);
-            }));
+            buffer.connect_text_notify(clone!(
+                #[weak]
+                obj,
+                move |buffer| {
+                    let (start_iter, end_iter) = buffer.bounds();
+                    let is_empty = start_iter == end_iter;
+                    obj.action_set_enabled("message-toolbar.send-text-message", !is_empty);
+                    obj.send_typing_notification(!is_empty);
+                }
+            ));
 
             let (start_iter, end_iter) = buffer.bounds();
             obj.action_set_enabled("message-toolbar.send-text-message", start_iter != end_iter);
@@ -283,11 +309,14 @@ mod imp {
             obj.clear_related_event();
 
             if let Some(room) = &room {
-                let can_send_message_handler = room.permissions().connect_can_send_message_notify(
-                    clone!(@weak self as imp => move |_| {
-                        imp.can_send_message_updated();
-                    }),
-                );
+                let can_send_message_handler =
+                    room.permissions().connect_can_send_message_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.can_send_message_updated();
+                        }
+                    ));
                 self.can_send_message_handler
                     .replace(Some(can_send_message_handler));
             }
@@ -985,9 +1014,13 @@ impl MessageToolbar {
             return;
         }
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.read_clipboard_file().await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.read_clipboard_file().await;
+            }
+        ));
     }
 
     // Copy the selection in the message entry to the clipboard while replacing

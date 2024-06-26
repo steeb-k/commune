@@ -97,11 +97,13 @@ mod imp {
             self.source.disconnect_signals();
 
             if let Some(source) = source {
-                let display_name_handler = source.connect_disambiguated_name_notify(
-                    clone!(@weak self as imp => move |source| {
+                let display_name_handler = source.connect_disambiguated_name_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |source| {
                         imp.set_display_name(&source.disambiguated_name());
-                    }),
-                );
+                    }
+                ));
                 self.set_display_name(&source.disambiguated_name());
 
                 self.source.set(source, vec![display_name_handler]);
@@ -126,9 +128,13 @@ mod imp {
             if activatable {
                 let gesture_click = gtk::GestureClick::new();
 
-                gesture_click.connect_released(clone!(@weak obj => move |_, _, _, _| {
-                    obj.activate();
-                }));
+                gesture_click.connect_released(clone!(
+                    #[weak]
+                    obj,
+                    move |_, _, _, _| {
+                        obj.activate();
+                    }
+                ));
 
                 obj.add_controller(gesture_click.clone());
                 self.gesture_click.replace(Some(gesture_click));

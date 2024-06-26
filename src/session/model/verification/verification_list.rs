@@ -268,9 +268,13 @@ impl VerificationList {
             return;
         }
 
-        verification.connect_remove_from_list(clone!(@weak self as obj => move |verification| {
-            obj.remove(&verification.key());
-        }));
+        verification.connect_remove_from_list(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |verification| {
+                obj.remove(&verification.key());
+            }
+        ));
 
         let (pos, _) = imp.list.borrow_mut().insert_full(key, verification);
 

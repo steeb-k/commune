@@ -66,20 +66,32 @@ mod imp {
             self.grid_view.set_model(Some(&model));
 
             // Load an initial number of items.
-            spawn!(clone!(@weak self as imp, @weak timeline => async move {
-                while model.n_items() < MIN_N_ITEMS {
-                    if !timeline.load().await {
-                        break;
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[weak]
+                timeline,
+                async move {
+                    while model.n_items() < MIN_N_ITEMS {
+                        if !timeline.load().await {
+                            break;
+                        }
                     }
-                }
 
-                let adj = imp.grid_view.vadjustment().unwrap();
-                adj.connect_value_notify(clone!(@weak timeline => move |adj| {
-                    if adj.value() + adj.page_size() * 2.0 >= adj.upper() {
-                        spawn!(async move { timeline.load().await; });
-                    }
-                }));
-            }));
+                    let adj = imp.grid_view.vadjustment().unwrap();
+                    adj.connect_value_notify(clone!(
+                        #[weak]
+                        timeline,
+                        move |adj| {
+                            if adj.value() + adj.page_size() * 2.0 >= adj.upper() {
+                                spawn!(async move {
+                                    timeline.load().await;
+                                });
+                            }
+                        }
+                    ));
+                }
+            ));
 
             self.timeline.set(timeline).unwrap();
         }

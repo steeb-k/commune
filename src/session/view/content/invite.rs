@@ -125,18 +125,22 @@ mod imp {
             }
 
             if let Some(room) = &room {
-                let category_handler = room.connect_category_notify(
-                    clone!(@weak obj => move |room| {
+                let category_handler = room.connect_category_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |room| {
                         let category = room.category();
 
                         if category == RoomType::Left {
-                            // We declined the invite or the invite was retracted, we should close the room
-                            // if it is opened.
+                            // We declined the invite or the invite was retracted, we should close
+                            // the room if it is opened.
                             let Some(session) = room.session() else {
                                 return;
                             };
                             let selection = session.sidebar_list_model().selection_model();
-                            if let Some(selected_room) = selection.selected_item().and_downcast::<Room>() {
+                            if let Some(selected_room) =
+                                selection.selected_item().and_downcast::<Room>()
+                            {
                                 if selected_room == *room {
                                     selection.set_selected_item(None::<glib::Object>);
                                 }
@@ -152,8 +156,8 @@ mod imp {
                                 room.disconnect(category_handler);
                             }
                         }
-                    }),
-                );
+                    }
+                ));
                 self.category_handler.replace(Some(category_handler));
             }
 

@@ -61,17 +61,27 @@ mod imp {
             let drag = gtk::DragSource::builder()
                 .actions(gdk::DragAction::MOVE)
                 .build();
-            drag.connect_prepare(
-                clone!(@weak obj => @default-return None, move |drag, x, y| {
-                    obj.drag_prepare(drag, x, y)
-                }),
-            );
-            drag.connect_drag_begin(clone!(@weak obj => move |_, _| {
-                obj.drag_begin();
-            }));
-            drag.connect_drag_end(clone!(@weak obj => move |_, _, _| {
-                obj.drag_end();
-            }));
+            drag.connect_prepare(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                None,
+                move |drag, x, y| obj.drag_prepare(drag, x, y)
+            ));
+            drag.connect_drag_begin(clone!(
+                #[weak]
+                obj,
+                move |_, _| {
+                    obj.drag_begin();
+                }
+            ));
+            drag.connect_drag_end(clone!(
+                #[weak]
+                obj,
+                move |_, _, _| {
+                    obj.drag_end();
+                }
+            ));
             obj.add_controller(drag);
         }
 
@@ -111,16 +121,27 @@ mod imp {
                     .build(),
                 ));
 
-                let highlight_handler =
-                    room.connect_highlight_notify(clone!(@weak obj => move |_| {
+                let highlight_handler = room.connect_highlight_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_highlight();
-                    }));
-                let direct_handler = room.connect_is_direct_notify(clone!(@weak obj => move |_| {
+                    }
+                ));
+                let direct_handler = room.connect_is_direct_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_direct_icon();
-                }));
-                let name_handler = room.connect_display_name_notify(clone!(@weak obj => move |_| {
-                    obj.update_accessibility_label();
-                }));
+                    }
+                ));
+                let name_handler = room.connect_display_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_accessibility_label();
+                    }
+                ));
 
                 if room.category() == RoomType::Left {
                     self.display_name.add_css_class("dim-label");

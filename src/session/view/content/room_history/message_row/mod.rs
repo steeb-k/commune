@@ -89,19 +89,25 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.content
-                .connect_format_notify(clone!(@weak self as imp => move |content|
+            self.content.connect_format_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |content| {
                     imp.reactions.set_visible(!matches!(
                         content.format(),
                         ContentFormat::Compact | ContentFormat::Ellipsized
                     ));
-                ));
+                }
+            ));
 
             let system_settings = Application::default().system_settings();
-            let system_settings_handler =
-                system_settings.connect_clock_format_notify(clone!(@weak obj => move |_| {
+            let system_settings_handler = system_settings.connect_clock_format_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.update_timestamp();
-                }));
+                }
+            ));
             self.system_settings_handler
                 .replace(Some(system_settings_handler));
         }
@@ -180,15 +186,23 @@ mod imp {
                 state_binding,
             ]);
 
-            let timestamp_handler = event.connect_timestamp_notify(clone!(@weak obj => move |_| {
-                obj.update_timestamp();
-            }));
+            let timestamp_handler = event.connect_timestamp_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_timestamp();
+                }
+            ));
 
             // Listening to changes in the source might not be enough, there are changes
             // that we display that don't affect the source, like related events.
-            let item_changed_handler = event.connect_item_changed(clone!(@weak obj => move |_| {
-                obj.update_content();
-            }));
+            let item_changed_handler = event.connect_item_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_content();
+                }
+            ));
 
             self.reactions
                 .set_reaction_list(&event.room().get_or_create_members(), &event.reactions());

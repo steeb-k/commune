@@ -115,9 +115,13 @@ mod imp {
 
         fn dispose(&self) {
             if let Some(verification) = self.verification.obj() {
-                spawn!(clone!(@strong verification => async move {
-                    let _ = verification.cancel().await;
-                }));
+                spawn!(clone!(
+                    #[strong]
+                    verification,
+                    async move {
+                        let _ = verification.cancel().await;
+                    }
+                ));
             }
 
             if let Some(session) = self.session.upgrade() {
@@ -162,9 +166,13 @@ mod imp {
                 let recovery_view = CryptoRecoverySetupView::new(&session);
 
                 let obj = self.obj();
-                recovery_view.connect_completed(clone!(@weak obj => move |_| {
-                    obj.emit_completed(CryptoIdentitySetupNextStep::None);
-                }));
+                recovery_view.connect_completed(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.emit_completed(CryptoIdentitySetupNextStep::None);
+                    }
+                ));
 
                 recovery_view
             })
@@ -176,8 +184,10 @@ mod imp {
 
             // Use received verification requests too.
             let verification_list = session.verification_list();
-            let verification_list_handler = verification_list.connect_items_changed(
-                clone!(@weak self as imp => move |verification_list, _, _, _| {
+            let verification_list_handler = verification_list.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |verification_list, _, _, _| {
                     if imp.verification.obj().is_some() {
                         // We don't want to override the current verification.
                         return;
@@ -186,8 +196,8 @@ mod imp {
                     if let Some(verification) = verification_list.ongoing_session_verification() {
                         imp.set_verification(Some(verification));
                     }
-                }),
-            );
+                }
+            ));
             self.verification_list_handler
                 .replace(Some(verification_list_handler));
 
@@ -264,34 +274,47 @@ mod imp {
 
             if let Some(verification) = prev_verification {
                 if !verification.is_finished() {
-                    spawn!(clone!(@strong verification => async move {
-                        let _ = verification.cancel().await;
-                    }));
+                    spawn!(clone!(
+                        #[strong]
+                        verification,
+                        async move {
+                            let _ = verification.cancel().await;
+                        }
+                    ));
                 }
 
                 self.verification.disconnect_signals();
             }
 
             if let Some(verification) = &verification {
-                let replaced_handler = verification.connect_replaced(
-                    clone!(@weak self as imp => move |_, new_verification| {
+                let replaced_handler = verification.connect_replaced(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, new_verification| {
                         imp.set_verification(Some(new_verification.clone()));
-                    }),
-                );
-                let done_handler = verification.connect_done(
-                    clone!(@weak obj => @default-return glib::Propagation::Stop, move |verification| {
+                    }
+                ));
+                let done_handler = verification.connect_done(clone!(
+                    #[weak]
+                    obj,
+                    #[upgrade_or]
+                    glib::Propagation::Stop,
+                    move |verification| {
                         obj.emit_completed(CryptoIdentitySetupNextStep::EnableRecovery);
                         obj.imp().set_verification(None);
                         verification.remove_from_list();
 
                         glib::Propagation::Stop
-                    }),
-                );
-                let remove_handler =
-                    verification.connect_dismiss(clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let remove_handler = verification.connect_dismiss(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.navigation.pop();
                         imp.set_verification(None);
-                    }));
+                    }
+                ));
 
                 self.verification.set(
                     verification,
@@ -328,9 +351,13 @@ mod imp {
                 .tag(CryptoIdentitySetupPage::Recovery.as_ref())
                 .child(recovery_view)
                 .build();
-            page.connect_shown(clone!(@weak recovery_view => move |_| {
-                recovery_view.grab_focus();
-            }));
+            page.connect_shown(clone!(
+                #[weak]
+                recovery_view,
+                move |_| {
+                    recovery_view.grab_focus();
+                }
+            ));
 
             page
         }

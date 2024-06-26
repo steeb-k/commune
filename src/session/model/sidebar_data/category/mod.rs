@@ -108,10 +108,14 @@ mod imp {
                 model
             };
 
-            model.connect_items_changed(clone!(@weak obj => move |model, pos, removed, added| {
-                obj.items_changed(pos, removed, added);
-                obj.imp().set_empty(model.n_items() == 0);
-            }));
+            model.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |model, pos, removed, added| {
+                    obj.items_changed(pos, removed, added);
+                    obj.imp().set_empty(model.n_items() == 0);
+                }
+            ));
 
             self.set_empty(model.n_items() == 0);
             self.model.set(model).unwrap();

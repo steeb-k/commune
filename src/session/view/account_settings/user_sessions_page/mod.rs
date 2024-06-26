@@ -101,30 +101,40 @@ mod imp {
                         UserSessionRow::new(user_session).upcast()
                     });
 
-                let other_sessions_handler = other_sessions.connect_items_changed(
-                    clone!(@weak self as imp => move |other_sessions, _, _, _| {
-                        imp.other_sessions_group.set_visible(other_sessions.n_items() > 0);
-                    }),
-                );
+                let other_sessions_handler = other_sessions.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |other_sessions, _, _, _| {
+                        imp.other_sessions_group
+                            .set_visible(other_sessions.n_items() > 0);
+                    }
+                ));
                 self.other_sessions_handler
                     .replace(Some(other_sessions_handler));
                 self.other_sessions_group
                     .set_visible(other_sessions.n_items() > 0);
 
-                let loading_state_handler = user_sessions.connect_loading_state_notify(
-                    clone!(@weak self as imp => move |_| {
+                let loading_state_handler = user_sessions.connect_loading_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_state();
-                    }),
-                );
-                let is_empty_handler =
-                    user_sessions.connect_is_empty_notify(clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let is_empty_handler = user_sessions.connect_is_empty_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_state();
-                    }));
-                let current_session_handler = user_sessions.connect_current_session_notify(
-                    clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let current_session_handler = user_sessions.connect_current_session_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_current_session();
-                    }),
-                );
+                    }
+                ));
 
                 self.user_sessions.set(
                     user_sessions,

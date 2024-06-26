@@ -214,11 +214,13 @@ impl OverlappingAvatars {
             return;
         };
 
-        let signal_handler_id = model.connect_items_changed(
-            clone!(@weak self as obj => move |model, position, removed, added| {
+        let signal_handler_id = model.connect_items_changed(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |model, position, removed, added| {
                 obj.handle_items_changed(model, position, removed, added)
-            }),
-        );
+            }
+        ));
 
         imp.bound_model
             .set(model.clone().upcast(), vec![signal_handler_id]);

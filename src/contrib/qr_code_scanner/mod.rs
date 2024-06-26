@@ -90,12 +90,22 @@ impl QrCodeScanner {
 
             imp.picture.set_paintable(Some(&paintable));
 
-            let callback = glib::clone!(@weak self as obj => @default-return None, move |args: &[glib::Value]| {
-                let code = args.get(1).unwrap().get::<QrVerificationDataBoxed>().unwrap();
-                obj.emit_by_name::<()>("code-detected", &[&code]);
+            let callback = glib::clone!(
+                #[weak(rename_to = obj)]
+                self,
+                #[upgrade_or]
+                None,
+                move |args: &[glib::Value]| {
+                    let code = args
+                        .get(1)
+                        .unwrap()
+                        .get::<QrVerificationDataBoxed>()
+                        .unwrap();
+                    obj.emit_by_name::<()>("code-detected", &[&code]);
 
-                None
-            });
+                    None
+                }
+            );
             let handler = paintable.connect_local("code-detected", false, callback);
 
             imp.handler.replace(Some(handler));

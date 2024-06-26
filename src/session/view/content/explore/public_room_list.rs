@@ -259,18 +259,22 @@ impl PublicRoomList {
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                // If the search term changed we ignore the response
-                if obj.is_valid_response(current_search_term, current_server, current_network) {
-                    match handle.await.unwrap() {
-                     Ok(response) => obj.handle_public_rooms_response(response),
-                     Err(error) => {
-                        obj.set_request_sent(false);
-                        error!("Error loading public rooms: {error}")
-                     },
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    // If the search term changed we ignore the response
+                    if obj.is_valid_response(current_search_term, current_server, current_network) {
+                        match handle.await.unwrap() {
+                            Ok(response) => obj.handle_public_rooms_response(response),
+                            Err(error) => {
+                                obj.set_request_sent(false);
+                                error!("Error loading public rooms: {error}")
+                            }
+                        }
                     }
                 }
-            })
+            )
         );
     }
 }

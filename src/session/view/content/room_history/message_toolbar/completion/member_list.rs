@@ -186,17 +186,23 @@ mod imp {
             }
 
             if let Some(room) = members.as_ref().and_then(|m| m.room()) {
-                let room_handler =
-                    room.connect_is_direct_notify(clone!(@weak self as imp => move |_| {
+                let room_handler = room.connect_is_direct_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_at_room_model();
-                    }));
+                    }
+                ));
                 self.room_handler.replace(Some(room_handler));
 
-                let permissions_handler = room.permissions().connect_can_notify_room_notify(
-                    clone!(@weak self as imp => move |_| {
-                        imp.update_at_room_model();
-                    }),
-                );
+                let permissions_handler =
+                    room.permissions().connect_can_notify_room_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_at_room_model();
+                        }
+                    ));
                 self.permissions_handler.replace(Some(permissions_handler));
             }
 

@@ -59,10 +59,13 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.retry_button
-                .connect_clicked(clone!(@weak obj => move |_| {
+            self.retry_button.connect_clicked(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.emit_by_name::<()>("retry", &[]);
-                }));
+                }
+            ));
         }
     }
 

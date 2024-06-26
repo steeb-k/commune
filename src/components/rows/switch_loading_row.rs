@@ -52,13 +52,16 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.switch
-                .connect_active_notify(clone!(@weak obj => move |switch| {
-                    obj.update_state(&[gtk::accessible::State::Checked(bool_to_accessible_tristate(
-                        switch.is_active(),
-                    ))]);
+            self.switch.connect_active_notify(clone!(
+                #[weak]
+                obj,
+                move |switch| {
+                    obj.update_state(&[gtk::accessible::State::Checked(
+                        bool_to_accessible_tristate(switch.is_active()),
+                    )]);
                     obj.notify_is_active();
-                }));
+                }
+            ));
             obj.update_state(&[gtk::accessible::State::Checked(
                 bool_to_accessible_tristate(self.switch.is_active()),
             )]);

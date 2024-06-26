@@ -102,9 +102,13 @@ mod imp {
 
             for (pos, item) in list.iter().enumerate() {
                 if let Some(category) = item.item.downcast_ref::<Category>() {
-                    category.connect_empty_notify(clone!(@weak self as imp => move |_| {
-                        imp.update_item_at(pos);
-                    }));
+                    category.connect_empty_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_item_at(pos);
+                        }
+                    ));
                 }
                 self.update_item_at(pos);
             }

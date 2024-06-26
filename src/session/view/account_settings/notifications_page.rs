@@ -87,10 +87,13 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.keywords_add_row
-                .connect_changed(clone!(@weak obj => move |_| {
+            self.keywords_add_row.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.update_keywords();
-                }));
+                }
+            ));
         }
     }
 
@@ -111,18 +114,27 @@ mod imp {
             self.notifications_settings.disconnect_signals();
 
             if let Some(settings) = notifications_settings {
-                let account_enabled_handler =
-                    settings.connect_account_enabled_notify(clone!(@weak obj => move |_| {
+                let account_enabled_handler = settings.connect_account_enabled_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_account();
-                    }));
-                let session_enabled_handler =
-                    settings.connect_session_enabled_notify(clone!(@weak obj => move |_| {
+                    }
+                ));
+                let session_enabled_handler = settings.connect_session_enabled_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_session();
-                    }));
-                let global_setting_handler =
-                    settings.connect_global_setting_notify(clone!(@weak obj => move |_| {
+                    }
+                ));
+                let global_setting_handler = settings.connect_global_setting_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_global();
-                    }));
+                    }
+                ));
 
                 self.notifications_settings.set(
                     settings,
@@ -143,12 +155,24 @@ mod imp {
                 let flattened_list = gtk::FlattenListModel::new(Some(all_items));
                 self.keywords.bind_model(
                     Some(&flattened_list),
-                    clone!(@weak obj => @default-return { adw::ActionRow::new().upcast() }, move |item| obj.create_keyword_row(item)),
+                    clone!(
+                        #[weak]
+                        obj,
+                        #[upgrade_or_else]
+                        || { adw::ActionRow::new().upcast() },
+                        move |item| obj.create_keyword_row(item)
+                    ),
                 );
             } else {
                 self.keywords.bind_model(
                     None::<&gio::ListModel>,
-                    clone!(@weak obj => @default-return { adw::ActionRow::new().upcast() }, move |item| obj.create_keyword_row(item)),
+                    clone!(
+                        #[weak]
+                        obj,
+                        #[upgrade_or_else]
+                        || { adw::ActionRow::new().upcast() },
+                        move |item| obj.create_keyword_row(item)
+                    ),
                 );
             }
 
@@ -176,9 +200,13 @@ mod imp {
             };
 
             let obj = self.obj();
-            spawn!(clone!(@weak obj => async move {
-                obj.global_setting_changed(default).await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.global_setting_changed(default).await;
+                }
+            ));
         }
     }
 }
@@ -359,9 +387,13 @@ impl NotificationsPage {
                 &[("keyword", &keyword)],
             )));
 
-            row.connect_remove(clone!(@weak self as obj => move |row| {
-                obj.remove_keyword(row);
-            }));
+            row.connect_remove(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |row| {
+                    obj.remove_keyword(row);
+                }
+            ));
 
             row.upcast()
         } else {
@@ -378,16 +410,19 @@ impl NotificationsPage {
 
         row.set_is_loading(true);
 
-        spawn!(clone!(@weak self as obj, @weak row => async move {
-            if settings.remove_keyword(row.title().into()).await.is_err() {
-                toast!(
-                    obj,
-                    gettext("Could not remove notification keyword")
-                );
-            }
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            #[weak]
+            row,
+            async move {
+                if settings.remove_keyword(row.title().into()).await.is_err() {
+                    toast!(obj, gettext("Could not remove notification keyword"));
+                }
 
-            row.set_is_loading(false);
-        }));
+                row.set_is_loading(false);
+            }
+        ));
     }
 
     /// Whether we can add the keyword that is currently in the entry.

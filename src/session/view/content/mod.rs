@@ -91,12 +91,16 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.stack
-                .connect_visible_child_notify(clone!(@weak self as imp => move |_| {
+            self.stack.connect_visible_child_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
                     if imp.visible_page() != ContentPage::Verification {
-                        imp.identity_verification_widget.set_verification(None::<IdentityVerification>);
+                        imp.identity_verification_widget
+                            .set_verification(None::<IdentityVerification>);
                     }
-                }));
+                }
+            ));
 
             if let Some(binding) = self.item_binding.take() {
                 binding.unbind()
@@ -163,15 +167,23 @@ mod imp {
 
             if let Some(item) = &item {
                 if let Some(room) = item.downcast_ref::<Room>() {
-                    let handler_id = room.connect_category_notify(clone!(@weak obj => move |_| {
-                        obj.update_visible_child();
-                    }));
+                    let handler_id = room.connect_category_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_visible_child();
+                        }
+                    ));
 
                     self.signal_handler.replace(Some(handler_id));
                 } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                    let handler_id = verification.connect_dismiss(clone!(@weak obj => move |_| {
-                        obj.set_item(None::<glib::Object>);
-                    }));
+                    let handler_id = verification.connect_dismiss(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.set_item(None::<glib::Object>);
+                        }
+                    ));
                     self.signal_handler.replace(Some(handler_id));
                 }
             }

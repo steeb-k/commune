@@ -60,10 +60,13 @@ mod imp {
     impl PrivilegedMembers {
         /// Set the permissions to watch.
         fn set_permissions(&self, permissions: &Permissions) {
-            let changed_handler =
-                permissions.connect_changed(clone!(@weak self as imp => move |_| {
+            let changed_handler = permissions.connect_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
                     imp.update();
-                }));
+                }
+            ));
             self.permissions.set(permissions, vec![changed_handler]);
 
             self.update();
@@ -110,18 +113,25 @@ mod imp {
                     .unwrap_or_else(|| {
                         let user = RemoteUser::new(&session, user_id.clone());
 
-                        spawn!(clone!(@strong user => async move {
-                            user.load_profile().await;
-                        }));
+                        spawn!(clone!(
+                            #[strong]
+                            user,
+                            async move {
+                                user.load_profile().await;
+                            }
+                        ));
 
                         user.upcast()
                     });
                 let member = MemberPowerLevel::new(&user, &permissions);
 
-                let handler =
-                    member.connect_power_level_notify(clone!(@weak self as imp => move |_| {
+                let handler = member.connect_power_level_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_changed();
-                    }));
+                    }
+                ));
                 new_handlers.push(handler);
 
                 (user_id, member)

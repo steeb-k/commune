@@ -79,15 +79,20 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.search_entry
-                .connect_pill_removed(clone!(@weak self as imp => move |_, source| {
+            self.search_entry.connect_pill_removed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, source| {
                     if let Ok(member) = source.downcast::<Member>() {
                         imp.remove_selected(member.user_id());
                     }
-                }));
+                }
+            ));
 
-            self.list_view
-                .connect_activate(clone!(@weak self as imp => move |list_view, index| {
+            self.list_view.connect_activate(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |list_view, index| {
                     let Some(member) = list_view
                         .model()
                         .and_then(|m| m.item(index))
@@ -97,7 +102,8 @@ mod imp {
                     };
 
                     imp.toggle_selected(member);
-                }));
+                }
+            ));
 
             // Search filter.
             fn search_string(member: Member) -> String {
@@ -134,11 +140,13 @@ mod imp {
 
             self.filtered_model.set_filter(Some(&filter));
 
-            self.filtered_model.connect_items_changed(
-                clone!(@weak self as imp => move |_, _, _, _| {
+            self.filtered_model.connect_items_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _, _, _| {
                     imp.update_visible_page();
-                }),
-            );
+                }
+            ));
 
             // Sort members by display name, then user ID.
             let display_name_expr = Member::this_expression("display-name");
@@ -158,32 +166,40 @@ mod imp {
                 .set_model(Some(&gtk::NoSelection::new(Some(sorted_model))));
 
             let factory = gtk::SignalListItemFactory::new();
-            factory.connect_setup(clone!(@weak obj => move |_, item| {
-                let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-                    error!("List item factory did not receive a list item: {item:?}");
-                    return;
-                };
-
-                let row = PermissionsSelectMemberRow::new();
-                item.set_child(Some(&row));
-                item.bind_property("item", &row, "member")
-                    .sync_create()
-                    .build();
-                item.set_selectable(false);
-
-                obj.connect_selection_changed(clone!(@weak row => move |obj| {
-                    let Some(member) = row.member() else {
+            factory.connect_setup(clone!(
+                #[weak]
+                obj,
+                move |_, item| {
+                    let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                        error!("List item factory did not receive a list item: {item:?}");
                         return;
                     };
 
-                    let selected = obj
-                        .imp()
-                        .selected_members
-                        .borrow()
-                        .contains_key(member.user_id());
-                    row.set_selected(selected);
-                }));
-            }));
+                    let row = PermissionsSelectMemberRow::new();
+                    item.set_child(Some(&row));
+                    item.bind_property("item", &row, "member")
+                        .sync_create()
+                        .build();
+                    item.set_selectable(false);
+
+                    obj.connect_selection_changed(clone!(
+                        #[weak]
+                        row,
+                        move |obj| {
+                            let Some(member) = row.member() else {
+                                return;
+                            };
+
+                            let selected = obj
+                                .imp()
+                                .selected_members
+                                .borrow()
+                                .contains_key(member.user_id());
+                            row.set_selected(selected);
+                        }
+                    ));
+                }
+            ));
             self.list_view.set_factory(Some(&factory));
         }
     }
@@ -201,15 +217,23 @@ mod imp {
             self.permissions.set(permissions.as_ref());
 
             if let Some(permissions) = &permissions {
-                self.power_level_filter.set_filter_func(clone!(@weak permissions => @default-return true, move |obj| {
-                    let Some(member) = obj.downcast_ref::<Member>() else {
-                        return false;
-                    };
+                self.power_level_filter.set_filter_func(clone!(
+                    #[weak]
+                    permissions,
+                    #[upgrade_or]
+                    true,
+                    move |obj| {
+                        let Some(member) = obj.downcast_ref::<Member>() else {
+                            return false;
+                        };
 
-                    // Filter out members whose power level cannot be changed.
-                    permissions
-                        .can_do_to_user(member.user_id(), PowerLevelUserAction::ChangePowerLevel)
-                }));
+                        // Filter out members whose power level cannot be changed.
+                        permissions.can_do_to_user(
+                            member.user_id(),
+                            PowerLevelUserAction::ChangePowerLevel,
+                        )
+                    }
+                ));
             }
 
             let members = permissions

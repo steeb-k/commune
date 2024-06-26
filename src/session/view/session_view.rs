@@ -126,26 +126,43 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.sidebar.property_expression("list-model").chain_property::<SidebarListModel>("selection-model").chain_property::<Selection>("selected-item").watch(glib::Object::NONE,
-                clone!(@weak self as imp => move || {
-                    let show_content = imp.sidebar.list_model().is_some_and(|m| m.selection_model().selected_item().is_some());
-                    imp.split_view.set_show_content(show_content);
-                }),
-            );
+            self.sidebar
+                .property_expression("list-model")
+                .chain_property::<SidebarListModel>("selection-model")
+                .chain_property::<Selection>("selected-item")
+                .watch(
+                    glib::Object::NONE,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            let show_content = imp
+                                .sidebar
+                                .list_model()
+                                .is_some_and(|m| m.selection_model().selected_item().is_some());
+                            imp.split_view.set_show_content(show_content);
+                        }
+                    ),
+                );
 
-            self.content
-                .connect_item_notify(clone!(@weak obj => move |_| {
+            self.content.connect_item_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     // Withdraw the notifications of the newly selected item.
                     obj.withdraw_selected_item_notifications();
-                }));
+                }
+            ));
 
             obj.connect_root_notify(|obj| {
                 let Some(window) = obj.parent_window() else {
                     return;
                 };
 
-                let handler_id =
-                    window.connect_is_active_notify(clone!(@weak obj => move |window| {
+                let handler_id = window.connect_is_active_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |window| {
                         if !window.is_active() {
                             return;
                         }
@@ -153,7 +170,8 @@ mod imp {
                         // When the window becomes active, withdraw the notifications
                         // of the selected item.
                         obj.withdraw_selected_item_notifications();
-                    }));
+                    }
+                ));
                 obj.imp().window_active_handler_id.replace(Some(handler_id));
             });
         }

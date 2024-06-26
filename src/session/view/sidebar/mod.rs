@@ -100,18 +100,22 @@ mod imp {
             let obj = self.obj();
 
             let factory = gtk::SignalListItemFactory::new();
-            factory.connect_setup(clone!(@weak obj => move |_, item| {
-                let item = match item.downcast_ref::<gtk::ListItem>() {
-                    Some(item) => item,
-                    None => {
-                        error!("List item factory did not receive a list item: {item:?}");
-                        return;
-                    }
-                };
-                let row = Row::new(&obj);
-                item.set_child(Some(&row));
-                item.bind_property("item", &row, "list-row").build();
-            }));
+            factory.connect_setup(clone!(
+                #[weak]
+                obj,
+                move |_, item| {
+                    let item = match item.downcast_ref::<gtk::ListItem>() {
+                        Some(item) => item,
+                        None => {
+                            error!("List item factory did not receive a list item: {item:?}");
+                            return;
+                        }
+                    };
+                    let row = Row::new(&obj);
+                    item.set_child(Some(&row));
+                    item.bind_property("item", &row, "list-row").build();
+                }
+            ));
             self.listview.set_factory(Some(&factory));
 
             self.listview.connect_activate(move |listview, pos| {
@@ -183,24 +187,34 @@ mod imp {
             if let Some(user) = &user {
                 let session = user.session();
 
-                let offline_handler =
-                    session.connect_offline_notify(clone!(@weak self as imp => move |_| {
+                let offline_handler = session.connect_offline_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_security_banner();
-                    }));
-                let crypto_identity_handler = session.connect_crypto_identity_state_notify(
-                    clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let crypto_identity_handler = session.connect_crypto_identity_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_security_banner();
-                    }),
-                );
-                let verification_handler = session.connect_verification_state_notify(
-                    clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let verification_handler = session.connect_verification_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_security_banner();
-                    }),
-                );
-                let recovery_handler =
-                    session.connect_recovery_state_notify(clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let recovery_handler = session.connect_recovery_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_security_banner();
-                    }));
+                    }
+                ));
 
                 self.session_handlers.replace(vec![
                     offline_handler,

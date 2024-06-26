@@ -193,28 +193,32 @@ impl MediaItem {
 
         spawn!(
             glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                let imp = obj.imp();
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    let imp = obj.imp();
 
-                match handle.await.unwrap() {
-                    Ok(Some(data)) => {
-                        match gdk::Texture::from_bytes(&glib::Bytes::from(&data)) {
-                            Ok(texture) => {
-                                imp.picture.set_paintable(Some(&texture));
-                            }
-                            Err(error) => {
-                                warn!("Image file not supported: {}", error);
+                    match handle.await.unwrap() {
+                        Ok(Some(data)) => {
+                            match gdk::Texture::from_bytes(&glib::Bytes::from(&data)) {
+                                Ok(texture) => {
+                                    imp.picture.set_paintable(Some(&texture));
+                                }
+                                Err(error) => {
+                                    warn!("Image file not supported: {}", error);
+                                }
                             }
                         }
-                    }
-                    Ok(None) => {
-                        warn!("Could not retrieve invalid media file");
-                    }
-                    Err(error) => {
-                        warn!("Could not retrieve media file: {}", error);
+                        Ok(None) => {
+                            warn!("Could not retrieve invalid media file");
+                        }
+                        Err(error) => {
+                            warn!("Could not retrieve media file: {}", error);
+                        }
                     }
                 }
-            })
+            )
         );
     }
 

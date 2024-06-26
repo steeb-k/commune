@@ -79,9 +79,13 @@ mod imp {
 
             spawn!(
                 glib::Priority::LOW,
-                clone!(@weak obj => async move {
-                    obj.load().await;
-                })
+                clone!(
+                    #[weak]
+                    obj,
+                    async move {
+                        obj.load().await;
+                    }
+                )
             );
         }
     }
@@ -115,9 +119,13 @@ impl MemberList {
     pub fn reload(&self) {
         self.set_state(LoadingState::Initial);
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load().await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.load().await;
+            }
+        ));
     }
 
     /// Load this list.

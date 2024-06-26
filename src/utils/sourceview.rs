@@ -9,9 +9,13 @@ pub fn setup_style_scheme(buffer: &sourceview::Buffer) {
 
     buffer.set_style_scheme(style_scheme().as_ref());
 
-    manager.connect_dark_notify(glib::clone!(@weak buffer => move |_| {
-        buffer.set_style_scheme(style_scheme().as_ref());
-    }));
+    manager.connect_dark_notify(glib::clone!(
+        #[weak]
+        buffer,
+        move |_| {
+            buffer.set_style_scheme(style_scheme().as_ref());
+        }
+    ));
 }
 
 /// Get the style scheme for the current appearance.

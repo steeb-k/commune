@@ -54,7 +54,10 @@ impl MessageReactionList {
         self.imp().flow_box.bind_model(
             Some(reaction_list),
             clone!(
-                @weak members => @default-return { gtk::FlowBoxChild::new().upcast() },
+                #[weak]
+                members,
+                #[upgrade_or_else]
+                || { gtk::FlowBoxChild::new().upcast() },
                 move |obj| {
                     MessageReaction::new(members, obj.clone().downcast().unwrap()).upcast()
                 }

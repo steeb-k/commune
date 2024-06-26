@@ -359,10 +359,14 @@ impl ImagePaintable {
         self.invalidate_contents();
 
         // Update the frame when the duration is elapsed.
-        let update_frame_callback = glib::clone!(@weak self as obj => move || {
-            obj.imp().timeout_source_id.take();
-            obj.update_frame();
-        });
+        let update_frame_callback = glib::clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move || {
+                obj.imp().timeout_source_id.take();
+                obj.update_frame();
+            }
+        );
         let source_id = glib::timeout_add_local_once(next_frame.duration, update_frame_callback);
         imp.timeout_source_id.replace(Some(source_id));
 

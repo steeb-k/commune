@@ -109,8 +109,11 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            adw::StyleManager::default()
-                .connect_dark_notify(clone!(@weak obj => move |_| obj.update_icon()));
+            adw::StyleManager::default().connect_dark_notify(clone!(
+                #[weak]
+                obj,
+                move |_| obj.update_icon()
+            ));
             obj.update_icon();
 
             obj.set_tooltip_text(Some(&gettext_f(

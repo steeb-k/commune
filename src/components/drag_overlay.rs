@@ -102,8 +102,10 @@ mod imp {
             }
             self.drop_target.disconnect_signals();
 
-            let handler_id = drop_target.connect_current_drop_notify(
-                clone!(@weak self.revealer as revealer => move |target| {
+            let handler_id = drop_target.connect_current_drop_notify(clone!(
+                #[weak(rename_to = revealer)]
+                self.revealer,
+                move |target| {
                     let reveal = target.current_drop().is_some();
 
                     if reveal {
@@ -111,8 +113,8 @@ mod imp {
                     }
 
                     revealer.set_reveal_child(reveal);
-                }),
-            );
+                }
+            ));
 
             obj.add_controller(drop_target.clone());
             self.drop_target.set(drop_target, vec![handler_id]);

@@ -82,15 +82,22 @@ mod imp {
             self.password_progress
                 .add_offset_value(gtk::LEVEL_BAR_OFFSET_FULL, 5.0);
 
-            self.password.connect_changed(clone!(@weak obj => move|_| {
-                obj.validate_password();
-                obj.validate_password_confirmation();
-            }));
-
-            self.confirm_password
-                .connect_changed(clone!(@weak obj => move|_| {
+            self.password.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.validate_password();
                     obj.validate_password_confirmation();
-                }));
+                }
+            ));
+
+            self.confirm_password.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.validate_password_confirmation();
+                }
+            ));
         }
     }
 

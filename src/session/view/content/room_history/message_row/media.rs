@@ -374,15 +374,20 @@ impl MessageMedia {
 
         spawn!(
             glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                let imp = obj.imp();
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    let imp = obj.imp();
 
-                match handle.await.unwrap() {
-                    Ok(Some(data)) => {
-                        match media_type {
-                            MediaType::Image | MediaType::Sticker => {
-                                match ImagePaintable::from_bytes(&glib::Bytes::from(&data), None)
-                                    {
+                    match handle.await.unwrap() {
+                        Ok(Some(data)) => {
+                            match media_type {
+                                MediaType::Image | MediaType::Sticker => {
+                                    match ImagePaintable::from_bytes(
+                                        &glib::Bytes::from(&data),
+                                        None,
+                                    ) {
                                         Ok(texture) => {
                                             let child = if let Some(child) =
                                                 imp.media.child().and_downcast::<gtk::Picture>()
@@ -400,59 +405,65 @@ impl MessageMedia {
                                                 if imp.media.has_css_class("content-thumbnail") {
                                                     imp.media.remove_css_class("content-thumbnail");
                                                 }
-                                            } else if !imp.media.has_css_class("content-thumbnail") {
+                                            } else if !imp.media.has_css_class("content-thumbnail")
+                                            {
                                                 imp.media.add_css_class("content-thumbnail");
                                             }
                                         }
                                         Err(error) => {
                                             warn!("Image file not supported: {error}");
-                                            imp.overlay_error.set_tooltip_text(Some(&gettext("Image file not supported")));
+                                            imp.overlay_error.set_tooltip_text(Some(&gettext(
+                                                "Image file not supported",
+                                            )));
                                             obj.set_state(MediaState::Error);
                                         }
                                     }
-                            }
-                            MediaType::Video => {
-                                // The GStreamer backend of GtkVideo doesn't work with input streams so
-                                // we need to store the file.
-                                // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                                let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                                file.replace_contents(
-                                    &data,
-                                    None,
-                                    false,
-                                    gio::FileCreateFlags::REPLACE_DESTINATION,
-                                    gio::Cancellable::NONE,
-                                )
-                                .unwrap();
+                                }
+                                MediaType::Video => {
+                                    // The GStreamer backend of GtkVideo doesn't work with input
+                                    // streams so we need to
+                                    // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
+                                    let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
+                                    file.replace_contents(
+                                        &data,
+                                        None,
+                                        false,
+                                        gio::FileCreateFlags::REPLACE_DESTINATION,
+                                        gio::Cancellable::NONE,
+                                    )
+                                    .unwrap();
 
-                                let child = if let Some(child) =
-                                    imp.media.child().and_downcast::<VideoPlayer>()
-                                {
-                                    child
-                                } else {
-                                    let child = VideoPlayer::new();
-                                    imp.media.set_child(Some(&child));
-                                    child
-                                };
-                                child.set_compact(obj.compact());
-                                child.play_media_file(file)
-                            }
-                        };
+                                    let child = if let Some(child) =
+                                        imp.media.child().and_downcast::<VideoPlayer>()
+                                    {
+                                        child
+                                    } else {
+                                        let child = VideoPlayer::new();
+                                        imp.media.set_child(Some(&child));
+                                        child
+                                    };
+                                    child.set_compact(obj.compact());
+                                    child.play_media_file(file)
+                                }
+                            };
 
-                        obj.set_state(MediaState::Ready);
-                    }
-                    Ok(None) => {
-                        warn!("Could not retrieve invalid media file");
-                        imp.overlay_error.set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                        obj.set_state(MediaState::Error);
-                    }
-                    Err(error) => {
-                        warn!("Could not retrieve media file: {error}");
-                        imp.overlay_error.set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                        obj.set_state(MediaState::Error);
+                            obj.set_state(MediaState::Ready);
+                        }
+                        Ok(None) => {
+                            warn!("Could not retrieve invalid media file");
+                            imp.overlay_error
+                                .set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                            obj.set_state(MediaState::Error);
+                        }
+                        Err(error) => {
+                            warn!("Could not retrieve media file: {error}");
+                            imp.overlay_error
+                                .set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                            obj.set_state(MediaState::Error);
+                        }
                     }
                 }
-            })
+            )
         );
     }
 

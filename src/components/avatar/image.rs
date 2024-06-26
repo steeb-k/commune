@@ -150,12 +150,16 @@ impl AvatarImage {
 
         spawn!(
             glib::Priority::LOW,
-            clone!(@weak self as obj => async move {
-                match handle.await.unwrap() {
-                    Ok(data) => obj.set_image_data(Some(data)),
-                    Err(error) => error!("Could not fetch avatar: {error}"),
-                };
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    match handle.await.unwrap() {
+                        Ok(data) => obj.set_image_data(Some(data)),
+                        Err(error) => error!("Could not fetch avatar: {error}"),
+                    };
+                }
+            )
         );
     }
 }

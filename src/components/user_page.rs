@@ -176,46 +176,65 @@ mod imp {
                     .build();
                 let bindings = vec![title_binding, avatar_binding];
 
-                let verified_handler = user.connect_verified_notify(clone!(@weak obj => move |_| {
-                    obj.update_verified();
-                }));
-                let ignored_handler =
-                    user.connect_is_ignored_notify(clone!(@weak obj => move |_| {
+                let verified_handler = user.connect_verified_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_verified();
+                    }
+                ));
+                let ignored_handler = user.connect_is_ignored_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_direct_chat();
                         obj.update_ignored();
-                    }));
+                    }
+                ));
                 let mut handlers = vec![verified_handler, ignored_handler];
 
                 if let Some(member) = user.downcast_ref::<Member>() {
                     let room = member.room();
 
                     let permissions = room.permissions();
-                    let permissions_handler =
-                        permissions.connect_changed(clone!(@weak obj => move |_| {
+                    let permissions_handler = permissions.connect_changed(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
                             obj.update_room();
-                        }));
+                        }
+                    ));
                     self.permissions_handler.replace(Some(permissions_handler));
                     self.power_level_row.set_permissions(Some(permissions));
 
-                    let room_display_name_handler =
-                        room.connect_display_name_notify(clone!(@weak obj => move |_| {
+                    let room_display_name_handler = room.connect_display_name_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
                             obj.update_room();
-                        }));
+                        }
+                    ));
                     self.room_display_name_handler
                         .replace(Some(room_display_name_handler));
 
-                    let membership_handler =
-                        member.connect_membership_notify(clone!(@weak obj => move |member| {
+                    let membership_handler = member.connect_membership_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |member| {
                             if member.membership() == Membership::Leave {
                                 obj.emit_by_name::<()>("close", &[]);
                             } else {
                                 obj.update_room();
                             }
-                        }));
-                    let power_level_handler =
-                        member.connect_power_level_notify(clone!(@weak obj => move |_| {
+                        }
+                    ));
+                    let power_level_handler = member.connect_power_level_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
                             obj.update_room();
-                        }));
+                        }
+                    ));
                     handlers.extend([membership_handler, power_level_handler]);
                 }
 

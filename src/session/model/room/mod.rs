@@ -344,15 +344,21 @@ mod imp {
             });
 
             if let Some(verification) = &verification {
-                let state_handler =
-                    verification.connect_is_finished_notify(clone!(@weak self as imp => move |_| {
+                let state_handler = verification.connect_is_finished_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.set_verification(None);
-                    }));
+                    }
+                ));
 
-                let dismiss_handler =
-                    verification.connect_dismiss(clone!(@weak self as imp => move |_| {
+                let dismiss_handler = verification.connect_dismiss(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.set_verification(None);
-                    }));
+                    }
+                ));
 
                 self.verification
                     .set(verification, vec![state_handler, dismiss_handler]);
@@ -429,51 +435,79 @@ impl Room {
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_display_name().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.load_display_name().await;
+                }
+            )
         );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_own_member().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.load_own_member().await;
+                }
+            )
         );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_is_direct().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.load_is_direct().await;
+                }
+            )
         );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.watch_room_info().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.watch_room_info().await;
+                }
+            )
         );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_inviter().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.load_inviter().await;
+                }
+            )
         );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.imp().permissions.init(&obj).await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.imp().permissions.init(&obj).await;
+                }
+            )
         );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.imp().join_rule.init(&obj).await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.imp().join_rule.init(&obj).await;
+                }
+            )
         );
     }
 
@@ -481,21 +515,27 @@ impl Room {
         let timeline = Timeline::new(self);
         self.imp().timeline.set(timeline.clone()).unwrap();
 
-        timeline
-            .sdk_items()
-            .connect_items_changed(clone!(@weak self as obj => move |_, _, _, _| {
+        timeline.sdk_items().connect_items_changed(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_, _, _, _| {
                 spawn!(async move {
                     obj.update_is_read().await;
                 });
-            }));
+            }
+        ));
 
         if !matches!(self.category(), RoomType::Left | RoomType::Outdated) {
             // Load the room history when idle.
             spawn!(
                 glib::source::Priority::LOW,
-                clone!(@weak self as obj => async move {
-                    obj.timeline().load().await;
-                })
+                clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    async move {
+                        obj.timeline().load().await;
+                    }
+                )
             );
         }
     }
@@ -524,9 +564,13 @@ impl Room {
         self.imp().is_direct.set(is_direct);
         self.notify_is_direct();
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_direct_member().await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.load_direct_member().await;
+            }
+        ));
     }
 
     /// Load whether the room is direct or not.
@@ -913,19 +957,23 @@ impl Room {
 
                     spawn!(
                         glib::Priority::DEFAULT_IDLE,
-                        clone!(@weak self as obj => async move {
-                            let mut category = RoomType::Normal;
+                        clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            async move {
+                                let mut category = RoomType::Normal;
 
-                            if let Ok(Some(tags)) = tags.await.unwrap() {
-                                if tags.contains_key(&TagName::Favorite) {
-                                    category = RoomType::Favorite;
-                                } else if tags.contains_key(&TagName::LowPriority) {
-                                    category = RoomType::LowPriority;
+                                if let Ok(Some(tags)) = tags.await.unwrap() {
+                                    if tags.contains_key(&TagName::Favorite) {
+                                        category = RoomType::Favorite;
+                                    } else if tags.contains_key(&TagName::LowPriority) {
+                                        category = RoomType::LowPriority;
+                                    }
                                 }
-                            }
 
-                            obj.set_category_internal(category);
-                        })
+                                obj.set_category_internal(category);
+                            }
+                        )
                     );
                 }
             }
@@ -1034,9 +1082,13 @@ impl Room {
         for (_event_id, receipts) in content.iter() {
             if let Some(users) = receipts.get(&ReceiptType::Read) {
                 if users.contains_key(own_user_id) {
-                    spawn!(clone!(@weak self as obj => async move {
-                        obj.update_is_read().await;
-                    }));
+                    spawn!(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        async move {
+                            obj.update_is_read().await;
+                        }
+                    ));
                 }
             }
         }
@@ -1239,11 +1291,15 @@ impl Room {
         let inviter = Member::new(self, inviter_id);
         inviter.update_from_room_member(&inviter_member);
 
-        inviter.upcast_ref::<User>().connect_is_ignored_notify(
-            clone!(@weak self as obj => move |_| {
-                obj.load_category();
-            }),
-        );
+        inviter
+            .upcast_ref::<User>()
+            .connect_is_ignored_notify(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |_| {
+                    obj.load_category();
+                }
+            ));
 
         self.imp().inviter.replace(Some(inviter));
 
@@ -1283,19 +1339,27 @@ impl Room {
                         }
 
                         // It might change the direct member.
-                        spawn!(clone!(@weak self as obj => async move {
-                            obj.load_direct_member().await;
-                            obj.load_display_name().await;
-                        }));
+                        spawn!(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            async move {
+                                obj.load_direct_member().await;
+                                obj.load_display_name().await;
+                            }
+                        ));
                     }
                     AnySyncStateEvent::RoomAvatar(SyncStateEvent::Original(_)) => {
                         self.update_avatar();
                     }
                     AnySyncStateEvent::RoomName(_) => {
                         self.notify_name();
-                        spawn!(clone!(@weak self as obj => async move {
-                            obj.load_display_name().await;
-                        }));
+                        spawn!(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            async move {
+                                obj.load_display_name().await;
+                            }
+                        ));
                     }
                     AnySyncStateEvent::RoomTopic(_) => {
                         self.notify_topic();
@@ -1394,15 +1458,12 @@ impl Room {
         let matrix_room = matrix_room.clone();
         let handle = spawn_tokio!(async move { matrix_room.typing_notice(is_typing).await });
 
-        spawn!(
-            glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                match handle.await.unwrap() {
-                    Ok(_) => {},
-                    Err(error) => error!("Could not send typing notification: {error}"),
-                };
-            })
-        );
+        spawn!(glib::Priority::DEFAULT_IDLE, async move {
+            match handle.await.unwrap() {
+                Ok(_) => {}
+                Err(error) => error!("Could not send typing notification: {error}"),
+            };
+        });
     }
 
     pub async fn accept_invite(&self) -> MatrixResult<()> {
@@ -1466,9 +1527,13 @@ impl Room {
         }
 
         self.load_category();
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load_inviter().await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.load_inviter().await;
+            }
+        ));
     }
 
     pub fn handle_left_update(&self, update: LeftRoomUpdate) {
@@ -1816,9 +1881,13 @@ impl Room {
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
-            clone!(@weak self as obj => async move {
-                obj.load_is_encrypted().await;
-            })
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.load_is_encrypted().await;
+                }
+            )
         );
     }
 

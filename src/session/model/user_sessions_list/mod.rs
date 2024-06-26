@@ -127,12 +127,22 @@ impl UserSessionsList {
         imp.session.set(Some(session));
         imp.user_id.set(user_id).unwrap();
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.load().await;
-        }));
-        spawn!(clone!(@weak self as obj, @weak session => async move {
-            obj.init_sessions_watch(session.client()).await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.load().await;
+            }
+        ));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            #[weak]
+            session,
+            async move {
+                obj.init_sessions_watch(session.client()).await;
+            }
+        ));
     }
 
     /// Start listening to changes in the user sessions.

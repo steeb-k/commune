@@ -139,9 +139,13 @@ mod imp {
             self.session.set(session);
             obj.notify_session();
 
-            spawn!(clone!(@weak obj => async move {
-                obj.init_api().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.init_api().await;
+                }
+            ));
         }
 
         /// Set whether notifications are enabled for this session.
@@ -190,11 +194,15 @@ impl NotificationsSettings {
         if session.state() != SessionState::Ready {
             self.imp().api.take();
 
-            session.connect_ready(clone!(@weak self as obj => move |_| {
-                spawn!(async move {
-                    obj.init_api().await;
-                });
-            }));
+            session.connect_ready(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |_| {
+                    spawn!(async move {
+                        obj.init_api().await;
+                    });
+                }
+            ));
 
             return;
         }
@@ -227,10 +235,22 @@ impl NotificationsSettings {
             }
         });
 
-        spawn!(clone!(@weak self as obj => async move { obj.update().await; }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.update().await;
+            }
+        ));
 
         while let Some(()) = receiver.next().await {
-            spawn!(clone!(@weak self as obj => async move { obj.update().await; }));
+            spawn!(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.update().await;
+                }
+            ));
         }
     }
 

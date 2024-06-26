@@ -122,13 +122,19 @@ mod imp {
                     .expect("Session should still have a strong reference");
                 let crypto_identity_view = CryptoIdentitySetupView::new(&session);
 
-                crypto_identity_view.connect_completed(clone!(@weak self as imp => move |_, next| {
-                    match next {
-                        CryptoIdentitySetupNextStep::None => imp.obj().emit_completed(),
-                        CryptoIdentitySetupNextStep::EnableRecovery => imp.check_recovery(true),
-                        CryptoIdentitySetupNextStep::CompleteRecovery => imp.check_recovery(false),
+                crypto_identity_view.connect_completed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, next| {
+                        match next {
+                            CryptoIdentitySetupNextStep::None => imp.obj().emit_completed(),
+                            CryptoIdentitySetupNextStep::EnableRecovery => imp.check_recovery(true),
+                            CryptoIdentitySetupNextStep::CompleteRecovery => {
+                                imp.check_recovery(false)
+                            }
+                        }
                     }
-                }));
+                ));
 
                 crypto_identity_view
             })
@@ -144,9 +150,13 @@ mod imp {
                 let recovery_view = CryptoRecoverySetupView::new(&session);
 
                 let obj = self.obj();
-                recovery_view.connect_completed(clone!(@weak obj => move |_| {
-                    obj.emit_completed();
-                }));
+                recovery_view.connect_completed(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.emit_completed();
+                    }
+                ));
 
                 recovery_view
             })
@@ -156,11 +166,15 @@ mod imp {
         fn set_session(&self, session: &Session) {
             self.session.set(Some(session));
 
-            let ready_handler = session.connect_ready(clone!(@weak self as imp => move |_| {
-                spawn!(async move {
-                    imp.load().await;
-                });
-            }));
+            let ready_handler = session.connect_ready(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    spawn!(async move {
+                        imp.load().await;
+                    });
+                }
+            ));
             self.session_handler.replace(Some(ready_handler));
         }
 
@@ -195,11 +209,13 @@ mod imp {
             // Wait if we don't know the crypto identity state.
             let crypto_identity_state = session.crypto_identity_state();
             if crypto_identity_state == CryptoIdentityState::Unknown {
-                let handler = session.connect_crypto_identity_state_notify(
-                    clone!(@weak self as imp => move |_| {
+                let handler = session.connect_crypto_identity_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.check_session_setup();
-                    }),
-                );
+                    }
+                ));
                 self.session_handler.replace(Some(handler));
                 return;
             }
@@ -207,11 +223,13 @@ mod imp {
             // Wait if we don't know the verification state.
             let verification_state = session.verification_state();
             if verification_state == SessionVerificationState::Unknown {
-                let handler = session.connect_verification_state_notify(
-                    clone!(@weak self as imp => move |_| {
+                let handler = session.connect_verification_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.check_session_setup();
-                    }),
-                );
+                    }
+                ));
                 self.session_handler.replace(Some(handler));
                 return;
             }
@@ -219,10 +237,13 @@ mod imp {
             // Wait if we don't know the recovery state.
             let recovery_state = session.recovery_state();
             if recovery_state == RecoveryState::Unknown {
-                let handler =
-                    session.connect_recovery_state_notify(clone!(@weak self as imp => move |_| {
+                let handler = session.connect_recovery_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.check_session_setup();
-                    }));
+                    }
+                ));
                 self.session_handler.replace(Some(handler));
                 return;
             }

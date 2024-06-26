@@ -83,14 +83,20 @@ mod imp {
             self.member.disconnect_signals();
 
             if let Some(member) = member {
-                let power_level_handler =
-                    member.connect_power_level_notify(clone!(@weak self as imp => move |_| {
+                let power_level_handler = member.connect_power_level_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_power_level();
-                    }));
-                let editable_handler =
-                    member.connect_editable_notify(clone!(@weak self as imp => move |_| {
+                    }
+                ));
+                let editable_handler = member.connect_editable_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_accessible_role();
-                    }));
+                    }
+                ));
 
                 self.member
                     .set(member, vec![power_level_handler, editable_handler]);

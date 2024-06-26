@@ -114,8 +114,14 @@ mod imp {
 
             let cell: Rc<RefCell<Option<glib::signal::SignalHandlerId>>> =
                 Rc::new(RefCell::new(None));
-            let signal_id = popover.connect_closed(
-                clone!(@weak obj, @strong cell, @weak room_history => move |popover| {
+            let signal_id = popover.connect_closed(clone!(
+                #[weak]
+                obj,
+                #[strong]
+                cell,
+                #[weak]
+                room_history,
+                move |popover| {
                     room_history.enable_sticky_mode();
 
                     obj.remove_css_class("has-open-popup");
@@ -123,8 +129,8 @@ mod imp {
                     if let Some(signal_id) = cell.take() {
                         popover.disconnect(signal_id);
                     }
-                }),
-            );
+                }
+            ));
             cell.replace(Some(signal_id));
 
             if let Some(event) = event
@@ -150,9 +156,15 @@ mod imp {
 
                     // Open emoji chooser
                     action_group.add_action_entries([gio::ActionEntry::builder("more-reactions")
-                        .activate(clone!(@weak obj, @weak popover => move |_, _, _| {
-                            obj.show_emoji_chooser(&popover);
-                        }))
+                        .activate(clone!(
+                            #[weak]
+                            obj,
+                            #[weak]
+                            popover,
+                            move |_, _, _| {
+                                obj.show_emoji_chooser(&popover);
+                            }
+                        ))
                         .build()]);
                 }
             } else {
@@ -175,9 +187,13 @@ mod imp {
 
             let related_event_handler = room_history
                 .message_toolbar()
-                .connect_related_event_notify(clone!(@weak obj => move |message_toolbar| {
-                    obj.update_for_related_event(message_toolbar.related_event());
-                }));
+                .connect_related_event_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |message_toolbar| {
+                        obj.update_for_related_event(message_toolbar.related_event());
+                    }
+                ));
             self.message_toolbar_handler
                 .replace(Some(related_event_handler));
         }
@@ -208,27 +224,41 @@ mod imp {
 
             if let Some(item) = &item {
                 if let Some(event) = item.downcast_ref::<Event>() {
-                    let state_notify_handler =
-                        event.connect_state_notify(clone!(@weak obj => move |event| {
+                    let state_notify_handler = event.connect_state_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |event| {
                             obj.update_event_actions(Some(event.upcast_ref()));
-                        }));
+                        }
+                    ));
 
-                    let source_notify_handler =
-                        event.connect_source_notify(clone!(@weak obj => move |event| {
+                    let source_notify_handler = event.connect_source_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |event| {
                             obj.set_event_widget(event.clone());
                             obj.update_event_actions(Some(event.upcast_ref()));
-                        }));
+                        }
+                    ));
 
                     let edit_source_notify_handler =
-                        event.connect_latest_edit_source_notify(clone!(@weak obj => move |event| {
-                            obj.set_event_widget(event.clone());
-                            obj.update_event_actions(Some(event.upcast_ref()));
-                        }));
+                        event.connect_latest_edit_source_notify(clone!(
+                            #[weak]
+                            obj,
+                            move |event| {
+                                obj.set_event_widget(event.clone());
+                                obj.update_event_actions(Some(event.upcast_ref()));
+                            }
+                        ));
 
                     let is_highlighted_notify_handler =
-                        event.connect_is_highlighted_notify(clone!(@weak obj => move |_| {
-                            obj.update_highlight();
-                        }));
+                        event.connect_is_highlighted_notify(clone!(
+                            #[weak]
+                            obj,
+                            move |_| {
+                                obj.update_highlight();
+                            }
+                        ));
 
                     self.event_handlers.replace(vec![
                         state_notify_handler,
@@ -237,11 +267,15 @@ mod imp {
                         is_highlighted_notify_handler,
                     ]);
 
-                    let permissions_handler = event.room().permissions().connect_changed(
-                        clone!(@weak obj, @weak event => move |_| {
+                    let permissions_handler = event.room().permissions().connect_changed(clone!(
+                        #[weak]
+                        obj,
+                        #[weak]
+                        event,
+                        move |_| {
                             obj.update_event_actions(Some(event.upcast_ref()));
-                        }),
-                    );
+                        }
+                    ));
                     self.permissions_handler.replace(Some(permissions_handler));
 
                     obj.set_event_widget(event.clone());
@@ -421,11 +455,14 @@ impl ItemRow {
             .pointing_to(&rectangle)
             .build();
 
-        emoji_chooser.connect_emoji_picked(clone!(@weak self as obj => move |_, emoji| {
-            obj
-                .activate_action("event.toggle-reaction", Some(&emoji.to_variant()))
-                .unwrap();
-        }));
+        emoji_chooser.connect_emoji_picked(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_, emoji| {
+                obj.activate_action("event.toggle-reaction", Some(&emoji.to_variant()))
+                    .unwrap();
+            }
+        ));
         emoji_chooser.connect_closed(|emoji_chooser| {
             emoji_chooser.unparent();
         });
@@ -465,23 +502,35 @@ impl ItemRow {
             action_group.add_action_entries([
                 // Create a permalink.
                 gio::ActionEntry::builder("permalink")
-                    .activate(clone!(@weak self as obj, @weak event => move |_, _, _| {
-                        spawn!(async move {
-                            let Some(permalink) = event.matrix_to_uri().await else {
-                                return;
-                            };
+                    .activate(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        #[weak]
+                        event,
+                        move |_, _, _| {
+                            spawn!(async move {
+                                let Some(permalink) = event.matrix_to_uri().await else {
+                                    return;
+                                };
 
-                            obj.clipboard().set_text(&permalink.to_string());
-                            toast!(obj, gettext("Permalink copied to clipboard"));
-                        });
-                    }))
+                                obj.clipboard().set_text(&permalink.to_string());
+                                toast!(obj, gettext("Permalink copied to clipboard"));
+                            });
+                        }
+                    ))
                     .build(),
                 // View event details.
                 gio::ActionEntry::builder("view-details")
-                    .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                        let dialog = EventDetailsDialog::new(&event);
-                        dialog.present(&widget);
-                    }))
+                    .activate(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        #[weak]
+                        event,
+                        move |_, _, _| {
+                            let dialog = EventDetailsDialog::new(&event);
+                            dialog.present(&obj);
+                        }
+                    ))
                     .build(),
             ]);
 
@@ -489,11 +538,15 @@ impl ItemRow {
                 action_group.add_action_entries([
                     // Report the event.
                     gio::ActionEntry::builder("report")
-                        .activate(clone!(@weak self as obj => move |_, _, _| {
-                            spawn!(async move {
-                                obj.report_event().await;
-                            });
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            move |_, _, _| {
+                                spawn!(async move {
+                                    obj.report_event().await;
+                                });
+                            }
+                        ))
                         .build(),
                 ]);
             }
@@ -503,22 +556,30 @@ impl ItemRow {
             if matches!(state, MessageState::Sending | MessageState::Error) {
                 // Cancel the event.
                 action_group.add_action_entries([gio::ActionEntry::builder("cancel-send")
-                    .activate(clone!(@weak self as obj, => move |_, _, _| {
-                        spawn!(async move {
-                            obj.cancel_send().await;
-                        });
-                    }))
+                    .activate(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        move |_, _, _| {
+                            spawn!(async move {
+                                obj.cancel_send().await;
+                            });
+                        }
+                    ))
                     .build()]);
             }
 
             if state == MessageState::Error {
                 // Retry to send the event.
                 action_group.add_action_entries([gio::ActionEntry::builder("retry-send")
-                    .activate(clone!(@weak self as obj, => move |_, _, _| {
-                        spawn!(async move {
-                            obj.retry_send().await;
-                        });
-                    }))
+                    .activate(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        move |_, _, _| {
+                            spawn!(async move {
+                                obj.retry_send().await;
+                            });
+                        }
+                    ))
                     .build()]);
             }
         }
@@ -535,11 +596,15 @@ impl ItemRow {
                     || permissions.can_redact_other())
             {
                 action_group.add_action_entries([gio::ActionEntry::builder("remove")
-                    .activate(clone!(@weak self as obj, => move |_, _, _| {
-                        spawn!(async move {
-                            obj.redact_message().await;
-                        });
-                    }))
+                    .activate(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        move |_, _, _| {
+                            spawn!(async move {
+                                obj.redact_message().await;
+                            });
+                        }
+                    ))
                     .build()]);
             };
 
@@ -547,15 +612,19 @@ impl ItemRow {
             if has_event_id && permissions.can_send_reaction() {
                 action_group.add_action_entries([gio::ActionEntry::builder("toggle-reaction")
                     .parameter_type(Some(&String::static_variant_type()))
-                    .activate(clone!(@weak self as obj => move |_, _, variant| {
-                        let Some(key) = variant.unwrap().get::<String>() else {
-                            return;
-                        };
+                    .activate(clone!(
+                        #[weak(rename_to = obj)]
+                        self,
+                        move |_, _, variant| {
+                            let Some(key) = variant.unwrap().get::<String>() else {
+                                return;
+                            };
 
-                        spawn!(async move {
-                            obj.toggle_reaction(key).await;
-                        });
-                    }))
+                            spawn!(async move {
+                                obj.toggle_reaction(key).await;
+                            });
+                        }
+                    ))
                     .build()]);
             }
 
@@ -563,14 +632,20 @@ impl ItemRow {
                 action_group.add_action_entries([
                     // Reply.
                     gio::ActionEntry::builder("reply")
-                        .activate(clone!(@weak event, @weak self as widget => move |_, _, _| {
-                            if let Some(event_id) = event.event_id() {
-                                let _ = widget.activate_action(
-                                    "room-history.reply",
-                                    Some(&event_id.as_str().to_variant())
-                                );
+                        .activate(clone!(
+                            #[weak]
+                            event,
+                            #[weak(rename_to = obj)]
+                            self,
+                            move |_, _, _| {
+                                if let Some(event_id) = event.event_id() {
+                                    let _ = obj.activate_action(
+                                        "room-history.reply",
+                                        Some(&event_id.as_str().to_variant()),
+                                    );
+                                }
                             }
-                        }))
+                        ))
                         .build(),
                 ]);
             }
@@ -581,41 +656,61 @@ impl ItemRow {
                     let body = text_message.body.clone();
 
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                        .activate(clone!(@weak self as widget => move |_, _, _| {
-                            widget.clipboard().set_text(&body);
-                            toast!(widget, gettext("Text copied to clipboard"));
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            move |_, _, _| {
+                                obj.clipboard().set_text(&body);
+                                toast!(obj, gettext("Text copied to clipboard"));
+                            }
+                        ))
                         .build()]);
 
                     // Edit message.
                     if has_event_id && is_from_own_user && permissions.can_send_message() {
                         action_group.add_action_entries([gio::ActionEntry::builder("edit")
-                            .activate(clone!(@weak event, @weak self as widget => move |_, _, _| {
-                                if let Some(event_id) = event.event_id() {
-                                    let _ = widget.activate_action(
-                                        "room-history.edit",
-                                        Some(&event_id.as_str().to_variant())
-                                    );
+                            .activate(clone!(
+                                #[weak]
+                                event,
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    if let Some(event_id) = event.event_id() {
+                                        let _ = obj.activate_action(
+                                            "room-history.edit",
+                                            Some(&event_id.as_str().to_variant()),
+                                        );
+                                    }
                                 }
-                            }))
+                            ))
                             .build()]);
                     }
                 }
                 MessageType::File(content) => {
                     // Save message's file.
                     action_group.add_action_entries([gio::ActionEntry::builder("file-save")
-                        .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                            widget.save_event_file(event);
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            #[weak]
+                            event,
+                            move |_, _, _| {
+                                obj.save_event_file(event);
+                            }
+                        ))
                         .build()]);
 
                     if let Some((caption, _)) = matrix_caption!(content) {
                         // Copy caption.
                         action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(@weak self as widget => move |_, _, _| {
-                                widget.clipboard().set_text(&caption);
-                                toast!(widget, gettext("Text copied to clipboard"));
-                            }))
+                            .activate(clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    obj.clipboard().set_text(&caption);
+                                    toast!(obj, gettext("Text copied to clipboard"));
+                                }
+                            ))
                             .build()]);
                     }
                 }
@@ -624,25 +719,37 @@ impl ItemRow {
                     let message = message.clone();
 
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                        .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                            let display_name = event.sender().display_name();
-                            let message = format!("{display_name} {}", message.body);
-                            widget.clipboard().set_text(&message);
-                            toast!(widget, gettext("Text copied to clipboard"));
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            #[weak]
+                            event,
+                            move |_, _, _| {
+                                let display_name = event.sender().display_name();
+                                let message = format!("{display_name} {}", message.body);
+                                obj.clipboard().set_text(&message);
+                                toast!(obj, gettext("Text copied to clipboard"));
+                            }
+                        ))
                         .build()]);
 
                     // Edit message.
                     if has_event_id && is_from_own_user && permissions.can_send_message() {
                         action_group.add_action_entries([gio::ActionEntry::builder("edit")
-                            .activate(clone!(@weak event, @weak self as widget => move |_, _, _| {
-                                if let Some(event_id) = event.event_id() {
-                                    let _ = widget.activate_action(
-                                        "room-history.edit",
-                                        Some(&event_id.as_str().to_variant())
-                                    );
+                            .activate(clone!(
+                                #[weak]
+                                event,
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    if let Some(event_id) = event.event_id() {
+                                        let _ = obj.activate_action(
+                                            "room-history.edit",
+                                            Some(&event_id.as_str().to_variant()),
+                                        );
+                                    }
                                 }
-                            }))
+                            ))
                             .build()]);
                     }
                 }
@@ -651,77 +758,116 @@ impl ItemRow {
                     let body = message.body.clone();
 
                     action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                        .activate(clone!(@weak self as widget => move |_, _, _| {
-                            widget.clipboard().set_text(&body);
-                            toast!(widget, gettext("Text copied to clipboard"));
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            move |_, _, _| {
+                                obj.clipboard().set_text(&body);
+                                toast!(obj, gettext("Text copied to clipboard"));
+                            }
+                        ))
                         .build()]);
                 }
                 MessageType::Image(content) => {
                     action_group.add_action_entries([
                         // Copy the texture to the clipboard.
                         gio::ActionEntry::builder("copy-image")
-                            .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                                let texture = widget.child()
-                                    .and_downcast::<MessageRow>()
-                                    .and_then(|r| r.texture())
-                                    .expect("An ItemRow with an image should have a texture");
+                            .activate(clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    let texture = obj
+                                        .child()
+                                        .and_downcast::<MessageRow>()
+                                        .and_then(|r| r.texture())
+                                        .expect("An ItemRow with an image should have a texture");
 
-                                widget.clipboard().set_texture(&texture);
-                                toast!(widget, gettext("Thumbnail copied to clipboard"));
-                            }))
+                                    obj.clipboard().set_texture(&texture);
+                                    toast!(obj, gettext("Thumbnail copied to clipboard"));
+                                }
+                            ))
                             .build(),
                         // Save the image to a file.
                         gio::ActionEntry::builder("save-image")
-                            .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                                widget.save_event_file(event);
-                            }))
+                            .activate(clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                #[weak]
+                                event,
+                                move |_, _, _| {
+                                    obj.save_event_file(event);
+                                }
+                            ))
                             .build(),
                     ]);
 
                     if let Some((caption, _)) = matrix_caption!(content) {
                         // Copy caption.
                         action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(@weak self as widget => move |_, _, _| {
-                                widget.clipboard().set_text(&caption);
-                                toast!(widget, gettext("Text copied to clipboard"));
-                            }))
+                            .activate(clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    obj.clipboard().set_text(&caption);
+                                    toast!(obj, gettext("Text copied to clipboard"));
+                                }
+                            ))
                             .build()]);
                     }
                 }
                 MessageType::Video(content) => {
                     // Save the video to a file.
                     action_group.add_action_entries([gio::ActionEntry::builder("save-video")
-                        .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                            widget.save_event_file(event);
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            #[weak]
+                            event,
+                            move |_, _, _| {
+                                obj.save_event_file(event);
+                            }
+                        ))
                         .build()]);
 
                     if let Some((caption, _)) = matrix_caption!(content) {
                         // Copy caption.
                         action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(@weak self as widget => move |_, _, _| {
-                                widget.clipboard().set_text(&caption);
-                                toast!(widget, gettext("Text copied to clipboard"));
-                            }))
+                            .activate(clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    obj.clipboard().set_text(&caption);
+                                    toast!(obj, gettext("Text copied to clipboard"));
+                                }
+                            ))
                             .build()]);
                     }
                 }
                 MessageType::Audio(content) => {
                     // Save the audio to a file.
                     action_group.add_action_entries([gio::ActionEntry::builder("save-audio")
-                        .activate(clone!(@weak self as widget, @weak event => move |_, _, _| {
-                            widget.save_event_file(event);
-                        }))
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            #[weak]
+                            event,
+                            move |_, _, _| {
+                                obj.save_event_file(event);
+                            }
+                        ))
                         .build()]);
 
                     if let Some((caption, _)) = matrix_caption!(content) {
                         // Copy caption.
                         action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(@weak self as widget => move |_, _, _| {
-                                widget.clipboard().set_text(&caption);
-                                toast!(widget, gettext("Text copied to clipboard"));
-                            }))
+                            .activate(clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                move |_, _, _| {
+                                    obj.clipboard().set_text(&caption);
+                                    toast!(obj, gettext("Text copied to clipboard"));
+                                }
+                            ))
                             .build()]);
                     }
                 }
@@ -739,19 +885,23 @@ impl ItemRow {
     /// See [`Event::get_media_content()`] for compatible events.
     /// Panics on an incompatible event.
     fn save_event_file(&self, event: Event) {
-        spawn!(clone!(@weak self as obj => async move {
-            let (filename, data) = match event.get_media_content().await {
-                Ok(res) => res,
-                Err(error) => {
-                    error!("Could not get event file: {error}");
-                    toast!(obj, error.to_user_facing());
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                let (filename, data) = match event.get_media_content().await {
+                    Ok(res) => res,
+                    Err(error) => {
+                        error!("Could not get event file: {error}");
+                        toast!(obj, error.to_user_facing());
 
-                    return;
-                }
-            };
+                        return;
+                    }
+                };
 
-            save_to_file(&obj, data, filename).await;
-        }));
+                save_to_file(&obj, data, filename).await;
+            }
+        ));
     }
 
     /// Redact the event of this row.

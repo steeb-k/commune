@@ -51,12 +51,15 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.check
-                .connect_active_notify(clone!(@weak obj => move |check| {
-                    obj.update_state(&[gtk::accessible::State::Checked(bool_to_accessible_tristate(
-                        check.is_active(),
-                    ))]);
-                }));
+            self.check.connect_active_notify(clone!(
+                #[weak]
+                obj,
+                move |check| {
+                    obj.update_state(&[gtk::accessible::State::Checked(
+                        bool_to_accessible_tristate(check.is_active()),
+                    )]);
+                }
+            ));
             obj.update_state(&[gtk::accessible::State::Checked(
                 bool_to_accessible_tristate(self.check.is_active()),
             )]);

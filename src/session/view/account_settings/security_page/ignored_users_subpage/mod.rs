@@ -73,21 +73,25 @@ mod imp {
             self.filtered_model.set_filter(Some(&search_filter));
 
             let factory = gtk::SignalListItemFactory::new();
-            factory.connect_setup(clone!(@weak self as imp => move |_, item| {
-                let Some(session) = imp.session.upgrade() else {
-                    return;
-                };
-                let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
-                    error!("List item factory did not receive a list item: {item:?}");
-                    return;
-                };
+            factory.connect_setup(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, item| {
+                    let Some(session) = imp.session.upgrade() else {
+                        return;
+                    };
+                    let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+                        error!("List item factory did not receive a list item: {item:?}");
+                        return;
+                    };
 
-                let row = IgnoredUserRow::new(&session.ignored_users());
-                item.set_child(Some(&row));
-                item.bind_property("item", &row, "item").build();
-                item.set_activatable(false);
-                item.set_selectable(false);
-            }));
+                    let row = IgnoredUserRow::new(&session.ignored_users());
+                    item.set_child(Some(&row));
+                    item.bind_property("item", &row, "item").build();
+                    item.set_activatable(false);
+                    item.set_selectable(false);
+                }
+            ));
             self.list_view.set_factory(Some(&factory));
 
             self.list_view.set_model(Some(&gtk::NoSelection::new(Some(
@@ -124,11 +128,13 @@ mod imp {
 
             let ignored_users = session.as_ref().map(|s| s.ignored_users());
             if let Some(ignored_users) = &ignored_users {
-                let items_changed_handler = ignored_users.connect_items_changed(
-                    clone!(@weak self as imp => move |_, _, _, _| {
+                let items_changed_handler = ignored_users.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _, _| {
                         imp.update_visible_page();
-                    }),
-                );
+                    }
+                ));
                 self.items_changed_handler
                     .replace(Some(items_changed_handler));
             }

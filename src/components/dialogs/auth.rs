@@ -94,10 +94,13 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.password
-                .connect_changed(clone!(@weak obj => move |password| {
+            self.password.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |password| {
                     obj.set_response_enabled("confirm", !password.text().is_empty());
-                }));
+                }
+            ));
         }
     }
 
@@ -328,9 +331,10 @@ impl AuthDialog {
             "{homeserver}_matrix/client/r0/auth/{auth_type}/fallback/web?session={uiaa_session}"
         );
 
-        let handler = imp
-            .open_browser_btn
-            .connect_clicked(clone!(@weak self as obj => move |_| {
+        let handler = imp.open_browser_btn.connect_clicked(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_| {
                 let uri = uri.clone();
                 spawn!(async move {
                     let Some(parent) = obj.parent() else {
@@ -346,7 +350,8 @@ impl AuthDialog {
 
                     obj.set_response_enabled("confirm", true);
                 });
-            }));
+            }
+        ));
 
         imp.open_browser_btn_handler.replace(Some(handler));
     }

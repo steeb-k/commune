@@ -64,10 +64,13 @@ mod imp {
                 .set_expression(Some(gtk::StringObject::this_expression("string")));
             self.filtered_list.set_filter(Some(&self.filter));
 
-            self.filtered_list
-                .connect_items_changed(clone!(@weak obj => move |_,_,_,_| {
+            self.filtered_list.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |_, _, _, _| {
                     obj.update_completion();
-                }));
+                }
+            ));
 
             self.list.bind_model(Some(&self.filtered_list), |item| {
                 let Some(item) = item.downcast_ref::<gtk::StringObject>() else {
@@ -125,46 +128,55 @@ mod imp {
 
             if let Some(entry) = entry {
                 let key_events = gtk::EventControllerKey::new();
-                key_events.connect_key_pressed(clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_, key, _, modifier| {
-                    if modifier.is_empty() {
-                        if obj.is_visible() {
-                            let imp = obj.imp();
-                            if matches!(key, gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::ISO_Enter) {
-                                // Activate completion.
-                                obj.activate_selected_row();
-                                return glib::Propagation::Stop;
-                            } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
-                                // Move up, if possible.
-                                let idx = obj.selected_row_index().unwrap_or_default();
-                                if idx > 0 {
-                                    obj.select_row_at_index(Some(idx - 1));
-                                }
-                                return glib::Propagation::Stop;
-                            } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
-                                // Move down, if possible.
-                                let new_idx = if let Some(idx) = obj.selected_row_index() {
-                                    idx + 1
-                                } else {
-                                    0
-                                };
-                                let max = imp.filtered_list.n_items() as usize;
+                key_events.connect_key_pressed(clone!(
+                    #[weak]
+                    obj,
+                    #[upgrade_or]
+                    glib::Propagation::Proceed,
+                    move |_, key, _, modifier| {
+                        if modifier.is_empty() {
+                            if obj.is_visible() {
+                                let imp = obj.imp();
+                                if matches!(
+                                    key,
+                                    gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::ISO_Enter
+                                ) {
+                                    // Activate completion.
+                                    obj.activate_selected_row();
+                                    return glib::Propagation::Stop;
+                                } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
+                                    // Move up, if possible.
+                                    let idx = obj.selected_row_index().unwrap_or_default();
+                                    if idx > 0 {
+                                        obj.select_row_at_index(Some(idx - 1));
+                                    }
+                                    return glib::Propagation::Stop;
+                                } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
+                                    // Move down, if possible.
+                                    let new_idx = if let Some(idx) = obj.selected_row_index() {
+                                        idx + 1
+                                    } else {
+                                        0
+                                    };
+                                    let max = imp.filtered_list.n_items() as usize;
 
-                                if new_idx < max {
-                                    obj.select_row_at_index(Some(new_idx));
+                                    if new_idx < max {
+                                        obj.select_row_at_index(Some(new_idx));
+                                    }
+                                    return glib::Propagation::Stop;
+                                } else if matches!(key, gdk::Key::Escape) {
+                                    // Close.
+                                    obj.popdown();
+                                    return glib::Propagation::Stop;
                                 }
-                                return glib::Propagation::Stop;
-                            } else if matches!(key, gdk::Key::Escape) {
-                                // Close.
-                                obj.popdown();
+                            } else if matches!(key, gdk::Key::Tab) {
+                                obj.update_completion();
                                 return glib::Propagation::Stop;
                             }
-                        } else if matches!(key, gdk::Key::Tab) {
-                            obj.update_completion();
-                            return glib::Propagation::Stop;
                         }
+                        glib::Propagation::Proceed
                     }
-                    glib::Propagation::Proceed
-                }));
+                ));
 
                 entry.add_controller(key_events.clone());
                 self.entry_controller.replace(Some(key_events));
@@ -175,14 +187,21 @@ mod imp {
                     .build();
                 self.entry_binding.replace(Some(search_binding));
 
-                let changed_handler = entry.connect_changed(clone!(@weak obj => move |_| {
-                    obj.update_completion();
-                }));
-
-                let state_flags_handler =
-                    entry.connect_state_flags_changed(clone!(@weak obj => move |_, _| {
+                let changed_handler = entry.connect_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_completion();
-                    }));
+                    }
+                ));
+
+                let state_flags_handler = entry.connect_state_flags_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |_, _| {
+                        obj.update_completion();
+                    }
+                ));
 
                 obj.set_parent(entry);
                 self.entry

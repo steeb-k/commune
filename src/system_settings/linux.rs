@@ -29,9 +29,13 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            spawn!(clone!(@weak obj => async move {
-                obj.init().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.init().await;
+                }
+            ));
         }
     }
 

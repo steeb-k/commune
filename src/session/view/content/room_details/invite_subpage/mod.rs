@@ -95,17 +95,29 @@ mod imp {
             let obj = self.obj();
 
             let invite_list = self.invite_list.get_or_init(|| InviteList::new(&room));
-            invite_list.connect_invitee_added(clone!(@weak self as imp => move |_, invitee| {
-                imp.search_entry.add_pill(&invitee.user());
-            }));
+            invite_list.connect_invitee_added(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, invitee| {
+                    imp.search_entry.add_pill(&invitee.user());
+                }
+            ));
 
-            invite_list.connect_invitee_removed(clone!(@weak self as imp => move |_, invitee| {
-                imp.search_entry.remove_pill(&invitee.user().identifier());
-            }));
+            invite_list.connect_invitee_removed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, invitee| {
+                    imp.search_entry.remove_pill(&invitee.user().identifier());
+                }
+            ));
 
-            invite_list.connect_state_notify(clone!(@weak self as imp => move |_| {
-                imp.update_view();
-            }));
+            invite_list.connect_state_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_view();
+                }
+            ));
 
             self.search_entry
                 .bind_property("text", invite_list, "search-term")

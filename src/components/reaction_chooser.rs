@@ -151,10 +151,13 @@ impl ReactionChooser {
         }
 
         if let Some(reactions) = reactions.as_ref() {
-            let signal_handler =
-                reactions.connect_items_changed(clone!(@weak self as obj => move |_, _, _, _| {
+            let signal_handler = reactions.connect_items_changed(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |_, _, _, _| {
                     obj.update_reactions();
-                }));
+                }
+            ));
             imp.reactions_handler.replace(Some(signal_handler));
         }
         imp.reactions.replace(reactions);

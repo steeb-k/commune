@@ -63,10 +63,13 @@ mod imp {
     impl ObjectImpl for PublicRoomRow {
         fn constructed(&self) {
             self.parent_constructed();
-            self.button
-                .connect_clicked(clone!(@weak self as imp => move |_| {
+            self.button.connect_clicked(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
                     imp.obj().join_or_view();
-                }));
+                }
+            ));
         }
     }
 
@@ -89,14 +92,20 @@ mod imp {
                 }
 
                 if public_room.matrix_public_room().is_some() {
-                    let pending_handler =
-                        public_room.connect_pending_notify(clone!(@weak self as imp => move |_| {
+                    let pending_handler = public_room.connect_pending_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
                             imp.update_button();
-                        }));
-                    let room_handler =
-                        public_room.connect_room_notify(clone!(@weak self as imp => move |_| {
+                        }
+                    ));
+                    let room_handler = public_room.connect_room_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
                             imp.update_button();
-                        }));
+                        }
+                    ));
 
                     self.public_room
                         .set(public_room, vec![pending_handler, room_handler]);
@@ -225,11 +234,15 @@ impl PublicRoomRow {
                     (id, via)
                 });
 
-            spawn!(clone!(@weak self as obj => async move {
-                if let Err(error) = room_list.join_by_id_or_alias(room_id, via).await {
-                    toast!(obj, error);
+            spawn!(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    if let Err(error) = room_list.join_by_id_or_alias(room_id, via).await {
+                        toast!(obj, error);
+                    }
                 }
-            }));
+            ));
         }
     }
 }

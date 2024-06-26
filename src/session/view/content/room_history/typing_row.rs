@@ -69,15 +69,20 @@ mod imp {
             self.list.disconnect_signals();
 
             if let Some(list) = list {
-                let items_changed_handler_id = list.connect_items_changed(
-                    clone!(@weak obj => move |list, _pos, removed, added| {
+                let items_changed_handler_id = list.connect_items_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |list, _pos, removed, added| {
                         if removed != 0 || added != 0 {
                             obj.update_label(list);
                         }
-                    }),
-                );
-                let is_empty_notify_handler_id = list
-                    .connect_is_empty_notify(clone!(@weak obj => move |_| obj.notify_is_empty()));
+                    }
+                ));
+                let is_empty_notify_handler_id = list.connect_is_empty_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| obj.notify_is_empty()
+                ));
 
                 self.avatar_list.bind_model(Some(list.clone()), |item| {
                     item.downcast_ref::<Member>().unwrap().avatar_data().clone()

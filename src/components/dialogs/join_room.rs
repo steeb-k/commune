@@ -110,11 +110,18 @@ mod imp {
                 ) {
                     obj.fill_details();
                 } else {
-                    room.connect_loading_state_notify(clone!(@weak obj => move |room| {
-                    if matches!(room.loading_state(), LoadingState::Ready | LoadingState::Error) {
-                        obj.fill_details();
-                    }
-                }));
+                    room.connect_loading_state_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |room| {
+                            if matches!(
+                                room.loading_state(),
+                                LoadingState::Ready | LoadingState::Error
+                            ) {
+                                obj.fill_details();
+                            }
+                        }
+                    ));
                 }
             }
 

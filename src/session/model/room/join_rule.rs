@@ -129,11 +129,13 @@ mod imp {
                 return;
             };
 
-            let own_membership_handler =
-                room.own_member()
-                    .connect_membership_notify(clone!(@weak self as imp => move |_| {
-                        imp.update_we_can_join();
-                    }));
+            let own_membership_handler = room.own_member().connect_membership_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_we_can_join();
+                }
+            ));
             self.own_membership_handler
                 .replace(Some(own_membership_handler));
 
@@ -254,10 +256,13 @@ mod imp {
                     RemoteRoom::new(&session, room_id.into()).upcast()
                 };
 
-                let display_name_handler =
-                    room.connect_display_name_notify(clone!(@weak self as imp => move |_| {
+                let display_name_handler = room.connect_display_name_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_display_name();
-                    }));
+                    }
+                ));
 
                 self.membership_room.set(room, vec![display_name_handler])
             }

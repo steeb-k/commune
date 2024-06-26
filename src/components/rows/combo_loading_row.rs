@@ -89,57 +89,68 @@ mod imp {
 
             self.list.bind_model(
                 model.as_ref(),
-                clone!(@weak obj => @default-return { gtk::ListBoxRow::new().upcast() }, move |item| {
-                    let Some(item) = item.downcast_ref::<gtk::StringObject>() else {
-                        return gtk::ListBoxRow::new().upcast();
-                    };
+                clone!(
+                    #[weak]
+                    obj,
+                    #[upgrade_or_else]
+                    || { gtk::ListBoxRow::new().upcast() },
+                    move |item| {
+                        let Some(item) = item.downcast_ref::<gtk::StringObject>() else {
+                            return gtk::ListBoxRow::new().upcast();
+                        };
 
-                    let string = item.string();
-                    let child = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+                        let string = item.string();
+                        let child = gtk::Box::new(gtk::Orientation::Horizontal, 6);
 
-                    let label = gtk::Label::builder()
-                        .xalign(0.0)
-                        .ellipsize(pango::EllipsizeMode::End)
-                        .max_width_chars(40)
-                        .valign(gtk::Align::Center)
-                        .label(string)
-                        .build();
-                    child.append(&label);
+                        let label = gtk::Label::builder()
+                            .xalign(0.0)
+                            .ellipsize(pango::EllipsizeMode::End)
+                            .max_width_chars(40)
+                            .valign(gtk::Align::Center)
+                            .label(string)
+                            .build();
+                        child.append(&label);
 
-                    let icon = gtk::Image::builder()
-                        .accessible_role(gtk::AccessibleRole::Presentation)
-                        .icon_name("object-select-symbolic")
-                        .build();
+                        let icon = gtk::Image::builder()
+                            .accessible_role(gtk::AccessibleRole::Presentation)
+                            .icon_name("object-select-symbolic")
+                            .build();
 
-                    let selected_handler = obj.connect_selected_string_notify(clone!(@weak label, @weak icon => move |obj| {
+                        let selected_handler = obj.connect_selected_string_notify(clone!(
+                            #[weak]
+                            label,
+                            #[weak]
+                            icon,
+                            move |obj| {
+                                let is_selected =
+                                    obj.selected_string().is_some_and(|s| s == label.label());
+                                let opacity = if is_selected { 1.0 } else { 0.0 };
+                                icon.set_opacity(opacity);
+                            }
+                        ));
+                        obj.imp()
+                            .selected_handlers
+                            .borrow_mut()
+                            .push(selected_handler);
+
                         let is_selected = obj.selected_string().is_some_and(|s| s == label.label());
-                        let opacity = if is_selected {
-                            1.0
-                        } else {
-                            0.0
-                        };
+                        let opacity = if is_selected { 1.0 } else { 0.0 };
                         icon.set_opacity(opacity);
-                    }));
-                    obj.imp().selected_handlers.borrow_mut().push(selected_handler);
+                        child.append(&icon);
 
-                    let is_selected = obj.selected_string().is_some_and(|s| s == label.label());
-                        let opacity = if is_selected {
-                            1.0
-                        } else {
-                            0.0
-                        };
-                        icon.set_opacity(opacity);
-                    child.append(&icon);
-
-                    gtk::ListBoxRow::builder().child(&child).build().upcast()
-                }),
+                        gtk::ListBoxRow::builder().child(&child).build().upcast()
+                    }
+                ),
             );
 
             if let Some(model) = model {
-                let items_changed_handler =
-                    model.connect_items_changed(clone!(@weak self as imp => move |_, _, _, _| {
+                let items_changed_handler = model.connect_items_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_, _, _, _| {
                         imp.update_selected();
-                    }));
+                    }
+                ));
 
                 self.string_model.set(model, vec![items_changed_handler]);
             }

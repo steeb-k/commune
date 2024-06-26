@@ -104,9 +104,13 @@ mod imp {
             let abort_handle = spawn_tokio!(fut).abort_handle();
             self.abort_handle.replace(Some(abort_handle));
 
-            spawn!(clone!(@weak self as imp => async move {
-                imp.load_list().await;
-            }));
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.load_list().await;
+                }
+            ));
         }
 
         /// Load the list from the store and update it.

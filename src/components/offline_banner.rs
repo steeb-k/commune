@@ -59,10 +59,13 @@ mod imp {
             self.session.disconnect_signals();
 
             if let Some(session) = session {
-                let offline_handler =
-                    session.connect_offline_notify(clone!(@weak self as imp => move |_| {
+                let offline_handler = session.connect_offline_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update();
-                    }));
+                    }
+                ));
 
                 self.session.set(session, vec![offline_handler]);
             }
@@ -83,10 +86,13 @@ mod imp {
             }
 
             let monitor = gio::NetworkMonitor::default();
-            let monitor_handler =
-                monitor.connect_network_changed(clone!(@weak self as imp => move |_, _| {
+            let monitor_handler = monitor.connect_network_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_, _| {
                     imp.update();
-                }));
+                }
+            ));
             self.monitor_handler.replace(Some(monitor_handler));
         }
 

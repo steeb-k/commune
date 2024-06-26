@@ -44,26 +44,34 @@ mod imp {
             self.parent_constructed();
 
             let obj = self.obj();
-            let target = adw::CallbackAnimationTarget::new(clone!(@weak obj => move |_| {
-                obj.queue_draw();
-            }));
+            let target = adw::CallbackAnimationTarget::new(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.queue_draw();
+                }
+            ));
             let animation = adw::TimedAnimation::new(&*obj, 0.0, 1.0, ANIMATION_DURATION, target);
 
             animation.set_easing(adw::Easing::EaseOutQuart);
-            animation.connect_done(clone!(@weak obj => move |_| {
-                let imp = obj.imp();
+            animation.connect_done(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    let imp = obj.imp();
 
-                if !imp.reveal_child.get() {
-                    if let Some(source_widget) = imp.source_widget.upgrade() {
-                        // Show the original source widget now that the
-                        // transition is over.
-                        source_widget.set_opacity(1.0);
+                    if !imp.reveal_child.get() {
+                        if let Some(source_widget) = imp.source_widget.upgrade() {
+                            // Show the original source widget now that the
+                            // transition is over.
+                            source_widget.set_opacity(1.0);
+                        }
+                        obj.set_visible(false);
                     }
-                    obj.set_visible(false);
-                }
 
-                obj.emit_by_name::<()>("transition-done", &[]);
-            }));
+                    obj.emit_by_name::<()>("transition-done", &[]);
+                }
+            ));
 
             self.animation.set(animation).unwrap();
             obj.set_visible(false);

@@ -51,6 +51,7 @@ url = "2"
 
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { package = "libadwaita", version = "0.6", features = ["v1_5"] }
+glib = { version = "0.19", features = ["unstable-clone-syntax"] } # Remove when GTK depends on version with new clone syntax
 gst = { version = "0.22", package = "gstreamer" }
 gst_base = { version = "0.22", package = "gstreamer-base" }
 gst_gtk = { version = "0.12", package = "gst-plugin-gtk4" }

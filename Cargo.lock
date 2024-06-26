@@ -1410,6 +1410,7 @@ dependencies = [
  "futures-util",
  "geo-uri",
  "gettext-rs",
+ "glib",
  "gst-plugin-gtk4",
  "gstreamer",
  "gstreamer-base",

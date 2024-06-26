@@ -57,12 +57,19 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            let bus_guard = self.player
+            let bus_guard = self
+                .player
                 .message_bus()
-                .add_watch_local(
-                    clone!(@weak obj =>  @default-return glib::ControlFlow::Break, move |_, message| {
+                .add_watch_local(clone!(
+                    #[weak]
+                    obj,
+                    #[upgrade_or]
+                    glib::ControlFlow::Break,
+                    move |_, message| {
                         match PlayMessage::parse(message) {
-                            Ok(PlayMessage::DurationChanged { duration }) => obj.duration_changed(duration),
+                            Ok(PlayMessage::DurationChanged { duration }) => {
+                                obj.duration_changed(duration)
+                            }
                             Ok(PlayMessage::Warning { error, .. }) => {
                                 warn!("Warning playing video: {error}");
                             }
@@ -73,8 +80,8 @@ mod imp {
                         }
 
                         glib::ControlFlow::Continue
-                    }),
-                )
+                    }
+                ))
                 .unwrap();
             self.bus_guard.set(bus_guard).unwrap();
         }

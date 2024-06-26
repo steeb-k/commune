@@ -89,71 +89,90 @@ mod imp {
                 if obj.parent().is_some() {
                     let view = obj.view();
                     let buffer = view.buffer();
-                    let handler_id =
-                        buffer.connect_cursor_position_notify(clone!(@weak obj => move |_| {
+                    let handler_id = buffer.connect_cursor_position_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
                             obj.update_completion(false);
-                        }));
+                        }
+                    ));
                     imp.buffer_handler.replace(Some((buffer, handler_id)));
 
                     let key_events = gtk::EventControllerKey::new();
-                    key_events.connect_key_pressed(clone!(@weak obj => @default-return glib::Propagation::Proceed, move |_, key, _, modifier| {
-                        if modifier.is_empty() {
-                            if obj.is_visible() {
-                                let imp = obj.imp();
-                                if matches!(key, gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::Tab) {
-                                    // Activate completion.
-                                    obj.activate_selected_row();
-                                    return glib::Propagation::Stop;
-                                } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
-                                    // Move up, if possible.
-                                    let idx = obj.selected_row_index().unwrap_or_default();
-                                    if idx > 0 {
-                                        obj.select_row_at_index(Some(idx - 1));
+                    key_events.connect_key_pressed(clone!(
+                        #[weak]
+                        obj,
+                        #[upgrade_or]
+                        glib::Propagation::Proceed,
+                        move |_, key, _, modifier| {
+                            if modifier.is_empty() {
+                                if obj.is_visible() {
+                                    let imp = obj.imp();
+                                    if matches!(
+                                        key,
+                                        gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::Tab
+                                    ) {
+                                        // Activate completion.
+                                        obj.activate_selected_row();
+                                        return glib::Propagation::Stop;
+                                    } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
+                                        // Move up, if possible.
+                                        let idx = obj.selected_row_index().unwrap_or_default();
+                                        if idx > 0 {
+                                            obj.select_row_at_index(Some(idx - 1));
+                                        }
+                                        return glib::Propagation::Stop;
+                                    } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
+                                        // Move down, if possible.
+                                        let new_idx = if let Some(idx) = obj.selected_row_index() {
+                                            idx + 1
+                                        } else {
+                                            0
+                                        };
+                                        let n_members = imp.member_list.list().n_items() as usize;
+                                        let max = MAX_ROWS.min(n_members);
+                                        if new_idx < max {
+                                            obj.select_row_at_index(Some(new_idx));
+                                        }
+                                        return glib::Propagation::Stop;
+                                    } else if matches!(key, gdk::Key::Escape) {
+                                        // Close.
+                                        obj.inhibit();
+                                        return glib::Propagation::Stop;
                                     }
-                                    return glib::Propagation::Stop;
-                                } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
-                                    // Move down, if possible.
-                                    let new_idx = if let Some(idx) = obj.selected_row_index() {
-                                        idx + 1
-                                    } else {
-                                        0
-                                    };
-                                    let n_members = imp.member_list.list().n_items() as usize;
-                                    let max = MAX_ROWS.min(n_members);
-                                    if new_idx < max {
-                                        obj.select_row_at_index(Some(new_idx));
-                                    }
-                                    return glib::Propagation::Stop;
-                                } else if matches!(key, gdk::Key::Escape) {
-                                    // Close.
-                                    obj.inhibit();
+                                } else if matches!(key, gdk::Key::Tab) {
+                                    obj.update_completion(true);
                                     return glib::Propagation::Stop;
                                 }
-                            } else if matches!(key, gdk::Key::Tab) {
-                                obj.update_completion(true);
-                                return glib::Propagation::Stop;
                             }
+                            glib::Propagation::Proceed
                         }
-                        glib::Propagation::Proceed
-                    }));
+                    ));
 
                     view.add_controller(key_events);
 
                     // Close popup when the entry is not focused.
-                    view.connect_has_focus_notify(clone!(@weak obj => move |view| {
-                        if !view.has_focus() && obj.get_visible() {
-                            obj.popdown();
+                    view.connect_has_focus_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |view| {
+                            if !view.has_focus() && obj.get_visible() {
+                                obj.popdown();
+                            }
                         }
-                    }));
+                    ));
                 }
             });
 
-            self.list
-                .connect_row_activated(clone!(@weak obj => move |_, row| {
+            self.list.connect_row_activated(clone!(
+                #[weak]
+                obj,
+                move |_, row| {
                     if let Some(row) = row.downcast_ref::<PillSourceRow>() {
                         obj.row_activated(row);
                     }
-                }));
+                }
+            ));
         }
     }
 

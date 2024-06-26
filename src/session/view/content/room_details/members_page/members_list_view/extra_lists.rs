@@ -46,13 +46,21 @@ mod imp {
             let invited_members = obj.invited().model();
             let banned_members = obj.banned().model();
 
-            invited_members.connect_items_changed(clone!(@weak obj => move |_, _, _, _| {
-                obj.update_invited();
-            }));
+            invited_members.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |_, _, _, _| {
+                    obj.update_invited();
+                }
+            ));
 
-            banned_members.connect_items_changed(clone!(@weak obj => move |_, _, _, _| {
-                obj.update_banned();
-            }));
+            banned_members.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |_, _, _, _| {
+                    obj.update_banned();
+                }
+            ));
 
             self.invited_is_empty.set(invited_members.n_items() == 0);
             self.banned_is_empty.set(banned_members.n_items() == 0);
@@ -104,12 +112,13 @@ mod imp {
 
             self.members.disconnect_signals();
 
-            let signal_handler_ids =
-                vec![
-                    members.connect_state_notify(clone!(@weak obj => move |members| {
-                        obj.update_loading_state(members.state());
-                    })),
-                ];
+            let signal_handler_ids = vec![members.connect_state_notify(clone!(
+                #[weak]
+                obj,
+                move |members| {
+                    obj.update_loading_state(members.state());
+                }
+            ))];
             obj.update_loading_state(members.state());
 
             self.members.set(&members, signal_handler_ids);

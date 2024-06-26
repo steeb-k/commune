@@ -186,82 +186,131 @@ mod imp {
                 .chain_property::<AvatarImage>("uri")
                 .watch(
                     Some(&avatar_data),
-                    clone!(@weak obj, @weak avatar_data => move || {
-                        obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
-                    }),
+                    clone!(
+                        #[weak]
+                        obj,
+                        #[weak]
+                        avatar_data,
+                        move || {
+                            obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
+                        }
+                    ),
                 );
             self.expr_watches.borrow_mut().push(expr_watch);
 
-            let membership_handler =
-                room.own_member()
-                    .connect_membership_notify(clone!(@weak obj => move |_| {
-                        obj.update_sections();
-                    }));
+            let membership_handler = room.own_member().connect_membership_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_sections();
+                }
+            ));
             self.membership_handler.replace(Some(membership_handler));
 
-            let permissions_handler =
-                room.permissions()
-                    .connect_changed(clone!(@weak obj => move |_| {
-                        obj.update_upgrade_button();
-                        obj.update_edit_addresses_button();
-                        obj.update_join_rule();
-                        obj.update_guest_access();
-                        obj.update_history_visibility();
-                        obj.update_encryption();
+            let permissions_handler = room.permissions().connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_upgrade_button();
+                    obj.update_edit_addresses_button();
+                    obj.update_join_rule();
+                    obj.update_guest_access();
+                    obj.update_history_visibility();
+                    obj.update_encryption();
 
-                        spawn!(async move {
-                            obj.update_publish().await;
-                        });
-                    }));
+                    spawn!(async move {
+                        obj.update_publish().await;
+                    });
+                }
+            ));
             self.permissions_handler.replace(Some(permissions_handler));
 
             let aliases = room.aliases();
-            let canonical_alias_handler =
-                aliases.connect_canonical_alias_string_notify(clone!(@weak obj => move |_| {
+            let canonical_alias_handler = aliases.connect_canonical_alias_string_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.update_addresses();
-                }));
+                }
+            ));
             self.canonical_alias_handler
                 .replace(Some(canonical_alias_handler));
 
-            let alt_aliases_handler = aliases.alt_aliases_model().connect_items_changed(
-                clone!(@weak obj => move |_,_,_,_| {
+            let alt_aliases_handler = aliases.alt_aliases_model().connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |_, _, _, _| {
                     obj.update_addresses();
-                }),
-            );
+                }
+            ));
             self.alt_aliases_handler.replace(Some(alt_aliases_handler));
 
-            let join_rule_handler =
-                room.join_rule()
-                    .connect_changed(clone!(@weak obj => move |_| {
-                        obj.update_join_rule();
-                    }));
+            let join_rule_handler = room.join_rule().connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
+                    obj.update_join_rule();
+                }
+            ));
             self.join_rule_handler.replace(Some(join_rule_handler));
 
             let room_handler_ids = vec![
-                room.connect_name_notify(clone!(@weak obj => move |room| {
-                    obj.name_changed(room.name());
-                })),
-                room.connect_topic_notify(clone!(@weak obj => move |room| {
-                    obj.topic_changed(room.topic());
-                })),
-                room.connect_joined_members_count_notify(clone!(@weak obj => move |room| {
-                    obj.member_count_changed(room.joined_members_count());
-                })),
-                room.connect_notifications_setting_notify(clone!(@weak obj => move |_| {
-                    obj.update_notifications();
-                })),
-                room.connect_is_tombstoned_notify(clone!(@weak obj => move |_| {
-                    obj.update_upgrade_button();
-                })),
-                room.connect_guests_allowed_notify(clone!(@weak obj => move |_| {
-                    obj.update_guest_access();
-                })),
-                room.connect_history_visibility_notify(clone!(@weak obj => move |_| {
-                    obj.update_history_visibility();
-                })),
-                room.connect_is_encrypted_notify(clone!(@weak obj => move |_| {
-                    obj.update_encryption();
-                })),
+                room.connect_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |room| {
+                        obj.name_changed(room.name());
+                    }
+                )),
+                room.connect_topic_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |room| {
+                        obj.topic_changed(room.topic());
+                    }
+                )),
+                room.connect_joined_members_count_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |room| {
+                        obj.member_count_changed(room.joined_members_count());
+                    }
+                )),
+                room.connect_notifications_setting_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_notifications();
+                    }
+                )),
+                room.connect_is_tombstoned_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_upgrade_button();
+                    }
+                )),
+                room.connect_guests_allowed_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_guest_access();
+                    }
+                )),
+                room.connect_history_visibility_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_history_visibility();
+                    }
+                )),
+                room.connect_is_encrypted_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_encryption();
+                    }
+                )),
             ];
 
             obj.member_count_changed(room.joined_members_count());
@@ -278,12 +327,20 @@ mod imp {
             if let Some(session) = room.session() {
                 let settings = session.notifications().settings();
                 let notifications_settings_handlers = vec![
-                    settings.connect_account_enabled_notify(clone!(@weak obj => move |_| {
-                        obj.update_notifications();
-                    })),
-                    settings.connect_session_enabled_notify(clone!(@weak obj => move |_| {
-                        obj.update_notifications();
-                    })),
+                    settings.connect_account_enabled_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_notifications();
+                        }
+                    )),
+                    settings.connect_session_enabled_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_notifications();
+                        }
+                    )),
                 ];
 
                 self.notifications_settings_handlers
@@ -302,9 +359,13 @@ mod imp {
             obj.update_encryption();
             obj.update_upgrade_button();
 
-            spawn!(clone!(@weak obj => async move {
-                obj.update_publish().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.update_publish().await;
+                }
+            ));
 
             self.load_capabilities();
         }
@@ -347,20 +408,22 @@ mod imp {
 
             spawn!(
                 glib::Priority::LOW,
-                clone!(@weak self as imp => async move {
-                    let handle = spawn_tokio!(async move {
-                        client.get_capabilities().await
-                    });
-                    match handle.await.unwrap() {
-                        Ok(capabilities) => {
-                            imp.capabilities.replace(capabilities);
-                        }
-                        Err(error) => {
-                            error!("Could not get server capabilities: {error}");
-                            imp.capabilities.take();
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        let handle = spawn_tokio!(async move { client.get_capabilities().await });
+                        match handle.await.unwrap() {
+                            Ok(capabilities) => {
+                                imp.capabilities.replace(capabilities);
+                            }
+                            Err(error) => {
+                                error!("Could not get server capabilities: {error}");
+                                imp.capabilities.take();
+                            }
                         }
                     }
-                })
+                )
             );
         }
     }
@@ -396,16 +459,24 @@ impl GeneralPage {
 
     fn init_avatar(&self) {
         let avatar = &*self.imp().avatar;
-        avatar.connect_edit_avatar(clone!(@weak self as obj => move |_, file| {
-            spawn!(async move {
-                obj.change_avatar(file).await;
-            });
-        }));
-        avatar.connect_remove_avatar(clone!(@weak self as obj => move |_| {
-            spawn!(async move {
-                obj.remove_avatar().await;
-            });
-        }));
+        avatar.connect_edit_avatar(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_, file| {
+                spawn!(async move {
+                    obj.change_avatar(file).await;
+                });
+            }
+        ));
+        avatar.connect_remove_avatar(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |_| {
+                spawn!(async move {
+                    obj.remove_avatar().await;
+                });
+            }
+        ));
     }
 
     fn avatar_changed(&self, uri: Option<String>) {
@@ -860,17 +931,22 @@ impl GeneralPage {
         self.set_notifications_loading(true, setting);
 
         let settings = session.notifications().settings();
-        spawn!(clone!(@weak self as obj => async move {
-            if settings.set_per_room_setting(room.room_id().to_owned(), setting).await.is_err() {
-                toast!(
-                    obj,
-                    gettext("Could not change notifications setting")
-                );
-            }
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                if settings
+                    .set_per_room_setting(room.room_id().to_owned(), setting)
+                    .await
+                    .is_err()
+                {
+                    toast!(obj, gettext("Could not change notifications setting"));
+                }
 
-            obj.set_notifications_loading(false, setting);
-            obj.update_notifications();
-        }));
+                obj.set_notifications_loading(false, setting);
+                obj.update_notifications();
+            }
+        ));
     }
 
     /// Update the button to edit addresses.

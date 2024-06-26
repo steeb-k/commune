@@ -74,9 +74,13 @@ mod imp {
 
                         glib::timeout_add_seconds_local_once(
                             SENT_VISIBLE_SECONDS,
-                            clone!(@weak obj => move || {
-                                obj.set_visible(false);
-                            }),
+                            clone!(
+                                #[weak]
+                                obj,
+                                move || {
+                                    obj.set_visible(false);
+                                }
+                            ),
                         );
                     } else {
                         obj.set_visible(false);
@@ -109,9 +113,13 @@ mod imp {
 
                         glib::timeout_add_seconds_local_once(
                             SENT_VISIBLE_SECONDS,
-                            clone!(@weak stack => move || {
-                                stack.set_visible_child_name("edited");
-                            }),
+                            clone!(
+                                #[weak]
+                                stack,
+                                move || {
+                                    stack.set_visible_child_name("edited");
+                                }
+                            ),
                         );
                     } else {
                         stack.set_visible_child_name("edited");

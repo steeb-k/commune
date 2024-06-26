@@ -93,10 +93,13 @@ mod imp {
             self.model.disconnect_signals();
 
             if let Some(model) = model {
-                let items_changed_handler =
-                    model.connect_items_changed(clone!(@weak obj => move |m, p, r, a| {
+                let items_changed_handler = model.connect_items_changed(clone!(
+                    #[weak]
+                    obj,
+                    move |m, p, r, a| {
                         obj.items_changed_cb(m, p, r, a);
-                    }));
+                    }
+                ));
 
                 obj.items_changed_cb(&model, 0, n_items_before, model.n_items());
 

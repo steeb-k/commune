@@ -116,9 +116,13 @@ impl AccountSwitcherButton {
                 parent.set_popover(None);
             }
 
-            let closed_handler = popover.connect_closed(clone!(@weak self as obj => move |_| {
-                obj.set_active(false);
-            }));
+            let closed_handler = popover.connect_closed(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |_| {
+                    obj.set_active(false);
+                }
+            ));
 
             popover.set_parent(self);
             imp.popover.set(popover, vec![closed_handler]);

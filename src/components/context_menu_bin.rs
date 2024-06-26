@@ -90,17 +90,22 @@ mod imp {
         fn constructed(&self) {
             let obj = self.obj();
 
-            self.long_press_gesture
-                .connect_pressed(clone!(@weak obj => move |gesture, x, y| {
+            self.long_press_gesture.connect_pressed(clone!(
+                #[weak]
+                obj,
+                move |gesture, x, y| {
                     if obj.has_context_menu() {
                         gesture.set_state(gtk::EventSequenceState::Claimed);
                         gesture.reset();
                         obj.open_menu_at(x as i32, y as i32);
                     }
-                }));
+                }
+            ));
 
-            self.click_gesture.connect_released(
-                clone!(@weak obj => move |gesture, n_press, x, y| {
+            self.click_gesture.connect_released(clone!(
+                #[weak]
+                obj,
+                move |gesture, n_press, x, y| {
                     if n_press > 1 {
                         return;
                     }
@@ -109,8 +114,8 @@ mod imp {
                         gesture.set_state(gtk::EventSequenceState::Claimed);
                         obj.open_menu_at(x as i32, y as i32);
                     }
-                }),
-            );
+                }
+            ));
             self.parent_constructed();
         }
 
@@ -167,12 +172,18 @@ mod imp {
                 popover.unparent();
                 popover.set_parent(&*obj);
 
-                let parent_handler =
-                    popover.connect_parent_notify(clone!(@weak obj => move |popover| {
-                        if !popover.parent().is_some_and(|w| &w == obj.upcast_ref::<gtk::Widget>()) {
+                let parent_handler = popover.connect_parent_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |popover| {
+                        if !popover
+                            .parent()
+                            .is_some_and(|w| &w == obj.upcast_ref::<gtk::Widget>())
+                        {
                             obj.imp().popover.disconnect_signals();
                         }
-                    }));
+                    }
+                ));
 
                 self.popover.set(popover, vec![parent_handler]);
             }

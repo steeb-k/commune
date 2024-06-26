@@ -60,9 +60,13 @@ mod imp {
             )]);
             obj.items_changed(0, 0, 1);
 
-            spawn!(clone!(@weak obj => async move {
-                obj.load_servers().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.load_servers().await;
+                }
+            ));
         }
     }
 }

@@ -60,29 +60,38 @@ mod imp {
                 .build();
 
             // When a verification is replaced, select the replacement automatically.
-            self.unfiltered_selection_model.connect_selected_item_notify(
-                clone!(@weak self as imp => move |selection_model| {
-                    imp.selected_item.disconnect_signals();
+            self.unfiltered_selection_model
+                .connect_selected_item_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |selection_model| {
+                        imp.selected_item.disconnect_signals();
 
-                    if let Some(item) = &selection_model.selected_item() {
-                        if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
-                            let verification_handler = verification.connect_replaced(
-                                clone!(@weak selection_model => move |_, new_verification| {
-                                    selection_model.set_selected_item(Some(new_verification.clone()));
-                                }),
-                            );
-                            imp.selected_item.set(item, vec![verification_handler]);
+                        if let Some(item) = &selection_model.selected_item() {
+                            if let Some(verification) = item.downcast_ref::<IdentityVerification>()
+                            {
+                                let verification_handler = verification.connect_replaced(clone!(
+                                    #[weak]
+                                    selection_model,
+                                    move |_, new_verification| {
+                                        selection_model
+                                            .set_selected_item(Some(new_verification.clone()));
+                                    }
+                                ));
+                                imp.selected_item.set(item, vec![verification_handler]);
+                            }
                         }
                     }
-                }),
-            );
+                ));
 
             // Switch between the filtered and unfiltered list models.
-            self.string_filter.connect_search_notify(
-                clone!(@weak self as imp => move |string_filter| {
+            self.string_filter.connect_search_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |string_filter| {
                     imp.set_is_filtered(string_filter.search().filter(|s| !s.is_empty()).is_some());
-                }),
-            );
+                }
+            ));
         }
     }
 

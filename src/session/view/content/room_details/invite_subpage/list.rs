@@ -115,9 +115,13 @@ mod imp {
 
             self.search_term.replace(search_term);
 
-            spawn!(clone!(@weak obj => async move {
-                obj.search_users().await;
-            }));
+            spawn!(clone!(
+                #[weak]
+                obj,
+                async move {
+                    obj.search_users().await;
+                }
+            ));
 
             obj.notify_search_term();
         }
@@ -330,12 +334,20 @@ impl InviteList {
         let item = InviteItem::new(user);
         item.set_invite_exception(invite_exception);
 
-        item.connect_is_invitee_notify(clone!(@weak self as obj => move |item| {
-            obj.update_invitees_for_item(item);
-        }));
-        item.connect_can_invite_notify(clone!(@weak self as obj => move |item| {
-            obj.update_invitees_for_item(item);
-        }));
+        item.connect_is_invitee_notify(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |item| {
+                obj.update_invitees_for_item(item);
+            }
+        ));
+        item.connect_can_invite_notify(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            move |item| {
+                obj.update_invitees_for_item(item);
+            }
+        ));
 
         item
     }

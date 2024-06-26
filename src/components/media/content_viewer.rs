@@ -168,9 +168,13 @@ impl MediaContentViewer {
     pub fn view_file(&self, file: gio::File) {
         self.show_loading();
 
-        spawn!(clone!(@weak self as obj => async move {
-            obj.view_file_inner(file).await;
-        }));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                obj.view_file_inner(file).await;
+            }
+        ));
     }
 
     async fn view_file_inner(&self, file: gio::File) {

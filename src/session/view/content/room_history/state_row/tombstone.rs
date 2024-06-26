@@ -49,16 +49,22 @@ mod imp {
         fn set_room(&self, room: Room) {
             let obj = self.obj();
 
-            let successor_handler =
-                room.connect_successor_id_string_notify(clone!(@weak self as imp => move |room| {
+            let successor_handler = room.connect_successor_id_string_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |room| {
                     imp.new_room_btn.set_visible(room.successor_id().is_some());
-                }));
+                }
+            ));
             self.new_room_btn.set_visible(room.successor_id().is_some());
 
-            let successor_room_handler =
-                room.connect_successor_notify(clone!(@weak obj => move |room| {
+            let successor_room_handler = room.connect_successor_notify(clone!(
+                #[weak]
+                obj,
+                move |room| {
                     obj.update_button_label(room);
-                }));
+                }
+            ));
             obj.update_button_label(&room);
 
             self.room

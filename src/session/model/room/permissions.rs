@@ -178,9 +178,13 @@ mod imp {
     impl Permissions {
         /// Initialize the room.
         pub(super) fn init_own_member(&self, own_member: Member) {
-            own_member.connect_membership_notify(clone!(@weak self as imp => move |_| {
-                imp.update_is_joined();
-            }));
+            own_member.connect_membership_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_is_joined();
+                }
+            ));
 
             self.update_is_joined();
         }

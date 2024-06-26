@@ -106,10 +106,11 @@ mod imp {
                 .sync_create()
                 .build();
 
-            let items_changed_handler_id =
-                group.connect_items_changed(clone!(@weak obj => move |group, pos, removed, added|
-                       obj.items_changed(group, pos, removed, added)
-                ));
+            let items_changed_handler_id = group.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |group, pos, removed, added| obj.items_changed(group, pos, removed, added)
+            ));
             obj.items_changed(&group, 0, self.list.n_items(), group.n_items());
 
             self.group.set(&group, vec![items_changed_handler_id]);
@@ -188,10 +189,13 @@ impl MessageReaction {
                 .and_then(|r| r.member())
             {
                 // Listen to changes of the display name.
-                let handler_id =
-                    member.connect_display_name_notify(clone!(@weak self as obj => move |member| {
+                let handler_id = member.connect_display_name_notify(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    move |member| {
                         obj.update_member_tooltip(member);
-                    }));
+                    }
+                ));
 
                 imp.reaction_member.set(&member, vec![handler_id]);
                 self.update_member_tooltip(&member);
@@ -245,9 +249,9 @@ impl MessageReaction {
         let button = &*self.imp().button;
         let popover = ReactionPopover::new(&list);
         popover.set_parent(button);
-        popover.connect_closed(clone!(@weak button => move |popover| {
+        popover.connect_closed(|popover| {
             popover.unparent();
-        }));
+        });
         popover.popup();
     }
 }

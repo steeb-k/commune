@@ -68,8 +68,10 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.text_buffer
-                .connect_delete_range(clone!(@weak obj => move |_, start, end| {
+            self.text_buffer.connect_delete_range(clone!(
+                #[weak]
+                obj,
+                move |_, start, end| {
                     if start == end {
                         // Nothing to do.
                         return;
@@ -83,7 +85,12 @@ mod imp {
                             .and_downcast_ref::<Pill>()
                             .and_then(|p| p.source())
                         {
-                            let removed = obj.imp().pills.borrow_mut().remove(&source.identifier()).is_some();
+                            let removed = obj
+                                .imp()
+                                .pills
+                                .borrow_mut()
+                                .remove(&source.identifier())
+                                .is_some();
 
                             if removed {
                                 obj.emit_by_name::<()>("pill-removed", &[&source]);
@@ -96,7 +103,8 @@ mod imp {
                             break;
                         }
                     }
-                }));
+                }
+            ));
 
             self.text_buffer
                 .connect_insert_text(|text_buffer, location, text| {
@@ -121,10 +129,13 @@ mod imp {
                     }
                 });
 
-            self.text_buffer
-                .connect_text_notify(clone!(@weak obj => move |_| {
+            self.text_buffer.connect_text_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.notify_text();
-                }));
+                }
+            ));
         }
     }
 

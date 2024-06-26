@@ -64,10 +64,13 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            self.qr_code_scanner
-                .connect_code_detected(clone!(@weak obj => move |_, data| {
+            self.qr_code_scanner.connect_code_detected(clone!(
+                #[weak]
+                obj,
+                move |_, data| {
                     obj.code_detected(data);
-                }));
+                }
+            ));
         }
 
         fn dispose(&self) {
@@ -83,9 +86,13 @@ mod imp {
         fn map(&self) {
             self.parent_map();
 
-            spawn!(clone!(@weak self as imp => async move {
-                imp.qr_code_scanner.start().await;
-            }));
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.qr_code_scanner.start().await;
+                }
+            ));
         }
 
         fn unmap(&self) {
@@ -114,19 +121,24 @@ mod imp {
             self.verification.disconnect_signals();
 
             if let Some(verification) = &verification {
-                let display_name_handler =
-                    verification
-                        .user()
-                        .connect_display_name_notify(clone!(@weak obj => move |_| {
-                            obj.update_labels();
-                        }));
+                let display_name_handler = verification.user().connect_display_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_labels();
+                    }
+                ));
                 self.display_name_handler
                     .replace(Some(display_name_handler));
 
                 let supported_methods_handler =
-                    verification.connect_supported_methods_notify(clone!(@weak obj => move |_| {
-                        obj.update_page();
-                    }));
+                    verification.connect_supported_methods_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_page();
+                        }
+                    ));
 
                 self.verification
                     .set(verification, vec![supported_methods_handler]);
@@ -207,11 +219,15 @@ impl ScanQrCodePage {
             return;
         };
 
-        spawn!(clone!(@weak self as obj => async move {
-            if verification.qr_code_scanned(data).await.is_err() {
-                toast!(obj, gettext("Could not validate scanned QR Code"));
+        spawn!(clone!(
+            #[weak(rename_to = obj)]
+            self,
+            async move {
+                if verification.qr_code_scanned(data).await.is_err() {
+                    toast!(obj, gettext("Could not validate scanned QR Code"));
+                }
             }
-        }));
+        ));
     }
 
     /// Switch to the screen to scan a QR Code.

@@ -96,19 +96,29 @@ mod imp {
             self.public_addresses_list.bind_model(
                 Some(&flattened_public_list),
                 clone!(
-                    @weak obj => @default-return { adw::ActionRow::new().upcast() },
+                    #[weak]
+                    obj,
+                    #[upgrade_or_else]
+                    || { adw::ActionRow::new().upcast() },
                     move |item| obj.create_public_address_row(item)
                 ),
             );
 
-            self.public_addresses_add_row
-                .connect_changed(clone!(@weak obj => move |_| {
+            self.public_addresses_add_row.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.update_public_addresses_add_row();
-                }));
+                }
+            ));
 
             // Filter addresses already in the list.
-            let new_addresses_filter = gtk::CustomFilter::new(
-                clone!(@weak self as imp => @default-return false, move |item: &glib::Object| {
+            let new_addresses_filter = gtk::CustomFilter::new(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[upgrade_or]
+                false,
+                move |item: &glib::Object| {
                     let Some(item) = item.downcast_ref::<gtk::StringObject>() else {
                         return false;
                     };
@@ -127,15 +137,17 @@ mod imp {
                     }
 
                     true
-                }),
-            );
+                }
+            ));
 
             // Update the filtered list everytime an item changes.
-            self.public_addresses().connect_items_changed(
-                clone!(@weak new_addresses_filter => move |_,_,_,_| {
+            self.public_addresses().connect_items_changed(clone!(
+                #[weak]
+                new_addresses_filter,
+                move |_, _, _, _| {
                     new_addresses_filter.changed(gtk::FilterChange::Different);
-                }),
-            );
+                }
+            ));
 
             let new_local_addresses = gtk::FilterListModel::new(
                 Some(self.local_addresses.clone()),
@@ -157,15 +169,21 @@ mod imp {
             self.local_addresses_list.bind_model(
                 Some(&flattened_local_list),
                 clone!(
-                    @weak obj => @default-return { adw::ActionRow::new().upcast() },
+                    #[weak]
+                    obj,
+                    #[upgrade_or_else]
+                    || { adw::ActionRow::new().upcast() },
                     move |item| obj.create_local_address_row(item)
                 ),
             );
 
-            self.local_addresses_add_row
-                .connect_changed(clone!(@weak obj => move |_| {
+            self.local_addresses_add_row.connect_changed(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.update_local_addresses_add_row();
-                }));
+                }
+            ));
         }
 
         fn dispose(&self) {
@@ -192,10 +210,13 @@ mod imp {
         fn set_room(&self, room: Room) {
             let aliases = room.aliases();
 
-            let aliases_changed_handler =
-                aliases.connect_changed(clone!(@weak self as imp => move |_| {
+            let aliases_changed_handler = aliases.connect_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
                     imp.update_public_addresses();
-                }));
+                }
+            ));
             self.aliases_changed_handler
                 .replace(Some(aliases_changed_handler));
 
@@ -205,9 +226,13 @@ mod imp {
             self.update_public_addresses();
             self.update_local_addresses_server();
 
-            spawn!(clone!(@weak self as imp => async move {
-                imp.update_local_addresses().await;
-            }));
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.update_local_addresses().await;
+                }
+            ));
         }
 
         /// Update the list of public addresses.
@@ -382,16 +407,30 @@ impl AddressesSubpage {
                 &[("address", alias.as_str())],
             )));
 
-            address.connect_is_main_notify(clone!(@weak self as obj, @weak row => move |address| {
-                obj.update_public_row_is_main(&row, address.is_main());
-            }));
+            address.connect_is_main_notify(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                #[weak]
+                row,
+                move |address| {
+                    obj.update_public_row_is_main(&row, address.is_main());
+                }
+            ));
             self.update_public_row_is_main(&row, address.is_main());
 
-            row.connect_remove(clone!(@weak self as obj => move |row| {
-                spawn!(clone!(@weak row => async move {
-                    obj.remove_public_address(&row).await;
-                }));
-            }));
+            row.connect_remove(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |row| {
+                    spawn!(clone!(
+                        #[weak]
+                        row,
+                        async move {
+                            obj.remove_public_address(&row).await;
+                        }
+                    ));
+                }
+            ));
 
             row.upcast()
         } else {
@@ -440,11 +479,17 @@ impl AddressesSubpage {
             );
             button.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
 
-            button.connect_clicked(clone!(@weak self as obj, @weak row => move |_| {
-                spawn!(async move {
-                    obj.set_main_public_address(&row).await;
-                });
-            }));
+            button.connect_clicked(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                #[weak]
+                row,
+                move |_| {
+                    spawn!(async move {
+                        obj.set_main_public_address(&row).await;
+                    });
+                }
+            ));
 
             row.set_extra_suffix(Some(button));
         }
@@ -622,11 +667,19 @@ impl AddressesSubpage {
                 &[("address", &alias)],
             )));
 
-            row.connect_remove(clone!(@weak self as obj => move |row| {
-                spawn!(clone!(@weak row => async move {
-                    obj.unregister_local_address(&row).await;
-                }));
-            }));
+            row.connect_remove(clone!(
+                #[weak(rename_to = obj)]
+                self,
+                move |row| {
+                    spawn!(clone!(
+                        #[weak]
+                        row,
+                        async move {
+                            obj.unregister_local_address(&row).await;
+                        }
+                    ));
+                }
+            ));
 
             row.upcast()
         } else {

@@ -128,17 +128,22 @@ mod imp {
             self.verification.disconnect_signals();
 
             if let Some(verification) = &verification {
-                let user_handler = verification.user().connect_display_name_notify(
-                    clone!(@weak self as imp => move |_| {
+                let user_handler = verification.user().connect_display_name_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_bar();
-                    }),
-                );
+                    }
+                ));
                 self.user_handler.replace(Some(user_handler));
 
-                let state_handler =
-                    verification.connect_state_notify(clone!(@weak self as imp => move |_| {
+                let state_handler = verification.connect_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_bar();
-                    }));
+                    }
+                ));
 
                 self.verification.set(verification, vec![state_handler]);
             }

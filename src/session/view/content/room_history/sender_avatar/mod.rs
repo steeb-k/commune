@@ -215,32 +215,46 @@ mod imp {
             self.sender.disconnect_signals();
 
             if let Some(sender) = sender {
-                let permissions_handler = sender.room().permissions().connect_changed(
-                    clone!(@weak self as imp => move |_| {
+                let permissions_handler = sender.room().permissions().connect_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_actions();
-                    }),
-                );
+                    }
+                ));
                 self.permissions_handler.replace(Some(permissions_handler));
 
-                let display_name_handler =
-                    sender.connect_display_name_notify(clone!(@weak self as imp => move |_| {
+                let display_name_handler = sender.connect_display_name_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_accessible_label();
-                    }));
+                    }
+                ));
 
-                let membership_handler =
-                    sender.connect_membership_notify(clone!(@weak self as imp => move |_| {
+                let membership_handler = sender.connect_membership_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_actions();
-                    }));
+                    }
+                ));
 
-                let power_level_handler =
-                    sender.connect_power_level_notify(clone!(@weak self as imp => move |_| {
+                let power_level_handler = sender.connect_power_level_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_actions();
-                    }));
+                    }
+                ));
 
-                let is_ignored_handler =
-                    sender.connect_is_ignored_notify(clone!(@weak self as imp => move |_| {
+                let is_ignored_handler = sender.connect_is_ignored_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
                         imp.update_actions();
-                    }));
+                    }
+                ));
 
                 self.sender.set(
                     sender,
@@ -385,18 +399,25 @@ mod imp {
                     popover.unparent();
                 }
 
-                let parent_handler =
-                    popover.connect_parent_notify(clone!(@weak obj => move |popover| {
+                let parent_handler = popover.connect_parent_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |popover| {
                         if !popover.parent().is_some_and(|w| w == obj) {
                             let imp = obj.imp();
 
                             imp.popover.disconnect_signals();
                             popover.remove_child(&*imp.user_id_btn);
                         }
-                    }));
-                let closed_handler = popover.connect_closed(clone!(@weak obj => move |_| {
-                    obj.set_active(false);
-                }));
+                    }
+                ));
+                let closed_handler = popover.connect_closed(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.set_active(false);
+                    }
+                ));
 
                 popover.add_child(&*self.user_id_btn, "user-id");
                 popover.set_parent(&*obj);

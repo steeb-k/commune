@@ -188,9 +188,13 @@ impl RemoteRoom {
         imp.uri.set(uri).unwrap();
         imp.update_display_name();
 
-        spawn!(clone!(@weak obj => async move {
-            obj.load().await;
-        }));
+        spawn!(clone!(
+            #[weak]
+            obj,
+            async move {
+                obj.load().await;
+            }
+        ));
 
         obj
     }

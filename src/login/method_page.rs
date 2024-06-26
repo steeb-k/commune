@@ -74,13 +74,20 @@ mod imp {
             self.login.disconnect_signals();
 
             if let Some(login) = login {
-                let domain_handler = login.connect_domain_notify(clone!(@weak obj => move |_| {
-                    obj.update_domain_name();
-                }));
-                let login_types_handler =
-                    login.connect_login_types_notify(clone!(@weak obj => move |_| {
+                let domain_handler = login.connect_domain_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_domain_name();
+                    }
+                ));
+                let login_types_handler = login.connect_login_types_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_sso();
-                    }));
+                    }
+                ));
 
                 self.login
                     .set(login, vec![domain_handler, login_types_handler]);

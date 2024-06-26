@@ -140,24 +140,29 @@ mod imp {
 
             self.load_window_size();
 
-            self.main_stack.connect_transition_running_notify(
-                clone!(@weak self as imp => move |stack|
-                    if !stack.is_transition_running() {
-                        // Focus the default widget when the transition has ended.
-                        imp.grab_focus();
-                    }
-                ),
-            );
+            self.main_stack.connect_transition_running_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |stack| if !stack.is_transition_running() {
+                    // Focus the default widget when the transition has ended.
+                    imp.grab_focus();
+                }
+            ));
 
             self.account_switcher
                 .set_session_selection(Some(self.session_selection.clone()));
 
-            self.session_selection
-                .connect_selected_item_notify(clone!(@weak obj => move |_| {
+            self.session_selection.connect_selected_item_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.show_selected_session();
-                }));
-            self.session_selection.connect_items_changed(
-                clone!(@weak obj => move |session_selection, pos, removed, added| {
+                }
+            ));
+            self.session_selection.connect_items_changed(clone!(
+                #[weak]
+                obj,
+                move |session_selection, pos, removed, added| {
                     let n_items = session_selection.n_items();
                     obj.action_set_enabled("win.show-session", n_items > 0);
 
@@ -172,7 +177,8 @@ mod imp {
                     }
 
                     for i in pos..pos + added {
-                        let Some(session) = session_selection.item(i).and_downcast::<SessionInfo>() else {
+                        let Some(session) = session_selection.item(i).and_downcast::<SessionInfo>()
+                        else {
                             continue;
                         };
 
@@ -181,13 +187,12 @@ mod imp {
                         }
 
                         let settings = Application::default().settings();
-                        if session.session_id() == settings.string("current-session")
-                        {
+                        if session.session_id() == settings.string("current-session") {
                             session_selection.set_selected(i);
                         }
                     }
-                }),
-            );
+                }
+            ));
 
             let app = Application::default();
             let session_list = app.session_list();
@@ -199,11 +204,15 @@ mod imp {
                     obj.set_visible_page(WindowPage::Login);
                 }
             } else {
-                session_list.connect_state_notify(clone!(@weak obj => move |session_list| {
-                    if session_list.state() == LoadingState::Ready && session_list.is_empty() {
-                        obj.set_visible_page(WindowPage::Login);
+                session_list.connect_state_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |session_list| {
+                        if session_list.state() == LoadingState::Ready && session_list.is_empty() {
+                            obj.set_visible_page(WindowPage::Login);
+                        }
                     }
-                }));
+                ));
             }
         }
     }
@@ -373,9 +382,13 @@ impl Window {
             if session.state() == SessionState::Ready {
                 self.set_visible_page(WindowPage::Session);
             } else {
-                session.connect_ready(clone!(@weak self as obj => move |_| {
-                    obj.set_visible_page(WindowPage::Session);
-                }));
+                session.connect_ready(clone!(
+                    #[weak(rename_to = obj)]
+                    self,
+                    move |_| {
+                        obj.set_visible_page(WindowPage::Session);
+                    }
+                ));
                 self.set_visible_page(WindowPage::Loading);
             }
 

@@ -104,19 +104,24 @@ mod imp {
             self.verification.disconnect_signals();
 
             if let Some(verification) = &verification {
-                let display_name_handler =
-                    verification
-                        .user()
-                        .connect_display_name_notify(clone!(@weak obj => move |_| {
-                            obj.update_page();
-                        }));
+                let display_name_handler = verification.user().connect_display_name_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_page();
+                    }
+                ));
                 self.display_name_handler
                     .replace(Some(display_name_handler));
 
                 let supported_methods_handler =
-                    verification.connect_supported_methods_notify(clone!(@weak obj => move |_| {
-                        obj.update_page();
-                    }));
+                    verification.connect_supported_methods_notify(clone!(
+                        #[weak]
+                        obj,
+                        move |_| {
+                            obj.update_page();
+                        }
+                    ));
 
                 self.verification
                     .set(verification, vec![supported_methods_handler]);

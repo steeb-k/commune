@@ -134,11 +134,13 @@ mod imp {
 
             obj.init_delegate();
 
-            self.text
-                .buffer()
-                .connect_length_notify(clone!(@weak obj => move |_| {
+            self.text.buffer().connect_length_notify(clone!(
+                #[weak]
+                obj,
+                move |_| {
                     obj.notify_text_length();
-                }));
+                }
+            ));
         }
 
         fn dispose(&self) {

@@ -84,14 +84,14 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.main_stack.connect_transition_running_notify(
-                clone!(@weak self as imp => move |stack|
-                    if !stack.is_transition_running() {
-                        // Focus the default widget when the transition has ended.
-                        imp.grab_focus();
-                    }
-                ),
-            );
+            self.main_stack.connect_transition_running_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |stack| if !stack.is_transition_running() {
+                    // Focus the default widget when the transition has ended.
+                    imp.grab_focus();
+                }
+            ));
         }
     }
 
@@ -130,10 +130,13 @@ mod imp {
             self.verification.disconnect_signals();
 
             if let Some(verification) = verification {
-                let state_handler =
-                    verification.connect_state_notify(clone!(@weak obj => move |_| {
+                let state_handler = verification.connect_state_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
                         obj.update_view();
-                    }));
+                    }
+                ));
 
                 verification.set_was_viewed(true);
                 self.verification.set(verification, vec![state_handler]);
