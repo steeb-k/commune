@@ -146,9 +146,15 @@ impl User {
         obj
     }
 
-    /// Get the cryptographic identity (aka cross-signing identity) of this
-    /// user.
-    pub async fn crypto_identity(&self) -> Option<UserIdentity> {
+    /// Get the local cryptographic identity (aka cross-signing identity) of
+    /// this user.
+    ///
+    /// Locally, we should always have the crypto identity of our own user and
+    /// of users with whom we share an encrypted room.
+    ///
+    /// To get the crypto identity of a user with whom we do not share an
+    /// encrypted room, use [`Self::ensure_crypto_identity()`].
+    pub async fn local_crypto_identity(&self) -> Option<UserIdentity> {
         let encryption = self.session().client().encryption();
         let user_id = self.user_id().clone();
         let handle = spawn_tokio!(async move { encryption.get_user_identity(&user_id).await });
@@ -156,7 +162,67 @@ impl User {
         match handle.await.unwrap() {
             Ok(identity) => identity,
             Err(error) => {
-                error!("Could not find crypto identity: {error}");
+                error!("Could not get local crypto identity: {error}");
+                None
+            }
+        }
+    }
+
+    /// Get the cryptographic identity (aka cross-signing identity) of this
+    /// user.
+    ///
+    /// First, we try to get the local crypto identity if we are sure that it is
+    /// up-to-date. If we do not have the crypto identity locally, we request it
+    /// from the homeserver.
+    pub async fn ensure_crypto_identity(&self) -> Option<UserIdentity> {
+        let session = self.session();
+        let encryption = session.client().encryption();
+        let user_id = self.user_id();
+
+        // First, see if we should have an updated crypto identity for the user locally.
+        // When we get the remote crypto identity of a user manually, it is cached
+        // locally but it is not kept up-to-date unless the user is tracked. That's why
+        // it's important to only use the local crypto identity if the user is tracked.
+        let should_have_local = if user_id == session.user_id() {
+            true
+        } else {
+            // We should have the updated user identity locally for tracked users.
+            let encryption_clone = encryption.clone();
+            let handle = spawn_tokio!(async move { encryption_clone.tracked_users().await });
+
+            match handle.await.unwrap() {
+                Ok(tracked_users) => {
+                    tracing::debug!("Got tracked users");
+                    tracked_users.contains(user_id)
+                }
+                Err(error) => {
+                    error!("Could not get tracked users: {error}");
+                    // We are not sure, but let us try to get the local user identity first.
+                    true
+                }
+            }
+        };
+        tracing::debug!("should_have_local: {should_have_local:?}");
+        // Try to get the local crypto identity.
+        if should_have_local {
+            if let Some(identity) = self.local_crypto_identity().await {
+                tracing::debug!("Local identity: {identity:?}");
+                return Some(identity);
+            }
+        }
+
+        // Now, try to request the crypto identity from the homeserver.
+        let user_id_clone = user_id.clone();
+        let handle =
+            spawn_tokio!(async move { encryption.request_user_identity(&user_id_clone).await });
+
+        match handle.await.unwrap() {
+            Ok(identity) => {
+                tracing::debug!("remote identity: {identity:?}");
+                identity
+            }
+            Err(error) => {
+                error!("Could not request remote crypto identity: {error}");
                 None
             }
         }
@@ -176,7 +242,11 @@ impl User {
             #[weak(rename_to = obj)]
             self,
             async move {
-                let verified = obj.crypto_identity().await.is_some_and(|i| i.is_verified());
+                // If a user is verified, we should have their crypto identity locally.
+                let verified = obj
+                    .local_crypto_identity()
+                    .await
+                    .is_some_and(|i| i.is_verified());
 
                 if verified == obj.verified() {
                     return;
@@ -230,8 +300,7 @@ impl User {
 
     /// Get or create a direct chat with this user.
     ///
-    /// If there is no existing direct chat, a new one is created. If a direct
-    /// chat exists but the other user has left the room, we re-invite them.
+    /// If there is no existing direct chat, a new one is created.
     pub async fn get_or_create_direct_chat(&self) -> Result<Room, ()> {
         let user_id = self.user_id();
 

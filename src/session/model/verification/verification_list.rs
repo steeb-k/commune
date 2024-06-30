@@ -329,7 +329,7 @@ impl VerificationList {
 
         let supported_methods = load_supported_verification_methods().await;
 
-        let Some(identity) = user.crypto_identity().await else {
+        let Some(identity) = user.ensure_crypto_identity().await else {
             error!("Could not create identity verification: cryptographic identity not found");
             return Err(());
         };
