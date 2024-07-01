@@ -24,14 +24,15 @@ use ruma::{
         Mentions,
     },
     matrix_uri::MatrixId,
-    OwnedUserId,
+    OwnedRoomId, OwnedUserId,
 };
-use sourceview::prelude::*;
 use tracing::{debug, error, warn};
 
 mod attachment_dialog;
 mod completion;
+mod composer_state;
 
+pub use self::composer_state::{ComposerState, RelationInfo};
 use self::{attachment_dialog::AttachmentDialog, completion::CompletionPopover};
 use super::message_row::MessageContent;
 use crate::{
@@ -48,18 +49,12 @@ use crate::{
     },
 };
 
-#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(i32)]
-#[enum_type(name = "RelatedEventType")]
-pub enum RelatedEventType {
-    #[default]
-    None = 0,
-    Reply = 1,
-    Edit = 2,
-}
-
 mod imp {
-    use std::cell::{Cell, RefCell};
+    use std::{
+        cell::{Cell, RefCell},
+        collections::HashMap,
+        marker::PhantomData,
+    };
 
     use glib::subclass::InitializingObject;
 
@@ -88,12 +83,15 @@ mod imp {
         pub related_event_header: TemplateChild<LabelWithWidgets>,
         #[template_child]
         pub related_event_content: TemplateChild<MessageContent>,
-        /// The type of related event of the composer.
-        #[property(get, builder(RelatedEventType::default()))]
-        pub related_event_type: Cell<RelatedEventType>,
-        /// The related event of the composer.
-        #[property(get)]
-        pub related_event: RefCell<Option<Event>>,
+        /// The current composer state.
+        #[property(get = Self::current_composer_state)]
+        pub current_composer_state: PhantomData<ComposerState>,
+        composer_state_handler: RefCell<Option<glib::SignalHandlerId>>,
+        buffer_handlers: RefCell<Option<(glib::SignalHandlerId, glib::Binding)>>,
+        /// The composer states, per-room.
+        ///
+        /// The fallback composer state has the `None` key.
+        pub composer_states: RefCell<HashMap<Option<OwnedRoomId>, ComposerState>>,
     }
 
     #[glib::object_subclass]
@@ -139,11 +137,9 @@ mod imp {
 
             klass.install_property_action("message-toolbar.markdown", "markdown-enabled");
 
-            klass.install_action(
-                "message-toolbar.clear-related-event",
-                None,
-                |widget, _, _| widget.clear_related_event(),
-            );
+            klass.install_action("message-toolbar.clear-related-event", None, |obj, _, _| {
+                obj.current_composer_state().set_related_to(None);
+            });
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -223,9 +219,9 @@ mod imp {
                         glib::Propagation::Stop
                     } else if modifier.is_empty()
                         && key == gdk::Key::Escape
-                        && obj.related_event_type() != RelatedEventType::None
+                        && obj.current_composer_state().has_relation()
                     {
-                        obj.clear_related_event();
+                        obj.current_composer_state().set_related_to(None);
                         glib::Propagation::Stop
                     } else {
                         glib::Propagation::Proceed
@@ -234,36 +230,7 @@ mod imp {
             ));
             self.message_entry.add_controller(key_events);
 
-            let buffer = self
-                .message_entry
-                .buffer()
-                .downcast::<sourceview::Buffer>()
-                .unwrap();
-
-            crate::utils::sourceview::setup_style_scheme(&buffer);
-
-            // Actions on changes in message entry.
-            buffer.connect_text_notify(clone!(
-                #[weak]
-                obj,
-                move |buffer| {
-                    let (start_iter, end_iter) = buffer.bounds();
-                    let is_empty = start_iter == end_iter;
-                    obj.action_set_enabled("message-toolbar.send-text-message", !is_empty);
-                    obj.send_typing_notification(!is_empty);
-                }
-            ));
-
-            let (start_iter, end_iter) = buffer.bounds();
-            obj.action_set_enabled("message-toolbar.send-text-message", start_iter != end_iter);
-
             // Markdown highlighting.
-            let md_lang = sourceview::LanguageManager::default().language("markdown");
-            buffer.set_language(md_lang.as_ref());
-            obj.bind_property("markdown-enabled", &buffer, "highlight-syntax")
-                .sync_create()
-                .build();
-
             let settings = Application::default().settings();
             settings
                 .bind("markdown-enabled", &*obj, "markdown-enabled")
@@ -303,12 +270,11 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(room) = old_room {
+            if let Some(room) = &old_room {
                 if let Some(handler) = self.can_send_message_handler.take() {
                     room.permissions().disconnect(handler);
                 }
             }
-            obj.clear_related_event();
 
             if let Some(room) = &room {
                 let can_send_message_handler =
@@ -329,6 +295,7 @@ mod imp {
             self.message_entry.grab_focus();
 
             obj.notify_room();
+            self.update_current_composer_state(old_room.as_ref());
         }
 
         /// Whether our own user can send a message in the current room.
@@ -346,6 +313,216 @@ mod imp {
                 "disabled"
             };
             self.main_stack.set_visible_child_name(page);
+        }
+
+        /// Get the current composer state.
+        fn current_composer_state(&self) -> ComposerState {
+            let room = self.room.upgrade();
+            self.composer_state(room.as_ref())
+        }
+
+        /// Get the composer state for the given room.
+        ///
+        /// If the composer state doesn't exist, it is created.
+        fn composer_state(&self, room: Option<&Room>) -> ComposerState {
+            self.composer_states
+                .borrow_mut()
+                .entry(room.map(|r| r.room_id().to_owned()))
+                .or_insert_with_key(|room_id| ComposerState::new(room_id.clone()))
+                .clone()
+        }
+
+        /// Update the current composer state.
+        fn update_current_composer_state(&self, old_room: Option<&Room>) {
+            if let Some(handler) = self.composer_state_handler.take() {
+                let old_composer_state = self.composer_state(old_room);
+                old_composer_state.disconnect(handler);
+            }
+            if let Some((handler, binding)) = self.buffer_handlers.take() {
+                let prev_buffer = self.message_entry.buffer();
+                prev_buffer.disconnect(handler);
+
+                binding.unbind();
+            }
+
+            let composer_state = self.current_composer_state();
+            let buffer = composer_state.buffer();
+            let obj = self.obj();
+
+            composer_state.attach_to_view(&self.message_entry);
+
+            // Actions on changes in message entry.
+            let text_notify_handler = buffer.connect_text_notify(clone!(
+                #[weak]
+                obj,
+                move |buffer| {
+                    let (start_iter, end_iter) = buffer.bounds();
+                    let is_empty = start_iter == end_iter;
+                    obj.action_set_enabled("message-toolbar.send-text-message", !is_empty);
+                    obj.send_typing_notification(!is_empty);
+                }
+            ));
+
+            let (start_iter, end_iter) = buffer.bounds();
+            obj.action_set_enabled("message-toolbar.send-text-message", start_iter != end_iter);
+
+            // Markdown highlighting.
+            let markdown_binding = obj
+                .bind_property("markdown-enabled", &buffer, "highlight-syntax")
+                .sync_create()
+                .build();
+
+            self.buffer_handlers
+                .replace(Some((text_notify_handler, markdown_binding)));
+
+            // Related event.
+            let composer_state_handler = composer_state.connect_related_to_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_related_event();
+                }
+            ));
+            self.composer_state_handler
+                .replace(Some(composer_state_handler));
+            self.update_related_event();
+
+            obj.notify_current_composer_state();
+        }
+
+        /// Update the displayed related event for the current state.
+        fn update_related_event(&self) {
+            let composer_state = self.current_composer_state();
+
+            match composer_state.related_to() {
+                Some(RelationInfo::Reply(info)) => {
+                    self.update_for_reply(info);
+                }
+                Some(RelationInfo::Edit(info)) => {
+                    self.update_for_edit(info);
+                }
+                None => {}
+            }
+        }
+
+        // Update the displayed related event for the given reply.
+        fn update_for_reply(&self, info: RepliedToInfo) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            let sender = room
+                .get_or_create_members()
+                .get_or_create(info.sender().to_owned());
+
+            self.related_event_header
+                .set_widgets(vec![Pill::new(&sender)]);
+            self.related_event_header
+                // Translators: Do NOT translate the content between '{' and '}',
+                // this is a variable name. In this string, 'Reply' is a noun.
+                .set_label(Some(gettext_f("Reply to {user}", &[("user", "<widget>")])));
+
+            self.related_event_content
+                .update_for_related_event(info, sender);
+            self.related_event_content.set_visible(true);
+        }
+
+        // Update the displayed related event for the given edit.
+        fn update_for_edit(&self, info: EditInfo) {
+            let Some(room) = self.room.upgrade() else {
+                return;
+            };
+
+            // We don't support editing non-text messages.
+            let (text, formatted) = match info.original_message().msgtype() {
+                MessageType::Emote(emote) => {
+                    (format!("/me {}", emote.body), emote.formatted.clone())
+                }
+                MessageType::Text(text) => (text.body.clone(), text.formatted.clone()),
+                _ => return,
+            };
+
+            // Try to detect rich mentions.
+            let mut mentions = if let Some(html) =
+                formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
+            {
+                let mentions = find_html_mentions(&html, &room);
+                let mut pos = 0;
+                // This is looking for the mention link's inner text in the Markdown
+                // so it is not super reliable: if there is other text that matches
+                // a user's display name in the string it might be replaced instead
+                // of the actual mention.
+                // Short of an HTML to Markdown converter, it won't be a simple task
+                // to locate mentions in Markdown.
+                mentions
+                    .into_iter()
+                    .filter_map(|(pill, s)| {
+                        text[pos..].find(s.as_ref()).map(|index| {
+                            let start = pos + index;
+                            let end = start + s.len();
+                            pos = end;
+                            DetectedMention { pill, start, end }
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            };
+
+            // Try to detect `@room` mentions.
+            let can_contain_at_room = info
+                .original_message()
+                .mentions()
+                .map(|m| m.room)
+                .unwrap_or(true);
+            if room.permissions().can_notify_room() && can_contain_at_room {
+                if let Some(start) = find_at_room(&text) {
+                    let pill = room.at_room().to_pill();
+                    let end = start + AT_ROOM.len();
+                    mentions.push(DetectedMention { pill, start, end });
+
+                    // Make sure the list is sorted.
+                    mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
+                }
+            }
+
+            self.related_event_header.set_widgets::<gtk::Widget>(vec![]);
+            self.related_event_header
+                // Translators: In this string, 'Edit' is a noun.
+                .set_label(Some(pgettext("room-history", "Edit")));
+
+            self.related_event_content.set_visible(false);
+
+            let view = &*self.message_entry;
+            let buffer = view.buffer();
+            let composer_state = self.current_composer_state();
+
+            if mentions.is_empty() {
+                buffer.set_text(&text);
+            } else {
+                // Place the pills instead of the text at the appropriate places in
+                // the GtkSourceView.
+                buffer.set_text("");
+
+                let mut pos = 0;
+                let mut iter = buffer.iter_at_offset(0);
+
+                for DetectedMention { pill, start, end } in mentions {
+                    if pos != start {
+                        buffer.insert(&mut iter, &text[pos..start]);
+                    }
+
+                    let anchor = buffer.create_child_anchor(&mut iter);
+                    view.add_child_at_anchor(&pill, &anchor);
+                    composer_state.add_widget(pill, anchor);
+
+                    pos = end;
+                }
+
+                if pos != text.len() {
+                    buffer.insert(&mut iter, &text[pos..])
+                }
+            }
         }
     }
 }
@@ -375,48 +552,9 @@ impl MessageToolbar {
 
         let pill = member.to_pill();
         view.add_child_at_anchor(&pill, &anchor);
+        self.current_composer_state().add_widget(pill, anchor);
 
         view.grab_focus();
-    }
-
-    /// Set the type of related event of the composer.
-    fn set_related_event_type(&self, related_type: RelatedEventType) {
-        if self.related_event_type() == related_type {
-            return;
-        }
-
-        self.imp().related_event_type.set(related_type);
-        self.notify_related_event_type();
-    }
-
-    /// Set the related event of the composer.
-    fn set_related_event(&self, event: Option<Event>) {
-        // We shouldn't reply to events that are not sent yet.
-        if let Some(event) = &event {
-            if event.event_id().is_none() {
-                return;
-            }
-        }
-
-        let prev_event = self.related_event();
-
-        if prev_event == event {
-            return;
-        }
-
-        self.imp().related_event.replace(event);
-        self.notify_related_event();
-    }
-
-    /// Remove the related event.
-    pub fn clear_related_event(&self) {
-        if self.related_event_type() == RelatedEventType::Edit {
-            // Clean up the entry.
-            self.imp().message_entry.buffer().set_text("");
-        };
-
-        self.set_related_event(None);
-        self.set_related_event_type(RelatedEventType::default());
     }
 
     /// Set the event to reply to.
@@ -426,140 +564,33 @@ impl MessageToolbar {
             return;
         }
 
-        imp.related_event_header
-            .set_widgets(vec![Pill::new(&event.sender())]);
-        imp.related_event_header
-            // Translators: Do NOT translate the content between '{' and '}',
-            // this is a variable name. In this string, 'Reply' is a noun.
-            .set_label(Some(gettext_f("Reply to {user}", &[("user", "<widget>")])));
+        let Ok(info) = event.item().replied_to_info() else {
+            warn!("Unsupported event type for reply");
+            return;
+        };
 
-        imp.related_event_content.update_for_event(&event);
-        imp.related_event_content.set_visible(true);
+        self.current_composer_state()
+            .set_related_to(Some(RelationInfo::Reply(info)));
 
-        self.set_related_event_type(RelatedEventType::Reply);
-        self.set_related_event(Some(event));
         imp.message_entry.grab_focus();
     }
 
     /// Set the event to edit.
     pub fn set_edit(&self, event: Event) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
         let imp = self.imp();
         if !imp.can_send_message() {
             return;
         }
 
-        // We don't support editing non-text messages.
-        let Some((text, formatted)) = event.message().and_then(|msg| match msg {
-            MessageType::Emote(emote) => Some((format!("/me {}", emote.body), emote.formatted)),
-            MessageType::Text(text) => Some((text.body, text.formatted)),
-            _ => None,
-        }) else {
+        let Ok(info) = event.item().edit_info() else {
+            warn!("Unsupported event type for edit");
             return;
         };
 
-        // Try to detect rich mentions.
-        let mut mentions = if let Some(html) =
-            formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
-        {
-            let mentions = find_html_mentions(&html, &event.room());
-            let mut pos = 0;
-            // This is looking for the mention link's inner text in the Markdown
-            // so it is not super reliable: if there is other text that matches
-            // a user's display name in the string it might be replaced instead
-            // of the actual mention.
-            // Short of an HTML to Markdown converter, it won't be a simple task
-            // to locate mentions in Markdown.
-            mentions
-                .into_iter()
-                .filter_map(|(pill, s)| {
-                    text[pos..].find(s.as_ref()).map(|index| {
-                        let start = pos + index;
-                        let end = start + s.len();
-                        pos = end;
-                        DetectedMention { pill, start, end }
-                    })
-                })
-                .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        };
-
-        // Try to detect `@room` mentions.
-        if room.permissions().can_notify_room() && event.can_contain_at_room() {
-            if let Some(start) = find_at_room(&text) {
-                let pill = room.at_room().to_pill();
-                let end = start + AT_ROOM.len();
-                mentions.push(DetectedMention { pill, start, end });
-
-                // Make sure the list is sorted.
-                mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
-            }
-        }
-
-        imp.related_event_header.set_widgets::<gtk::Widget>(vec![]);
-        imp.related_event_header
-            // Translators: In this string, 'Edit' is a noun.
-            .set_label(Some(pgettext("room-history", "Edit")));
-
-        imp.related_event_content.set_visible(false);
-
-        self.set_related_event_type(RelatedEventType::Edit);
-        self.set_related_event(Some(event));
-
-        let view = &*imp.message_entry;
-        let buffer = view.buffer();
-
-        if mentions.is_empty() {
-            buffer.set_text(&text);
-        } else {
-            // Place the pills instead of the text at the appropriate places in
-            // the GtkSourceView.
-            buffer.set_text("");
-
-            let mut pos = 0;
-            let mut iter = buffer.iter_at_offset(0);
-
-            for DetectedMention { pill, start, end } in mentions {
-                if pos != start {
-                    buffer.insert(&mut iter, &text[pos..start]);
-                }
-
-                let anchor = buffer.create_child_anchor(&mut iter);
-                view.add_child_at_anchor(&pill, &anchor);
-
-                pos = end;
-            }
-
-            if pos != text.len() {
-                buffer.insert(&mut iter, &text[pos..])
-            }
-        }
+        self.current_composer_state()
+            .set_related_to(Some(RelationInfo::Edit(info)));
 
         imp.message_entry.grab_focus();
-    }
-
-    /// The relation to send with the current message.
-    fn send_relation(&self) -> Option<SendRelation> {
-        let related_event_item = self.related_event()?.item();
-        match self.related_event_type() {
-            RelatedEventType::None => None,
-            RelatedEventType::Reply => Some(SendRelation::Reply(
-                related_event_item.replied_to_info().ok()?,
-            )),
-            RelatedEventType::Edit => {
-                Some(SendRelation::Edit(related_event_item.edit_info().ok()?))
-            }
-        }
-    }
-
-    /// Get an iterator over chunks of the message entry's text between the
-    /// given start and end, split by mentions.
-    fn split_buffer_mentions(&self, start: gtk::TextIter, end: gtk::TextIter) -> SplitMentions {
-        SplitMentions { iter: start, end }
     }
 
     /// Send the text message that is currently in the message entry.
@@ -572,7 +603,8 @@ impl MessageToolbar {
             return;
         };
 
-        let buffer = imp.message_entry.buffer();
+        let composer_state = self.current_composer_state();
+        let buffer = composer_state.buffer();
         let (start_iter, end_iter) = buffer.bounds();
         let body_len = buffer.text(&start_iter, &end_iter, true).len();
 
@@ -583,7 +615,7 @@ impl MessageToolbar {
         let mut formatted_body = String::with_capacity(body_len);
         let mut mentions = Mentions::new();
 
-        let mut split_mentions = self.split_buffer_mentions(start_iter, end_iter);
+        let mut split_mentions = SplitMentions::new(start_iter, end_iter);
         while let Some(chunk) = split_mentions.next().await {
             match chunk {
                 MentionChunk::Text(text) => {
@@ -652,8 +684,8 @@ impl MessageToolbar {
         let matrix_timeline = room.timeline().matrix_timeline();
 
         // Send event depending on relation.
-        match self.send_relation() {
-            Some(SendRelation::Reply(replied_to_info)) => {
+        match composer_state.related_to() {
+            Some(RelationInfo::Reply(replied_to_info)) => {
                 let handle = spawn_tokio!(async move {
                     matrix_timeline
                         .send_reply(content, replied_to_info, ForwardThread::Yes)
@@ -664,7 +696,7 @@ impl MessageToolbar {
                     toast!(self, gettext("Could not send reply"));
                 }
             }
-            Some(SendRelation::Edit(edit_info)) => {
+            Some(RelationInfo::Edit(edit_info)) => {
                 let handle =
                     spawn_tokio!(async move { matrix_timeline.edit(content, edit_info).await });
                 if let Err(error) = handle.await.unwrap() {
@@ -685,9 +717,8 @@ impl MessageToolbar {
             }
         }
 
-        // Clear the message entry.
-        buffer.set_text("");
-        self.clear_related_event();
+        // Clear the composer state.
+        composer_state.clear();
     }
 
     /// Open the emoji chooser in the message entry.
@@ -1019,10 +1050,10 @@ impl MessageToolbar {
     /// Scrolls to the corresponding event.
     #[template_callback]
     fn handle_related_event_click(&self) {
-        if let Some(event) = &*self.imp().related_event.borrow() {
+        if let Some(related_to) = self.current_composer_state().related_to() {
             self.activate_action(
                 "room-history.scroll-to-event",
-                Some(&event.key().to_variant()),
+                Some(&related_to.key().to_variant()),
             )
             .unwrap();
         }
@@ -1054,7 +1085,7 @@ impl MessageToolbar {
         let body_len = buffer.text(&start, &end, true).len();
         let mut body = String::with_capacity(body_len);
 
-        let mut split_mentions = self.split_buffer_mentions(start, end);
+        let mut split_mentions = SplitMentions::new(start, end);
         while let Some(chunk) = split_mentions.next().await {
             match chunk {
                 MentionChunk::Text(text) => {
@@ -1120,6 +1151,13 @@ enum MentionChunk {
 struct SplitMentions {
     iter: gtk::TextIter,
     end: gtk::TextIter,
+}
+
+impl SplitMentions {
+    /// Construct a `SplitMention` to iterate between the given start and end.
+    fn new(start: gtk::TextIter, end: gtk::TextIter) -> Self {
+        Self { iter: start, end }
+    }
 }
 
 impl SplitMentions {
@@ -1196,14 +1234,4 @@ impl SplitMentions {
             Some(MentionChunk::Text(text.into()))
         }
     }
-}
-
-/// The possible relations to send with a message.
-#[derive(Debug)]
-enum SendRelation {
-    /// Send a reply with the given replied to info.
-    Reply(RepliedToInfo),
-
-    /// Send an edit with the given edit info.
-    Edit(EditInfo),
 }

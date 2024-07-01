@@ -12,11 +12,11 @@ use crate::{
     matrix_caption,
     prelude::*,
     session::{
-        model::{Event, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
-        view::EventDetailsDialog,
+        model::{Event, EventKey, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
+        view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
     spawn, toast,
-    utils::media::save_to_file,
+    utils::{media::save_to_file, BoundObjectWeakRef},
 };
 
 mod imp {
@@ -31,6 +31,7 @@ mod imp {
         #[property(get, set = Self::set_room_history, construct_only)]
         pub room_history: glib::WeakRef<RoomHistory>,
         pub message_toolbar_handler: RefCell<Option<glib::SignalHandlerId>>,
+        pub composer_state: BoundObjectWeakRef<ComposerState>,
         /// The [`TimelineItem`] presented by this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: RefCell<Option<TimelineItem>>,
@@ -81,8 +82,8 @@ mod imp {
                 binding.unbind();
             }
 
-            if let Some(room_history) = self.room_history.upgrade() {
-                if let Some(handler) = self.message_toolbar_handler.take() {
+            if let Some(handler) = self.message_toolbar_handler.take() {
+                if let Some(room_history) = self.room_history.upgrade() {
                     room_history.message_toolbar().disconnect(handler);
                 }
             }
@@ -181,21 +182,43 @@ mod imp {
     impl ItemRow {
         /// Set the ancestor room history of this row.
         fn set_room_history(&self, room_history: RoomHistory) {
-            let obj = self.obj();
-
             self.room_history.set(Some(&room_history));
 
-            let related_event_handler = room_history
-                .message_toolbar()
-                .connect_related_event_notify(clone!(
-                    #[weak]
-                    obj,
+            let message_toolbar = room_history.message_toolbar();
+            let message_toolbar_handler =
+                message_toolbar.connect_current_composer_state_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
                     move |message_toolbar| {
-                        obj.update_for_related_event(message_toolbar.related_event());
+                        imp.watch_related_event(&message_toolbar.current_composer_state());
                     }
                 ));
             self.message_toolbar_handler
-                .replace(Some(related_event_handler));
+                .replace(Some(message_toolbar_handler));
+
+            self.watch_related_event(&message_toolbar.current_composer_state());
+        }
+
+        /// Watch the related event for given current composer state of the
+        /// toolbar.
+        fn watch_related_event(&self, composer_state: &ComposerState) {
+            let obj = self.obj();
+
+            self.composer_state.disconnect_signals();
+
+            let composer_state_handler = composer_state.connect_related_to_changed(clone!(
+                #[weak]
+                obj,
+                move |composer_state| {
+                    obj.update_for_related_event(
+                        composer_state.related_to().map(|i| i.key()).as_ref(),
+                    );
+                }
+            ));
+            self.composer_state
+                .set(composer_state, vec![composer_state_handler]);
+
+            obj.update_for_related_event(composer_state.related_to().map(|i| i.key()).as_ref());
         }
 
         /// Set the [`TimelineItem`] presented by this row.
@@ -472,11 +495,11 @@ impl ItemRow {
         emoji_chooser.popup();
     }
 
-    /// Update this row for the currently related event.
-    fn update_for_related_event(&self, related_event: Option<Event>) {
+    /// Update this row for the related event with the given key.
+    fn update_for_related_event(&self, related_event_id: Option<&EventKey>) {
         let event = self.item().and_downcast::<Event>();
 
-        if event.is_some() && event == related_event {
+        if event.is_some_and(|event| related_event_id.is_some_and(|key| event.matches_key(key))) {
             self.add_css_class("selected");
         } else {
             self.remove_css_class("selected");

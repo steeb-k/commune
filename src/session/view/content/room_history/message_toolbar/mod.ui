@@ -31,9 +31,9 @@
                     </style>
                     <property name="spacing">12</property>
                     <binding name="visible">
-                      <closure type="gboolean" function="object_is_some">
-                        <lookup name="related-event">MessageToolbar</lookup>
-                      </closure>
+                      <lookup name="has-relation">
+                        <lookup name="current-composer-state">MessageToolbar</lookup>
+                      </lookup>
                     </binding>
                     <child>
                       <object class="GtkBox">

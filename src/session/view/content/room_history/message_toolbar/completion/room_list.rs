@@ -119,9 +119,6 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for CompletionRoomList {}
-    impl PopoverImpl for CompletionRoomList {}
-
     impl CompletionRoomList {
         /// The rooms used for completion.
         fn rooms(&self) -> Option<RoomList> {

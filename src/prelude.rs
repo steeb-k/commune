@@ -5,7 +5,7 @@ pub use crate::{
     session_list::SessionInfoExt,
     user_facing_error::UserFacingError,
     utils::{
-        matrix::TimelineItemContentExt,
+        matrix::AtMentionExt,
         string::{StrExt, StrMutExt},
         LocationExt,
     },

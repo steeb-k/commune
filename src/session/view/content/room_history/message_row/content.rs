@@ -1,7 +1,9 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, glib, glib::clone};
-use matrix_sdk_ui::timeline::{TimelineDetails, TimelineItemContent};
+use matrix_sdk_ui::timeline::{
+    Message, RepliedToInfo, ReplyContent, TimelineDetails, TimelineItemContent,
+};
 use ruma::events::room::message::MessageType;
 use tracing::{error, warn};
 
@@ -11,7 +13,7 @@ use super::{
 };
 use crate::{
     prelude::*,
-    session::model::{content_can_show_header, Event, Member, Room},
+    session::model::{content_can_show_header, Event, Member},
     spawn,
 };
 
@@ -107,8 +109,8 @@ impl MessageContent {
         child.downcast::<MessageMedia>().ok()
     }
 
+    /// Update this widget to present the given `Event`.
     pub fn update_for_event(&self, event: &Event) {
-        let room = event.room();
         let detect_at_room = event.can_contain_at_room() && event.sender().can_notify_room();
 
         let format = self.format();
@@ -138,7 +140,8 @@ impl MessageContent {
                     TimelineDetails::Ready(replied_to_event) => {
                         // We should have a strong reference to the list in the RoomHistory so we
                         // can use `get_or_create_members()`.
-                        let replied_to_sender = room
+                        let replied_to_sender = event
+                            .room()
                             .get_or_create_members()
                             .get_or_create(replied_to_event.sender().to_owned());
                         let replied_to_content = replied_to_event.content();
@@ -155,7 +158,6 @@ impl MessageContent {
                             replied_to_content.clone(),
                             ContentFormat::Compact,
                             replied_to_sender,
-                            &room,
                             replied_to_detect_at_room,
                         );
                         build_content(
@@ -163,7 +165,6 @@ impl MessageContent {
                             event.content(),
                             ContentFormat::Natural,
                             event.sender(),
-                            &room,
                             detect_at_room,
                         );
                         self.set_child(Some(&reply));
@@ -180,9 +181,19 @@ impl MessageContent {
             event.content(),
             format,
             event.sender(),
-            &room,
             detect_at_room,
         );
+    }
+
+    /// Update this widget to present the given related event.
+    pub fn update_for_related_event(&self, info: RepliedToInfo, sender: Member) {
+        let ReplyContent::Message(message) = info.content() else {
+            return;
+        };
+
+        let detect_at_room = message.can_contain_at_room() && sender.can_notify_room();
+
+        build_message_content(self, message, self.format(), sender, detect_at_room);
     }
 
     /// Get the texture displayed by this widget, if any.
@@ -197,164 +208,17 @@ fn build_content(
     content: TimelineItemContent,
     format: ContentFormat,
     sender: Member,
-    room: &Room,
     detect_at_room: bool,
 ) {
+    let room = sender.room();
     let Some(session) = room.session() else {
         return;
     };
 
-    /// Show the caption of the file if applicable.
-    macro_rules! with_caption {
-        ($parent:ident, $message:ident, $widget_type:ty, $mime_fallback:expr) => {{
-            let filename = $crate::matrix_filename!($message, $mime_fallback);
-            let caption = $crate::matrix_caption!($message);
-
-            let child = if let Some((caption, formatted_caption)) = caption {
-                let caption_widget = if let Some(caption_widget) =
-                    $parent.child().and_downcast::<MessageCaption>()
-                {
-                    caption_widget
-                } else {
-                    let caption_widget = MessageCaption::new();
-                    $parent.set_child(Some(&caption_widget));
-                    caption_widget
-                };
-
-                caption_widget.set_caption(
-                    caption,
-                    formatted_caption,
-                    room,
-                    format,
-                    detect_at_room,
-                );
-
-                if let Some(child) = caption_widget.child().and_downcast::<$widget_type>() {
-                    child
-                } else {
-                    let child = <$widget_type>::new();
-                    caption_widget.set_child(Some(child.clone()));
-                    child
-                }
-            } else if let Some(child) = $parent.child().and_downcast::<$widget_type>() {
-                child
-            } else {
-                let child = <$widget_type>::new();
-                $parent.set_child(Some(&child));
-                child
-            };
-
-            (child, filename)
-        }};
-    }
-
     match content {
-        TimelineItemContent::Message(message) => match message.msgtype() {
-            MessageType::Audio(message) => {
-                let (child, filename) =
-                    with_caption!(parent, message, MessageAudio, Some(mime::AUDIO));
-
-                child.audio(message.clone(), filename, &session, format);
-            }
-            MessageType::Emote(message) => {
-                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                    child
-                } else {
-                    let child = MessageText::new();
-                    parent.set_child(Some(&child));
-                    child
-                };
-                child.with_emote(
-                    message.formatted.clone(),
-                    message.body.clone(),
-                    sender,
-                    room,
-                    format,
-                    detect_at_room,
-                );
-            }
-            MessageType::File(message) => {
-                let (child, filename) = with_caption!(parent, message, MessageFile, None);
-
-                child.set_filename(Some(filename));
-                child.set_format(format);
-            }
-            MessageType::Image(message) => {
-                let (child, filename) =
-                    with_caption!(parent, message, MessageMedia, Some(mime::IMAGE));
-
-                child.image(message.clone(), filename, &session, format);
-            }
-            MessageType::Location(message) => {
-                let child = if let Some(child) = parent.child().and_downcast::<MessageLocation>() {
-                    child
-                } else {
-                    let child = MessageLocation::new();
-                    parent.set_child(Some(&child));
-                    child
-                };
-                child.set_geo_uri(&message.geo_uri, format);
-            }
-            MessageType::Notice(message) => {
-                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                    child
-                } else {
-                    let child = MessageText::new();
-                    parent.set_child(Some(&child));
-                    child
-                };
-                child.with_markup(
-                    message.formatted.clone(),
-                    message.body.clone(),
-                    room,
-                    format,
-                    detect_at_room,
-                );
-            }
-            MessageType::ServerNotice(message) => {
-                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                    child
-                } else {
-                    let child = MessageText::new();
-                    parent.set_child(Some(&child));
-                    child
-                };
-                child.with_plain_text(message.body.clone(), format);
-            }
-            MessageType::Text(message) => {
-                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                    child
-                } else {
-                    let child = MessageText::new();
-                    parent.set_child(Some(&child));
-                    child
-                };
-                child.with_markup(
-                    message.formatted.clone(),
-                    message.body.clone(),
-                    room,
-                    format,
-                    detect_at_room,
-                );
-            }
-            MessageType::Video(message) => {
-                let (child, filename) =
-                    with_caption!(parent, message, MessageMedia, Some(mime::VIDEO));
-
-                child.video(message.clone(), filename, &session, format);
-            }
-            msgtype => {
-                warn!("Event not supported: {msgtype:?}");
-                let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
-                    child
-                } else {
-                    let child = MessageText::new();
-                    parent.set_child(Some(&child));
-                    child
-                };
-                child.with_plain_text(gettext("Unsupported event"), format);
-            }
-        },
+        TimelineItemContent::Message(message) => {
+            build_message_content(parent, &message, format, sender, detect_at_room)
+        }
         TimelineItemContent::Sticker(sticker) => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageMedia>() {
                 child
@@ -387,6 +251,168 @@ fn build_content(
         }
         content => {
             warn!("Unsupported event content: {content:?}");
+            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                child
+            } else {
+                let child = MessageText::new();
+                parent.set_child(Some(&child));
+                child
+            };
+            child.with_plain_text(gettext("Unsupported event"), format);
+        }
+    }
+}
+
+/// Build the content widget of the given message event as a child of `parent`.
+fn build_message_content(
+    parent: &impl IsA<adw::Bin>,
+    message: &Message,
+    format: ContentFormat,
+    sender: Member,
+    detect_at_room: bool,
+) {
+    let room = sender.room();
+    let Some(session) = room.session() else {
+        return;
+    };
+
+    /// Show the caption of the file if applicable.
+    macro_rules! with_caption {
+        ($parent:ident, $message:ident, $widget_type:ty, $mime_fallback:expr) => {{
+            let filename = $crate::matrix_filename!($message, $mime_fallback);
+            let caption = $crate::matrix_caption!($message);
+
+            let child = if let Some((caption, formatted_caption)) = caption {
+                let caption_widget = if let Some(caption_widget) =
+                    $parent.child().and_downcast::<MessageCaption>()
+                {
+                    caption_widget
+                } else {
+                    let caption_widget = MessageCaption::new();
+                    $parent.set_child(Some(&caption_widget));
+                    caption_widget
+                };
+
+                caption_widget.set_caption(
+                    caption,
+                    formatted_caption,
+                    &room,
+                    format,
+                    detect_at_room,
+                );
+
+                if let Some(child) = caption_widget.child().and_downcast::<$widget_type>() {
+                    child
+                } else {
+                    let child = <$widget_type>::new();
+                    caption_widget.set_child(Some(child.clone()));
+                    child
+                }
+            } else if let Some(child) = $parent.child().and_downcast::<$widget_type>() {
+                child
+            } else {
+                let child = <$widget_type>::new();
+                $parent.set_child(Some(&child));
+                child
+            };
+
+            (child, filename)
+        }};
+    }
+
+    match message.msgtype() {
+        MessageType::Audio(message) => {
+            let (child, filename) = with_caption!(parent, message, MessageAudio, Some(mime::AUDIO));
+
+            child.audio(message.clone(), filename, &session, format);
+        }
+        MessageType::Emote(message) => {
+            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                child
+            } else {
+                let child = MessageText::new();
+                parent.set_child(Some(&child));
+                child
+            };
+            child.with_emote(
+                message.formatted.clone(),
+                message.body.clone(),
+                sender,
+                &room,
+                format,
+                detect_at_room,
+            );
+        }
+        MessageType::File(message) => {
+            let (child, filename) = with_caption!(parent, message, MessageFile, None);
+
+            child.set_filename(Some(filename));
+            child.set_format(format);
+        }
+        MessageType::Image(message) => {
+            let (child, filename) = with_caption!(parent, message, MessageMedia, Some(mime::IMAGE));
+
+            child.image(message.clone(), filename, &session, format);
+        }
+        MessageType::Location(message) => {
+            let child = if let Some(child) = parent.child().and_downcast::<MessageLocation>() {
+                child
+            } else {
+                let child = MessageLocation::new();
+                parent.set_child(Some(&child));
+                child
+            };
+            child.set_geo_uri(&message.geo_uri, format);
+        }
+        MessageType::Notice(message) => {
+            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                child
+            } else {
+                let child = MessageText::new();
+                parent.set_child(Some(&child));
+                child
+            };
+            child.with_markup(
+                message.formatted.clone(),
+                message.body.clone(),
+                &room,
+                format,
+                detect_at_room,
+            );
+        }
+        MessageType::ServerNotice(message) => {
+            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                child
+            } else {
+                let child = MessageText::new();
+                parent.set_child(Some(&child));
+                child
+            };
+            child.with_plain_text(message.body.clone(), format);
+        }
+        MessageType::Text(message) => {
+            let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
+                child
+            } else {
+                let child = MessageText::new();
+                parent.set_child(Some(&child));
+                child
+            };
+            child.with_markup(
+                message.formatted.clone(),
+                message.body.clone(),
+                &room,
+                format,
+                detect_at_room,
+            );
+        }
+        MessageType::Video(message) => {
+            let (child, filename) = with_caption!(parent, message, MessageMedia, Some(mime::VIDEO));
+
+            child.video(message.clone(), filename, &session, format);
+        }
+        msgtype => {
+            warn!("Event not supported: {msgtype:?}");
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
                 child
             } else {

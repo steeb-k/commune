@@ -6,7 +6,8 @@ use secular::normalized_lower_lay_string;
 use super::{CompletionMemberList, CompletionRoomList};
 use crate::{
     components::{Pill, PillSource, PillSourceRow},
-    session::model::Room,
+    session::{model::Room, view::content::room_history::message_toolbar::MessageToolbar},
+    utils::BoundObject,
 };
 
 /// The maximum number of rows presented in the popover.
@@ -50,8 +51,8 @@ mod imp {
         pub current_word: RefCell<Option<(gtk::TextIter, gtk::TextIter, SearchTerm)>>,
         /// Whether the popover is inhibited for the current word.
         pub inhibit: Cell<bool>,
-        /// The buffer to complete with its cursor position signal handler ID.
-        pub buffer_handler: RefCell<Option<(gtk::TextBuffer, glib::SignalHandlerId)>>,
+        /// The buffer to autocomplete.
+        pub buffer: BoundObject<gtk::TextBuffer>,
     }
 
     #[glib::object_subclass]
@@ -81,22 +82,18 @@ mod imp {
 
             obj.connect_parent_notify(|obj| {
                 let imp = obj.imp();
-
-                if let Some((buffer, handler_id)) = imp.buffer_handler.take() {
-                    buffer.disconnect(handler_id);
-                }
+                imp.update_buffer();
 
                 if obj.parent().is_some() {
                     let view = obj.view();
-                    let buffer = view.buffer();
-                    let handler_id = buffer.connect_cursor_position_notify(clone!(
+
+                    view.connect_buffer_notify(clone!(
                         #[weak]
-                        obj,
+                        imp,
                         move |_| {
-                            obj.update_completion(false);
+                            imp.update_buffer();
                         }
                     ));
-                    imp.buffer_handler.replace(Some((buffer, handler_id)));
 
                     let key_events = gtk::EventControllerKey::new();
                     key_events.connect_key_pressed(clone!(
@@ -196,6 +193,35 @@ mod imp {
         /// The parent `GtkTextView` to autocomplete.
         fn view(&self) -> gtk::TextView {
             self.obj().parent().and_downcast::<gtk::TextView>().unwrap()
+        }
+
+        /// The ancestor `MessageToolbar`.
+        pub(super) fn message_toolbar(&self) -> MessageToolbar {
+            self.obj()
+                .ancestor(MessageToolbar::static_type())
+                .and_downcast::<MessageToolbar>()
+                .unwrap()
+        }
+
+        /// Handle a change of buffer.
+        fn update_buffer(&self) {
+            let obj = self.obj();
+
+            self.buffer.disconnect_signals();
+
+            if obj.parent().is_some() {
+                let buffer = self.view().buffer();
+                let handler_id = buffer.connect_cursor_position_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_completion(false);
+                    }
+                ));
+                self.buffer.set(buffer, vec![handler_id]);
+
+                obj.update_completion(false);
+            }
         }
     }
 }
@@ -610,6 +636,9 @@ impl CompletionPopover {
         };
         let pill = Pill::new(&source);
         view.add_child_at_anchor(&pill, &anchor);
+        imp.message_toolbar()
+            .current_composer_state()
+            .add_widget(pill, anchor);
 
         self.popdown();
         self.select_row_at_index(None);

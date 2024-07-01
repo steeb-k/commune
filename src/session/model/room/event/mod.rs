@@ -501,6 +501,19 @@ impl Event {
         }
     }
 
+    /// Whether the given key matches this `Event`.
+    ///
+    /// The result can be different from comparing two `EventKey`s because an
+    /// event can have a transaction ID and an event ID.
+    pub fn matches_key(&self, key: &EventKey) -> bool {
+        let item_ref = self.imp().item.borrow();
+        let item = item_ref.as_ref().unwrap();
+        match key {
+            EventKey::TransactionId(txn_id) => item.transaction_id().is_some_and(|id| id == txn_id),
+            EventKey::EventId(event_id) => item.event_id().is_some_and(|id| id == event_id),
+        }
+    }
+
     /// The event ID of this `Event`, if it has been received from the server.
     pub fn event_id(&self) -> Option<OwnedEventId> {
         match self.key() {

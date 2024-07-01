@@ -159,9 +159,6 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for CompletionMemberList {}
-    impl PopoverImpl for CompletionMemberList {}
-
     impl CompletionMemberList {
         /// The room members used for completion.
         fn members(&self) -> Option<MemberList> {

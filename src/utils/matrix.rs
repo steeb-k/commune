@@ -8,7 +8,7 @@ use matrix_sdk::{
     encryption::{BackupDownloadStrategy, EncryptionSettings},
     Client, ClientBuildError,
 };
-use matrix_sdk_ui::timeline::TimelineItemContent;
+use matrix_sdk_ui::timeline::{Message, TimelineItemContent};
 use ruma::{
     events::{
         room::{member::MembershipState, message::MessageType},
@@ -775,8 +775,8 @@ pub enum MatrixIdUriParseError {
     UnsupportedId(MatrixId),
 }
 
-/// Helper trait for [`TimelineItemContent`].
-pub trait TimelineItemContentExt {
+/// Helper trait for types possibly containing an `@room` mention.
+pub trait AtMentionExt {
     /// Whether this event might contain an `@room` mention.
     ///
     /// This means that either it doesn't have intentional mentions, or it has
@@ -784,17 +784,21 @@ pub trait TimelineItemContentExt {
     fn can_contain_at_room(&self) -> bool;
 }
 
-impl TimelineItemContentExt for TimelineItemContent {
+impl AtMentionExt for TimelineItemContent {
     fn can_contain_at_room(&self) -> bool {
         match self {
-            TimelineItemContent::Message(msg) => {
-                let Some(mentions) = msg.mentions() else {
-                    return true;
-                };
-
-                mentions.room
-            }
+            TimelineItemContent::Message(msg) => msg.can_contain_at_room(),
             _ => false,
         }
+    }
+}
+
+impl AtMentionExt for Message {
+    fn can_contain_at_room(&self) -> bool {
+        let Some(mentions) = self.mentions() else {
+            return true;
+        };
+
+        mentions.room
     }
 }

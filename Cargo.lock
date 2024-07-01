@@ -192,12 +192,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "assert_matches2"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15832d94c458da98cac0ffa6eca52cc19c2a3c6c951058500a5ae8f01f0fdf56"
-
-[[package]]
 name = "assign"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -707,9 +701,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.102"
+version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "779e6b7d17797c0b42023d417228c02889300190e700cb074c3438d9c541d332"
+checksum = "74b6a57f98764a267ff415d50a25e6e166f3831a5071af4995296ea97d210490"
 dependencies = [
  "jobserver",
  "libc",
@@ -743,9 +737,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "cfg_aliases"
-version = "0.1.1"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
+checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "chacha20"
@@ -2371,9 +2365,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hyper"
-version = "1.3.1"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe575dd17d0862a9a33781c8c4696a55c320909004a67a00fb286ba8b1bc496d"
+checksum = "c4fe55fb7a772d59a5ff1dfbff4fe0258d19b89fec4b233e75d35d5d2316badc"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2407,9 +2401,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b875924a60b96e5d7b9ae7b066540b1dd1cbd90d1828f54c92e02a283351c56"
+checksum = "3ab92f4f49ee4fb4f997c784b7a2e0fa70050211e0b6a287f898c3c9785ca956"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -3047,7 +3041,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk"
 version = "0.7.1"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "anymap2",
  "aquamarine",
@@ -3098,7 +3092,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-base"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "as_variant",
  "async-trait",
@@ -3122,7 +3116,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-common"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "async-trait",
  "futures-core",
@@ -3144,11 +3138,10 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-crypto"
 version = "0.7.1"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "aes",
  "as_variant",
- "assert_matches2",
  "async-trait",
  "bs58",
  "byteorder",
@@ -3186,7 +3179,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-indexeddb"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3214,7 +3207,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-qrcode"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "byteorder",
  "qrcode",
@@ -3226,7 +3219,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-sqlite"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "async-trait",
  "deadpool-sqlite",
@@ -3248,7 +3241,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-store-encryption"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "base64",
  "blake3",
@@ -3267,7 +3260,7 @@ dependencies = [
 [[package]]
 name = "matrix-sdk-ui"
 version = "0.7.0"
-source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=38a18c3c8e3be2951967d463ade1f6607228e6a7#38a18c3c8e3be2951967d463ade1f6607228e6a7"
+source = "git+https://github.com/matrix-org/matrix-rust-sdk.git?rev=0a7184e594d1dc0c00e5d5773f206f50a6c0939a#0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
 dependencies = [
  "as_variant",
  "async-once-cell",
@@ -3416,9 +3409,9 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.28.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab2156c4fce2f8df6c499cc1c763e4394b7482525bf2a9701c9d79d215f519e4"
+checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
 dependencies = [
  "bitflags 2.6.0",
  "cfg-if",
@@ -4741,9 +4734,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.118"
+version = "1.0.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d947f6b3163d8857ea16c4fa0dd4840d52f3041039a85decd46867eb1abef2e4"
+checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
 dependencies = [
  "itoa",
  "ryu",
@@ -5967,9 +5960,9 @@ dependencies = [
 
 [[package]]
 name = "zbus"
-version = "4.3.0"
+version = "4.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23915fcb26e7a9a9dc05fd93a9870d336d6d032cd7e8cebf1c5c37666489fdd5"
+checksum = "851238c133804e0aa888edf4a0229481c753544ca12a60fd1c3230c8a500fe40"
 dependencies = [
  "async-broadcast",
  "async-process",
@@ -5981,7 +5974,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "hex",
- "nix 0.28.0",
+ "nix 0.29.0",
  "ordered-stream",
  "rand",
  "serde",
@@ -6000,9 +5993,9 @@ dependencies = [
 
 [[package]]
 name = "zbus_macros"
-version = "4.3.0"
+version = "4.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02bcca0b586d2f8589da32347b4784ba424c4891ed86aa5b50d5e88f6b2c4f5d"
+checksum = "8d5a3f12c20bd473be3194af6b49d50d7bb804ef3192dc70eddedb26b85d9da7"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -6088,9 +6081,9 @@ dependencies = [
 
 [[package]]
 name = "zvariant"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9aa6d31a02fbfb602bfde791de7fedeb9c2c18115b3d00f3a36e489f46ffbbc7"
+checksum = "1724a2b330760dc7d2a8402d841119dc869ef120b139d29862d6980e9c75bfc9"
 dependencies = [
  "endi",
  "enumflags2",
@@ -6102,9 +6095,9 @@ dependencies = [
 
 [[package]]
 name = "zvariant_derive"
-version = "4.1.1"
+version = "4.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "642bf1b6b6d527988b3e8193d20969d53700a36eac734d21ae6639db168701c8"
+checksum = "55025a7a518ad14518fb243559c058a2e5b848b015e31f1d90414f36e3317859"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
