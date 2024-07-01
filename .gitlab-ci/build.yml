@@ -23,3 +23,27 @@ build@aarch64:
   extends:
     - .flatpak@aarch64
   stage: build
+
+# Test builds with the stable runtime to make sure that the Flatpak will build on Flathub.
+# Should be run manually before tagging a new release.
+.build-stable:
+  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-46'
+  variables:
+    MANIFEST_PATH: ".gitlab-ci/org.gnome.Fractal.CiTest.json"
+    APP_ID: "org.gnome.Fractal.CiTest"
+    RUNTIME_REPO: "https://flathub.org/repo/flathub.flatpakrepo"
+    BUNDLE: "${APP_ID}.flatpak"
+
+build-stable@x86_64:
+  extends:
+    - .flatpak@x86_64
+    - .build-stable
+  stage: build
+  when: manual
+
+build-stable@aarch64:
+  extends:
+    - .flatpak@aarch64
+    - .build-stable
+  stage: build
+  when: manual
