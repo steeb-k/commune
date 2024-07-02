@@ -191,10 +191,7 @@ impl User {
             let handle = spawn_tokio!(async move { encryption_clone.tracked_users().await });
 
             match handle.await.unwrap() {
-                Ok(tracked_users) => {
-                    tracing::debug!("Got tracked users");
-                    tracked_users.contains(user_id)
-                }
+                Ok(tracked_users) => tracked_users.contains(user_id),
                 Err(error) => {
                     error!("Could not get tracked users: {error}");
                     // We are not sure, but let us try to get the local user identity first.
@@ -202,11 +199,10 @@ impl User {
                 }
             }
         };
-        tracing::debug!("should_have_local: {should_have_local:?}");
+
         // Try to get the local crypto identity.
         if should_have_local {
             if let Some(identity) = self.local_crypto_identity().await {
-                tracing::debug!("Local identity: {identity:?}");
                 return Some(identity);
             }
         }
@@ -217,10 +213,7 @@ impl User {
             spawn_tokio!(async move { encryption.request_user_identity(&user_id_clone).await });
 
         match handle.await.unwrap() {
-            Ok(identity) => {
-                tracing::debug!("remote identity: {identity:?}");
-                identity
-            }
+            Ok(identity) => identity,
             Err(error) => {
                 error!("Could not request remote crypto identity: {error}");
                 None
