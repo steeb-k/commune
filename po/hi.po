@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-06-10 13:56+0000\n"
-"PO-Revision-Date: 2024-06-13 11:47+0530\n"
+"POT-Creation-Date: 2024-06-17 13:39+0000\n"
+"PO-Revision-Date: 2024-06-19 14:50+0530\n"
 "Last-Translator: Scrambled777 <weblate.scrambled777@simplelogin.com>\n"
 "Language-Team: Hindi <indlinux-hindi@lists.sourceforge.net>\n"
 "Language: hi\n"
@@ -40,15 +40,15 @@ msgstr "Matrix;matrix.org;चैट;irc;संचार;talk;riot;element;"
 
 #: data/org.gnome.Fractal.gschema.xml.in:6
 msgid "Window width"
-msgstr "विंडो चौड़ाई"
+msgstr "खिड़की चौड़ाई"
 
 #: data/org.gnome.Fractal.gschema.xml.in:10
 msgid "Window height"
-msgstr "विंडो ऊंचाई"
+msgstr "खिड़की ऊंचाई"
 
 #: data/org.gnome.Fractal.gschema.xml.in:14
 msgid "Window maximized state"
-msgstr "विंडो अधिकतमीकृत स्थिति"
+msgstr "खिड़की अधिकतमीकृत स्थिति"
 
 #: data/org.gnome.Fractal.gschema.xml.in:18
 msgid "Enable markdown formatting"
@@ -122,7 +122,7 @@ msgstr "एक साथ कई खातों में लॉग इन क�
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:39
 msgid "Fractal’s main window"
-msgstr "Fractal की मुख्य विंडो"
+msgstr "Fractal की मुख्य खिड़की"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:43
 msgid "View the media history of a Matrix room"
@@ -154,24 +154,24 @@ msgstr "खाता जोड़ें (_A)"
 msgid "Account Settings"
 msgstr "खाता सेटिंग"
 
-#: src/application.rs:192
+#: src/application.rs:204
 msgid "The Fractal Team"
 msgstr "Fractal टीम"
 
-#: src/application.rs:198
+#: src/application.rs:210
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Fractal टीम"
 
-#: src/application.rs:212
+#: src/application.rs:224
 msgid "translator-credits"
 msgstr "Scrambled777 <weblate.scrambled777@simplelogin.com>"
 
 #. This can't be added via the builder
-#: src/application.rs:216
+#: src/application.rs:228
 msgid "Name by"
 msgstr "नाम द्वारा"
 
-#: src/application.rs:313
+#: src/application.rs:325
 msgid "Session not found"
 msgstr "सत्र नहीं मिला"
 
@@ -339,7 +339,7 @@ msgstr "आगे बढ़ने के लिए, आपको अपनी �
 
 #: src/components/crypto/recovery_setup_view.rs:174
 msgid "Invalidates the verifications of all users and sessions"
-msgstr "सभी उपयोक्ताओं और सत्रों का सत्यापन अमान्य हो जाएगा।"
+msgstr "सभी उपयोक्ताओं और सत्रों का सत्यापन अमान्य हो जाएगा"
 
 #: src/components/crypto/recovery_setup_view.rs:179
 msgid ""
@@ -351,7 +351,7 @@ msgstr ""
 
 #: src/components/crypto/recovery_setup_view.rs:189
 msgid "You might not be able to read your past encrypted messages anymore"
-msgstr "अब आप अपने पिछले कूटलेखित संदेशों को पढ़ने में सक्षम नहीं हो सकते हैं।"
+msgstr "अब आप अपने पिछले कूटलेखित संदेशों को पढ़ने में सक्षम नहीं हो सकते हैं"
 
 #: src/components/crypto/recovery_setup_view.rs:194
 msgid ""
@@ -638,7 +638,7 @@ msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:27
 #: src/identity_verification_view/accept_request_page.ui:47
-#: src/session/view/content/room_history/verification_info_bar.rs:166
+#: src/session/view/content/room_history/verification_info_bar.rs:168
 msgid "Decline"
 msgstr "अस्वीकारें"
 
@@ -675,7 +675,7 @@ msgstr "छोड़ें"
 #: src/session/view/content/room_history/item_row.rs:831
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
-#: src/session/view/content/room_history/verification_info_bar.rs:170
+#: src/session/view/content/room_history/verification_info_bar.rs:172
 msgid "Cancel"
 msgstr "रद्द करें"
 
@@ -1104,7 +1104,7 @@ msgstr "सुरक्षा"
 #: src/components/user_page.ui:238
 #: src/identity_verification_view/accept_request_page.ui:58
 #: src/session/view/account_settings/security_page/mod.rs:257
-#: src/session/view/content/room_history/verification_info_bar.rs:165
+#: src/session/view/content/room_history/verification_info_bar.rs:167
 #: src/session/view/sidebar/mod.rs:308
 msgid "Verify"
 msgstr "सत्यापित करें"
@@ -1185,6 +1185,7 @@ msgid "Could Not Initialize Session"
 msgstr "सत्र प्रारंभ नहीं किया जा सका"
 
 #: src/identity_verification_view/accept_request_page.rs:128
+#: src/session/model/notifications/mod.rs:296
 msgid "Login Request From Another Session"
 msgstr "दूसरे सत्र से लॉगिन अनुरोध"
 
@@ -1196,6 +1197,7 @@ msgstr "वर्तमान सत्र से नये सत्र का 
 #: src/identity_verification_view/choose_method_page.rs:178
 #: src/identity_verification_view/sas_page.rs:155
 #: src/identity_verification_view/scan_qr_code_page.rs:167
+#: src/session/model/notifications/mod.rs:227
 msgid "Verification Request"
 msgstr "सत्यापन अनुरोध"
 
@@ -1249,6 +1251,8 @@ msgstr "सत्यापन प्रक्रिया के दौरान
 
 #: src/identity_verification_view/cancelled_page.rs:161
 #: src/identity_verification_view/mod.ui:113
+#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "सत्यापन रद्द किया गया"
 
@@ -1262,6 +1266,7 @@ msgstr "नया अनुरोध भेजें"
 
 #: src/identity_verification_view/cancelled_page.ui:52
 #: src/identity_verification_view/completed_page.ui:47
+#: src/identity_verification_view/room_left_page.ui:43
 msgid "Dismiss"
 msgstr "खारिज करें"
 
@@ -1471,6 +1476,10 @@ msgid ""
 msgstr ""
 "आपने QR कोड सफलतापूर्वक स्कैन कर लिया। {user} को सत्यापन की पुष्टि करने की आवश्यकता हो "
 "सकती है।"
+
+#: src/identity_verification_view/room_left_page.ui:37
+msgid "You are no longer in the room where the verification was taking place"
+msgstr "अब आप उस कक्ष में नहीं हैं जहां सत्यापन हो रहा था"
 
 #: src/identity_verification_view/sas_page.rs:146
 msgid "Check if the same emoji appear in the same order on the other client."
@@ -1838,6 +1847,18 @@ msgstr ""
 msgid "Could not log the session out"
 msgstr "सत्र को लॉग आउट नहीं किया जा सका"
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:231
+msgid "{user} sent a verification request"
+msgstr "{user} ने सत्यापन अनुरोध भेजा"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:300
+msgid "Verify your new session “{name}”"
+msgstr "अपना नया सत्र “{name}” सत्यापित करें"
+
 #: src/session/model/room/join_rule.rs:276
 msgid "Only invited users, and users can knock"
 msgstr "केवल आमंत्रित उपयोक्ता, और उपयोक्ता दस्तक दे सकते हैं"
@@ -1995,7 +2016,7 @@ msgstr "नए पासवर्ड की पुष्टि करें"
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:77
-#: src/session/view/content/room_history/verification_info_bar.rs:169
+#: src/session/view/content/room_history/verification_info_bar.rs:171
 msgid "Continue"
 msgstr "जारी रखें"
 
@@ -2688,7 +2709,7 @@ msgstr "सर्वर हटाएं"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:248
+#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:244
 msgid "{user} invited you"
 msgstr "{user} ने आपको आमंत्रित किया"
 
@@ -4286,17 +4307,17 @@ msgstr[1] "{n} सदस्य टाइप कर रहे हैं…"
 msgid "Could not accept verification"
 msgstr "सत्यापन स्वीकार नहीं किया जा सका"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:86
+#: src/session/view/content/room_history/verification_info_bar.rs:88
 msgid "Could not decline verification"
 msgstr "सत्यापन अस्वीकार नहीं किया जा सका"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:159
+#: src/session/view/content/room_history/verification_info_bar.rs:161
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} सत्यापित होना चाहता है"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:168
+#: src/session/view/content/room_history/verification_info_bar.rs:170
 msgid "Verification in progress"
 msgstr "सत्यापन प्रगति पर है"
 
@@ -4739,15 +4760,11 @@ msgstr "{user} ने अपना स्थान भेजा।"
 msgid "{user} sent a video."
 msgstr "{user} ने एक वीडियो भेजा।"
 
-#: src/utils/matrix.rs:206
-msgid "{user} sent a verification request."
-msgstr "{user} ने सत्यापन अनुरोध भेजा।"
-
-#: src/utils/matrix.rs:214
+#: src/utils/matrix.rs:210
 msgid "{user} sent a sticker."
 msgstr "{user} ने एक स्टीकर भेजा।"
 
-#: src/utils/matrix.rs:224
+#: src/utils/matrix.rs:220
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
