@@ -1,6 +1,6 @@
 project('fractal',
         'rust',
-        version: '7',
+        version: '8.beta',
         license: 'GPL-3.0-or-later',
         meson_version: '>= 1.1')
 
@@ -10,8 +10,8 @@ gnome = import('gnome')
 base_id = 'org.gnome.Fractal'
 application_id = base_id
 
-major_version = '7'
-pre_release_version = ''
+major_version = '8'
+pre_release_version = 'beta'
 
 version = major_version
 if pre_release_version != ''

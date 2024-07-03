@@ -71,6 +71,48 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="8~beta" type="development" date="2024-07-03">
+      <description>
+        <p>
+          It’s been all over the news, so you probably already have heard about what’s happening in
+          France, but in case you haven’t yet: a new Fractal beta just dropped!
+        </p>
+        <p>
+          What have we been up to?
+        </p>
+        <ul>
+          <li>
+            Mentions are sent intentionally
+          </li>
+          <li>
+            Authenticated media are supported
+          </li>
+          <li>
+            Draft messages are kept per-room
+          </li>
+          <li>
+            The verification and account recovery processes have been polished
+          </li>
+          <li>
+            HTML rendering should be more robust, as we switched to the same library already used by
+            the Rust SDK to cleanup tags in messages
+          </li>
+          <li>
+            Speaking of HTML rendering, code blocks gained syntax highlighting, lists can be nested,
+            numbered lists can start from an arbitrary number, the details tag is supported, and
+            @room mentions are detected and rendered with a pill
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, there might be a slight risk of regressions, but it should be
+          mostly stable. If all goes well the next step is the release candidate!
+        </p>
+      </description>
+    </release>
     <release version="7" type="stable" date="2024-05-02">
       <description>
         <p>
