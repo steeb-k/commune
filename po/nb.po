@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-06-02 21:26+0000\n"
-"PO-Revision-Date: 2024-06-04 19:37+0200\n"
+"POT-Creation-Date: 2024-06-30 13:13+0000\n"
+"PO-Revision-Date: 2024-07-03 22:02+0200\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -160,24 +160,24 @@ msgstr "_Legg til konto"
 msgid "Account Settings"
 msgstr "Kontoinnstillinger"
 
-#: src/application.rs:192
+#: src/application.rs:209
 msgid "The Fractal Team"
 msgstr "Fractal-gruppen"
 
-#: src/application.rs:198
+#: src/application.rs:215
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Fractal-gruppen"
 
-#: src/application.rs:212
+#: src/application.rs:229
 msgid "translator-credits"
 msgstr "Brage Fuglseth https://bragefuglseth.dev"
 
 #. This can't be added via the builder
-#: src/application.rs:216
+#: src/application.rs:233
 msgid "Name by"
 msgstr "Navngitt av"
 
-#: src/application.rs:313
+#: src/application.rs:348
 msgid "Session not found"
 msgstr "Fant ikke økt"
 
@@ -215,28 +215,28 @@ msgstr "Advarsel"
 msgid "Error"
 msgstr "Noe gikk galt"
 
-#: src/components/avatar/editable.rs:353
+#: src/components/avatar/editable.rs:357
 msgid "Images"
 msgstr "Bilder"
 
-#: src/components/avatar/editable.rs:358
+#: src/components/avatar/editable.rs:362
 msgid "Choose Avatar"
 msgstr "Velg profilbilde"
 
-#: src/components/avatar/editable.rs:360
+#: src/components/avatar/editable.rs:364
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
 msgid "Choose"
 msgstr "Velg"
 
-#: src/components/avatar/editable.rs:374
+#: src/components/avatar/editable.rs:378
 msgid "Could not open avatar file"
 msgstr "Åpning av profilbilde mislyktes"
 
-#: src/components/avatar/editable.rs:395
+#: src/components/avatar/editable.rs:399
 msgid "The chosen file is not an image"
 msgstr "Den valgte filen er ikke et bilde"
 
-#: src/components/avatar/editable.rs:401
+#: src/components/avatar/editable.rs:405
 msgid "Could not determine the type of the chosen file"
 msgstr "Filtypen er ikke gjenkjennbar"
 
@@ -248,12 +248,12 @@ msgstr "Fjern profilbilde"
 msgid "Select New Avatar"
 msgstr "Velg nytt profilbilde"
 
-#: src/components/crypto/identity_setup_view.rs:373
-#: src/identity_verification_view/cancelled_page.rs:185
+#: src/components/crypto/identity_setup_view.rs:400
+#: src/identity_verification_view/cancelled_page.rs:189
 msgid "Could not send a new verification request"
 msgstr "Sending av ny forespørsel mislyktes"
 
-#: src/components/crypto/identity_setup_view.rs:424
+#: src/components/crypto/identity_setup_view.rs:451
 msgid "Could not create the crypto identity"
 msgstr "Oppretting av krypteringsidentitet mislyktes"
 
@@ -289,8 +289,8 @@ msgstr "Gjenopprett konto"
 #: src/components/crypto/recovery_setup_view.ui:98
 #: src/components/crypto/recovery_setup_view.ui:209
 #: src/components/crypto/recovery_setup_view.ui:513
-#: src/session/view/account_settings/security_page/mod.rs:238
-#: src/session/view/account_settings/security_page/mod.rs:306
+#: src/session/view/account_settings/security_page/mod.rs:251
+#: src/session/view/account_settings/security_page/mod.rs:319
 msgid "Reset"
 msgstr "Tilbakestill"
 
@@ -325,7 +325,7 @@ msgstr "Sett opp"
 #: src/components/crypto/identity_setup_view.ui:200
 #: src/components/crypto/identity_setup_view.ui:226
 #: src/components/crypto/recovery_setup_view.ui:169
-#: src/session/view/account_settings/security_page/mod.rs:241
+#: src/session/view/account_settings/security_page/mod.rs:254
 msgid "Reset Crypto Identity"
 msgstr "_Tilbakestill kryptering"
 
@@ -424,8 +424,8 @@ msgid "Recovery Passphrase or Key"
 msgstr "Passord eller nøkkel"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:326
-#: src/session/view/sidebar/mod.rs:315
+#: src/session/view/account_settings/security_page/mod.rs:339
+#: src/session/view/sidebar/mod.rs:329
 msgid "Recover"
 msgstr "Gjenopprett"
 
@@ -510,7 +510,7 @@ msgstr "OK"
 
 #: src/components/crypto/recovery_setup_view.ui:430
 #: src/components/crypto/recovery_setup_view.ui:457
-#: src/session/view/account_settings/security_page/mod.rs:321
+#: src/session/view/account_settings/security_page/mod.rs:334
 msgid "Account Recovery Incomplete"
 msgstr "Gjenoppretting mislyktes"
 
@@ -540,11 +540,11 @@ msgstr ""
 msgid "Alternatively, you can reset Account Recovery"
 msgstr "Eventuelt kan kontogjenopprettingen tilbakestilles"
 
-#: src/components/dialogs/auth.rs:236
+#: src/components/dialogs/auth.rs:239
 msgid "Please authenticate the operation with your password"
 msgstr "Skriv inn passordet ditt for å autentisere handlingen"
 
-#: src/components/dialogs/auth.rs:275
+#: src/components/dialogs/auth.rs:278
 msgid ""
 "Please authenticate the operation via the browser and, once completed, press "
 "confirm"
@@ -569,20 +569,20 @@ msgid "C_onfirm"
 msgstr "_Bekreft"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/components/dialogs/join_room.rs:192
-#: src/session/view/content/explore/public_room_row.rs:168
-#: src/session/view/content/room_history/mod.rs:959
-#: src/session/view/content/room_history/state_row/tombstone.rs:88
+#: src/components/dialogs/join_room.rs:199
+#: src/session/view/content/explore/public_room_row.rs:177
+#: src/session/view/content/room_history/mod.rs:1015
+#: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Åpne"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/join_room.rs:195
+#: src/components/dialogs/join_room.rs:202
 #: src/components/dialogs/join_room.ui:91
 msgid "Look Up"
 msgstr "Finn"
 
-#: src/components/dialogs/join_room.rs:258
+#: src/components/dialogs/join_room.rs:265
 msgid ""
 "The room details cannot be previewed. It can be because the room is not "
 "known by the homeserver or because its details are private. You can still "
@@ -593,8 +593,8 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/join_room.rs:280
-#: src/session/view/content/explore/public_room_row.rs:149
+#: src/components/dialogs/join_room.rs:287
+#: src/session/view/content/explore/public_room_row.rs:158
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "1 medlem"
@@ -616,9 +616,9 @@ msgid "Enter a room ID, room alias, or permalink to look up a room"
 msgstr "Oppgi en kode, et navn eller en adresse for å finne en samtale"
 
 #: src/components/dialogs/join_room.ui:191
-#: src/session/view/content/explore/public_room_row.rs:170
-#: src/session/view/content/room_history/mod.rs:962
-#: src/session/view/content/room_history/state_row/tombstone.rs:90
+#: src/session/view/content/explore/public_room_row.rs:179
+#: src/session/view/content/room_history/mod.rs:1018
+#: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Bli med"
 
@@ -645,7 +645,7 @@ msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:27
 #: src/identity_verification_view/accept_request_page.ui:47
-#: src/session/view/content/room_history/verification_info_bar.rs:166
+#: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Avslå"
 
@@ -676,16 +676,16 @@ msgstr "Forlat"
 #: src/components/dialogs/message_dialogs.rs:320
 #: src/components/dialogs/message_dialogs.rs:355
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:280
-#: src/session/view/content/room_details/general_page/mod.rs:525
-#: src/session/view/content/room_details/general_page/mod.rs:1299
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:588
+#: src/session/view/account_settings/general_page/mod.rs:293
+#: src/session/view/content/room_details/general_page/mod.rs:596
+#: src/session/view/content/room_details/general_page/mod.rs:1375
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:774
-#: src/session/view/content/room_history/item_row.rs:831
+#: src/session/view/content/room_history/item_row.rs:914
+#: src/session/view/content/room_history/item_row.rs:971
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
-#: src/session/view/content/room_history/verification_info_bar.rs:170
+#: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
 msgstr "Avbryt"
 
@@ -738,7 +738,7 @@ msgstr ""
 "ikke kunne bli med i samtalen med mindre noen inviterer dem på nytt."
 
 #: src/components/dialogs/message_dialogs.rs:121
-#: src/components/user_page.rs:402
+#: src/components/user_page.rs:421
 msgid "Revoke Invite"
 msgstr "Trekk tilbake invitasjon"
 
@@ -755,7 +755,7 @@ msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Er du sikker på at du ønsker å avslå forespørselen fra {user_id}?"
 
 #: src/components/dialogs/message_dialogs.rs:137
-#: src/components/user_page.rs:403
+#: src/components/user_page.rs:422
 msgid "Deny Access"
 msgstr "Avvis"
 
@@ -788,7 +788,7 @@ msgstr ""
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
 #: src/components/dialogs/message_dialogs.rs:159
-#: src/components/user_page.rs:405
+#: src/components/user_page.rs:424
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "Spark ut"
@@ -816,9 +816,9 @@ msgstr[1] ""
 "meldinger mottatt fra hjemmetjeneren vil slettes permanent."
 
 #: src/components/dialogs/message_dialogs.rs:181
-#: src/session/view/account_settings/general_page/mod.rs:281
-#: src/session/view/content/room_details/general_page/mod.rs:526
-#: src/session/view/content/room_history/item_row.rs:775
+#: src/session/view/account_settings/general_page/mod.rs:294
+#: src/session/view/content/room_details/general_page/mod.rs:597
+#: src/session/view/content/room_history/item_row.rs:915
 msgid "Remove"
 msgstr "Fjern"
 
@@ -839,7 +839,7 @@ msgstr ""
 "Du kan prøve å laste inn flere ved å bla lenger tilbake i samtalen."
 
 #: src/components/dialogs/message_dialogs.rs:208
-#: src/session/view/content/room_history/item_row.rs:813
+#: src/session/view/content/room_history/item_row.rs:953
 msgid "Reason (optional)"
 msgstr "Begrunnelse"
 
@@ -896,15 +896,15 @@ msgstr "Forfrem"
 msgid "User Profile"
 msgstr "Profil"
 
-#: src/components/offline_banner.rs:96
+#: src/components/offline_banner.rs:102
 msgid "Offline"
 msgstr "Frakoblet"
 
-#: src/components/offline_banner.rs:103
+#: src/components/offline_banner.rs:109
 msgid "No network connection"
 msgstr "Ingen nettverksforbindelse"
 
-#: src/components/offline_banner.rs:106
+#: src/components/offline_banner.rs:112
 msgid "No Internet connection"
 msgstr "Ingen nettverksforbindelse"
 
@@ -941,7 +941,7 @@ msgid "Notify the whole room"
 msgstr "Varsle hele samtalen"
 
 #. Translators: As in 'Custom role'.
-#. Translators: As in, 'Custom power level'.
+#. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
 #: src/session/model/room/permissions.rs:73
 msgid "Custom"
@@ -951,138 +951,138 @@ msgstr "Tilpasset"
 msgid "Confirm Custom Role"
 msgstr "Bekreft tilpasset rolle"
 
-#: src/components/user_page.rs:262
+#: src/components/user_page.rs:281
 #: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matrix-brukernavn kopiert til utklippstavlen"
 
-#: src/components/user_page.rs:284
+#: src/components/user_page.rs:303
 msgid "Open Direct Chat"
 msgstr "Åpne direktesamtale"
 
-#: src/components/user_page.rs:286
+#: src/components/user_page.rs:305
 msgid "Create Direct Chat"
 msgstr "Opprett direktesamtale"
 
-#: src/components/user_page.rs:310
-#: src/session/view/content/room_history/sender_avatar/mod.rs:513
-#: src/session/view/create_dm_dialog/mod.rs:198
+#: src/components/user_page.rs:329
+#: src/session/view/content/room_history/sender_avatar/mod.rs:534
+#: src/session/view/create_dm_dialog/mod.rs:202
 msgid "Could not create a new Direct Chat"
 msgstr "Oppretting av samtale mislyktes"
 
-#: src/components/user_page.rs:343
+#: src/components/user_page.rs:362
 msgid "In {room_name}"
 msgstr "I {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:354
+#: src/components/user_page.rs:373
 msgctxt "member"
 msgid "Invited"
 msgstr "Invitert"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:359
+#: src/components/user_page.rs:378
 msgctxt "member"
 msgid "Banned"
 msgstr "Utestengt"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:364
+#: src/components/user_page.rs:383
 msgctxt "member"
 msgid "Knocked"
 msgstr "Bedt om tilgang"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:369
+#: src/components/user_page.rs:388
 msgctxt "member"
 msgid "Unknown"
 msgstr "Ukjent"
 
-#: src/components/user_page.rs:390
+#: src/components/user_page.rs:409
 msgid "Allow Access"
 msgstr "Gi tilgang"
 
-#: src/components/user_page.rs:492
+#: src/components/user_page.rs:511
 msgid "Could not change the role"
 msgstr "Endring av rolle mislyktes"
 
-#: src/components/user_page.rs:514
-#: src/session/view/content/room_history/sender_avatar/mod.rs:537
+#: src/components/user_page.rs:533
+#: src/session/view/content/room_history/sender_avatar/mod.rs:558
 msgid "Could not invite user"
 msgstr "Invitering av konto mislyktes"
 
-#: src/components/user_page.rs:548
-#: src/session/view/content/room_history/sender_avatar/mod.rs:570
+#: src/components/user_page.rs:567
+#: src/session/view/content/room_history/sender_avatar/mod.rs:591
 msgid "Could not revoke invite of user"
 msgstr "Tilbaketrekning av invitasjon mislyktes"
 
-#: src/components/user_page.rs:549
-#: src/session/view/content/room_history/sender_avatar/mod.rs:571
+#: src/components/user_page.rs:568
+#: src/session/view/content/room_history/sender_avatar/mod.rs:592
 msgid "Could not deny access to user"
 msgstr "Avvisning av konto mislyktes"
 
-#: src/components/user_page.rs:550
-#: src/session/view/content/room_history/sender_avatar/mod.rs:572
+#: src/components/user_page.rs:569
+#: src/session/view/content/room_history/sender_avatar/mod.rs:593
 msgid "Could not kick user"
 msgstr "Sparking av konto mislyktes"
 
-#: src/components/user_page.rs:596
-#: src/session/view/content/room_history/sender_avatar/mod.rs:657
+#: src/components/user_page.rs:615
+#: src/session/view/content/room_history/sender_avatar/mod.rs:678
 msgid "Could not ban user"
 msgstr "Utestenging av konto mislyktes"
 
-#: src/components/user_page.rs:624
-#: src/session/view/content/room_history/sender_avatar/mod.rs:677
+#: src/components/user_page.rs:643
+#: src/session/view/content/room_history/sender_avatar/mod.rs:698
 msgid "Could not unban user"
 msgstr "Oppheving av utestenging mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:672
-#: src/session/view/content/room_history/sender_avatar/mod.rs:731
+#: src/components/user_page.rs:691
+#: src/session/view/content/room_history/sender_avatar/mod.rs:752
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Sletting av melding mislyktes"
 msgstr[1] "Sletting av {n} meldinger mislyktes"
 
-#: src/components/user_page.rs:689
+#: src/components/user_page.rs:708
 msgid "Identity verified"
 msgstr "Identitet verifisert"
 
-#: src/components/user_page.rs:696
+#: src/components/user_page.rs:715
 msgid "Identity not verified"
 msgstr "Ikke verifisert"
 
-#: src/components/user_page.rs:712
+#: src/components/user_page.rs:731
 msgid "Could not start user verification"
 msgstr "Oppstart av verifisering mislyktes"
 
-#: src/components/user_page.rs:738
+#: src/components/user_page.rs:757
 msgid "Ignored"
 msgstr "Ignorert"
 
-#: src/components/user_page.rs:740
+#: src/components/user_page.rs:759
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Opphev ignorering"
 
-#: src/components/user_page.rs:743
+#: src/components/user_page.rs:762
 msgid "Not Ignored"
 msgstr "Ikke ignorert"
 
-#: src/components/user_page.rs:744
+#: src/components/user_page.rs:763
 msgid "Ignore"
 msgstr "Ignorer"
 
-#: src/components/user_page.rs:761
+#: src/components/user_page.rs:780
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
-#: src/session/view/content/room_history/sender_avatar/mod.rs:756
+#: src/session/view/content/room_history/sender_avatar/mod.rs:777
 msgid "Could not stop ignoring user"
 msgstr "Oppheving av ignorering mislyktes"
 
-#: src/components/user_page.rs:764
-#: src/session/view/content/room_history/sender_avatar/mod.rs:759
+#: src/components/user_page.rs:783
+#: src/session/view/content/room_history/sender_avatar/mod.rs:780
 msgid "Could not ignore user"
 msgstr "Ignorering av konto mislyktes"
 
@@ -1096,6 +1096,7 @@ msgstr "Kopier Matrix-brukernavn til utklippstavle"
 msgid "Role"
 msgstr "Rolle"
 
+#. Translators: value used to assign room member roles
 #: src/components/user_page.ui:128
 msgid "Power Level"
 msgstr "Batterinivå"
@@ -1116,9 +1117,9 @@ msgstr "Sikkerhet"
 
 #: src/components/user_page.ui:238
 #: src/identity_verification_view/accept_request_page.ui:58
-#: src/session/view/account_settings/security_page/mod.rs:257
-#: src/session/view/content/room_history/verification_info_bar.rs:165
-#: src/session/view/sidebar/mod.rs:308
+#: src/session/view/account_settings/security_page/mod.rs:270
+#: src/session/view/content/room_history/verification_info_bar.rs:172
+#: src/session/view/sidebar/mod.rs:322
 msgid "Verify"
 msgstr "Verifiser"
 
@@ -1196,74 +1197,78 @@ msgstr ""
 msgid "Could Not Initialize Session"
 msgstr "Oppstart av økt mislyktes"
 
-#: src/identity_verification_view/accept_request_page.rs:128
+#: src/identity_verification_view/accept_request_page.rs:129
+#: src/session/model/notifications/mod.rs:296
 msgid "Login Request From Another Session"
 msgstr "Verifiseringsforespørsel"
 
-#: src/identity_verification_view/accept_request_page.rs:130
+#: src/identity_verification_view/accept_request_page.rs:131
 msgid "Verify the new session from the current session."
 msgstr "Verifiser en ny økt fra denne."
 
-#: src/identity_verification_view/accept_request_page.rs:133
-#: src/identity_verification_view/choose_method_page.rs:178
-#: src/identity_verification_view/sas_page.rs:155
-#: src/identity_verification_view/scan_qr_code_page.rs:167
+#: src/identity_verification_view/accept_request_page.rs:134
+#: src/identity_verification_view/choose_method_page.rs:183
+#: src/identity_verification_view/sas_page.rs:159
+#: src/identity_verification_view/scan_qr_code_page.rs:179
+#: src/session/model/notifications/mod.rs:227
 msgid "Verification Request"
 msgstr "Verfiseringsforespørsel"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/accept_request_page.rs:137
+#: src/identity_verification_view/accept_request_page.rs:138
 msgid ""
 "{user} asked to be verified. Verifying a user increases the security of the "
 "conversation."
 msgstr ""
 "{user} ba om å bli verifisert. Å verifisere en konto gjør samtalen sikrere."
 
-#: src/identity_verification_view/accept_request_page.rs:160
+#: src/identity_verification_view/accept_request_page.rs:161
 msgid "Could not decline verification request"
 msgstr "Avslåing av forespørsel mislyktes"
 
-#: src/identity_verification_view/accept_request_page.rs:176
+#: src/identity_verification_view/accept_request_page.rs:177
 msgid "Could not accept verification request"
 msgstr "Godtaking av forespørsel mislyktes"
 
-#: src/identity_verification_view/cancelled_page.rs:134
+#: src/identity_verification_view/cancelled_page.rs:138
 msgid "The verification was cancelled from the other session."
 msgstr "Verifiseringen ble avbrutt fra den andre økten."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/cancelled_page.rs:140
+#: src/identity_verification_view/cancelled_page.rs:144
 msgid "The verification was cancelled by {user}."
 msgstr "Verifiseringen ble avbrutt av {user}."
 
-#: src/identity_verification_view/cancelled_page.rs:146
+#: src/identity_verification_view/cancelled_page.rs:150
 msgid "The verification process failed because it reached a timeout."
 msgstr "Verifiseringen mislyktes fordi den tok for lang tid."
 
-#: src/identity_verification_view/cancelled_page.rs:148
+#: src/identity_verification_view/cancelled_page.rs:152
 msgid "You accepted the request from another session."
 msgstr "Forespørselen ble godtatt fra en annen økt."
 
-#: src/identity_verification_view/cancelled_page.rs:151
+#: src/identity_verification_view/cancelled_page.rs:155
 msgid "The emoji did not match."
 msgstr "Emojiene samsvarte ikke."
 
-#: src/identity_verification_view/cancelled_page.rs:153
+#: src/identity_verification_view/cancelled_page.rs:157
 msgid "The numbers did not match."
 msgstr "Tallene samsvarte ikke."
 
-#: src/identity_verification_view/cancelled_page.rs:156
+#: src/identity_verification_view/cancelled_page.rs:160
 msgid "An unexpected error happened during the verification process."
 msgstr "Noe gikk galt under verifiseringen."
 
-#: src/identity_verification_view/cancelled_page.rs:161
+#: src/identity_verification_view/cancelled_page.rs:165
 #: src/identity_verification_view/mod.ui:113
+#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "Verifisering avbrutt"
 
-#: src/identity_verification_view/cancelled_page.rs:163
+#: src/identity_verification_view/cancelled_page.rs:167
 msgid "Verification Error"
 msgstr "Verifiseringsfeil"
 
@@ -1273,48 +1278,49 @@ msgstr "Send på nytt"
 
 #: src/identity_verification_view/cancelled_page.ui:52
 #: src/identity_verification_view/completed_page.ui:47
+#: src/identity_verification_view/room_left_page.ui:43
 msgid "Dismiss"
 msgstr "Fortsett"
 
-#: src/identity_verification_view/choose_method_page.rs:170
-#: src/identity_verification_view/sas_page.rs:143
-#: src/identity_verification_view/scan_qr_code_page.rs:162
+#: src/identity_verification_view/choose_method_page.rs:175
+#: src/identity_verification_view/sas_page.rs:147
+#: src/identity_verification_view/scan_qr_code_page.rs:174
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:74
 msgid "Verify Session"
 msgstr "Verifiser økt"
 
-#: src/identity_verification_view/choose_method_page.rs:174
+#: src/identity_verification_view/choose_method_page.rs:179
 msgid "Scan this QR code from the other session."
 msgstr "Skann denne QR-koden fra den andre økten."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/choose_method_page.rs:184
+#: src/identity_verification_view/choose_method_page.rs:189
 msgid "Ask {user} to scan this QR code from their session."
 msgstr "Spør {user} om å skanne denne QR-koden fra sin økt."
 
-#: src/identity_verification_view/choose_method_page.rs:193
+#: src/identity_verification_view/choose_method_page.rs:198
 msgid "Select a verification method to proceed."
 msgstr "Velg en metode for å fortsette."
 
-#: src/identity_verification_view/choose_method_page.rs:196
+#: src/identity_verification_view/choose_method_page.rs:201
 msgid "Click on the verification method to proceed."
 msgstr "Trykk på metoden for å fortsette."
 
-#: src/identity_verification_view/choose_method_page.rs:228
+#: src/identity_verification_view/choose_method_page.rs:233
 msgid "Could not access camera"
 msgstr "Bruk av kamera mislyktes"
 
-#: src/identity_verification_view/choose_method_page.rs:245
-#: src/identity_verification_view/scan_qr_code_page.rs:239
+#: src/identity_verification_view/choose_method_page.rs:250
+#: src/identity_verification_view/scan_qr_code_page.rs:255
 msgid "Could not start emoji verification"
 msgstr "Verifisering med emojier mislyktes"
 
-#: src/identity_verification_view/choose_method_page.rs:261
-#: src/identity_verification_view/confirm_qr_code_page.rs:175
-#: src/identity_verification_view/qr_code_scanned_page.rs:143
-#: src/identity_verification_view/scan_qr_code_page.rs:255
-#: src/identity_verification_view/wait_for_other_page.rs:162
+#: src/identity_verification_view/choose_method_page.rs:266
+#: src/identity_verification_view/confirm_qr_code_page.rs:176
+#: src/identity_verification_view/qr_code_scanned_page.rs:144
+#: src/identity_verification_view/scan_qr_code_page.rs:271
+#: src/identity_verification_view/wait_for_other_page.rs:163
 msgid "Could not cancel the verification"
 msgstr "Avbryting av verifisering mislyktes"
 
@@ -1333,27 +1339,27 @@ msgid "Compare Emoji"
 msgstr "Sammenlign emojier"
 
 #: src/identity_verification_view/choose_method_page.ui:80
-#: src/identity_verification_view/no_supported_methods_page.rs:163
+#: src/identity_verification_view/no_supported_methods_page.rs:167
 #: src/identity_verification_view/qr_code_scanned_page.ui:48
 #: src/identity_verification_view/scan_qr_code_page.ui:77
 msgid "Cancel Verification"
 msgstr "Avbryt verifisering"
 
-#: src/identity_verification_view/completed_page.rs:120
+#: src/identity_verification_view/completed_page.rs:121
 msgid "Request Complete"
 msgstr "Verifisering fullført"
 
-#: src/identity_verification_view/completed_page.rs:122
+#: src/identity_verification_view/completed_page.rs:123
 msgid "The new session is now ready to send and receive secure messages."
 msgstr "Den nye økten er klar til å sende og motta sikre meldinger."
 
-#: src/identity_verification_view/completed_page.rs:126
+#: src/identity_verification_view/completed_page.rs:127
 msgid "Verification Complete"
 msgstr "Verifisering fullført"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/completed_page.rs:129
+#: src/identity_verification_view/completed_page.rs:130
 msgid ""
 "{user} is verified and you can now be sure that your communication will be "
 "private."
@@ -1361,17 +1367,17 @@ msgstr ""
 "{user} er verifisert, og det er nå sikkert at kommunikasjonen deres vil være "
 "privat."
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:127
+#: src/identity_verification_view/confirm_qr_code_page.rs:128
 msgid "Does the other session show a confirmation?"
 msgstr "Viser den andre økten et bekreftelsesvindu?"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/confirm_qr_code_page.rs:133
+#: src/identity_verification_view/confirm_qr_code_page.rs:134
 msgid "Does {user} see a confirmation on their session?"
 msgstr "Kan {user} se et bekreftelsesvindu i økten sin?"
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:159
+#: src/identity_verification_view/confirm_qr_code_page.rs:160
 msgid "Could not confirm the scan of the QR Code"
 msgstr "Skanning av QR-kode mislyktes"
 
@@ -1421,12 +1427,12 @@ msgstr "Verifisering med autentiseringstekst"
 msgid "Verification Successful"
 msgstr "Verifisering ferdig"
 
-#: src/identity_verification_view/no_supported_methods_page.rs:134
+#: src/identity_verification_view/no_supported_methods_page.rs:138
 msgid ""
 "None of the methods offered by the other client are supported by Fractal."
 msgstr "Ingen av metodene til den andre appen virker med Fractal."
 
-#: src/identity_verification_view/no_supported_methods_page.rs:137
+#: src/identity_verification_view/no_supported_methods_page.rs:141
 msgid ""
 "A login request was received, but none of the methods offered by the other "
 "client are supported by Fractal."
@@ -1436,14 +1442,14 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:146
+#: src/identity_verification_view/no_supported_methods_page.rs:150
 msgid ""
 "None of the methods offered by {user}’s client are supported by Fractal."
 msgstr "Ingen av metodene til {user} sin app virker med Fractal."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:153
+#: src/identity_verification_view/no_supported_methods_page.rs:157
 msgid ""
 "{user} sent a verification request, but none of the methods offered by the "
 "other client are supported by Fractal."
@@ -1451,11 +1457,11 @@ msgstr ""
 "{user} sendte en verifiseringsforespørsel, men ingen av metodene til den "
 "andre appen virker med Fractal."
 
-#: src/identity_verification_view/no_supported_methods_page.rs:165
+#: src/identity_verification_view/no_supported_methods_page.rs:169
 msgid "Decline Verification"
 msgstr "Avslå verifisering"
 
-#: src/identity_verification_view/no_supported_methods_page.rs:187
+#: src/identity_verification_view/no_supported_methods_page.rs:191
 msgid "Could not decline the verification"
 msgstr "Avslåing av verifisering mislyktes"
 
@@ -1467,7 +1473,7 @@ msgstr ""
 "Du kan godta denne verifiseringen fra en annen økt, eller avslå den for alle "
 "øktene dine"
 
-#: src/identity_verification_view/qr_code_scanned_page.rs:117
+#: src/identity_verification_view/qr_code_scanned_page.rs:118
 msgid ""
 "You scanned the QR code successfully. You may need to confirm the "
 "verification from the other session."
@@ -1477,26 +1483,30 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/qr_code_scanned_page.rs:122
+#: src/identity_verification_view/qr_code_scanned_page.rs:123
 msgid ""
 "You scanned the QR code successfully. {user} may need to confirm the "
 "verification."
 msgstr ""
 "QR-koden ble lest av. Det kan hende at {user} må bekrefte verifiseringen."
 
-#: src/identity_verification_view/sas_page.rs:146
+#: src/identity_verification_view/room_left_page.ui:37
+msgid "You are no longer in the room where the verification was taking place"
+msgstr "Du er ikke lenger med i samtalen hvor verifiseringen fant sted"
+
+#: src/identity_verification_view/sas_page.rs:150
 msgid "Check if the same emoji appear in the same order on the other client."
 msgstr ""
 "Sjekk om de samme emojiene dukker opp i samme rekkefølge i den andre økten."
 
-#: src/identity_verification_view/sas_page.rs:150
+#: src/identity_verification_view/sas_page.rs:154
 msgid "Check if the same numbers appear in the same order on the other client."
 msgstr ""
 "Sjekk om de samme tallene dukker opp i samme rekkefølge i den andre økten."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:160
+#: src/identity_verification_view/sas_page.rs:164
 msgid ""
 "Ask {user} if they see the following emoji appear in the same order on their "
 "screen."
@@ -1505,18 +1515,18 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:167
+#: src/identity_verification_view/sas_page.rs:171
 msgid ""
 "Ask {user} if they see the following numbers appear in the same order on "
 "their screen."
 msgstr ""
 "Spør {user} om de ser disse tallene i samme rekkefølge på skjermen sin."
 
-#: src/identity_verification_view/sas_page.rs:249
+#: src/identity_verification_view/sas_page.rs:253
 msgid "Could not send that the data does not match"
 msgstr "Sending av feilmelding mislyktes"
 
-#: src/identity_verification_view/sas_page.rs:266
+#: src/identity_verification_view/sas_page.rs:270
 msgid "Could not send confirmation that the data matches"
 msgstr "Sending av bekreftelse mislyktes"
 
@@ -1530,17 +1540,17 @@ msgstr "Samsvarer ikke"
 msgid "Match"
 msgstr "Samsvarer"
 
-#: src/identity_verification_view/scan_qr_code_page.rs:164
+#: src/identity_verification_view/scan_qr_code_page.rs:176
 msgid "Scan the QR code displayed by the other session."
 msgstr "Skann QR-koden som vises i den andre økten."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/scan_qr_code_page.rs:171
+#: src/identity_verification_view/scan_qr_code_page.rs:183
 msgid "Scan the QR code shown on the device of {user}."
 msgstr "Skann QR-koden på {user} sin enhet."
 
-#: src/identity_verification_view/scan_qr_code_page.rs:212
+#: src/identity_verification_view/scan_qr_code_page.rs:227
 msgid "Could not validate scanned QR Code"
 msgstr "Godkjenning av skannet QR-kode mislyktes"
 
@@ -1548,24 +1558,24 @@ msgstr "Godkjenning av skannet QR-kode mislyktes"
 msgid "Show a QR code to scan with another device"
 msgstr "Vis QR-kode"
 
-#: src/identity_verification_view/wait_for_other_page.rs:122
+#: src/identity_verification_view/wait_for_other_page.rs:123
 msgid "Get Another Device"
 msgstr "Få tak i en annen økt"
 
-#: src/identity_verification_view/wait_for_other_page.rs:124
+#: src/identity_verification_view/wait_for_other_page.rs:125
 msgid "Accept the verification request from another session or device."
 msgstr ""
 "Godta verifiseringsforespørselen i en annen økt eller på en annen enhet."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:132
+#: src/identity_verification_view/wait_for_other_page.rs:133
 msgid "Waiting for {user}"
 msgstr "Venter på {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:138
+#: src/identity_verification_view/wait_for_other_page.rs:139
 msgid "Ask {user} to accept the verification request."
 msgstr "Spør {user} om å godta verifiseringsforespørselen."
 
@@ -1622,21 +1632,21 @@ msgstr "_Logg inn"
 msgid "_Create Account"
 msgstr "_Opprett konto"
 
-#: src/login/homeserver_page.rs:115
+#: src/login/homeserver_page.rs:119
 msgid "Domain Name"
 msgstr "Domenenavn"
 
-#: src/login/homeserver_page.rs:117
+#: src/login/homeserver_page.rs:121
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Domenet til tjeneren kontoen din er på, for eksempel gnome.org"
 
-#: src/login/homeserver_page.rs:120 src/login/method_page.ui:68
+#: src/login/homeserver_page.rs:124 src/login/method_page.ui:68
 msgid "Homeserver URL"
 msgstr "Tjeneradresse"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/homeserver_page.rs:124
+#: src/login/homeserver_page.rs:128
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Adressen til Matrix-tjeneren din, for eksempel {address}"
 
@@ -1658,25 +1668,25 @@ msgstr "Avansert…"
 #. variable name.
 #. This is the tooltip text on buttons to log in via Single Sign-On.
 #. The brand is something like Facebook, Apple, GitHub…
-#: src/login/idp_button.rs:121
+#: src/login/idp_button.rs:124
 msgid "Log in with {brand}"
 msgstr "Logg inn med {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:129
+#: src/login/method_page.rs:136
 msgid "Log in to {domain_name}"
 msgstr "Logg inn på {domain_name}"
 
-#: src/login/method_page.rs:136
+#: src/login/method_page.rs:143
 msgid "Log in"
 msgstr "Logg inn"
 
-#: src/login/method_page.rs:179
+#: src/login/method_page.rs:186
 msgid "More SSO Providers"
 msgstr "Flere alternativer"
 
-#: src/login/method_page.rs:182
+#: src/login/method_page.rs:189
 msgid "Login via SSO"
 msgstr "Bruk innloggingstjeneste"
 
@@ -1696,7 +1706,7 @@ msgstr "Passord"
 msgid "Single Sign-On Providers"
 msgstr "Innloggingstjenester"
 
-#: src/login/mod.rs:464
+#: src/login/mod.rs:479
 msgid "Could not store session"
 msgstr "Lagring av økt mislyktes"
 
@@ -1850,54 +1860,66 @@ msgstr ""
 "Åpning av standardsamling mislyktes. Pass på at en nøkkelring ble opprettet "
 "og valgt som standard."
 
-#: src/session/model/session.rs:880
+#: src/session/model/session.rs:892
 msgid "Could not log the session out"
 msgstr "Utlogging mislyktes"
 
-#: src/session/model/room/join_rule.rs:276
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:231
+msgid "{user} sent a verification request"
+msgstr "{user} sendte en verifiseringsforespørsel"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:300
+msgid "Verify your new session “{name}”"
+msgstr "Verifiser «{name}»"
+
+#: src/session/model/room/join_rule.rs:281
 msgid "Only invited users, and users can knock"
 msgstr "Kun inviterte kontoer, og forespørsler for andre"
 
-#: src/session/model/room/join_rule.rs:278
+#: src/session/model/room/join_rule.rs:283
 msgid "Only invited users"
 msgstr "Kun inviterte kontoer"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:292
+#: src/session/model/room/join_rule.rs:297
 msgid "Members of {room}, and users can knock"
 msgstr "Medlemmer av {room}, og forespørsler for andre"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:299
+#: src/session/model/room/join_rule.rs:304
 msgid "Members of {room}"
 msgstr "Medlemmer av {room}"
 
-#: src/session/model/room/join_rule.rs:304
+#: src/session/model/room/join_rule.rs:309
 msgid "Any registered user"
 msgstr "Hvem som helst"
 
-#: src/session/model/room/join_rule.rs:305
-#: src/session/view/content/room_details/general_page/mod.rs:1203
+#: src/session/model/room/join_rule.rs:310
+#: src/session/view/content/room_details/general_page/mod.rs:1279
 msgid "Unsupported rule"
 msgstr "Ukjent regel"
 
-#: src/session/model/room/mod.rs:1177
+#: src/session/model/room/mod.rs:1229
 msgid "Empty Room (was {user})"
 msgstr "Tom samtale (tidligere {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1180
+#: src/session/model/room/mod.rs:1232
 msgid "Empty Room"
 msgstr "Tom samtale"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1190
+#: src/session/model/room/mod.rs:1242
 msgid "Unknown"
 msgstr "Ukjent"
 
-#. Translators: As in 'Default power level'.
+#. Translators: As in 'Default power level', meaning permissions.
 #: src/session/model/room/permissions.rs:71
 msgid "Default"
 msgstr "Standard"
@@ -1917,8 +1939,8 @@ msgstr "Dempet"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:556
+#: src/session/model/room_list/mod.rs:410
+#: src/session/view/content/room_history/mod.rs:593
 msgid "Could not join room {room_name}. Try again later."
 msgstr "Tilkobling til {room_name} mislyktes. Prøv igjen senere."
 
@@ -1927,7 +1949,7 @@ msgid "Verifications"
 msgstr "Verifiseringer"
 
 #: src/session/model/sidebar_data/category/category_type.rs:30
-#: src/session/view/content/room_details/invite_subpage/list.rs:266
+#: src/session/view/content/room_details/invite_subpage/list.rs:270
 msgid "Invited"
 msgstr "Invitasjoner"
 
@@ -1955,39 +1977,39 @@ msgstr "Utforsk"
 msgid "Forget Room"
 msgstr "Glem samtale"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:147
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:154
 msgid "Password must be at least 8 characters long"
 msgstr "Passordet må ha minst 8 tegn"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:150
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:157
 msgid "Password must have at least one lower-case letter"
 msgstr "Passordet må ha minst 1 liten bokstav"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:154
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:161
 msgid "Password must have at least one upper-case letter"
 msgstr "Passordet må ha minst 1 stor bokstav"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:157
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:164
 msgid "Password must have at least one digit"
 msgstr "Passordet må ha minst 1 tegn"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:159
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:166
 msgid "Password must have at least one symbol"
 msgstr "Passordet må ha minst 1 symbol"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:189
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:196
 msgid "Passwords do not match"
 msgstr "Passordene er ulike"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:239
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:246
 msgid "Password changed successfully"
 msgstr "Passord endret"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:251
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:258
 msgid "Password rejected for being too weak"
 msgstr "Passordet er for svakt"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:255
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:262
 msgid "Could not change password"
 msgstr "Endring av passord mislyktes"
 
@@ -2011,15 +2033,15 @@ msgstr "Bekreft nytt passord"
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:77
-#: src/session/view/content/room_history/verification_info_bar.rs:169
+#: src/session/view/content/room_history/verification_info_bar.rs:176
 msgid "Continue"
 msgstr "Fortsett"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:139
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:149
 msgid "Account successfully deactivated"
 msgstr "Konto deaktivert"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:148
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:158
 msgid "Could not deactivate account"
 msgstr "Deaktivering av konto mislyktes"
 
@@ -2066,7 +2088,7 @@ msgstr ""
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
 #: src/session/view/account_settings/general_page/mod.ui:102
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:108
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
 msgid "Log Out"
 msgstr "Logg ut"
 
@@ -2108,50 +2130,50 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Fjern økt"
 
-#: src/session/view/account_settings/general_page/mod.rs:194
-#: src/session/view/content/room_details/general_page/mod.rs:429
+#: src/session/view/account_settings/general_page/mod.rs:207
+#: src/session/view/content/room_details/general_page/mod.rs:500
 msgid "Avatar removed successfully"
 msgstr "Profilbilde slettet"
 
-#: src/session/view/account_settings/general_page/mod.rs:196
-#: src/session/view/content/room_details/general_page/mod.rs:431
+#: src/session/view/account_settings/general_page/mod.rs:209
+#: src/session/view/content/room_details/general_page/mod.rs:502
 msgid "Avatar changed successfully"
 msgstr "Profilbilde endret"
 
-#: src/session/view/account_settings/general_page/mod.rs:215
-#: src/session/view/content/room_details/general_page/mod.rs:454
+#: src/session/view/account_settings/general_page/mod.rs:228
+#: src/session/view/content/room_details/general_page/mod.rs:525
 msgid "Could not load file"
 msgstr "Åpning av fil mislyktes"
 
-#: src/session/view/account_settings/general_page/mod.rs:230
-#: src/session/view/content/room_details/general_page/mod.rs:478
+#: src/session/view/account_settings/general_page/mod.rs:243
+#: src/session/view/content/room_details/general_page/mod.rs:549
 msgid "Could not upload avatar"
 msgstr "Opplasting av profilbilde mislyktes"
 
-#: src/session/view/account_settings/general_page/mod.rs:259
-#: src/session/view/content/room_details/general_page/mod.rs:499
+#: src/session/view/account_settings/general_page/mod.rs:272
+#: src/session/view/content/room_details/general_page/mod.rs:570
 msgid "Could not change avatar"
 msgstr "Endring av profilbilde mislyktes"
 
-#: src/session/view/account_settings/general_page/mod.rs:276
-#: src/session/view/content/room_details/general_page/mod.rs:519
+#: src/session/view/account_settings/general_page/mod.rs:289
+#: src/session/view/content/room_details/general_page/mod.rs:590
 msgid "Remove Avatar?"
 msgstr "Fjerne profilbilde?"
 
-#: src/session/view/account_settings/general_page/mod.rs:277
+#: src/session/view/account_settings/general_page/mod.rs:290
 msgid "Do you really want to remove your avatar?"
 msgstr "Er du sikker på at du vil fjerne profilbildet ditt?"
 
-#: src/session/view/account_settings/general_page/mod.rs:315
-#: src/session/view/content/room_details/general_page/mod.rs:552
+#: src/session/view/account_settings/general_page/mod.rs:328
+#: src/session/view/content/room_details/general_page/mod.rs:623
 msgid "Could not remove avatar"
 msgstr "Fjerning av profilbilde mislyktes"
 
-#: src/session/view/account_settings/general_page/mod.rs:367
+#: src/session/view/account_settings/general_page/mod.rs:380
 msgid "Name changed successfully"
 msgstr "Navn endret"
 
-#: src/session/view/account_settings/general_page/mod.rs:418
+#: src/session/view/account_settings/general_page/mod.rs:431
 msgid "Could not change display name"
 msgstr "Endring av visningsnavn mislyktes"
 
@@ -2197,27 +2219,27 @@ msgstr "Kopier øktkode til utklippstavle"
 msgid "Session ID copied to clipboard"
 msgstr "Øktkode kopiert til utklippstavlen"
 
-#: src/session/view/account_settings/notifications_page.rs:287
+#: src/session/view/account_settings/notifications_page.rs:315
 msgid "Could not enable account notifications"
 msgstr "Aktivering av kontovarslinger mislyktes"
 
-#: src/session/view/account_settings/notifications_page.rs:289
+#: src/session/view/account_settings/notifications_page.rs:317
 msgid "Could not disable account notifications"
 msgstr "Deaktivering av kontovarslinger mislyktes"
 
-#: src/session/view/account_settings/notifications_page.rs:341
+#: src/session/view/account_settings/notifications_page.rs:369
 msgid "Could not change global notifications setting"
 msgstr "Endring av varslingsinnstilling mislyktes"
 
-#: src/session/view/account_settings/notifications_page.rs:358
+#: src/session/view/account_settings/notifications_page.rs:386
 msgid "Remove “{keyword}”"
 msgstr "Fjern «{keyword}»"
 
-#: src/session/view/account_settings/notifications_page.rs:385
+#: src/session/view/account_settings/notifications_page.rs:420
 msgid "Could not remove notification keyword"
 msgstr "Fjerning av nøkkelord mislyktes"
 
-#: src/session/view/account_settings/notifications_page.rs:456
+#: src/session/view/account_settings/notifications_page.rs:491
 msgid "Could not add notification keyword"
 msgstr "Følging av nøkkelord mislyktes"
 
@@ -2411,76 +2433,76 @@ msgstr "Fil"
 msgid "Choose…"
 msgstr "Velg…"
 
-#: src/session/view/account_settings/security_page/mod.rs:209
+#: src/session/view/account_settings/security_page/mod.rs:222
 msgid "No Crypto Identity"
 msgstr "Ingen krypteringsidentitet"
 
-#: src/session/view/account_settings/security_page/mod.rs:211
+#: src/session/view/account_settings/security_page/mod.rs:224
 msgid "Verifying your own devices or other users is not possible"
 msgstr "Kan ikke verifisere andre enheter eller kontoer"
 
-#: src/session/view/account_settings/security_page/mod.rs:214
-#: src/session/view/account_settings/security_page/mod.rs:287
-#: src/session/view/content/room_details/general_page/mod.rs:1300
-#: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
+#: src/session/view/account_settings/security_page/mod.rs:227
+#: src/session/view/account_settings/security_page/mod.rs:300
+#: src/session/view/content/room_details/general_page/mod.rs:1376
+#: src/session/view/sidebar/mod.rs:320 src/session/view/sidebar/mod.rs:326
 msgid "Enable"
 msgstr "Slå på"
 
-#: src/session/view/account_settings/security_page/mod.rs:217
+#: src/session/view/account_settings/security_page/mod.rs:230
 msgid "Enable Crypto Identity"
 msgstr "Slå på krypteringsidentitet"
 
-#: src/session/view/account_settings/security_page/mod.rs:233
+#: src/session/view/account_settings/security_page/mod.rs:246
 msgid "Crypto Identity Enabled"
 msgstr "Krypteringsidentitet slått på"
 
-#: src/session/view/account_settings/security_page/mod.rs:235
+#: src/session/view/account_settings/security_page/mod.rs:248
 msgid "The crypto identity exists and this device is verified"
 msgstr "Krypteringsidentitet finnes, og enheten er verifisert"
 
-#: src/session/view/account_settings/security_page/mod.rs:252
+#: src/session/view/account_settings/security_page/mod.rs:265
 msgid "Crypto Identity Incomplete"
 msgstr "Krypteringsidentitet ufullstendig"
 
-#: src/session/view/account_settings/security_page/mod.rs:254
+#: src/session/view/account_settings/security_page/mod.rs:267
 msgid "The crypto identity exists but this device is not verified"
 msgstr "Krypteringsidentitet finnes, men enheten er ikke verifisert"
 
-#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:273
 msgid "Verify This Session"
 msgstr "Verifiser økt"
 
-#: src/session/view/account_settings/security_page/mod.rs:282
+#: src/session/view/account_settings/security_page/mod.rs:295
 msgid "Account Recovery Disabled"
 msgstr "Kontogjenoppretting slått av"
 
-#: src/session/view/account_settings/security_page/mod.rs:284
+#: src/session/view/account_settings/security_page/mod.rs:297
 msgid ""
 "Enable recovery to be able to restore your account without another device"
 msgstr ""
 "Slå på gjenoppretting for å gjenopprette kontoen din med en annen enhet"
 
-#: src/session/view/account_settings/security_page/mod.rs:290
+#: src/session/view/account_settings/security_page/mod.rs:303
 msgid "Enable Account Recovery"
 msgstr "Slå på kontogjenoppretting"
 
-#: src/session/view/account_settings/security_page/mod.rs:301
+#: src/session/view/account_settings/security_page/mod.rs:314
 msgid "Account Recovery Enabled"
 msgstr "Kontogjenoppretting slått på"
 
-#: src/session/view/account_settings/security_page/mod.rs:303
+#: src/session/view/account_settings/security_page/mod.rs:316
 msgid "Your signing keys and encryption keys are synchronized"
 msgstr "Alle nøkler er synkroniert"
 
-#: src/session/view/account_settings/security_page/mod.rs:309
+#: src/session/view/account_settings/security_page/mod.rs:322
 msgid "Reset Account Recovery Key"
 msgstr "Tilbakestill gjenopprettingsnøkkel"
 
-#: src/session/view/account_settings/security_page/mod.rs:323
+#: src/session/view/account_settings/security_page/mod.rs:336
 msgid "Recover to synchronize your signing keys and encryption keys"
 msgstr "Gjenopprett for å synkronisere nøkler"
 
-#: src/session/view/account_settings/security_page/mod.rs:329
+#: src/session/view/account_settings/security_page/mod.rs:342
 msgid "Recover Account Data"
 msgstr "Gjenopprett kontoinformasjon"
 
@@ -2557,32 +2579,32 @@ msgstr "Andre aktive økter"
 msgid "Could not load the list of connected devices"
 msgstr "Innlasting av tilkoblede enheter mislyktes"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:113
 msgid "Disconnect Session"
 msgstr "Koble fra økt"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:163
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:166
 msgid "Could not disconnect device “{device_name}”"
 msgstr "Frakobling av «{device_name}» mislyktes"
 
 #. Translators: Time in 24h format, i.e. "23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:211
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:214
 msgid "Last seen at %H:%M"
 msgstr "Sist sett kl. %H∶%M"
 
 #. Translators: Time in 12h format, i.e. "11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:216
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:219
 msgid "Last seen at %I:%M %p"
 msgstr "Sist sett kl. %I∶%M %p"
 
 #. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:226
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:229
 #, no-c-format
 msgid "Last seen yesterday at %H:%M"
 msgstr "Sist sett i går kl. %H∶%M"
@@ -2591,7 +2613,7 @@ msgstr "Sist sett i går kl. %H∶%M"
 #. PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:233
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:236
 #, no-c-format
 msgid "Last seen yesterday at %I:%M %p"
 msgstr "Sist sett i går kl. %l∶%M %p"
@@ -2600,7 +2622,7 @@ msgstr "Sist sett i går kl. %l∶%M %p"
 #. format, i.e. "Last seen Monday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:244
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:247
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "Sist sett %A kl. %H∶%M"
@@ -2609,7 +2631,7 @@ msgstr "Sist sett %A kl. %H∶%M"
 #. "Last seen Monday at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:251
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:254
 #, no-c-format
 msgid "Last seen %A at %I:%M %p"
 msgstr "Sist sett %A kl. %l∶%M %p"
@@ -2618,7 +2640,7 @@ msgstr "Sist sett %A kl. %l∶%M %p"
 #. seen February 3 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:260
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:263
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "Sist sett %-e. %B kl. %H∶%M"
@@ -2627,7 +2649,7 @@ msgstr "Sist sett %-e. %B kl. %H∶%M"
 #. seen February 3 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:267
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:270
 #, no-c-format
 msgid "Last seen %B %-e at %I:%M %p"
 msgstr "Sist sett %-e. %B kl. %l∶%M %p"
@@ -2636,7 +2658,7 @@ msgstr "Sist sett %-e. %B kl. %l∶%M %p"
 #. seen February 3 2015 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:275
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "Sist sett %-e. %B %Y kl. %H∶%M"
@@ -2645,7 +2667,7 @@ msgstr "Sist sett %-e. %B %Y kl. %H∶%M"
 #. seen February 3 2015 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:282
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:285
 #, no-c-format
 msgid "Last seen %B %-e %Y at %I:%M %p"
 msgstr "Sist sett %-e. %B %Y kl. %l∶%M %p"
@@ -2679,11 +2701,11 @@ msgstr "Fant ingen samtaler"
 msgid "List of Public Rooms"
 msgstr "Samtaleliste"
 
-#: src/session/view/content/explore/public_room_row.rs:176
+#: src/session/view/content/explore/public_room_row.rs:185
 msgid "View {room_name}"
 msgstr "Vis {room_name}"
 
-#: src/session/view/content/explore/public_room_row.rs:178
+#: src/session/view/content/explore/public_room_row.rs:187
 msgid "Join {room_name}"
 msgstr "Bli med i {room_name}"
 
@@ -2703,19 +2725,19 @@ msgstr "Fjern tjener"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:248
+#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:244
 msgid "{user} invited you"
 msgstr "{user} inviterte deg"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:208
+#: src/session/view/content/invite.rs:212
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "Godtaking av invitasjon til {room} mislyktes."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:241
+#: src/session/view/content/invite.rs:245
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "Avslåing av invitasjon til {room} mislyktes."
 
@@ -2765,81 +2787,81 @@ msgstr "Adresseforslag"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:303
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:328
 msgid "Local Addresses on {homeserver}"
 msgstr "Lokale adresser på {homeserver}"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:377
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:402
 msgid "Remove address"
 msgstr "Fjern adresse"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:381
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:406
 msgid "Remove “{address}”"
 msgstr "Fjern «{address}»"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:408
-#: src/session/view/content/room_details/general_page/mod.rs:913
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:447
+#: src/session/view/content/room_details/general_page/mod.rs:989
 #: src/session/view/room_creation.ui:116
 msgid "Main Address"
 msgstr "Hovedadresse"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:432
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:471
 msgid "Set as main address"
 msgstr "Bruk som hovedadresse"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:438
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:477
 msgid "Set “{address}” as main address"
 msgstr "Bruk «{address}» som hovedadresse"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:476
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:521
 msgid "Could not remove public address"
 msgstr "Fjerning av adresse mislyktes"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:502
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:547
 msgid "Could not set main public address"
 msgstr "Endring av hovedadresse mislyktes"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:556
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:601
 msgid "Could not add public address"
 msgstr "Oppretting av adresse mislyktes"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:560
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:605
 msgid "This address is not registered as a local address"
 msgstr "Adressen er ikke registrert lokalt"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:563
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:608
 msgid "This address does not belong to this room"
 msgstr "Adressen tilhører ikke denne samtalen"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:617
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:662
 msgid "Unregister local address"
 msgstr "Fjern lokal adresse"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:621
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:666
 msgid "Unregister “{address}”"
 msgstr "Fjern «{address}»"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:652
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:705
 msgid "Could not unregister local address"
 msgstr "Fjerning av lokal adresse mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:685
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:738
 msgid "Register “{address}”"
 msgstr "Registrer «{address}»"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:723
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:776
 msgid "Could not register local address"
 msgstr "Registrering av lokal adresse mislyktes"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:727
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:780
 msgid "This address is already registered"
 msgstr "Adressen er allerede registrert"
 
@@ -2891,98 +2913,98 @@ msgstr "min-samtale"
 msgid "First part of the address, for example “my-room”"
 msgstr "Første ledd i adressen, for eksempel «min-samtale»"
 
-#: src/session/view/content/room_details/general_page/mod.rs:521
+#: src/session/view/content/room_details/general_page/mod.rs:592
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Er du sikker på at du vil fjerne bildet til denne samtalen?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:630
+#: src/session/view/content/room_details/general_page/mod.rs:701
 msgid "Room name saved successfully"
 msgstr "Navn lagret"
 
-#: src/session/view/content/room_details/general_page/mod.rs:655
+#: src/session/view/content/room_details/general_page/mod.rs:726
 msgid "Room topic saved successfully"
 msgstr "Beskrivelse lagret"
 
-#: src/session/view/content/room_details/general_page/mod.rs:727
+#: src/session/view/content/room_details/general_page/mod.rs:798
 msgid "Could not change room name"
 msgstr "Endring av navn mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:751
+#: src/session/view/content/room_details/general_page/mod.rs:822
 msgid "Could not change room topic"
 msgstr "Endring av beskrivelse mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:764
-#: src/session/view/content/room_details/invite_subpage/list.rs:264
+#: src/session/view/content/room_details/general_page/mod.rs:835
+#: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Medlem"
 msgstr[1] "Medlemmer"
 
-#: src/session/view/content/room_details/general_page/mod.rs:867
+#: src/session/view/content/room_details/general_page/mod.rs:943
 msgid "Could not change notifications setting"
 msgstr "Endring av varslingsinnstilling mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:908
-#: src/session/view/content/room_details/general_page/mod.rs:947
+#: src/session/view/content/room_details/general_page/mod.rs:984
+#: src/session/view/content/room_details/general_page/mod.rs:1023
 msgid "Copy address"
 msgstr "Kopier adresse"
 
-#: src/session/view/content/room_details/general_page/mod.rs:909
-#: src/session/view/content/room_details/general_page/mod.rs:948
+#: src/session/view/content/room_details/general_page/mod.rs:985
+#: src/session/view/content/room_details/general_page/mod.rs:1024
 msgid "Address copied to clipboard"
 msgstr "Adresse kopiert til utklippstavlen"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1031
+#: src/session/view/content/room_details/general_page/mod.rs:1107
 msgid "Could not change who can join"
 msgstr "Endring av tillatte kontoer mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1079
+#: src/session/view/content/room_details/general_page/mod.rs:1155
 msgid "Could not change guest access"
 msgstr "Endring av gjesteadresse mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page/mod.rs:1096
+#: src/session/view/content/room_details/general_page/mod.rs:1172
 msgid "Publish in the {homeserver} directory"
 msgstr "Vis på {homeserver} sin samtaleliste"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1173
+#: src/session/view/content/room_details/general_page/mod.rs:1249
 msgid "Could not publish room in directory"
 msgstr "Publisering av samtale mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1175
+#: src/session/view/content/room_details/general_page/mod.rs:1251
 msgid "Could not unpublish room from directory"
 msgstr "Avpublisering av samtale mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1196
+#: src/session/view/content/room_details/general_page/mod.rs:1272
 #: src/session/view/content/room_details/general_page/mod.ui:266
 msgid "Anyone, even if they are not in the room"
 msgstr "Alle, selv hvis de ikke er med i samtalen"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1199
+#: src/session/view/content/room_details/general_page/mod.rs:1275
 #: src/session/view/content/room_details/general_page/mod.ui:267
 msgid "Members only, since this option was selected"
 msgstr "Kun medlemmer, etter at dette har blitt valgt"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1201
+#: src/session/view/content/room_details/general_page/mod.rs:1277
 #: src/session/view/content/room_details/general_page/mod.ui:269
 msgid "Members only, since they were invited"
 msgstr "Kun medlemmer, etter at de har blitt invitert"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1202
+#: src/session/view/content/room_details/general_page/mod.rs:1278
 #: src/session/view/content/room_details/general_page/mod.ui:268
 msgid "Members only, since they joined the room"
 msgstr "Kun medlemmer, etter at de har blitt med"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1250
+#: src/session/view/content/room_details/general_page/mod.rs:1326
 msgid "Could not change who can read history"
 msgstr "Endring av meldingstilgang mislyktes"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1294
+#: src/session/view/content/room_details/general_page/mod.rs:1370
 msgid "Enable Encryption?"
 msgstr "Slå på kryptering?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1295
+#: src/session/view/content/room_details/general_page/mod.rs:1371
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -2990,25 +3012,25 @@ msgstr ""
 "Å slå på kryptering vil hindre nye medlemmer i å lese meldinger fra før de "
 "ble med. Dette kan ikke slås av senere."
 
-#: src/session/view/content/room_details/general_page/mod.rs:1310
+#: src/session/view/content/room_details/general_page/mod.rs:1386
 msgid "Could not enable encryption"
 msgstr "Aktivering av kryptering mislyktes"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:1336
+#: src/session/view/content/room_details/general_page/mod.rs:1412
 msgid "Federated"
 msgstr "Tilknyttet"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:1339
+#: src/session/view/content/room_details/general_page/mod.rs:1415
 msgid "Not federated"
 msgstr "Uavhengig"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1369
+#: src/session/view/content/room_details/general_page/mod.rs:1445
 msgid "Room upgraded successfully"
 msgstr "Samtale oppgradert"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1373
+#: src/session/view/content/room_details/general_page/mod.rs:1449
 msgid "Could not upgrade room"
 msgstr "Oppgradering av samtale mislyktes"
 
@@ -3183,18 +3205,18 @@ msgid "Save File"
 msgstr "Lagre fil"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:119
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:590
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
 #: src/utils/media.rs:193
 msgid "Save"
 msgstr "Lagre"
 
-#: src/session/view/content/room_details/invite_subpage/list.rs:265
+#: src/session/view/content/room_details/invite_subpage/list.rs:269
 msgid "Banned"
 msgstr "Utestengt"
 
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
-#: src/session/view/content/room_details/invite_subpage/mod.rs:229
+#: src/session/view/content/room_details/invite_subpage/mod.rs:241
 msgid "Could not invite {user} to {room}. Try again later."
 msgid_plural "Could not invite {n} users to {room}. Try again later."
 msgstr[0] "Invitering av {user} til {room} mislyktes."
@@ -3242,7 +3264,7 @@ msgstr "Søking etter treff mislyktes"
 msgid "Searching for Users"
 msgstr "Søker etter kontoer"
 
-#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:161
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:170
 msgid "Could not load the full list of room members"
 msgstr "Innlasting av medlemsliste mislyktes"
 
@@ -3251,7 +3273,7 @@ msgid "Identity Verified"
 msgstr "Identitet verifisert"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:117
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
 msgctxt "members"
 msgid "Invited"
 msgid_plural "Invited"
@@ -3259,26 +3281,26 @@ msgstr[0] "Invitert"
 msgstr[1] "Inviterte"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
 msgctxt "members"
 msgid "Banned"
 msgid_plural "Banned"
 msgstr[0] "Utestengt"
 msgstr[1] "Utestengte"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:214
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
 msgstr[0] "Invitert konto"
 msgstr[1] "Inviterte kontoer"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:215
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
 msgstr[0] "Utestengt konto"
 msgstr[1] "Utestengte kontoer"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:216
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Medlem"
@@ -3298,7 +3320,7 @@ msgstr "Søk etter medlemmer"
 msgid "Search for room members"
 msgstr "Søk etter medlemmer"
 
-#: src/session/view/content/room_details/members_page/mod.rs:85
+#: src/session/view/content/room_details/members_page/mod.rs:90
 msgid "The user is not in the room members list anymore"
 msgstr "Denne kontoen er ikke i medlemslisten lenger"
 
@@ -3310,6 +3332,7 @@ msgstr "Legg til egendefinerte tillatelser"
 msgid "_Add"
 msgstr "_Legg til"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:50
 msgid "Assign Power Level"
 msgstr "Endre tillatelsesnivå"
@@ -3327,6 +3350,7 @@ msgstr "Ingen treff"
 msgid "No room members matching the search were found"
 msgstr "Fant ingen kontoer som samsvarer med søket"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:279
 msgid "Members With Assigned Power Levels"
@@ -3336,20 +3360,20 @@ msgstr "Nåværende tillatelsesnivåer"
 msgid "Add"
 msgstr "Legg til"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:577
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:584
 msgid "Save Changes?"
 msgstr "Lagre endringer?"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:579
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:586
 msgid ""
 "This page contains unsaved changes. Changes which are not saved will be lost."
 msgstr "Endringer som ikke har blitt lagret, vil gå tapt."
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:589
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:596
 msgid "Discard"
 msgstr "Forkast"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:634
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:641
 msgid "Could not save permissions"
 msgstr "Lagring av tillatelser mislyktes"
 
@@ -3361,6 +3385,7 @@ msgstr "_Lagre"
 msgid "Room Actions"
 msgstr "Samtalehandlinger"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:45
 msgid "Power level required to perform different actions in the room"
 msgstr "Tillatelsesnivåene som kreves for å utføre handlinger i samtalen"
@@ -3422,18 +3447,22 @@ msgstr "_Oppgrader samtale"
 msgid "Member Actions"
 msgstr "Medlemsmeny"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:205
 msgid "Power level required to perform different actions on room members"
 msgstr "Nødvendige tillatelsesnivåer for å utføre handlinger på medlemmer"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:246
 msgid "Members Power Levels"
 msgstr "Tillatelsesnivåer"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:247
 msgid "Power levels defined for all members of the room"
 msgstr "Tillatelsesnivåer for alle medlemmer av samtalen"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:250
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:266
 msgid "Default Power Level"
@@ -3464,31 +3493,31 @@ msgstr "{version} (ustabil)"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
-#: src/session/view/content/room_history/event_actions.ui:103
+#: src/session/view/content/room_history/event_actions.ui:98
 msgid "_Reply"
 msgstr "_Svar"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:18
-#: src/session/view/content/room_history/event_actions.ui:109
+#: src/session/view/content/room_history/event_actions.ui:104
 msgid "_Edit"
 msgstr "_Rediger"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
 #: src/session/view/content/room_history/event_actions.ui:25
-#: src/session/view/content/room_history/event_actions.ui:116
+#: src/session/view/content/room_history/event_actions.ui:111
 msgid "_Forward"
 msgstr "_Videresend"
 
 #: src/session/view/content/room_history/event_actions.ui:32
-#: src/session/view/content/room_history/event_actions.ui:123
-#: src/session/view/content/room_history/event_actions.ui:193
+#: src/session/view/content/room_history/event_actions.ui:118
+#: src/session/view/content/room_history/event_actions.ui:183
 msgid "_Select"
 msgstr "V_elg"
 
 #: src/session/view/content/room_history/event_actions.ui:39
-#: src/session/view/content/room_history/event_actions.ui:130
+#: src/session/view/content/room_history/event_actions.ui:125
 msgid "_Copy Text"
 msgstr "_Kopier tekst"
 
@@ -3497,68 +3526,63 @@ msgid "Copy T_humbnail"
 msgstr "_Kopier forhåndsvisning"
 
 #: src/session/view/content/room_history/event_actions.ui:49
-#: src/session/view/content/room_history/event_actions.ui:140
+#: src/session/view/content/room_history/event_actions.ui:135
 #: src/session/view/media_viewer.ui:11
 msgid "S_ave Image"
 msgstr "_Lagre bilde"
 
 #: src/session/view/content/room_history/event_actions.ui:54
-#: src/session/view/content/room_history/event_actions.ui:145
+#: src/session/view/content/room_history/event_actions.ui:140
 #: src/session/view/media_viewer.ui:16
 msgid "S_ave Video"
 msgstr "_Lagre video"
 
 #: src/session/view/content/room_history/event_actions.ui:59
-#: src/session/view/content/room_history/event_actions.ui:150
+#: src/session/view/content/room_history/event_actions.ui:145
 #: src/session/view/media_viewer.ui:21
 msgid "S_ave Audio"
 msgstr "_Lagre lydklipp"
 
 #: src/session/view/content/room_history/event_actions.ui:64
-#: src/session/view/content/room_history/event_actions.ui:155
-#: src/session/view/content/room_history/event_actions.ui:200
+#: src/session/view/content/room_history/event_actions.ui:150
+#: src/session/view/content/room_history/event_actions.ui:190
 #: src/session/view/content/room_history/mod.ui:58
 #: src/session/view/media_viewer.ui:26
 msgid "_Permalink"
 msgstr "Kopier _lenke"
 
 #: src/session/view/content/room_history/event_actions.ui:69
-#: src/session/view/content/room_history/event_actions.ui:160
-#: src/session/view/content/room_history/event_actions.ui:205
+#: src/session/view/content/room_history/event_actions.ui:155
+#: src/session/view/content/room_history/event_actions.ui:195
 #: src/session/view/content/room_history/mod.ui:125
 msgid "_View Details"
 msgstr "_Vis informasjon"
 
 #: src/session/view/content/room_history/event_actions.ui:76
-#: src/session/view/content/room_history/event_actions.ui:167
-msgid "_Try Again"
-msgstr "_Prøv igjen"
-
-#: src/session/view/content/room_history/event_actions.ui:81
-#: src/session/view/content/room_history/event_actions.ui:172
+#: src/session/view/content/room_history/event_actions.ui:162
 msgid "_Discard"
 msgstr "_Forkast"
 
-#: src/session/view/content/room_history/event_actions.ui:88
+#: src/session/view/content/room_history/event_actions.ui:83
 msgid "Rep_ort…"
 msgstr "_Rapporter…"
 
-#: src/session/view/content/room_history/event_actions.ui:93
-#: src/session/view/content/room_history/event_actions.ui:184
-#: src/session/view/content/room_history/event_actions.ui:217
+#: src/session/view/content/room_history/event_actions.ui:88
+#: src/session/view/content/room_history/event_actions.ui:174
+#: src/session/view/content/room_history/event_actions.ui:207
 msgid "Re_move"
 msgstr "_Slett"
 
-#: src/session/view/content/room_history/event_actions.ui:135
+#: src/session/view/content/room_history/event_actions.ui:130
 msgid "_Copy Thumbnail"
 msgstr "_Kopier forhåndsvisning"
 
-#: src/session/view/content/room_history/event_actions.ui:179
-#: src/session/view/content/room_history/event_actions.ui:212
+#: src/session/view/content/room_history/event_actions.ui:169
+#: src/session/view/content/room_history/event_actions.ui:202
 msgid "Rep_ort"
 msgstr "_Rapporter"
 
-#: src/session/view/content/room_history/item_row.rs:279
+#: src/session/view/content/room_history/item_row.rs:313
 msgid "This is the start of the visible history"
 msgstr "Her begynner den synlige delen av samtalen"
 
@@ -3566,7 +3590,7 @@ msgstr "Her begynner den synlige delen av samtalen"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:319
+#: src/session/view/content/room_history/item_row.rs:353
 msgid "%A, %B %-e"
 msgstr "%A %-e. %B"
 
@@ -3574,58 +3598,58 @@ msgstr "%A %-e. %B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:325
+#: src/session/view/content/room_history/item_row.rs:359
 msgid "%A, %B %-e, %Y"
 msgstr "%A %-e. %B %Y"
 
-#: src/session/view/content/room_history/item_row.rs:331
+#: src/session/view/content/room_history/item_row.rs:365
 msgid "New Messages"
 msgstr "Nye meldinger"
 
-#: src/session/view/content/room_history/item_row.rs:475
-#: src/session/view/content/room_history/mod.rs:586
+#: src/session/view/content/room_history/item_row.rs:517
+#: src/session/view/content/room_history/mod.rs:623
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
-#: src/session/view/media_viewer.rs:518
+#: src/session/view/media_viewer.rs:554
 msgid "Permalink copied to clipboard"
 msgstr "Lenke kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:586
-#: src/session/view/content/room_history/item_row.rs:617
-#: src/session/view/content/room_history/item_row.rs:631
-#: src/session/view/content/room_history/item_row.rs:656
-#: src/session/view/content/room_history/item_row.rs:687
-#: src/session/view/content/room_history/item_row.rs:705
-#: src/session/view/content/room_history/item_row.rs:723
+#: src/session/view/content/room_history/item_row.rs:654
+#: src/session/view/content/room_history/item_row.rs:701
+#: src/session/view/content/room_history/item_row.rs:721
+#: src/session/view/content/room_history/item_row.rs:756
+#: src/session/view/content/room_history/item_row.rs:802
+#: src/session/view/content/room_history/item_row.rs:830
+#: src/session/view/content/room_history/item_row.rs:858
 msgid "Text copied to clipboard"
 msgstr "Tekst kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:671
+#: src/session/view/content/room_history/item_row.rs:776
 msgid "Thumbnail copied to clipboard"
 msgstr "Forhåndsvisning kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:768
+#: src/session/view/content/room_history/item_row.rs:908
 msgid "Remove Message?"
 msgstr "Slette melding?"
 
-#: src/session/view/content/room_history/item_row.rs:770
+#: src/session/view/content/room_history/item_row.rs:910
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Er du sikker på at du vil slette denne meldingen? Den vil bli borte for "
 "alltid."
 
-#: src/session/view/content/room_history/item_row.rs:784
+#: src/session/view/content/room_history/item_row.rs:924
 msgid "Could not remove message"
 msgstr "Sletting av melding mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:798
+#: src/session/view/content/room_history/item_row.rs:938
 msgid "Could not toggle reaction"
 msgstr "Endring av reaksjon mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:824
+#: src/session/view/content/room_history/item_row.rs:964
 msgid "Report Event?"
 msgstr "Rapportere hendelse?"
 
-#: src/session/view/content/room_history/item_row.rs:826
+#: src/session/view/content/room_history/item_row.rs:966
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3636,41 +3660,37 @@ msgstr ""
 "hendelsen hvis den er kryptert eller slettet."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:833
+#: src/session/view/content/room_history/item_row.rs:973
 msgid "Report"
 msgstr "Rapporter"
 
-#: src/session/view/content/room_history/item_row.rs:851
+#: src/session/view/content/room_history/item_row.rs:991
 msgid "Could not report event"
 msgstr "Rapportering av hendelse mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:871
+#: src/session/view/content/room_history/item_row.rs:1009
 msgid "Could not discard message"
 msgstr "Forkasting av melding mislyktes"
-
-#: src/session/view/content/room_history/item_row.rs:892
-msgid "Could not retry to send message"
-msgstr "Nytt forsøk mislyktes"
 
 #: src/session/view/content/room_history/message_row/audio.rs:92
 msgid "Audio: {filename}"
 msgstr "Lyd: {filename}"
 
-#: src/session/view/content/room_history/message_row/audio.rs:195
-#: src/session/view/content/room_history/message_row/audio.rs:199
+#: src/session/view/content/room_history/message_row/audio.rs:198
+#: src/session/view/content/room_history/message_row/audio.rs:202
 msgid "Could not retrieve audio file"
 msgstr "Nedlasting av lydklipp mislyktes"
 
-#: src/session/view/content/room_history/message_row/audio.rs:212
+#: src/session/view/content/room_history/message_row/audio.rs:219
 msgid "Error reading audio file"
 msgstr "Innlasting av lydklipp mislyktes"
 
-#: src/session/view/content/room_history/message_row/content.rs:351
-#: src/session/view/content/room_history/message_row/content.rs:393
+#: src/session/view/content/room_history/message_row/content.rs:355
+#: src/session/view/content/room_history/message_row/content.rs:397
 msgid "Unsupported event"
 msgstr "Ukjent meldingstype"
 
-#: src/session/view/content/room_history/message_row/content.rs:372
+#: src/session/view/content/room_history/message_row/content.rs:376
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3678,7 +3698,7 @@ msgstr ""
 "Dekryptering av melding mislyktes, det vil bli gjort et nytt forsøk når "
 "nøklene er tilgjengelige."
 
-#: src/session/view/content/room_history/message_row/content.rs:382
+#: src/session/view/content/room_history/message_row/content.rs:386
 msgid "This message was removed."
 msgstr "Denne meldingen ble slettet."
 
@@ -3718,22 +3738,14 @@ msgstr "Klistremerke"
 msgid "Video"
 msgstr "Video"
 
-#: src/session/view/content/room_history/message_row/media.rs:409
+#: src/session/view/content/room_history/message_row/media.rs:416
 msgid "Image file not supported"
 msgstr "Ukjent bildefil"
 
-#: src/session/view/content/room_history/message_row/media.rs:446
-#: src/session/view/content/room_history/message_row/media.rs:451
+#: src/session/view/content/room_history/message_row/media.rs:455
+#: src/session/view/content/room_history/message_row/media.rs:461
 msgid "Could not retrieve media"
 msgstr "Innlasting av medier mislyktes"
-
-#: src/session/view/content/room_history/message_row/message_state_stack.rs:91
-msgid "Could not send the message"
-msgstr "Sending av melding mislyktes"
-
-#: src/session/view/content/room_history/message_row/message_state_stack.rs:97
-msgid "An error occurred with the sending queue"
-msgstr "Noe gikk galt med utsendingskøen"
 
 #. Translators: As in 'Sending message…'.
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:14
@@ -3741,31 +3753,39 @@ msgstr "Noe gikk galt med utsendingskøen"
 msgid "Sending…"
 msgstr "Sender…"
 
-#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:30
+msgid "Temporary Error Sending Message"
+msgstr "Midlertidig feil ved sending av melding"
+
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:45
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:48
+msgid "Message Cannot Be Sent"
+msgstr "Sending av melding mislyktes"
+
+#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:61
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:64
 msgid "Sent"
 msgstr "Sendt"
 
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:67
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:83
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:86
 msgid "Edited"
 msgstr "Redigert"
 
-#: src/session/view/content/room_history/message_row/mod.rs:240
+#: src/session/view/content/room_history/message_row/mod.rs:254
 msgid "Sent at {time}"
 msgstr "Sendt {time}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:206
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:210
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] "1 medlem reagerte med {reaction_key}"
 msgstr[1] "{n} medlemmer reagerte med {reaction_key}"
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:224
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:228
 msgid "{user} reacted with {reaction_key}"
 msgstr "{user} reagerte med {reaction_key}"
 
@@ -3786,70 +3806,90 @@ msgstr "Informasjon"
 msgid "_Send"
 msgstr "_Send"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:619
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:638
 msgid "Public Room Mention Auto-completion"
 msgstr "Automatisk fullføring av samtalenavn"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:621
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:640
 msgid "Room Member Mention Auto-completion"
 msgstr "Automatisk fullføring av kontonavn"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:403
+#: src/session/view/content/room_history/message_toolbar/mod.rs:434
 msgid "Reply to {user}"
 msgstr "Svar {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:475
+#: src/session/view/content/room_history/message_toolbar/mod.rs:506
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Rediger"
 
+#: src/session/view/content/room_history/message_toolbar/mod.rs:664
+msgid "Could not send reply"
+msgstr "Sending av svar mislyktes"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:672
+msgid "Could not send edit"
+msgstr "Redigering mislyktes"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:683
+msgid "Could not send message"
+msgstr "Sending av melding mislyktes"
+
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:680
+#: src/session/view/content/room_history/message_toolbar/mod.rs:726
 msgid "Your Location"
 msgstr "Posisjonen din"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:741
+#: src/session/view/content/room_history/message_toolbar/mod.rs:787
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Posisjon {geo_uri} på tidspunktet {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:767
+#: src/session/view/content/room_history/message_toolbar/mod.rs:809
+msgid "Could not send location"
+msgstr "Sending av posisjon mislyktes"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:816
 msgid "The location request has been cancelled"
 msgstr "Posisjonsforespørselen ble avbrutt"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:768
+#: src/session/view/content/room_history/message_toolbar/mod.rs:817
 msgid "The location services are disabled"
 msgstr "Posisjonsdeling er slått av"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:769
+#: src/session/view/content/room_history/message_toolbar/mod.rs:818
 msgid "Could not retrieve current location"
 msgstr "Innhenting av posisjon mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:854
+#: src/session/view/content/room_history/message_toolbar/mod.rs:863
+msgid "Could not send file"
+msgstr "Sending av fil mislyktes"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:903
 msgid "Select File"
 msgstr "Velg fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:856
+#: src/session/view/content/room_history/message_toolbar/mod.rs:905
 msgid "Select"
 msgstr "Velg"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:871
+#: src/session/view/content/room_history/message_toolbar/mod.rs:920
 msgid "Could not open file"
 msgstr "Åpning av fil mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:890
+#: src/session/view/content/room_history/message_toolbar/mod.rs:939
 msgid "Error reading file"
 msgstr "Lesing av fil mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:947
+#: src/session/view/content/room_history/message_toolbar/mod.rs:996
 msgid "Error getting image from clipboard"
 msgstr "Innliming av bilde mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:964
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1013
 msgid "Error getting file from clipboard"
 msgstr "Innliming av fil mislyktes"
 
@@ -3895,7 +3935,7 @@ msgstr "Du har ikke tillatelse til å sende meldinger i denne samtalen"
 #. For example, "May 5 at 01:20 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/row.rs:117
+#: src/session/view/content/room_history/member_timestamp/row.rs:120
 msgid "%B %-e at %I∶%M %p"
 msgstr "%-e. %B kl. %I∶%M %p"
 
@@ -3903,42 +3943,42 @@ msgstr "%-e. %B kl. %I∶%M %p"
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/row.rs:123
+#: src/session/view/content/room_history/member_timestamp/row.rs:126
 msgid "%B %-e at %H∶%M"
 msgstr "%-e. %B kl. %H∶%M"
 
 # Refererer til "dra-og-slipp"-funksjonalitet
-#: src/session/view/content/room_history/mod.rs:338
+#: src/session/view/content/room_history/mod.rs:356
 msgid "Error getting file from drop"
 msgstr "Innhenting av fil mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:537
+#: src/session/view/content/room_history/mod.rs:574
 msgid "Could not leave {room}"
 msgstr "Forlating av {room} mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:573
-#: src/session/view/sidebar/row.rs:492
+#: src/session/view/content/room_history/mod.rs:610
+#: src/session/view/sidebar/row.rs:553
 msgid "Could not forget {room}"
 msgstr "Glemming av {room} mislyktes"
 
-#: src/session/view/content/room_history/mod.rs:751
-#: src/session/view/sidebar/mod.rs:418
+#: src/session/view/content/room_history/mod.rs:791
+#: src/session/view/sidebar/mod.rs:432
 msgid "Context Menu"
 msgstr "Meny"
 
-#: src/session/view/content/room_history/mod.rs:771
+#: src/session/view/content/room_history/mod.rs:811
 msgid "Sender Context Menu"
 msgstr "Kontomeny"
 
-#: src/session/view/content/room_history/mod.rs:957
-#: src/session/view/content/room_history/mod.rs:961
+#: src/session/view/content/room_history/mod.rs:1013
+#: src/session/view/content/room_history/mod.rs:1017
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Det finnes en nyere versjon av denne samtalen"
 
-#: src/session/view/content/room_history/mod.rs:964
+#: src/session/view/content/room_history/mod.rs:1020
 msgid "This room was closed"
 msgstr "Denne samtalen er stengt"
 
@@ -4050,7 +4090,7 @@ msgstr "Slipp her for å sende"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:259
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:267
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Sett av 1 medlem"
@@ -4058,79 +4098,79 @@ msgstr[1] "Sett av {n} medlemmer"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:272
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:280
 msgid "Seen by {name}"
 msgstr "Sett av {name}"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:267
+#: src/session/view/content/room_history/sender_avatar/mod.rs:281
 msgid "{user}’s avatar"
 msgstr "{user} sitt profilbilde"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:508
+#: src/session/view/content/room_history/sender_avatar/mod.rs:529
 msgid "Creating a new Direct Chat…"
 msgstr "Oppretter direktesamtale…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:532
+#: src/session/view/content/room_history/sender_avatar/mod.rs:553
 msgid "Inviting user…"
 msgstr "Inviterer konto…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:560
+#: src/session/view/content/room_history/sender_avatar/mod.rs:581
 msgid "Revoking invite…"
 msgstr "Trekker tilbake invitasjon…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:561
+#: src/session/view/content/room_history/sender_avatar/mod.rs:582
 msgid "Denying access…"
 msgstr "Avviser…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:562
+#: src/session/view/content/room_history/sender_avatar/mod.rs:583
 msgid "Kicking user…"
 msgstr "Sparker ut {user}…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:597
+#: src/session/view/content/room_history/sender_avatar/mod.rs:618
 msgid "Muting member…"
 msgstr "Demper konto…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:600
+#: src/session/view/content/room_history/sender_avatar/mod.rs:621
 msgid "Unmuting member…"
 msgstr "Opphever demping…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:610
+#: src/session/view/content/room_history/sender_avatar/mod.rs:631
 msgid "Member muted"
 msgstr "Konto dempet"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:612
+#: src/session/view/content/room_history/sender_avatar/mod.rs:633
 msgid "Member unmuted"
 msgstr "Demping opphevet"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:617
+#: src/session/view/content/room_history/sender_avatar/mod.rs:638
 msgid "Could not mute member"
 msgstr "Demping mislyktes"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:619
+#: src/session/view/content/room_history/sender_avatar/mod.rs:640
 msgid "Could not unmute member"
 msgstr "Oppheving av demping mislyktes"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:648
+#: src/session/view/content/room_history/sender_avatar/mod.rs:669
 msgid "Banning user…"
 msgstr "Utestenger konto…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:672
+#: src/session/view/content/room_history/sender_avatar/mod.rs:693
 msgid "Unbanning user…"
 msgstr "Opphever utestenging…"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:715
+#: src/session/view/content/room_history/sender_avatar/mod.rs:736
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] "Fjerner 1 melding fra kontoen…"
 msgstr[1] "Fjerner {n} meldinger fra kontoen…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:748
+#: src/session/view/content/room_history/sender_avatar/mod.rs:769
 msgid "Stop ignoring user…"
 msgstr "Opphev ignorering…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:750
+#: src/session/view/content/room_history/sender_avatar/mod.rs:771
 msgid "Ignoring user…"
 msgstr "Ignorerer konto…"
 
@@ -4285,13 +4325,13 @@ msgstr "{user} endret profilbildet sitt."
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:137
+#: src/session/view/content/room_history/typing_row.rs:142
 msgid "{user} is typing…"
 msgstr "{user} skriver…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:144
+#: src/session/view/content/room_history/typing_row.rs:149
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} skriver…"
@@ -4301,21 +4341,21 @@ msgstr[1] "{n} skriver…"
 msgid "Could not accept verification"
 msgstr "Godtaking av verifisering mislyktes"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:86
+#: src/session/view/content/room_history/verification_info_bar.rs:88
 msgid "Could not decline verification"
 msgstr "Avslåing av verifisering mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:159
+#: src/session/view/content/room_history/verification_info_bar.rs:166
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} ber om å bli verifisert"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:168
+#: src/session/view/content/room_history/verification_info_bar.rs:175
 msgid "Verification in progress"
 msgstr "Verifisering pågår"
 
-#: src/session/view/create_dm_dialog/mod.rs:140
+#: src/session/view/create_dm_dialog/mod.rs:144
 msgid "An error occurred while searching for users"
 msgstr "Noe gikk galt med søket"
 
@@ -4427,7 +4467,7 @@ msgstr "Sist redigert"
 msgid "Copy Source to Clipboard"
 msgstr "Kopier rådata til utklippstavlen"
 
-#: src/session/view/media_viewer.rs:478
+#: src/session/view/media_viewer.rs:514
 msgid "Image copied to clipboard"
 msgstr "Bilde kopiert til utklippstavlen"
 
@@ -4560,19 +4600,19 @@ msgstr "Bli med igjen"
 msgid "Rejoin Room as Low Priority"
 msgstr "Bli med igjen og merk som uviktig"
 
-#: src/session/view/sidebar/mod.rs:306
+#: src/session/view/sidebar/mod.rs:320
 msgid "No crypto identity"
 msgstr "Ingen krypteringsidentitet"
 
-#: src/session/view/sidebar/mod.rs:308
+#: src/session/view/sidebar/mod.rs:322
 msgid "Crypto identity incomplete"
 msgstr "Ufullstendig kryptering"
 
-#: src/session/view/sidebar/mod.rs:312
+#: src/session/view/sidebar/mod.rs:326
 msgid "Account recovery disabled"
 msgstr "Gjenoppretting er slått av"
 
-#: src/session/view/sidebar/mod.rs:315
+#: src/session/view/sidebar/mod.rs:329
 msgid "Account recovery incomplete"
 msgstr "Ufullstendig gjenoppretting"
 
@@ -4643,17 +4683,17 @@ msgstr "Muliggjør navigering mellom samtaler"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:251
+#: src/session/view/sidebar/room_row.rs:272
 msgid "Direct chat with {name}"
 msgstr "Direktesamtale med {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:477
+#: src/session/view/sidebar/row.rs:538
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 "Flytting av {room} fra {previous_category} til {new_category} mislyktes"
 
-#: src/session_list/mod.rs:262
+#: src/session_list/mod.rs:272
 msgid "Could not restore previous sessions"
 msgstr "Gjenoppretting av tidligere økter mislyktes"
 
@@ -4756,15 +4796,11 @@ msgstr "{user} sendte posisjonen sin."
 msgid "{user} sent a video."
 msgstr "{user} sendte en video."
 
-#: src/utils/matrix.rs:206
-msgid "{user} sent a verification request."
-msgstr "{user} sendte en verifiseringsforespørsel."
-
-#: src/utils/matrix.rs:214
+#: src/utils/matrix.rs:210
 msgid "{user} sent a sticker."
 msgstr "{user} sendte et klistremerke."
 
-#: src/utils/matrix.rs:224
+#: src/utils/matrix.rs:220
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
@@ -4795,6 +4831,15 @@ msgstr "Lagring av fil mislyktes"
 #: src/window.ui:66
 msgid "Session"
 msgstr "Økt"
+
+#~ msgid "_Try Again"
+#~ msgstr "_Prøv igjen"
+
+#~ msgid "Could not retry to send message"
+#~ msgstr "Nytt forsøk mislyktes"
+
+#~ msgid "An error occurred with the sending queue"
+#~ msgstr "Noe gikk galt med utsendingskøen"
 
 #~ msgid ""
 #~ "Since no other sessions are available to verify this device and account "
