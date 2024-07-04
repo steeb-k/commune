@@ -5,16 +5,12 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk_ui::timeline::{EditInfo, RepliedToInfo, TimelineEventItemId};
-use ruma::OwnedRoomId;
 use sourceview::prelude::*;
 
-use crate::session::model::EventKey;
+use crate::session::model::{EventKey, Room};
 
 mod imp {
-    use std::{
-        cell::{OnceCell, RefCell},
-        marker::PhantomData,
-    };
+    use std::{cell::RefCell, marker::PhantomData};
 
     use glib::subclass::Signal;
     use once_cell::sync::Lazy;
@@ -24,8 +20,9 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::ComposerState)]
     pub struct ComposerState {
-        /// The room ID associated with this state.
-        pub room_id: OnceCell<OwnedRoomId>,
+        /// The room associated with this state.
+        #[property(get, construct_only, nullable)]
+        pub room: glib::WeakRef<Room>,
         /// The buffer of this state.
         #[property(get)]
         pub buffer: sourceview::Buffer,
@@ -91,28 +88,15 @@ mod imp {
 glib::wrapper! {
     /// The composer state for a room.
     ///
-    /// This allows to save and restore the composer state between room changes. It keeps track of the related event and restores the state of the composer's `GtkSourceView`.
+    /// This allows to save and restore the composer state between room changes.
+    /// It keeps track of the related event and restores the state of the composer's `GtkSourceView`.
     pub struct ComposerState(ObjectSubclass<imp::ComposerState>);
 }
 
 impl ComposerState {
-    /// Create a new empty `ComposerState` for the given room ID.
-    pub fn new(room_id: Option<OwnedRoomId>) -> Self {
-        let obj = glib::Object::new::<Self>();
-
-        if let Some(room_id) = room_id {
-            obj.imp()
-                .room_id
-                .set(room_id)
-                .expect("OnceCell is not initialized yet");
-        }
-
-        obj
-    }
-
-    /// The room ID associated with this state.
-    pub fn room_id(&self) -> Option<&OwnedRoomId> {
-        self.imp().room_id.get()
+    /// Create a new empty `ComposerState` for the given room.
+    pub fn new(room: Option<&Room>) -> Self {
+        glib::Object::builder().property("room", room).build()
     }
 
     /// Attach the buffer of this state to the given view.

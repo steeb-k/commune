@@ -1,4 +1,4 @@
-use std::{fmt::Write, io::Cursor};
+use std::{collections::HashMap, fmt::Write, io::Cursor};
 
 use adw::{prelude::*, subclass::prelude::*};
 use futures_util::{future, pin_mut, StreamExt};
@@ -48,10 +48,12 @@ use crate::{
     },
 };
 
+/// A map of composer state per-session and per-room.
+type ComposerStatesMap = HashMap<Option<String>, HashMap<Option<OwnedRoomId>, ComposerState>>;
+
 mod imp {
     use std::{
         cell::{Cell, RefCell},
-        collections::HashMap,
         marker::PhantomData,
     };
 
@@ -87,10 +89,10 @@ mod imp {
         pub current_composer_state: PhantomData<ComposerState>,
         composer_state_handler: RefCell<Option<glib::SignalHandlerId>>,
         buffer_handlers: RefCell<Option<(glib::SignalHandlerId, glib::Binding)>>,
-        /// The composer states, per-room.
+        /// The composer states, per-session and per-room.
         ///
         /// The fallback composer state has the `None` key.
-        pub composer_states: RefCell<HashMap<Option<OwnedRoomId>, ComposerState>>,
+        pub composer_states: RefCell<ComposerStatesMap>,
     }
 
     #[glib::object_subclass]
@@ -326,8 +328,13 @@ mod imp {
         fn composer_state(&self, room: Option<&Room>) -> ComposerState {
             self.composer_states
                 .borrow_mut()
+                .entry(
+                    room.and_then(|r| r.session())
+                        .map(|s| s.session_id().to_owned()),
+                )
+                .or_default()
                 .entry(room.map(|r| r.room_id().to_owned()))
-                .or_insert_with_key(|room_id| ComposerState::new(room_id.clone()))
+                .or_insert_with(|| ComposerState::new(room))
                 .clone()
         }
 
