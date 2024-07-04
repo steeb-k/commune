@@ -67,9 +67,7 @@ mod imp {
                 #[weak(rename_to = imp)]
                 self,
                 move |_, _, _| {
-                    imp.widgets
-                        .borrow_mut()
-                        .retain(|(_w, anchor)| !anchor.is_deleted());
+                    imp.update_widgets();
                 }
             ));
         }
@@ -79,6 +77,13 @@ mod imp {
         /// Whether this state has a relation.
         fn has_relation(&self) -> bool {
             self.related_to.borrow().is_some()
+        }
+
+        /// Update the list of widgets present in the composer.
+        pub(super) fn update_widgets(&self) {
+            self.widgets
+                .borrow_mut()
+                .retain(|(_w, anchor)| !anchor.is_deleted());
         }
     }
 }
@@ -114,6 +119,8 @@ impl ComposerState {
     pub fn attach_to_view(&self, view: &sourceview::View) {
         let imp = self.imp();
         view.set_buffer(Some(&imp.buffer));
+
+        imp.update_widgets();
 
         for (widget, anchor) in &*imp.widgets.borrow() {
             view.add_child_at_anchor(widget, anchor);
