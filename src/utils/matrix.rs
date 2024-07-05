@@ -1,6 +1,6 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::{fmt, str::FromStr};
+use std::str::FromStr;
 
 use matrix_sdk::{
     config::RequestConfig,
@@ -22,7 +22,7 @@ use ruma::{
     matrix_uri::MatrixId,
     serde::Raw,
     EventId, IdParseError, MatrixToUri, MatrixUri, MatrixUriError, OwnedEventId, OwnedRoomAliasId,
-    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomOrAliasId, UserId,
+    OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, OwnedUserId, RoomId, RoomOrAliasId, UserId,
 };
 use thiserror::Error;
 
@@ -482,81 +482,6 @@ pub fn raw_eq<T, U>(lhs: Option<&Raw<T>>, rhs: Option<&Raw<U>>) -> bool {
     lhs.json().get() == rhs.json().get()
 }
 
-/// A unique identifier for a room.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum MatrixRoomId {
-    /// A room ID.
-    Id(OwnedRoomId),
-    /// A room alias.
-    Alias(OwnedRoomAliasId),
-}
-
-impl MatrixRoomId {
-    /// The room ID, if this is an ID.
-    pub fn as_id(&self) -> Option<&OwnedRoomId> {
-        match self {
-            Self::Id(room_id) => Some(room_id),
-            Self::Alias(_) => None,
-        }
-    }
-
-    /// The room alias, if this is an alias.
-    pub fn as_alias(&self) -> Option<&OwnedRoomAliasId> {
-        match self {
-            Self::Id(_) => None,
-            Self::Alias(alias) => Some(alias),
-        }
-    }
-}
-
-impl From<OwnedRoomId> for MatrixRoomId {
-    fn from(value: OwnedRoomId) -> Self {
-        Self::Id(value)
-    }
-}
-
-impl From<OwnedRoomAliasId> for MatrixRoomId {
-    fn from(value: OwnedRoomAliasId) -> Self {
-        Self::Alias(value)
-    }
-}
-
-impl From<OwnedRoomOrAliasId> for MatrixRoomId {
-    fn from(value: OwnedRoomOrAliasId) -> Self {
-        if value.is_room_id() {
-            Self::Id(
-                value
-                    .try_into()
-                    .expect("Conversion into known variant should not fail"),
-            )
-        } else {
-            Self::Alias(
-                value
-                    .try_into()
-                    .expect("Conversion into known variant should not fail"),
-            )
-        }
-    }
-}
-
-impl From<MatrixRoomId> for OwnedRoomOrAliasId {
-    fn from(value: MatrixRoomId) -> Self {
-        match value {
-            MatrixRoomId::Id(id) => id.into(),
-            MatrixRoomId::Alias(alias) => alias.into(),
-        }
-    }
-}
-
-impl fmt::Display for MatrixRoomId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Id(id) => id.fmt(f),
-            Self::Alias(alias) => alias.fmt(f),
-        }
-    }
-}
-
 /// A URI for a Matrix ID.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MatrixIdUri {
@@ -584,7 +509,7 @@ impl MatrixIdUri {
             MatrixId::Event(room_id, event_id) => Self::Event(MatrixEventIdUri {
                 event_id,
                 room_uri: MatrixRoomIdUri {
-                    id: room_id.into(),
+                    id: room_id,
                     via: via.to_owned(),
                 },
             }),
@@ -702,7 +627,7 @@ impl TryFrom<AnchorUri> for MatrixIdUri {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MatrixRoomIdUri {
     /// The room ID.
-    pub id: MatrixRoomId,
+    pub id: OwnedRoomOrAliasId,
     /// Matrix servers usable to route a `RoomId`.
     pub via: Vec<OwnedServerName>,
 }
@@ -716,17 +641,12 @@ impl MatrixRoomIdUri {
                 MatrixIdUri::Room(room_uri) => Some(room_uri),
                 _ => None,
             })
-            .or_else(|| {
-                RoomOrAliasId::parse(s)
-                    .ok()
-                    .map(MatrixRoomId::from)
-                    .map(Into::into)
-            })
+            .or_else(|| RoomOrAliasId::parse(s).ok().map(Into::into))
     }
 }
 
-impl From<MatrixRoomId> for MatrixRoomIdUri {
-    fn from(id: MatrixRoomId) -> Self {
+impl From<OwnedRoomOrAliasId> for MatrixRoomIdUri {
+    fn from(id: OwnedRoomOrAliasId) -> Self {
         Self {
             id,
             via: Vec::new(),
@@ -736,21 +656,21 @@ impl From<MatrixRoomId> for MatrixRoomIdUri {
 
 impl From<OwnedRoomId> for MatrixRoomIdUri {
     fn from(value: OwnedRoomId) -> Self {
-        MatrixRoomId::from(value).into()
+        OwnedRoomOrAliasId::from(value).into()
     }
 }
 
 impl From<OwnedRoomAliasId> for MatrixRoomIdUri {
     fn from(value: OwnedRoomAliasId) -> Self {
-        MatrixRoomId::from(value).into()
+        OwnedRoomOrAliasId::from(value).into()
     }
 }
 
 impl From<&MatrixRoomIdUri> for MatrixUri {
     fn from(value: &MatrixRoomIdUri) -> Self {
-        match &value.id {
-            MatrixRoomId::Id(room_id) => room_id.matrix_uri_via(value.via.clone(), false),
-            MatrixRoomId::Alias(alias) => alias.matrix_uri(false),
+        match <&RoomId>::try_from(&*value.id) {
+            Ok(room_id) => room_id.matrix_uri_via(value.via.clone(), false),
+            Err(alias) => alias.matrix_uri(false),
         }
     }
 }

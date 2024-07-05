@@ -9,12 +9,9 @@ use gtk::{
     prelude::*,
     subclass::prelude::*,
 };
-use indexmap::map::IndexMap;
-use matrix_sdk::{
-    ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId},
-    sync::RoomUpdates,
-};
-use ruma::UserId;
+use indexmap::IndexMap;
+use matrix_sdk::sync::RoomUpdates;
+use ruma::{OwnedRoomId, OwnedRoomOrAliasId, OwnedServerName, RoomId, RoomOrAliasId, UserId};
 use tracing::{error, warn};
 
 mod room_list_metainfo;
@@ -26,7 +23,6 @@ use crate::{
     prelude::*,
     session::model::{Room, Session},
     spawn_tokio,
-    utils::matrix::MatrixRoomId,
 };
 
 mod imp {
@@ -152,10 +148,10 @@ impl RoomList {
     }
 
     /// Get the room with the given identifier, if any.
-    pub fn get_by_identifier(&self, identifier: &MatrixRoomId) -> Option<Room> {
-        match identifier {
-            MatrixRoomId::Id(room_id) => self.get(room_id),
-            MatrixRoomId::Alias(room_alias) => {
+    pub fn get_by_identifier(&self, identifier: &RoomOrAliasId) -> Option<Room> {
+        match <&RoomId>::try_from(identifier) {
+            Ok(room_id) => self.get(room_id),
+            Err(room_alias) => {
                 let mut matches = self
                     .imp()
                     .list
@@ -163,8 +159,8 @@ impl RoomList {
                     .iter()
                     .filter(|(_, room)| {
                         let matrix_room = room.matrix_room();
-                        matrix_room.canonical_alias().as_ref() == Some(room_alias)
-                            || matrix_room.alt_aliases().contains(room_alias)
+                        matrix_room.canonical_alias().as_deref() == Some(room_alias)
+                            || matrix_room.alt_aliases().iter().any(|a| a == room_alias)
                     })
                     .map(|(room_id, room)| (room_id.clone(), room.clone()))
                     .collect::<HashMap<_, _>>();
@@ -430,7 +426,7 @@ impl RoomList {
     }
 
     /// Get the room with the given identifier, if it is joined.
-    pub fn joined_room(&self, identifier: &MatrixRoomId) -> Option<Room> {
+    pub fn joined_room(&self, identifier: &RoomOrAliasId) -> Option<Room> {
         self.get_by_identifier(identifier)
             .filter(|room| room.is_joined())
     }

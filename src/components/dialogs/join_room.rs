@@ -315,7 +315,7 @@ impl JoinRoomDialog {
         let room_list = session.room_list();
         let uri = room.uri().clone();
 
-        match room_list.join_by_id_or_alias(uri.id.into(), uri.via).await {
+        match room_list.join_by_id_or_alias(uri.id, uri.via).await {
             Ok(room_id) => {
                 if let Some(room) = room_list.get_wait(&room_id).await {
                     if let Some(window) = self.root().and_downcast_ref::<Window>() {

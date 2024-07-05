@@ -12,10 +12,7 @@ use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
     prelude::*,
     spawn, spawn_tokio,
-    utils::{
-        matrix::{MatrixRoomId, MatrixRoomIdUri},
-        LoadingState,
-    },
+    utils::{matrix::MatrixRoomIdUri, LoadingState},
 };
 
 mod imp {
@@ -210,7 +207,7 @@ impl RemoteRoom {
             .room_id
             .borrow()
             .clone()
-            .or_else(|| self.uri().id.as_id().cloned())
+            .or_else(|| self.uri().id.clone().try_into().ok())
     }
 
     /// The canonical alias of this room.
@@ -219,7 +216,7 @@ impl RemoteRoom {
             .alias
             .borrow()
             .clone()
-            .or_else(|| self.uri().id.as_alias().cloned())
+            .or_else(|| self.uri().id.clone().try_into().ok())
     }
 
     /// Load the data of this room.
@@ -234,9 +231,9 @@ impl RemoteRoom {
         let uri = self.uri();
         let client = session.client();
 
-        let room_id = match uri.id.clone() {
-            MatrixRoomId::Id(room_id) => room_id,
-            MatrixRoomId::Alias(alias) => {
+        let room_id = match OwnedRoomId::try_from(uri.id.clone()) {
+            Ok(room_id) => room_id,
+            Err(alias) => {
                 let client_clone = client.clone();
                 let handle =
                     spawn_tokio!(async move { client_clone.resolve_room_alias(&alias).await });

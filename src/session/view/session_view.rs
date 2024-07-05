@@ -4,7 +4,7 @@ use gtk::{
     glib::{clone, signal::SignalHandlerId},
     CompositeTemplate,
 };
-use ruma::{OwnedUserId, RoomId};
+use ruma::{OwnedUserId, RoomId, RoomOrAliasId};
 use tracing::{error, warn};
 
 use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
@@ -14,7 +14,7 @@ use crate::{
         Event, IdentityVerification, Room, Selection, Session, SidebarListModel, VerificationKey,
     },
     toast,
-    utils::matrix::{MatrixRoomId, MatrixRoomIdUri},
+    utils::matrix::MatrixRoomIdUri,
     Window,
 };
 
@@ -252,10 +252,10 @@ impl SessionView {
     /// Select the room with the given identifier in this view, if it exists.
     ///
     /// Returns `true` if the room was found.
-    pub fn select_room_if_exists(&self, room_id: &MatrixRoomId) -> bool {
+    pub fn select_room_if_exists(&self, identifier: &RoomOrAliasId) -> bool {
         if let Some(room) = self
             .session()
-            .and_then(|s| s.room_list().joined_room(room_id))
+            .and_then(|s| s.room_list().joined_room(identifier))
         {
             self.select_room(Some(room));
             true
