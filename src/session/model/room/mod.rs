@@ -28,8 +28,7 @@ use ruma::{
         AnyRoomAccountDataEvent, AnySyncStateEvent, AnySyncTimelineEvent, SyncEphemeralRoomEvent,
         SyncStateEvent,
     },
-    EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomAliasId, OwnedRoomId, OwnedUserId,
-    RoomId, UserId,
+    EventId, MatrixToUri, MatrixUri, OwnedEventId, OwnedRoomId, OwnedUserId, RoomId, UserId,
 };
 use tracing::{debug, error, warn};
 
@@ -224,7 +223,9 @@ mod imp {
 
     impl PillSourceImpl for Room {
         fn identifier(&self) -> String {
-            self.alias_string().unwrap_or_else(|| self.room_id_string())
+            self.aliases
+                .alias_string()
+                .unwrap_or_else(|| self.room_id_string())
         }
     }
 
@@ -245,19 +246,6 @@ mod imp {
         /// The room ID of this room, as a string.
         fn room_id_string(&self) -> String {
             self.matrix_room().room_id().to_string()
-        }
-
-        /// The alias of this room.
-        pub(super) fn alias(&self) -> Option<OwnedRoomAliasId> {
-            let matrix_room = self.matrix_room();
-            matrix_room
-                .canonical_alias()
-                .or_else(|| matrix_room.alt_aliases().into_iter().next())
-        }
-
-        /// The alias of this room, as a string.
-        fn alias_string(&self) -> Option<String> {
-            self.alias().map(Into::into)
         }
 
         /// The version of this room.
@@ -543,11 +531,6 @@ impl Room {
     /// The ID of this room.
     pub fn room_id(&self) -> &RoomId {
         self.matrix_room().room_id()
-    }
-
-    /// The alias of this room.
-    pub fn alias(&self) -> Option<OwnedRoomAliasId> {
-        self.imp().alias()
     }
 
     /// The state of the room.

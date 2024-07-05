@@ -402,6 +402,15 @@ impl RoomAliases {
         }
     }
 
+    /// The main alias.
+    ///
+    /// This is the canonical alias if there is one, of the first of the alt
+    /// aliases.
+    pub fn alias(&self) -> Option<OwnedRoomAliasId> {
+        self.canonical_alias()
+            .or_else(|| self.imp().alt_aliases.borrow().first().cloned())
+    }
+
     /// Get the local aliases registered on the homeserver.
     pub async fn local_aliases(&self) -> Result<Vec<OwnedRoomAliasId>, ()> {
         let Some(room) = self.room() else {
