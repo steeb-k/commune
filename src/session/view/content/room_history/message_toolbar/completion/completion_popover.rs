@@ -635,7 +635,7 @@ impl CompletionPopover {
             None => buffer.create_child_anchor(&mut start),
         };
         let pill = Pill::new(&source);
-        view.add_child_at_anchor(&pill, &anchor);
+
         imp.message_toolbar()
             .current_composer_state()
             .add_widget(pill, anchor);

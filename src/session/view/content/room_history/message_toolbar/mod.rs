@@ -340,8 +340,10 @@ mod imp {
 
         /// Update the current composer state.
         fn update_current_composer_state(&self, old_room: Option<&Room>) {
+            let old_composer_state = self.composer_state(old_room);
+            old_composer_state.attach_to_view(None);
+
             if let Some(handler) = self.composer_state_handler.take() {
-                let old_composer_state = self.composer_state(old_room);
                 old_composer_state.disconnect(handler);
             }
             if let Some((handler, binding)) = self.buffer_handlers.take() {
@@ -355,7 +357,7 @@ mod imp {
             let buffer = composer_state.buffer();
             let obj = self.obj();
 
-            composer_state.attach_to_view(&self.message_entry);
+            composer_state.attach_to_view(Some(&self.message_entry));
 
             // Actions on changes in message entry.
             let text_notify_handler = buffer.connect_text_notify(clone!(
@@ -519,7 +521,6 @@ mod imp {
                     }
 
                     let anchor = buffer.create_child_anchor(&mut iter);
-                    view.add_child_at_anchor(&pill, &anchor);
                     composer_state.add_widget(pill, anchor);
 
                     pos = end;
@@ -557,7 +558,6 @@ impl MessageToolbar {
         };
 
         let pill = member.to_pill();
-        view.add_child_at_anchor(&pill, &anchor);
         self.current_composer_state().add_widget(pill, anchor);
 
         view.grab_focus();
@@ -621,7 +621,7 @@ impl MessageToolbar {
         let mut formatted_body = String::with_capacity(body_len);
         let mut mentions = Mentions::new();
 
-        let split_message = MessageBufferParser::new(start_iter, end_iter);
+        let split_message = MessageBufferParser::new(&composer_state, start_iter, end_iter);
         for chunk in split_message {
             match chunk {
                 MessageBufferChunk::Text(text) => {
@@ -1090,10 +1090,11 @@ impl MessageToolbar {
             return;
         };
 
+        let composer_state = self.current_composer_state();
         let body_len = end.offset().saturating_sub(start.offset()) as usize;
         let mut body = String::with_capacity(body_len);
 
-        let split_message = MessageBufferParser::new(start, end);
+        let split_message = MessageBufferParser::new(&composer_state, start, end);
         for chunk in split_message {
             match chunk {
                 MessageBufferChunk::Text(text) => {
@@ -1202,20 +1203,28 @@ impl Mention {
 }
 
 /// An iterator over the chunks of a message in a `GtkTextBuffer`.
-struct MessageBufferParser {
+struct MessageBufferParser<'a> {
+    /// The composer state associated with the buffer.
+    composer_state: &'a ComposerState,
+    /// The current position of the iterator in the buffer.
     iter: gtk::TextIter,
+    /// The position of the end of the buffer.
     end: gtk::TextIter,
 }
 
-impl MessageBufferParser {
+impl<'a> MessageBufferParser<'a> {
     /// Construct a `MessageBufferParser` to iterate between the given start and
     /// end in a buffer.
-    fn new(start: gtk::TextIter, end: gtk::TextIter) -> Self {
-        Self { iter: start, end }
+    fn new(composer_state: &'a ComposerState, start: gtk::TextIter, end: gtk::TextIter) -> Self {
+        Self {
+            composer_state,
+            iter: start,
+            end,
+        }
     }
 }
 
-impl Iterator for MessageBufferParser {
+impl<'a> Iterator for MessageBufferParser<'a> {
     type Item = MessageBufferChunk;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1227,10 +1236,8 @@ impl Iterator for MessageBufferParser {
         if let Some(source) = self
             .iter
             .child_anchor()
-            .map(|anchor| anchor.widgets())
-            .as_ref()
-            .and_then(|widgets| widgets.first())
-            .and_then(|widget| widget.downcast_ref::<Pill>())
+            .and_then(|anchor| self.composer_state.widget_at_anchor(&anchor))
+            .and_then(|widget| widget.downcast::<Pill>().ok())
             .and_then(|p| p.source())
         {
             self.iter.forward_cursor_position();
@@ -1245,10 +1252,8 @@ impl Iterator for MessageBufferParser {
             if self
                 .iter
                 .child_anchor()
-                .map(|anchor| anchor.widgets())
-                .as_ref()
-                .and_then(|widgets| widgets.first())
-                .and_then(|widget| widget.downcast_ref::<Pill>())
+                .and_then(|anchor| self.composer_state.widget_at_anchor(&anchor))
+                .and_then(|widget| widget.downcast::<Pill>().ok())
                 .is_some()
             {
                 break;
