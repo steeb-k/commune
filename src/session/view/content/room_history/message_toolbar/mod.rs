@@ -520,8 +520,7 @@ mod imp {
                         buffer.insert(&mut iter, &text[pos..start]);
                     }
 
-                    let anchor = buffer.create_child_anchor(&mut iter);
-                    composer_state.add_widget(pill, anchor);
+                    composer_state.add_widget(pill, &mut iter);
 
                     pos = end;
                 }
@@ -552,13 +551,9 @@ impl MessageToolbar {
         let buffer = view.buffer();
 
         let mut insert = buffer.iter_at_mark(&buffer.get_insert());
-        let anchor = match insert.child_anchor() {
-            Some(anchor) => anchor,
-            None => buffer.create_child_anchor(&mut insert),
-        };
 
         let pill = member.to_pill();
-        self.current_composer_state().add_widget(pill, anchor);
+        self.current_composer_state().add_widget(pill, &mut insert);
 
         view.grab_focus();
     }

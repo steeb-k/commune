@@ -630,15 +630,10 @@ impl CompletionPopover {
 
         buffer.delete(&mut start, &mut end);
 
-        let anchor = match start.child_anchor() {
-            Some(anchor) => anchor,
-            None => buffer.create_child_anchor(&mut start),
-        };
         let pill = Pill::new(&source);
-
         imp.message_toolbar()
             .current_composer_state()
-            .add_widget(pill, anchor);
+            .add_widget(pill, &mut start);
 
         self.popdown();
         self.select_row_at_index(None);

@@ -234,13 +234,15 @@ mod imp {
             }
         }
 
-        /// Add the given widget and anchor to this state.
-        pub(super) fn add_widget(
-            &self,
-            widget: impl IsA<gtk::Widget>,
-            anchor: gtk::TextChildAnchor,
-        ) {
+        /// Add the given widget at the position of the given iter to this
+        /// state.
+        pub(super) fn add_widget(&self, widget: impl IsA<gtk::Widget>, iter: &mut gtk::TextIter) {
             let widget = widget.upcast();
+
+            let anchor = match iter.child_anchor() {
+                Some(anchor) => anchor,
+                None => self.buffer.create_child_anchor(iter),
+            };
 
             if let Some(view) = self.view.upgrade() {
                 view.add_child_at_anchor(&widget, &anchor);
@@ -303,11 +305,7 @@ mod imp {
 
                 match DraftMention::new(&room, &text[content_start..content_end]) {
                     DraftMention::Source(source) => {
-                        let anchor = match end_iter.child_anchor() {
-                            Some(anchor) => anchor,
-                            None => self.buffer.create_child_anchor(&mut end_iter),
-                        };
-                        self.add_widget(source.to_pill(), anchor);
+                        self.add_widget(source.to_pill(), &mut end_iter);
                     }
                     DraftMention::Text(s) => {
                         self.buffer.insert(&mut end_iter, s);
@@ -459,9 +457,9 @@ impl ComposerState {
         self.imp().trigger_draft_saving();
     }
 
-    /// Add the given widget and anchor to this state.
-    pub fn add_widget(&self, widget: impl IsA<gtk::Widget>, anchor: gtk::TextChildAnchor) {
-        self.imp().add_widget(widget, anchor);
+    /// Add the given widget at the position of the given iter to this state.
+    pub fn add_widget(&self, widget: impl IsA<gtk::Widget>, iter: &mut gtk::TextIter) {
+        self.imp().add_widget(widget, iter);
     }
 
     /// Get the widget at the given anchor, if any.
