@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{fmt::Write, io::Cursor};
 
 use adw::{prelude::*, subclass::prelude::*};
 use futures_util::{future, pin_mut, StreamExt};
@@ -23,7 +23,6 @@ use ruma::{
         },
         Mentions,
     },
-    matrix_uri::MatrixId,
     OwnedRoomId, OwnedUserId,
 };
 use tracing::{debug, error, warn};
@@ -36,7 +35,7 @@ pub use self::composer_state::{ComposerState, RelationInfo};
 use self::{attachment_dialog::AttachmentDialog, completion::CompletionPopover};
 use super::message_row::MessageContent;
 use crate::{
-    components::{AtRoom, CustomEntry, LabelWithWidgets, Pill},
+    components::{AtRoom, CustomEntry, LabelWithWidgets, Pill, PillSource},
     gettext_f,
     prelude::*,
     session::model::{Event, Member, Room},
@@ -606,7 +605,7 @@ impl MessageToolbar {
         let composer_state = self.current_composer_state();
         let buffer = composer_state.buffer();
         let (start_iter, end_iter) = buffer.bounds();
-        let body_len = buffer.text(&start_iter, &end_iter, true).len();
+        let body_len = end_iter.offset() as usize;
 
         let is_markdown = self.markdown_enabled();
         let mut has_rich_mentions = false;
@@ -615,32 +614,34 @@ impl MessageToolbar {
         let mut formatted_body = String::with_capacity(body_len);
         let mut mentions = Mentions::new();
 
-        let mut split_mentions = SplitMentions::new(start_iter, end_iter);
-        while let Some(chunk) = split_mentions.next().await {
+        let split_message = MessageBufferParser::new(start_iter, end_iter);
+        for chunk in split_message {
             match chunk {
-                MentionChunk::Text(text) => {
+                MessageBufferChunk::Text(text) => {
                     plain_body.push_str(&text);
                     formatted_body.push_str(&text);
                 }
-                MentionChunk::RichMention { name, uri, user_id } => {
-                    has_rich_mentions = true;
-                    plain_body.push_str(&name);
-                    formatted_body.push_str(&if is_markdown {
-                        format!("[{name}]({uri})")
-                    } else {
-                        format!("<a href=\"{uri}\">{name}</a>")
-                    });
+                MessageBufferChunk::Mention(source) => match Mention::from_source(&source).await {
+                    Mention::Rich { name, uri, user_id } => {
+                        has_rich_mentions = true;
+                        plain_body.push_str(&name);
+                        if is_markdown {
+                            let _ = write!(formatted_body, "[{name}]({uri})");
+                        } else {
+                            let _ = write!(formatted_body, "<a href=\"{uri}\">{name}</a>");
+                        };
 
-                    if let Some(user_id) = user_id {
-                        mentions.user_ids.insert(user_id);
+                        if let Some(user_id) = user_id {
+                            mentions.user_ids.insert(user_id);
+                        }
                     }
-                }
-                MentionChunk::AtRoom => {
-                    plain_body.push_str(AT_ROOM);
-                    formatted_body.push_str(AT_ROOM);
+                    Mention::AtRoom => {
+                        plain_body.push_str(AT_ROOM);
+                        formatted_body.push_str(AT_ROOM);
 
-                    mentions.room = true;
-                }
+                        mentions.room = true;
+                    }
+                },
             }
         }
 
@@ -1082,20 +1083,31 @@ impl MessageToolbar {
             return;
         };
 
-        let body_len = buffer.text(&start, &end, true).len();
+        let body_len = end.offset().saturating_sub(start.offset()) as usize;
         let mut body = String::with_capacity(body_len);
 
-        let mut split_mentions = SplitMentions::new(start, end);
-        while let Some(chunk) = split_mentions.next().await {
+        let split_message = MessageBufferParser::new(start, end);
+        for chunk in split_message {
             match chunk {
-                MentionChunk::Text(text) => {
+                MessageBufferChunk::Text(text) => {
                     body.push_str(&text);
                 }
-                MentionChunk::RichMention { name, .. } => {
-                    body.push_str(&name);
-                }
-                MentionChunk::AtRoom => {
-                    body.push_str(AT_ROOM);
+                MessageBufferChunk::Mention(source) => {
+                    if let Some(user) = source.downcast_ref::<Member>() {
+                        body.push_str(&user.display_name());
+                    } else if let Some(room) = source.downcast_ref::<Room>() {
+                        body.push_str(
+                            room.aliases()
+                                .alias()
+                                .as_ref()
+                                .map(AsRef::as_ref)
+                                .unwrap_or_else(|| room.room_id().as_ref()),
+                        );
+                    } else if source.is::<AtRoom>() {
+                        body.push_str(AT_ROOM);
+                    } else {
+                        unreachable!()
+                    }
                 }
             }
         }
@@ -1130,12 +1142,18 @@ struct DetectedMention {
     end: usize,
 }
 
-/// A chunk of a message.
-enum MentionChunk {
+/// A chunk of a message in a buffer.
+enum MessageBufferChunk {
     /// Some text.
     Text(String),
-    /// A rich mention (a mention that has a HTML representation).
-    RichMention {
+    /// A mention as a `Pill`.
+    Mention(PillSource),
+}
+
+/// A mention that can be sent in a message.
+enum Mention {
+    /// A mention that has a HTML representation.
+    Rich {
         /// The string representation of the mention.
         name: String,
         /// The URI of the mention.
@@ -1147,21 +1165,53 @@ enum MentionChunk {
     AtRoom,
 }
 
+impl Mention {
+    /// Construct a `Mention` from the given pill source.
+    async fn from_source(source: &PillSource) -> Self {
+        if let Some(user) = source.downcast_ref::<Member>() {
+            Self::Rich {
+                name: user.display_name(),
+                uri: user.matrix_to_uri().to_string(),
+                user_id: Some(user.user_id().clone()),
+            }
+        } else if let Some(room) = source.downcast_ref::<Room>() {
+            let matrix_to_uri = room.matrix_to_uri().await;
+            let string_repr = room
+                .aliases()
+                .alias_string()
+                .unwrap_or_else(|| room.room_id_string());
+
+            Self::Rich {
+                name: string_repr,
+                uri: matrix_to_uri.to_string(),
+                user_id: None,
+            }
+        } else if source.is::<AtRoom>() {
+            Self::AtRoom
+        } else {
+            unreachable!()
+        }
+    }
+}
+
 /// An iterator over the chunks of a message in a `GtkTextBuffer`.
-struct SplitMentions {
+struct MessageBufferParser {
     iter: gtk::TextIter,
     end: gtk::TextIter,
 }
 
-impl SplitMentions {
-    /// Construct a `SplitMention` to iterate between the given start and end.
+impl MessageBufferParser {
+    /// Construct a `MessageBufferParser` to iterate between the given start and
+    /// end in a buffer.
     fn new(start: gtk::TextIter, end: gtk::TextIter) -> Self {
         Self { iter: start, end }
     }
 }
 
-impl SplitMentions {
-    async fn next(&mut self) -> Option<MentionChunk> {
+impl Iterator for MessageBufferParser {
+    type Item = MessageBufferChunk;
+
+    fn next(&mut self) -> Option<Self::Item> {
         if self.iter == self.end {
             // We reached the end.
             return None;
@@ -1176,35 +1226,9 @@ impl SplitMentions {
             .and_then(|widget| widget.downcast_ref::<Pill>())
             .and_then(|p| p.source())
         {
-            // This chunk is a mention.
-            let chunk = if let Some(user) = source.downcast_ref::<Member>() {
-                MentionChunk::RichMention {
-                    name: user.display_name(),
-                    uri: user.matrix_to_uri().to_string(),
-                    user_id: Some(user.user_id().clone()),
-                }
-            } else if let Some(room) = source.downcast_ref::<Room>() {
-                let matrix_to_uri = room.matrix_to_uri().await;
-                let string_repr = match matrix_to_uri.id() {
-                    MatrixId::Room(room_id) => room_id.to_string(),
-                    MatrixId::RoomAlias(alias) => alias.to_string(),
-                    _ => unreachable!(),
-                };
-
-                MentionChunk::RichMention {
-                    name: string_repr,
-                    uri: matrix_to_uri.to_string(),
-                    user_id: None,
-                }
-            } else if source.is::<AtRoom>() {
-                MentionChunk::AtRoom
-            } else {
-                unreachable!()
-            };
-
             self.iter.forward_cursor_position();
 
-            return Some(chunk);
+            return Some(MessageBufferChunk::Mention(source));
         }
 
         // This chunk is not a mention. Go forward until the next mention or the
@@ -1231,7 +1255,7 @@ impl SplitMentions {
         if self.iter == self.end && text.is_empty() {
             None
         } else {
-            Some(MentionChunk::Text(text.into()))
+            Some(MessageBufferChunk::Text(text.into()))
         }
     }
 }
