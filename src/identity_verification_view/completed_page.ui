@@ -43,6 +43,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="dismiss_btn">
+                    <property name="can-shrink">True</property>
                     <property name="halign">center</property>
                     <property name="label" translatable="yes">Dismiss</property>
                     <signal name="clicked" handler="dismiss" swapped="yes"/>

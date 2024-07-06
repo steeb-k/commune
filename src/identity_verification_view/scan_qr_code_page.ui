@@ -54,6 +54,7 @@
                 <child>
                   <object class="GtkButton" id="show_qr_code_btn">
                     <property name="halign">center</property>
+                    <property name="can-shrink">True</property>
                     <property name="label" translatable="yes">Show a QR code to scan with another device</property>
                     <signal name="clicked" handler="show_qr_code" swapped="yes"/>
                     <style>

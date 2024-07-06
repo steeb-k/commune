@@ -43,7 +43,6 @@
                 </child>
                 <child>
                   <object class="LoadingButton" id="decline_btn">
-                    <property name="can-shrink">true</property>
                     <property name="content-label" translatable="yes">Decline</property>
                     <property name="halign">center</property>
                     <signal name="clicked" handler="decline" swapped="yes"/>
