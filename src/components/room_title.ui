@@ -2,40 +2,154 @@
 <interface>
   <template class="RoomTitle" parent="AdwBin">
     <child>
-      <object class="GtkBox" id="box">
-        <property name="orientation">vertical</property>
-        <property name="halign">center</property>
-        <property name="valign">center</property>
+      <object class="GtkStack" id="stack">
         <child>
-          <object class="GtkLabel" id="title_label">
-            <property name="focusable">True</property>
-            <property name="ellipsize">end</property>
-            <property name="halign">center</property>
-            <property name="wrap">False</property>
-            <property name="single-line-mode">True</property>
-            <property name="use-markup">True</property>
-            <property name="width-chars">5</property>
-            <property name="label" bind-source="RoomTitle" bind-property="title" bind-flags="sync-create"/>
-            <property name="tooltip-markup" bind-source="RoomTitle" bind-property="title" bind-flags="sync-create"/>
-            <style>
-              <class name="title"/>
-            </style>
+          <object class="GtkStackPage">
+            <property name="name">title-only</property>
+            <property name="child">
+              <object class="GtkLabel">
+                <property name="focusable">True</property>
+                <property name="ellipsize">end</property>
+                <property name="halign">center</property>
+                <property name="valign">center</property>
+                <property name="wrap">False</property>
+                <property name="single-line-mode">True</property>
+                <property name="use-markup">True</property>
+                <property name="width-chars">5</property>
+                <property name="label" bind-source="RoomTitle" bind-property="title-excerpt" bind-flags="sync-create"/>
+                <property name="tooltip-markup" bind-source="RoomTitle" bind-property="title-excerpt" bind-flags="sync-create"/>
+                <style>
+                  <class name="title"/>
+                </style>
+              </object>
+            </property>
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="subtitle_label">
-            <property name="focusable">True</property>
-            <property name="ellipsize">end</property>
-            <property name="halign">center</property>
-            <property name="wrap">False</property>
-            <property name="single-line-mode">True</property>
-            <property name="use-markup">True</property>
-            <property name="visible">False</property>
-            <property name="label" bind-source="RoomTitle" bind-property="subtitle" bind-flags="sync-create"/>
-            <property name="tooltip-markup" bind-source="RoomTitle" bind-property="subtitle" bind-flags="sync-create"/>
-            <style>
-              <class name="subtitle"/>
-            </style>
+          <object class="GtkStackPage">
+            <property name="name">button</property>
+            <property name="child">
+              <object class="GtkMenuButton">
+                <style>
+                  <class name="flat"/>
+                </style>
+                <property name="tooltip-text" translatable="yes">Click to Expand</property>
+                <property name="child">
+                  <object class="GtkBox">
+                    <property name="halign">center</property>
+                    <property name="valign">center</property>
+                    <property name="accessible-role">group</property>
+                    <property name="spacing">6</property>
+                    <child>
+                      <!-- Widget to compensate for the arrow on the right for centering the title -->
+                      <object class="AdwBin" id="start_bin">
+                        <property name="halign">start</property>
+                        <property name="accessible-role">presentation</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <property name="halign">center</property>
+                        <property name="valign">center</property>
+                        <property name="accessible-role">group</property>
+                        <child>
+                          <object class="GtkLabel" id="title_excerpt_label">
+                            <property name="focusable">True</property>
+                            <property name="ellipsize">end</property>
+                            <property name="halign">center</property>
+                            <property name="wrap">False</property>
+                            <property name="single-line-mode">True</property>
+                            <property name="use-markup">True</property>
+                            <property name="width-chars">5</property>
+                            <property name="label" bind-source="RoomTitle" bind-property="title-excerpt" bind-flags="sync-create"/>
+                            <style>
+                              <class name="title"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="ellipsize">end</property>
+                            <property name="halign">center</property>
+                            <property name="wrap">False</property>
+                            <property name="single-line-mode">True</property>
+                            <property name="use-markup">True</property>
+                            <property name="label" bind-source="RoomTitle" bind-property="subtitle-excerpt" bind-flags="sync-create"/>
+                            <style>
+                              <class name="subtitle"/>
+                            </style>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImage" id="arrow_icon">
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
+                        <property name="icon-name">expander-arrow-symbolic</property>
+                        <property name="accessible-role">presentation</property>
+                        <style>
+                          <class name="arrow" />
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </property>
+                <property name="popover">
+                  <object class="GtkPopover">
+                    <property name="has-arrow">False</property>
+                    <property name="child">
+                      <object class="GtkScrolledWindow">
+                        <property name="hscrollbar-policy">never</property>
+                        <property name="propagate-natural-height">True</property>
+                        <property name="propagate-natural-width">True</property>
+                        <property name="child">
+                          <object class="AdwClamp">
+                            <property name="maximum-size">500</property>
+                            <property name="tightening-threshold">500</property>
+                            <property name="child">
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <property name="accessible-role">group</property>
+                                <property name="spacing">6</property>
+                                <property name="margin-bottom">6</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="focusable">True</property>
+                                    <property name="wrap">True</property>
+                                    <property name="wrap-mode">word-char</property>
+                                    <property name="use-markup">True</property>
+                                    <property name="selectable">True</property>
+                                    <property name="label" bind-source="RoomTitle" bind-property="title" bind-flags="sync-create"/>
+                                    <style>
+                                      <class name="heading"/>
+                                    </style>
+                                  </object>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="focusable">True</property>
+                                    <property name="wrap">True</property>
+                                    <property name="wrap-mode">word-char</property>
+                                    <property name="use-markup">True</property>
+                                    <property name="selectable">True</property>
+                                    <property name="label" bind-source="RoomTitle" bind-property="subtitle" bind-flags="sync-create"/>
+                                    <style>
+                                      <class name="body"/>
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
+                          </object>
+                        </property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+              </object>
+            </property>
           </object>
         </child>
       </object>

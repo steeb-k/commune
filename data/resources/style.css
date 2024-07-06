@@ -772,22 +772,34 @@ room-history-row expander-widget > box > :not(title) {
   padding: 12px;
 }
 
-roomtitle {
+room-title {
   margin-top: -6px;
   margin-bottom: -6px;
   min-height: 12px;
 }
 
-roomtitle .title {
+room-title menubutton, room-title menubutton .toggle {
+  padding: 0;
+}
+
+room-title menubutton .toggle {
+  padding: 0;
   padding-left: 12px;
   padding-right: 12px;
+}
+
+room-title menubutton image.arrow {
+  transform: rotate(-0.5turn);
+}
+
+room-title .title {
+  padding: 0;
   font-weight: bold;
 }
 
-roomtitle .subtitle {
-  font-size: smaller;
-  padding-left: 12px;
-  padding-right: 12px;
+room-title .subtitle {
+  padding: 0;
+  font-weight: normal;
 }
 
 sender-avatar {
