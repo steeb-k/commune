@@ -251,6 +251,11 @@ mod imp {
     }
 
     impl Session {
+        // The Matrix client.
+        pub(super) fn client(&self) -> &Client {
+            &self.client.get().expect("session should be restored").0
+        }
+
         /// The list model of the sidebar.
         fn sidebar_list_model(&self) -> SidebarListModel {
             let obj = self.obj();
@@ -371,6 +376,12 @@ mod imp {
                 debug!("This session is now offline");
             } else {
                 debug!("This session is now online");
+
+                // Restart the send queues, in case they were stopped.
+                let send_queue = self.client().send_queue();
+                spawn_tokio!(async move {
+                    send_queue.set_enabled(true).await;
+                });
             }
 
             self.is_offline.set(is_offline);
@@ -863,12 +874,7 @@ impl Session {
 
     /// The Matrix client.
     pub fn client(&self) -> Client {
-        self.imp()
-            .client
-            .get()
-            .expect("The session wasn't prepared")
-            .0
-            .clone()
+        self.imp().client().clone()
     }
 
     /// Connect to the signal emitted when this session is logged out.
