@@ -59,7 +59,7 @@ mod imp {
             self.session.disconnect_signals();
 
             if let Some(session) = session {
-                let offline_handler = session.connect_offline_notify(clone!(
+                let offline_handler = session.connect_is_offline_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -100,7 +100,7 @@ mod imp {
         fn update(&self) {
             if let Some(session) = self.session.obj() {
                 self.banner.set_title(&gettext("Offline"));
-                self.banner.set_revealed(session.offline());
+                self.banner.set_revealed(session.is_offline());
             } else {
                 self.ensure_connection_watched();
                 let monitor = gio::NetworkMonitor::default();

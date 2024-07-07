@@ -187,7 +187,7 @@ mod imp {
             if let Some(user) = &user {
                 let session = user.session();
 
-                let offline_handler = session.connect_offline_notify(clone!(
+                let offline_handler = session.connect_is_offline_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -288,7 +288,7 @@ mod imp {
                 return;
             };
 
-            if session.offline() {
+            if session.is_offline() {
                 // Only show one banner at a time.
                 // The user will not be able to solve security issues while offline anyway.
                 self.security_banner.set_revealed(false);

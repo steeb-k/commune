@@ -21,11 +21,10 @@ use futures_util::{
     future::{self, Either, Future},
     pin_mut,
 };
-use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
 use matrix_sdk::ruma::UInt;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use tracing::error;
 
 pub use self::{
     dummy_object::DummyObject,
@@ -82,19 +81,6 @@ pub fn freplace(s: String, args: &[(&str, &str)]) -> String {
     }
 
     s
-}
-
-/// Check if the given hostname is reachable.
-pub async fn check_if_reachable(hostname: &impl AsRef<str>) -> bool {
-    let address = gio::NetworkAddress::parse_uri(hostname.as_ref(), 80).unwrap();
-    let monitor = gio::NetworkMonitor::default();
-    match monitor.can_reach_future(&address).await {
-        Ok(()) => true,
-        Err(error) => {
-            error!("Homeserver {} isn't reachable: {error}", hostname.as_ref());
-            false
-        }
-    }
 }
 
 /// Regex that matches a string that only includes emojis.

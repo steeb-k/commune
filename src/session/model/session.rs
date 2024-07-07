@@ -42,14 +42,17 @@ use crate::{
     session_list::{SessionInfo, SessionInfoImpl},
     spawn, spawn_tokio,
     utils::{
-        check_if_reachable,
         matrix::{self, ClientSetupError},
         TokioDrop,
     },
     Application,
 };
 
+/// The database key for persisting the session's profile.
 const SESSION_PROFILE_KEY: &str = "session_profile";
+/// The number of consecutive missed synchronizations before the session is
+/// marked as offline.
+const MISSED_SYNC_MAX_COUNT: u8 = 3;
 
 /// The state of the session.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, glib::Enum)]
@@ -155,7 +158,10 @@ mod imp {
         pub state: Cell<SessionState>,
         /// Whether this session has a connection to the homeserver.
         #[property(get)]
-        pub offline: Cell<bool>,
+        pub is_homeserver_reachable: Cell<bool>,
+        /// Whether this session is synchronized with the homeserver.
+        #[property(get)]
+        pub is_offline: Cell<bool>,
         /// The current settings for this session.
         #[property(get, construct_only)]
         pub settings: OnceCell<SessionSettings>,
@@ -185,7 +191,11 @@ mod imp {
         pub backup_enabled: Cell<bool>,
         pub sync_handle: RefCell<Option<AbortHandle>>,
         pub abort_handles: RefCell<Vec<AbortHandle>>,
-        pub offline_handler_id: RefCell<Option<SignalHandlerId>>,
+        pub network_monitor_handler_id: RefCell<Option<SignalHandlerId>>,
+        /// The number of missed synchonizations in a row.
+        ///
+        /// Capped at `MISSED_SYNC_MAX_COUNT - 1`.
+        pub missed_sync_count: Cell<u8>,
     }
 
     #[glib::object_subclass]
@@ -207,20 +217,20 @@ mod imp {
 
             let monitor = gio::NetworkMonitor::default();
             let handler_id = monitor.connect_network_changed(clone!(
-                #[weak]
-                obj,
+                #[weak(rename_to = imp)]
+                self,
                 move |_, _| {
                     spawn!(async move {
-                        obj.update_offline().await;
+                        imp.update_homeserver_reachable().await;
                     });
                 }
             ));
-            self.offline_handler_id.replace(Some(handler_id));
+            self.network_monitor_handler_id.replace(Some(handler_id));
         }
 
         fn dispose(&self) {
             // Needs to be disconnected or else it may restart the sync
-            if let Some(handler_id) = self.offline_handler_id.take() {
+            if let Some(handler_id) = self.network_monitor_handler_id.take() {
                 gio::NetworkMonitor::default().disconnect(handler_id);
             }
 
@@ -310,6 +320,62 @@ mod imp {
             self.backup_enabled.set(enabled);
             self.obj().notify_backup_enabled();
         }
+
+        /// Update whether the homeserver is reachable.
+        pub(super) async fn update_homeserver_reachable(&self) {
+            let obj = self.obj();
+            let monitor = gio::NetworkMonitor::default();
+
+            let is_homeserver_reachable = if monitor.is_network_available() {
+                let homeserver = obj.homeserver();
+                let address = gio::NetworkAddress::parse_uri(homeserver.as_ref(), 80).unwrap();
+
+                match monitor.can_reach_future(&address).await {
+                    Ok(()) => true,
+                    Err(error) => {
+                        error!("Homeserver {homeserver} is not reachable: {error}");
+                        false
+                    }
+                }
+            } else {
+                false
+            };
+
+            if self.is_homeserver_reachable.get() == is_homeserver_reachable {
+                return;
+            }
+
+            self.is_homeserver_reachable.set(is_homeserver_reachable);
+
+            if let Some(handle) = self.sync_handle.take() {
+                handle.abort();
+            }
+
+            if is_homeserver_reachable {
+                // Restart the sync loop.
+                obj.sync();
+            } else {
+                self.set_offline(true);
+            }
+
+            obj.notify_is_homeserver_reachable();
+        }
+
+        /// Set whether this session is synchronized with the homeserver.
+        pub(super) fn set_offline(&self, is_offline: bool) {
+            if self.is_offline.get() == is_offline {
+                return;
+            }
+
+            if is_offline {
+                debug!("This session is now offline");
+            } else {
+                debug!("This session is now online");
+            }
+
+            self.is_offline.set(is_offline);
+            self.obj().notify_is_offline();
+        }
     }
 }
 
@@ -380,7 +446,7 @@ impl Session {
                 }
             )
         );
-        self.update_offline().await;
+        self.imp().update_homeserver_reachable().await;
 
         self.room_list().load().await;
         self.setup_direct_room_handler();
@@ -404,7 +470,7 @@ impl Session {
 
     /// Start syncing the Matrix client.
     fn sync(&self) {
-        if self.state() < SessionState::InitialSync || self.offline() {
+        if self.state() < SessionState::InitialSync || !self.is_homeserver_reachable() {
             return;
         }
 
@@ -797,39 +863,6 @@ impl Session {
             .clone()
     }
 
-    /// Update whether this session is offline.
-    async fn update_offline(&self) {
-        let imp = self.imp();
-        let monitor = gio::NetworkMonitor::default();
-
-        let offline = if monitor.is_network_available() {
-            !check_if_reachable(&self.homeserver()).await
-        } else {
-            true
-        };
-
-        if self.offline() == offline {
-            return;
-        }
-
-        if offline {
-            debug!("This session is now offline");
-        } else {
-            debug!("This session is now online");
-        }
-
-        imp.offline.set(offline);
-
-        if let Some(handle) = imp.sync_handle.take() {
-            handle.abort();
-        }
-
-        // Restart the sync loop when online
-        self.sync();
-
-        self.notify_offline();
-    }
-
     /// Connect to the signal emitted when this session is logged out.
     pub fn connect_logged_out<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_state_notify(move |obj| {
@@ -851,6 +884,8 @@ impl Session {
     /// Handle the response received via sync.
     fn handle_sync_response(&self, response: Result<SyncResponse, matrix_sdk::Error>) {
         debug!("Received sync response");
+        let imp = self.imp();
+
         match response {
             Ok(response) => {
                 self.room_list().handle_room_updates(response.rooms);
@@ -858,11 +893,20 @@ impl Session {
                 if self.state() < SessionState::Ready {
                     self.set_state(SessionState::Ready);
                 }
+
+                imp.set_offline(false);
+                imp.missed_sync_count.set(0);
             }
             Err(error) => {
-                if let Some(kind) = error.client_api_error_kind() {
-                    if matches!(kind, ErrorKind::UnknownToken { .. }) {
-                        self.handle_logged_out();
+                if let Some(ErrorKind::UnknownToken { .. }) = error.client_api_error_kind() {
+                    self.handle_logged_out();
+                } else {
+                    let missed_sync_count = imp.missed_sync_count.get() + 1;
+
+                    if missed_sync_count >= MISSED_SYNC_MAX_COUNT {
+                        imp.set_offline(true);
+                    } else {
+                        imp.missed_sync_count.set(missed_sync_count);
                     }
                 }
                 error!("Could not perform sync: {error}");
