@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-06-30 13:13+0000\n"
-"PO-Revision-Date: 2024-07-01 22:15+0300\n"
+"POT-Creation-Date: 2024-07-07 09:25+0000\n"
+"PO-Revision-Date: 2024-07-07 18:14+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -670,7 +670,7 @@ msgstr ""
 "кімнати без запрошення."
 
 #: src/components/dialogs/message_dialogs.rs:27
-#: src/identity_verification_view/accept_request_page.ui:47
+#: src/identity_verification_view/accept_request_page.ui:46
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Відхилити"
@@ -707,8 +707,8 @@ msgstr "Полишити"
 #: src/session/view/content/room_details/general_page/mod.rs:1375
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:914
-#: src/session/view/content/room_history/item_row.rs:971
+#: src/session/view/content/room_history/item_row.rs:937
+#: src/session/view/content/room_history/item_row.rs:994
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -854,7 +854,7 @@ msgstr[3] ""
 #: src/components/dialogs/message_dialogs.rs:181
 #: src/session/view/account_settings/general_page/mod.rs:294
 #: src/session/view/content/room_details/general_page/mod.rs:597
-#: src/session/view/content/room_history/item_row.rs:915
+#: src/session/view/content/room_history/item_row.rs:938
 msgid "Remove"
 msgstr "Вилучити"
 
@@ -876,7 +876,7 @@ msgstr ""
 "журналі кімнати."
 
 #: src/components/dialogs/message_dialogs.rs:208
-#: src/session/view/content/room_history/item_row.rs:953
+#: src/session/view/content/room_history/item_row.rs:976
 msgid "Reason (optional)"
 msgstr "Причина (необов'язкова)"
 
@@ -989,6 +989,10 @@ msgstr "Нетипове"
 #: src/components/power_level_selection/popover.ui:164
 msgid "Confirm Custom Role"
 msgstr "Підтвердження нетипової ролі"
+
+#: src/components/room_title.ui:36
+msgid "Click to Expand"
+msgstr "Натисніть, щоб розгорнути"
 
 #: src/components/user_page.rs:281
 #: src/session/view/account_settings/general_page/mod.ui:74
@@ -1157,7 +1161,7 @@ msgid "Security"
 msgstr "Безпека"
 
 #: src/components/user_page.ui:238
-#: src/identity_verification_view/accept_request_page.ui:58
+#: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:270
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:322
@@ -1323,8 +1327,8 @@ msgid "Send New Request"
 msgstr "Надіслати новий запит"
 
 #: src/identity_verification_view/cancelled_page.ui:52
-#: src/identity_verification_view/completed_page.ui:47
-#: src/identity_verification_view/room_left_page.ui:43
+#: src/identity_verification_view/completed_page.ui:48
+#: src/identity_verification_view/room_left_page.ui:44
 msgid "Dismiss"
 msgstr "Відкинути"
 
@@ -1380,14 +1384,14 @@ msgid "Scan QR code with this session"
 msgstr "Сканувати QR-код з цим сеансом"
 
 #: src/identity_verification_view/choose_method_page.ui:69
-#: src/identity_verification_view/scan_qr_code_page.ui:66
+#: src/identity_verification_view/scan_qr_code_page.ui:67
 msgid "Compare Emoji"
 msgstr "Порівняти емодзі"
 
 #: src/identity_verification_view/choose_method_page.ui:80
 #: src/identity_verification_view/no_supported_methods_page.rs:167
 #: src/identity_verification_view/qr_code_scanned_page.ui:48
-#: src/identity_verification_view/scan_qr_code_page.ui:77
+#: src/identity_verification_view/scan_qr_code_page.ui:78
 msgid "Cancel Verification"
 msgstr "Скасувати перевірку"
 
@@ -1611,7 +1615,7 @@ msgstr "Скануйте QR-код, який показано на пристр�
 msgid "Could not validate scanned QR Code"
 msgstr "Сканований QR-код не пройшов перевірки"
 
-#: src/identity_verification_view/scan_qr_code_page.ui:57
+#: src/identity_verification_view/scan_qr_code_page.ui:58
 msgid "Show a QR code to scan with another device"
 msgstr "Показати QR-код для скасування за допомогою іншого пристрою"
 
@@ -1975,17 +1979,17 @@ msgstr "Будь-який зареєстрований користувач"
 msgid "Unsupported rule"
 msgstr "Непідтримуване правило"
 
-#: src/session/model/room/mod.rs:1229
+#: src/session/model/room/mod.rs:1212
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1232
+#: src/session/model/room/mod.rs:1215
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1242
+#: src/session/model/room/mod.rs:1225
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -2009,7 +2013,7 @@ msgstr "Вимкнено"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:410
+#: src/session/model/room_list/mod.rs:406
 #: src/session/view/content/room_history/mod.rs:593
 msgid "Could not join room {room_name}. Try again later."
 msgstr ""
@@ -3695,7 +3699,7 @@ msgstr "_Копіювати мініатюру"
 msgid "Rep_ort"
 msgstr "Пос_каржитися"
 
-#: src/session/view/content/room_history/item_row.rs:313
+#: src/session/view/content/room_history/item_row.rs:336
 msgid "This is the start of the visible history"
 msgstr "Це початок видимого журналу"
 
@@ -3703,7 +3707,7 @@ msgstr "Це початок видимого журналу"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:353
+#: src/session/view/content/room_history/item_row.rs:376
 msgid "%A, %B %-e"
 msgstr "%A, %-d %B"
 
@@ -3711,58 +3715,58 @@ msgstr "%A, %-d %B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:359
+#: src/session/view/content/room_history/item_row.rs:382
 msgid "%A, %B %-e, %Y"
 msgstr "%A, %-e %b %Y"
 
-#: src/session/view/content/room_history/item_row.rs:365
+#: src/session/view/content/room_history/item_row.rs:388
 msgid "New Messages"
 msgstr "Нові повідомлення"
 
-#: src/session/view/content/room_history/item_row.rs:517
+#: src/session/view/content/room_history/item_row.rs:540
 #: src/session/view/content/room_history/mod.rs:623
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
 #: src/session/view/media_viewer.rs:554
 msgid "Permalink copied to clipboard"
 msgstr "Стале посилання скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/item_row.rs:654
-#: src/session/view/content/room_history/item_row.rs:701
-#: src/session/view/content/room_history/item_row.rs:721
-#: src/session/view/content/room_history/item_row.rs:756
-#: src/session/view/content/room_history/item_row.rs:802
-#: src/session/view/content/room_history/item_row.rs:830
-#: src/session/view/content/room_history/item_row.rs:858
+#: src/session/view/content/room_history/item_row.rs:677
+#: src/session/view/content/room_history/item_row.rs:724
+#: src/session/view/content/room_history/item_row.rs:744
+#: src/session/view/content/room_history/item_row.rs:779
+#: src/session/view/content/room_history/item_row.rs:825
+#: src/session/view/content/room_history/item_row.rs:853
+#: src/session/view/content/room_history/item_row.rs:881
 msgid "Text copied to clipboard"
 msgstr "Текст скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/item_row.rs:776
+#: src/session/view/content/room_history/item_row.rs:799
 msgid "Thumbnail copied to clipboard"
 msgstr "Мініатюру скопійовано до буфера обміну"
 
-#: src/session/view/content/room_history/item_row.rs:908
+#: src/session/view/content/room_history/item_row.rs:931
 msgid "Remove Message?"
 msgstr "Вилучити повідомлення?"
 
-#: src/session/view/content/room_history/item_row.rs:910
+#: src/session/view/content/room_history/item_row.rs:933
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Ви справді хочете вилучити це повідомлення? Наслідки цієї дії не може бути "
 "скасовано."
 
-#: src/session/view/content/room_history/item_row.rs:924
+#: src/session/view/content/room_history/item_row.rs:947
 msgid "Could not remove message"
 msgstr "Не вдалося вилучити повідомлення"
 
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:961
 msgid "Could not toggle reaction"
 msgstr "Не вдалося перемкнути реакцію"
 
-#: src/session/view/content/room_history/item_row.rs:964
+#: src/session/view/content/room_history/item_row.rs:987
 msgid "Report Event?"
 msgstr "Поскаржитися на подію?"
 
-#: src/session/view/content/room_history/item_row.rs:966
+#: src/session/view/content/room_history/item_row.rs:989
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3773,15 +3777,15 @@ msgstr ""
 "вміст події, якщо його було зашифровано або змінено внаслідок редагування."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:973
+#: src/session/view/content/room_history/item_row.rs:996
 msgid "Report"
 msgstr "Поскаржитися"
 
-#: src/session/view/content/room_history/item_row.rs:991
+#: src/session/view/content/room_history/item_row.rs:1014
 msgid "Could not report event"
 msgstr "Не вдалося поскаржитися на подію"
 
-#: src/session/view/content/room_history/item_row.rs:1009
+#: src/session/view/content/room_history/item_row.rs:1032
 msgid "Could not discard message"
 msgstr "Не вдалося відкинути повідомлення"
 
@@ -3798,12 +3802,7 @@ msgstr "Не вдалося отримати звуковий файл"
 msgid "Error reading audio file"
 msgstr "Помилка під час читання звукового файла"
 
-#: src/session/view/content/room_history/message_row/content.rs:355
-#: src/session/view/content/room_history/message_row/content.rs:397
-msgid "Unsupported event"
-msgstr "Непідтримувана подія"
-
-#: src/session/view/content/room_history/message_row/content.rs:376
+#: src/session/view/content/room_history/message_row/content.rs:240
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3811,9 +3810,14 @@ msgstr ""
 "Не вдалося розшифрувати це повідомлення, але програма повторить спробу, "
 "щойно стануть доступними ключі."
 
-#: src/session/view/content/room_history/message_row/content.rs:386
+#: src/session/view/content/room_history/message_row/content.rs:250
 msgid "This message was removed."
 msgstr "Це повідомлення було вилучено."
+
+#: src/session/view/content/room_history/message_row/content.rs:261
+#: src/session/view/content/room_history/message_row/content.rs:423
+msgid "Unsupported event"
+msgstr "Непідтримувана подія"
 
 #: src/session/view/content/room_history/message_row/file.rs:63
 msgid "File: {filename}"
@@ -3867,7 +3871,6 @@ msgid "Sending…"
 msgstr "Надсилання…"
 
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:30
-#| msgid "Error deleting message"
 msgid "Temporary Error Sending Message"
 msgstr "Тимчасова помилка при надсиланні повідомлення"
 
@@ -3922,95 +3925,90 @@ msgstr "Подробиці"
 msgid "_Send"
 msgstr "_Надіслати"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:638
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:662
 msgid "Public Room Mention Auto-completion"
 msgstr "Автодоповнення згадки відкритої кімнати"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:640
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:664
 msgid "Room Member Mention Auto-completion"
 msgstr "Автодоповнення згадки учасника кімнати"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:434
+#: src/session/view/content/room_history/message_toolbar/mod.rs:431
 msgid "Reply to {user}"
 msgstr "Відповідь {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:506
+#: src/session/view/content/room_history/message_toolbar/mod.rs:500
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Редагування"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:664
-#| msgid "Could not save file"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:699
 msgid "Could not send reply"
 msgstr "Не вдалося надіслати відповідь"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:672
-#| msgid "Could not save file"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:707
 msgid "Could not send edit"
 msgstr "Не вдалося надіслати зміни"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:683
-#| msgid "Could not send the message"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:718
 msgid "Could not send message"
 msgstr "Не вдалося відіслати повідомлення"
 
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:726
+#: src/session/view/content/room_history/message_toolbar/mod.rs:760
 msgid "Your Location"
 msgstr "Ваше місце перебування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:787
+#: src/session/view/content/room_history/message_toolbar/mod.rs:821
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Розташування користувача {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:809
-#| msgid "Could not retrieve current location"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:843
 msgid "Could not send location"
 msgstr "Не вдалося надіслати місце"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:816
+#: src/session/view/content/room_history/message_toolbar/mod.rs:850
 msgid "The location request has been cancelled"
 msgstr "Запит щодо визначення розташування було скасовано"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:817
+#: src/session/view/content/room_history/message_toolbar/mod.rs:851
 msgid "The location services are disabled"
 msgstr "Служби визначення розташування вимкнено"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:818
+#: src/session/view/content/room_history/message_toolbar/mod.rs:852
 msgid "Could not retrieve current location"
 msgstr "Не вдалося отримати дані щодо поточного розташування"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:863
-#| msgid "Could not save file"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:897
 msgid "Could not send file"
 msgstr "Не вдалося надіслати файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:903
+#: src/session/view/content/room_history/message_toolbar/mod.rs:937
 msgid "Select File"
 msgstr "Виберіть файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:905
+#: src/session/view/content/room_history/message_toolbar/mod.rs:939
 msgid "Select"
 msgstr "Вибрати"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:920
+#: src/session/view/content/room_history/message_toolbar/mod.rs:954
 msgid "Could not open file"
 msgstr "Не вдалося відкрити файл"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:939
+#: src/session/view/content/room_history/message_toolbar/mod.rs:973
 msgid "Error reading file"
 msgstr "Помилка при зчитуванні файла"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:996
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1030
 msgid "Error getting image from clipboard"
 msgstr "Помилка під час отримання зображення з буфера обміну"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1013
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1047
 msgid "Error getting file from clipboard"
 msgstr "Помилка під час отримання файла з буфера обміну"
 
