@@ -5,6 +5,7 @@ use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 use crate::{
     components::{confirm_leave_room_dialog, Avatar, LabelWithWidgets, LoadingButton, Pill},
     gettext_f,
+    prelude::*,
     session::model::{MemberList, Room, RoomType},
     toast,
 };
@@ -27,6 +28,8 @@ mod imp {
         pub accept_requests: RefCell<HashSet<Room>>,
         pub decline_requests: RefCell<HashSet<Room>>,
         pub category_handler: RefCell<Option<glib::SignalHandlerId>>,
+        #[template_child]
+        pub room_alias: TemplateChild<gtk::Label>,
         #[template_child]
         pub room_topic: TemplateChild<gtk::Label>,
         #[template_child]
@@ -69,19 +72,17 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            self.room_alias.connect_label_notify(|room_alias| {
+                room_alias.set_visible(!room_alias.label().is_empty());
+            });
+            self.room_alias
+                .set_visible(!self.room_alias.label().is_empty());
+
             self.room_topic.connect_label_notify(|room_topic| {
                 room_topic.set_visible(!room_topic.label().is_empty());
             });
-
             self.room_topic
                 .set_visible(!self.room_topic.label().is_empty());
-
-            // Translators: Do NOT translate the content between '{' and '}', this is a
-            // variable name.
-            self.inviter.set_label(Some(gettext_f(
-                "{user} invited you",
-                &[("user", "<widget>")],
-            )));
         }
 
         fn dispose(&self) {
@@ -159,6 +160,18 @@ mod imp {
                     }
                 ));
                 self.category_handler.replace(Some(category_handler));
+
+                if let Some(inviter) = room.inviter() {
+                    // Translators: Do NOT translate the content between '{' and '}', these are
+                    // variable names.
+                    self.inviter.set_label(Some(gettext_f(
+                        "{user_name} ({user_id}) invited you",
+                        &[
+                            ("user_name", "<widget>"),
+                            ("user_id", inviter.user_id().as_str()),
+                        ],
+                    )));
+                }
             }
 
             // Keep a strong reference to the members list.

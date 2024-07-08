@@ -28,6 +28,10 @@ mod imp {
         /// Whether the label should be ellipsized.
         #[property(get, set = Self::set_ellipsize, explicit_notify)]
         pub ellipsize: Cell<bool>,
+        /// The alignment of the lines in the text of the label, relative to
+        /// each other.
+        #[property(get = Self::justify, set = Self::set_justify, builder(gtk::Justification::Left))]
+        pub justify: PhantomData<gtk::Justification>,
     }
 
     #[glib::object_subclass]
@@ -135,6 +139,18 @@ mod imp {
             let obj = self.obj();
             obj.update_label();
             obj.notify_ellipsize();
+        }
+
+        /// The alignment of the lines in the text of the label, relative to
+        /// each other.
+        fn justify(&self) -> gtk::Justification {
+            self.child.justify()
+        }
+
+        /// Set the alignment of the lines in the text of the label, relative to
+        /// each other.
+        fn set_justify(&self, justify: gtk::Justification) {
+            self.child.set_justify(justify);
         }
     }
 }

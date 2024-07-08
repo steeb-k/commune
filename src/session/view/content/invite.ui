@@ -21,8 +21,8 @@
             <property name="hscrollbar-policy">never</property>
             <property name="child">
               <object class="AdwClamp">
-                <property name="maximum-size">400</property>
-                <property name="tightening-threshold">200</property>
+                <property name="maximum-size">444</property>
+                <property name="tightening-threshold">300</property>
                 <property name="vexpand">True</property>
                 <property name="margin-top">24</property>
                 <property name="margin-bottom">24</property>
@@ -50,16 +50,37 @@
                       </object>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="display_name">
-                        <property name="ellipsize">end</property>
-                        <binding name="label">
-                          <lookup name="display-name">
-                            <lookup name="room">ContentInvite</lookup>
-                          </lookup>
-                        </binding>
-                        <style>
-                          <class name="invite-room-name"/>
-                        </style>
+                      <object class="GtkBox">
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <object class="GtkLabel" id="display_name">
+                            <property name="ellipsize">end</property>
+                            <binding name="label">
+                              <lookup name="display-name">
+                                <lookup name="room">ContentInvite</lookup>
+                              </lookup>
+                            </binding>
+                            <style>
+                              <class name="invite-room-name"/>
+                            </style>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="room_alias">
+                            <property name="wrap">True</property>
+                            <property name="justify">center</property>
+                            <binding name="label">
+                              <lookup name="alias-string">
+                                <lookup name="aliases">
+                                  <lookup name="room">ContentInvite</lookup>
+                                </lookup>
+                              </lookup>
+                            </binding>
+                            <style>
+                              <class name="dim-label"/>
+                            </style>
+                          </object>
+                        </child>
                       </object>
                     </child>
                     <child>
@@ -79,6 +100,7 @@
                     <child>
                       <object class="LabelWithWidgets" id="inviter">
                         <property name="halign">center</property>
+                        <property name="justify">center</property>
                         <child>
                           <object class="Pill">
                             <binding name="source">
