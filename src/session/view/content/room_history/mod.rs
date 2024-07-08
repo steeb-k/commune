@@ -562,7 +562,7 @@ impl RoomHistory {
             return;
         };
 
-        if !confirm_leave_room_dialog(&room, self).await {
+        if confirm_leave_room_dialog(&room, self).await.is_none() {
             return;
         }
 

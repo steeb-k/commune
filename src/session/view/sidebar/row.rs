@@ -9,7 +9,7 @@ use crate::{
     },
     session::model::{
         Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
-        SidebarIconItemType,
+        SidebarIconItemType, User,
     },
     spawn, toast,
     utils::BoundObjectWeakRef,
@@ -525,9 +525,15 @@ impl Row {
 
     /// Change the category of the given room room.
     async fn set_room_category(&self, room: &Room, category: RoomType) {
-        if category == RoomType::Left && !confirm_leave_room_dialog(room, self).await {
-            return;
-        }
+        let ignored_inviter = if category == RoomType::Left {
+            let Some(response) = confirm_leave_room_dialog(room, self).await else {
+                return;
+            };
+
+            response.ignore_inviter.then(|| room.inviter()).flatten()
+        } else {
+            None
+        };
 
         let previous_category = room.category();
         if room.set_category(category).await.is_err() {
@@ -541,6 +547,12 @@ impl Row {
                 previous_category = previous_category.to_string(),
                 new_category = category.to_string(),
             );
+        }
+
+        if let Some(inviter) = ignored_inviter {
+            if inviter.upcast::<User>().ignore().await.is_err() {
+                toast!(self, gettext("Could not ignore user"));
+            }
         }
     }
 

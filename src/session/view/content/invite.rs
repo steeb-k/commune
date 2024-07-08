@@ -6,7 +6,7 @@ use crate::{
     components::{confirm_leave_room_dialog, Avatar, LabelWithWidgets, LoadingButton, Pill},
     gettext_f,
     prelude::*,
-    session::model::{MemberList, Room, RoomType},
+    session::model::{MemberList, Room, RoomType, User},
     toast,
 };
 
@@ -239,29 +239,47 @@ impl Invite {
         };
         let imp = self.imp();
 
-        if !confirm_leave_room_dialog(&room, self).await {
+        let Some(response) = confirm_leave_room_dialog(&room, self).await else {
             return;
-        }
+        };
 
         self.action_set_enabled("invite.accept", false);
         self.action_set_enabled("invite.decline", false);
         imp.decline_button.set_is_loading(true);
         imp.decline_requests.borrow_mut().insert(room.clone());
 
-        let result = room.decline_invite().await;
-        if result.is_err() {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this
-                    // is a variable name.
-                    "Could not decline invitation for {room}. Try again later.",
-                ),
-                @room,
-            );
+        let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
 
-            imp.decline_requests.borrow_mut().remove(&room);
-            self.reset();
+        let closed = match room.decline_invite().await {
+            Ok(_) => {
+                // A room where we were invited is usually empty so just close it.
+                let _ = self.activate_action("session.close-room", None);
+                true
+            }
+            Err(_) => {
+                toast!(
+                    self,
+                    gettext(
+                        // Translators: Do NOT translate the content between '{' and '}', this
+                        // is a variable name.
+                        "Could not decline invitation for {room}. Try again later.",
+                    ),
+                    @room,
+                );
+
+                imp.decline_requests.borrow_mut().remove(&room);
+                self.reset();
+                false
+            }
+        };
+
+        if let Some(inviter) = ignored_inviter {
+            if inviter.upcast::<User>().ignore().await.is_err() {
+                toast!(self, gettext("Could not ignore user"));
+            } else if !closed {
+                // Ignoring the user should remove the room from the sidebar so close it.
+                let _ = self.activate_action("session.close-room", None);
+            }
         }
     }
 }

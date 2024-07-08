@@ -13,7 +13,12 @@ use crate::{
 /// Show a dialog to confirm leaving a room.
 ///
 /// This supports both leaving a joined room and rejecting an invite.
-pub async fn confirm_leave_room_dialog(room: &Room, parent: &impl IsA<gtk::Widget>) -> bool {
+///
+/// Returns `None` if the user did not confirm.
+pub async fn confirm_leave_room_dialog(
+    room: &Room,
+    parent: &impl IsA<gtk::Widget>,
+) -> Option<ConfirmLeaveRoomResponse> {
     let (heading, body, response) = if room.category() == RoomType::Invited {
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
@@ -51,7 +56,51 @@ pub async fn confirm_leave_room_dialog(room: &Room, parent: &impl IsA<gtk::Widge
     confirm_dialog.add_responses(&[("cancel", &gettext("Cancel")), ("leave", &response)]);
     confirm_dialog.set_response_appearance("leave", adw::ResponseAppearance::Destructive);
 
-    confirm_dialog.choose_future(parent).await == "leave"
+    let ignore_inviter_switch = if let Some(inviter) = room
+        .inviter()
+        .filter(|_| room.category() == RoomType::Invited)
+    {
+        let switch = adw::SwitchRow::builder()
+            .title(gettext_f(
+                "Ignore {user}",
+                &[("user", inviter.user_id().as_str())],
+            ))
+            .subtitle(gettext(
+                "All messages or invitations sent by this user will be ignored",
+            ))
+            .build();
+
+        let list_box = gtk::ListBox::builder()
+            .css_classes(["boxed-list"])
+            .margin_top(6)
+            .accessible_role(gtk::AccessibleRole::Group)
+            .build();
+        list_box.append(&switch);
+        confirm_dialog.set_extra_child(Some(&list_box));
+
+        Some(switch)
+    } else {
+        None
+    };
+
+    if confirm_dialog.choose_future(parent).await == "leave" {
+        let mut response = ConfirmLeaveRoomResponse::default();
+
+        if let Some(switch) = ignore_inviter_switch {
+            response.ignore_inviter = switch.is_active();
+        }
+
+        Some(response)
+    } else {
+        None
+    }
+}
+
+/// A response to the dialog to confirm leaving a room
+#[derive(Debug, Default, Clone)]
+pub struct ConfirmLeaveRoomResponse {
+    /// If the room is an invite, whether the user wants to ignore the inviter.
+    pub ignore_inviter: bool,
 }
 
 /// The room member destructive actions that need to be confirmed.
