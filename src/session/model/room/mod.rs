@@ -1020,6 +1020,7 @@ impl Room {
 
         if self.inviter().is_some_and(|i| i.is_ignored()) {
             self.set_category_internal(RoomType::Ignored);
+            return;
         }
 
         let matrix_room = self.matrix_room();
