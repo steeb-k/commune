@@ -378,9 +378,9 @@ mod imp {
                 debug!("This session is now online");
 
                 // Restart the send queues, in case they were stopped.
-                let send_queue = self.client().send_queue();
+                let client = self.client().clone();
                 spawn_tokio!(async move {
-                    send_queue.set_enabled(true).await;
+                    client.send_queue().set_enabled(true).await;
                 });
             }
 

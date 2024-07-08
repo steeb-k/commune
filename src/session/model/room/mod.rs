@@ -375,10 +375,11 @@ mod imp {
 
         /// Watch errors in the send queue to try to handle them.
         pub(super) async fn watch_send_queue(&self) {
-            let send_queue = self.matrix_room().send_queue();
+            let matrix_room = self.matrix_room().clone();
 
             let room_weak = glib::SendWeakRef::from(self.obj().downgrade());
             spawn_tokio!(async move {
+                let send_queue = matrix_room.send_queue();
                 let subscriber = match send_queue.subscribe().await {
                     Ok((_, subscriber)) => BroadcastStream::new(subscriber),
                     Err(error) => {
@@ -432,7 +433,11 @@ mod imp {
                                         .unwrap_or(DEFAULT_RETRY_AFTER);
 
                                     glib::timeout_add_seconds_local_once(retry_after, move || {
-                                        obj.matrix_room().send_queue().set_enabled(true);
+                                        let matrix_room = obj.matrix_room().clone();
+                                        // Getting a room's send queue requires a tokio executor.
+                                        spawn_tokio!(async move {
+                                            matrix_room.send_queue().set_enabled(true);
+                                        });
                                     });
                                 });
                             });
