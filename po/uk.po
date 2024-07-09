@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-07 09:25+0000\n"
-"PO-Revision-Date: 2024-07-07 18:14+0300\n"
+"POT-Creation-Date: 2024-07-08 12:39+0000\n"
+"PO-Revision-Date: 2024-07-09 07:47+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -649,11 +649,11 @@ msgid "Join"
 msgstr "Увійти"
 
 #. We are rejecting an invite.
-#: src/components/dialogs/message_dialogs.rs:19
+#: src/components/dialogs/message_dialogs.rs:24
 msgid "Decline Invite?"
 msgstr "Відхилити запрошення?"
 
-#: src/components/dialogs/message_dialogs.rs:21
+#: src/components/dialogs/message_dialogs.rs:26
 msgid ""
 "Do you really want to decline this invite? You can join this room on your "
 "own later."
@@ -661,7 +661,7 @@ msgstr ""
 "Ви справді хочете відхилити це запрошення? Ви зможете долучитися до цієї "
 "кімнати власноруч пізніше."
 
-#: src/components/dialogs/message_dialogs.rs:24
+#: src/components/dialogs/message_dialogs.rs:29
 msgid ""
 "Do you really want to decline this invite? You will not be able to join this "
 "room without it."
@@ -669,23 +669,23 @@ msgstr ""
 "Ви справді хочете відхилити це запрошення? Ви не зможете долучитися до цієї "
 "кімнати без запрошення."
 
-#: src/components/dialogs/message_dialogs.rs:27
+#: src/components/dialogs/message_dialogs.rs:32
 #: src/identity_verification_view/accept_request_page.ui:46
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Відхилити"
 
 #. We are leaving a room that was joined.
-#: src/components/dialogs/message_dialogs.rs:32
+#: src/components/dialogs/message_dialogs.rs:37
 msgid "Leave Room?"
 msgstr "Полишити кімнату?"
 
-#: src/components/dialogs/message_dialogs.rs:34
+#: src/components/dialogs/message_dialogs.rs:39
 msgid "Do you really want to leave this room? You can come back later."
 msgstr ""
 "Ви справді хочете полишити цю кімнату? Ви зможете повернутися до неї пізніше."
 
-#: src/components/dialogs/message_dialogs.rs:37
+#: src/components/dialogs/message_dialogs.rs:42
 msgid ""
 "Do you really want to leave this room? You will not be able to come back "
 "without an invitation."
@@ -693,14 +693,14 @@ msgstr ""
 "Ви справді хочете полишити цю кімнату? Ви не зможете повернутися до неї "
 "пізніше без запрошення."
 
-#: src/components/dialogs/message_dialogs.rs:40
+#: src/components/dialogs/message_dialogs.rs:45
 msgid "Leave"
 msgstr "Полишити"
 
-#: src/components/dialogs/message_dialogs.rs:51
-#: src/components/dialogs/message_dialogs.rs:259
-#: src/components/dialogs/message_dialogs.rs:320
-#: src/components/dialogs/message_dialogs.rs:355
+#: src/components/dialogs/message_dialogs.rs:56
+#: src/components/dialogs/message_dialogs.rs:308
+#: src/components/dialogs/message_dialogs.rs:369
+#: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
 #: src/session/view/account_settings/general_page/mod.rs:293
 #: src/session/view/content/room_details/general_page/mod.rs:596
@@ -715,15 +715,26 @@ msgstr "Полишити"
 msgid "Cancel"
 msgstr "Скасувати"
 
+#: src/components/dialogs/message_dialogs.rs:65
+#| msgid "Ignored Users"
+msgid "Ignore {user}"
+msgstr "Ігнорувати {user}"
+
+#: src/components/dialogs/message_dialogs.rs:69
+msgid "All messages or invitations sent by this user will be ignored"
+msgstr ""
+"Усі повідомлення і запрошення, які надіслано цим користувачем, буде"
+" проігноровано"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:85
+#: src/components/dialogs/message_dialogs.rs:134
 msgid "Ban {user}?"
 msgstr "Заблокувати {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:89
+#: src/components/dialogs/message_dialogs.rs:138
 msgid ""
 "Are you sure you want to ban {user_id}? They will not be able to join the "
 "room again until someone unbans them."
@@ -732,20 +743,21 @@ msgstr ""
 "долучитися до кімнати, доки хтось його не розблокує."
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/dialogs/message_dialogs.rs:92 src/components/user_page.ui:170
+#: src/components/dialogs/message_dialogs.rs:141
+#: src/components/user_page.ui:170
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "Заблокувати"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:103
+#: src/components/dialogs/message_dialogs.rs:152
 msgid "Revoke Invite for {user}?"
 msgstr "Відкликати запрошення {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:110
+#: src/components/dialogs/message_dialogs.rs:159
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will still be "
 "able to join the room on their own."
@@ -755,7 +767,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:117
+#: src/components/dialogs/message_dialogs.rs:166
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will not be "
 "able to join the room again until someone reinvites them."
@@ -763,37 +775,37 @@ msgstr ""
 "Ви справді хочете відкликати запрошення {user_id}? Цей користувач більше не "
 "зможе долучитися до кімнати, доки хтось його хтось знову не запросить."
 
-#: src/components/dialogs/message_dialogs.rs:121
+#: src/components/dialogs/message_dialogs.rs:170
 #: src/components/user_page.rs:421
 msgid "Revoke Invite"
 msgstr "Відкликати запрошення"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:128
+#: src/components/dialogs/message_dialogs.rs:177
 msgid "Deny Access to {user}?"
 msgstr "Заборонити доступ для {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:134
+#: src/components/dialogs/message_dialogs.rs:183
 msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Ви справді хочете заборонити доступ для {user_id}?"
 
-#: src/components/dialogs/message_dialogs.rs:137
+#: src/components/dialogs/message_dialogs.rs:186
 #: src/components/user_page.rs:422
 msgid "Deny Access"
 msgstr "Заборонити доступ"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:143
+#: src/components/dialogs/message_dialogs.rs:192
 msgid "Kick {user}?"
 msgstr "Викинути {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:148
+#: src/components/dialogs/message_dialogs.rs:197
 msgid ""
 "Are you sure you want to kick {user_id}? They will still be able to join the "
 "room again on their own."
@@ -803,7 +815,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:155
+#: src/components/dialogs/message_dialogs.rs:204
 msgid ""
 "Are you sure you want to kick {user_id}? They will not be able to join the "
 "room again until someone invites them."
@@ -813,7 +825,7 @@ msgstr ""
 
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
-#: src/components/dialogs/message_dialogs.rs:159
+#: src/components/dialogs/message_dialogs.rs:208
 #: src/components/user_page.rs:424
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
@@ -821,13 +833,13 @@ msgstr "Викинути"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:170
+#: src/components/dialogs/message_dialogs.rs:219
 msgid "Remove Messages Sent by {user}?"
 msgstr "Вилучити повідомлення, які надіслано {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:176
+#: src/components/dialogs/message_dialogs.rs:225
 msgid ""
 "This removes all the messages received from the homeserver. Are you sure you "
 "want to remove 1 message sent by {user_id}? This cannot be undone."
@@ -851,7 +863,7 @@ msgstr[3] ""
 "хочете вилучити {n} повідомлення, яке надіслано {user_id}? Наслідки дії не "
 "може бути скасовано."
 
-#: src/components/dialogs/message_dialogs.rs:181
+#: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:294
 #: src/session/view/content/room_details/general_page/mod.rs:597
 #: src/session/view/content/room_history/item_row.rs:938
@@ -860,13 +872,13 @@ msgstr "Вилучити"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:187
+#: src/components/dialogs/message_dialogs.rs:236
 msgid "No Messages Sent by {user}"
 msgstr "Немає повідомлень, які надіслано {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:193
+#: src/components/dialogs/message_dialogs.rs:242
 msgid ""
 "There are no messages received from the homeserver sent by {user_id}. You "
 "can try to load more by going further back in the room history."
@@ -875,14 +887,14 @@ msgstr ""
 "можете спробувати завантажити більше повідомлень, просуваючись назад у "
 "журналі кімнати."
 
-#: src/components/dialogs/message_dialogs.rs:208
+#: src/components/dialogs/message_dialogs.rs:257
 #: src/session/view/content/room_history/item_row.rs:976
 msgid "Reason (optional)"
 msgstr "Причина (необов'язкова)"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:232
+#: src/components/dialogs/message_dialogs.rs:281
 msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] "Вилучити {n} найсвіжіше повідомлення, які надіслано користувачем"
@@ -892,13 +904,13 @@ msgstr[3] "Вилучити {n} найсвіжіше повідомлення, �
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:303
+#: src/components/dialogs/message_dialogs.rs:352
 msgid "Mute {user}?"
 msgstr "Вимкнути {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:309
+#: src/components/dialogs/message_dialogs.rs:358
 msgid ""
 "Are you sure you want to mute {user_id}? They will not be able to send new "
 "messages."
@@ -907,19 +919,19 @@ msgstr ""
 "призведе до того, що користувач не зможе надсилати нові повідомлення."
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
-#: src/components/dialogs/message_dialogs.rs:322
+#: src/components/dialogs/message_dialogs.rs:371
 msgid "Mute"
 msgstr "Вимкнути"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:338
+#: src/components/dialogs/message_dialogs.rs:387
 msgid "Promote {user}?"
 msgstr "Розширити повноваження {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:344
+#: src/components/dialogs/message_dialogs.rs:393
 msgid ""
 "If you promote {user_id} to the same level as yours, you will not be able to "
 "demote them in the future."
@@ -927,7 +939,7 @@ msgstr ""
 "Якщо ви розширите повноваження {user_id} до ваших повноважень, ви не зможете "
 "надалі їх звужувати."
 
-#: src/components/dialogs/message_dialogs.rs:356
+#: src/components/dialogs/message_dialogs.rs:405
 msgid "Promote"
 msgstr "Розширити повноваження"
 
@@ -1126,8 +1138,9 @@ msgstr "Ігнорувати"
 msgid "Could not stop ignoring user"
 msgstr "Не вдалося припинити ігнорувати користувача"
 
-#: src/components/user_page.rs:783
+#: src/components/user_page.rs:783 src/session/view/content/invite.rs:278
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
+#: src/session/view/sidebar/row.rs:554
 msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
@@ -1934,7 +1947,7 @@ msgstr ""
 "Не вдалося отримати доступу до типової збірки. Переконайтеся, що в'язку "
 "ключів було створено і зроблено типовою."
 
-#: src/session/model/session.rs:892
+#: src/session/model/session.rs:950
 msgid "Could not log the session out"
 msgstr "Не вдалося вийти з сеансу"
 
@@ -1979,17 +1992,17 @@ msgstr "Будь-який зареєстрований користувач"
 msgid "Unsupported rule"
 msgstr "Непідтримуване правило"
 
-#: src/session/model/room/mod.rs:1212
+#: src/session/model/room/mod.rs:1306
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1215
+#: src/session/model/room/mod.rs:1309
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1225
+#: src/session/model/room/mod.rs:1319
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -2815,21 +2828,20 @@ msgstr "Додати сервер"
 msgid "Remove Server"
 msgstr "Вилучити сервер"
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:244
-msgid "{user} invited you"
-msgstr "{user} запросив/запросила вас"
+#: src/session/view/content/invite.rs:168
+#| msgid "{user} invited you"
+msgid "{user_name} ({user_id}) invited you"
+msgstr "Вас запрошено {user_name} ({user_id})"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:212
+#: src/session/view/content/invite.rs:225
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "Не вдалося прийняти запрошення до {room}. Повторіть спробу пізніше."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:245
+#: src/session/view/content/invite.rs:265
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "Не вдалося відхилити запрошення до {room}. Повторіть спробу пізніше."
 
@@ -2840,11 +2852,11 @@ msgstr "Не вдалося відхилити запрошення до {room}.
 msgid "Invite"
 msgstr "Запросити"
 
-#: src/session/view/content/invite.ui:100
+#: src/session/view/content/invite.ui:122
 msgid "_Decline"
 msgstr "Від_хилити"
 
-#: src/session/view/content/invite.ui:110 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:132 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "При_йняти"
 
@@ -4077,7 +4089,7 @@ msgstr "Не вдалося полишити {room}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:610
-#: src/session/view/sidebar/row.rs:553
+#: src/session/view/sidebar/row.rs:565
 msgid "Could not forget {room}"
 msgstr "Не вдалося забути про {room}"
 
@@ -4812,7 +4824,7 @@ msgid "Direct chat with {name}"
 msgstr "Безпосереднє спілкування з {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:538
+#: src/session/view/sidebar/row.rs:544
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}"
 
@@ -4941,6 +4953,12 @@ msgstr "Користувачем {user} надіслано наліпку."
 #: src/utils/matrix.rs:220
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/utils/matrix.rs:244
+msgid "{user} invited you"
+msgstr "{user} запросив/запросила вас"
 
 #. Translators: Default name for image files.
 #: src/utils/media.rs:33
