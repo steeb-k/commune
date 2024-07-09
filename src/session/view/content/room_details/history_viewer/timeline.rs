@@ -12,6 +12,7 @@ use tracing::error;
 
 use super::HistoryViewerEvent;
 use crate::{
+    components::LoadingRow,
     session::model::{Room, TimelineState},
     spawn_tokio,
 };
@@ -37,6 +38,15 @@ mod imp {
         pub state: Cell<TimelineState>,
         pub list: RefCell<Vec<HistoryViewerEvent>>,
         pub last_token: Arc<Mutex<String>>,
+        /// A wrapper model with an extra loading item at the end when
+        /// applicable.
+        ///
+        /// The loading item is a [`LoadingRow`], all other items are
+        /// [`HistoryViewerEvent`]s.
+        model_with_loading_item: OnceCell<gtk::FlattenListModel>,
+        /// A model containing a [`LoadingRow`] when the timeline is loading.
+        loading_item_model: OnceCell<gio::ListStore>,
+        loading_row: LoadingRow,
     }
 
     #[glib::object_subclass]
@@ -62,6 +72,63 @@ mod imp {
             let list = self.list.borrow();
             list.get(position as usize)
                 .map(|o| o.clone().upcast::<glib::Object>())
+        }
+    }
+
+    impl HistoryViewerTimeline {
+        /// Set the state of the timeline.
+        pub(super) fn set_state(&self, state: TimelineState) {
+            if state == self.state.get() {
+                return;
+            }
+
+            self.state.set(state);
+
+            let loading_item_model = self.loading_item_model();
+            if state == TimelineState::Loading {
+                if loading_item_model.n_items() == 0 {
+                    loading_item_model.append(&self.loading_row);
+                }
+            } else if loading_item_model.n_items() != 0 {
+                loading_item_model.remove_all();
+            }
+
+            self.obj().notify_state();
+        }
+
+        /// Append the given batch to the timeline.
+        pub(super) fn append(&self, batch: Vec<HistoryViewerEvent>) {
+            if batch.is_empty() {
+                return;
+            }
+
+            let index = self.n_items();
+            let added = batch.len();
+
+            self.list.borrow_mut().extend(batch);
+
+            self.obj().items_changed(index, 0, added as u32);
+        }
+
+        /// A model containing a [`LoadingRow`] when the timeline is loading.
+        pub(super) fn loading_item_model(&self) -> &gio::ListStore {
+            self.loading_item_model
+                .get_or_init(gio::ListStore::new::<LoadingRow>)
+        }
+
+        /// A wrapper model with an extra loading item at the end when
+        /// applicable.
+        ///
+        /// The loading item is a [`LoadingRow`], all other items are
+        /// [`HistoryViewerEvent`]s.
+        pub(super) fn model_with_loading_item(&self) -> &gtk::FlattenListModel {
+            self.model_with_loading_item.get_or_init(|| {
+                let wrapper_model = gio::ListStore::new::<glib::Object>();
+                wrapper_model.append(&*self.obj());
+                wrapper_model.append(self.loading_item_model());
+
+                gtk::FlattenListModel::new(Some(wrapper_model))
+            })
         }
     }
 }
@@ -90,13 +157,13 @@ impl HistoryViewerTimeline {
             return false;
         }
 
-        self.set_state(TimelineState::Loading);
+        imp.set_state(TimelineState::Loading);
 
         let room = self.room();
         let matrix_room = room.matrix_room().clone();
         let last_token = imp.last_token.clone();
         let is_encrypted = room.is_encrypted();
-        let handle: tokio::task::JoinHandle<matrix_sdk::Result<_>> = spawn_tokio!(async move {
+        let handle = spawn_tokio!(async move {
             let last_token = last_token.lock().await;
 
             // If the room is encrypted, the messages content cannot be filtered with URLs
@@ -134,56 +201,28 @@ impl HistoryViewerTimeline {
                         .filter_map(|event| HistoryViewerEvent::try_new(&room, event))
                         .collect();
 
-                    self.append(events);
-
-                    self.set_state(TimelineState::Ready);
+                    imp.append(events);
+                    imp.set_state(TimelineState::Ready);
                     true
                 }
                 None => {
-                    self.set_state(TimelineState::Complete);
+                    imp.set_state(TimelineState::Complete);
                     false
                 }
             },
             Err(error) => {
                 error!("Could not load history viewer timeline events: {error}");
-                self.set_state(TimelineState::Error);
+                imp.set_state(TimelineState::Error);
                 false
             }
         }
     }
 
-    fn append(&self, batch: Vec<HistoryViewerEvent>) {
-        let imp = self.imp();
-
-        if batch.is_empty() {
-            return;
-        }
-
-        let added = batch.len();
-        let index = {
-            let mut list = imp.list.borrow_mut();
-            let index = list.len();
-
-            // Extend the size of the list so that rust doesn't need to reallocate memory
-            // multiple times
-            list.reserve(batch.len());
-
-            for event in batch {
-                list.push(event.upcast());
-            }
-
-            index
-        };
-
-        self.items_changed(index as u32, 0, added as u32);
-    }
-
-    fn set_state(&self, state: TimelineState) {
-        if state == self.state() {
-            return;
-        }
-
-        self.imp().state.set(state);
-        self.notify_state();
+    /// This model with an extra loading item at the end when applicable.
+    ///
+    /// The loading item is a [`LoadingRow`], all other items are
+    /// [`HistoryViewerEvent`]s.
+    pub fn with_loading_item(&self) -> &gio::ListModel {
+        self.imp().model_with_loading_item().upcast_ref()
     }
 }

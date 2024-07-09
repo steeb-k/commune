@@ -1,19 +1,16 @@
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use matrix_sdk::{
-    media::{MediaEventContent, MediaThumbnailSize},
-    ruma::{
-        api::client::media::get_content_thumbnail::v3::Method,
-        events::room::message::{ImageMessageEventContent, MessageType, VideoMessageEventContent},
-        uint,
-    },
+use matrix_sdk::media::{MediaEventContent, MediaThumbnailSize};
+use ruma::{
+    api::client::media::get_content_thumbnail::v3::Method,
+    events::room::message::{ImageMessageEventContent, MessageType, VideoMessageEventContent},
 };
 use tracing::warn;
 
 use super::{HistoryViewerEvent, MediaHistoryViewer};
-use crate::{
-    matrix_filename, session::model::Session, spawn, spawn_tokio,
-    utils::add_activate_binding_action,
-};
+use crate::{matrix_filename, spawn, spawn_tokio, utils::add_activate_binding_action};
+
+/// The default size requested by a thumbnail.
+const THUMBNAIL_SIZE: u32 = 300;
 
 mod imp {
     use std::cell::RefCell;
@@ -91,28 +88,133 @@ mod imp {
             if *self.event.borrow() == event {
                 return;
             }
-            let obj = self.obj();
-
-            if let Some(event) = &event {
-                let Some(room) = event.room() else {
-                    return;
-                };
-                let Some(session) = room.session() else {
-                    return;
-                };
-                match event.message_content() {
-                    MessageType::Image(content) => {
-                        obj.show_image(content, &session);
-                    }
-                    MessageType::Video(content) => {
-                        obj.show_video(content, &session);
-                    }
-                    _ => {}
-                }
-            }
 
             self.event.replace(event);
-            obj.notify_event();
+            self.update();
+
+            self.obj().notify_event();
+        }
+
+        /// Update this item for the current state.
+        fn update(&self) {
+            let Some(message_content) = self.event.borrow().as_ref().map(|e| e.message_content())
+            else {
+                return;
+            };
+
+            match message_content {
+                MessageType::Image(content) => {
+                    self.show_image(content);
+                }
+                MessageType::Video(content) => {
+                    self.show_video(content);
+                }
+                _ => {}
+            }
+        }
+
+        /// Show the given image with this item.
+        fn show_image(&self, image: ImageMessageEventContent) {
+            if let Some(icon) = self.overlay_icon.take() {
+                self.overlay.remove_overlay(&icon);
+            }
+
+            let filename = matrix_filename!(image, Some(mime::IMAGE));
+            self.obj().set_tooltip_text(Some(&filename));
+
+            self.load_thumbnail(image);
+        }
+
+        /// Show the given video with this item.
+        fn show_video(&self, video: VideoMessageEventContent) {
+            if self.overlay_icon.borrow().is_none() {
+                let icon = gtk::Image::builder()
+                    .icon_name("media-playback-start-symbolic")
+                    .css_classes(vec!["osd".to_string()])
+                    .halign(gtk::Align::Center)
+                    .valign(gtk::Align::Center)
+                    .accessible_role(gtk::AccessibleRole::Presentation)
+                    .build();
+
+                self.overlay.add_overlay(&icon);
+                self.overlay_icon.replace(Some(icon));
+            }
+
+            let filename = matrix_filename!(video, Some(mime::VIDEO));
+            self.obj().set_tooltip_text(Some(&filename));
+
+            self.load_thumbnail(video);
+        }
+
+        /// Load the thumbnail for the given media event content.
+        fn load_thumbnail<C>(&self, content: C)
+        where
+            C: MediaEventContent + Send + Sync + Clone + 'static,
+        {
+            let Some(session) = self
+                .event
+                .borrow()
+                .as_ref()
+                .and_then(|e| e.room())
+                .and_then(|r| r.session())
+            else {
+                return;
+            };
+
+            let media = session.client().media();
+            let handle = spawn_tokio!(async move {
+                let thumbnail = if content.thumbnail_source().is_some() {
+                    media
+                        .get_thumbnail(
+                            &content,
+                            MediaThumbnailSize {
+                                method: Method::Scale,
+                                width: THUMBNAIL_SIZE.into(),
+                                height: THUMBNAIL_SIZE.into(),
+                            },
+                            true,
+                        )
+                        .await
+                        .ok()
+                        .flatten()
+                } else {
+                    None
+                };
+
+                if let Some(data) = thumbnail {
+                    Ok(Some(data))
+                } else {
+                    media.get_file(&content, true).await
+                }
+            });
+
+            spawn!(
+                glib::Priority::LOW,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    async move {
+                        match handle.await.unwrap() {
+                            Ok(Some(data)) => {
+                                match gdk::Texture::from_bytes(&glib::Bytes::from(&data)) {
+                                    Ok(texture) => {
+                                        imp.picture.set_paintable(Some(&texture));
+                                    }
+                                    Err(error) => {
+                                        warn!("Image file not supported: {}", error);
+                                    }
+                                }
+                            }
+                            Ok(None) => {
+                                warn!("Could not retrieve invalid media file");
+                            }
+                            Err(error) => {
+                                warn!("Could not retrieve media file: {}", error);
+                            }
+                        }
+                    }
+                )
+            );
         }
     }
 }
@@ -125,103 +227,12 @@ glib::wrapper! {
 
 #[gtk::template_callbacks]
 impl MediaItem {
-    fn show_image(&self, image: ImageMessageEventContent, session: &Session) {
-        let imp = self.imp();
-
-        if let Some(icon) = imp.overlay_icon.take() {
-            imp.overlay.remove_overlay(&icon);
-        }
-
-        let filename = matrix_filename!(image, Some(mime::IMAGE));
-        self.set_tooltip_text(Some(&filename));
-
-        self.load_thumbnail(image, session);
+    /// Construct a new empty `MediaItem`.
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
-    fn show_video(&self, video: VideoMessageEventContent, session: &Session) {
-        let imp = self.imp();
-
-        if imp.overlay_icon.borrow().is_none() {
-            let icon = gtk::Image::builder()
-                .icon_name("media-playback-start-symbolic")
-                .css_classes(vec!["osd".to_string()])
-                .halign(gtk::Align::Center)
-                .valign(gtk::Align::Center)
-                .accessible_role(gtk::AccessibleRole::Presentation)
-                .build();
-
-            imp.overlay.add_overlay(&icon);
-            imp.overlay_icon.replace(Some(icon));
-        }
-
-        let filename = matrix_filename!(video, Some(mime::VIDEO));
-        self.set_tooltip_text(Some(&filename));
-
-        self.load_thumbnail(video, session);
-    }
-
-    fn load_thumbnail<C>(&self, content: C, session: &Session)
-    where
-        C: MediaEventContent + Send + Sync + Clone + 'static,
-    {
-        let media = session.client().media();
-        let handle = spawn_tokio!(async move {
-            let thumbnail = if content.thumbnail_source().is_some() {
-                media
-                    .get_thumbnail(
-                        &content,
-                        MediaThumbnailSize {
-                            method: Method::Scale,
-                            width: uint!(300),
-                            height: uint!(300),
-                        },
-                        true,
-                    )
-                    .await
-                    .ok()
-                    .flatten()
-            } else {
-                None
-            };
-
-            if let Some(data) = thumbnail {
-                Ok(Some(data))
-            } else {
-                media.get_file(&content, true).await
-            }
-        });
-
-        spawn!(
-            glib::Priority::LOW,
-            clone!(
-                #[weak(rename_to = obj)]
-                self,
-                async move {
-                    let imp = obj.imp();
-
-                    match handle.await.unwrap() {
-                        Ok(Some(data)) => {
-                            match gdk::Texture::from_bytes(&glib::Bytes::from(&data)) {
-                                Ok(texture) => {
-                                    imp.picture.set_paintable(Some(&texture));
-                                }
-                                Err(error) => {
-                                    warn!("Image file not supported: {}", error);
-                                }
-                            }
-                        }
-                        Ok(None) => {
-                            warn!("Could not retrieve invalid media file");
-                        }
-                        Err(error) => {
-                            warn!("Could not retrieve media file: {}", error);
-                        }
-                    }
-                }
-            )
-        );
-    }
-
+    /// The item was activated.
     #[template_callback]
     fn activate(&self) {
         let media_history_viewer = self

@@ -1,7 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, CompositeTemplate};
-use matrix_sdk::ruma::events::room::message::MessageType;
+use ruma::events::room::message::MessageType;
 use tracing::error;
 
 use super::HistoryViewerEvent;
@@ -40,13 +40,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-
-            klass.install_action_async("file-row.save-file", None, |obj, _, _| async move {
-                obj.save_file().await;
-            });
-            klass.install_action("file-row.open-file", None, |obj, _, _| {
-                obj.open_file();
-            });
+            Self::Type::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -90,7 +84,21 @@ mod imp {
             }
 
             self.event.replace(event);
+            self.file.take();
+            self.update_button();
+
             self.obj().notify_event();
+        }
+
+        /// Update the button for the current state.
+        pub(super) fn update_button(&self) {
+            if self.file.borrow().is_some() {
+                self.button.set_icon_name("document-symbolic");
+                self.button.set_tooltip_text(Some(&gettext("Open File")));
+            } else {
+                self.button.set_icon_name("save-symbolic");
+                self.button.set_tooltip_text(Some(&gettext("Save File")));
+            }
         }
     }
 }
@@ -101,13 +109,41 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin;
 }
 
+#[gtk::template_callbacks]
 impl FileRow {
+    /// Construct an empty `FileRow`.
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// Handle when the row's button was clicked.
+    #[template_callback]
+    async fn button_clicked(&self) {
+        let file = self.imp().file.borrow().clone();
+
+        // If there is a file, open it.
+        if let Some(file) = file {
+            if let Err(error) =
+                gio::AppInfo::launch_default_for_uri(&file.uri(), gio::AppLaunchContext::NONE)
+            {
+                error!("Could not open file: {error}");
+            }
+        } else {
+            // Otherwise save the file.
+            self.save_file().await
+        }
+    }
+
+    /// Save the file of this row.
     async fn save_file(&self) {
-        let (filename, data) = match self.event().unwrap().get_file_content().await {
+        let Some(event) = self.event() else {
+            return;
+        };
+        let (filename, data) = match event.get_file_content().await {
             Ok(res) => res,
-            Err(err) => {
-                error!("Could not get file: {}", err);
-                toast!(self, err.to_user_facing());
+            Err(error) => {
+                error!("Could not get file: {error}");
+                toast!(self, error.to_user_facing());
 
                 return;
             }
@@ -133,18 +169,7 @@ impl FileRow {
             let imp = self.imp();
 
             imp.file.replace(Some(file));
-            imp.button.set_icon_name("document-symbolic");
-            imp.button.set_action_name(Some("file-row.open-file"));
-        }
-    }
-
-    fn open_file(&self) {
-        if let Some(file) = self.imp().file.borrow().as_ref() {
-            if let Err(e) =
-                gio::AppInfo::launch_default_for_uri(&file.uri(), gio::AppLaunchContext::NONE)
-            {
-                error!("Error: {e}");
-            }
+            imp.update_button()
         }
     }
 }

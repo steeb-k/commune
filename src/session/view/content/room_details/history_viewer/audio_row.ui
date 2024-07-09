@@ -6,7 +6,7 @@
         <property name="spacing">12</property>
         <child>
           <object class="GtkButton" id="play_button">
-            <property name="action-name">audio-row.toggle-play</property>
+            <signal name="clicked" handler="toggle_play" swapped="true"/>
             <property name="icon-name">media-playback-start-symbolic</property>
             <property name="valign">center</property>
             <!-- Translators: As in "Play audio file". -->

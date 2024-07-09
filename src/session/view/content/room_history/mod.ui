@@ -209,7 +209,7 @@
                         <property name="vexpand">True</property>
                         <property name="icon-name">error-symbolic</property>
                         <property name="title" translatable="yes">Could Not Load Room</property>
-                        <property name="description" translatable="yes">Check your network connection.</property>
+                        <property name="description" translatable="yes">Check your network connection</property>
                         <property name="child">
                           <object class="GtkButton">
                             <property name="can-shrink">true</property>

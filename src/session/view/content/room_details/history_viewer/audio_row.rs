@@ -2,11 +2,11 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use glib::clone;
 use gtk::{gio, glib, CompositeTemplate};
-use matrix_sdk::ruma::events::room::message::{AudioMessageEventContent, MessageType};
+use ruma::events::room::message::MessageType;
 use tracing::warn;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, matrix_filename, session::model::Session, spawn, spawn_tokio};
+use crate::{gettext_f, matrix_filename, spawn, spawn_tokio};
 
 mod imp {
     use std::cell::RefCell;
@@ -22,7 +22,7 @@ mod imp {
     #[properties(wrapper_type = super::AudioRow)]
     pub struct AudioRow {
         /// The audio event.
-        #[property(get, set = Self::set_event, explicit_notify)]
+        #[property(get, set = Self::set_event, explicit_notify, nullable)]
         pub event: RefCell<Option<HistoryViewerEvent>>,
         pub media_file: RefCell<Option<gtk::MediaFile>>,
         #[template_child]
@@ -41,10 +41,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
-
-            klass.install_action("audio-row.toggle-play", None, |obj, _, _| {
-                obj.toggle_play();
-            });
+            Self::Type::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -64,7 +61,6 @@ mod imp {
             if *self.event.borrow() == event {
                 return;
             }
-            let obj = self.obj();
 
             if let Some(event) = &event {
                 if let MessageType::Audio(audio) = event.message_content() {
@@ -96,21 +92,82 @@ mod imp {
                     } else {
                         self.duration_label.set_label(&gettext("Unknown duration"));
                     }
-
-                    if let Some(session) = event.room().and_then(|r| r.session()) {
-                        spawn!(clone!(
-                            #[weak]
-                            obj,
-                            async move {
-                                obj.download_audio(audio, &session).await;
-                            }
-                        ));
-                    }
                 }
             }
 
             self.event.replace(event);
-            obj.notify_event();
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.download_audio().await;
+                }
+            ));
+
+            self.obj().notify_event();
+        }
+
+        /// Download the given audio.
+        async fn download_audio(&self) {
+            let Some(event) = self.event.borrow().clone() else {
+                return;
+            };
+            let MessageType::Audio(audio) = event.message_content() else {
+                return;
+            };
+            let Some(session) = event.room().and_then(|r| r.session()) else {
+                return;
+            };
+            let client = session.client();
+            let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
+
+            match handle.await.unwrap() {
+                Ok(Some(data)) => {
+                    // The GStreamer backend doesn't work with input streams so
+                    // we need to store the file.
+                    // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
+                    let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
+                    file.replace_contents(
+                        &data,
+                        None,
+                        false,
+                        gio::FileCreateFlags::REPLACE_DESTINATION,
+                        gio::Cancellable::NONE,
+                    )
+                    .unwrap();
+                    self.set_media_file(file);
+                }
+                Ok(None) => {
+                    warn!("Could not retrieve invalid audio file");
+                }
+                Err(error) => {
+                    warn!("Could not retrieve audio file: {error}");
+                }
+            }
+        }
+
+        /// Set the media file to play.
+        fn set_media_file(&self, file: gio::File) {
+            let media_file = gtk::MediaFile::for_file(&file);
+
+            media_file.connect_error_notify(|media_file| {
+                if let Some(error) = media_file.error() {
+                    warn!("Error reading audio file: {}", error);
+                }
+            });
+            media_file.connect_ended_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |media_file| {
+                    if media_file.is_ended() {
+                        imp.play_button
+                            .set_icon_name("media-playback-start-symbolic");
+                    }
+                }
+            ));
+
+            self.media_file.replace(Some(media_file));
         }
     }
 }
@@ -121,59 +178,15 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin;
 }
 
+#[gtk::template_callbacks]
 impl AudioRow {
-    async fn download_audio(&self, audio: AudioMessageEventContent, session: &Session) {
-        let client = session.client();
-        let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
-
-        match handle.await.unwrap() {
-            Ok(Some(data)) => {
-                // The GStreamer backend doesn't work with input streams so
-                // we need to store the file.
-                // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                file.replace_contents(
-                    &data,
-                    None,
-                    false,
-                    gio::FileCreateFlags::REPLACE_DESTINATION,
-                    gio::Cancellable::NONE,
-                )
-                .unwrap();
-                self.prepare_audio(file);
-            }
-            Ok(None) => {
-                warn!("Could not retrieve invalid audio file");
-            }
-            Err(error) => {
-                warn!("Could not retrieve audio file: {error}");
-            }
-        }
+    /// Construct an empty `AudioRow`.
+    pub fn new() -> Self {
+        glib::Object::new()
     }
 
-    fn prepare_audio(&self, file: gio::File) {
-        let media_file = gtk::MediaFile::for_file(&file);
-
-        media_file.connect_error_notify(|media_file| {
-            if let Some(error) = media_file.error() {
-                warn!("Error reading audio file: {}", error);
-            }
-        });
-        media_file.connect_ended_notify(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |media_file| {
-                if media_file.is_ended() {
-                    obj.imp()
-                        .play_button
-                        .set_icon_name("media-playback-start-symbolic");
-                }
-            }
-        ));
-
-        self.imp().media_file.replace(Some(media_file));
-    }
-
+    /// Toggle the audio player playing state.
+    #[template_callback]
     fn toggle_play(&self) {
         let imp = self.imp();
 

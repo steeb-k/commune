@@ -942,6 +942,11 @@ media-history-viewer-item > overlay > image {
 
 file-history-viewer listview > row {
   border-radius: 0;
+  padding: 6px;
+}
+
+file-history-viewer listview > row:last-child {
+  border-bottom-width: 0;
 }
 
 
@@ -949,6 +954,11 @@ file-history-viewer listview > row {
 
 audio-history-viewer listview > row {
   border-radius: 0;
+  padding: 6px;
+}
+
+audio-history-viewer listview > row:last-child {
+  border-bottom-width: 0;
 }
 
 

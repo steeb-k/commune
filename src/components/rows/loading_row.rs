@@ -113,6 +113,7 @@ impl LoadingRow {
         glib::Object::new()
     }
 
+    /// Connect to the signal emitted when the retry button is clicked.
     pub fn connect_retry<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "retry",
@@ -121,5 +122,11 @@ impl LoadingRow {
                 f(&obj);
             }),
         )
+    }
+}
+
+impl Default for LoadingRow {
+    fn default() -> Self {
+        Self::new()
     }
 }
