@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-06-30 13:13+0000\n"
-"PO-Revision-Date: 2024-07-03 22:02+0200\n"
+"POT-Creation-Date: 2024-07-09 19:49+0000\n"
+"PO-Revision-Date: 2024-07-10 00:40+0200\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -188,6 +188,9 @@ msgstr "Bekreft endring"
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
+#: src/session/view/content/room_details/history_viewer/audio.ui:61
+#: src/session/view/content/room_details/history_viewer/file.ui:60
+#: src/session/view/content/room_details/history_viewer/media.ui:67
 #: src/session/view/content/room_history/mod.ui:216
 msgid "Try Again"
 msgstr "Prøv igjen"
@@ -195,6 +198,9 @@ msgstr "Prøv igjen"
 #: src/components/action_button.ui:67 src/components/loading/spinner.rs:31
 #: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:53
+#: src/session/view/content/room_details/history_viewer/audio.ui:17
+#: src/session/view/content/room_details/history_viewer/file.ui:16
+#: src/session/view/content/room_details/history_viewer/media.ui:23
 #: src/session/view/content/room_history/mod.ui:188 src/window.ui:18
 msgid "Loading"
 msgstr "Laster inn"
@@ -623,11 +629,11 @@ msgid "Join"
 msgstr "Bli med"
 
 #. We are rejecting an invite.
-#: src/components/dialogs/message_dialogs.rs:19
+#: src/components/dialogs/message_dialogs.rs:24
 msgid "Decline Invite?"
 msgstr "Avslå invitasjon?"
 
-#: src/components/dialogs/message_dialogs.rs:21
+#: src/components/dialogs/message_dialogs.rs:26
 msgid ""
 "Do you really want to decline this invite? You can join this room on your "
 "own later."
@@ -635,7 +641,7 @@ msgstr ""
 "Er du sikker på at du vil avslå invitasjonen? Du kan bli med i samtalen på "
 "egen hånd senere."
 
-#: src/components/dialogs/message_dialogs.rs:24
+#: src/components/dialogs/message_dialogs.rs:29
 msgid ""
 "Do you really want to decline this invite? You will not be able to join this "
 "room without it."
@@ -643,23 +649,23 @@ msgstr ""
 "Er du sikker på at du vil avslå invitasjonen? Du kan ikke bli med i samtalen "
 "uten den."
 
-#: src/components/dialogs/message_dialogs.rs:27
-#: src/identity_verification_view/accept_request_page.ui:47
+#: src/components/dialogs/message_dialogs.rs:32
+#: src/identity_verification_view/accept_request_page.ui:46
 #: src/session/view/content/room_history/verification_info_bar.rs:173
 msgid "Decline"
 msgstr "Avslå"
 
 #. We are leaving a room that was joined.
-#: src/components/dialogs/message_dialogs.rs:32
+#: src/components/dialogs/message_dialogs.rs:37
 msgid "Leave Room?"
 msgstr "Forlate samtale?"
 
-#: src/components/dialogs/message_dialogs.rs:34
+#: src/components/dialogs/message_dialogs.rs:39
 msgid "Do you really want to leave this room? You can come back later."
 msgstr ""
 "Er du sikker på at du vil forlate samtalen? Du kan komme tilbake senere."
 
-#: src/components/dialogs/message_dialogs.rs:37
+#: src/components/dialogs/message_dialogs.rs:42
 msgid ""
 "Do you really want to leave this room? You will not be able to come back "
 "without an invitation."
@@ -667,37 +673,45 @@ msgstr ""
 "Er du sikker på at du vil forlate samtalen? Du vil ikke kunne bli med igjen "
 "uten en invitasjon."
 
-#: src/components/dialogs/message_dialogs.rs:40
+#: src/components/dialogs/message_dialogs.rs:45
 msgid "Leave"
 msgstr "Forlat"
 
-#: src/components/dialogs/message_dialogs.rs:51
-#: src/components/dialogs/message_dialogs.rs:259
-#: src/components/dialogs/message_dialogs.rs:320
-#: src/components/dialogs/message_dialogs.rs:355
+#: src/components/dialogs/message_dialogs.rs:56
+#: src/components/dialogs/message_dialogs.rs:308
+#: src/components/dialogs/message_dialogs.rs:369
+#: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
 #: src/session/view/account_settings/general_page/mod.rs:293
 #: src/session/view/content/room_details/general_page/mod.rs:596
 #: src/session/view/content/room_details/general_page/mod.rs:1375
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:914
-#: src/session/view/content/room_history/item_row.rs:971
+#: src/session/view/content/room_history/item_row.rs:937
+#: src/session/view/content/room_history/item_row.rs:994
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
 msgid "Cancel"
 msgstr "Avbryt"
 
+#: src/components/dialogs/message_dialogs.rs:65
+msgid "Ignore {user}"
+msgstr "Ignorer {user}"
+
+#: src/components/dialogs/message_dialogs.rs:69
+msgid "All messages or invitations sent by this user will be ignored"
+msgstr "Alle meldinger og invitasjoner fra denne kontoen vil ignoreres"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:85
+#: src/components/dialogs/message_dialogs.rs:134
 msgid "Ban {user}?"
 msgstr "Utestenge {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:89
+#: src/components/dialogs/message_dialogs.rs:138
 msgid ""
 "Are you sure you want to ban {user_id}? They will not be able to join the "
 "room again until someone unbans them."
@@ -706,20 +720,21 @@ msgstr ""
 "samtalen igjen før noen opphever utestengingen."
 
 #. Translators: As in, 'Ban room member'.
-#: src/components/dialogs/message_dialogs.rs:92 src/components/user_page.ui:170
+#: src/components/dialogs/message_dialogs.rs:141
+#: src/components/user_page.ui:170
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "Utesteng"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:103
+#: src/components/dialogs/message_dialogs.rs:152
 msgid "Revoke Invite for {user}?"
 msgstr "Trekke tilbake invitasjon av {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:110
+#: src/components/dialogs/message_dialogs.rs:159
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will still be "
 "able to join the room on their own."
@@ -729,7 +744,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:117
+#: src/components/dialogs/message_dialogs.rs:166
 msgid ""
 "Are you sure you want to revoke the invite for {user_id}? They will not be "
 "able to join the room again until someone reinvites them."
@@ -737,37 +752,37 @@ msgstr ""
 "Er du sikker på at du vil trekke tilbake invitasjonen av {user_id}? De vil "
 "ikke kunne bli med i samtalen med mindre noen inviterer dem på nytt."
 
-#: src/components/dialogs/message_dialogs.rs:121
+#: src/components/dialogs/message_dialogs.rs:170
 #: src/components/user_page.rs:421
 msgid "Revoke Invite"
 msgstr "Trekk tilbake invitasjon"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:128
+#: src/components/dialogs/message_dialogs.rs:177
 msgid "Deny Access to {user}?"
 msgstr "Avslå forespørsel fra {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:134
+#: src/components/dialogs/message_dialogs.rs:183
 msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "Er du sikker på at du ønsker å avslå forespørselen fra {user_id}?"
 
-#: src/components/dialogs/message_dialogs.rs:137
+#: src/components/dialogs/message_dialogs.rs:186
 #: src/components/user_page.rs:422
 msgid "Deny Access"
 msgstr "Avvis"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:143
+#: src/components/dialogs/message_dialogs.rs:192
 msgid "Kick {user}?"
 msgstr "Sparke ut {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:148
+#: src/components/dialogs/message_dialogs.rs:197
 msgid ""
 "Are you sure you want to kick {user_id}? They will still be able to join the "
 "room again on their own."
@@ -777,7 +792,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:155
+#: src/components/dialogs/message_dialogs.rs:204
 msgid ""
 "Are you sure you want to kick {user_id}? They will not be able to join the "
 "room again until someone invites them."
@@ -787,7 +802,7 @@ msgstr ""
 
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
-#: src/components/dialogs/message_dialogs.rs:159
+#: src/components/dialogs/message_dialogs.rs:208
 #: src/components/user_page.rs:424
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
@@ -795,13 +810,13 @@ msgstr "Spark ut"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:170
+#: src/components/dialogs/message_dialogs.rs:219
 msgid "Remove Messages Sent by {user}?"
 msgstr "Slette meldinger fra {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:176
+#: src/components/dialogs/message_dialogs.rs:225
 msgid ""
 "This removes all the messages received from the homeserver. Are you sure you "
 "want to remove 1 message sent by {user_id}? This cannot be undone."
@@ -815,22 +830,22 @@ msgstr[1] ""
 "Er du sikker på at du vil slette {n} meldinger sendt av {user_id}? Alle "
 "meldinger mottatt fra hjemmetjeneren vil slettes permanent."
 
-#: src/components/dialogs/message_dialogs.rs:181
+#: src/components/dialogs/message_dialogs.rs:230
 #: src/session/view/account_settings/general_page/mod.rs:294
 #: src/session/view/content/room_details/general_page/mod.rs:597
-#: src/session/view/content/room_history/item_row.rs:915
+#: src/session/view/content/room_history/item_row.rs:938
 msgid "Remove"
 msgstr "Fjern"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:187
+#: src/components/dialogs/message_dialogs.rs:236
 msgid "No Messages Sent by {user}"
 msgstr "Ingen meldinger fra {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:193
+#: src/components/dialogs/message_dialogs.rs:242
 msgid ""
 "There are no messages received from the homeserver sent by {user_id}. You "
 "can try to load more by going further back in the room history."
@@ -838,14 +853,14 @@ msgstr ""
 "Det er ingen meldinger mottatt fra hjemmetjeneren som er sendt av {user_id}. "
 "Du kan prøve å laste inn flere ved å bla lenger tilbake i samtalen."
 
-#: src/components/dialogs/message_dialogs.rs:208
-#: src/session/view/content/room_history/item_row.rs:953
+#: src/components/dialogs/message_dialogs.rs:257
+#: src/session/view/content/room_history/item_row.rs:976
 msgid "Reason (optional)"
 msgstr "Begrunnelse"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:232
+#: src/components/dialogs/message_dialogs.rs:281
 msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] "Fjern siste melding fra kontoen"
@@ -853,13 +868,13 @@ msgstr[1] "Fjern de {n} siste meldingene fra kontoen"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:303
+#: src/components/dialogs/message_dialogs.rs:352
 msgid "Mute {user}?"
 msgstr "Dempe {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:309
+#: src/components/dialogs/message_dialogs.rs:358
 msgid ""
 "Are you sure you want to mute {user_id}? They will not be able to send new "
 "messages."
@@ -868,19 +883,19 @@ msgstr ""
 "meldinger."
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
-#: src/components/dialogs/message_dialogs.rs:322
+#: src/components/dialogs/message_dialogs.rs:371
 msgid "Mute"
 msgstr "Demp"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:338
+#: src/components/dialogs/message_dialogs.rs:387
 msgid "Promote {user}?"
 msgstr "Forfremme {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/message_dialogs.rs:344
+#: src/components/dialogs/message_dialogs.rs:393
 msgid ""
 "If you promote {user_id} to the same level as yours, you will not be able to "
 "demote them in the future."
@@ -888,7 +903,7 @@ msgstr ""
 "Hvis du forfremmer {user_id} til samme nivå som deg, vil du ikke kunne "
 "nedgradere dem senere."
 
-#: src/components/dialogs/message_dialogs.rs:356
+#: src/components/dialogs/message_dialogs.rs:405
 msgid "Promote"
 msgstr "Forfrem"
 
@@ -950,6 +965,10 @@ msgstr "Tilpasset"
 #: src/components/power_level_selection/popover.ui:164
 msgid "Confirm Custom Role"
 msgstr "Bekreft tilpasset rolle"
+
+#: src/components/room_title.ui:35
+msgid "Click to Expand"
+msgstr "Trykk for å utvide"
 
 #: src/components/user_page.rs:281
 #: src/session/view/account_settings/general_page/mod.ui:74
@@ -1081,8 +1100,9 @@ msgstr "Ignorer"
 msgid "Could not stop ignoring user"
 msgstr "Oppheving av ignorering mislyktes"
 
-#: src/components/user_page.rs:783
+#: src/components/user_page.rs:783 src/session/view/content/invite.rs:278
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
+#: src/session/view/sidebar/row.rs:554
 msgid "Could not ignore user"
 msgstr "Ignorering av konto mislyktes"
 
@@ -1116,7 +1136,7 @@ msgid "Security"
 msgstr "Sikkerhet"
 
 #: src/components/user_page.ui:238
-#: src/identity_verification_view/accept_request_page.ui:58
+#: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:270
 #: src/session/view/content/room_history/verification_info_bar.rs:172
 #: src/session/view/sidebar/mod.rs:322
@@ -1277,8 +1297,8 @@ msgid "Send New Request"
 msgstr "Send på nytt"
 
 #: src/identity_verification_view/cancelled_page.ui:52
-#: src/identity_verification_view/completed_page.ui:47
-#: src/identity_verification_view/room_left_page.ui:43
+#: src/identity_verification_view/completed_page.ui:48
+#: src/identity_verification_view/room_left_page.ui:44
 msgid "Dismiss"
 msgstr "Fortsett"
 
@@ -1334,14 +1354,14 @@ msgid "Scan QR code with this session"
 msgstr "Skann QR-kode"
 
 #: src/identity_verification_view/choose_method_page.ui:69
-#: src/identity_verification_view/scan_qr_code_page.ui:66
+#: src/identity_verification_view/scan_qr_code_page.ui:67
 msgid "Compare Emoji"
 msgstr "Sammenlign emojier"
 
 #: src/identity_verification_view/choose_method_page.ui:80
 #: src/identity_verification_view/no_supported_methods_page.rs:167
 #: src/identity_verification_view/qr_code_scanned_page.ui:48
-#: src/identity_verification_view/scan_qr_code_page.ui:77
+#: src/identity_verification_view/scan_qr_code_page.ui:78
 msgid "Cancel Verification"
 msgstr "Avbryt verifisering"
 
@@ -1554,7 +1574,7 @@ msgstr "Skann QR-koden på {user} sin enhet."
 msgid "Could not validate scanned QR Code"
 msgstr "Godkjenning av skannet QR-kode mislyktes"
 
-#: src/identity_verification_view/scan_qr_code_page.ui:57
+#: src/identity_verification_view/scan_qr_code_page.ui:58
 msgid "Show a QR code to scan with another device"
 msgstr "Vis QR-kode"
 
@@ -1860,7 +1880,7 @@ msgstr ""
 "Åpning av standardsamling mislyktes. Pass på at en nøkkelring ble opprettet "
 "og valgt som standard."
 
-#: src/session/model/session.rs:892
+#: src/session/model/session.rs:950
 msgid "Could not log the session out"
 msgstr "Utlogging mislyktes"
 
@@ -1905,17 +1925,17 @@ msgstr "Hvem som helst"
 msgid "Unsupported rule"
 msgstr "Ukjent regel"
 
-#: src/session/model/room/mod.rs:1229
+#: src/session/model/room/mod.rs:1306
 msgid "Empty Room (was {user})"
 msgstr "Tom samtale (tidligere {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1232
+#: src/session/model/room/mod.rs:1309
 msgid "Empty Room"
 msgstr "Tom samtale"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1242
+#: src/session/model/room/mod.rs:1319
 msgid "Unknown"
 msgstr "Ukjent"
 
@@ -1939,7 +1959,7 @@ msgstr "Dempet"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/model/room_list/mod.rs:410
+#: src/session/model/room_list/mod.rs:406
 #: src/session/view/content/room_history/mod.rs:593
 msgid "Could not join room {room_name}. Try again later."
 msgstr "Tilkobling til {room_name} mislyktes. Prøv igjen senere."
@@ -2723,21 +2743,19 @@ msgstr "Legg til tjener"
 msgid "Remove Server"
 msgstr "Fjern tjener"
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/invite.rs:82 src/utils/matrix.rs:244
-msgid "{user} invited you"
-msgstr "{user} inviterte deg"
+#: src/session/view/content/invite.rs:168
+msgid "{user_name} ({user_id}) invited you"
+msgstr "{user_name} ({user_id}) inviterte deg"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:212
+#: src/session/view/content/invite.rs:225
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "Godtaking av invitasjon til {room} mislyktes."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:245
+#: src/session/view/content/invite.rs:265
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "Avslåing av invitasjon til {room} mislyktes."
 
@@ -2748,11 +2766,11 @@ msgstr "Avslåing av invitasjon til {room} mislyktes."
 msgid "Invite"
 msgstr "Inviter"
 
-#: src/session/view/content/invite.ui:100
+#: src/session/view/content/invite.ui:122
 msgid "_Decline"
 msgstr "_Avslå"
 
-#: src/session/view/content/invite.ui:110 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:132 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "_Godta"
 
@@ -3173,11 +3191,11 @@ msgstr "Tilknytning"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this case, the file to play is an
 #. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:79
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:75
 msgid "Play {filename}"
 msgstr "Spill {filename}"
 
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:97
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:93
 msgid "Unknown duration"
 msgstr "Ukjent varighet"
 
@@ -3186,17 +3204,47 @@ msgstr "Ukjent varighet"
 msgid "Play"
 msgstr "Spill av"
 
+#: src/session/view/content/room_details/history_viewer/audio.ui:33
+#: src/session/view/content/room_details/history_viewer/audio.ui:40
+msgid "No Audio"
+msgstr "Ingen lyd"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:41
+msgid "This room does not contain any audio"
+msgstr "Denne samtalen har ingen lydklipp"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:49
+#: src/session/view/content/room_details/history_viewer/audio.ui:56
+msgid "Could Not Load Audio"
+msgstr "Innlasting av lyd mislyktes"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:57
+#: src/session/view/content/room_details/history_viewer/file.ui:56
+#: src/session/view/content/room_details/history_viewer/media.ui:63
+#: src/session/view/content/room_history/mod.ui:212
+msgid "Check your network connection"
+msgstr "Sjekk nettverkstilkoblingen din"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:76
+msgid "Audio History"
+msgstr "Lydhistorikk"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/history_viewer/file_row.rs:79
+#: src/session/view/content/room_details/history_viewer/file_row.rs:73
 msgid "Save {filename}"
 msgstr "Lagre {filename}"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:87
+#: src/session/view/content/room_details/history_viewer/file_row.rs:81
 msgid "Unknown size"
 msgstr "Ukjent størrelse"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:118
+#: src/session/view/content/room_details/history_viewer/file_row.rs:97
+msgid "Open File"
+msgstr "Åpne fil"
+
+#: src/session/view/content/room_details/history_viewer/file_row.rs:100
+#: src/session/view/content/room_details/history_viewer/file_row.rs:154
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
@@ -3204,11 +3252,47 @@ msgstr "Ukjent størrelse"
 msgid "Save File"
 msgstr "Lagre fil"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:119
+#: src/session/view/content/room_details/history_viewer/file_row.rs:155
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
 #: src/utils/media.rs:193
 msgid "Save"
 msgstr "Lagre"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:32
+#: src/session/view/content/room_details/history_viewer/file.ui:39
+msgid "No Files"
+msgstr "Ingen filer"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:40
+msgid "This room does not contain any files"
+msgstr "Denne samtalen har ingen filer"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:48
+#: src/session/view/content/room_details/history_viewer/file.ui:55
+msgid "Could Not Load Files"
+msgstr "Innlasting av filer mislyktes"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:75
+msgid "File History"
+msgstr "Filhistorikk"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:39
+#: src/session/view/content/room_details/history_viewer/media.ui:46
+msgid "No Media"
+msgstr "Ingen medier"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:47
+msgid "This room does not contain any media"
+msgstr "Denne samtalen har ingen medier"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:55
+#: src/session/view/content/room_details/history_viewer/media.ui:62
+msgid "Could Not Load Media"
+msgstr "Innlasting av medier mislyktes"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:82
+msgid "Media History"
+msgstr "Mediehistorikk"
 
 #: src/session/view/content/room_details/invite_subpage/list.rs:269
 msgid "Banned"
@@ -3582,7 +3666,7 @@ msgstr "_Kopier forhåndsvisning"
 msgid "Rep_ort"
 msgstr "_Rapporter"
 
-#: src/session/view/content/room_history/item_row.rs:313
+#: src/session/view/content/room_history/item_row.rs:336
 msgid "This is the start of the visible history"
 msgstr "Her begynner den synlige delen av samtalen"
 
@@ -3590,7 +3674,7 @@ msgstr "Her begynner den synlige delen av samtalen"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:353
+#: src/session/view/content/room_history/item_row.rs:376
 msgid "%A, %B %-e"
 msgstr "%A %-e. %B"
 
@@ -3598,58 +3682,58 @@ msgstr "%A %-e. %B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:359
+#: src/session/view/content/room_history/item_row.rs:382
 msgid "%A, %B %-e, %Y"
 msgstr "%A %-e. %B %Y"
 
-#: src/session/view/content/room_history/item_row.rs:365
+#: src/session/view/content/room_history/item_row.rs:388
 msgid "New Messages"
 msgstr "Nye meldinger"
 
-#: src/session/view/content/room_history/item_row.rs:517
+#: src/session/view/content/room_history/item_row.rs:540
 #: src/session/view/content/room_history/mod.rs:623
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
 #: src/session/view/media_viewer.rs:554
 msgid "Permalink copied to clipboard"
 msgstr "Lenke kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:654
-#: src/session/view/content/room_history/item_row.rs:701
-#: src/session/view/content/room_history/item_row.rs:721
-#: src/session/view/content/room_history/item_row.rs:756
-#: src/session/view/content/room_history/item_row.rs:802
-#: src/session/view/content/room_history/item_row.rs:830
-#: src/session/view/content/room_history/item_row.rs:858
+#: src/session/view/content/room_history/item_row.rs:677
+#: src/session/view/content/room_history/item_row.rs:724
+#: src/session/view/content/room_history/item_row.rs:744
+#: src/session/view/content/room_history/item_row.rs:779
+#: src/session/view/content/room_history/item_row.rs:825
+#: src/session/view/content/room_history/item_row.rs:853
+#: src/session/view/content/room_history/item_row.rs:881
 msgid "Text copied to clipboard"
 msgstr "Tekst kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:776
+#: src/session/view/content/room_history/item_row.rs:799
 msgid "Thumbnail copied to clipboard"
 msgstr "Forhåndsvisning kopiert til utklippstavlen"
 
-#: src/session/view/content/room_history/item_row.rs:908
+#: src/session/view/content/room_history/item_row.rs:931
 msgid "Remove Message?"
 msgstr "Slette melding?"
 
-#: src/session/view/content/room_history/item_row.rs:910
+#: src/session/view/content/room_history/item_row.rs:933
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 "Er du sikker på at du vil slette denne meldingen? Den vil bli borte for "
 "alltid."
 
-#: src/session/view/content/room_history/item_row.rs:924
+#: src/session/view/content/room_history/item_row.rs:947
 msgid "Could not remove message"
 msgstr "Sletting av melding mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:961
 msgid "Could not toggle reaction"
 msgstr "Endring av reaksjon mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:964
+#: src/session/view/content/room_history/item_row.rs:987
 msgid "Report Event?"
 msgstr "Rapportere hendelse?"
 
-#: src/session/view/content/room_history/item_row.rs:966
+#: src/session/view/content/room_history/item_row.rs:989
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3660,15 +3744,15 @@ msgstr ""
 "hendelsen hvis den er kryptert eller slettet."
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:973
+#: src/session/view/content/room_history/item_row.rs:996
 msgid "Report"
 msgstr "Rapporter"
 
-#: src/session/view/content/room_history/item_row.rs:991
+#: src/session/view/content/room_history/item_row.rs:1014
 msgid "Could not report event"
 msgstr "Rapportering av hendelse mislyktes"
 
-#: src/session/view/content/room_history/item_row.rs:1009
+#: src/session/view/content/room_history/item_row.rs:1032
 msgid "Could not discard message"
 msgstr "Forkasting av melding mislyktes"
 
@@ -3685,12 +3769,7 @@ msgstr "Nedlasting av lydklipp mislyktes"
 msgid "Error reading audio file"
 msgstr "Innlasting av lydklipp mislyktes"
 
-#: src/session/view/content/room_history/message_row/content.rs:355
-#: src/session/view/content/room_history/message_row/content.rs:397
-msgid "Unsupported event"
-msgstr "Ukjent meldingstype"
-
-#: src/session/view/content/room_history/message_row/content.rs:376
+#: src/session/view/content/room_history/message_row/content.rs:240
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3698,9 +3777,14 @@ msgstr ""
 "Dekryptering av melding mislyktes, det vil bli gjort et nytt forsøk når "
 "nøklene er tilgjengelige."
 
-#: src/session/view/content/room_history/message_row/content.rs:386
+#: src/session/view/content/room_history/message_row/content.rs:250
 msgid "This message was removed."
 msgstr "Denne meldingen ble slettet."
+
+#: src/session/view/content/room_history/message_row/content.rs:261
+#: src/session/view/content/room_history/message_row/content.rs:423
+msgid "Unsupported event"
+msgstr "Ukjent meldingstype"
 
 #: src/session/view/content/room_history/message_row/file.rs:63
 msgid "File: {filename}"
@@ -3806,90 +3890,90 @@ msgstr "Informasjon"
 msgid "_Send"
 msgstr "_Send"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:638
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:662
 msgid "Public Room Mention Auto-completion"
 msgstr "Automatisk fullføring av samtalenavn"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:640
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:664
 msgid "Room Member Mention Auto-completion"
 msgstr "Automatisk fullføring av kontonavn"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:434
+#: src/session/view/content/room_history/message_toolbar/mod.rs:431
 msgid "Reply to {user}"
 msgstr "Svar {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:506
+#: src/session/view/content/room_history/message_toolbar/mod.rs:500
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Rediger"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:664
+#: src/session/view/content/room_history/message_toolbar/mod.rs:699
 msgid "Could not send reply"
 msgstr "Sending av svar mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:672
+#: src/session/view/content/room_history/message_toolbar/mod.rs:707
 msgid "Could not send edit"
 msgstr "Redigering mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:683
+#: src/session/view/content/room_history/message_toolbar/mod.rs:718
 msgid "Could not send message"
 msgstr "Sending av melding mislyktes"
 
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:726
+#: src/session/view/content/room_history/message_toolbar/mod.rs:760
 msgid "Your Location"
 msgstr "Posisjonen din"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:787
+#: src/session/view/content/room_history/message_toolbar/mod.rs:821
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Posisjon {geo_uri} på tidspunktet {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:809
+#: src/session/view/content/room_history/message_toolbar/mod.rs:843
 msgid "Could not send location"
 msgstr "Sending av posisjon mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:816
+#: src/session/view/content/room_history/message_toolbar/mod.rs:850
 msgid "The location request has been cancelled"
 msgstr "Posisjonsforespørselen ble avbrutt"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:817
+#: src/session/view/content/room_history/message_toolbar/mod.rs:851
 msgid "The location services are disabled"
 msgstr "Posisjonsdeling er slått av"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:818
+#: src/session/view/content/room_history/message_toolbar/mod.rs:852
 msgid "Could not retrieve current location"
 msgstr "Innhenting av posisjon mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:863
+#: src/session/view/content/room_history/message_toolbar/mod.rs:897
 msgid "Could not send file"
 msgstr "Sending av fil mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:903
+#: src/session/view/content/room_history/message_toolbar/mod.rs:937
 msgid "Select File"
 msgstr "Velg fil"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:905
+#: src/session/view/content/room_history/message_toolbar/mod.rs:939
 msgid "Select"
 msgstr "Velg"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:920
+#: src/session/view/content/room_history/message_toolbar/mod.rs:954
 msgid "Could not open file"
 msgstr "Åpning av fil mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:939
+#: src/session/view/content/room_history/message_toolbar/mod.rs:973
 msgid "Error reading file"
 msgstr "Lesing av fil mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:996
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1030
 msgid "Error getting image from clipboard"
 msgstr "Innliming av bilde mislyktes"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:1013
+#: src/session/view/content/room_history/message_toolbar/mod.rs:1047
 msgid "Error getting file from clipboard"
 msgstr "Innliming av fil mislyktes"
 
@@ -3959,7 +4043,7 @@ msgstr "Forlating av {room} mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:610
-#: src/session/view/sidebar/row.rs:553
+#: src/session/view/sidebar/row.rs:565
 msgid "Could not forget {room}"
 msgstr "Glemming av {room} mislyktes"
 
@@ -4075,10 +4159,6 @@ msgstr "Samtalemeny"
 #: src/session/view/content/room_history/mod.ui:211
 msgid "Could Not Load Room"
 msgstr "Åpning av samtale mislyktes"
-
-#: src/session/view/content/room_history/mod.ui:212
-msgid "Check your network connection."
-msgstr "Sjekk nettverkstilkoblingen din."
 
 #: src/session/view/content/room_history/mod.ui:246
 msgid "Scroll to Bottom"
@@ -4688,7 +4768,7 @@ msgid "Direct chat with {name}"
 msgstr "Direktesamtale med {name}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:538
+#: src/session/view/sidebar/row.rs:544
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 "Flytting av {room} fra {previous_category} til {new_category} mislyktes"
@@ -4803,6 +4883,12 @@ msgstr "{user} sendte et klistremerke."
 #: src/utils/matrix.rs:220
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/utils/matrix.rs:244
+msgid "{user} invited you"
+msgstr "{user} inviterte deg"
 
 #. Translators: Default name for image files.
 #: src/utils/media.rs:33
