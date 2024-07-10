@@ -1441,6 +1441,7 @@ dependencies = [
  "sourceview5",
  "strum",
  "thiserror",
+ "tld",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -5175,6 +5176,16 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tld"
+version = "2.35.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73ca5fc340fcb4f52570c502cf443fc22d5521e9ef2bb03528e3634254016cf7"
+dependencies = [
+ "phf",
+ "phf_codegen",
+]
 
 [[package]]
 name = "tokio"

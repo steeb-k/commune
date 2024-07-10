@@ -1,9 +1,14 @@
 //! Helper traits and methods for strings.
 
-use std::fmt::{self, Write};
+use std::{borrow::Cow, fmt::Write};
 
 use gtk::glib::markup_escape_text;
 use linkify::{LinkFinder, LinkKind};
+use ruma::MatrixUri;
+use url::Url;
+
+#[cfg(test)]
+mod tests;
 
 use super::matrix::{find_at_room, MatrixIdUri, AT_ROOM};
 use crate::{
@@ -11,6 +16,13 @@ use crate::{
     prelude::*,
     session::model::Room,
 };
+
+/// The prefix for an email URI.
+const EMAIL_URI_PREFIX: &str = "mailto:";
+/// The prefix for a HTTPS URL.
+const HTTPS_URI_PREFIX: &str = "https://";
+/// The prefix for a `matrix:` URI.
+const MATRIX_URI_PREFIX: &str = "matrix:";
 
 /// Common extensions to strings.
 pub trait StrExt {
@@ -207,30 +219,34 @@ impl<'a> Linkifier<'a> {
     ///
     /// Returns the list of mentions, if any where found.
     pub fn linkify(mut self, text: &str) {
-        let finder = LinkFinder::new();
+        let mut finder = LinkFinder::new();
+        // Allow URLS without a scheme.
+        finder.url_must_have_scheme(false);
+
+        let mut prev_span = None;
 
         for span in finder.spans(text) {
             let span_text = span.as_str();
 
-            let uri = match span.kind() {
+            match span.kind() {
                 Some(LinkKind::Url) => {
-                    if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
-                        if let Some(pill) = self.inner.maybe_append_mention(span_text, room) {
-                            pills.push(pill);
+                    let is_valid_url = self.append_detected_url(span_text, prev_span);
 
-                            continue;
-                        }
+                    if is_valid_url {
+                        prev_span = None;
+                    } else {
+                        prev_span = Some(span_text);
                     }
-
-                    Some(UriParts {
-                        prefix: None,
-                        uri: span_text,
-                    })
                 }
-                Some(LinkKind::Email) => Some(UriParts {
-                    prefix: Some("mailto:"),
-                    uri: span_text,
-                }),
+                Some(LinkKind::Email) => {
+                    self.inner
+                        .append_link_opening_tag(format!("{EMAIL_URI_PREFIX}{span_text}"));
+                    self.inner.push_str(&span_text.escape_markup());
+                    self.inner.push_str("</a>");
+
+                    // The span was a valid email so we will not need to check it for the next span.
+                    prev_span = None;
+                }
                 _ => {
                     if let MentionsMode::WithMentions {
                         pills,
@@ -242,23 +258,104 @@ impl<'a> Linkifier<'a> {
                             pills.push(pill);
                         }
 
+                        prev_span = Some(span_text);
                         continue;
                     }
 
-                    None
+                    self.append_string(span_text);
+                    prev_span = Some(span_text);
                 }
-            };
-
-            if let Some(uri) = uri {
-                self.inner.append_link_opening_tag(uri.to_string());
-            }
-
-            self.inner.push_str(&span_text.escape_markup());
-
-            if uri.is_some() {
-                self.inner.push_str("</a>");
             }
         }
+    }
+
+    /// Append the given string.
+    ///
+    /// Escapes the markup of the string.
+    fn append_string(&mut self, s: &str) {
+        self.inner.push_str(&s.escape_markup());
+    }
+
+    /// Append the given URI.
+    fn append_uri(&mut self, uri: &str, prefix: Option<&str>) {
+        let full_uri = if let Some(prefix) = prefix {
+            Cow::Owned(format!("{prefix}{uri}"))
+        } else {
+            Cow::Borrowed(uri)
+        };
+
+        if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
+            if let Some(pill) = self.inner.maybe_append_mention(full_uri.as_ref(), room) {
+                pills.push(pill);
+
+                return;
+            }
+        }
+
+        self.inner.append_link_opening_tag(full_uri);
+        self.append_string(uri);
+        self.inner.push_str("</a>");
+    }
+
+    /// Append the given string detected as a URL.
+    ///
+    /// Appends false positives as normal strings, otherwise appends it as a
+    /// URI.
+    ///
+    /// Returns `true` if it was detected as a valid URL.
+    fn append_detected_url(&mut self, detected_url: &str, prev_span: Option<&str>) -> bool {
+        if Url::parse(detected_url).is_ok() {
+            // This is a full URL with a scheme, we can trust that it is valid.
+            self.append_uri(detected_url, None);
+            return true;
+        }
+
+        // It does not have a scheme, try to split it to get only the domain.
+        let domain = if let Some((domain, _)) = detected_url.split_once('/') {
+            // This is a URL with a path component.
+            domain
+        } else if let Some((domain, _)) = detected_url.split_once('?') {
+            // This is a URL with a query component.
+            domain
+        } else if let Some((domain, _)) = detected_url.split_once('#') {
+            // This is a URL with a fragment.
+            domain
+        } else {
+            // It should only contain the full domain.
+            detected_url
+        };
+
+        // Check that the top-level domain is known.
+        if !domain.rsplit_once('.').is_some_and(|(_, d)| tld::exist(d)) {
+            // This is a false positive, treat it like a regular string.
+            self.append_string(detected_url);
+            return false;
+        }
+
+        // The LinkFinder does not detect URIs without an authority component, which is
+        // problematic for `matrix:` URIs. However it detects a link starting from the
+        // homeserver part, e.g. it detects `example.org` in
+        // `matrix:r/somewhere:example.org`. We can use that to recompose the full URI
+        // with the previous span.
+
+        // First, detect if we can find the `matrix:` scheme in the previous span.
+        if let Some(maybe_uri_start) =
+            prev_span.and_then(|s| s.rfind(MATRIX_URI_PREFIX).map(|pos| &s[pos..]))
+        {
+            // See if the whole string is a valid URI.
+            let maybe_full_uri = format!("{maybe_uri_start}{detected_url}");
+            if MatrixUri::parse(&maybe_full_uri).is_ok() {
+                // Remove the start of the URI from the string.
+                self.inner
+                    .truncate(self.inner.len() - maybe_uri_start.len());
+                self.append_uri(&maybe_full_uri, None);
+
+                return true;
+            }
+        }
+
+        self.append_uri(detected_url, Some(HTTPS_URI_PREFIX));
+        true
     }
 }
 
@@ -277,21 +374,4 @@ enum MentionsMode<'a> {
         /// Whether to detect `@room` mentions.
         detect_at_room: bool,
     },
-}
-
-/// A URI that is possibly into parts.
-#[derive(Debug, Clone, Copy)]
-struct UriParts<'a> {
-    prefix: Option<&'a str>,
-    uri: &'a str,
-}
-
-impl<'a> fmt::Display for UriParts<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(prefix) = self.prefix {
-            f.write_str(prefix)?;
-        }
-
-        f.write_str(self.uri)
-    }
 }
