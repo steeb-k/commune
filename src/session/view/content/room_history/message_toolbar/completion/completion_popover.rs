@@ -12,6 +12,10 @@ use crate::{
 
 /// The maximum number of rows presented in the popover.
 const MAX_ROWS: usize = 32;
+/// The sigil for a user ID.
+const USER_ID_SIGIL: char = '@';
+/// The sigil for a room alias.
+const ROOM_ALIAS_SIGIL: char = '#';
 
 mod imp {
     use std::{
@@ -310,7 +314,18 @@ impl CompletionPopover {
 
         fn is_possible_word_char(c: char) -> bool {
             c.is_alphanumeric()
-                || matches!(c, '.' | '_' | '=' | '-' | '/' | ':' | '[' | ']' | '@' | '#')
+                || matches!(
+                    c,
+                    '.' | '_'
+                        | '='
+                        | '-'
+                        | '/'
+                        | ':'
+                        | '['
+                        | ']'
+                        | USER_ID_SIGIL
+                        | ROOM_ALIAS_SIGIL
+                )
         }
 
         let buffer = self.view().buffer();
@@ -326,7 +341,7 @@ impl CompletionPopover {
             }
         }
 
-        if word_start.char() != '@'
+        if !matches!(word_start.char(), USER_ID_SIGIL | ROOM_ALIAS_SIGIL)
             && !trigger
             && (cursor == word_start || self.current_word().is_none())
         {
@@ -409,10 +424,10 @@ impl CompletionPopover {
 
         let mut term_start = word_start;
         let term_start_char = term_start.char();
-        let is_room = term_start_char == '#';
+        let is_room = term_start_char == ROOM_ALIAS_SIGIL;
 
-        // Remove the starting `@` or '#' for searching.
-        if matches!(term_start_char, '@' | '#') {
+        // Remove the starting sigil for searching.
+        if matches!(term_start_char, USER_ID_SIGIL | ROOM_ALIAS_SIGIL) {
             term_start.forward_cursor_position();
         }
 
