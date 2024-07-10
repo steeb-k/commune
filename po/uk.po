@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-08 12:39+0000\n"
-"PO-Revision-Date: 2024-07-09 07:47+0300\n"
+"POT-Creation-Date: 2024-07-09 19:49+0000\n"
+"PO-Revision-Date: 2024-07-10 06:50+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -199,6 +199,9 @@ msgstr "Підтвердити зміну"
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
+#: src/session/view/content/room_details/history_viewer/audio.ui:61
+#: src/session/view/content/room_details/history_viewer/file.ui:60
+#: src/session/view/content/room_details/history_viewer/media.ui:67
 #: src/session/view/content/room_history/mod.ui:216
 msgid "Try Again"
 msgstr "Повторити спробу"
@@ -206,6 +209,9 @@ msgstr "Повторити спробу"
 #: src/components/action_button.ui:67 src/components/loading/spinner.rs:31
 #: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:53
+#: src/session/view/content/room_details/history_viewer/audio.ui:17
+#: src/session/view/content/room_details/history_viewer/file.ui:16
+#: src/session/view/content/room_details/history_viewer/media.ui:23
 #: src/session/view/content/room_history/mod.ui:188 src/window.ui:18
 msgid "Loading"
 msgstr "Завантаження"
@@ -716,15 +722,14 @@ msgid "Cancel"
 msgstr "Скасувати"
 
 #: src/components/dialogs/message_dialogs.rs:65
-#| msgid "Ignored Users"
 msgid "Ignore {user}"
 msgstr "Ігнорувати {user}"
 
 #: src/components/dialogs/message_dialogs.rs:69
 msgid "All messages or invitations sent by this user will be ignored"
 msgstr ""
-"Усі повідомлення і запрошення, які надіслано цим користувачем, буде"
-" проігноровано"
+"Усі повідомлення і запрошення, які надіслано цим користувачем, буде "
+"проігноровано"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -1002,7 +1007,7 @@ msgstr "Нетипове"
 msgid "Confirm Custom Role"
 msgstr "Підтвердження нетипової ролі"
 
-#: src/components/room_title.ui:36
+#: src/components/room_title.ui:35
 msgid "Click to Expand"
 msgstr "Натисніть, щоб розгорнути"
 
@@ -2829,7 +2834,6 @@ msgid "Remove Server"
 msgstr "Вилучити сервер"
 
 #: src/session/view/content/invite.rs:168
-#| msgid "{user} invited you"
 msgid "{user_name} ({user_id}) invited you"
 msgstr "Вас запрошено {user_name} ({user_id})"
 
@@ -3281,11 +3285,11 @@ msgstr "Федерація"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this case, the file to play is an
 #. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:79
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:75
 msgid "Play {filename}"
 msgstr "Відтворити {filename}"
 
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:97
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:93
 msgid "Unknown duration"
 msgstr "Невідома тривалість"
 
@@ -3294,17 +3298,52 @@ msgstr "Невідома тривалість"
 msgid "Play"
 msgstr "Відтворити"
 
+#: src/session/view/content/room_details/history_viewer/audio.ui:33
+#: src/session/view/content/room_details/history_viewer/audio.ui:40
+#| msgid "Audio"
+msgid "No Audio"
+msgstr "Немає звукових даних"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:41
+msgid "This room does not contain any audio"
+msgstr "У цій кімнаті немає ніяких звукових даних"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:49
+#: src/session/view/content/room_details/history_viewer/audio.ui:56
+#| msgid "Could Not Load Room"
+msgid "Could Not Load Audio"
+msgstr "Не вдалося завантажити звукові дані"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:57
+#: src/session/view/content/room_details/history_viewer/file.ui:56
+#: src/session/view/content/room_details/history_viewer/media.ui:63
+#: src/session/view/content/room_history/mod.ui:212
+#| msgid "Check your network connection."
+msgid "Check your network connection"
+msgstr "Перевірте ваше з'єднання з мережею"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:76
+#| msgid "Room History"
+msgid "Audio History"
+msgstr "Журнал звукових даних"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/history_viewer/file_row.rs:79
+#: src/session/view/content/room_details/history_viewer/file_row.rs:73
 msgid "Save {filename}"
 msgstr "Зберегти {filename}"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:87
+#: src/session/view/content/room_details/history_viewer/file_row.rs:81
 msgid "Unknown size"
 msgstr "Невідомий розмір"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:118
+#: src/session/view/content/room_details/history_viewer/file_row.rs:97
+#| msgid "Send a File"
+msgid "Open File"
+msgstr "Відкрити файл"
+
+#: src/session/view/content/room_details/history_viewer/file_row.rs:100
+#: src/session/view/content/room_details/history_viewer/file_row.rs:154
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
@@ -3312,11 +3351,53 @@ msgstr "Невідомий розмір"
 msgid "Save File"
 msgstr "Зберегти файл"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:119
+#: src/session/view/content/room_details/history_viewer/file_row.rs:155
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
 #: src/utils/media.rs:193
 msgid "Save"
 msgstr "Зберегти"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:32
+#: src/session/view/content/room_details/history_viewer/file.ui:39
+#| msgid "Files"
+msgid "No Files"
+msgstr "Немає файлів"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:40
+msgid "This room does not contain any files"
+msgstr "У цій кімнаті немає ніяких файлів"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:48
+#: src/session/view/content/room_details/history_viewer/file.ui:55
+#| msgid "Could not load file"
+msgid "Could Not Load Files"
+msgstr "Не вдалось завантажити файли"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:75
+#| msgid "Room History"
+msgid "File History"
+msgstr "Журнал файлів"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:39
+#: src/session/view/content/room_details/history_viewer/media.ui:46
+#| msgid "Media"
+msgid "No Media"
+msgstr "Немає мультимедійних даних"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:47
+msgid "This room does not contain any media"
+msgstr "У цій кімнаті немає ніяких мультимедійних даних"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:55
+#: src/session/view/content/room_details/history_viewer/media.ui:62
+#| msgid "Could Not Load Room"
+msgid "Could Not Load Media"
+msgstr "Не вдалося завантажити мультимедійні дані"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:82
+#| msgid "Room History"
+msgid "Media History"
+msgstr "Журнал мультимедіа"
 
 #: src/session/view/content/room_details/invite_subpage/list.rs:269
 msgid "Banned"
@@ -4205,10 +4286,6 @@ msgstr "Меню кімнати"
 #: src/session/view/content/room_history/mod.ui:211
 msgid "Could Not Load Room"
 msgstr "Не вдалося завантажити кімнату"
-
-#: src/session/view/content/room_history/mod.ui:212
-msgid "Check your network connection."
-msgstr "Перевірте ваше з'єднання з мережею."
 
 #: src/session/view/content/room_history/mod.ui:246
 msgid "Scroll to Bottom"
