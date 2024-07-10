@@ -109,3 +109,11 @@ custom_target(
       ] ,
     ],
   )
+
+test(
+    'cargo-test', cargo,
+    env: cargo_env,
+    args: ['test', '--no-fail-fast'] + cargo_options,
+    timeout: 0,
+    verbose: true,
+)
