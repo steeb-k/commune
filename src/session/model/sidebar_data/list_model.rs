@@ -1,6 +1,6 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{item_list::ItemList, selection::Selection};
+use super::{item_list::SidebarItemList, selection::Selection};
 use crate::{
     session::model::{IdentityVerification, Room},
     utils::{expression, BoundObjectWeakRef},
@@ -19,7 +19,7 @@ mod imp {
     pub struct SidebarListModel {
         /// The list of items in the sidebar.
         #[property(get, set = Self::set_item_list, construct_only)]
-        pub item_list: OnceCell<ItemList>,
+        pub item_list: OnceCell<SidebarItemList>,
         /// The string filter.
         #[property(get)]
         pub string_filter: gtk::StringFilter,
@@ -97,7 +97,7 @@ mod imp {
 
     impl SidebarListModel {
         /// Set the list of items in the sidebar.
-        fn set_item_list(&self, item_list: ItemList) {
+        fn set_item_list(&self, item_list: SidebarItemList) {
             self.item_list.set(item_list.clone()).unwrap();
 
             let unfiltered_tree_model =
@@ -164,7 +164,7 @@ glib::wrapper! {
 
 impl SidebarListModel {
     /// Create a new `SidebarListModel`.
-    pub fn new(item_list: &ItemList) -> Self {
+    pub fn new(item_list: &SidebarItemList) -> Self {
         glib::Object::builder()
             .property("item-list", item_list)
             .build()

@@ -7,7 +7,7 @@ mod selection;
 pub use self::{
     category::{Category, CategoryType},
     icon_item::{SidebarIconItem, SidebarIconItemType},
-    item_list::ItemList,
+    item_list::SidebarItemList,
     list_model::SidebarListModel,
     selection::Selection,
 };

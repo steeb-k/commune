@@ -48,8 +48,8 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::ItemList)]
-    pub struct ItemList {
+    #[properties(wrapper_type = super::SidebarItemList)]
+    pub struct SidebarItemList {
         /// The list of top-level items.
         ///
         /// This is a list of `(item, visible)` tuples.
@@ -69,14 +69,14 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for ItemList {
-        const NAME: &'static str = "ItemList";
-        type Type = super::ItemList;
+    impl ObjectSubclass for SidebarItemList {
+        const NAME: &'static str = "SidebarItemList";
+        type Type = super::SidebarItemList;
         type Interfaces = (gio::ListModel,);
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for ItemList {
+    impl ObjectImpl for SidebarItemList {
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -115,7 +115,7 @@ mod imp {
         }
     }
 
-    impl ListModelImpl for ItemList {
+    impl ListModelImpl for SidebarItemList {
         fn item_type(&self) -> glib::Type {
             glib::Object::static_type()
         }
@@ -140,7 +140,7 @@ mod imp {
         }
     }
 
-    impl ItemList {
+    impl SidebarItemList {
         /// Set the `CategoryType` to show all compatible categories for.
         fn set_show_all_for_category(&self, category: CategoryType) {
             if category == self.show_all_for_category.get() {
@@ -186,13 +186,13 @@ mod imp {
 glib::wrapper! {
     /// Fixed list of all subcomponents in the sidebar.
     ///
-    /// ItemList implements the ListModel interface and yields the subcomponents
+    /// SidebarItemList implements the ListModel interface and yields the subcomponents
     /// from the sidebar, namely Entries and Categories.
-    pub struct ItemList(ObjectSubclass<imp::ItemList>)
+    pub struct SidebarItemList(ObjectSubclass<imp::SidebarItemList>)
         @implements gio::ListModel;
 }
 
-impl ItemList {
+impl SidebarItemList {
     pub fn new(room_list: &RoomList, verification_list: &VerificationList) -> Self {
         glib::Object::builder()
             .property("room-list", room_list)

@@ -23,7 +23,7 @@ pub use self::{
     session::*,
     session_settings::{SessionSettings, StoredSessionSettings},
     sidebar_data::{
-        Category, CategoryType, ItemList, Selection, SidebarIconItem, SidebarIconItemType,
+        Category, CategoryType, Selection, SidebarIconItem, SidebarIconItemType, SidebarItemList,
         SidebarListModel,
     },
     user::{User, UserExt},

@@ -32,8 +32,8 @@ use tracing::{debug, error};
 use url::Url;
 
 use super::{
-    IgnoredUsers, ItemList, Notifications, RoomList, SessionSettings, SidebarListModel, User,
-    UserSessionsList, VerificationList,
+    IgnoredUsers, Notifications, RoomList, SessionSettings, SidebarItemList, SidebarListModel,
+    User, UserSessionsList, VerificationList,
 };
 use crate::{
     components::AvatarData,
@@ -262,7 +262,7 @@ mod imp {
             self.sidebar_list_model
                 .get_or_init(|| {
                     let item_list =
-                        ItemList::new(&RoomList::new(&obj), &VerificationList::new(&obj));
+                        SidebarItemList::new(&RoomList::new(&obj), &VerificationList::new(&obj));
                     SidebarListModel::new(&item_list)
                 })
                 .clone()
