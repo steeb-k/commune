@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-08 12:39+0000\n"
-"PO-Revision-Date: 2024-07-09 19:21+0800\n"
+"POT-Creation-Date: 2024-07-09 19:49+0000\n"
+"PO-Revision-Date: 2024-07-11 18:55+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -189,6 +189,9 @@ msgstr "确认更改"
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
+#: src/session/view/content/room_details/history_viewer/audio.ui:61
+#: src/session/view/content/room_details/history_viewer/file.ui:60
+#: src/session/view/content/room_details/history_viewer/media.ui:67
 #: src/session/view/content/room_history/mod.ui:216
 msgid "Try Again"
 msgstr "重试"
@@ -196,6 +199,9 @@ msgstr "重试"
 #: src/components/action_button.ui:67 src/components/loading/spinner.rs:31
 #: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:53
+#: src/session/view/content/room_details/history_viewer/audio.ui:17
+#: src/session/view/content/room_details/history_viewer/file.ui:16
+#: src/session/view/content/room_details/history_viewer/media.ui:23
 #: src/session/view/content/room_history/mod.ui:188 src/window.ui:18
 msgid "Loading"
 msgstr "正在加载"
@@ -915,7 +921,7 @@ msgstr "自定义"
 msgid "Confirm Custom Role"
 msgstr "确认自定义角色"
 
-#: src/components/room_title.ui:36
+#: src/components/room_title.ui:35
 msgid "Click to Expand"
 msgstr "点击以展开"
 
@@ -3088,11 +3094,11 @@ msgstr "联合"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this case, the file to play is an
 #. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:79
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:75
 msgid "Play {filename}"
 msgstr "播放 {filename}"
 
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:97
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:93
 msgid "Unknown duration"
 msgstr "未知长度"
 
@@ -3101,17 +3107,47 @@ msgstr "未知长度"
 msgid "Play"
 msgstr "播放"
 
+#: src/session/view/content/room_details/history_viewer/audio.ui:33
+#: src/session/view/content/room_details/history_viewer/audio.ui:40
+msgid "No Audio"
+msgstr "无音频"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:41
+msgid "This room does not contain any audio"
+msgstr "该聊天室不包含任何音频"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:49
+#: src/session/view/content/room_details/history_viewer/audio.ui:56
+msgid "Could Not Load Audio"
+msgstr "无法加载音频"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:57
+#: src/session/view/content/room_details/history_viewer/file.ui:56
+#: src/session/view/content/room_details/history_viewer/media.ui:63
+#: src/session/view/content/room_history/mod.ui:212
+msgid "Check your network connection"
+msgstr "检查您的网络连接"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:76
+msgid "Audio History"
+msgstr "音频历史"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/history_viewer/file_row.rs:79
+#: src/session/view/content/room_details/history_viewer/file_row.rs:73
 msgid "Save {filename}"
 msgstr "保存 {filename}"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:87
+#: src/session/view/content/room_details/history_viewer/file_row.rs:81
 msgid "Unknown size"
 msgstr "未知大小"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:118
+#: src/session/view/content/room_details/history_viewer/file_row.rs:97
+msgid "Open File"
+msgstr "打开文件"
+
+#: src/session/view/content/room_details/history_viewer/file_row.rs:100
+#: src/session/view/content/room_details/history_viewer/file_row.rs:154
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
@@ -3119,11 +3155,47 @@ msgstr "未知大小"
 msgid "Save File"
 msgstr "保存文件"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:119
+#: src/session/view/content/room_details/history_viewer/file_row.rs:155
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
 #: src/utils/media.rs:193
 msgid "Save"
 msgstr "保存"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:32
+#: src/session/view/content/room_details/history_viewer/file.ui:39
+msgid "No Files"
+msgstr "无文件"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:40
+msgid "This room does not contain any files"
+msgstr "该聊天室不包含任何文件"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:48
+#: src/session/view/content/room_details/history_viewer/file.ui:55
+msgid "Could Not Load Files"
+msgstr "无法加载文件"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:75
+msgid "File History"
+msgstr "文件历史"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:39
+#: src/session/view/content/room_details/history_viewer/media.ui:46
+msgid "No Media"
+msgstr "无媒体"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:47
+msgid "This room does not contain any media"
+msgstr "该聊天室不包含任何多媒体"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:55
+#: src/session/view/content/room_details/history_viewer/media.ui:62
+msgid "Could Not Load Media"
+msgstr "无法加载媒体"
+
+#: src/session/view/content/room_details/history_viewer/media.ui:82
+msgid "Media History"
+msgstr "媒体历史"
 
 #: src/session/view/content/room_details/invite_subpage/list.rs:269
 msgid "Banned"
@@ -3976,10 +4048,6 @@ msgstr "聊天室菜单"
 #: src/session/view/content/room_history/mod.ui:211
 msgid "Could Not Load Room"
 msgstr "无法加载聊天室"
-
-#: src/session/view/content/room_history/mod.ui:212
-msgid "Check your network connection."
-msgstr "检查您的网络连接。"
 
 #: src/session/view/content/room_history/mod.ui:246
 msgid "Scroll to Bottom"
