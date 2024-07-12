@@ -1054,6 +1054,18 @@ impl GeneralPage {
         }
     }
 
+    /// Copy the room's permalink to the clipboard.
+    #[template_callback]
+    async fn copy_permalink(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        let permalink = room.matrix_to_uri().await;
+        self.clipboard().set_text(&permalink.to_string());
+        toast!(self, gettext("Permalink copied to clipboard"));
+    }
+
     /// Update the join rule row.
     fn update_join_rule(&self) {
         let Some(room) = self.room() else {

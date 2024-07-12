@@ -149,10 +149,6 @@ mod imp {
                 obj.try_again();
             });
 
-            klass.install_action_async("room-history.permalink", None, |obj, _, _| async move {
-                obj.permalink().await;
-            });
-
             klass.install_action("room-history.details", None, |obj, _, _| {
                 obj.open_room_details(None);
             });
@@ -611,16 +607,6 @@ impl RoomHistory {
                 @room,
             );
         }
-    }
-
-    pub async fn permalink(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-
-        let permalink = room.matrix_to_uri().await;
-        self.clipboard().set_text(&permalink.to_string());
-        toast!(self, gettext("Permalink copied to clipboard"));
     }
 
     fn init_invite_action(&self) {

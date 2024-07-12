@@ -219,6 +219,16 @@
             </style>
           </object>
         </child>
+        <child>
+          <object class="GtkButton">
+            <style>
+              <class name="row"/>
+            </style>
+            <property name="margin-top">12</property>
+            <property name="label" translatable="yes">Room Permalink</property>
+            <signal name="clicked" handler="copy_permalink" swapped="yes" />
+          </object>
+        </child>
       </object>
     </child>
     <child>
