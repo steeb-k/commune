@@ -1,6 +1,6 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{Selection, SidebarItem, SidebarItemList};
+use super::{Selection, SidebarItemList};
 use crate::{
     session::model::{IdentityVerification, Room},
     utils::{expression, BoundObjectWeakRef},
@@ -28,6 +28,7 @@ mod imp {
         pub selection_model: Selection,
         /// The selected item, if it has signal handlers.
         pub selected_item: BoundObjectWeakRef<glib::Object>,
+        item_type_filter: gtk::CustomFilter,
     }
 
     #[glib::object_subclass]
@@ -87,8 +88,17 @@ mod imp {
 
             let flattened_model = gtk::FlattenListModel::new(Some(item_list.clone()));
 
-            let room_name_expression =
-                SidebarItem::this_expression("inner-item").chain_property::<Room>("display-name");
+            // When search is active, only show rooms.
+            self.item_type_filter.set_filter_func(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                #[upgrade_or]
+                false,
+                move |item| !imp.is_filtered.get() || item.is::<Room>()
+            ));
+
+            // Set up search.
+            let room_name_expression = Room::this_expression("display-name");
             self.string_filter
                 .set_match_mode(gtk::StringFilterMatchMode::Substring);
             self.string_filter
@@ -97,8 +107,11 @@ mod imp {
             // Default to an empty string to be able to bind to GtkEditable::text.
             self.string_filter.set_search(Some(""));
 
-            let filter_model =
-                gtk::FilterListModel::new(Some(flattened_model), Some(self.string_filter.clone()));
+            let multi_filter = gtk::EveryFilter::new();
+            multi_filter.append(self.item_type_filter.clone());
+            multi_filter.append(self.string_filter.clone());
+
+            let filter_model = gtk::FilterListModel::new(Some(flattened_model), Some(multi_filter));
 
             self.selection_model.set_model(Some(filter_model));
         }
@@ -113,6 +126,7 @@ mod imp {
 
             self.obj().notify_is_filtered();
             self.item_list().inhibit_expanded(is_filtered);
+            self.item_type_filter.changed(gtk::FilterChange::Different);
         }
     }
 }
