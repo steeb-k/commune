@@ -639,6 +639,12 @@ room-history-row .event-content .quote,
   opacity: 0.7;
 }
 
+message-reactions flowboxchild:hover,
+message-reactions flowboxchild:active {
+  /* Cancel effect under .navigation-sidebar from libadwaita */
+  background-color: transparent;
+}
+
 message-reactions .toggle {
   padding: 1px 4px 0 5px;
 }
@@ -669,7 +675,7 @@ read-receipts-list {
   min-height: 24px;
   min-width: 16px;
   padding: 5px 10px;
-  border-radius: 6px;
+  border-radius: 999px;
   transition-property: outline, outline-width, outline-offset, outline-color;
   transition-duration: 300ms;
   animation-timing-function: ease-in-out;
