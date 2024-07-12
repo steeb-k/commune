@@ -61,7 +61,7 @@
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Permalink</attribute>
+        <attribute name="label" translatable="yes">Copy Message _Link</attribute>
         <attribute name="action">event.permalink</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
@@ -147,7 +147,7 @@
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Permalink</attribute>
+        <attribute name="label" translatable="yes">Copy Message _Link</attribute>
         <attribute name="action">event.permalink</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
@@ -187,7 +187,7 @@
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">_Permalink</attribute>
+        <attribute name="label" translatable="yes">Copy Message _Link</attribute>
         <attribute name="action">event.permalink</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>

@@ -225,7 +225,7 @@
               <class name="row"/>
             </style>
             <property name="margin-top">12</property>
-            <property name="label" translatable="yes">Room Permalink</property>
+            <property name="label" translatable="yes">Copy Room Link</property>
             <signal name="clicked" handler="copy_permalink" swapped="yes" />
           </object>
         </child>

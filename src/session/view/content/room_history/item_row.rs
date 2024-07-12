@@ -537,7 +537,7 @@ impl ItemRow {
                                 };
 
                                 obj.clipboard().set_text(&permalink.to_string());
-                                toast!(obj, gettext("Permalink copied to clipboard"));
+                                toast!(obj, gettext("Message link copied to clipboard"));
                             });
                         }
                     ))

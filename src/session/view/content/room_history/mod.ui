@@ -51,7 +51,7 @@
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Permalink</attribute>
+        <attribute name="label" translatable="yes">Copy _Link</attribute>
         <attribute name="action">sender-avatar.permalink</attribute>
       </item>
     </section>

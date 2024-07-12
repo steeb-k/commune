@@ -96,7 +96,7 @@ mod imp {
                 widget
                     .clipboard()
                     .set_text(&sender.matrix_to_uri().to_string());
-                toast!(widget, gettext("Permalink copied to clipboard"));
+                toast!(widget, gettext("Link copied to clipboard"));
             });
 
             klass.install_action_async("sender-avatar.invite", None, |widget, _, _| async move {

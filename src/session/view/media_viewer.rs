@@ -551,6 +551,6 @@ impl MediaViewer {
 
         let permalink = room.matrix_to_event_uri(event_id).await;
         self.clipboard().set_text(&permalink.to_string());
-        toast!(self, gettext("Permalink copied to clipboard"));
+        toast!(self, gettext("Message link copied to clipboard"));
     }
 }
