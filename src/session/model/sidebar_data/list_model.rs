@@ -1,16 +1,13 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{item_list::SidebarItemList, selection::Selection};
+use super::{Selection, SidebarItem, SidebarItemList};
 use crate::{
     session::model::{IdentityVerification, Room},
     utils::{expression, BoundObjectWeakRef},
 };
 
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell},
-        marker::PhantomData,
-    };
+    use std::cell::{Cell, OnceCell};
 
     use super::*;
 
@@ -27,12 +24,8 @@ mod imp {
         #[property(get)]
         pub is_filtered: Cell<bool>,
         /// The selection model.
-        #[property(get = Self::selection_model)]
-        pub selection_model: PhantomData<Selection>,
-        /// The unfiltered selection model.
-        pub unfiltered_selection_model: Selection,
-        /// The filtered selection model.
-        pub filtered_selection_model: Selection,
+        #[property(get)]
+        pub selection_model: Selection,
         /// The selected item, if it has signal handlers.
         pub selected_item: BoundObjectWeakRef<glib::Object>,
     }
@@ -48,73 +41,54 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            // Keep the selected item in sync.
-            self.unfiltered_selection_model
-                .bind_property(
-                    "selected-item",
-                    &self.filtered_selection_model,
-                    "selected-item",
-                )
-                .bidirectional()
-                .sync_create()
-                .build();
-
             // When a verification is replaced, select the replacement automatically.
-            self.unfiltered_selection_model
-                .connect_selected_item_notify(clone!(
-                    #[weak(rename_to = imp)]
-                    self,
-                    move |selection_model| {
-                        imp.selected_item.disconnect_signals();
+            self.selection_model.connect_selected_item_notify(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |selection_model| {
+                    imp.selected_item.disconnect_signals();
 
-                        if let Some(item) = &selection_model.selected_item() {
-                            if let Some(verification) = item.downcast_ref::<IdentityVerification>()
-                            {
-                                let verification_handler = verification.connect_replaced(clone!(
-                                    #[weak]
-                                    selection_model,
-                                    move |_, new_verification| {
-                                        selection_model
-                                            .set_selected_item(Some(new_verification.clone()));
-                                    }
-                                ));
-                                imp.selected_item.set(item, vec![verification_handler]);
-                            }
+                    if let Some(item) = &selection_model.selected_item() {
+                        if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
+                            let verification_handler = verification.connect_replaced(clone!(
+                                #[weak]
+                                selection_model,
+                                move |_, new_verification| {
+                                    selection_model
+                                        .set_selected_item(Some(new_verification.clone()));
+                                }
+                            ));
+                            imp.selected_item.set(item, vec![verification_handler]);
                         }
                     }
-                ));
+                }
+            ));
 
-            // Switch between the filtered and unfiltered list models.
+            // Disable the expanded filters of the items during search.
             self.string_filter.connect_search_notify(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |string_filter| {
-                    imp.set_is_filtered(string_filter.search().filter(|s| !s.is_empty()).is_some());
+                    imp.set_is_filtered(string_filter.search().is_some_and(|s| !s.is_empty()));
                 }
             ));
         }
     }
 
     impl SidebarListModel {
+        /// The list of items in the sidebar.
+        fn item_list(&self) -> &SidebarItemList {
+            self.item_list.get().unwrap()
+        }
+
         /// Set the list of items in the sidebar.
         fn set_item_list(&self, item_list: SidebarItemList) {
-            self.item_list.set(item_list.clone()).unwrap();
+            let item_list = self.item_list.get_or_init(|| item_list);
 
-            let unfiltered_tree_model =
-                gtk::TreeListModel::new(item_list.clone(), false, true, |item| {
-                    item.clone().downcast().ok()
-                });
-            self.unfiltered_selection_model
-                .set_model(Some(unfiltered_tree_model));
-
-            // We keep two separate models, so the filtered list is always expanded and
-            // searches in all rooms.
-            let filtered_tree_model = gtk::TreeListModel::new(item_list, false, true, |item| {
-                item.clone().downcast().ok()
-            });
+            let flattened_model = gtk::FlattenListModel::new(Some(item_list.clone()));
 
             let room_name_expression =
-                gtk::TreeListRow::this_expression("item").chain_property::<Room>("display-name");
+                SidebarItem::this_expression("inner-item").chain_property::<Room>("display-name");
             self.string_filter
                 .set_match_mode(gtk::StringFilterMatchMode::Substring);
             self.string_filter
@@ -123,12 +97,10 @@ mod imp {
             // Default to an empty string to be able to bind to GtkEditable::text.
             self.string_filter.set_search(Some(""));
 
-            let filter_model = gtk::FilterListModel::new(
-                Some(filtered_tree_model),
-                Some(self.string_filter.clone()),
-            );
+            let filter_model =
+                gtk::FilterListModel::new(Some(flattened_model), Some(self.string_filter.clone()));
 
-            self.filtered_selection_model.set_model(Some(filter_model));
+            self.selection_model.set_model(Some(filter_model));
         }
 
         /// Set whether the string filter is active.
@@ -139,18 +111,8 @@ mod imp {
 
             self.is_filtered.set(is_filtered);
 
-            let obj = self.obj();
-            obj.notify_is_filtered();
-            obj.notify_selection_model();
-        }
-
-        /// The selection model.
-        fn selection_model(&self) -> Selection {
-            if self.is_filtered.get() {
-                self.filtered_selection_model.clone()
-            } else {
-                self.unfiltered_selection_model.clone()
-            }
+            self.obj().notify_is_filtered();
+            self.item_list().inhibit_expanded(is_filtered);
         }
     }
 }

@@ -21,6 +21,7 @@ mod imp {
         /// The category of this row.
         #[property(get, set = Self::set_category, explicit_notify, nullable)]
         pub category: RefCell<Option<Category>>,
+        category_binding: RefCell<Option<glib::Binding>>,
         /// The expanded state of this row.
         #[property(get, set = Self::set_expanded, explicit_notify, construct, default = true)]
         pub expanded: Cell<bool>,
@@ -65,6 +66,12 @@ mod imp {
                 obj.set_expanded_accessibility_state(obj.expanded());
             });
         }
+
+        fn dispose(&self) {
+            if let Some(binding) = self.category_binding.take() {
+                binding.unbind();
+            }
+        }
     }
 
     impl WidgetImpl for CategoryRow {}
@@ -77,9 +84,21 @@ mod imp {
                 return;
             }
 
+            if let Some(binding) = self.category_binding.take() {
+                binding.unbind();
+            }
+            let obj = self.obj();
+
+            if let Some(category) = &category {
+                let category_binding = category
+                    .bind_property("is-expanded", &*obj, "expanded")
+                    .sync_create()
+                    .build();
+                self.category_binding.replace(Some(category_binding));
+            }
+
             self.category.replace(category);
 
-            let obj = self.obj();
             obj.notify_category();
             obj.notify_label();
         }

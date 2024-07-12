@@ -1,6 +1,7 @@
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use serde::{Deserialize, Serialize};
 
+use super::CategoryType;
 use crate::Application;
 
 #[derive(Debug, Clone, Serialize, Deserialize, glib::Boxed)]
@@ -30,6 +31,10 @@ pub struct StoredSessionSettings {
         skip_serializing_if = "ruma::serde::is_true"
     )]
     typing_enabled: bool,
+
+    /// Which categories are expanded.
+    #[serde(default)]
+    categories_expanded: CategoriesExpanded,
 }
 
 impl Default for StoredSessionSettings {
@@ -39,6 +44,7 @@ impl Default for StoredSessionSettings {
             notifications_enabled: true,
             public_read_receipts_enabled: true,
             typing_enabled: true,
+            categories_expanded: Default::default(),
         }
     }
 }
@@ -192,5 +198,78 @@ impl SessionSettings {
             .borrow_mut()
             .explore_custom_servers = servers;
         self.save();
+    }
+
+    /// Whether the given category is expanded.
+    pub fn is_category_expanded(&self, category: CategoryType) -> bool {
+        self.imp()
+            .stored_settings
+            .borrow()
+            .categories_expanded
+            .is_category_expanded(category)
+    }
+
+    /// Set whether the given category is expanded.
+    pub fn set_category_expanded(&self, category: CategoryType, expanded: bool) {
+        self.imp()
+            .stored_settings
+            .borrow_mut()
+            .categories_expanded
+            .set_category_expanded(category, expanded);
+        self.save();
+    }
+}
+
+/// Whether the categories are expanded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+pub struct CategoriesExpanded {
+    verification_request: bool,
+    invited: bool,
+    favorite: bool,
+    normal: bool,
+    low_priority: bool,
+    left: bool,
+}
+
+impl CategoriesExpanded {
+    /// Whether the given category is expanded.
+    pub fn is_category_expanded(&self, category: CategoryType) -> bool {
+        match category {
+            CategoryType::VerificationRequest => self.verification_request,
+            CategoryType::Invited => self.invited,
+            CategoryType::Favorite => self.favorite,
+            CategoryType::Normal => self.normal,
+            CategoryType::LowPriority => self.low_priority,
+            CategoryType::Left => self.left,
+            _ => false,
+        }
+    }
+
+    /// Set whether the given category is expanded.
+    pub fn set_category_expanded(&mut self, category: CategoryType, expanded: bool) {
+        let field = match category {
+            CategoryType::VerificationRequest => &mut self.verification_request,
+            CategoryType::Invited => &mut self.invited,
+            CategoryType::Favorite => &mut self.favorite,
+            CategoryType::Normal => &mut self.normal,
+            CategoryType::LowPriority => &mut self.low_priority,
+            CategoryType::Left => &mut self.left,
+            _ => return,
+        };
+
+        *field = expanded;
+    }
+}
+
+impl Default for CategoriesExpanded {
+    fn default() -> Self {
+        Self {
+            verification_request: true,
+            invited: true,
+            favorite: true,
+            normal: true,
+            low_priority: true,
+            left: false,
+        }
     }
 }

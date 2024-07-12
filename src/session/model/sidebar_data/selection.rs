@@ -43,19 +43,15 @@ mod imp {
 
     impl ListModelImpl for Selection {
         fn item_type(&self) -> glib::Type {
-            gtk::TreeListRow::static_type()
+            glib::Object::static_type()
         }
 
         fn n_items(&self) -> u32 {
-            self.model
-                .obj()
-                .as_ref()
-                .map(|m| m.n_items())
-                .unwrap_or_default()
+            self.model.obj().map(|m| m.n_items()).unwrap_or_default()
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            self.model.obj().as_ref().and_then(|m| m.item(position))
+            self.model.obj()?.item(position)
         }
     }
 
@@ -101,9 +97,8 @@ mod imp {
                     }
                 ));
 
+                self.model.set(model.clone(), vec![items_changed_handler]);
                 obj.items_changed_cb(&model, 0, n_items_before, model.n_items());
-
-                self.model.set(model, vec![items_changed_handler]);
             } else {
                 if self.selected.get() != gtk::INVALID_LIST_POSITION {
                     self.selected.replace(gtk::INVALID_LIST_POSITION);
@@ -127,12 +122,7 @@ mod imp {
                 return;
             }
 
-            let selected_item = self
-                .model
-                .obj()
-                .and_then(|m| m.item(position))
-                .and_downcast::<gtk::TreeListRow>()
-                .and_then(|r| r.item());
+            let selected_item = self.model.obj().and_then(|m| m.item(position));
 
             let selected = if selected_item.is_none() {
                 gtk::INVALID_LIST_POSITION
@@ -175,10 +165,7 @@ mod imp {
             if item.is_some() {
                 if let Some(model) = self.model.obj() {
                     for i in 0..model.n_items() {
-                        let current_item = model
-                            .item(i)
-                            .and_downcast::<gtk::TreeListRow>()
-                            .and_then(|r| r.item());
+                        let current_item = model.item(i);
                         if current_item == item {
                             selected = i;
                             break;
@@ -241,10 +228,7 @@ impl Selection {
                     imp.selected.replace(gtk::INVALID_LIST_POSITION);
                     self.notify_selected();
                 } else {
-                    let item = model
-                        .item(position + i)
-                        .and_downcast::<gtk::TreeListRow>()
-                        .and_then(|r| r.item());
+                    let item = model.item(position + i);
                     if item == selected_item {
                         // the item moved
                         if selected != position + i {

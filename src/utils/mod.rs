@@ -8,6 +8,7 @@ pub mod macros;
 pub mod matrix;
 pub mod media;
 pub mod notifications;
+mod single_item_list_model;
 pub mod sourceview;
 pub mod string;
 pub mod template_callbacks;
@@ -30,6 +31,7 @@ pub use self::{
     dummy_object::DummyObject,
     expression_list_model::ExpressionListModel,
     location::{Location, LocationError, LocationExt},
+    single_item_list_model::SingleItemListModel,
 };
 use crate::RUNTIME;
 

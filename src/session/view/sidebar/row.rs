@@ -16,7 +16,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{cell::RefCell, marker::PhantomData};
+    use std::cell::RefCell;
 
     use super::*;
 
@@ -26,13 +26,9 @@ mod imp {
         /// The ancestor sidebar of this row.
         #[property(get, set = Self::set_sidebar, construct_only)]
         pub sidebar: BoundObjectWeakRef<Sidebar>,
-        /// The list row to track for expander state.
-        #[property(get, set = Self::set_list_row, explicit_notify, nullable)]
-        pub list_row: RefCell<Option<gtk::TreeListRow>>,
         /// The item of this row.
-        #[property(get = Self::item)]
-        pub item: PhantomData<Option<glib::Object>>,
-        pub bindings: RefCell<Vec<glib::Binding>>,
+        #[property(get, set = Self::set_item, explicit_notify, nullable)]
+        pub item: RefCell<Option<glib::Object>>,
         room_join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -96,7 +92,7 @@ mod imp {
 
     impl ContextMenuBinImpl for Row {
         fn menu_opened(&self) {
-            if !self.item().is_some_and(|i| i.is::<Room>()) {
+            if !self.item.borrow().as_ref().is_some_and(|i| i.is::<Room>()) {
                 // No context menu.
                 return;
             }
@@ -138,28 +134,24 @@ mod imp {
             );
         }
 
-        /// Set the list row to track for expander state.
-        fn set_list_row(&self, list_row: Option<gtk::TreeListRow>) {
-            if *self.list_row.borrow() == list_row {
+        /// Set the item of this row.
+        fn set_item(&self, item: Option<glib::Object>) {
+            if *self.item.borrow() == item {
                 return;
             }
             let obj = self.obj();
 
-            for binding in self.bindings.take() {
-                binding.unbind();
-            }
             if let Some(room) = self.room() {
                 if let Some(handler) = self.room_join_rule_handler.take() {
                     room.join_rule().disconnect(handler);
                 }
             }
 
-            self.list_row.replace(list_row.clone());
+            self.item.replace(item.clone());
 
             self.update_context_menu();
 
-            let mut bindings = vec![];
-            if let Some((row, item)) = list_row.zip(self.item()) {
+            if let Some(item) = item {
                 if let Some(category) = item.downcast_ref::<Category>() {
                     let child = if let Some(child) = obj.child().and_downcast::<CategoryRow>() {
                         child
@@ -170,12 +162,6 @@ mod imp {
                         child
                     };
                     child.set_category(Some(category.clone()));
-
-                    bindings.push(
-                        row.bind_property("expanded", &child, "expanded")
-                            .sync_create()
-                            .build(),
-                    );
                 } else if let Some(room) = item.downcast_ref::<Room>() {
                     let child = if let Some(child) = obj.child().and_downcast::<RoomRow>() {
                         child
@@ -224,21 +210,13 @@ mod imp {
                 obj.update_for_drop_source_type();
             }
 
-            self.bindings.replace(bindings);
-
             self.update_context_menu();
             obj.notify_item();
-            obj.notify_list_row();
-        }
-
-        /// The sidebar item of this row.
-        fn item(&self) -> Option<glib::Object> {
-            self.list_row.borrow().as_ref().and_then(|r| r.item())
         }
 
         /// Get the `Room` of this item, if this is a room row.
         pub(super) fn room(&self) -> Option<Room> {
-            self.item().and_downcast()
+            self.item.borrow().clone().and_downcast()
         }
 
         /// Whether this has a room context menu.

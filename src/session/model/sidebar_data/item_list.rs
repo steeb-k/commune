@@ -2,45 +2,11 @@ use std::cell::Cell;
 
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{Category, CategoryType, SidebarIconItem, SidebarIconItemType};
+use super::{Category, CategoryType, SidebarIconItem, SidebarIconItemType, SidebarItem};
 use crate::session::model::{RoomList, VerificationList};
 
-/// A top-level sidebar item.
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct SidebarItem {
-    /// The item.
-    item: glib::Object,
-    /// Whether the item is visible.
-    visible: Cell<bool>,
-}
-
-impl SidebarItem {
-    fn new(item: impl IsA<glib::Object>) -> Self {
-        Self {
-            item: item.upcast(),
-            visible: Cell::new(true),
-        }
-    }
-
-    /// Whether this item is visible.
-    fn visible(&self) -> bool {
-        self.visible.get()
-    }
-
-    /// Update the visibility of this item for a drag-n-drop from the given
-    /// category.
-    fn update_visibility(&self, for_category: CategoryType) {
-        let visible = if let Some(category) = self.item.downcast_ref::<Category>() {
-            category.visible_for_category(for_category)
-        } else if let Some(icon_item) = self.item.downcast_ref::<SidebarIconItem>() {
-            icon_item.visible_for_category(for_category)
-        } else {
-            true
-        };
-
-        self.visible.set(visible);
-    }
-}
+/// The number of top-level items in the sidebar.
+const TOP_LEVEL_ITEMS_COUNT: usize = 8;
 
 mod imp {
     use std::cell::OnceCell;
@@ -51,9 +17,7 @@ mod imp {
     #[properties(wrapper_type = super::SidebarItemList)]
     pub struct SidebarItemList {
         /// The list of top-level items.
-        ///
-        /// This is a list of `(item, visible)` tuples.
-        list: OnceCell<[SidebarItem; 8]>,
+        list: OnceCell<[SidebarItem; TOP_LEVEL_ITEMS_COUNT]>,
         /// The list of rooms.
         #[property(get, construct_only)]
         pub room_list: OnceCell<RoomList>,
@@ -84,63 +48,59 @@ mod imp {
             let room_list = obj.room_list();
             let verification_list = obj.verification_list();
 
-            let list = [
-                SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Explore)),
-                SidebarItem::new(Category::new(
-                    CategoryType::VerificationRequest,
-                    &verification_list,
-                )),
-                SidebarItem::new(Category::new(CategoryType::Invited, &room_list)),
-                SidebarItem::new(Category::new(CategoryType::Favorite, &room_list)),
-                SidebarItem::new(Category::new(CategoryType::Normal, &room_list)),
-                SidebarItem::new(Category::new(CategoryType::LowPriority, &room_list)),
-                SidebarItem::new(Category::new(CategoryType::Left, &room_list)),
-                SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Forget)),
-            ];
+            let list = self.list.get_or_init(|| {
+                [
+                    SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Explore)),
+                    SidebarItem::new(Category::new(
+                        CategoryType::VerificationRequest,
+                        &verification_list,
+                    )),
+                    SidebarItem::new(Category::new(CategoryType::Invited, &room_list)),
+                    SidebarItem::new(Category::new(CategoryType::Favorite, &room_list)),
+                    SidebarItem::new(Category::new(CategoryType::Normal, &room_list)),
+                    SidebarItem::new(Category::new(CategoryType::LowPriority, &room_list)),
+                    SidebarItem::new(Category::new(CategoryType::Left, &room_list)),
+                    SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Forget)),
+                ]
+            });
 
-            self.list.set(list.clone()).unwrap();
-
-            for (pos, item) in list.iter().enumerate() {
-                if let Some(category) = item.item.downcast_ref::<Category>() {
+            for item in list {
+                if let Some(category) = item.inner_item().downcast_ref::<Category>() {
                     category.connect_empty_notify(clone!(
                         #[weak(rename_to = imp)]
                         self,
+                        #[weak]
+                        item,
                         move |_| {
-                            imp.update_item_at(pos);
+                            imp.update_item_visibility(&item);
                         }
                     ));
                 }
-                self.update_item_at(pos);
+                self.update_item_visibility(item);
             }
         }
     }
 
     impl ListModelImpl for SidebarItemList {
         fn item_type(&self) -> glib::Type {
-            glib::Object::static_type()
+            SidebarItem::static_type()
         }
 
         fn n_items(&self) -> u32 {
-            self.list
-                .get()
-                .unwrap()
-                .iter()
-                .filter(|item| item.visible())
-                .count() as u32
+            TOP_LEVEL_ITEMS_COUNT as u32
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            self.list
-                .get()
-                .unwrap()
-                .iter()
-                .filter(|item| item.visible())
-                .nth(position as usize)
-                .map(|item| item.item.clone())
+            self.list().get(position as usize).cloned().and_upcast()
         }
     }
 
     impl SidebarItemList {
+        /// The list of top-level items.
+        fn list(&self) -> &[SidebarItem; TOP_LEVEL_ITEMS_COUNT] {
+            self.list.get().unwrap()
+        }
+
         /// Set the `CategoryType` to show all compatible categories for.
         fn set_show_all_for_category(&self, category: CategoryType) {
             if category == self.show_all_for_category.get() {
@@ -148,36 +108,25 @@ mod imp {
             }
 
             self.show_all_for_category.set(category);
-            for pos in 0..self.list.get().unwrap().len() {
-                self.update_item_at(pos);
+            for item in self.list() {
+                self.update_item_visibility(item);
             }
 
             self.obj().notify_show_all_for_category();
         }
 
-        /// Update the visibility of the item at the given absolute position.
-        fn update_item_at(&self, abs_pos: usize) {
-            let list = self.list.get().unwrap();
-            let item = &list[abs_pos];
-            let old_visible = item.visible();
+        /// Update the visibility of the given item.
+        fn update_item_visibility(&self, item: &SidebarItem) {
+            item.update_visibility_for_category(self.show_all_for_category.get());
+        }
 
-            item.update_visibility(self.show_all_for_category.get());
-            let visible = item.visible();
-
-            if visible != old_visible {
-                // Compute the position in the gio::ListModel.
-                let hidden_before_position = list
-                    .iter()
-                    .take(abs_pos)
-                    .filter(|item| !item.visible())
-                    .count();
-
-                let real_position = abs_pos - hidden_before_position;
-
-                // If its not added, it's removed.
-                let (removed, added) = if visible { (0, 1) } else { (1, 0) };
-                self.obj()
-                    .items_changed(real_position as u32, removed, added);
+        /// Set whether to inhibit the expanded state of the categories.
+        ///
+        /// It means that all the categories will be expanded regardless of
+        /// their "is-expanded" property.
+        pub(super) fn inhibit_expanded(&self, inhibit: bool) {
+            for item in self.list() {
+                item.set_inhibit_expanded(inhibit);
             }
         }
     }
@@ -186,17 +135,27 @@ mod imp {
 glib::wrapper! {
     /// Fixed list of all subcomponents in the sidebar.
     ///
-    /// SidebarItemList implements the ListModel interface and yields the subcomponents
-    /// from the sidebar, namely Entries and Categories.
+    /// Implements the `gio::ListModel` interface and yields the top-level
+    /// items of the sidebar.
     pub struct SidebarItemList(ObjectSubclass<imp::SidebarItemList>)
         @implements gio::ListModel;
 }
 
 impl SidebarItemList {
+    /// Construct a new `SidebarItemList` with the given room list and
+    /// verification list.
     pub fn new(room_list: &RoomList, verification_list: &VerificationList) -> Self {
         glib::Object::builder()
             .property("room-list", room_list)
             .property("verification-list", verification_list)
             .build()
+    }
+
+    /// Set whether to inhibit the expanded state of the categories.
+    ///
+    /// It means that all the categories will be expanded regardless of their
+    /// "is-expanded" property.
+    pub fn inhibit_expanded(&self, inhibit: bool) {
+        self.imp().inhibit_expanded(inhibit);
     }
 }

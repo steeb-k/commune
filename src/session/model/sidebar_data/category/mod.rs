@@ -11,7 +11,7 @@ mod category_type;
 use self::category_filter::CategoryFilter;
 pub use self::category_type::CategoryType;
 use crate::{
-    session::model::{Room, RoomList, RoomType},
+    session::model::{Room, RoomList, RoomType, SessionSettings, VerificationList},
     utils::ExpressionListModel,
 };
 
@@ -26,9 +26,11 @@ mod imp {
     #[derive(Debug, Default, glib::Properties)]
     #[properties(wrapper_type = super::Category)]
     pub struct Category {
-        /// The filter list model of this category.
+        /// The source model of this category.
         #[property(get, set = Self::set_model, construct_only)]
         pub model: OnceCell<gio::ListModel>,
+        /// The inner model of this category.
+        inner_model: OnceCell<gio::ListModel>,
         /// The filter of this category.
         pub filter: CategoryFilter,
         /// The type of this category.
@@ -40,6 +42,9 @@ mod imp {
         /// The display name of this category.
         #[property(get = Self::display_name)]
         pub display_name: PhantomData<String>,
+        /// Whether this category is expanded.
+        #[property(get, set = Self::set_is_expanded, explicit_notify)]
+        pub is_expanded: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -50,7 +55,18 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Category {}
+    impl ObjectImpl for Category {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            let Some(settings) = self.session_settings() else {
+                return;
+            };
+
+            let is_expanded = settings.is_category_expanded(self.category_type());
+            self.set_is_expanded(is_expanded);
+        }
+    }
 
     impl ListModelImpl for Category {
         fn item_type(&self) -> glib::Type {
@@ -58,21 +74,27 @@ mod imp {
         }
 
         fn n_items(&self) -> u32 {
-            self.model.get().unwrap().n_items()
+            self.inner_model().n_items()
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            self.model.get().unwrap().item(position)
+            self.inner_model().item(position)
         }
     }
 
     impl Category {
-        /// Set the filter list model of this category.
+        /// The source model of this category.
+        fn model(&self) -> &gio::ListModel {
+            self.model.get().unwrap()
+        }
+
+        /// Set the source model of this category.
         fn set_model(&self, model: gio::ListModel) {
+            let model = self.model.get_or_init(|| model).clone();
             let obj = self.obj();
 
-            // Special case room lists so that they are sorted and in the right category
-            let model = if model.is::<RoomList>() {
+            // Special-case room lists so that they are sorted and in the right category.
+            let inner_model = if model.is::<RoomList>() {
                 let room_category_type = Room::this_expression("category")
                     .chain_closure::<CategoryType>(closure!(
                         |_: Option<glib::Object>, room_type: RoomType| {
@@ -108,7 +130,7 @@ mod imp {
                 model
             };
 
-            model.connect_items_changed(clone!(
+            inner_model.connect_items_changed(clone!(
                 #[weak]
                 obj,
                 move |model, pos, removed, added| {
@@ -117,8 +139,13 @@ mod imp {
                 }
             ));
 
-            self.set_empty(model.n_items() == 0);
-            self.model.set(model).unwrap();
+            self.set_empty(inner_model.n_items() == 0);
+            self.inner_model.set(inner_model).unwrap();
+        }
+
+        /// The inner model of this category.
+        fn inner_model(&self) -> &gio::ListModel {
+            self.inner_model.get().unwrap()
         }
 
         /// The type of this category.
@@ -145,18 +172,46 @@ mod imp {
         fn display_name(&self) -> String {
             self.category_type().to_string()
         }
+
+        /// Set whether this category is expanded.
+        fn set_is_expanded(&self, expanded: bool) {
+            if self.is_expanded.get() == expanded {
+                return;
+            }
+
+            self.is_expanded.set(expanded);
+            self.obj().notify_is_expanded();
+
+            if let Some(settings) = self.session_settings() {
+                settings.set_category_expanded(self.category_type(), expanded);
+            }
+        }
+
+        /// The settings of the current session.
+        fn session_settings(&self) -> Option<SessionSettings> {
+            let model = self.model();
+            let session = model
+                .downcast_ref::<RoomList>()
+                .and_then(|l| l.session())
+                .or_else(|| {
+                    model
+                        .downcast_ref::<VerificationList>()
+                        .and_then(|l| l.session())
+                })?;
+            Some(session.settings())
+        }
     }
 }
 
 glib::wrapper! {
-    /// A list of Items in the same category, implementing ListModel.
-    ///
-    /// This struct is used in `SidebarItemList`.
+    /// A list of items in the same category.
     pub struct Category(ObjectSubclass<imp::Category>)
         @implements gio::ListModel;
 }
 
 impl Category {
+    /// Constructs a new `Category` with the given category type and source
+    /// model.
     pub fn new(category_type: CategoryType, model: &impl IsA<gio::ListModel>) -> Self {
         glib::Object::builder()
             .property("category-type", category_type)

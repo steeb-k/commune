@@ -18,8 +18,8 @@ use crate::{
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
     session::model::{
-        Category, CategoryType, CryptoIdentityState, IdentityVerification, RecoveryState, Room,
-        RoomType, Selection, SessionVerificationState, SidebarIconItem, SidebarListModel, User,
+        Category, CategoryType, CryptoIdentityState, RecoveryState, RoomType, Selection,
+        SessionVerificationState, SidebarListModel, User,
     },
     utils::expression,
 };
@@ -113,27 +113,23 @@ mod imp {
                     };
                     let row = Row::new(&obj);
                     item.set_child(Some(&row));
-                    item.bind_property("item", &row, "list-row").build();
+                    item.bind_property("item", &row, "item").build();
                 }
             ));
             self.listview.set_factory(Some(&factory));
 
             self.listview.connect_activate(move |listview, pos| {
-                let model: Option<Selection> = listview.model().and_downcast();
-                let row: Option<gtk::TreeListRow> =
-                    model.as_ref().and_then(|m| m.item(pos)).and_downcast();
-
-                let (model, row) = match (model, row) {
-                    (Some(model), Some(row)) => (model, row),
-                    _ => return,
+                let Some(model) = listview.model().and_downcast::<Selection>() else {
+                    return;
+                };
+                let Some(item) = model.item(pos) else {
+                    return;
                 };
 
-                match row.item() {
-                    Some(o) if o.is::<Category>() => row.set_expanded(!row.is_expanded()),
-                    Some(o) if o.is::<Room>() => model.set_selected(pos),
-                    Some(o) if o.is::<SidebarIconItem>() => model.set_selected(pos),
-                    Some(o) if o.is::<IdentityVerification>() => model.set_selected(pos),
-                    _ => {}
+                if let Some(category) = item.downcast_ref::<Category>() {
+                    category.set_is_expanded(!category.is_expanded());
+                } else {
+                    model.set_selected(pos);
                 }
             });
 
