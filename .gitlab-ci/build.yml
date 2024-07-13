@@ -33,6 +33,7 @@ build@aarch64:
     APP_ID: "org.gnome.Fractal.CiTest"
     RUNTIME_REPO: "https://flathub.org/repo/flathub.flatpakrepo"
     BUNDLE: "${APP_ID}.flatpak"
+    RUN_TESTS: 0
 
 build-stable@x86_64:
   extends:
