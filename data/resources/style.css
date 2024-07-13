@@ -406,6 +406,10 @@ setup-view .text-button {
 
 /* Sidebar */
 
+sidebar .collapse-spacing {
+  padding: 0;
+}
+
 .sidebar-list row {
   margin: 0;
   padding: 0;
@@ -782,6 +786,7 @@ room-title {
   margin-top: -6px;
   margin-bottom: -6px;
   min-height: 12px;
+  padding: 3px 0;
 }
 
 room-title menubutton, room-title menubutton .toggle {

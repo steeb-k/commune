@@ -29,6 +29,8 @@ mod imp {
         pub decline_requests: RefCell<HashSet<Room>>,
         pub category_handler: RefCell<Option<glib::SignalHandlerId>>,
         #[template_child]
+        pub header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
         pub room_alias: TemplateChild<gtk::Label>,
         #[template_child]
         pub room_topic: TemplateChild<gtk::Label>,
@@ -193,6 +195,11 @@ glib::wrapper! {
 impl Invite {
     pub fn new() -> Self {
         glib::Object::new()
+    }
+
+    /// The header bar of the invite.
+    pub fn header_bar(&self) -> &adw::HeaderBar {
+        &self.imp().header_bar
     }
 
     fn reset(&self) {

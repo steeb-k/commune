@@ -65,7 +65,11 @@ mod imp {
         #[template_child]
         pub empty_page: TemplateChild<adw::ToolbarView>,
         #[template_child]
+        pub empty_page_header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
         pub verification_page: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        pub verification_page_header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         pub identity_verification_widget: TemplateChild<IdentityVerificationView>,
     }
@@ -254,5 +258,17 @@ impl Content {
             }
             _ => {}
         }
+    }
+
+    /// All the header bars of the children of the content.
+    pub fn header_bars(&self) -> [&adw::HeaderBar; 5] {
+        let imp = self.imp();
+        [
+            &imp.empty_page_header_bar,
+            imp.room_history.header_bar(),
+            imp.invite.header_bar(),
+            imp.explore.header_bar(),
+            &imp.verification_page_header_bar,
+        ]
     }
 }

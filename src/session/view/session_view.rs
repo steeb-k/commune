@@ -174,6 +174,15 @@ mod imp {
                 ));
                 obj.imp().window_active_handler_id.replace(Some(handler_id));
             });
+
+            // Make sure all header bars on the same screen have the same height.
+            // Necessary when the text scaling changes.
+            let size_group = gtk::SizeGroup::new(gtk::SizeGroupMode::Vertical);
+            size_group.add_widget(self.sidebar.header_bar());
+
+            for header_bar in self.content.header_bars() {
+                size_group.add_widget(header_bar);
+            }
         }
 
         fn dispose(&self) {

@@ -9,7 +9,7 @@
     <child>
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="AdwHeaderBar">
+          <object class="AdwHeaderBar" id="header_bar">
             <child type="title">
               <object class="AdwClamp">
                 <property name="maximum-size">400</property>

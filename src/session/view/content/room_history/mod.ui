@@ -132,24 +132,16 @@
     <child>
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="AdwHeaderBar">
+          <object class="AdwHeaderBar" id="header_bar">
             <property name="centering-policy">strict</property>
             <child type="title">
-              <object class="RoomTitle" id="room_title">
-                <binding name="title">
-                  <lookup name="display-name">
-                    <lookup name="room">ContentRoomHistory</lookup>
-                  </lookup>
-                </binding>
-                <binding name="subtitle">
-                  <lookup name="topic">
-                    <lookup name="room">ContentRoomHistory</lookup>
-                  </lookup>
-                </binding>
+              <object class="RoomHistoryTitle">
+                <property name="room" bind-source="ContentRoomHistory" bind-property="room" bind-flags="sync-create" />
               </object>
             </child>
             <child type="end">
               <object class="GtkMenuButton" id="room_menu">
+                <property name="valign">center</property>
                 <property name="icon-name">menu-secondary-symbolic</property>
                 <property name="menu-model">room-menu-model</property>
                 <property name="primary" bind-source="ContentRoomHistory" bind-property="only-view" bind-flags="sync-create"/>

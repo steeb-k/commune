@@ -6,6 +6,7 @@ mod message_toolbar;
 mod read_receipts_list;
 mod sender_avatar;
 mod state_row;
+mod title;
 mod typing_row;
 mod verification_info_bar;
 
@@ -24,12 +25,12 @@ use tracing::{error, warn};
 use self::{
     divider_row::DividerRow, item_row::ItemRow, message_row::MessageRow,
     message_toolbar::MessageToolbar, read_receipts_list::ReadReceiptsList,
-    sender_avatar::SenderAvatar, state_row::StateRow, typing_row::TypingRow,
-    verification_info_bar::VerificationInfoBar,
+    sender_avatar::SenderAvatar, state_row::StateRow, title::RoomHistoryTitle,
+    typing_row::TypingRow, verification_info_bar::VerificationInfoBar,
 };
 use super::{room_details, RoomDetails};
 use crate::{
-    components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser, RoomTitle, Spinner},
+    components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser, Spinner},
     i18n::gettext_f,
     prelude::*,
     session::model::{
@@ -82,7 +83,7 @@ mod imp {
         #[template_child]
         pub sender_menu_model: TemplateChild<gio::Menu>,
         #[template_child]
-        pub room_title: TemplateChild<RoomTitle>,
+        pub header_bar: TemplateChild<adw::HeaderBar>,
         #[template_child]
         pub room_menu: TemplateChild<gtk::MenuButton>,
         #[template_child]
@@ -125,6 +126,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            RoomHistoryTitle::ensure_type();
             ItemRow::ensure_type();
             VerificationInfoBar::ensure_type();
             Timeline::ensure_type();
@@ -537,6 +539,12 @@ impl RoomHistory {
         glib::Object::new()
     }
 
+    /// The header bar of the room history.
+    pub fn header_bar(&self) -> &adw::HeaderBar {
+        &self.imp().header_bar
+    }
+
+    /// The message toolbar of the room history.
     fn message_toolbar(&self) -> &MessageToolbar {
         &self.imp().message_toolbar
     }

@@ -13,7 +13,6 @@ mod pill;
 mod power_level_selection;
 mod reaction_chooser;
 mod role_badge;
-mod room_title;
 mod rows;
 mod scale_revealer;
 mod user_page;
@@ -33,7 +32,6 @@ pub use self::{
     power_level_selection::*,
     reaction_chooser::ReactionChooser,
     role_badge::RoleBadge,
-    room_title::RoomTitle,
     rows::*,
     scale_revealer::ScaleRevealer,
     user_page::UserPage,

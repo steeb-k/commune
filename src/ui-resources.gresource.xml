@@ -29,7 +29,6 @@
     <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/reaction_chooser.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/room_title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/button_count_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/button_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/check_loading_row.ui</file>
@@ -126,6 +125,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/creation.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/state_row/tombstone.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/title.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/typing_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_history/verification_info_bar.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/create_dm_dialog/mod.ui</file>

@@ -1,27 +1,35 @@
 use adw::{prelude::*, subclass::prelude::*};
-use gtk::{glib, CompositeTemplate};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
-use crate::{prelude::*, utils::string::linkify};
+use crate::{
+    components::Avatar,
+    prelude::*,
+    session::model::Room,
+    utils::{string::linkify, BoundObjectWeakRef},
+};
 
 mod imp {
-    use std::cell::{OnceCell, RefCell};
+    use std::cell::RefCell;
 
     use glib::subclass::InitializingObject;
 
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/room_title.ui")]
-    #[properties(wrapper_type = super::RoomTitle)]
-    pub struct RoomTitle {
+    #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_history/title.ui")]
+    #[properties(wrapper_type = super::RoomHistoryTitle)]
+    pub struct RoomHistoryTitle {
+        // The room to present the title of.
+        #[property(get, set = Self::set_room, explicit_notify, nullable)]
+        pub room: BoundObjectWeakRef<Room>,
         // The title of the room.
-        #[property(get, set = Self::set_title, explicit_notify)]
+        #[property(get)]
         pub title: RefCell<Option<String>>,
         // The title of the room that can be presented on a single line.
         #[property(get)]
         pub title_excerpt: RefCell<Option<String>>,
         // The subtitle of the room.
-        #[property(get, set = Self::set_subtitle, explicit_notify)]
+        #[property(get)]
         pub subtitle: RefCell<Option<String>>,
         // The subtitle of the room that can be presented on a single line.
         #[property(get)]
@@ -31,20 +39,22 @@ mod imp {
         #[template_child]
         pub title_excerpt_label: TemplateChild<gtk::Label>,
         #[template_child]
-        pub start_bin: TemplateChild<adw::Bin>,
+        pub popover: TemplateChild<gtk::Popover>,
         #[template_child]
-        pub arrow_icon: TemplateChild<gtk::Image>,
-        size_group: OnceCell<gtk::SizeGroup>,
+        pub title_label: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for RoomTitle {
-        const NAME: &'static str = "RoomTitle";
-        type Type = super::RoomTitle;
+    impl ObjectSubclass for RoomHistoryTitle {
+        const NAME: &'static str = "RoomHistoryTitle";
+        type Type = super::RoomHistoryTitle;
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
+            Avatar::ensure_type();
+
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
 
             klass.set_css_name("room-title");
         }
@@ -55,24 +65,55 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for RoomTitle {
+    impl ObjectImpl for RoomHistoryTitle {
         fn constructed(&self) {
             self.parent_constructed();
 
-            let size_group = self
-                .size_group
-                .get_or_init(|| gtk::SizeGroup::new(gtk::SizeGroupMode::Horizontal));
-            size_group.add_widget(&*self.start_bin);
-            size_group.add_widget(&*self.arrow_icon);
+            self.popover.set_offset(0, 5);
         }
     }
 
-    impl WidgetImpl for RoomTitle {}
-    impl BinImpl for RoomTitle {}
+    impl WidgetImpl for RoomHistoryTitle {}
+    impl BinImpl for RoomHistoryTitle {}
 
-    impl RoomTitle {
-        /// Set the title of the room.
-        fn set_title(&self, original_title: Option<String>) {
+    impl RoomHistoryTitle {
+        /// Set the room to present the title of.
+        fn set_room(&self, room: Option<Room>) {
+            if self.room.obj() == room {
+                return;
+            }
+
+            self.room.disconnect_signals();
+
+            if let Some(room) = room {
+                let display_name_handler = room.connect_display_name_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_title();
+                    }
+                ));
+                let topic_handler = room.connect_topic_notify(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move |_| {
+                        imp.update_subtitle();
+                    }
+                ));
+
+                self.room
+                    .set(&room, vec![display_name_handler, topic_handler]);
+            }
+
+            self.obj().notify_room();
+            self.update_title();
+            self.update_subtitle();
+        }
+
+        /// Update the title of the room.
+        fn update_title(&self) {
+            let original_title = self.room.obj().map(|r| r.display_name());
+
             let title = original_title.as_deref().map(|s| {
                 // Detect links.
                 let mut s = linkify(s);
@@ -104,8 +145,10 @@ mod imp {
             self.title_excerpt_label.set_visible(has_title);
         }
 
-        /// Set the subtitle of the room.
-        pub fn set_subtitle(&self, original_subtitle: Option<String>) {
+        /// Update the subtitle of the room.
+        fn update_subtitle(&self) {
+            let original_subtitle = self.room.obj().and_then(|r| r.topic());
+
             let subtitle = original_subtitle.as_deref().map(|s| {
                 // Detect links.
                 let mut s = linkify(s);
@@ -146,17 +189,34 @@ mod imp {
 
 glib::wrapper! {
     /// A widget to show a room's title and topic in a header bar.
-    pub struct RoomTitle(ObjectSubclass<imp::RoomTitle>)
+    pub struct RoomHistoryTitle(ObjectSubclass<imp::RoomHistoryTitle>)
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-impl RoomTitle {
+#[gtk::template_callbacks]
+impl RoomHistoryTitle {
+    /// Construct a new empty `RoomHistoryTitle`.
     pub fn new() -> Self {
         glib::Object::new()
     }
+
+    /// Handle when the title's label was mapped.
+    #[template_callback]
+    fn title_mapped(&self) {
+        let imp = self.imp();
+        // Put the cursor at the beginning of the title instead of having the title
+        // selected.
+        glib::idle_add_local_once(clone!(
+            #[weak]
+            imp,
+            move || {
+                imp.title_label.select_region(0, 0);
+            }
+        ));
+    }
 }
 
-impl Default for RoomTitle {
+impl Default for RoomHistoryTitle {
     fn default() -> Self {
         Self::new()
     }

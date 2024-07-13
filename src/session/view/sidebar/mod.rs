@@ -39,6 +39,8 @@ mod imp {
     #[properties(wrapper_type = super::Sidebar)]
     pub struct Sidebar {
         #[template_child]
+        pub header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
         pub security_banner: TemplateChild<adw::Banner>,
         #[template_child]
         pub scrolled_window: TemplateChild<gtk::ScrolledWindow>,
@@ -429,5 +431,10 @@ impl Sidebar {
 
             popover
         })
+    }
+
+    /// The `adw::HeaderBar` of the sidebar.
+    pub fn header_bar(&self) -> &adw::HeaderBar {
+        &self.imp().header_bar
     }
 }

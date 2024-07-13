@@ -31,6 +31,8 @@ mod imp {
         #[property(get, set = Self::set_session, explicit_notify)]
         pub session: glib::WeakRef<Session>,
         #[template_child]
+        pub header_bar: TemplateChild<adw::HeaderBar>,
+        #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub search_entry: TemplateChild<gtk::SearchEntry>,
@@ -174,6 +176,11 @@ impl Explore {
         }
 
         self.imp().search_entry.grab_focus();
+    }
+
+    /// The header bar of the explorer.
+    pub fn header_bar(&self) -> &adw::HeaderBar {
+        &self.imp().header_bar
     }
 
     /// Update the visible child according to the current state.

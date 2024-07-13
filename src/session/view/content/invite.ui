@@ -6,7 +6,7 @@
     <child>
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="AdwHeaderBar">
+          <object class="AdwHeaderBar" id="header_bar">
             <child type="title">
               <object class="AdwWindowTitle">
                 <!-- Translators: This is a verb. -->
