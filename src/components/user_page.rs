@@ -92,6 +92,8 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
+            klass.set_css_name("user-page");
+
             klass.install_action_async(
                 "user-page.open-direct-chat",
                 None,

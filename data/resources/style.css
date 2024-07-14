@@ -346,6 +346,11 @@ crop-circle > .mask {
   border-radius: 9999px;
 }
 
+user-page scrolledwindow > viewport > clamp > box {
+  margin: 12px;
+  border-spacing: 24px;
+}
+
 
 /* Login */
 

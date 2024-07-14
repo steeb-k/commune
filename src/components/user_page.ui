@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <template class="UserPage" parent="AdwNavigationPage">
-    <style>
-      <class name="form-page"/>
-    </style>
     <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
-          <object class="AdwHeaderBar"/>
+          <object class="AdwHeaderBar">
+            <property name="show-title">False</property>
+          </object>
         </child>
         <property name="content">
           <object class="GtkScrolledWindow" id="scrolled_window">

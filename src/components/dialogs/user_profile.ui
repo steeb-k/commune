@@ -2,8 +2,7 @@
 <interface>
   <template class="UserProfileDialog" parent="ToastableDialog">
     <property name="title" translatable="yes">User Profile</property>
-    <property name="content-width">480</property>
-    <property name="content-height">500</property>
+    <property name="content-width">500</property>
     <property name="child-content">
       <object class="GtkStack" id="stack">
         <child>
