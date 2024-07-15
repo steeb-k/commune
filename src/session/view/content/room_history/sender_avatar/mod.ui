@@ -24,7 +24,7 @@
     </child>
   </template>
   <object class="GtkButton" id="user_id_btn">
-    <property name="tooltip-text" translatable="yes">Copy Matrix User ID to Clipboard</property>
+    <property name="tooltip-text" translatable="yes">Copy Matrix User ID</property>
     <property name="action-name">sender-avatar.copy-user-id</property>
     <style>
       <class name="flat"/>

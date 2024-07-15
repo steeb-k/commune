@@ -110,7 +110,7 @@
                                             <child>
                                               <object class="GtkButton">
                                                 <property name="icon-name">copy-symbolic</property>
-                                                <property name="tooltip-text" translatable="yes">Copy Command to Clipboard</property>
+                                                <property name="tooltip-text" translatable="yes">Copy Command</property>
                                                 <property name="valign">center</property>
                                                 <property name="halign">end</property>
                                                 <property name="margin-start">3</property>

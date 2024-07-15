@@ -297,7 +297,7 @@
               </lookup>
             </binding>
             <property name="main-title">subtitle</property>
-            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix Room ID to Clipboard</property>
+            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix Room ID</property>
             <property name="toast-text" translatable="yes">Matrix room ID copied to clipboard</property>
           </object>
         </child>

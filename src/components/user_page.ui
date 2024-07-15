@@ -63,7 +63,7 @@
                             <child type="end">
                               <object class="GtkButton">
                                 <property name="icon-name">copy-symbolic</property>
-                                <property name="tooltip-text" translatable="yes">Copy Matrix User ID to Clipboard</property>
+                                <property name="tooltip-text" translatable="yes">Copy Matrix User ID</property>
                                 <property name="valign">center</property>
                                 <property name="hexpand">True</property>
                                 <property name="halign">start</property>

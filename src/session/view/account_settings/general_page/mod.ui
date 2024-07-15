@@ -70,7 +70,7 @@
           <object class="CopyableRow" id="user_id">
             <property name="title" translatable="yes">Matrix User ID</property>
             <property name="main-title">subtitle</property>
-            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix User ID to Clipboard</property>
+            <property name="copy-button-tooltip-text" translatable="yes">Copy Matrix User ID</property>
             <property name="toast-text" translatable="yes">Matrix user ID copied to clipboard</property>
           </object>
         </child>
@@ -78,7 +78,7 @@
           <object class="CopyableRow" id="homeserver">
             <property name="title" translatable="yes">Homeserver</property>
             <property name="main-title">subtitle</property>
-            <property name="copy-button-tooltip-text" translatable="yes">Copy Homeserver Address to Clipboard</property>
+            <property name="copy-button-tooltip-text" translatable="yes">Copy Homeserver Address</property>
             <property name="toast-text" translatable="yes">Homeserver address copied to clipboard</property>
           </object>
         </child>
@@ -86,7 +86,7 @@
           <object class="CopyableRow" id="session_id">
             <property name="title" translatable="yes">Session ID</property>
             <property name="main-title">subtitle</property>
-            <property name="copy-button-tooltip-text" translatable="yes">Copy Session ID to Clipboard</property>
+            <property name="copy-button-tooltip-text" translatable="yes">Copy Session ID</property>
             <property name="toast-text" translatable="yes">Session ID copied to clipboard</property>
           </object>
         </child>
