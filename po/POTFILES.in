@@ -109,8 +109,8 @@ src/session/view/content/mod.ui
 src/session/view/content/room_details/addresses_subpage/completion_popover.ui
 src/session/view/content/room_details/addresses_subpage/mod.rs
 src/session/view/content/room_details/addresses_subpage/mod.ui
-src/session/view/content/room_details/general_page/mod.rs
-src/session/view/content/room_details/general_page/mod.ui
+src/session/view/content/room_details/general_page.rs
+src/session/view/content/room_details/general_page.ui
 src/session/view/content/room_details/history_viewer/audio_row.rs
 src/session/view/content/room_details/history_viewer/audio_row.ui
 src/session/view/content/room_details/history_viewer/audio.ui

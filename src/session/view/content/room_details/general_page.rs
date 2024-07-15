@@ -57,7 +57,7 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/general_page/mod.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/general_page.ui"
     )]
     #[properties(wrapper_type = super::GeneralPage)]
     pub struct GeneralPage {

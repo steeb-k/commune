@@ -83,7 +83,7 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/addresses_subpage/completion_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/addresses_subpage/mod.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/general_page/mod.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/general_page.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/audio.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/audio_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/file.ui</file>
