@@ -55,6 +55,16 @@
         <attribute name="action">room-row.set-lowpriority</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
+      <item>
+        <attribute name="label" translatable="yes">Mark as _Direct Chat</attribute>
+        <attribute name="action">room-row.set-direct-chat</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Unmark as _Direct Chat</attribute>
+        <attribute name="action">room-row.unset-direct-chat</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
     </section>
     <section>
       <item>

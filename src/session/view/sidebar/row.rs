@@ -1,6 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
+use tracing::error;
 
 use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
         Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
         SidebarIconItemType, User,
     },
-    spawn, toast,
+    spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
 };
 
@@ -29,6 +30,7 @@ mod imp {
         /// The item of this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
         pub item: RefCell<Option<glib::Object>>,
+        room_handler: RefCell<Option<glib::SignalHandlerId>>,
         room_join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
@@ -142,6 +144,9 @@ mod imp {
             let obj = self.obj();
 
             if let Some(room) = self.room() {
+                if let Some(handler) = self.room_handler.take() {
+                    room.disconnect(handler);
+                }
                 if let Some(handler) = self.room_join_rule_handler.take() {
                     room.join_rule().disconnect(handler);
                 }
@@ -171,6 +176,14 @@ mod imp {
                         child
                     };
 
+                    let room_is_direct_handler = room.connect_is_direct_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_context_menu();
+                        }
+                    ));
+                    self.room_handler.replace(Some(room_is_direct_handler));
                     let room_join_rule_handler =
                         room.join_rule().connect_we_can_join_notify(clone!(
                             #[weak(rename_to = imp)]
@@ -387,6 +400,43 @@ mod imp {
                 RoomType::Outdated | RoomType::Space | RoomType::Ignored => {}
             }
 
+            if matches!(
+                category,
+                RoomType::Favorite | RoomType::Normal | RoomType::LowPriority | RoomType::Left
+            ) {
+                if room.is_direct() {
+                    action_group.add_action_entries([gio::ActionEntry::builder(
+                        "unset-direct-chat",
+                    )
+                    .activate(clone!(
+                        #[weak]
+                        obj,
+                        move |_, _, _| {
+                            if let Some(room) = obj.room() {
+                                spawn!(async move {
+                                    obj.set_room_is_direct(&room, false).await;
+                                });
+                            }
+                        }
+                    ))
+                    .build()]);
+                } else {
+                    action_group.add_action_entries([gio::ActionEntry::builder("set-direct-chat")
+                        .activate(clone!(
+                            #[weak]
+                            obj,
+                            move |_, _, _| {
+                                if let Some(room) = obj.room() {
+                                    spawn!(async move {
+                                        obj.set_room_is_direct(&room, true).await;
+                                    });
+                                }
+                            }
+                        ))
+                        .build()]);
+                }
+            }
+
             Some(action_group)
         }
     }
@@ -543,6 +593,26 @@ impl Row {
                 gettext("Could not forget {room}"),
                 @room,
             );
+        }
+    }
+
+    /// Set or unset the room as a direct chat.
+    async fn set_room_is_direct(&self, room: &Room, is_direct: bool) {
+        let matrix_room = room.matrix_room().clone();
+        let handle = spawn_tokio!(async move { matrix_room.set_is_direct(is_direct).await });
+
+        if let Err(error) = handle.await.unwrap() {
+            if is_direct {
+                error!("Could not mark room as direct chat: {error}");
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                toast!(self, gettext("Could not mark {room} as direct chat"), @room,);
+            } else {
+                error!("Could not unmark room as direct chat: {error}");
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name.
+                toast!(self, gettext("Could not unmark {room} as direct chat"), @room,);
+            }
         }
     }
 
