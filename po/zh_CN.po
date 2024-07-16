@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-12 16:30+0000\n"
-"PO-Revision-Date: 2024-07-13 20:41+0800\n"
+"POT-Creation-Date: 2024-07-15 15:53+0000\n"
+"PO-Revision-Date: 2024-07-16 19:12+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -25,7 +25,8 @@ msgstr ""
 "X-DL-State: None\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
+#: data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: src/login/session_setup_view.ui:22 src/window.ui:8
 msgid "Fractal"
 msgstr "Fractal"
 
@@ -192,7 +193,7 @@ msgstr "确认更改"
 #: src/session/view/content/room_details/history_viewer/audio.ui:61
 #: src/session/view/content/room_details/history_viewer/file.ui:60
 #: src/session/view/content/room_details/history_viewer/media.ui:67
-#: src/session/view/content/room_history/mod.ui:212
+#: src/session/view/content/room_history/mod.ui:204
 msgid "Try Again"
 msgstr "重试"
 
@@ -202,7 +203,7 @@ msgstr "重试"
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
 #: src/session/view/content/room_details/history_viewer/media.ui:23
-#: src/session/view/content/room_history/mod.ui:184 src/window.ui:18
+#: src/session/view/content/room_history/mod.ui:176 src/window.ui:18
 msgid "Loading"
 msgstr "正在加载"
 
@@ -419,7 +420,7 @@ msgstr "恢复口令或密钥"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:339
-#: src/session/view/sidebar/mod.rs:325
+#: src/session/view/sidebar/mod.rs:327
 msgid "Recover"
 msgstr "恢复"
 
@@ -556,7 +557,7 @@ msgstr "确认(_O)"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:199
 #: src/session/view/content/explore/public_room_row.rs:177
-#: src/session/view/content/room_history/mod.rs:1001
+#: src/session/view/content/room_history/mod.rs:1009
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "查看"
@@ -601,7 +602,7 @@ msgstr "输入聊天室标识、别名或永久链接来查找聊天室"
 
 #: src/components/dialogs/join_room.ui:191
 #: src/session/view/content/explore/public_room_row.rs:179
-#: src/session/view/content/room_history/mod.rs:1004
+#: src/session/view/content/room_history/mod.rs:1012
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "加入"
@@ -690,7 +691,7 @@ msgstr "您确定想要封禁 {user_id} 吗？他们在被解封之前将无法�
 
 #. Translators: As in, 'Ban room member'.
 #: src/components/dialogs/message_dialogs.rs:141
-#: src/components/user_page.ui:170
+#: src/components/user_page.ui:169
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
 msgid "Ban"
 msgstr "封禁"
@@ -720,7 +721,7 @@ msgstr ""
 "室。"
 
 #: src/components/dialogs/message_dialogs.rs:170
-#: src/components/user_page.rs:421
+#: src/components/user_page.rs:423
 msgid "Revoke Invite"
 msgstr "撤消邀请"
 
@@ -737,7 +738,7 @@ msgid "Are you sure you want to deny access to {user_id}?"
 msgstr "您确定想要拒绝 {user_id} 的访问吗？"
 
 #: src/components/dialogs/message_dialogs.rs:186
-#: src/components/user_page.rs:422
+#: src/components/user_page.rs:424
 msgid "Deny Access"
 msgstr "拒绝访问"
 
@@ -766,7 +767,7 @@ msgstr "您确定想要踢出 {user_id} 吗？他们在收到邀请前将无法�
 #. Translators: As in, 'Kick room member'.
 #. // Translators: As in, 'Kick room member'.
 #: src/components/dialogs/message_dialogs.rs:208
-#: src/components/user_page.rs:424
+#: src/components/user_page.rs:426
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
 msgid "Kick"
 msgstr "踢出"
@@ -921,179 +922,175 @@ msgstr "自定义"
 msgid "Confirm Custom Role"
 msgstr "确认自定义角色"
 
-#: src/components/room_title.ui:35
-msgid "Click to Expand"
-msgstr "点击以展开"
-
-#: src/components/user_page.rs:281
+#: src/components/user_page.rs:283
 #: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matrix 用户标识已复制到剪贴板"
 
-#: src/components/user_page.rs:303
+#: src/components/user_page.rs:305
 msgid "Open Direct Chat"
 msgstr "打开直接聊天"
 
-#: src/components/user_page.rs:305
+#: src/components/user_page.rs:307
 msgid "Create Direct Chat"
 msgstr "创建直接聊天"
 
-#: src/components/user_page.rs:329
+#: src/components/user_page.rs:331
 #: src/session/view/content/room_history/sender_avatar/mod.rs:534
 #: src/session/view/create_dm_dialog/mod.rs:202
 msgid "Could not create a new Direct Chat"
 msgstr "无法创建新的直接聊天"
 
-#: src/components/user_page.rs:362
+#: src/components/user_page.rs:364
 msgid "In {room_name}"
 msgstr "在 {room_name} 中"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:373
+#: src/components/user_page.rs:375
 msgctxt "member"
 msgid "Invited"
 msgstr "已邀请"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:378
+#: src/components/user_page.rs:380
 msgctxt "member"
 msgid "Banned"
 msgstr "已封禁"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:383
+#: src/components/user_page.rs:385
 msgctxt "member"
 msgid "Knocked"
 msgstr "已敲门"
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:388
+#: src/components/user_page.rs:390
 msgctxt "member"
 msgid "Unknown"
 msgstr "未知"
 
-#: src/components/user_page.rs:409
+#: src/components/user_page.rs:411
 msgid "Allow Access"
 msgstr "允许访问"
 
-#: src/components/user_page.rs:511
+#: src/components/user_page.rs:513
 msgid "Could not change the role"
 msgstr "无法更改角色"
 
-#: src/components/user_page.rs:533
+#: src/components/user_page.rs:535
 #: src/session/view/content/room_history/sender_avatar/mod.rs:558
 msgid "Could not invite user"
 msgstr "无法邀请用户"
 
-#: src/components/user_page.rs:567
+#: src/components/user_page.rs:569
 #: src/session/view/content/room_history/sender_avatar/mod.rs:591
 msgid "Could not revoke invite of user"
 msgstr "无法撤消邀请用户"
 
-#: src/components/user_page.rs:568
+#: src/components/user_page.rs:570
 #: src/session/view/content/room_history/sender_avatar/mod.rs:592
 msgid "Could not deny access to user"
 msgstr "无法拒绝用户访问"
 
-#: src/components/user_page.rs:569
+#: src/components/user_page.rs:571
 #: src/session/view/content/room_history/sender_avatar/mod.rs:593
 msgid "Could not kick user"
 msgstr "无法踢出用户"
 
-#: src/components/user_page.rs:615
+#: src/components/user_page.rs:617
 #: src/session/view/content/room_history/sender_avatar/mod.rs:678
 msgid "Could not ban user"
 msgstr "无法封禁用户"
 
-#: src/components/user_page.rs:643
+#: src/components/user_page.rs:645
 #: src/session/view/content/room_history/sender_avatar/mod.rs:698
 msgid "Could not unban user"
 msgstr "无法解封用户"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:691
+#: src/components/user_page.rs:693
 #: src/session/view/content/room_history/sender_avatar/mod.rs:752
 msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "无法移除由该用户发送的 {n} 条消息"
 
-#: src/components/user_page.rs:708
+#: src/components/user_page.rs:710
 msgid "Identity verified"
 msgstr "身份已验证"
 
-#: src/components/user_page.rs:715
+#: src/components/user_page.rs:717
 msgid "Identity not verified"
 msgstr "身份未验证"
 
-#: src/components/user_page.rs:731
+#: src/components/user_page.rs:733
 msgid "Could not start user verification"
 msgstr "无法开始用户验证"
 
-#: src/components/user_page.rs:757
+#: src/components/user_page.rs:759
 msgid "Ignored"
 msgstr "已忽略"
 
-#: src/components/user_page.rs:759
+#: src/components/user_page.rs:761
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "停止忽略"
 
-#: src/components/user_page.rs:762
+#: src/components/user_page.rs:764
 msgid "Not Ignored"
 msgstr "未忽略"
 
-#: src/components/user_page.rs:763
+#: src/components/user_page.rs:765
 msgid "Ignore"
 msgstr "忽略"
 
-#: src/components/user_page.rs:780
+#: src/components/user_page.rs:782
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
 #: src/session/view/content/room_history/sender_avatar/mod.rs:777
 msgid "Could not stop ignoring user"
 msgstr "无法停止忽略用户"
 
-#: src/components/user_page.rs:783 src/session/view/content/invite.rs:278
+#: src/components/user_page.rs:785 src/session/view/content/invite.rs:285
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
 #: src/session/view/sidebar/row.rs:532
 msgid "Could not ignore user"
 msgstr "无法忽略用户"
 
-#: src/components/user_page.ui:67
+#: src/components/user_page.ui:66
 #: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
-msgid "Copy Matrix User ID to Clipboard"
-msgstr "将 Matrix 用户标识复制到剪贴板"
+msgid "Copy Matrix User ID"
+msgstr "复制 Matrix 用户标识"
 
-#: src/components/user_page.ui:115
+#: src/components/user_page.ui:114
 msgid "Role"
 msgstr "角色"
 
 #. Translators: value used to assign room member roles
-#: src/components/user_page.ui:128
+#: src/components/user_page.ui:127
 msgid "Power Level"
 msgstr "权力等级"
 
 #. Translators: As in, 'Unban room member'.
-#: src/components/user_page.ui:182
+#: src/components/user_page.ui:181
 msgid "Unban"
 msgstr "解封"
 
-#: src/components/user_page.ui:197
+#: src/components/user_page.ui:196
 msgid "Remove Messages"
 msgstr "移除消息"
 
-#: src/components/user_page.ui:211
+#: src/components/user_page.ui:210
 #: src/session/view/account_settings/security_page/mod.ui:5
 msgid "Security"
 msgstr "安全"
 
-#: src/components/user_page.ui:238
+#: src/components/user_page.ui:237
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:270
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:318
+#: src/session/view/sidebar/mod.rs:320
 msgid "Verify"
 msgstr "验证"
 
@@ -1150,8 +1147,8 @@ msgstr ""
 "如果您更偏好使用保密服务提供者，您需要允许 Fractal 与其交互，就像这样："
 
 #: src/error_page.ui:113
-msgid "Copy Command to Clipboard"
-msgstr "将命令复制到剪贴板"
+msgid "Copy Command"
+msgstr "复制命令"
 
 #: src/error_page.ui:148
 msgid "Check that you have a default keyring and that it is unlocked."
@@ -1679,6 +1676,10 @@ msgstr "开始聊天"
 msgid "Session Setup"
 msgstr "会话设置"
 
+#: src/login/session_setup_view.ui:45
+msgid "Fetching Account Data…"
+msgstr "正在获取账号数据…"
+
 #: src/login/sso_page.ui:5 src/login/sso_page.ui:41
 msgid "Single Sign-On"
 msgstr "单点登录"
@@ -1886,7 +1887,7 @@ msgstr "已禁言"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:589
+#: src/session/view/content/room_history/mod.rs:597
 msgid "Could not join room {room_name}. Try again later."
 msgstr "无法加入聊天室 {room_name}。请稍后重试。"
 
@@ -2138,8 +2139,8 @@ msgid "Matrix User ID"
 msgstr "Matrix 用户标识"
 
 #: src/session/view/account_settings/general_page/mod.ui:81
-msgid "Copy Homeserver Address to Clipboard"
-msgstr "将主服务器地址复制到剪贴板"
+msgid "Copy Homeserver Address"
+msgstr "复制主服务器地址"
 
 #: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver address copied to clipboard"
@@ -2150,8 +2151,8 @@ msgid "Session ID"
 msgstr "会话标识"
 
 #: src/session/view/account_settings/general_page/mod.ui:89
-msgid "Copy Session ID to Clipboard"
-msgstr "将会话标识复制到剪贴板"
+msgid "Copy Session ID"
+msgstr "复制会话标识"
 
 #: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
@@ -2375,7 +2376,7 @@ msgstr "无法认证您自己的设备或别的用户"
 #: src/session/view/account_settings/security_page/mod.rs:227
 #: src/session/view/account_settings/security_page/mod.rs:300
 #: src/session/view/content/room_details/general_page/mod.rs:1388
-#: src/session/view/sidebar/mod.rs:316 src/session/view/sidebar/mod.rs:322
+#: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
 msgid "Enable"
 msgstr "启用"
 
@@ -2650,19 +2651,19 @@ msgstr "添加服务器"
 msgid "Remove Server"
 msgstr "移除服务器"
 
-#: src/session/view/content/invite.rs:168
+#: src/session/view/content/invite.rs:170
 msgid "{user_name} ({user_id}) invited you"
 msgstr "{user_name}（{user_id}）已邀请您"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:225
+#: src/session/view/content/invite.rs:232
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "无法接受 {room} 的邀请。请稍后重试。"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:265
+#: src/session/view/content/invite.rs:272
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "无法拒绝 {room} 的邀请。请稍后重试。"
 
@@ -2694,7 +2695,7 @@ msgid "Join a room to start chatting"
 msgstr "加入聊天室开始聊天"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:227
+#: src/session/view/content/room_history/mod.ui:219
 msgid "Room History"
 msgstr "聊天室历史"
 
@@ -3067,8 +3068,8 @@ msgid "Matrix Room ID"
 msgstr "Matrix 聊天室标识"
 
 #: src/session/view/content/room_details/general_page/mod.ui:300
-msgid "Copy Matrix Room ID to Clipboard"
-msgstr "将 Matrix 聊天室标识复制到剪贴板"
+msgid "Copy Matrix Room ID"
+msgstr "复制 Matrix 聊天室标识"
 
 #: src/session/view/content/room_details/general_page/mod.ui:301
 msgid "Matrix room ID copied to clipboard"
@@ -3132,7 +3133,7 @@ msgstr "无法加载音频"
 #: src/session/view/content/room_details/history_viewer/audio.ui:57
 #: src/session/view/content/room_details/history_viewer/file.ui:56
 #: src/session/view/content/room_details/history_viewer/media.ui:63
-#: src/session/view/content/room_history/mod.ui:208
+#: src/session/view/content/room_history/mod.ui:200
 msgid "Check your network connection"
 msgstr "检查您的网络连接"
 
@@ -3926,37 +3927,37 @@ msgstr "%m 月 %d 日 %I:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%m 月 %d 日 %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:352
+#: src/session/view/content/room_history/mod.rs:354
 msgid "Error getting file from drop"
 msgstr "从拖放获取文件时出错"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:570
+#: src/session/view/content/room_history/mod.rs:578
 msgid "Could not leave {room}"
 msgstr "无法离开 {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:606
+#: src/session/view/content/room_history/mod.rs:614
 #: src/session/view/sidebar/row.rs:543
 msgid "Could not forget {room}"
 msgstr "无法忘记 {room}"
 
-#: src/session/view/content/room_history/mod.rs:777
-#: src/session/view/sidebar/mod.rs:428
+#: src/session/view/content/room_history/mod.rs:785
+#: src/session/view/sidebar/mod.rs:430
 msgid "Context Menu"
 msgstr "上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:797
+#: src/session/view/content/room_history/mod.rs:805
 msgid "Sender Context Menu"
 msgstr "发送者上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:999
-#: src/session/view/content/room_history/mod.rs:1003
+#: src/session/view/content/room_history/mod.rs:1007
+#: src/session/view/content/room_history/mod.rs:1011
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "该聊天室有新版本"
 
-#: src/session/view/content/room_history/mod.rs:1006
+#: src/session/view/content/room_history/mod.rs:1014
 msgid "This room was closed"
 msgstr "该聊天室已关闭"
 
@@ -4045,20 +4046,20 @@ msgstr "忽略(_G)"
 msgid "Stop I_gnoring"
 msgstr "停止忽略(_G)"
 
-#: src/session/view/content/room_history/mod.ui:156
+#: src/session/view/content/room_history/mod.ui:148
 msgid "Room Menu"
 msgstr "聊天室菜单"
 
-#: src/session/view/content/room_history/mod.ui:200
-#: src/session/view/content/room_history/mod.ui:207
+#: src/session/view/content/room_history/mod.ui:192
+#: src/session/view/content/room_history/mod.ui:199
 msgid "Could Not Load Room"
 msgstr "无法加载聊天室"
 
-#: src/session/view/content/room_history/mod.ui:242
+#: src/session/view/content/room_history/mod.ui:234
 msgid "Scroll to Bottom"
 msgstr "滚动到底部"
 
-#: src/session/view/content/room_history/mod.ui:254
+#: src/session/view/content/room_history/mod.ui:246
 msgid "Drop Here to Send"
 msgstr "拖到这里发送"
 
@@ -4299,6 +4300,10 @@ msgstr "{user} 移除了他们的头像。"
 msgid "{user} changed their avatar."
 msgstr "{user} 更改了他们的头像。"
 
+#: src/session/view/content/room_history/title.ui:35
+msgid "Click to Expand"
+msgstr "点击以展开"
+
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
 #: src/session/view/content/room_history/typing_row.rs:142
@@ -4382,8 +4387,8 @@ msgstr "事件标识"
 
 #: src/session/view/event_details_dialog.ui:69
 #: src/session/view/event_details_dialog.ui:163
-msgid "Copy Event ID to Clipboard"
-msgstr "将事件标识复制到剪贴板"
+msgid "Copy Event ID"
+msgstr "复制事件标识"
 
 #: src/session/view/event_details_dialog.ui:70
 #: src/session/view/event_details_dialog.ui:164
@@ -4395,8 +4400,8 @@ msgid "Room ID"
 msgstr "聊天室标识"
 
 #: src/session/view/event_details_dialog.ui:84
-msgid "Copy Room ID to Clipboard"
-msgstr "将聊天室标识复制到剪贴板"
+msgid "Copy Room ID"
+msgstr "复制聊天室标识"
 
 #: src/session/view/event_details_dialog.ui:85
 msgid "Room ID copied to clipboard"
@@ -4407,8 +4412,8 @@ msgid "Sender ID"
 msgstr "发送者标识"
 
 #: src/session/view/event_details_dialog.ui:97
-msgid "Copy Sender ID to Clipboard"
-msgstr "将发送者标识复制到剪贴板"
+msgid "Copy Sender ID"
+msgstr "复制发送者标识"
 
 #: src/session/view/event_details_dialog.ui:98
 msgid "Sender ID copied to clipboard"
@@ -4421,8 +4426,8 @@ msgstr "时间戳"
 
 #: src/session/view/event_details_dialog.ui:110
 #: src/session/view/event_details_dialog.ui:176
-msgid "Copy Timestamp to Clipboard"
-msgstr "将时间戳复制到剪贴板"
+msgid "Copy Timestamp"
+msgstr "复制时间戳"
 
 #: src/session/view/event_details_dialog.ui:111
 #: src/session/view/event_details_dialog.ui:177
@@ -4439,8 +4444,8 @@ msgid "Latest Edit"
 msgstr "最新编辑"
 
 #: src/session/view/event_details_dialog.ui:213
-msgid "Copy Source to Clipboard"
-msgstr "将来源复制到剪贴板"
+msgid "Copy Source"
+msgstr "复制来源"
 
 #: src/session/view/media_viewer.rs:514
 msgid "Image copied to clipboard"
@@ -4575,19 +4580,19 @@ msgstr "重新加入聊天室"
 msgid "Rejoin Room as Low Priority"
 msgstr "重新加入聊天室并设为低优先级"
 
-#: src/session/view/sidebar/mod.rs:316
+#: src/session/view/sidebar/mod.rs:318
 msgid "No crypto identity"
 msgstr "没有加密身份"
 
-#: src/session/view/sidebar/mod.rs:318
+#: src/session/view/sidebar/mod.rs:320
 msgid "Crypto identity incomplete"
 msgstr "加密身份不完整"
 
-#: src/session/view/sidebar/mod.rs:322
+#: src/session/view/sidebar/mod.rs:324
 msgid "Account recovery disabled"
 msgstr "账号恢复已禁用"
 
-#: src/session/view/sidebar/mod.rs:325
+#: src/session/view/sidebar/mod.rs:327
 msgid "Account recovery incomplete"
 msgstr "账号恢复不完全"
 
@@ -4631,27 +4636,27 @@ msgstr "移至低优先级(_P)"
 msgid "Sidebar"
 msgstr "侧边栏"
 
-#: src/session/view/sidebar/mod.ui:92
+#: src/session/view/sidebar/mod.ui:95
 msgid "Main Menu"
 msgstr "主菜单"
 
-#: src/session/view/sidebar/mod.ui:100
+#: src/session/view/sidebar/mod.ui:104
 msgid "Toggle Room Search"
 msgstr "切换聊天室搜索"
 
-#: src/session/view/sidebar/mod.ui:113
+#: src/session/view/sidebar/mod.ui:117
 msgid "Room Search"
 msgstr "聊天室搜索"
 
-#: src/session/view/sidebar/mod.ui:114
+#: src/session/view/sidebar/mod.ui:118
 msgid "Search for a room"
 msgstr "搜索聊天室"
 
-#: src/session/view/sidebar/mod.ui:149
+#: src/session/view/sidebar/mod.ui:153
 msgid "Room List"
 msgstr "聊天室列表"
 
-#: src/session/view/sidebar/mod.ui:150
+#: src/session/view/sidebar/mod.ui:154
 msgid "Allows to navigate between rooms"
 msgstr "允许在聊天室间导览"
 
@@ -4809,6 +4814,30 @@ msgstr "无法保存文件"
 #: src/window.ui:66
 msgid "Session"
 msgstr "会话"
+
+#~ msgid "Copy Matrix User ID to Clipboard"
+#~ msgstr "将 Matrix 用户标识复制到剪贴板"
+
+#~ msgid "Copy Session ID to Clipboard"
+#~ msgstr "将会话标识复制到剪贴板"
+
+#~ msgid "Copy Matrix Room ID to Clipboard"
+#~ msgstr "将 Matrix 聊天室标识复制到剪贴板"
+
+#~ msgid "Copy Event ID to Clipboard"
+#~ msgstr "将事件标识复制到剪贴板"
+
+#~ msgid "Copy Room ID to Clipboard"
+#~ msgstr "将聊天室标识复制到剪贴板"
+
+#~ msgid "Copy Sender ID to Clipboard"
+#~ msgstr "将发送者标识复制到剪贴板"
+
+#~ msgid "Copy Timestamp to Clipboard"
+#~ msgstr "将时间戳复制到剪贴板"
+
+#~ msgid "Copy Source to Clipboard"
+#~ msgstr "将来源复制到剪贴板"
 
 #~ msgid "_Permalink"
 #~ msgstr "永久链接(_P)"
@@ -4995,9 +5024,6 @@ msgstr "会话"
 
 #~ msgid "Scroll to bottom"
 #~ msgstr "滚动到底部"
-
-#~ msgid "Source"
-#~ msgstr "来源"
 
 #~ msgid "Found stored session with unsupported version {version_nb}"
 #~ msgstr "找到带有不受支持的版本 {version_nb} 的存储会话"
