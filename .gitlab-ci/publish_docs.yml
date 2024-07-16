@@ -3,6 +3,8 @@
 include: '.gitlab-ci/pages.yaml'
 
 pages:
+  extends:
+    - .pages
   stage: deploy
   variables:
     DOCS_FOLDER: "public"
