@@ -2,6 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, CompositeTemplate};
 
 mod addresses_subpage;
+mod edit_details_subpage;
 mod general_page;
 mod history_viewer;
 mod invite_subpage;
@@ -11,6 +12,7 @@ mod room_upgrade_dialog;
 
 use self::{
     addresses_subpage::AddressesSubpage,
+    edit_details_subpage::EditDetailsSubpage,
     general_page::GeneralPage,
     history_viewer::{
         AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, MediaHistoryViewer,
@@ -23,6 +25,7 @@ use crate::session::model::Room;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Variant)]
 pub enum SubpageName {
+    EditDetails,
     Members,
     Invite,
     MediaHistory,
@@ -46,6 +49,8 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/session/view/content/room_details/mod.ui")]
     #[properties(wrapper_type = super::RoomDetails)]
     pub struct RoomDetails {
+        #[template_child]
+        pub general_page: TemplateChild<GeneralPage>,
         /// The room to show the details for.
         #[property(get, construct_only)]
         pub room: RefCell<Option<Room>>,
@@ -66,8 +71,6 @@ mod imp {
         type ParentType = adw::PreferencesWindow;
 
         fn class_init(klass: &mut Self::Class) {
-            GeneralPage::ensure_type();
-
             Self::bind_template(klass);
 
             klass.install_action(
@@ -99,7 +102,13 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for RoomDetails {}
 
-    impl WidgetImpl for RoomDetails {}
+    impl WidgetImpl for RoomDetails {
+        fn map(&self) {
+            self.parent_map();
+            self.general_page.unselect_topic();
+        }
+    }
+
     impl WindowImpl for RoomDetails {}
     impl AdwWindowImpl for RoomDetails {}
     impl PreferencesWindowImpl for RoomDetails {}
@@ -142,6 +151,7 @@ impl RoomDetails {
 
         let mut subpages = imp.subpages.borrow_mut();
         let subpage = subpages.entry(name).or_insert_with(|| match name {
+            SubpageName::EditDetails => EditDetailsSubpage::new(&room).upcast(),
             SubpageName::Members => MembersPage::new(&room).upcast(),
             SubpageName::Invite => InviteSubpage::new(&room).upcast(),
             SubpageName::MediaHistory => MediaHistoryViewer::new(&self.timeline()).upcast(),

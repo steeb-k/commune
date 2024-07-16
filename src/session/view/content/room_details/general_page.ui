@@ -1,100 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentRoomDetailsGeneralPage" parent="AdwPreferencesPage">
+  <template class="RoomDetailsGeneralPage" parent="AdwPreferencesPage">
     <property name="title" translatable="yes">Room Details</property>
     <child>
       <object class="AdwPreferencesGroup">
-        <style>
-          <class name="room-details-group"/>
-        </style>
-        <child>
-          <object class="EditableAvatar" id="avatar">
-            <accessibility>
-              <property name="label" translatable="yes">Room Avatar</property>
-            </accessibility>
-            <binding name="editable">
-              <lookup name="can-change-avatar">
-                <lookup name="permissions">
-                  <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
-                </lookup>
-              </lookup>
-            </binding>
-            <binding name="data">
-              <lookup name="avatar-data">
-                <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
-              </lookup>
-            </binding>
-            <binding name="inhibit-remove">
-              <closure type="gboolean" function="invert_boolean">
-                <lookup name="has-avatar">
-                  <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
-                </lookup>
-              </closure>
-            </binding>
-          </object>
-        </child>
         <child>
           <object class="GtkBox">
-            <property name="spacing">6</property>
+            <property name="spacing">12</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkEntry" id="room_name_entry">
-                <property name="sensitive">false</property>
-                <property name="activates-default">True</property>
-                <property name="xalign">0.5</property>
-                <property name="buffer">
-                  <object class="GtkEntryBuffer" id="room_name_buffer">
-                    <binding name="text">
-                      <lookup name="display-name">
-                        <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
-                      </lookup>
-                    </binding>
-                  </object>
-                </property>
+              <object class="Avatar">
+                <property name="size">128</property>
+                <property name="accessible-role">presentation</property>
+                <binding name="data">
+                  <lookup name="avatar-data">
+                    <lookup name="room">RoomDetailsGeneralPage</lookup>
+                  </lookup>
+                </binding>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="wrap">true</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
+                <binding name="label">
+                  <lookup name="display-name">
+                    <lookup name="room">RoomDetailsGeneralPage</lookup>
+                  </lookup>
+                </binding>
                 <style>
-                  <class name="room-details-name"/>
+                  <class name="title-1"/>
                 </style>
               </object>
             </child>
             <child>
-              <object class="GtkLabel" id="room_topic_label">
-                <property name="visible">false</property>
-                <property name="margin-top">12</property>
-                <property name="label" translatable="yes">Description</property>
-                <property name="halign">start</property>
-                <style>
-                  <class name="dim-label"/>
-                  <class name="caption-heading"/>
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="CustomEntry" id="room_topic_entry">
-                <property name="sensitive">false</property>
-                <property name="margin-bottom">18</property>
-                <child>
-                  <object class="GtkTextView" id="room_topic_text_view">
-                    <property name="justification">center</property>
-                    <property name="wrap-mode">word-char</property>
-                    <property name="accepts-tab">False</property>
-                    <property name="top-margin">7</property>
-                    <property name="bottom-margin">7</property>
-                    <property name="buffer">
-                      <object class="GtkTextBuffer" id="room_topic_buffer">
-                        <binding name="text">
-                          <closure type="gchararray" function="unwrap_string_or_empty">
-                            <lookup name="topic">
-                              <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
-                            </lookup>
-                          </closure>
-                        </binding>
-                      </object>
-                    </property>
-                  </object>
-                </child>
-                <style>
-                  <class name="room-details-topic"/>
-                </style>
+              <object class="GtkLabel" id="room_topic">
+                <property name="wrap">true</property>
+                <property name="wrap-mode">word-char</property>
+                <property name="justify">center</property>
+                <property name="use-markup">True</property>
+                <property name="selectable">True</property>
+                <binding name="label">
+                  <lookup name="topic-linkified">
+                    <lookup name="room">RoomDetailsGeneralPage</lookup>
+                  </lookup>
+                </binding>
+                <binding name="visible">
+                  <closure type="gboolean" function="string_not_empty">
+                    <lookup name="topic-linkified">
+                      <lookup name="room">RoomDetailsGeneralPage</lookup>
+                    </lookup>
+                  </closure>
+                </binding>
               </object>
             </child>
             <child>
@@ -102,18 +60,8 @@
                 <property name="can-shrink">true</property>
                 <property name="halign">center</property>
                 <property name="label" translatable="yes">Edit Details</property>
-                <signal name="clicked" handler="edit_details_clicked" swapped="yes"/>
-                <style>
-                  <class name="pill" />
-                </style>
-              </object>
-            </child>
-            <child>
-              <object class="LoadingButton" id="save_details_btn">
-                <property name="visible" bind-source="ContentRoomDetailsGeneralPage" bind-property="edit-mode-enabled" bind-flags="sync-create"/>
-                <property name="halign">center</property>
-                <property name="content-label" translatable="yes">Save Details</property>
-                <signal name="clicked" handler="save_details_clicked" swapped="yes"/>
+                <property name="action-name">details.show-subpage</property>
+                <property name="action-target">'edit-details'</property>
                 <style>
                   <class name="pill" />
                 </style>
@@ -248,7 +196,7 @@
             <binding name="selected-string">
               <lookup name="display-name">
                 <lookup name="join-rule">
-                  <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                  <lookup name="room">RoomDetailsGeneralPage</lookup>
                 </lookup>
               </lookup>
             </binding>
@@ -293,7 +241,7 @@
             <property name="title" translatable="yes">Matrix Room ID</property>
             <binding name="subtitle">
               <lookup name="room-id-string">
-                <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                <lookup name="room">RoomDetailsGeneralPage</lookup>
               </lookup>
             </binding>
             <property name="main-title">subtitle</property>
@@ -306,7 +254,7 @@
             <property name="title" translatable="yes">Enable Encryption</property>
             <binding name="is-active">
               <lookup name="is-encrypted">
-                <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                <lookup name="room">RoomDetailsGeneralPage</lookup>
               </lookup>
             </binding>
             <signal name="notify::is-active" handler="enable_encryption" swapped="true"/>
@@ -325,7 +273,7 @@
             <property name="title" translatable="yes">Room Version</property>
             <binding name="subtitle">
               <lookup name="version">
-                <lookup name="room">ContentRoomDetailsGeneralPage</lookup>
+                <lookup name="room">RoomDetailsGeneralPage</lookup>
               </lookup>
             </binding>
             <style>

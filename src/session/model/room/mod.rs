@@ -67,7 +67,7 @@ use crate::{
     gettext_f,
     prelude::*,
     spawn, spawn_tokio,
-    utils::BoundObjectWeakRef,
+    utils::{string::linkify, BoundObjectWeakRef},
 };
 
 /// The default duration in seconds that we wait for to retry failed sending
@@ -194,6 +194,12 @@ mod imp {
         /// The topic of this room.
         #[property(get = Self::topic)]
         pub topic: PhantomData<Option<String>>,
+        /// The linkified topic of this room.
+        ///
+        /// This is the string that should be used in the interface when markup
+        /// is allowed.
+        #[property(get)]
+        pub topic_linkified: RefCell<Option<String>>,
         /// Whether this room has been upgraded.
         #[property(get = Self::is_tombstoned)]
         pub is_tombstoned: PhantomData<bool>,
@@ -299,9 +305,26 @@ mod imp {
 
         /// The topic of this room.
         fn topic(&self) -> Option<String> {
-            self.matrix_room().topic().filter(|topic| {
-                !topic.is_empty() && topic.find(|c: char| !c.is_whitespace()).is_some()
-            })
+            self.matrix_room()
+                .topic()
+                .filter(|topic| !topic.trim().is_empty())
+        }
+
+        /// Update the topic of this room.
+        pub(super) fn update_topic(&self) {
+            let topic_linkified = self.topic().map(|t| {
+                // Detect links.
+                let mut s = linkify(&t);
+                // Remove trailing spaces.
+                s.truncate_end_whitespaces();
+                s
+            });
+
+            self.topic_linkified.replace(topic_linkified);
+
+            let obj = self.obj();
+            obj.notify_topic();
+            obj.notify_topic_linkified();
         }
 
         /// Whether this room was tombstoned.
@@ -491,6 +514,7 @@ impl Room {
 
         imp.matrix_room.set(matrix_room).unwrap();
 
+        imp.update_topic();
         self.update_avatar();
         self.load_predecessor();
         self.load_tombstone();
@@ -1439,7 +1463,7 @@ impl Room {
                         ));
                     }
                     AnySyncStateEvent::RoomTopic(_) => {
-                        self.notify_topic();
+                        self.imp().update_topic();
                     }
                     AnySyncStateEvent::RoomTombstone(_) => {
                         self.load_tombstone();

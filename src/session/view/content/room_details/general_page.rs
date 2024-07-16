@@ -1,21 +1,17 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::{gettext, ngettext};
 use gtk::{
-    gio,
     glib::{self, clone},
     pango, CompositeTemplate,
 };
-use matrix_sdk::RoomState;
 use ruma::{
     api::client::{
         directory::{get_room_visibility, set_room_visibility},
         discovery::get_capabilities::Capabilities,
         room::{upgrade_room, Visibility},
     },
-    assign,
     events::{
         room::{
-            avatar::ImageInfo,
             guest_access::{GuestAccess, RoomGuestAccessEventContent},
             history_visibility::RoomHistoryVisibilityEventContent,
             power_levels::PowerLevelAction,
@@ -28,8 +24,8 @@ use tracing::error;
 use super::room_upgrade_dialog::confirm_room_upgrade;
 use crate::{
     components::{
-        AvatarData, AvatarImage, ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow,
-        CustomEntry, EditableAvatar, LoadingButton, SwitchLoadingRow,
+        ButtonCountRow, ButtonRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
+        SwitchLoadingRow,
     },
     gettext_f,
     prelude::*,
@@ -38,10 +34,7 @@ use crate::{
     },
     spawn, spawn_tokio, toast,
     utils::{
-        expression,
-        media::{get_image_info, load_file},
-        template_callbacks::TemplateCallbacks,
-        BoundObjectWeakRef, OngoingAsyncAction,
+        expression, template_callbacks::TemplateCallbacks, BoundObjectWeakRef, OngoingAsyncAction,
     },
 };
 
@@ -66,19 +59,9 @@ mod imp {
         pub room: BoundObjectWeakRef<Room>,
         pub room_members: RefCell<Option<MemberList>>,
         #[template_child]
-        pub avatar: TemplateChild<EditableAvatar>,
-        #[template_child]
-        pub room_name_entry: TemplateChild<gtk::Entry>,
-        #[template_child]
-        pub room_topic_text_view: TemplateChild<gtk::TextView>,
-        #[template_child]
-        pub room_topic_entry: TemplateChild<CustomEntry>,
-        #[template_child]
-        pub room_topic_label: TemplateChild<gtk::Label>,
+        pub room_topic: TemplateChild<gtk::Label>,
         #[template_child]
         pub edit_details_btn: TemplateChild<gtk::Button>,
-        #[template_child]
-        pub save_details_btn: TemplateChild<LoadingButton>,
         #[template_child]
         pub members_row: TemplateChild<ButtonCountRow>,
         #[template_child]
@@ -113,9 +96,6 @@ mod imp {
         pub upgrade_button: TemplateChild<LoadingButton>,
         #[template_child]
         pub room_federated: TemplateChild<adw::ActionRow>,
-        /// Whether edit mode is enabled.
-        #[property(get, set = Self::set_edit_mode_enabled, explicit_notify)]
-        pub edit_mode_enabled: Cell<bool>,
         /// The notifications setting for the room.
         #[property(get = Self::notifications_setting, set = Self::set_notifications_setting, explicit_notify, builder(NotificationsRoomSetting::default()))]
         pub notifications_setting: PhantomData<NotificationsRoomSetting>,
@@ -128,7 +108,7 @@ mod imp {
         pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
-        pub expr_watches: RefCell<Vec<gtk::ExpressionWatch>>,
+        pub expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
         pub notifications_settings_handlers: RefCell<Vec<glib::SignalHandlerId>>,
         pub membership_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub permissions_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -140,11 +120,12 @@ mod imp {
 
     #[glib::object_subclass]
     impl ObjectSubclass for GeneralPage {
-        const NAME: &'static str = "ContentRoomDetailsGeneralPage";
+        const NAME: &'static str = "RoomDetailsGeneralPage";
         type Type = super::GeneralPage;
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
+            ButtonRow::ensure_type();
             CopyableRow::ensure_type();
 
             Self::bind_template(klass);
@@ -163,7 +144,7 @@ mod imp {
     #[glib::derived_properties]
     impl ObjectImpl for GeneralPage {
         fn dispose(&self) {
-            self.obj().disconnect_all();
+            self.disconnect_all();
         }
     }
 
@@ -179,30 +160,13 @@ mod imp {
             };
             let obj = self.obj();
 
-            obj.disconnect_all();
-
-            let avatar_data = room.avatar_data();
-            let expr_watch = AvatarData::this_expression("image")
-                .chain_property::<AvatarImage>("uri")
-                .watch(
-                    Some(&avatar_data),
-                    clone!(
-                        #[weak]
-                        obj,
-                        #[weak]
-                        avatar_data,
-                        move || {
-                            obj.avatar_changed(avatar_data.image().and_then(|i| i.uri()));
-                        }
-                    ),
-                );
-            self.expr_watches.borrow_mut().push(expr_watch);
+            self.disconnect_all();
 
             let membership_handler = room.own_member().connect_membership_notify(clone!(
                 #[weak]
                 obj,
                 move |_| {
-                    obj.update_sections();
+                    obj.update_notifications();
                 }
             ));
             self.membership_handler.replace(Some(membership_handler));
@@ -255,20 +219,6 @@ mod imp {
             self.join_rule_handler.replace(Some(join_rule_handler));
 
             let room_handler_ids = vec![
-                room.connect_name_notify(clone!(
-                    #[weak]
-                    obj,
-                    move |room| {
-                        obj.name_changed(room.name());
-                    }
-                )),
-                room.connect_topic_notify(clone!(
-                    #[weak]
-                    obj,
-                    move |room| {
-                        obj.topic_changed(room.topic());
-                    }
-                )),
                 room.connect_joined_members_count_notify(clone!(
                     #[weak]
                     obj,
@@ -314,8 +264,6 @@ mod imp {
             ];
 
             obj.member_count_changed(room.joined_members_count());
-            obj.init_avatar();
-            obj.init_edit_mode(&room);
 
             // Keep strong reference to members list.
             self.room_members
@@ -347,11 +295,11 @@ mod imp {
                     .replace(notifications_settings_handlers);
             }
 
+            self.init_edit_details();
             obj.update_notifications();
             obj.update_edit_addresses_button();
             obj.update_addresses();
             obj.update_federated();
-            obj.update_sections();
             obj.update_join_rule();
             obj.update_guest_access();
             obj.update_publish_title();
@@ -368,18 +316,6 @@ mod imp {
             ));
 
             self.load_capabilities();
-        }
-
-        /// Set whether edit mode is enabled.
-        fn set_edit_mode_enabled(&self, enabled: bool) {
-            if self.edit_mode_enabled.get() == enabled {
-                return;
-            }
-            let obj = self.obj();
-
-            obj.enable_details(enabled);
-            self.edit_mode_enabled.set(enabled);
-            obj.notify_edit_mode_enabled();
         }
 
         /// The notifications setting for the room.
@@ -426,6 +362,64 @@ mod imp {
                 )
             );
         }
+
+        /// Initialize the button to edit details.
+        fn init_edit_details(&self) {
+            let Some(room) = self.room.obj() else {
+                return;
+            };
+
+            // Hide edit button when the user cannot edit any detail.
+            let permissions = room.permissions();
+            let can_change_avatar = permissions.property_expression("can-change-avatar");
+            let can_change_name = permissions.property_expression("can-change-name");
+            let can_change_topic = permissions.property_expression("can-change-topic");
+
+            let can_change_name_topic = expression::or(can_change_name, can_change_topic);
+            let can_edit_details = expression::or(can_change_name_topic, can_change_avatar);
+
+            let expr_watch =
+                can_edit_details.bind(&*self.edit_details_btn, "visible", gtk::Widget::NONE);
+            self.expr_watch.replace(Some(expr_watch));
+        }
+
+        /// Disconnect all the signals.
+        fn disconnect_all(&self) {
+            if let Some(room) = self.room.obj() {
+                if let Some(session) = room.session() {
+                    let settings = session.notifications().settings();
+                    for handler in self.notifications_settings_handlers.take() {
+                        settings.disconnect(handler);
+                    }
+                }
+
+                if let Some(handler) = self.membership_handler.take() {
+                    room.own_member().disconnect(handler);
+                }
+
+                if let Some(handler) = self.permissions_handler.take() {
+                    room.permissions().disconnect(handler);
+                }
+
+                let aliases = room.aliases();
+                if let Some(handler) = self.canonical_alias_handler.take() {
+                    aliases.disconnect(handler);
+                }
+                if let Some(handler) = self.alt_aliases_handler.take() {
+                    aliases.alt_aliases_model().disconnect(handler);
+                }
+
+                if let Some(handler) = self.join_rule_handler.take() {
+                    room.join_rule().disconnect(handler);
+                }
+            }
+
+            self.room.disconnect_signals();
+
+            if let Some(watch) = self.expr_watch.take() {
+                watch.unwatch();
+            }
+        }
     }
 }
 
@@ -441,390 +435,29 @@ impl GeneralPage {
         glib::Object::builder().property("room", room).build()
     }
 
+    /// Unselect the topic of the room.
+    ///
+    /// This is to circumvent the default GTK behavior to select all the text
+    /// when opening the details.
+    pub fn unselect_topic(&self) {
+        let imp = self.imp();
+
+        glib::idle_add_local_once(clone!(
+            #[weak]
+            imp,
+            move || {
+                // Put the cursor at the beginning of the title instead of having the title
+                // selected, if it is visible.
+                if imp.room_topic.is_visible() {
+                    imp.room_topic.select_region(0, 0);
+                }
+            }
+        ));
+    }
+
     /// The members of the room.
     pub fn room_members(&self) -> MemberList {
         self.imp().room_members.borrow().clone().unwrap()
-    }
-
-    /// Update the visible sections according to the current state.
-    fn update_sections(&self) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let imp = self.imp();
-
-        let is_joined = room.is_joined();
-        imp.notifications.set_visible(is_joined);
-    }
-
-    fn init_avatar(&self) {
-        let avatar = &*self.imp().avatar;
-        avatar.connect_edit_avatar(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |_, file| {
-                spawn!(async move {
-                    obj.change_avatar(file).await;
-                });
-            }
-        ));
-        avatar.connect_remove_avatar(clone!(
-            #[weak(rename_to = obj)]
-            self,
-            move |_| {
-                spawn!(async move {
-                    obj.remove_avatar().await;
-                });
-            }
-        ));
-    }
-
-    fn avatar_changed(&self, uri: Option<String>) {
-        let imp = self.imp();
-
-        if let Some(action) = imp.changing_avatar.borrow().as_ref() {
-            if uri.as_ref() != action.as_value() {
-                // This is not the change we expected, maybe another device did a change too.
-                // Let's wait for another change.
-                return;
-            }
-        } else {
-            // No action is ongoing, we don't need to do anything.
-            return;
-        };
-
-        // Reset the state.
-        imp.changing_avatar.take();
-        imp.avatar.success();
-        if uri.is_none() {
-            toast!(self, gettext("Avatar removed successfully"));
-        } else {
-            toast!(self, gettext("Avatar changed successfully"));
-        }
-    }
-
-    async fn change_avatar(&self, file: gio::File) {
-        let Some(room) = self.room() else {
-            error!("Cannot change avatar with missing room");
-            return;
-        };
-        let matrix_room = room.matrix_room();
-        if matrix_room.state() != RoomState::Joined {
-            error!("Cannot change avatar of room not joined");
-            return;
-        }
-
-        let imp = self.imp();
-        let avatar = &imp.avatar;
-        avatar.edit_in_progress();
-
-        let (data, info) = match load_file(&file).await {
-            Ok(res) => res,
-            Err(error) => {
-                error!("Could not load room avatar file: {error}");
-                toast!(self, gettext("Could not load file"));
-                avatar.reset();
-                return;
-            }
-        };
-
-        let base_image_info = get_image_info(&file).await;
-        let image_info = assign!(ImageInfo::new(), {
-            width: base_image_info.width,
-            height: base_image_info.height,
-            size: info.size.map(Into::into),
-            mimetype: Some(info.mime.to_string()),
-        });
-
-        let Some(session) = room.session() else {
-            return;
-        };
-        let client = session.client();
-        let handle = spawn_tokio!(async move { client.media().upload(&info.mime, data).await });
-
-        let uri = match handle.await.unwrap() {
-            Ok(res) => res.content_uri,
-            Err(error) => {
-                error!("Could not upload room avatar: {error}");
-                toast!(self, gettext("Could not upload avatar"));
-                avatar.reset();
-                return;
-            }
-        };
-
-        let (action, weak_action) = OngoingAsyncAction::set(uri.to_string());
-        imp.changing_avatar.replace(Some(action));
-
-        let matrix_room = matrix_room.clone();
-        let handle =
-            spawn_tokio!(async move { matrix_room.set_avatar_url(&uri, Some(image_info)).await });
-
-        // We don't need to handle the success of the request, we should receive the
-        // change via sync.
-        if let Err(error) = handle.await.unwrap() {
-            // Because this action can finish in avatar_changed, we must only act if this is
-            // still the current action.
-            if weak_action.is_ongoing() {
-                imp.changing_avatar.take();
-                error!("Could not change room avatar: {error}");
-                toast!(self, gettext("Could not change avatar"));
-                avatar.reset();
-            }
-        }
-    }
-
-    async fn remove_avatar(&self) {
-        let Some(room) = self.room() else {
-            error!("Cannot remove avatar with missing room");
-            return;
-        };
-        let matrix_room = room.matrix_room();
-        if matrix_room.state() != RoomState::Joined {
-            error!("Cannot remove avatar of room not joined");
-            return;
-        }
-
-        // Ask for confirmation.
-        let confirm_dialog = adw::AlertDialog::builder()
-            .default_response("cancel")
-            .heading(gettext("Remove Avatar?"))
-            .body(gettext(
-                "Do you really want to remove the avatar for this room?",
-            ))
-            .build();
-        confirm_dialog.add_responses(&[
-            ("cancel", &gettext("Cancel")),
-            ("remove", &gettext("Remove")),
-        ]);
-        confirm_dialog.set_response_appearance("remove", adw::ResponseAppearance::Destructive);
-
-        if confirm_dialog.choose_future(self).await != "remove" {
-            return;
-        }
-
-        let imp = self.imp();
-        let avatar = &*imp.avatar;
-        avatar.removal_in_progress();
-
-        let (action, weak_action) = OngoingAsyncAction::remove();
-        imp.changing_avatar.replace(Some(action));
-
-        let matrix_room = matrix_room.clone();
-        let handle = spawn_tokio!(async move { matrix_room.remove_avatar().await });
-
-        // We don't need to handle the success of the request, we should receive the
-        // change via sync.
-        if let Err(error) = handle.await.unwrap() {
-            // Because this action can finish in avatar_changed, we must only act if this is
-            // still the current action.
-            if weak_action.is_ongoing() {
-                imp.changing_avatar.take();
-                error!("Could not remove room avatar: {error}");
-                toast!(self, gettext("Could not remove avatar"));
-                avatar.reset();
-            }
-        }
-    }
-
-    fn enable_details(&self, enabled: bool) {
-        let imp = self.imp();
-
-        if enabled {
-            imp.room_topic_text_view
-                .set_justification(gtk::Justification::Left);
-            EntryExt::set_alignment(&*imp.room_name_entry, 0.0);
-            imp.room_name_entry.set_halign(gtk::Align::Center);
-            imp.room_name_entry.set_sensitive(true);
-            imp.room_name_entry.set_width_chars(25);
-            imp.room_topic_entry.set_sensitive(true);
-            imp.room_topic_label.set_visible(true);
-        } else {
-            imp.room_topic_text_view
-                .set_justification(gtk::Justification::Center);
-            EntryExt::set_alignment(&*imp.room_name_entry, 0.5);
-            imp.room_name_entry.set_sensitive(false);
-            imp.room_name_entry.set_halign(gtk::Align::Fill);
-            imp.room_name_entry.set_width_chars(-1);
-            imp.room_topic_entry.set_sensitive(false);
-            imp.room_topic_label.set_visible(false);
-        }
-    }
-
-    fn init_edit_mode(&self, room: &Room) {
-        let imp = self.imp();
-
-        self.enable_details(false);
-
-        // Hide edit controls when the user is not eligible to perform the actions.
-        let permissions = room.permissions();
-        let room_name_changeable = permissions.property_expression("can-change-name");
-        let room_topic_changeable = permissions.property_expression("can-change-topic");
-        let edit_mode_disabled = expression::not(self.property_expression("edit-mode-enabled"));
-
-        let details_changeable = expression::or(room_name_changeable, room_topic_changeable);
-        let edit_details_visible = expression::and(edit_mode_disabled, details_changeable);
-
-        let expr_watch =
-            edit_details_visible.bind(&*imp.edit_details_btn, "visible", gtk::Widget::NONE);
-        imp.expr_watches.borrow_mut().push(expr_watch);
-    }
-
-    /// Finish the details changes if none are ongoing.
-    fn finish_details_changes(&self) {
-        let imp = self.imp();
-
-        if imp.changing_name.borrow().is_some() {
-            return;
-        }
-        if imp.changing_topic.borrow().is_some() {
-            return;
-        }
-
-        self.set_edit_mode_enabled(false);
-        imp.save_details_btn.set_is_loading(false);
-    }
-
-    fn name_changed(&self, name: Option<String>) {
-        let imp = self.imp();
-
-        if let Some(action) = imp.changing_name.borrow().as_ref() {
-            if name.as_ref() != action.as_value() {
-                // This is not the change we expected, maybe another device did a change too.
-                // Let's wait for another change.
-                return;
-            }
-        } else {
-            // No action is ongoing, we don't need to do anything.
-            return;
-        };
-
-        toast!(self, gettext("Room name saved successfully"));
-
-        // Reset state.
-        imp.changing_name.take();
-        self.finish_details_changes();
-    }
-
-    fn topic_changed(&self, topic: Option<String>) {
-        let imp = self.imp();
-
-        // It is not possible to remove a topic so we process the empty string as
-        // `None`. We need to cancel that here.
-        let topic = topic.unwrap_or_default();
-
-        if let Some(action) = imp.changing_topic.borrow().as_ref() {
-            if Some(&topic) != action.as_value() {
-                // This is not the change we expected, maybe another device did a change too.
-                // Let's wait for another change.
-                return;
-            }
-        } else {
-            // No action is ongoing, we don't need to do anything.
-            return;
-        };
-
-        toast!(self, gettext("Room topic saved successfully"));
-
-        // Reset state.
-        imp.changing_topic.take();
-        self.finish_details_changes();
-    }
-
-    #[template_callback]
-    fn edit_details_clicked(&self) {
-        self.set_edit_mode_enabled(true);
-    }
-
-    #[template_callback]
-    async fn save_details_clicked(&self) {
-        let Some(room) = self.room() else {
-            error!("Cannot save details with missing room");
-            return;
-        };
-        let imp = self.imp();
-
-        imp.save_details_btn.set_is_loading(true);
-        self.enable_details(false);
-        self.set_edit_mode_enabled(false);
-
-        let raw_name = imp.room_name_entry.text();
-        let trimmed_name = raw_name.trim();
-        let name = (!trimmed_name.is_empty()).then(|| trimmed_name.to_owned());
-
-        let topic_buffer = imp.room_topic_text_view.buffer();
-        let raw_topic = topic_buffer
-            .text(&topic_buffer.start_iter(), &topic_buffer.end_iter(), false)
-            .to_string();
-        let topic = raw_topic.trim().to_owned();
-
-        let name_changed = if let Some(name) = &name {
-            *name != room.display_name()
-        } else {
-            room.name().is_some()
-        };
-        let topic_changed = topic != room.topic().unwrap_or_default();
-
-        if !name_changed && !topic_changed {
-            return;
-        }
-
-        let matrix_room = room.matrix_room();
-        if matrix_room.state() != RoomState::Joined {
-            error!("Cannot change name or topic of room not joined");
-            return;
-        }
-
-        if name_changed {
-            let matrix_room = matrix_room.clone();
-
-            let (action, weak_action) = if let Some(name) = name.clone() {
-                OngoingAsyncAction::set(name)
-            } else {
-                OngoingAsyncAction::remove()
-            };
-            imp.changing_name.replace(Some(action));
-
-            let handle =
-                spawn_tokio!(async move { matrix_room.set_name(name.unwrap_or_default()).await });
-
-            // We don't need to handle the success of the request, we should receive the
-            // change via sync.
-            if let Err(error) = handle.await.unwrap() {
-                // Because this action can finish in name_changed, we must only act if this is
-                // still the current action.
-                if weak_action.is_ongoing() {
-                    imp.changing_name.take();
-                    error!("Could not change room name: {error}");
-                    toast!(self, gettext("Could not change room name"));
-                    self.enable_details(true);
-                    imp.save_details_btn.set_is_loading(false);
-                    return;
-                }
-            }
-        }
-
-        if topic_changed {
-            let matrix_room = matrix_room.clone();
-
-            let (action, weak_action) = OngoingAsyncAction::set(topic.clone());
-            imp.changing_topic.replace(Some(action));
-
-            let handle = spawn_tokio!(async move { matrix_room.set_room_topic(&topic).await });
-
-            // We don't need to handle the success of the request, we should receive the
-            // change via sync.
-            if let Err(error) = handle.await.unwrap() {
-                // Because this action can finish in topic_changed, we must only act if this is
-                // still the current action.
-                if weak_action.is_ongoing() {
-                    imp.changing_topic.take();
-                    error!("Could not change room topic: {error}");
-                    toast!(self, gettext("Could not change room topic"));
-                    self.enable_details(true);
-                    imp.save_details_btn.set_is_loading(false);
-                }
-            }
-        }
     }
 
     fn member_count_changed(&self, n: u64) {
@@ -835,54 +468,21 @@ impl GeneralPage {
         imp.members_row.set_title(&ngettext("Member", "Members", n));
     }
 
-    fn disconnect_all(&self) {
-        let imp = self.imp();
-
-        if let Some(room) = self.room() {
-            if let Some(session) = room.session() {
-                let settings = session.notifications().settings();
-                for handler in imp.notifications_settings_handlers.take() {
-                    settings.disconnect(handler);
-                }
-            }
-
-            if let Some(handler) = imp.membership_handler.take() {
-                room.own_member().disconnect(handler);
-            }
-
-            if let Some(handler) = imp.permissions_handler.take() {
-                room.permissions().disconnect(handler);
-            }
-
-            let aliases = room.aliases();
-            if let Some(handler) = imp.canonical_alias_handler.take() {
-                aliases.disconnect(handler);
-            }
-            if let Some(handler) = imp.alt_aliases_handler.take() {
-                aliases.alt_aliases_model().disconnect(handler);
-            }
-
-            if let Some(handler) = imp.join_rule_handler.take() {
-                room.join_rule().disconnect(handler);
-            }
-        }
-
-        imp.room.disconnect_signals();
-
-        for watch in imp.expr_watches.take() {
-            watch.unwatch();
-        }
-    }
-
     /// Update the section about notifications.
     fn update_notifications(&self) {
         let Some(room) = self.room() else {
             return;
         };
+        let imp = self.imp();
+
+        if !room.is_joined() {
+            imp.notifications.set_visible(false);
+            return;
+        }
+
         let Some(session) = room.session() else {
             return;
         };
-        let imp = self.imp();
 
         // Updates the active radio button.
         self.notify_notifications_setting();
@@ -892,6 +492,7 @@ impl GeneralPage {
             && settings.session_enabled()
             && !self.notifications_loading();
         imp.notifications.set_sensitive(sensitive);
+        imp.notifications.set_visible(true);
     }
 
     /// Update the loading state in the notifications section.

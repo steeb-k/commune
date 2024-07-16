@@ -179,6 +179,24 @@ button.overlaid {
   font-size: 90%;
 }
 
+scrolledwindow.card {
+  transition-property: outline, outline-width, outline-offset, outline-color;
+  transition-duration: 300ms;
+  animation-timing-function: ease-in-out;
+  outline: 0 solid transparent;
+  outline-offset: 2px;
+}
+
+scrolledwindow.card:focus-within {
+  outline-color: alpha(@accent_color, 0.5);
+  outline-width: 2px;
+  outline-offset: -2px;
+}
+
+scrolledwindow.card > textview {
+  padding: 12px;
+}
+
 
 /* Components */
 
@@ -982,40 +1000,6 @@ audio-history-viewer listview > row:last-child {
 
 .room-details listview {
 	background: transparent;
-}
-
-.room-details-group entry:disabled {
-  border-color: transparent;
-  /* Undo non-sensitive style. */
-  color: @view_fg_color;
-  background: none;
-}
-
-.room-details-group entry textview {
-  /* Undo non-sensitive style. */
-  color: @view_fg_color;
-  background: none;
-}
-
-.room-details-group entry text {
-  /* Undo non-sensitive style. */
-  color: @view_fg_color;
-  background: none;
-}
-
-.room-details-name:disabled {
-  font-size: 20pt;
-  font-weight: 800;
-  margin-top: 24px;
-  filter: opacity(1);
-}
-
-.room-details-topic:not(:disabled) {
-  min-height: 102px;
-}
-
-.room-details-topic:disabled {
-  filter: opacity(1);
 }
 
 members-list row {
