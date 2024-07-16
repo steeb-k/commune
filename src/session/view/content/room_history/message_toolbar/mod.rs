@@ -9,17 +9,19 @@ use gtk::{
     CompositeTemplate,
 };
 use image::ImageFormat;
-use matrix_sdk::attachment::{
-    generate_image_thumbnail, AttachmentConfig, AttachmentInfo, BaseFileInfo, BaseImageInfo,
-    ThumbnailFormat,
+use matrix_sdk::{
+    attachment::{
+        generate_image_thumbnail, AttachmentConfig, AttachmentInfo, BaseFileInfo, BaseImageInfo,
+        ThumbnailFormat,
+    },
+    room::edit::EditedContent,
 };
-use matrix_sdk_ui::timeline::{EditInfo, RepliedToInfo};
+use matrix_sdk_ui::timeline::{RepliedToInfo, TimelineItemContent};
 use ruma::{
     events::{
         room::message::{
             EmoteMessageEventContent, FormattedBody, ForwardThread, LocationMessageEventContent,
-            MessageFormat, MessageType, RoomMessageEventContent,
-            RoomMessageEventContentWithoutRelation,
+            MessageType, RoomMessageEventContent, RoomMessageEventContentWithoutRelation,
         },
         Mentions,
     },
@@ -41,7 +43,7 @@ use crate::{
     session::model::{Event, Member, Room},
     spawn, spawn_tokio, toast,
     utils::{
-        matrix::{find_at_room, find_html_mentions, AT_ROOM},
+        matrix::AT_ROOM,
         media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
@@ -406,14 +408,14 @@ mod imp {
                 Some(RelationInfo::Reply(info)) => {
                     self.update_for_reply(info);
                 }
-                Some(RelationInfo::Edit(info)) => {
-                    self.update_for_edit(info);
+                Some(RelationInfo::Edit(_)) => {
+                    self.update_for_edit();
                 }
                 None => {}
             }
         }
 
-        // Update the displayed related event for the given reply.
+        /// Update the displayed related event for the given reply.
         fn update_for_reply(&self, info: RepliedToInfo) {
             let Some(room) = self.room.upgrade() else {
                 return;
@@ -435,100 +437,14 @@ mod imp {
             self.related_event_content.set_visible(true);
         }
 
-        // Update the displayed related event for the given edit.
-        fn update_for_edit(&self, info: EditInfo) {
-            let Some(room) = self.room.upgrade() else {
-                return;
-            };
-
-            // We don't support editing non-text messages.
-            let (text, formatted) = match info.original_message().msgtype() {
-                MessageType::Emote(emote) => {
-                    (format!("/me {}", emote.body), emote.formatted.clone())
-                }
-                MessageType::Text(text) => (text.body.clone(), text.formatted.clone()),
-                _ => return,
-            };
-
-            // Try to detect rich mentions.
-            let mut mentions = if let Some(html) =
-                formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
-            {
-                let mentions = find_html_mentions(&html, &room);
-                let mut pos = 0;
-                // This is looking for the mention link's inner text in the Markdown
-                // so it is not super reliable: if there is other text that matches
-                // a user's display name in the string it might be replaced instead
-                // of the actual mention.
-                // Short of an HTML to Markdown converter, it won't be a simple task
-                // to locate mentions in Markdown.
-                mentions
-                    .into_iter()
-                    .filter_map(|(pill, s)| {
-                        text[pos..].find(s.as_ref()).map(|index| {
-                            let start = pos + index;
-                            let end = start + s.len();
-                            pos = end;
-                            DetectedMention { pill, start, end }
-                        })
-                    })
-                    .collect::<Vec<_>>()
-            } else {
-                Vec::new()
-            };
-
-            // Try to detect `@room` mentions.
-            let can_contain_at_room = info
-                .original_message()
-                .mentions()
-                .map(|m| m.room)
-                .unwrap_or(true);
-            if room.permissions().can_notify_room() && can_contain_at_room {
-                if let Some(start) = find_at_room(&text) {
-                    let pill = room.at_room().to_pill();
-                    let end = start + AT_ROOM.len();
-                    mentions.push(DetectedMention { pill, start, end });
-
-                    // Make sure the list is sorted.
-                    mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
-                }
-            }
-
+        /// Update the displayed related event for the given edit.
+        fn update_for_edit(&self) {
             self.related_event_header.set_widgets::<gtk::Widget>(vec![]);
             self.related_event_header
                 // Translators: In this string, 'Edit' is a noun.
                 .set_label(Some(pgettext("room-history", "Edit")));
 
             self.related_event_content.set_visible(false);
-
-            let view = &*self.message_entry;
-            let buffer = view.buffer();
-            let composer_state = self.current_composer_state();
-
-            if mentions.is_empty() {
-                buffer.set_text(&text);
-            } else {
-                // Place the pills instead of the text at the appropriate places in
-                // the GtkSourceView.
-                buffer.set_text("");
-
-                let mut pos = 0;
-                let mut iter = buffer.iter_at_offset(0);
-
-                for DetectedMention { pill, start, end } in mentions {
-                    if pos != start {
-                        buffer.insert(&mut iter, &text[pos..start]);
-                    }
-
-                    composer_state.add_widget(pill, &mut iter);
-
-                    pos = end;
-                }
-
-                if pos != text.len() {
-                    buffer.insert(&mut iter, &text[pos..])
-                }
-            }
         }
     }
 }
@@ -583,13 +499,19 @@ impl MessageToolbar {
             return;
         }
 
-        let Ok(info) = event.item().edit_info() else {
+        let item = event.item();
+
+        let Some(event_id) = item.event_id() else {
+            warn!("Cannot send edit for event that is not sent yet");
+            return;
+        };
+        let TimelineItemContent::Message(message) = item.content() else {
             warn!("Unsupported event type for edit");
             return;
         };
 
         self.current_composer_state()
-            .set_related_to(Some(RelationInfo::Edit(info)));
+            .set_edit_source(event_id.to_owned(), message);
 
         imp.message_entry.grab_focus();
     }
@@ -699,9 +621,16 @@ impl MessageToolbar {
                     toast!(self, gettext("Could not send reply"));
                 }
             }
-            Some(RelationInfo::Edit(edit_info)) => {
-                let handle =
-                    spawn_tokio!(async move { matrix_timeline.edit(content, edit_info).await });
+            Some(RelationInfo::Edit(event_id)) => {
+                let matrix_room = room.matrix_room().clone();
+                let handle = spawn_tokio!(async move {
+                    let full_content = matrix_room
+                        .make_edit_event(&event_id, EditedContent::RoomMessage(content))
+                        .await?;
+                    let send_queue = matrix_room.send_queue();
+                    send_queue.send(full_content).await?;
+                    Ok::<(), matrix_sdk_ui::timeline::Error>(())
+                });
                 if let Err(error) = handle.await.unwrap() {
                     error!("Could not send edit: {error}");
                     toast!(self, gettext("Could not send edit"));
@@ -1133,16 +1062,6 @@ impl MessageToolbar {
 
         room.send_typing_notification(typing);
     }
-}
-
-/// A mention that was detected in a message.
-struct DetectedMention {
-    /// The pill to represent the mention.
-    pill: Pill,
-    /// The start of the mention in the text.
-    start: usize,
-    /// The end of the mention in the text.
-    end: usize,
 }
 
 /// A chunk of a message in a buffer.

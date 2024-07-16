@@ -32,7 +32,12 @@ mod imp {
 
     #[derive(Debug, Default)]
     pub struct LinuxLocation {
-        pub proxy: OnceCell<Arc<(LocationProxy<'static>, Session<'static>)>>,
+        pub proxy: OnceCell<
+            Arc<(
+                LocationProxy<'static>,
+                Session<'static, LocationProxy<'static>>,
+            )>,
+        >,
     }
 
     #[glib::object_subclass]

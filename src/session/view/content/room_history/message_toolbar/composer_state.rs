@@ -5,18 +5,21 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{ComposerDraft, ComposerDraftType};
-use matrix_sdk_ui::timeline::{EditInfo, RepliedToInfo, TimelineEventItemId};
-use ruma::{RoomOrAliasId, UserId};
+use matrix_sdk_ui::timeline::{Message, RepliedToInfo};
+use ruma::{
+    events::room::message::{MessageFormat, MessageType},
+    OwnedEventId, RoomOrAliasId, UserId,
+};
 use sourceview::prelude::*;
 use tracing::{error, warn};
 
 use super::{MessageBufferChunk, MessageBufferParser};
 use crate::{
-    components::{AtRoom, PillSource},
+    components::{AtRoom, Pill, PillSource},
     prelude::*,
     session::model::{EventKey, Member, Room},
     spawn, spawn_tokio,
-    utils::matrix::AT_ROOM,
+    utils::matrix::{find_at_room, find_html_mentions, AT_ROOM},
 };
 
 // The duration in seconds we wait for before saving a change.
@@ -347,21 +350,7 @@ mod imp {
                         }
                     }
                 }
-                ComposerDraftType::Edit { event_id } => {
-                    let matrix_timeline = room.timeline().matrix_timeline();
-
-                    let handle = spawn_tokio!(async move {
-                        matrix_timeline.edit_info_from_event_id(&event_id).await
-                    });
-
-                    match handle.await.unwrap() {
-                        Ok(info) => Some(RelationInfo::Edit(info)),
-                        Err(error) => {
-                            warn!("Could not fetch replied-to event content of draft: {error}");
-                            None
-                        }
-                    }
-                }
+                ComposerDraftType::Edit { event_id } => Some(RelationInfo::Edit(event_id)),
             };
 
             self.related_to.replace(related_to);
@@ -457,6 +446,91 @@ impl ComposerState {
         self.imp().trigger_draft_saving();
     }
 
+    /// Update the buffer for the given edit source.
+    pub fn set_edit_source(&self, event_id: OwnedEventId, message: &Message) {
+        let Some(room) = self.room() else {
+            return;
+        };
+
+        // We don't support editing non-text messages.
+        let (text, formatted) = match message.msgtype() {
+            MessageType::Emote(emote) => (format!("/me {}", emote.body), emote.formatted.clone()),
+            MessageType::Text(text) => (text.body.clone(), text.formatted.clone()),
+            _ => return,
+        };
+
+        self.set_related_to(Some(RelationInfo::Edit(event_id)));
+
+        // Try to detect rich mentions.
+        let mut mentions = if let Some(html) =
+            formatted.and_then(|f| (f.format == MessageFormat::Html).then_some(f.body))
+        {
+            let mentions = find_html_mentions(&html, &room);
+            let mut pos = 0;
+            // This is looking for the mention link's inner text in the Markdown
+            // so it is not super reliable: if there is other text that matches
+            // a user's display name in the string it might be replaced instead
+            // of the actual mention.
+            // Short of an HTML to Markdown converter, it won't be a simple task
+            // to locate mentions in Markdown.
+            mentions
+                .into_iter()
+                .filter_map(|(pill, s)| {
+                    text[pos..].find(s.as_ref()).map(|index| {
+                        let start = pos + index;
+                        let end = start + s.len();
+                        pos = end;
+                        DetectedMention { pill, start, end }
+                    })
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
+        // Try to detect `@room` mentions.
+        let can_contain_at_room = message.mentions().map(|m| m.room).unwrap_or(true);
+        if room.permissions().can_notify_room() && can_contain_at_room {
+            if let Some(start) = find_at_room(&text) {
+                let pill = room.at_room().to_pill();
+                let end = start + AT_ROOM.len();
+                mentions.push(DetectedMention { pill, start, end });
+
+                // Make sure the list is sorted.
+                mentions.sort_by(|lhs, rhs| lhs.start.cmp(&rhs.start));
+            }
+        }
+
+        let buffer = self.buffer();
+
+        if mentions.is_empty() {
+            buffer.set_text(&text);
+        } else {
+            // Place the pills instead of the text at the appropriate places in
+            // the GtkSourceView.
+            buffer.set_text("");
+
+            let mut pos = 0;
+            let mut iter = buffer.iter_at_offset(0);
+
+            for DetectedMention { pill, start, end } in mentions {
+                if pos != start {
+                    buffer.insert(&mut iter, &text[pos..start]);
+                }
+
+                self.add_widget(pill, &mut iter);
+
+                pos = end;
+            }
+
+            if pos != text.len() {
+                buffer.insert(&mut iter, &text[pos..])
+            }
+        }
+
+        self.imp().trigger_draft_saving();
+    }
+
     /// Add the given widget at the position of the given iter to this state.
     pub fn add_widget(&self, widget: impl IsA<gtk::Widget>, iter: &mut gtk::TextIter) {
         self.imp().add_widget(widget, iter);
@@ -493,8 +567,8 @@ pub enum RelationInfo {
     /// Send a reply with the given replied to info.
     Reply(RepliedToInfo),
 
-    /// Send an edit with the given edit info.
-    Edit(EditInfo),
+    /// Send an edit to the event with the given ID.
+    Edit(OwnedEventId),
 }
 
 impl RelationInfo {
@@ -502,12 +576,7 @@ impl RelationInfo {
     pub fn key(&self) -> EventKey {
         match self {
             RelationInfo::Reply(info) => EventKey::EventId(info.event_id().to_owned()),
-            RelationInfo::Edit(info) => match info.id() {
-                TimelineEventItemId::TransactionId(txn_id) => {
-                    EventKey::TransactionId(txn_id.clone())
-                }
-                TimelineEventItemId::EventId(event_id) => EventKey::EventId(event_id.clone()),
-            },
+            RelationInfo::Edit(event_id) => EventKey::EventId(event_id.clone()),
         }
     }
 
@@ -517,12 +586,8 @@ impl RelationInfo {
             Self::Reply(info) => ComposerDraftType::Reply {
                 event_id: info.event_id().to_owned(),
             },
-            Self::Edit(info) => match info.id() {
-                // We don't support editing local echos (yet).
-                TimelineEventItemId::TransactionId(_) => ComposerDraftType::NewMessage,
-                TimelineEventItemId::EventId(event_id) => ComposerDraftType::Reply {
-                    event_id: event_id.clone(),
-                },
+            Self::Edit(event_id) => ComposerDraftType::Edit {
+                event_id: event_id.clone(),
             },
         }
     }
@@ -581,4 +646,14 @@ impl<'a> DraftMention<'a> {
             }
         }
     }
+}
+
+/// A mention that was detected in a message.
+struct DetectedMention {
+    /// The pill to represent the mention.
+    pill: Pill,
+    /// The start of the mention in the text.
+    start: usize,
+    /// The end of the mention in the text.
+    end: usize,
 }

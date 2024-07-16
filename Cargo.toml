@@ -65,7 +65,7 @@ sourceview = { package = "sourceview5", version = "0.8" }
 
 [dependencies.matrix-sdk]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
+rev = "62137e5a3ef032a5f4c3ff77f98f5d0051bf55ad"
 features = [
     "socks",
     "sso-login",
@@ -76,14 +76,14 @@ features = [
 
 [dependencies.matrix-sdk-ui]
 git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "0a7184e594d1dc0c00e5d5773f206f50a6c0939a"
+rev = "62137e5a3ef032a5f4c3ff77f98f5d0051bf55ad"
 default-features = false
 features = ["e2e-encryption", "native-tls"]
 
 [dependencies.ruma]
 # version = "0.10"
 git = "https://github.com/ruma/ruma.git"
-rev = "e5a370f7e5fcebb0da6e4945e51c5fafba9aa5f0"
+rev = "c37843e9be619ffac8c4d33ad3a6a175cc32610c"
 features = [
     "unstable-unspecified",
     "client-api-c",
@@ -99,7 +99,7 @@ features = [
 
 # Linux-only dependencies.
 [target.'cfg(target_os = "linux")'.dependencies]
-ashpd = { version = "0.8", default-features = false, features = [
+ashpd = { version = "0.9", default-features = false, features = [
     "pipewire",
     "tracing",
     "tokio",
