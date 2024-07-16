@@ -66,15 +66,15 @@ custom_target(
 )
 
 rustdoc_flags = ' '.join([
-# FIXME: Unstable features are disabled because we need Rust nightly
-#  '-Zunstable-options',
-#  '--enable-index-page',
-#  '--extern-html-root-url=gio=https://gtk-rs.org/gtk-rs-core/stable/latest/docs/',
-#  '--extern-html-root-url=glib=https://gtk-rs.org/gtk-rs-core/stable/latest/docs/',
-#  '--extern-html-root-url=gsk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
-#  '--extern-html-root-url=gdk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
-#  '--extern-html-root-url=gtk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
-#  '--extern-html-root-url=libadwaita=https://world.pages.gitlab.gnome.org/Rust/libadwaita-rs/stable/latest/docs/',
+  '-Zunstable-options',
+  '--enable-index-page',
+  '--extern-html-root-url=gio=https://gtk-rs.org/gtk-rs-core/stable/latest/docs/',
+  '--extern-html-root-url=glib=https://gtk-rs.org/gtk-rs-core/stable/latest/docs/',
+  '--extern-html-root-url=gsk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
+  '--extern-html-root-url=gdk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
+  '--extern-html-root-url=gtk4=https://gtk-rs.org/gtk4-rs/stable/latest/docs/',
+  '--extern-html-root-url=libadwaita=https://world.pages.gitlab.gnome.org/Rust/libadwaita-rs/stable/latest/docs/',
+  '--cfg=docsrs',
   '-Dwarnings',
 ])
 doc_env = ['RUSTDOCFLAGS=' + rustdoc_flags ]
@@ -103,10 +103,7 @@ custom_target(
     command: [
       'env', cargo_env + doc_env,
       cargo, 'doc',
-      cargo_options + doc_deps + [
-        '--no-deps',
-        #'-Zrustdoc-map'
-      ] ,
+      cargo_options + doc_deps + ['--no-deps', '-Zrustdoc-map'] ,
     ],
   )
 

@@ -1,5 +1,7 @@
 # Tests after the app is built.
 
+include: '.gitlab-ci/pages.yaml'
+
 # Validate the metainfo with Flathub's tool.
 metainfo:
   stage: test
@@ -14,3 +16,13 @@ metainfo:
     # Test also with the pedantic and strict flags.
     - appstreamcli validate --pedantic --explain --strict ${METAINFO}
   needs: ["build@x86_64"]
+
+# Test that there are no errors in the docs.
+test-pages:
+  extends:
+    - .pages
+  stage: test
+  variables:
+    DOCS_FOLDER: "doc"
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main"

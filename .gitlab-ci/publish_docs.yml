@@ -1,19 +1,11 @@
 # Build and publish the docs
 
+include: '.gitlab-ci/pages.yaml'
+
 pages:
   stage: deploy
-  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
-  tags:
-    - flatpak
-  script:
-    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
-    - echo "ninja src/doc" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
-    - mv .flatpak-builder/build/${FLATPAK_MODULE}/_flatpak_build/src/doc public
-    - chmod -R a=rwx public
-  dependencies: []
-  artifacts:
-    paths:
-      - 'public'
+  variables:
+    DOCS_FOLDER: "public"
   rules:
     - changes:
         - src/**/*

@@ -1,6 +1,6 @@
 [![Our chat room](https://img.shields.io/matrix/fractal-gtk:matrix.org?color=blue&label=%23fractal%3Agnome.org&logo=matrix)](https://matrix.to/#/#fractal:gnome.org)
 [![Our Gitlab project](https://img.shields.io/badge/gitlab.gnome.org%2F-World%2FFractal-green?logo=gitlab)](https://gitlab.gnome.org/World/fractal/)
-[![Our documentation](https://img.shields.io/badge/%F0%9F%95%AE-Docs-B7410E?logo=rust)](https://world.pages.gitlab.gnome.org/fractal/fractal/index.html)
+[![Our documentation](https://img.shields.io/badge/%F0%9F%95%AE-Docs-B7410E?logo=rust)](https://world.pages.gitlab.gnome.org/fractal/)
 [![Official package](https://img.shields.io/flathub/downloads/org.gnome.Fractal?logo=flathub)](https://flathub.org/apps/org.gnome.Fractal)
 
 # Fractal
