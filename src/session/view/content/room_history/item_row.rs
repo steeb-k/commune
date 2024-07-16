@@ -551,7 +551,7 @@ impl ItemRow {
                         event,
                         move |_, _, _| {
                             let dialog = EventDetailsDialog::new(&event);
-                            dialog.present(&obj);
+                            dialog.present(Some(&obj));
                         }
                     ))
                     .build(),

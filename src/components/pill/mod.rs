@@ -204,7 +204,7 @@ impl Pill {
         if let Some(member) = source.downcast_ref::<Member>() {
             let dialog = UserProfileDialog::new();
             dialog.set_room_member(member.clone());
-            dialog.present(self);
+            dialog.present(Some(self));
         } else if let Some(room) = source.downcast_ref::<Room>() {
             let Some(session_view) = self
                 .ancestor(SessionView::static_type())
@@ -221,7 +221,7 @@ impl Pill {
 
             let dialog = JoinRoomDialog::new(&session);
             dialog.set_room(room);
-            dialog.present(self);
+            dialog.present(Some(self));
         }
     }
 }

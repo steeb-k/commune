@@ -253,7 +253,7 @@ impl Application {
             }
         ));
 
-        dialog.present(&self.present_main_window());
+        dialog.present(Some(&self.present_main_window()));
     }
 
     /// Process the given URI.

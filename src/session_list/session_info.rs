@@ -48,7 +48,7 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    unsafe impl ObjectSubclass for SessionInfo {
+    impl ObjectSubclass for SessionInfo {
         const NAME: &'static str = "SessionInfo";
         const ABSTRACT: bool = true;
         type Type = super::SessionInfo;

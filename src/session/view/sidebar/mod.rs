@@ -376,7 +376,7 @@ impl Sidebar {
         };
         dialog.show_subpage(subpage);
 
-        dialog.present(self);
+        dialog.present(Some(self));
     }
 
     /// The type of the source that activated drop mode.

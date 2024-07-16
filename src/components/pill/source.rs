@@ -47,7 +47,7 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    unsafe impl ObjectSubclass for PillSource {
+    impl ObjectSubclass for PillSource {
         const NAME: &'static str = "PillSource";
         const ABSTRACT: bool = true;
         type Type = super::PillSource;

@@ -83,7 +83,7 @@ mod imp {
             );
 
             klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
-                if obj.is_fullscreened() {
+                if obj.is_fullscreen() {
                     obj.unfullscreen();
                 } else {
                     obj.fullscreen();

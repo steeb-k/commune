@@ -135,7 +135,7 @@ impl AttachmentDialog {
         let (sender, receiver) = oneshot::channel();
         self.imp().sender.replace(Some(sender));
 
-        self.present(parent);
+        self.present(Some(parent));
 
         receiver.await.unwrap_or(gtk::ResponseType::Cancel)
     }

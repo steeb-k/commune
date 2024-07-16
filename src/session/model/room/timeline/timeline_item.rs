@@ -74,7 +74,7 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    unsafe impl ObjectSubclass for TimelineItem {
+    impl ObjectSubclass for TimelineItem {
         const NAME: &'static str = "TimelineItem";
         const ABSTRACT: bool = true;
         type Type = super::TimelineItem;

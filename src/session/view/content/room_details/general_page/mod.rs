@@ -632,7 +632,7 @@ impl GeneralPage {
         if enabled {
             imp.room_topic_text_view
                 .set_justification(gtk::Justification::Left);
-            imp.room_name_entry.set_xalign(0.0);
+            EntryExt::set_alignment(&*imp.room_name_entry, 0.0);
             imp.room_name_entry.set_halign(gtk::Align::Center);
             imp.room_name_entry.set_sensitive(true);
             imp.room_name_entry.set_width_chars(25);
@@ -641,7 +641,7 @@ impl GeneralPage {
         } else {
             imp.room_topic_text_view
                 .set_justification(gtk::Justification::Center);
-            imp.room_name_entry.set_xalign(0.5);
+            EntryExt::set_alignment(&*imp.room_name_entry, 0.5);
             imp.room_name_entry.set_sensitive(false);
             imp.room_name_entry.set_halign(gtk::Align::Fill);
             imp.room_name_entry.set_width_chars(-1);

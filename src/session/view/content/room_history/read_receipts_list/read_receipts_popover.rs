@@ -81,7 +81,7 @@ mod imp {
 
                     let dialog = UserProfileDialog::new();
                     dialog.set_room_member(member);
-                    dialog.present(&obj);
+                    dialog.present(Some(&obj));
                     obj.popdown();
                 }
             ));

@@ -298,7 +298,7 @@ impl AuthDialog {
         let (sender, receiver) = futures_channel::oneshot::channel();
         self.imp().sender.replace(Some(sender));
 
-        self.present(&parent);
+        self.present(Some(&parent));
 
         let result = receiver.await.unwrap();
         self.close();

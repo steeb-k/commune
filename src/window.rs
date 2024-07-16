@@ -110,7 +110,7 @@ mod imp {
             });
 
             klass.install_action("win.toggle-fullscreen", None, |obj, _, _| {
-                if obj.is_fullscreened() {
+                if obj.is_fullscreen() {
                     obj.unfullscreen();
                 } else {
                     obj.fullscreen();
@@ -450,7 +450,7 @@ impl Window {
         };
 
         let dialog = AccountSettings::new(&session);
-        dialog.present(self);
+        dialog.present(Some(self));
     }
 
     /// Open the error page and display the given secret error message.

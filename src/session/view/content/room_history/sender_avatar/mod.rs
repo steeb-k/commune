@@ -512,7 +512,7 @@ impl SenderAvatar {
 
         let dialog = UserProfileDialog::new();
         dialog.set_room_member(sender);
-        dialog.present(self);
+        dialog.present(Some(self));
     }
 
     /// Open a direct chat with the current sender.

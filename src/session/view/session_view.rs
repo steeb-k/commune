@@ -306,7 +306,7 @@ impl SessionView {
         };
 
         let dialog = RoomCreation::new(&session);
-        dialog.present(self);
+        dialog.present(Some(self));
     }
 
     async fn show_create_dm_dialog(&self) {
@@ -338,7 +338,7 @@ impl SessionView {
             dialog.set_uri(uri);
         }
 
-        dialog.present(self);
+        dialog.present(Some(self));
     }
 
     pub fn handle_paste_action(&self) {
@@ -377,7 +377,7 @@ impl SessionView {
 
         let dialog = UserProfileDialog::new();
         dialog.load_user(&session, user_id);
-        dialog.present(self);
+        dialog.present(Some(self));
     }
 
     /// Withdraw the notifications for the currently selected item.

@@ -183,7 +183,7 @@ impl CreateDmDialog {
         let (sender, receiver) = oneshot::channel();
         self.imp().sender.replace(Some(sender));
 
-        self.present(parent);
+        self.present(Some(parent));
 
         let Ok(Some(user)) = receiver.await else {
             return;
