@@ -106,11 +106,3 @@ custom_target(
       cargo_options + doc_deps + ['--no-deps', '-Zrustdoc-map'] ,
     ],
   )
-
-test(
-    'cargo-test', cargo,
-    env: cargo_env,
-    args: ['test', '--no-fail-fast'] + cargo_options,
-    timeout: 0,
-    verbose: true,
-)

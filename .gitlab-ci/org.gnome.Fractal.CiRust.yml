@@ -1,0 +1,66 @@
+id: org.gnome.Fractal.CiRust
+runtime: org.gnome.Platform
+runtime-version: master
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.llvm18
+command: fractal
+finish-args:
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --share=network
+  - --share=ipc
+  - --device=dri
+build-options:
+  append-ld-library-path: /usr/lib/sdk/llvm18/lib
+  append-path: /usr/lib/sdk/llvm18/bin:/usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER: clang
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C link-arg=-fuse-ld=/usr/lib/sdk/rust-stable/bin/mold --cfg=ruma_identifiers_storage="Arc"
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: clang
+    CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS: -C link-arg=-fuse-ld=/usr/lib/sdk/rust-stable/bin/mold --cfg=ruma_identifiers_storage="Arc"
+  build-args:
+    - --share=network
+  test-args:
+    - --socket=x11
+    - --share=network
+modules:
+  - name: cargo-nextest
+    buildsystem: simple
+    sources:
+      - type: archive
+        url: https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.72/cargo-nextest-0.9.72-x86_64-unknown-linux-gnu.tar.gz
+        sha256: e6f66397d3ba9a150b5debbc414a9ad1f87e4707da1f989c0681444ba5d15571
+        dest: cargo-nextest
+        strip-components: 0
+    build-commands:
+      - mkdir /app/bin
+      - mv cargo-nextest/cargo-nextest /app/bin/
+  - name: protobuf-c
+    buildsystem: autotools
+    config-opts:
+      - --disable-protoc
+    sources:
+      - type: git
+        url: https://github.com/protobuf-c/protobuf-c.git
+        tag: v1.5.0
+        commit: 8c201f6e47a53feaab773922a743091eb6c8972a
+  - name: libshumate
+    buildsystem: meson
+    config-opts:
+      - -Dgir=false
+      - -Dvapi=false
+      - -Dgtk_doc=false
+      - -Dvector_renderer=true
+    sources:
+      - type: git
+        url: https://gitlab.gnome.org/GNOME/libshumate.git
+        tag: 1.2.2
+        commit: fab290f36bb7043fe6107308ff4f91c80492aa11
+  - name: fractal
+    buildsystem: meson
+    sources:
+      - type: dir
+        path: ../

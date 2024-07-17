@@ -17,6 +17,22 @@ lint-metainfo:
     - appstreamcli validate --pedantic --explain --strict ${METAINFO}
   needs: ["build@x86_64"]
 
+# Run the Rust tests.
+rust-tests:
+  stage: test
+  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
+  tags:
+    - flatpak
+  variables:
+    MANIFEST_PATH: ".gitlab-ci/org.gnome.Fractal.CiRust.yml"
+  script:
+    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
+    - echo "cargo-nextest nextest run --config-file ../.gitlab-ci/nextest.toml" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
+  dependencies: []
+  artifacts:
+    reports:
+      junit: '.flatpak-builder/build/${FLATPAK_MODULE}/target/nextest/default/junit.xml'
+
 # Test that there are no errors in the docs.
 build-docs:
   extends:
