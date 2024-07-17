@@ -8,10 +8,10 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-17 08:57+0000\n"
-"PO-Revision-Date: 2024-07-17 14:06+0300\n"
-"Last-Translator: Fracture dept <yurchor@ukr.net>\n"
-"Language-Team: Ukrainian <kde-i18n-uk@kde.org>\n"
+"POT-Creation-Date: 2024-07-17 17:15+0000\n"
+"PO-Revision-Date: 2024-07-17 20:58+0300\n"
+"Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
+"Language-Team: Ukrainian\n"
 "Language: uk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -644,9 +644,10 @@ msgid "Back"
 msgstr "Назад"
 
 #: src/components/dialogs/join_room.ui:72
-msgid "Enter a room ID, room alias, or permalink to look up a room"
+#| msgid "Enter a room ID, room alias, or permalink to look up a room"
+msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr ""
-"Введіть ідентифікатор кімнати, альтернативну назву кімнати або постійне "
+"Введіть ідентифікатор кімнати, альтернативну назву кімнати або "
 "посилання, щоб виконати пошук кімнати"
 
 #: src/components/dialogs/join_room.ui:193
@@ -3634,7 +3635,6 @@ msgid "Change Room Name"
 msgstr "Змінювати назву кімнати"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:114
-#| msgid "Could not change room description"
 msgid "Change Room Description"
 msgstr "Зміна опису кімнати"
 
@@ -4549,9 +4549,10 @@ msgstr "{user} вилучено аватар."
 msgid "{user} changed their avatar."
 msgstr "{user} змінено аватар."
 
-#: src/session/view/content/room_history/title.ui:35
-msgid "Click to Expand"
-msgstr "Натисніть, щоб розгорнути"
+#: src/session/view/content/room_history/title.ui:9
+#| msgid "Room Details"
+msgid "Open Room Details"
+msgstr "Відкрити відомості щодо кімнати"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
@@ -4740,7 +4741,6 @@ msgid "New Room"
 msgstr "Нова кімната"
 
 #: src/session/view/room_creation.ui:59
-#| msgid "Reason (optional)"
 msgid "Description (Optional)"
 msgstr "Опис (необов'язковий)"
 
@@ -5104,6 +5104,9 @@ msgstr "Не вдалося зберегти файл"
 #: src/window.ui:66
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "Click to Expand"
+#~ msgstr "Натисніть, щоб розгорнути"
 
 #~ msgid "Change Room Topic"
 #~ msgstr "Змінювати тему кімнати"
