@@ -111,7 +111,7 @@
                         </child>
                         <child>
                           <object class="PowerLevelSelectionRow" id="topic_row">
-                            <property name="title" translatable="yes">Change Room Topic</property>
+                            <property name="title" translatable="yes">Change Room Description</property>
                             <property name="use-subtitle">True</property>
                             <property name="permissions" bind-source="RoomDetailsPermissionsSubpage" bind-property="permissions" bind-flags="sync-create"/>
                             <signal name="notify::selected-power-level" handler="value_changed" swapped="yes"/>
