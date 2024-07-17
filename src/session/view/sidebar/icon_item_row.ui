@@ -12,6 +12,7 @@
               </lookup>
             </binding>
             <property name="accessible-role">presentation</property>
+            <property name="valign">center</property>
           </object>
         </child>
         <child>
