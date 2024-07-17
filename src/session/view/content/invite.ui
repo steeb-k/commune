@@ -68,6 +68,7 @@
                         <child>
                           <object class="GtkLabel" id="room_alias">
                             <property name="wrap">True</property>
+                            <property name="wrap-mode">word-char</property>
                             <property name="justify">center</property>
                             <binding name="label">
                               <lookup name="alias-string">
@@ -86,9 +87,11 @@
                     <child>
                       <object class="GtkLabel" id="room_topic">
                         <property name="wrap">True</property>
+                        <property name="wrap-mode">word-char</property>
                         <property name="justify">center</property>
+                        <property name="use-markup">True</property>
                         <binding name="label">
-                          <lookup name="topic">
+                          <lookup name="topic-linkified">
                             <lookup name="room">ContentInvite</lookup>
                           </lookup>
                         </binding>

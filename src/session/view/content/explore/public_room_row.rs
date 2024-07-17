@@ -9,7 +9,7 @@ use crate::{
     gettext_f, ngettext_f,
     prelude::*,
     spawn, toast,
-    utils::BoundObject,
+    utils::{string::linkify, BoundObject},
     Window,
 };
 
@@ -138,7 +138,11 @@ mod imp {
             self.display_name.set_text(&public_room.display_name());
 
             if let Some(topic) = &matrix_public_room.topic {
-                self.description.set_text(topic);
+                // Detect links.
+                let mut t = linkify(topic);
+                // Remove trailing spaces.
+                t.truncate_end_whitespaces();
+                self.description.set_label(&t);
             }
             self.description
                 .set_visible(matrix_public_room.topic.is_some());

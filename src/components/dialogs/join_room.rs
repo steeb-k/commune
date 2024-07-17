@@ -271,7 +271,7 @@ impl JoinRoomDialog {
             return;
         }
 
-        if let Some(topic) = room.topic() {
+        if let Some(topic) = room.topic_linkified() {
             imp.room_topic.set_label(&topic);
             imp.room_topic.set_visible(true);
         } else {

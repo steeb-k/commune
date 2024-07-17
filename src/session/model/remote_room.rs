@@ -12,7 +12,7 @@ use crate::{
     components::{AvatarImage, AvatarUriSource, PillSource},
     prelude::*,
     spawn, spawn_tokio,
-    utils::{matrix::MatrixRoomIdUri, LoadingState},
+    utils::{matrix::MatrixRoomIdUri, string::linkify, LoadingState},
 };
 
 mod imp {
@@ -41,6 +41,12 @@ mod imp {
         /// The topic of this room.
         #[property(get)]
         pub topic: RefCell<Option<String>>,
+        /// The linkified topic of this room.
+        ///
+        /// This is the string that should be used in the interface when markup
+        /// is allowed.
+        #[property(get)]
+        pub topic_linkified: RefCell<Option<String>>,
         /// The number of joined members in the room.
         #[property(get)]
         pub joined_members_count: Cell<u32>,
@@ -129,8 +135,20 @@ mod imp {
                 return;
             }
 
+            let topic_linkified = topic.as_deref().map(|t| {
+                // Detect links.
+                let mut s = linkify(t);
+                // Remove trailing spaces.
+                s.truncate_end_whitespaces();
+                s
+            });
+
             self.topic.replace(topic);
-            self.obj().notify_topic();
+            self.topic_linkified.replace(topic_linkified);
+
+            let obj = self.obj();
+            obj.notify_topic();
+            obj.notify_topic_linkified();
         }
 
         /// Set the loading state.
