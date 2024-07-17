@@ -1,9 +1,9 @@
 # Tests after the app is built.
 
-include: '.gitlab-ci/pages.yaml'
+include: '.gitlab-ci/docs.yml'
 
 # Validate the metainfo with Flathub's tool.
-metainfo:
+lint-metainfo:
   stage: test
   image:
     name: "ghcr.io/flathub/flatpak-builder-lint:latest"
@@ -18,9 +18,9 @@ metainfo:
   needs: ["build@x86_64"]
 
 # Test that there are no errors in the docs.
-test-pages:
+build-docs:
   extends:
-    - .pages
+    - .docs
   stage: test
   variables:
     DOCS_FOLDER: "doc"

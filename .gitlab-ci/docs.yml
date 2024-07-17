@@ -1,4 +1,4 @@
-.pages:
+.docs:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-master'
   tags:
     - flatpak

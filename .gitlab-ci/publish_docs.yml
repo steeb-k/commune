@@ -1,10 +1,10 @@
 # Build and publish the docs
 
-include: '.gitlab-ci/pages.yaml'
+include: '.gitlab-ci/docs.yml'
 
 pages:
   extends:
-    - .pages
+    - .docs
   stage: deploy
   variables:
     DOCS_FOLDER: "public"
