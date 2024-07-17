@@ -1,12 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 
-use crate::{
-    components::Avatar,
-    prelude::*,
-    session::model::Room,
-    utils::{string::linkify, BoundObjectWeakRef},
-};
+use crate::{prelude::*, session::model::Room, utils::BoundObjectWeakRef};
 
 mod imp {
     use std::cell::RefCell;
@@ -22,26 +17,14 @@ mod imp {
         // The room to present the title of.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: BoundObjectWeakRef<Room>,
-        // The title of the room.
-        #[property(get)]
-        pub title: RefCell<Option<String>>,
         // The title of the room that can be presented on a single line.
         #[property(get)]
-        pub title_excerpt: RefCell<Option<String>>,
-        // The subtitle of the room.
-        #[property(get)]
-        pub subtitle: RefCell<Option<String>>,
+        pub title: RefCell<String>,
         // The subtitle of the room that can be presented on a single line.
         #[property(get)]
-        pub subtitle_excerpt: RefCell<Option<String>>,
+        pub subtitle: RefCell<Option<String>>,
         #[template_child]
-        pub stack: TemplateChild<gtk::Stack>,
-        #[template_child]
-        pub title_excerpt_label: TemplateChild<gtk::Label>,
-        #[template_child]
-        pub popover: TemplateChild<gtk::Popover>,
-        #[template_child]
-        pub title_label: TemplateChild<gtk::Label>,
+        pub subtitle_label: TemplateChild<gtk::Label>,
     }
 
     #[glib::object_subclass]
@@ -51,10 +34,7 @@ mod imp {
         type ParentType = adw::Bin;
 
         fn class_init(klass: &mut Self::Class) {
-            Avatar::ensure_type();
-
             Self::bind_template(klass);
-            Self::Type::bind_template_callbacks(klass);
 
             klass.set_css_name("room-title");
         }
@@ -65,13 +45,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for RoomHistoryTitle {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.popover.set_offset(0, 5);
-        }
-    }
+    impl ObjectImpl for RoomHistoryTitle {}
 
     impl WidgetImpl for RoomHistoryTitle {}
     impl BinImpl for RoomHistoryTitle {}
@@ -112,77 +86,49 @@ mod imp {
 
         /// Update the title of the room.
         fn update_title(&self) {
-            let original_title = self.room.obj().map(|r| r.display_name());
+            let Some(room) = self.room.obj() else {
+                return;
+            };
 
-            let title = original_title.as_deref().map(|s| {
-                // Detect links.
-                let mut s = linkify(s);
-                // Remove trailing spaces.
-                s.truncate_end_whitespaces();
-                s
-            });
+            // Remove newlines.
+            let mut title = room.display_name().replace('\n', "");
+            // Remove trailing spaces.
+            title.truncate_end_whitespaces();
 
             if *self.title.borrow() == title {
                 return;
             }
 
-            let has_title = title.is_some();
-            let title_excerpt = original_title.map(|s| {
-                // Remove newlines.
-                let mut s = s.replace('\n', "");
-                // Remove trailing spaces.
-                s.truncate_end_whitespaces();
-                s
-            });
-
             self.title.replace(title);
-            self.title_excerpt.replace(title_excerpt);
-
-            let obj = self.obj();
-            obj.notify_title();
-            obj.notify_title_excerpt();
-
-            self.title_excerpt_label.set_visible(has_title);
+            self.obj().notify_title();
         }
 
         /// Update the subtitle of the room.
         fn update_subtitle(&self) {
-            let original_subtitle = self.room.obj().and_then(|r| r.topic());
+            let Some(room) = self.room.obj() else {
+                return;
+            };
 
-            let subtitle = original_subtitle.as_deref().map(|s| {
-                // Detect links.
-                let mut s = linkify(s);
-                // Remove trailing spaces.
-                s.truncate_end_whitespaces();
-                s
-            });
+            let subtitle = room
+                .topic()
+                .map(|s| {
+                    // Remove newlines.
+                    let mut s = s.replace('\n', "");
+                    // Remove trailing spaces.
+                    s.truncate_end_whitespaces();
+                    s
+                })
+                .filter(|s| !s.is_empty());
 
             if *self.subtitle.borrow() == subtitle {
                 return;
             }
 
             let has_subtitle = subtitle.is_some();
-            let subtitle_excerpt = original_subtitle.map(|s| {
-                // Remove newlines.
-                let mut s = s.replace('\n', "");
-                // Remove trailing spaces.
-                s.truncate_end_whitespaces();
-                s
-            });
 
             self.subtitle.replace(subtitle);
-            self.subtitle_excerpt.replace(subtitle_excerpt);
-
-            let obj = self.obj();
-            obj.notify_subtitle();
-            obj.notify_subtitle_excerpt();
-
-            // Show the button only if there is a subtitle.
-            if has_subtitle {
-                self.stack.set_visible_child_name("button");
-            } else {
-                self.stack.set_visible_child_name("title-only");
-            }
+            self.obj().notify_subtitle();
+            self.subtitle_label.set_visible(has_subtitle);
         }
     }
 }
@@ -193,26 +139,10 @@ glib::wrapper! {
         @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
 }
 
-#[gtk::template_callbacks]
 impl RoomHistoryTitle {
     /// Construct a new empty `RoomHistoryTitle`.
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    /// Handle when the title's label was mapped.
-    #[template_callback]
-    fn title_mapped(&self) {
-        let imp = self.imp();
-        // Put the cursor at the beginning of the title instead of having the title
-        // selected.
-        glib::idle_add_local_once(clone!(
-            #[weak]
-            imp,
-            move || {
-                imp.title_label.select_region(0, 0);
-            }
-        ));
     }
 }
 
