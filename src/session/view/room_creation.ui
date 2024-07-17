@@ -3,7 +3,6 @@
   <template class="RoomCreation" parent="ToastableDialog">
     <property name="default-widget">create_button</property>
     <property name="content-width">380</property>
-    <property name="content-height">620</property>
     <property name="child-content">
       <object class="AdwToolbarView">
         <child type="top">
@@ -45,9 +44,7 @@
                         <property name="spacing">18</property>
                         <child>
                           <object class="AdwPreferencesGroup">
-                            <style>
-                              <class name="boxed-list"/>
-                            </style>
+                            <property name="title" translatable="yes">Name</property>
                             <child>
                               <object class="AdwEntryRow" id="room_name">
                                 <property name="title" translatable="yes">Name</property>
@@ -55,10 +52,29 @@
                                 <signal name="entry-activated" handler="create_room" swapped="yes"/>
                               </object>
                             </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="AdwPreferencesGroup" id="topic_group">
+                            <property name="title" translatable="yes">Description (Optional)</property>
                             <child>
-                              <object class="AdwEntryRow" id="room_topic">
-                                <property name="title" translatable="yes">Topic (Optional)</property>
-                                <signal name="entry-activated" handler="create_room" swapped="yes"/>
+                              <object class="GtkScrolledWindow">
+                                <property name="height-request">120</property>
+                                <child>
+                                  <object class="GtkTextView" id="topic_text_view">
+                                    <property name="hexpand">True</property>
+                                    <property name="wrap-mode">word-char</property>
+                                    <style>
+                                      <class name="inline"/>
+                                    </style>
+                                    <accessibility>
+                                      <relation name="labelled-by">topic_group</relation>
+                                    </accessibility>
+                                  </object>
+                                </child>
+                                <style>
+                                  <class name="card"/>
+                                </style>
                               </object>
                             </child>
                           </object>

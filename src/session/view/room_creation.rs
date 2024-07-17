@@ -43,7 +43,7 @@ mod imp {
         #[template_child]
         pub room_name: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub room_topic: TemplateChild<adw::EntryRow>,
+        pub topic_text_view: TemplateChild<gtk::TextView>,
         #[template_child]
         pub visibility_private: TemplateChild<gtk::CheckButton>,
         #[template_child]
@@ -124,8 +124,15 @@ impl RoomCreation {
         imp.create_button.set_is_loading(true);
         imp.content.set_sensitive(false);
 
-        let name = Some(imp.room_name.text().to_string());
-        let topic = Some(imp.room_topic.text().to_string()).filter(|s| !s.is_empty());
+        let name = Some(imp.room_name.text().trim())
+            .filter(|s| !s.is_empty())
+            .map(ToOwned::to_owned);
+
+        let buffer = imp.topic_text_view.buffer();
+        let (start_iter, end_iter) = buffer.bounds();
+        let topic = Some(buffer.text(&start_iter, &end_iter, false).trim())
+            .filter(|s| !s.is_empty())
+            .map(ToOwned::to_owned);
 
         let mut request = assign!(
             create_room::v3::Request::new(),
