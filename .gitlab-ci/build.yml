@@ -29,8 +29,8 @@ build@aarch64:
 .build-stable:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-46'
   variables:
-    MANIFEST_PATH: ".gitlab-ci/org.gnome.Fractal.CiTest.json"
-    APP_ID: "org.gnome.Fractal.CiTest"
+    MANIFEST_PATH: ".gitlab-ci/org.gnome.Fractal.CiBuildStable.yml"
+    APP_ID: "org.gnome.Fractal.CiBuildStable"
     RUNTIME_REPO: "https://flathub.org/repo/flathub.flatpakrepo"
     BUNDLE: "${APP_ID}.flatpak"
     RUN_TESTS: 0
