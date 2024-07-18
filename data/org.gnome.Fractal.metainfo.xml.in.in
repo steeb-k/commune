@@ -71,6 +71,43 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="8~rc" type="development" date="2024-07-18">
+      <description>
+        <p>
+          Did you miss us? Only two weeks after our beta release, we are ready to release Fractal
+          8.rc.
+        </p>
+        <p>
+          Here are the main goodies since Fractal 8.beta:
+        </p>
+        <ul>
+          <li>
+            Draft messages are persisted in the database, allowing to restore them after a restart
+          </li>
+          <li>
+            A banner appears when synchronization with the homeserver fails too many times in a row
+          </li>
+          <li>
+            Links in room descriptions are detected in most places
+          </li>
+          <li>
+            Collapsed categories in the sidebar are remembered between restarts, with the
+            “Historical” category collapsed by default
+          </li>
+          <li>
+            The history media viewers show properly when they are loading or empty
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, it should be mostly stable and we expect to only include minor
+          improvements until the release of Fractal 8.
+        </p>
+      </description>
+    </release>
     <release version="8~beta" type="development" date="2024-07-03">
       <description>
         <p>

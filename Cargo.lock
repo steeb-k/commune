@@ -1400,7 +1400,7 @@ dependencies = [
 
 [[package]]
 name = "fractal"
-version = "8.0.0-beta"
+version = "8.0.0-rc"
 dependencies = [
  "ashpd",
  "djb_hash",
