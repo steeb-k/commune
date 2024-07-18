@@ -1,6 +1,6 @@
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*};
 use matrix_sdk::{
-    media::{MediaFormat, MediaRequest, MediaThumbnailSize},
+    media::{MediaFormat, MediaRequest, MediaThumbnailSettings},
     ruma::{
         api::client::media::get_content_thumbnail::v3::Method, events::room::MediaSource, MxcUri,
         OwnedMxcUri,
@@ -139,11 +139,11 @@ impl AvatarImage {
         let needed_size = self.needed_size();
         let request = MediaRequest {
             source: MediaSource::Plain(uri),
-            format: MediaFormat::Thumbnail(MediaThumbnailSize {
-                width: needed_size.into(),
-                height: needed_size.into(),
-                method: Method::Scale,
-            }),
+            format: MediaFormat::Thumbnail(MediaThumbnailSettings::new(
+                Method::Scale,
+                needed_size.into(),
+                needed_size.into(),
+            )),
         };
         let handle =
             spawn_tokio!(async move { client.media().get_media_content(&request, true).await });

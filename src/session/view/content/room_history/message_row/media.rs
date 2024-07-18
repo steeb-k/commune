@@ -6,7 +6,7 @@ use gtk::{
     CompositeTemplate,
 };
 use matrix_sdk::{
-    media::{MediaEventContent, MediaThumbnailSize},
+    media::{MediaEventContent, MediaThumbnailSettings},
     ruma::{
         api::client::media::get_content_thumbnail::v3::Method,
         events::{
@@ -351,11 +351,11 @@ impl MessageMedia {
                     media
                         .get_thumbnail(
                             &content,
-                            MediaThumbnailSize {
-                                method: Method::Scale,
-                                width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32).into(),
-                                height: ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32).into(),
-                            },
+                            MediaThumbnailSettings::new(
+                                Method::Scale,
+                                ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32).into(),
+                                ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32).into(),
+                            ),
                             true,
                         )
                         .await

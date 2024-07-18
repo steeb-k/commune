@@ -1,5 +1,5 @@
 use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use matrix_sdk::media::{MediaEventContent, MediaThumbnailSize};
+use matrix_sdk::media::{MediaEventContent, MediaThumbnailSettings};
 use ruma::{
     api::client::media::get_content_thumbnail::v3::Method,
     events::room::message::{ImageMessageEventContent, MessageType, VideoMessageEventContent},
@@ -167,11 +167,11 @@ mod imp {
                     media
                         .get_thumbnail(
                             &content,
-                            MediaThumbnailSize {
-                                method: Method::Scale,
-                                width: THUMBNAIL_SIZE.into(),
-                                height: THUMBNAIL_SIZE.into(),
-                            },
+                            MediaThumbnailSettings::new(
+                                Method::Scale,
+                                THUMBNAIL_SIZE.into(),
+                                THUMBNAIL_SIZE.into(),
+                            ),
                             true,
                         )
                         .await
