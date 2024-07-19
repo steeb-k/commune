@@ -1,10 +1,10 @@
 //! Helper traits and methods for strings.
 
-use std::{borrow::Cow, fmt::Write};
+use std::fmt::Write;
 
 use gtk::glib::markup_escape_text;
 use linkify::{LinkFinder, LinkKind};
-use ruma::MatrixUri;
+use ruma::{MatrixUri, RoomAliasId, RoomId, UserId};
 use url::Url;
 
 #[cfg(test)]
@@ -21,8 +21,8 @@ use crate::{
 const EMAIL_URI_PREFIX: &str = "mailto:";
 /// The prefix for a HTTPS URL.
 const HTTPS_URI_PREFIX: &str = "https://";
-/// The prefix for a `matrix:` URI.
-const MATRIX_URI_PREFIX: &str = "matrix:";
+/// The scheme for a `matrix:` URI.
+const MATRIX_URI_SCHEME: &str = "matrix";
 
 /// Common extensions to strings.
 pub trait StrExt {
@@ -276,24 +276,18 @@ impl<'a> Linkifier<'a> {
         self.inner.push_str(&s.escape_markup());
     }
 
-    /// Append the given URI.
-    fn append_uri(&mut self, uri: &str, prefix: Option<&str>) {
-        let full_uri = if let Some(prefix) = prefix {
-            Cow::Owned(format!("{prefix}{uri}"))
-        } else {
-            Cow::Borrowed(uri)
-        };
-
+    /// Append the given URI with the given link content.
+    fn append_uri(&mut self, uri: &str, content: &str) {
         if let MentionsMode::WithMentions { pills, room, .. } = &mut self.mentions {
-            if let Some(pill) = self.inner.maybe_append_mention(full_uri.as_ref(), room) {
+            if let Some(pill) = self.inner.maybe_append_mention(uri, room) {
                 pills.push(pill);
 
                 return;
             }
         }
 
-        self.inner.append_link_opening_tag(full_uri);
-        self.append_string(uri);
+        self.inner.append_link_opening_tag(uri);
+        self.append_string(content);
         self.inner.push_str("</a>");
     }
 
@@ -306,7 +300,7 @@ impl<'a> Linkifier<'a> {
     fn append_detected_url(&mut self, detected_url: &str, prev_span: Option<&str>) -> bool {
         if Url::parse(detected_url).is_ok() {
             // This is a full URL with a scheme, we can trust that it is valid.
-            self.append_uri(detected_url, None);
+            self.append_uri(detected_url, detected_url);
             return true;
         }
 
@@ -332,29 +326,94 @@ impl<'a> Linkifier<'a> {
             return false;
         }
 
-        // The LinkFinder does not detect URIs without an authority component, which is
-        // problematic for `matrix:` URIs. However it detects a link starting from the
-        // homeserver part, e.g. it detects `example.org` in
-        // `matrix:r/somewhere:example.org`. We can use that to recompose the full URI
-        // with the previous span.
+        // The LinkFinder detects the homeserver part of `matrix:` URIs and Matrix
+        // identifiers, e.g. it detects `example.org` in `matrix:r/somewhere:
+        // example.org` or in `#somewhere:matrix.org`. We can use that to detect the
+        // full URI or identifier with the previous span.
 
-        // First, detect if we can find the `matrix:` scheme in the previous span.
-        if let Some(maybe_uri_start) =
-            prev_span.and_then(|s| s.rfind(MATRIX_URI_PREFIX).map(|pos| &s[pos..]))
-        {
-            // See if the whole string is a valid URI.
-            let maybe_full_uri = format!("{maybe_uri_start}{detected_url}");
-            if MatrixUri::parse(&maybe_full_uri).is_ok() {
-                // Remove the start of the URI from the string.
-                self.inner
-                    .truncate(self.inner.len() - maybe_uri_start.len());
-                self.append_uri(&maybe_full_uri, None);
+        // First, detect if the previous character is `:`, this is common to URIs and
+        // identifiers.
+        if let Some(prev_span) = prev_span.filter(|s| s.ends_with(':')) {
+            // Most identifiers in Matrix do not have a list of allowed characters, so all
+            // characters are allowed… which makes it difficult to find where they start.
+            // We have to set arbitrary rules for the localpart to match most cases:
+            // - No whitespaces
+            // - No `:`, as it is the separator between localpart and server name, and after
+            //   the scheme in URIs
+            // - As soon as we encounter a known sigil, we assume we have the full ID. We
+            //   ignore event IDs because we need a room to be able to generate a link.
+            if let Some((pos, c)) = prev_span[..]
+                .char_indices()
+                .rev()
+                // Skip the `:` we detected earlier.
+                .skip(1)
+                .find(|(_, c)| c.is_whitespace() || matches!(c, ':' | '!' | '#' | '@'))
+            {
+                let maybe_id_start = &prev_span[pos..];
 
-                return true;
+                match c {
+                    ':' if prev_span[..pos].ends_with(MATRIX_URI_SCHEME) => {
+                        // This should be a matrix URI.
+                        let maybe_full_uri =
+                            format!("{MATRIX_URI_SCHEME}{maybe_id_start}{detected_url}");
+                        if MatrixUri::parse(&maybe_full_uri).is_ok() {
+                            // Remove the start of the URI from the string.
+                            self.inner.truncate(
+                                self.inner.len() - maybe_id_start.len() - MATRIX_URI_SCHEME.len(),
+                            );
+                            self.append_uri(&maybe_full_uri, &maybe_full_uri);
+
+                            return true;
+                        }
+                    }
+                    '!' => {
+                        // This should be a room ID.
+                        if let Ok(room_id) =
+                            RoomId::parse(format!("{maybe_id_start}{detected_url}"))
+                        {
+                            // Remove the start of the ID from the string.
+                            self.inner.truncate(self.inner.len() - maybe_id_start.len());
+                            // Transform it into a link.
+                            self.append_uri(&room_id.matrix_to_uri().to_string(), room_id.as_str());
+                            return true;
+                        }
+                    }
+                    '#' => {
+                        // This should be a room alias.
+                        if let Ok(room_alias) =
+                            RoomAliasId::parse(format!("{maybe_id_start}{detected_url}"))
+                        {
+                            // Remove the start of the ID from the string.
+                            self.inner.truncate(self.inner.len() - maybe_id_start.len());
+                            // Transform it into a link.
+                            self.append_uri(
+                                &room_alias.matrix_to_uri().to_string(),
+                                room_alias.as_str(),
+                            );
+                            return true;
+                        }
+                    }
+                    '@' => {
+                        // This should be a user ID.
+                        if let Ok(user_id) =
+                            UserId::parse(format!("{maybe_id_start}{detected_url}"))
+                        {
+                            // Remove the start of the ID from the string.
+                            self.inner.truncate(self.inner.len() - maybe_id_start.len());
+                            // Transform it into a link.
+                            self.append_uri(&user_id.matrix_to_uri().to_string(), user_id.as_str());
+                            return true;
+                        }
+                    }
+                    _ => {
+                        // We reached a whitespace without a sigil or URI
+                        // scheme, this must be a regular URL.
+                    }
+                }
             }
         }
 
-        self.append_uri(detected_url, Some(HTTPS_URI_PREFIX));
+        self.append_uri(&format!("{HTTPS_URI_PREFIX}{detected_url}"), detected_url);
         true
     }
 }

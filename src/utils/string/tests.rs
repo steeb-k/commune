@@ -66,6 +66,25 @@ fn linkify_text() {
         r#"<a href="matrix:u/alice:example.org?action=chat" title="matrix:u/alice:example.org?action=chat">matrix:u/alice:example.org?action=chat</a>"#
     );
 
+    // Matrix identifiers.
+    let text = "#somewhere:example.org";
+    assert_eq!(
+        linkify(text),
+        r#"<a href="https://matrix.to/#/%23somewhere:example.org" title="https://matrix.to/#/%23somewhere:example.org">#somewhere:example.org</a>"#
+    );
+
+    let text = "!somewhere:example.org";
+    assert_eq!(
+        linkify(text),
+        r#"<a href="https://matrix.to/#/!somewhere:example.org" title="https://matrix.to/#/!somewhere:example.org">!somewhere:example.org</a>"#
+    );
+
+    let text = "@someone:example.org";
+    assert_eq!(
+        linkify(text),
+        r#"<a href="https://matrix.to/#/@someone:example.org" title="https://matrix.to/#/@someone:example.org">@someone:example.org</a>"#
+    );
+
     // Invalid TLDs.
     let text = "gnome.invalid";
     assert_eq!(linkify(text), "gnome.invalid");
