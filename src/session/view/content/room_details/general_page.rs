@@ -21,7 +21,7 @@ use ruma::{
 };
 use tracing::error;
 
-use super::room_upgrade_dialog::confirm_room_upgrade;
+use super::{room_upgrade_dialog::confirm_room_upgrade, RoomDetails};
 use crate::{
     components::{
         ButtonCountRow, ButtonRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
@@ -34,8 +34,10 @@ use crate::{
     },
     spawn, spawn_tokio, toast,
     utils::{
-        expression, template_callbacks::TemplateCallbacks, BoundObjectWeakRef, OngoingAsyncAction,
+        expression, matrix::MatrixIdUri, template_callbacks::TemplateCallbacks, BoundObjectWeakRef,
+        OngoingAsyncAction,
     },
+    Window,
 };
 
 mod imp {
@@ -143,6 +145,38 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for GeneralPage {
+        fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+
+            self.room_topic.connect_activate_link(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, uri| {
+                    let Ok(uri) = MatrixIdUri::parse(uri) else {
+                        return glib::Propagation::Proceed;
+                    };
+                    let Some(room_details) = obj
+                        .ancestor(RoomDetails::static_type())
+                        .and_downcast::<RoomDetails>()
+                    else {
+                        return glib::Propagation::Proceed;
+                    };
+                    let Some(parent_window) = room_details.transient_for().and_downcast::<Window>()
+                    else {
+                        return glib::Propagation::Proceed;
+                    };
+
+                    parent_window.session_view().show_matrix_uri(uri);
+                    room_details.close();
+
+                    glib::Propagation::Stop
+                }
+            ));
+        }
+
         fn dispose(&self) {
             self.disconnect_all();
         }

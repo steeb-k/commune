@@ -14,7 +14,7 @@ use crate::{
         Event, IdentityVerification, Room, Selection, Session, SidebarListModel, VerificationKey,
     },
     toast,
-    utils::matrix::MatrixRoomIdUri,
+    utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri},
     Window,
 };
 
@@ -112,6 +112,18 @@ mod imp {
                 gdk::Key::k,
                 gdk::ModifierType::CONTROL_MASK,
                 "session.toggle-room-search",
+            );
+
+            klass.install_action(
+                "session.show-matrix-uri",
+                Some(&MatrixIdUri::static_variant_type()),
+                |obj, _, parameter| {
+                    if let Some(uri) = parameter.unwrap().get::<MatrixIdUri>() {
+                        obj.show_matrix_uri(uri);
+                    } else {
+                        error!("Cannot show invalid Matrix URI");
+                    }
+                },
             );
         }
 
@@ -395,6 +407,20 @@ impl SessionView {
             notifications.withdraw_all_for_room(room.room_id());
         } else if let Some(verification) = item.downcast_ref::<IdentityVerification>() {
             notifications.withdraw_identity_verification(&verification.key());
+        }
+    }
+
+    /// Show the given `MatrixIdUri`.
+    pub fn show_matrix_uri(&self, uri: MatrixIdUri) {
+        match uri {
+            MatrixIdUri::Room(room_uri) | MatrixIdUri::Event(MatrixEventIdUri { room_uri, .. }) => {
+                if !self.select_room_if_exists(&room_uri.id) {
+                    self.show_join_room_dialog(Some(room_uri));
+                }
+            }
+            MatrixIdUri::User(user_id) => {
+                self.show_user_profile_dialog(user_id);
+            }
         }
     }
 }

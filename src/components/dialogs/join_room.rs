@@ -9,7 +9,10 @@ use crate::{
     prelude::*,
     session::model::{RemoteRoom, Session},
     toast,
-    utils::{matrix::MatrixRoomIdUri, LoadingState},
+    utils::{
+        matrix::{MatrixIdUri, MatrixRoomIdUri},
+        LoadingState,
+    },
     Window,
 };
 
@@ -78,7 +81,32 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for JoinRoomDialog {}
+    impl ObjectImpl for JoinRoomDialog {
+        fn constructed(&self) {
+            self.parent_constructed();
+            let obj = self.obj();
+
+            self.room_topic.connect_activate_link(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, uri| {
+                    let Ok(uri) = MatrixIdUri::parse(uri) else {
+                        return glib::Propagation::Proceed;
+                    };
+                    let Some(parent_window) =
+                        obj.ancestor(Window::static_type()).and_downcast::<Window>()
+                    else {
+                        return glib::Propagation::Proceed;
+                    };
+
+                    parent_window.session_view().show_matrix_uri(uri);
+                    glib::Propagation::Stop
+                }
+            ));
+        }
+    }
 
     impl WidgetImpl for JoinRoomDialog {}
     impl AdwDialogImpl for JoinRoomDialog {}

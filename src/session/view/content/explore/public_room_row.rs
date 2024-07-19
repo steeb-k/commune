@@ -9,7 +9,7 @@ use crate::{
     gettext_f, ngettext_f,
     prelude::*,
     spawn, toast,
-    utils::{string::linkify, BoundObject},
+    utils::{matrix::MatrixIdUri, string::linkify, BoundObject},
     Window,
 };
 
@@ -63,11 +63,29 @@ mod imp {
     impl ObjectImpl for PublicRoomRow {
         fn constructed(&self) {
             self.parent_constructed();
+            let obj = self.obj();
+
             self.button.connect_clicked(clone!(
                 #[weak(rename_to = imp)]
                 self,
                 move |_| {
                     imp.obj().join_or_view();
+                }
+            ));
+
+            self.description.connect_activate_link(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, uri| {
+                    if MatrixIdUri::parse(uri).is_ok() {
+                        let _ =
+                            obj.activate_action("session.show-matrix-uri", Some(&uri.to_variant()));
+                        glib::Propagation::Stop
+                    } else {
+                        glib::Propagation::Proceed
+                    }
                 }
             ));
         }

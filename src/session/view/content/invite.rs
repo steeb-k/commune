@@ -8,6 +8,7 @@ use crate::{
     prelude::*,
     session::model::{MemberList, Room, RoomType, User},
     toast,
+    utils::matrix::MatrixIdUri,
 };
 
 mod imp {
@@ -73,6 +74,7 @@ mod imp {
     impl ObjectImpl for Invite {
         fn constructed(&self) {
             self.parent_constructed();
+            let obj = self.obj();
 
             self.room_alias.connect_label_notify(|room_alias| {
                 room_alias.set_visible(!room_alias.label().is_empty());
@@ -85,6 +87,21 @@ mod imp {
             });
             self.room_topic
                 .set_visible(!self.room_topic.label().is_empty());
+            self.room_topic.connect_activate_link(clone!(
+                #[weak]
+                obj,
+                #[upgrade_or]
+                glib::Propagation::Proceed,
+                move |_, uri| {
+                    if MatrixIdUri::parse(uri).is_ok() {
+                        let _ =
+                            obj.activate_action("session.show-matrix-uri", Some(&uri.to_variant()));
+                        glib::Propagation::Stop
+                    } else {
+                        glib::Propagation::Proceed
+                    }
+                }
+            ));
         }
 
         fn dispose(&self) {

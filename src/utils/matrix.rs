@@ -1,7 +1,8 @@
 //! Collection of methods related to the Matrix specification.
 
-use std::str::FromStr;
+use std::{borrow::Cow, str::FromStr};
 
+use gtk::{glib, prelude::*};
 use matrix_sdk::{
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
@@ -620,6 +621,18 @@ impl TryFrom<AnchorUri> for MatrixIdUri {
 
     fn try_from(value: AnchorUri) -> Result<Self, Self::Error> {
         Self::try_from(&value)
+    }
+}
+
+impl StaticVariantType for MatrixIdUri {
+    fn static_variant_type() -> Cow<'static, glib::VariantTy> {
+        String::static_variant_type()
+    }
+}
+
+impl FromVariant for MatrixIdUri {
+    fn from_variant(variant: &glib::Variant) -> Option<Self> {
+        Self::parse(&variant.get::<String>()?).ok()
     }
 }
 
