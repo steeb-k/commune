@@ -3,7 +3,7 @@ use gtk::{gdk, glib, glib::clone, CompositeTemplate};
 
 use super::Row;
 use crate::{
-    i18n::gettext_f,
+    i18n::{gettext_f, ngettext_f},
     prelude::*,
     session::model::{HighlightFlags, Room, RoomType},
     utils::BoundObject,
@@ -142,13 +142,27 @@ mod imp {
                         obj.update_accessibility_label();
                     }
                 ));
+                let notifications_count_handler = room.connect_notification_count_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |_| {
+                        obj.update_accessibility_label();
+                    }
+                ));
 
                 if room.category() == RoomType::Left {
                     self.display_name.add_css_class("dim-label");
                 }
 
-                self.room
-                    .set(room, vec![highlight_handler, direct_handler, name_handler]);
+                self.room.set(
+                    room,
+                    vec![
+                        highlight_handler,
+                        direct_handler,
+                        name_handler,
+                        notifications_count_handler,
+                    ],
+                );
 
                 obj.update_accessibility_label();
             }
@@ -264,7 +278,7 @@ impl RoomRow {
             return String::new();
         };
 
-        if room.is_direct() {
+        let name = if room.is_direct() {
             gettext_f(
                 // Translators: Do NOT translate the content between '{' and '}', this is a
                 // variable name. Presented to screen readers when a
@@ -274,6 +288,21 @@ impl RoomRow {
             )
         } else {
             room.display_name()
+        };
+
+        if room.notification_count() > 0 {
+            let count = ngettext_f(
+                // Translators: Do NOT translate the content between '{' and '}', this is a
+                // variable name. Presented to screen readers when a room has notifications
+                // for unread messages.
+                "1 notification",
+                "{count} notifications",
+                room.notification_count() as u32,
+                &[("count", &room.notification_count().to_string())],
+            );
+            format!("{} {}", name, count)
+        } else {
+            name
         }
     }
 }
