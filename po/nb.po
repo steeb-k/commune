@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-18 14:53+0000\n"
-"PO-Revision-Date: 2024-07-18 19:16+0200\n"
+"POT-Creation-Date: 2024-07-20 09:31+0000\n"
+"PO-Revision-Date: 2024-07-22 18:14+0200\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -576,20 +576,20 @@ msgid "C_onfirm"
 msgstr "_Bekreft"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/components/dialogs/join_room.rs:199
-#: src/session/view/content/explore/public_room_row.rs:181
+#: src/components/dialogs/join_room.rs:227
+#: src/session/view/content/explore/public_room_row.rs:199
 #: src/session/view/content/room_history/mod.rs:1009
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Åpne"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/join_room.rs:202
+#: src/components/dialogs/join_room.rs:230
 #: src/components/dialogs/join_room.ui:91
 msgid "Look Up"
 msgstr "Finn"
 
-#: src/components/dialogs/join_room.rs:265
+#: src/components/dialogs/join_room.rs:293
 msgid ""
 "The room details cannot be previewed. It can be because the room is not "
 "known by the homeserver or because its details are private. You can still "
@@ -600,8 +600,8 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/join_room.rs:287
-#: src/session/view/content/explore/public_room_row.rs:162
+#: src/components/dialogs/join_room.rs:315
+#: src/session/view/content/explore/public_room_row.rs:180
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "1 medlem"
@@ -624,7 +624,7 @@ msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr "Oppgi en kode, et navn eller en lenke for å finne en samtale"
 
 #: src/components/dialogs/join_room.ui:193
-#: src/session/view/content/explore/public_room_row.rs:183
+#: src/session/view/content/explore/public_room_row.rs:201
 #: src/session/view/content/room_history/mod.rs:1012
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
@@ -687,7 +687,7 @@ msgstr "Forlat"
 #: src/session/view/account_settings/general_page/mod.rs:293
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
-#: src/session/view/content/room_details/general_page.rs:988
+#: src/session/view/content/room_details/general_page.rs:1022
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
 #: src/session/view/content/room_history/item_row.rs:937
@@ -1099,7 +1099,7 @@ msgstr "Ignorer"
 msgid "Could not stop ignoring user"
 msgstr "Oppheving av ignorering mislyktes"
 
-#: src/components/user_page.rs:785 src/session/view/content/invite.rs:285
+#: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
 #: src/session/view/sidebar/row.rs:582
 msgid "Could not ignore user"
@@ -1350,7 +1350,7 @@ msgstr "Går det ikke å skanne QR-koden?"
 
 #: src/identity_verification_view/choose_method_page.ui:60
 msgid "Scan QR code with this session"
-msgstr "Skann QR-kode"
+msgstr "Skann QR-kode med denne økten"
 
 #: src/identity_verification_view/choose_method_page.ui:69
 #: src/identity_verification_view/scan_qr_code_page.ui:67
@@ -1924,7 +1924,7 @@ msgid "Any registered user"
 msgstr "Hvem som helst"
 
 #: src/session/model/room/join_rule.rs:310
-#: src/session/view/content/room_details/general_page.rs:892
+#: src/session/view/content/room_details/general_page.rs:926
 msgid "Unsupported rule"
 msgstr "Ukjent regel"
 
@@ -2468,7 +2468,7 @@ msgstr "Kan ikke verifisere andre enheter eller kontoer"
 
 #: src/session/view/account_settings/security_page/mod.rs:227
 #: src/session/view/account_settings/security_page/mod.rs:300
-#: src/session/view/content/room_details/general_page.rs:989
+#: src/session/view/content/room_details/general_page.rs:1023
 #: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
 msgid "Enable"
 msgstr "Slå på"
@@ -2726,11 +2726,11 @@ msgstr "Fant ingen samtaler"
 msgid "List of Public Rooms"
 msgstr "Samtaleliste"
 
-#: src/session/view/content/explore/public_room_row.rs:189
+#: src/session/view/content/explore/public_room_row.rs:207
 msgid "View {room_name}"
 msgstr "Vis {room_name}"
 
-#: src/session/view/content/explore/public_room_row.rs:191
+#: src/session/view/content/explore/public_room_row.rs:209
 msgid "Join {room_name}"
 msgstr "Bli med i {room_name}"
 
@@ -2748,19 +2748,19 @@ msgstr "Legg til tjener"
 msgid "Remove Server"
 msgstr "Fjern tjener"
 
-#: src/session/view/content/invite.rs:170
+#: src/session/view/content/invite.rs:187
 msgid "{user_name} ({user_id}) invited you"
 msgstr "{user_name} ({user_id}) inviterte deg"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:232
+#: src/session/view/content/invite.rs:249
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "Godtaking av invitasjon til {room} mislyktes."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:272
+#: src/session/view/content/invite.rs:289
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "Avslåing av invitasjon til {room} mislyktes."
 
@@ -2825,7 +2825,7 @@ msgid "Remove “{address}”"
 msgstr "Fjern «{address}»"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
-#: src/session/view/content/room_details/general_page.rs:590
+#: src/session/view/content/room_details/general_page.rs:624
 #: src/session/view/room_creation.ui:132
 msgid "Main Address"
 msgstr "Hovedadresse"
@@ -2994,82 +2994,82 @@ msgstr "Lagre"
 msgid "Save Description"
 msgstr "Lagre beskrivelse"
 
-#: src/session/view/content/room_details/general_page.rs:468
+#: src/session/view/content/room_details/general_page.rs:502
 #: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Medlem"
 msgstr[1] "Medlemmer"
 
-#: src/session/view/content/room_details/general_page.rs:544
+#: src/session/view/content/room_details/general_page.rs:578
 msgid "Could not change notifications setting"
 msgstr "Endring av varslingsinnstilling mislyktes"
 
-#: src/session/view/content/room_details/general_page.rs:585
-#: src/session/view/content/room_details/general_page.rs:624
+#: src/session/view/content/room_details/general_page.rs:619
+#: src/session/view/content/room_details/general_page.rs:658
 msgid "Copy address"
 msgstr "Kopier adresse"
 
-#: src/session/view/content/room_details/general_page.rs:586
-#: src/session/view/content/room_details/general_page.rs:625
+#: src/session/view/content/room_details/general_page.rs:620
+#: src/session/view/content/room_details/general_page.rs:659
 msgid "Address copied to clipboard"
 msgstr "Adresse kopiert til utklippstavlen"
 
-#: src/session/view/content/room_details/general_page.rs:667
+#: src/session/view/content/room_details/general_page.rs:701
 msgid "Room link copied to clipboard"
 msgstr "Lenke kopiert til utklippstavlen"
 
-#: src/session/view/content/room_details/general_page.rs:720
+#: src/session/view/content/room_details/general_page.rs:754
 msgid "Could not change who can join"
 msgstr "Endring av tillatte kontoer mislyktes"
 
-#: src/session/view/content/room_details/general_page.rs:768
+#: src/session/view/content/room_details/general_page.rs:802
 msgid "Could not change guest access"
 msgstr "Endring av gjesteadresse mislyktes"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:785
+#: src/session/view/content/room_details/general_page.rs:819
 msgid "Publish in the {homeserver} directory"
 msgstr "Vis på {homeserver} sin samtaleliste"
 
-#: src/session/view/content/room_details/general_page.rs:862
+#: src/session/view/content/room_details/general_page.rs:896
 msgid "Could not publish room in directory"
 msgstr "Publisering av samtale mislyktes"
 
-#: src/session/view/content/room_details/general_page.rs:864
+#: src/session/view/content/room_details/general_page.rs:898
 msgid "Could not unpublish room from directory"
 msgstr "Avpublisering av samtale mislyktes"
 
-#: src/session/view/content/room_details/general_page.rs:885
+#: src/session/view/content/room_details/general_page.rs:919
 #: src/session/view/content/room_details/general_page.ui:224
 msgid "Anyone, even if they are not in the room"
 msgstr "Alle, selv hvis de ikke er med i samtalen"
 
-#: src/session/view/content/room_details/general_page.rs:888
+#: src/session/view/content/room_details/general_page.rs:922
 #: src/session/view/content/room_details/general_page.ui:225
 msgid "Members only, since this option was selected"
 msgstr "Kun medlemmer, etter at dette har blitt valgt"
 
-#: src/session/view/content/room_details/general_page.rs:890
+#: src/session/view/content/room_details/general_page.rs:924
 #: src/session/view/content/room_details/general_page.ui:227
 msgid "Members only, since they were invited"
 msgstr "Kun medlemmer, etter at de har blitt invitert"
 
-#: src/session/view/content/room_details/general_page.rs:891
+#: src/session/view/content/room_details/general_page.rs:925
 #: src/session/view/content/room_details/general_page.ui:226
 msgid "Members only, since they joined the room"
 msgstr "Kun medlemmer, etter at de har blitt med"
 
-#: src/session/view/content/room_details/general_page.rs:939
+#: src/session/view/content/room_details/general_page.rs:973
 msgid "Could not change who can read history"
 msgstr "Endring av meldingstilgang mislyktes"
 
-#: src/session/view/content/room_details/general_page.rs:983
+#: src/session/view/content/room_details/general_page.rs:1017
 msgid "Enable Encryption?"
 msgstr "Slå på kryptering?"
 
-#: src/session/view/content/room_details/general_page.rs:984
+#: src/session/view/content/room_details/general_page.rs:1018
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3077,25 +3077,25 @@ msgstr ""
 "Å slå på kryptering vil hindre nye medlemmer i å lese meldinger fra før de "
 "ble med. Dette kan ikke slås av senere."
 
-#: src/session/view/content/room_details/general_page.rs:999
+#: src/session/view/content/room_details/general_page.rs:1033
 msgid "Could not enable encryption"
 msgstr "Aktivering av kryptering mislyktes"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1025
+#: src/session/view/content/room_details/general_page.rs:1059
 msgid "Federated"
 msgstr "Tilknyttet"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1028
+#: src/session/view/content/room_details/general_page.rs:1062
 msgid "Not federated"
 msgstr "Uavhengig"
 
-#: src/session/view/content/room_details/general_page.rs:1058
+#: src/session/view/content/room_details/general_page.rs:1092
 msgid "Room upgraded successfully"
 msgstr "Samtale oppgradert"
 
-#: src/session/view/content/room_details/general_page.rs:1062
+#: src/session/view/content/room_details/general_page.rs:1096
 msgid "Could not upgrade room"
 msgstr "Oppgradering av samtale mislyktes"
 
@@ -4570,7 +4570,7 @@ msgstr "Rådata"
 
 #: src/session/view/event_details_dialog.ui:141
 msgid "Latest Edit"
-msgstr "Sist redigert"
+msgstr "Siste redigering"
 
 #: src/session/view/event_details_dialog.ui:213
 msgid "Copy Source"
@@ -4800,9 +4800,18 @@ msgstr "Muliggjør navigering mellom samtaler"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:272
+#: src/session/view/sidebar/room_row.rs:286
 msgid "Direct chat with {name}"
 msgstr "Direktesamtale med {name}"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name. Presented to screen readers when a room has notifications
+#. for unread messages.
+#: src/session/view/sidebar/room_row.rs:298
+msgid "1 notification"
+msgid_plural "{count} notifications"
+msgstr[0] "1 varsling"
+msgstr[1] "{count} varslinger"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/row.rs:572
@@ -4905,37 +4914,37 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Innlasting av database mislyktes."
 
-#: src/utils/matrix.rs:183
+#: src/utils/matrix.rs:184
 msgid "{user} sent an audio file."
 msgstr "{user} sendte et lydklipp."
 
-#: src/utils/matrix.rs:186
+#: src/utils/matrix.rs:187
 msgid "{user} sent a file."
 msgstr "{user} sendte en fil."
 
-#: src/utils/matrix.rs:188
+#: src/utils/matrix.rs:189
 msgid "{user} sent an image."
 msgstr "{user} sendte et bilde."
 
-#: src/utils/matrix.rs:191
+#: src/utils/matrix.rs:192
 msgid "{user} sent their location."
 msgstr "{user} sendte posisjonen sin."
 
-#: src/utils/matrix.rs:203
+#: src/utils/matrix.rs:204
 msgid "{user} sent a video."
 msgstr "{user} sendte en video."
 
-#: src/utils/matrix.rs:210
+#: src/utils/matrix.rs:211
 msgid "{user} sent a sticker."
 msgstr "{user} sendte et klistremerke."
 
-#: src/utils/matrix.rs:220
+#: src/utils/matrix.rs:221
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/utils/matrix.rs:244
+#: src/utils/matrix.rs:245
 msgid "{user} invited you"
 msgstr "{user} inviterte deg"
 
