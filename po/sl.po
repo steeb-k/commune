@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-07-20 09:31+0000\n"
-"PO-Revision-Date: 2024-07-21 12:28+0200\n"
+"PO-Revision-Date: 2024-07-22 07:39+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -493,10 +493,13 @@ msgid "Reset Account Recovery"
 msgstr "Ponastavitev ključa za obnovitev računa"
 
 #: src/components/crypto/recovery_setup_view.ui:156
+#, fuzzy
 msgid ""
 "Resetting account recovery can allow you to fix or reset part or all of your "
 "recovery setup."
 msgstr ""
+"Če ponastavite obnovitev računa, lahko popravite ali ponastavite del ali "
+"celotno nastavitev obnovitve."
 
 #: src/components/crypto/recovery_setup_view.ui:174
 #, fuzzy
@@ -1080,16 +1083,12 @@ msgid "Matrix user ID copied to clipboard"
 msgstr "Matrični ID uporabnika, kopiran v odložišče"
 
 #: src/components/user_page.rs:305
-#, fuzzy
-#| msgid "New Direct Chat"
 msgid "Open Direct Chat"
-msgstr "Novo neposredno klepetanje"
+msgstr "Odpri neposredni klepet"
 
 #: src/components/user_page.rs:307
-#, fuzzy
-#| msgid "New Direct Chat"
 msgid "Create Direct Chat"
-msgstr "Novo neposredno klepetanje"
+msgstr "Ustvari neposredni klepet"
 
 #: src/components/user_page.rs:331
 #: src/session/view/content/room_history/sender_avatar/mod.rs:534
@@ -1100,10 +1099,8 @@ msgid "Could not create a new Direct Chat"
 msgstr "Ni mogoče pridobiti naslova URI datoteke"
 
 #: src/components/user_page.rs:364
-#, fuzzy
-#| msgid "Join {room_name}?"
 msgid "In {room_name}"
-msgstr "Ime sobe:"
+msgstr "V {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
 #: src/components/user_page.rs:375
@@ -1136,17 +1133,13 @@ msgid "Allow Access"
 msgstr "Dovoli dostop"
 
 #: src/components/user_page.rs:513
-#, fuzzy
-#| msgid "Couldn’t change the password"
 msgid "Could not change the role"
-msgstr "Gesla ni mogoče spremeniti"
+msgstr "Vloge ni bilo mogoče spremeniti"
 
 #: src/components/user_page.rs:535
 #: src/session/view/content/room_history/sender_avatar/mod.rs:558
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not invite user"
-msgstr "Ni mogoče prejeti datoteke"
+msgstr "Uporabnika ni bilo mogoče povabiti"
 
 #: src/components/user_page.rs:569
 #: src/session/view/content/room_history/sender_avatar/mod.rs:591
@@ -1344,10 +1337,13 @@ msgstr ""
 "keyring."
 
 #: src/error_page.ui:91
+#, fuzzy
 msgid ""
 "If you prefer to use a Secret Service Provider instead, you need to allow "
 "Fractal to interact with it, like this:"
 msgstr ""
+"Če raje uporabljate ponudnika tajnih storitev, morate Fractalu dovoliti "
+"interakcijo z njim, kot je ta:"
 
 #: src/error_page.ui:113
 #, fuzzy
@@ -1373,12 +1369,10 @@ msgstr "Seje ni bilo mogoče inicializirati"
 
 #: src/identity_verification_view/accept_request_page.rs:129
 #: src/session/model/notifications/mod.rs:296
-#, fuzzy
 msgid "Login Request From Another Session"
 msgstr "Zahteva za prijavo iz druge seje"
 
 #: src/identity_verification_view/accept_request_page.rs:131
-#, fuzzy
 msgid "Verify the new session from the current session."
 msgstr "Preverite novo sejo iz trenutne seje."
 
@@ -1465,10 +1459,8 @@ msgstr "Zavrzi"
 #: src/identity_verification_view/sas_page.rs:147
 #: src/identity_verification_view/scan_qr_code_page.rs:174
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:74
-#, fuzzy
-#| msgid "_Verify New Password"
 msgid "Verify Session"
-msgstr "_Overi novo geslo"
+msgstr "Preveri sejo"
 
 #: src/identity_verification_view/choose_method_page.rs:179
 msgid "Scan this QR code from the other session."
@@ -1492,13 +1484,11 @@ msgid "Click on the verification method to proceed."
 msgstr "Za nadaljevanje kliknite na metodo preverjanja."
 
 #: src/identity_verification_view/choose_method_page.rs:233
-#, fuzzy
 msgid "Could not access camera"
 msgstr "Dostop do kamere ni mogoč"
 
 #: src/identity_verification_view/choose_method_page.rs:250
 #: src/identity_verification_view/scan_qr_code_page.rs:255
-#, fuzzy
 msgid "Could not start emoji verification"
 msgstr "Preverjanja čustvenih simbolov ni bilo mogoče začeti"
 
@@ -1507,21 +1497,17 @@ msgstr "Preverjanja čustvenih simbolov ni bilo mogoče začeti"
 #: src/identity_verification_view/qr_code_scanned_page.rs:144
 #: src/identity_verification_view/scan_qr_code_page.rs:271
 #: src/identity_verification_view/wait_for_other_page.rs:163
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not cancel the verification"
-msgstr "Ni mogoče prejeti datoteke"
+msgstr "Preverjanja ni bilo mogoče preklicati"
 
 #: src/identity_verification_view/choose_method_page.ui:51
 #: src/identity_verification_view/scan_qr_code_page.ui:48
-#, fuzzy
 msgid "Can’t scan QR code?"
 msgstr "Ne morete optično prebrati kode QR?"
 
 #: src/identity_verification_view/choose_method_page.ui:60
-#, fuzzy
 msgid "Scan QR code with this session"
-msgstr "Skenirajte QR kodo s to sejo"
+msgstr "Skenirajte QR-kodo s to sejo"
 
 #: src/identity_verification_view/choose_method_page.ui:69
 #: src/identity_verification_view/scan_qr_code_page.ui:67
@@ -1706,8 +1692,9 @@ msgstr ""
 "preverjanje."
 
 #: src/identity_verification_view/room_left_page.ui:37
+#, fuzzy
 msgid "You are no longer in the room where the verification was taking place"
-msgstr ""
+msgstr "Niste več v sobi, kjer je potekalo preverjanje"
 
 #: src/identity_verification_view/sas_page.rs:150
 #, fuzzy
@@ -2411,20 +2398,26 @@ msgstr "Pregled varnosti računa"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:94
 msgid "Logout Failed"
-msgstr ""
+msgstr "Odjava ni uspela"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:113
+#, fuzzy
 msgid ""
 "Logging out of this session failed. You can try again, or, if this is a "
 "permanent error, you can remove the session."
 msgstr ""
+"Odjava iz te seje ni uspela. Če je to trajna napaka, lahko sejo odstranite, "
+"če gre za trajno napako."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:131
+#, fuzzy
 msgid ""
 "Removing the session deletes the associated data from the system, but your "
 "homeserver and other sessions will not be aware that this session was logged "
 "out."
 msgstr ""
+"Če odstranite sejo, izbrišete povezane podatke iz sistema, vendar vaš domači "
+"strežnik in druge seje ne bodo vedele, da je bila ta seja odjavljena."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:143
 msgid "Remove Session"
@@ -3722,8 +3715,9 @@ msgid "No Audio"
 msgstr "Zvok"
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:41
+#, fuzzy
 msgid "This room does not contain any audio"
-msgstr ""
+msgstr "Ta soba ne vsebuje zvoka."
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:49
 #: src/session/view/content/room_details/history_viewer/audio.ui:56
@@ -3777,8 +3771,9 @@ msgid "No Files"
 msgstr "Datoteke"
 
 #: src/session/view/content/room_details/history_viewer/file.ui:40
+#, fuzzy
 msgid "This room does not contain any files"
-msgstr ""
+msgstr "Ta soba ne vsebuje datotek"
 
 #: src/session/view/content/room_details/history_viewer/file.ui:48
 #: src/session/view/content/room_details/history_viewer/file.ui:55
@@ -3801,8 +3796,9 @@ msgid "No Media"
 msgstr "Nosilci"
 
 #: src/session/view/content/room_details/history_viewer/media.ui:47
+#, fuzzy
 msgid "This room does not contain any media"
-msgstr ""
+msgstr "Ta soba ne vsebuje nobenih medijev."
 
 #: src/session/view/content/room_details/history_viewer/media.ui:55
 #: src/session/view/content/room_details/history_viewer/media.ui:62
@@ -4206,7 +4202,7 @@ msgstr "S_hrani zvok"
 #: src/session/view/content/room_history/event_actions.ui:190
 #: src/session/view/media_viewer.ui:26
 msgid "Copy Message _Link"
-msgstr ""
+msgstr "Kopiraj povezavo sporoči_la"
 
 #: src/session/view/content/room_history/event_actions.ui:69
 #: src/session/view/content/room_history/event_actions.ui:155
@@ -4434,7 +4430,7 @@ msgstr "Poteka pošiljanje …"
 
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:30
 msgid "Temporary Error Sending Message"
-msgstr ""
+msgstr "Začasna napaka pri pošiljanju sporočila"
 
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:45
 msgid "Message Cannot Be Sent"
@@ -4454,9 +4450,8 @@ msgid "Edited"
 msgstr "Urejena paleta"
 
 #: src/session/view/content/room_history/message_row/mod.rs:254
-#, fuzzy
 msgid "Sent at {time}"
-msgstr "Poslano ob {time}"
+msgstr "Poslano {time}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -4475,9 +4470,8 @@ msgid "{user} reacted with {reaction_key}"
 msgstr "{user} je reagiral z {reaction_key}"
 
 #: src/session/view/content/room_history/message_row/reaction_list.ui:5
-#, fuzzy
 msgid "Reactions"
-msgstr "Več odzivov"
+msgstr "Odzivi"
 
 #: src/session/view/content/room_history/message_row/reply.ui:9
 #, fuzzy
