@@ -72,27 +72,23 @@ cargo install --git https://gitlab.gnome.org/ZanderBrown/fenv fenv
 After that, setup the project:
 
 ```sh
-# Setup the flatpak environment
+# Set up the flatpak environment
 fenv gen build-aux/org.gnome.Fractal.Devel.json
-
-# Initialize the build system
-fenv exec -- meson setup -Dprofile=development --prefix=/app _build
 ```
 
 Finally, build and run the application:
 
 ```sh
 # Build the project
-fenv exec -- ninja -C _build
-
-# Install the application in the flatpak environment
-fenv exec -- ninja -C _build install
+fenv build
 
 # Launch Fractal
-fenv exec ./_build/src/fractal
+fenv run
 ```
 
-To test changes you make to the code, re-run these three last commands.
+_Note that fenv will use `_build` as build directory._
+
+To test changes you make to the code, re-run these two last commands.
 
 ### Install the flatpak
 
