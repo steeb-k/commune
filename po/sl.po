@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-20 09:31+0000\n"
-"PO-Revision-Date: 2024-07-22 07:39+0200\n"
+"POT-Creation-Date: 2024-07-26 11:10+0000\n"
+"PO-Revision-Date: 2024-07-27 12:00+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -546,7 +546,6 @@ msgstr ""
 "preberete šifrirana sporočila, tudi če izgubite dostop do vseh sej."
 
 #: src/components/crypto/recovery_setup_view.ui:276
-#, fuzzy
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr "Če ne vnesete gesla za obnovitev, bo ustvarjen obnovitveni ključ."
@@ -572,7 +571,6 @@ msgid "Account Recovery Incomplete"
 msgstr "Obnovitev računa ni popolna"
 
 #: src/components/crypto/recovery_setup_view.ui:468
-#, fuzzy
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr ""
 "Obnovitev je bila uspešna, vendar so bili podatki o obnovitvi nepopolni."
@@ -597,9 +595,8 @@ msgstr ""
 "kopiranje«."
 
 #: src/components/crypto/recovery_setup_view.ui:504
-#, fuzzy
 msgid "Alternatively, you can reset Account Recovery"
-msgstr "Omogočanje obnovitve računa"
+msgstr "Obnovitev računa lahko tudi ponastavite."
 
 #: src/components/dialogs/auth.rs:239
 #, fuzzy
@@ -1291,10 +1288,8 @@ msgid "QR Code"
 msgstr "Koda QR"
 
 #: src/error_page.rs:98
-#, fuzzy
-#| msgid "Image copied to clipboard"
 msgid "Command copied to clipboard"
-msgstr "Slika, kopirana na odložišče"
+msgstr "Ukaz je kopiran na odložišče"
 
 #: src/error_page.ui:25
 #, fuzzy
@@ -1809,20 +1804,16 @@ msgstr ""
 "vreden način komunikacije."
 
 #: src/identity_verification_view/wait_for_other_page.ui:55
-#, fuzzy
 msgid "The request is not showing up on the other device?"
 msgstr "Zahteva ni prikazana v drugi napravi?"
 
 #: src/identity_verification_view/wait_for_other_page.ui:64
-#, fuzzy
 msgid "Cancel Verification Request"
 msgstr "Prekliči zahtevo za preverjanje"
 
 #: src/login/advanced_dialog.ui:4
-#, fuzzy
-#| msgid "Homeserver"
 msgid "Homeserver Discovery"
-msgstr "Osnovni strežnik"
+msgstr "Odkrivanje domačega strežnika"
 
 #: src/login/advanced_dialog.ui:11
 #, fuzzy
@@ -1838,9 +1829,8 @@ msgstr ""
 "navesti sami."
 
 #: src/login/advanced_dialog.ui:14
-#, fuzzy
 msgid "_Auto-Discovery"
-msgstr "_Auto-Discovery"
+msgstr "Samodejno _odkrivanje"
 
 #. Translators: Fractal is the application name.
 #: src/login/greeter.ui:6 src/login/greeter.ui:91
@@ -1943,10 +1933,8 @@ msgid "Single Sign-On Providers"
 msgstr "Ponudniki enotne prijave"
 
 #: src/login/mod.rs:479
-#, fuzzy
-#| msgid "Could not retrieve file URI"
 msgid "Could not store session"
-msgstr "Ni mogoče pridobiti naslova URI datoteke"
+msgstr "Seje ni mogoče shraniti"
 
 #: src/login/mod.ui:25 src/login/mod.ui:59
 msgid "Login Complete"
@@ -1976,7 +1964,6 @@ msgid "Single Sign-On"
 msgstr "Enotna prijava"
 
 #: src/login/sso_page.ui:56
-#, fuzzy
 msgid "Please follow the steps in the browser"
 msgstr "Sledite korakom v brskalniku"
 
@@ -2137,17 +2124,14 @@ msgstr ""
 "ključe ustvarjen in nastavljen kot privzet."
 
 #: src/session/model/session.rs:950
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not log the session out"
-msgstr "Ni mogoče prejeti datoteke"
+msgstr "Seje ni bilo mogoče odjaviti"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/notifications/mod.rs:231
-#, fuzzy
 msgid "{user} sent a verification request"
-msgstr "{user} je poslal zahtevo za preverjanje."
+msgstr "{uporabnik} je poslal/a zahtevo za preverjanje"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -2425,63 +2409,48 @@ msgstr "Odstrani sejo"
 
 #: src/session/view/account_settings/general_page/mod.rs:207
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
-#, fuzzy
 msgid "Avatar removed successfully"
 msgstr "Avatar uspešno odstranjen"
 
 #: src/session/view/account_settings/general_page/mod.rs:209
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
-#, fuzzy
 msgid "Avatar changed successfully"
 msgstr "Avatar se je uspešno spremenil"
 
 #: src/session/view/account_settings/general_page/mod.rs:228
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not load file"
 msgstr "Napaka pri odpiranju datoteke: »%s«"
 
 #: src/session/view/account_settings/general_page/mod.rs:243
 #: src/session/view/content/room_details/edit_details_subpage.rs:204
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not upload avatar"
-msgstr "Ni mogoče prejeti datoteke"
+msgstr "Avatarja ni bilo mogoče naložiti"
 
 #: src/session/view/account_settings/general_page/mod.rs:272
 #: src/session/view/content/room_details/edit_details_subpage.rs:227
-#, fuzzy
-#| msgid "Couldn’t change the password"
 msgid "Could not change avatar"
-msgstr "Gesla ni mogoče spremeniti"
+msgstr "Avatarja ni bilo mogoče spremeniti"
 
 #: src/session/view/account_settings/general_page/mod.rs:289
 #: src/session/view/content/room_details/edit_details_subpage.rs:252
-#, fuzzy
 msgid "Remove Avatar?"
-msgstr "Odstrani podobo"
+msgstr "Želite odstraniti avatar?"
 
 #: src/session/view/account_settings/general_page/mod.rs:290
-#, fuzzy
-#| msgid "Are you sure you want to delete your account?"
 msgid "Do you really want to remove your avatar?"
-msgstr "Ali ste prepričani, da želite izbrisati račun?"
+msgstr "Ali res želite odstraniti svoj avatar?"
 
 #: src/session/view/account_settings/general_page/mod.rs:328
 #: src/session/view/content/room_details/edit_details_subpage.rs:284
-#, fuzzy
-#| msgid "Could not retrieve file URI"
 msgid "Could not remove avatar"
-msgstr "Ni mogoče pridobiti naslova URI datoteke"
+msgstr "Avatarja ni bilo mogoče odstraniti"
 
 #: src/session/view/account_settings/general_page/mod.rs:380
-#, fuzzy
 msgid "Name changed successfully"
-msgstr "Ime se je uspešno spremenilo"
+msgstr "Ime je uspešno spremenjeno"
 
 #: src/session/view/account_settings/general_page/mod.rs:431
-#, fuzzy
 msgid "Could not change display name"
 msgstr "Prikaznega imena ni bilo mogoče spremeniti"
 
@@ -2506,20 +2475,16 @@ msgid "Advanced Information"
 msgstr "Napredne podrobnosti"
 
 #: src/session/view/account_settings/general_page/mod.ui:71
-#, fuzzy
 msgid "Matrix User ID"
 msgstr "ID uporabnika Matrix"
 
 #: src/session/view/account_settings/general_page/mod.ui:81
-#, fuzzy
-#| msgid "Copy To Clipboard"
 msgid "Copy Homeserver Address"
-msgstr "Kopiraj v odložišče"
+msgstr "Kopiraj naslov domačega strežnika"
 
 #: src/session/view/account_settings/general_page/mod.ui:82
-#, fuzzy
 msgid "Homeserver address copied to clipboard"
-msgstr "Naslov domačega strežnika, kopiran v odložišče"
+msgstr "Naslov domačega strežnika je kopiran v odložišče"
 
 #: src/session/view/account_settings/general_page/mod.ui:87
 msgid "Session ID"
@@ -2534,12 +2499,10 @@ msgid "Session ID copied to clipboard"
 msgstr "ID seje je kopiran v odložišče"
 
 #: src/session/view/account_settings/notifications_page.rs:315
-#, fuzzy
 msgid "Could not enable account notifications"
 msgstr "Obvestil o računu ni bilo mogoče omogočiti"
 
 #: src/session/view/account_settings/notifications_page.rs:317
-#, fuzzy
 msgid "Could not disable account notifications"
 msgstr "Obvestil o računu ni bilo mogoče onemogočiti"
 
@@ -2549,17 +2512,14 @@ msgid "Could not change global notifications setting"
 msgstr "Nastavitve globalnih obvestil ni bilo mogoče spremeniti"
 
 #: src/session/view/account_settings/notifications_page.rs:386
-#, fuzzy
 msgid "Remove “{keyword}”"
-msgstr "Odstrani ključno besedo"
+msgstr "Odstrani ključno besedo »{keyword}«"
 
 #: src/session/view/account_settings/notifications_page.rs:420
-#, fuzzy
 msgid "Could not remove notification keyword"
 msgstr "Ključne besede za obvestila ni bilo mogoče odstraniti"
 
 #: src/session/view/account_settings/notifications_page.rs:491
-#, fuzzy
 msgid "Could not add notification keyword"
 msgstr "Ključne besede za obvestila ni bilo mogoče dodati"
 
@@ -2829,58 +2789,47 @@ msgid "The crypto identity exists but this device is not verified"
 msgstr "Kripto identiteta obstaja, vendar ta naprava ni preverjena"
 
 #: src/session/view/account_settings/security_page/mod.rs:273
-#, fuzzy
 msgid "Verify This Session"
-msgstr "Preverite to sejo"
+msgstr "Preveri to sejo"
 
 #: src/session/view/account_settings/security_page/mod.rs:295
-#, fuzzy
 msgid "Account Recovery Disabled"
 msgstr "Obnovitev računa je onemogočena"
 
 #: src/session/view/account_settings/security_page/mod.rs:297
-#, fuzzy
 msgid ""
 "Enable recovery to be able to restore your account without another device"
 msgstr "Omogočite obnovitev, da boste lahko obnovili račun brez druge naprave"
 
 #: src/session/view/account_settings/security_page/mod.rs:303
-#, fuzzy
 msgid "Enable Account Recovery"
-msgstr "Omogočanje obnovitve računa"
+msgstr "Omogoči obnovitev računa"
 
 #: src/session/view/account_settings/security_page/mod.rs:314
-#, fuzzy
 msgid "Account Recovery Enabled"
 msgstr "Obnovitev računa je omogočena"
 
 #: src/session/view/account_settings/security_page/mod.rs:316
-#, fuzzy
 msgid "Your signing keys and encryption keys are synchronized"
-msgstr "Podpisni in šifrirni ključi se sinhronizirajo"
+msgstr "Vaši podpisni in šifrirni ključi so sinhronizirani"
 
 #: src/session/view/account_settings/security_page/mod.rs:322
-#, fuzzy
 msgid "Reset Account Recovery Key"
-msgstr "Ponastavitev ključa za obnovitev računa"
+msgstr "Ponastavi ključ za obnovitev računa"
 
 #: src/session/view/account_settings/security_page/mod.rs:336
-#, fuzzy
 msgid "Recover to synchronize your signing keys and encryption keys"
-msgstr "Obnovi, da sinhronizirate podpisne ključe in šifrirne ključe"
+msgstr "Obnovite, da sinhronizirate svoje podpisne ključe in šifrirne ključe"
 
 #: src/session/view/account_settings/security_page/mod.rs:342
-#, fuzzy
-#| msgid "Deactivate Account"
 msgid "Recover Account Data"
-msgstr "Izbriši račun"
+msgstr "Obnovi podatke računa"
 
 #: src/session/view/account_settings/security_page/mod.ui:9
 msgid "Privacy"
 msgstr "Zasebnost"
 
 #: src/session/view/account_settings/security_page/mod.ui:13
-#, fuzzy
 msgid "Send Read Receipts"
 msgstr "Pošlji potrdila o branju"
 
@@ -2919,12 +2868,10 @@ msgstr ""
 "sobi ali jo zapustijo."
 
 #: src/session/view/account_settings/security_page/mod.ui:36
-#, fuzzy
 msgid "Crypto Identity"
 msgstr "Kripto identiteta"
 
 #: src/session/view/account_settings/security_page/mod.ui:37
-#, fuzzy
 msgid ""
 "Allows you to verify other Matrix accounts and automatically trust their "
 "verified sessions"
@@ -2933,12 +2880,10 @@ msgstr ""
 "preverjenim sejam"
 
 #: src/session/view/account_settings/security_page/mod.ui:99
-#, fuzzy
 msgid "Account Recovery"
-msgstr "Uspešno nastavljena obnovitev računa"
+msgstr "Obnovitev računa"
 
 #: src/session/view/account_settings/security_page/mod.ui:100
-#, fuzzy
 msgid ""
 "Allows to fully recover your account with a recovery key or passphrase, if "
 "you ever lose access to all your sessions"
@@ -2957,23 +2902,18 @@ msgstr "Trenutna seja"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:57
 #: src/session/view/account_settings/user_sessions_page/mod.ui:61
-#, fuzzy
 msgid "Other Active Sessions"
 msgstr "Druge aktivne seje"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:85
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not load the list of connected devices"
-msgstr "Ni mogoče prejeti datoteke"
+msgstr "Seznama priključenih naprav ni bilo mogoče naložiti"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:113
-#, fuzzy
 msgid "Disconnect Session"
 msgstr "Prekini povezavo s sejo"
 
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:166
-#, fuzzy
 msgid "Could not disconnect device “{device_name}”"
 msgstr "Povezave z napravo »{device_name}« ni bilo mogoče prekiniti"
 
@@ -3198,9 +3138,8 @@ msgstr "Samodokončanje naslova"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:328
-#, fuzzy
 msgid "Local Addresses on {homeserver}"
-msgstr "Lokalni naslovi na {homeserver}"
+msgstr "Krajevni naslovi na {homeserver}"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:402
 msgid "Remove address"
@@ -3209,9 +3148,8 @@ msgstr "Odstrani naslov"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:406
-#, fuzzy
 msgid "Remove “{address}”"
-msgstr "Odstrani naslov"
+msgstr "Odstrani »{address}«"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
 #: src/session/view/content/room_details/general_page.rs:624
@@ -3280,9 +3218,8 @@ msgstr "Elektronskega naslova ni mogoče dodati"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:738
-#, fuzzy
 msgid "Register “{address}”"
-msgstr "Registrirajte se »{address}«"
+msgstr "Registriraj »{address}«"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:776
 #, fuzzy
@@ -3440,9 +3377,8 @@ msgstr "Kopiraj naslov"
 
 #: src/session/view/content/room_details/general_page.rs:620
 #: src/session/view/content/room_details/general_page.rs:659
-#, fuzzy
 msgid "Address copied to clipboard"
-msgstr "Naslov naprave je kopiran v odložišče"
+msgstr "Naslov je kopiran v odložišče"
 
 #: src/session/view/content/room_details/general_page.rs:701
 #, fuzzy
@@ -3709,10 +3645,8 @@ msgstr "Predvajaj"
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:33
 #: src/session/view/content/room_details/history_viewer/audio.ui:40
-#, fuzzy
-#| msgid "Audio"
 msgid "No Audio"
-msgstr "Zvok"
+msgstr "Brez zvoka"
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:41
 #, fuzzy
@@ -3721,9 +3655,8 @@ msgstr "Ta soba ne vsebuje zvoka."
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:49
 #: src/session/view/content/room_details/history_viewer/audio.ui:56
-#, fuzzy
 msgid "Could Not Load Audio"
-msgstr "Ni bilo mogoče naložiti prostora"
+msgstr "Zvoka ni bilo mogoče naložiti"
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:57
 #: src/session/view/content/room_details/history_viewer/file.ui:56
@@ -3750,9 +3683,8 @@ msgid "Unknown size"
 msgstr "Neznana velikost"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:97
-#, fuzzy
 msgid "Open File"
-msgstr "Pošiljanje datoteke"
+msgstr "Odpri datoteko"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:100
 #: src/session/view/content/room_details/history_viewer/file_row.rs:154
@@ -3765,10 +3697,8 @@ msgstr "Shrani datoteko"
 
 #: src/session/view/content/room_details/history_viewer/file.ui:32
 #: src/session/view/content/room_details/history_viewer/file.ui:39
-#, fuzzy
-#| msgid "Files"
 msgid "No Files"
-msgstr "Datoteke"
+msgstr "Ni datotek"
 
 #: src/session/view/content/room_details/history_viewer/file.ui:40
 #, fuzzy
@@ -3783,10 +3713,8 @@ msgid "Could Not Load Files"
 msgstr "Napaka pri odpiranju datoteke: »%s«"
 
 #: src/session/view/content/room_details/history_viewer/file.ui:75
-#, fuzzy
-#| msgid "Room History"
 msgid "File History"
-msgstr "Zgodovina klepetalnice"
+msgstr "Zgodovina datoteke"
 
 #: src/session/view/content/room_details/history_viewer/media.ui:39
 #: src/session/view/content/room_details/history_viewer/media.ui:46
@@ -3886,7 +3814,6 @@ msgid "Could not load the full list of room members"
 msgstr "Ni mogoče prejeti datoteke"
 
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
-#, fuzzy
 msgid "Identity Verified"
 msgstr "Preverjena identiteta"
 
@@ -4565,10 +4492,8 @@ msgid "Could not retrieve current location"
 msgstr "Ni mogoče pridobiti naslova URI datoteke"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:826
-#, fuzzy
-#| msgid "Could not save file"
 msgid "Could not send file"
-msgstr "Datoteke ni mogoče shraniti"
+msgstr "Ni mogoče poslati datoteke"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:866
 msgid "Select File"
@@ -4705,10 +4630,8 @@ msgid "Room _Details"
 msgstr "Po_drobnosti klepetalnice"
 
 #: src/session/view/content/room_history/mod.ui:11
-#, fuzzy
-#| msgid "Invite New Member"
 msgid "_Invite New Members…"
-msgstr "Povabi novega člana"
+msgstr "Pova_bi nove člane …"
 
 #: src/session/view/content/room_history/mod.ui:18
 #: src/session/view/sidebar/mod.ui:71
@@ -4750,10 +4673,8 @@ msgstr "Kopiraj _povezavo"
 
 #. Translators: In this string, 'Invite' is a verb.
 #: src/session/view/content/room_history/mod.ui:61
-#, fuzzy
-#| msgid "Invite"
 msgid "_Invite"
-msgstr "Povabi"
+msgstr "Pova_bi"
 
 #: src/session/view/content/room_history/mod.ui:66
 #, fuzzy
@@ -4874,7 +4795,6 @@ msgid "Revoking invite…"
 msgstr "Preklic povabila ..."
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:582
-#, fuzzy
 msgid "Denying access…"
 msgstr "Zavrnitev dostopa ..."
 
@@ -5132,11 +5052,8 @@ msgstr "Podrobnosti klepetalnice"
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
 #: src/session/view/content/room_history/typing_row.rs:142
-#, fuzzy
-#| msgid "<b>{}</b> is typing…"
-#| msgid_plural "<b>{}</b> and <b>{}</b> are typing…"
 msgid "{user} is typing…"
-msgstr "<b>{}</b> in <b>{}</b> vpisujejo besedilo …"
+msgstr "{user} vpisuje besedilo …"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
@@ -5321,22 +5238,18 @@ msgid "Exit Fullscreen"
 msgstr "Izhod iz celozaslonskega načina"
 
 #: src/session/view/room_creation.rs:192
-#, fuzzy
 msgid "The address is already taken."
 msgstr "Naslov je že zaseden."
 
 #: src/session/view/room_creation.rs:224
-#, fuzzy
 msgid "Cannot contain “:”"
-msgstr "Ime mape ne sme vsebovati znaka »/«"
+msgstr "Ne sme vsebovati znaka »:«"
 
 #: src/session/view/room_creation.rs:229
-#, fuzzy
 msgid "Cannot contain “#”"
-msgstr "Ime mape ne sme vsebovati znaka »/«"
+msgstr "Ne sme vsebovati znaka »#«"
 
 #: src/session/view/room_creation.rs:234
-#, fuzzy
 msgid "Too long. Use a shorter address."
 msgstr "Predolgo. Uporabite krajši naslov."
 
@@ -5450,7 +5363,6 @@ msgid "Rejoin Room as Low Priority"
 msgstr "Znova se pridružite sobi z nizko prioriteto"
 
 #: src/session/view/sidebar/mod.rs:318
-#, fuzzy
 msgid "No crypto identity"
 msgstr "Brez kripto identitete"
 
@@ -5460,14 +5372,12 @@ msgid "Crypto identity incomplete"
 msgstr "Kripto identiteta ni popolna"
 
 #: src/session/view/sidebar/mod.rs:324
-#, fuzzy
 msgid "Account recovery disabled"
 msgstr "Obnovitev računa je onemogočena"
 
 #: src/session/view/sidebar/mod.rs:327
-#, fuzzy
 msgid "Account recovery incomplete"
-msgstr "Obnovitev računa ni popolna"
+msgstr "Obnovitev računa ni dokončana"
 
 #: src/session/view/sidebar/mod.ui:6
 msgid "New _Direct Chat…"
