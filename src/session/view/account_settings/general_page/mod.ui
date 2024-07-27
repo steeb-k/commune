@@ -114,6 +114,7 @@
             <style>
               <class name="error"/>
             </style>
+            <!-- Translators: Deactivation is a permanent action that occurs on the server. -->
             <property name="title" translatable="yes">Deactivate Account</property>
             <property name="to-subpage">true</property>
             <property name="action-name">account-settings.show-subpage</property>
