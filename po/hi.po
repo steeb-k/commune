@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-18 14:53+0000\n"
-"PO-Revision-Date: 2024-07-18 21:13+0530\n"
+"POT-Creation-Date: 2024-07-20 09:31+0000\n"
+"PO-Revision-Date: 2024-07-21 10:01+0530\n"
 "Last-Translator: Scrambled777 <weblate.scrambled777@simplelogin.com>\n"
 "Language-Team: Hindi <indlinux-hindi@lists.sourceforge.net>\n"
 "Language: hi\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Gtranslator 46.1\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
@@ -569,20 +569,20 @@ msgid "C_onfirm"
 msgstr "पुष्टि करें (_o)"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/components/dialogs/join_room.rs:199
-#: src/session/view/content/explore/public_room_row.rs:181
+#: src/components/dialogs/join_room.rs:227
+#: src/session/view/content/explore/public_room_row.rs:199
 #: src/session/view/content/room_history/mod.rs:1009
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "देखें"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/dialogs/join_room.rs:202
+#: src/components/dialogs/join_room.rs:230
 #: src/components/dialogs/join_room.ui:91
 msgid "Look Up"
 msgstr "खोजें"
 
-#: src/components/dialogs/join_room.rs:265
+#: src/components/dialogs/join_room.rs:293
 msgid ""
 "The room details cannot be previewed. It can be because the room is not "
 "known by the homeserver or because its details are private. You can still "
@@ -594,8 +594,8 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/dialogs/join_room.rs:287
-#: src/session/view/content/explore/public_room_row.rs:162
+#: src/components/dialogs/join_room.rs:315
+#: src/session/view/content/explore/public_room_row.rs:180
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "1 सदस्य"
@@ -618,7 +618,7 @@ msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr "किसी कक्ष को देखने के लिए कक्ष की ID, कक्ष का उपनाम या स्थायी लिंक दर्ज करें"
 
 #: src/components/dialogs/join_room.ui:193
-#: src/session/view/content/explore/public_room_row.rs:183
+#: src/session/view/content/explore/public_room_row.rs:201
 #: src/session/view/content/room_history/mod.rs:1012
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
@@ -677,7 +677,7 @@ msgstr "छोड़ें"
 #: src/session/view/account_settings/general_page/mod.rs:293
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
-#: src/session/view/content/room_details/general_page.rs:988
+#: src/session/view/content/room_details/general_page.rs:1022
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
 #: src/session/view/content/room_history/item_row.rs:937
@@ -1086,7 +1086,7 @@ msgstr "नजरअंदाज करें"
 msgid "Could not stop ignoring user"
 msgstr "उपयोक्ता को नज़रअंदाज करना बंद नहीं किया जा सका"
 
-#: src/components/user_page.rs:785 src/session/view/content/invite.rs:285
+#: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
 #: src/session/view/sidebar/row.rs:582
 msgid "Could not ignore user"
@@ -1908,7 +1908,7 @@ msgid "Any registered user"
 msgstr "कोई भी पंजीकृत उपयोक्ता"
 
 #: src/session/model/room/join_rule.rs:310
-#: src/session/view/content/room_details/general_page.rs:892
+#: src/session/view/content/room_details/general_page.rs:926
 msgid "Unsupported rule"
 msgstr "असमर्थित नियम"
 
@@ -2228,15 +2228,15 @@ msgstr "सत्र ID क्लिपबोर्ड पर कॉपी क�
 
 #: src/session/view/account_settings/notifications_page.rs:315
 msgid "Could not enable account notifications"
-msgstr "खाता सूचनाएं सक्षम नहीं कर सका"
+msgstr "खाता अधिसूचनाएं सक्षम नहीं कर सका"
 
 #: src/session/view/account_settings/notifications_page.rs:317
 msgid "Could not disable account notifications"
-msgstr "खाता सूचनाएं अक्षम नहीं की जा सकीं"
+msgstr "खाता अधिसूचनाएं अक्षम नहीं की जा सकी"
 
 #: src/session/view/account_settings/notifications_page.rs:369
 msgid "Could not change global notifications setting"
-msgstr "वैश्विक सूचना सेटिंग नहीं बदली जा सकी"
+msgstr "वैश्विक अधिसूचना सेटिंग नहीं बदली जा सकी"
 
 #: src/session/view/account_settings/notifications_page.rs:386
 msgid "Remove “{keyword}”"
@@ -2253,7 +2253,7 @@ msgstr "अधिसूचना खोजशब्द नहीं जोड़
 #: src/session/view/account_settings/notifications_page.ui:5
 #: src/session/view/content/room_details/general_page.ui:113
 msgid "Notifications"
-msgstr "सूचनाएं"
+msgstr "अधिसूचनाएं"
 
 #: src/session/view/account_settings/notifications_page.ui:11
 msgid "Enable for This Account"
@@ -2271,7 +2271,7 @@ msgstr "वैश्विक"
 msgid ""
 "Which messages trigger notifications in rooms that do not have more specific "
 "rules"
-msgstr "कौन से संदेश उन कक्षों में सूचनाएं सक्रिय करते हैं जिनमें अधिक विशिष्ट नियम नहीं हैं"
+msgstr "कौन से संदेश उन कक्षों में अधिसूचनाएं सक्रिय करते हैं जिनमें अधिक विशिष्ट नियम नहीं हैं"
 
 #: src/session/view/account_settings/notifications_page.ui:31
 msgid "All messages in all rooms"
@@ -2294,7 +2294,7 @@ msgid ""
 "Messages that contain one of these keywords trigger notifications. Matching "
 "on these keywords is case-insensitive."
 msgstr ""
-"जिन संदेशों में इनमें से कोई एक खोजशब्द होता है, वे सूचनाएं सक्रिय करते हैं। इन खोजशब्द पर "
+"जिन संदेशों में इनमें से कोई एक खोजशब्द होता है, वे अधिसूचनाएं सक्रिय करते हैं। इन खोजशब्द पर "
 "मिलान करना केस-असंवेदनशील है।"
 
 #: src/session/view/account_settings/notifications_page.ui:67
@@ -2448,7 +2448,7 @@ msgstr "आपके अपने उपकरण या अन्य उपय�
 
 #: src/session/view/account_settings/security_page/mod.rs:227
 #: src/session/view/account_settings/security_page/mod.rs:300
-#: src/session/view/content/room_details/general_page.rs:989
+#: src/session/view/content/room_details/general_page.rs:1023
 #: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
 msgid "Enable"
 msgstr "सक्षम"
@@ -2530,7 +2530,7 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/mod.ui:20
 msgid "Send Typing Notifications"
-msgstr "टाइपिंग सूचनाएं भेजें"
+msgstr "टाइपिंग अधिसूचनाएं भेजें"
 
 #: src/session/view/account_settings/security_page/mod.ui:21
 msgid ""
@@ -2711,11 +2711,11 @@ msgstr "खोज से मेल खाने वाला कोई कक्
 msgid "List of Public Rooms"
 msgstr "सार्वजनिक कक्षों की सूची"
 
-#: src/session/view/content/explore/public_room_row.rs:189
+#: src/session/view/content/explore/public_room_row.rs:207
 msgid "View {room_name}"
 msgstr "{room_name} देखें"
 
-#: src/session/view/content/explore/public_room_row.rs:191
+#: src/session/view/content/explore/public_room_row.rs:209
 msgid "Join {room_name}"
 msgstr "{room_name} से जुड़ें"
 
@@ -2733,19 +2733,19 @@ msgstr "सर्वर जोड़े"
 msgid "Remove Server"
 msgstr "सर्वर हटाएं"
 
-#: src/session/view/content/invite.rs:170
+#: src/session/view/content/invite.rs:187
 msgid "{user_name} ({user_id}) invited you"
 msgstr "{user_name} ({user_id}) ने आपको आमंत्रित किया है"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:232
+#: src/session/view/content/invite.rs:249
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "{room} के लिए निमंत्रण स्वीकार नहीं किया जा सका। बाद में पुन: प्रयास करें।"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:272
+#: src/session/view/content/invite.rs:289
 msgid "Could not decline invitation for {room}. Try again later."
 msgstr "{room} के लिए आमंत्रण अस्वीकार नहीं किया जा सका। बाद में पुन: प्रयास करें।"
 
@@ -2810,7 +2810,7 @@ msgid "Remove “{address}”"
 msgstr "“{address}” हटाएं"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
-#: src/session/view/content/room_details/general_page.rs:590
+#: src/session/view/content/room_details/general_page.rs:624
 #: src/session/view/room_creation.ui:132
 msgid "Main Address"
 msgstr "मुख्य पता"
@@ -2980,82 +2980,82 @@ msgstr "सहेजें"
 msgid "Save Description"
 msgstr "विवरण सहेजें"
 
-#: src/session/view/content/room_details/general_page.rs:468
+#: src/session/view/content/room_details/general_page.rs:502
 #: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "सदस्य"
 msgstr[1] "सदस्य"
 
-#: src/session/view/content/room_details/general_page.rs:544
+#: src/session/view/content/room_details/general_page.rs:578
 msgid "Could not change notifications setting"
-msgstr "सूचना सेटिंग नहीं बदली जा सकी"
+msgstr "अधिसूचना सेटिंग नहीं बदली जा सकी"
 
-#: src/session/view/content/room_details/general_page.rs:585
-#: src/session/view/content/room_details/general_page.rs:624
+#: src/session/view/content/room_details/general_page.rs:619
+#: src/session/view/content/room_details/general_page.rs:658
 msgid "Copy address"
 msgstr "पता कॉपी करें"
 
-#: src/session/view/content/room_details/general_page.rs:586
-#: src/session/view/content/room_details/general_page.rs:625
+#: src/session/view/content/room_details/general_page.rs:620
+#: src/session/view/content/room_details/general_page.rs:659
 msgid "Address copied to clipboard"
 msgstr "पता क्लिपबोर्ड पर कॉपी किया गया"
 
-#: src/session/view/content/room_details/general_page.rs:667
+#: src/session/view/content/room_details/general_page.rs:701
 msgid "Room link copied to clipboard"
 msgstr "कक्ष का लिंक क्लिपबोर्ड पर कॉपी किया गया"
 
-#: src/session/view/content/room_details/general_page.rs:720
+#: src/session/view/content/room_details/general_page.rs:754
 msgid "Could not change who can join"
 msgstr "कौन जुड़ सकता है, इसे बदला नहीं जा सका"
 
-#: src/session/view/content/room_details/general_page.rs:768
+#: src/session/view/content/room_details/general_page.rs:802
 msgid "Could not change guest access"
 msgstr "अतिथि अभिगम नहीं बदल सके"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page.rs:785
+#: src/session/view/content/room_details/general_page.rs:819
 msgid "Publish in the {homeserver} directory"
 msgstr "{homeserver} निर्देशिका में प्रकाशित करें"
 
-#: src/session/view/content/room_details/general_page.rs:862
+#: src/session/view/content/room_details/general_page.rs:896
 msgid "Could not publish room in directory"
 msgstr "निर्देशिका में कक्ष प्रकाशित नहीं किया जा सका"
 
-#: src/session/view/content/room_details/general_page.rs:864
+#: src/session/view/content/room_details/general_page.rs:898
 msgid "Could not unpublish room from directory"
 msgstr "निर्देशिका से कक्ष अप्रकाशित नहीं किया जा सका"
 
-#: src/session/view/content/room_details/general_page.rs:885
+#: src/session/view/content/room_details/general_page.rs:919
 #: src/session/view/content/room_details/general_page.ui:224
 msgid "Anyone, even if they are not in the room"
 msgstr "कोई भी, भले ही वे कक्ष में न हों"
 
-#: src/session/view/content/room_details/general_page.rs:888
+#: src/session/view/content/room_details/general_page.rs:922
 #: src/session/view/content/room_details/general_page.ui:225
 msgid "Members only, since this option was selected"
 msgstr "केवल सदस्य, जबसे यह विकल्प चुना गया था"
 
-#: src/session/view/content/room_details/general_page.rs:890
+#: src/session/view/content/room_details/general_page.rs:924
 #: src/session/view/content/room_details/general_page.ui:227
 msgid "Members only, since they were invited"
 msgstr "केवल सदस्य, जबसे उन्हें आमंत्रित किया गया था"
 
-#: src/session/view/content/room_details/general_page.rs:891
+#: src/session/view/content/room_details/general_page.rs:925
 #: src/session/view/content/room_details/general_page.ui:226
 msgid "Members only, since they joined the room"
 msgstr "केवल सदस्य, जब से वे कक्ष में शामिल हुए"
 
-#: src/session/view/content/room_details/general_page.rs:939
+#: src/session/view/content/room_details/general_page.rs:973
 msgid "Could not change who can read history"
 msgstr "इतिहास कौन पढ़ सकता है, इसे बदला नहीं जा सकता"
 
-#: src/session/view/content/room_details/general_page.rs:983
+#: src/session/view/content/room_details/general_page.rs:1017
 msgid "Enable Encryption?"
 msgstr "कूटलेखन सक्षम करें?"
 
-#: src/session/view/content/room_details/general_page.rs:984
+#: src/session/view/content/room_details/general_page.rs:1018
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
@@ -3063,25 +3063,25 @@ msgstr ""
 "कूटलेखन सक्षम करने से नए सदस्यों को आने से पहले इतिहास पढ़ने से रोका जा सकेगा। इसे बाद में "
 "अक्षम नहीं किया जा सकता।"
 
-#: src/session/view/content/room_details/general_page.rs:999
+#: src/session/view/content/room_details/general_page.rs:1033
 msgid "Could not enable encryption"
 msgstr "कूटलेखन सक्षम नहीं किया जा सका"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page.rs:1025
+#: src/session/view/content/room_details/general_page.rs:1059
 msgid "Federated"
 msgstr "संघबद्ध"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page.rs:1028
+#: src/session/view/content/room_details/general_page.rs:1062
 msgid "Not federated"
 msgstr "संघबद्ध नहीं"
 
-#: src/session/view/content/room_details/general_page.rs:1058
+#: src/session/view/content/room_details/general_page.rs:1092
 msgid "Room upgraded successfully"
 msgstr "कक्ष सफलतापूर्वक उन्नयन किया गया"
 
-#: src/session/view/content/room_details/general_page.rs:1062
+#: src/session/view/content/room_details/general_page.rs:1096
 msgid "Could not upgrade room"
 msgstr "कक्ष उन्नयन नहीं किया जा सका"
 
@@ -3112,7 +3112,7 @@ msgstr "ऑडियो"
 
 #: src/session/view/content/room_details/general_page.ui:114
 msgid "Which messages trigger notifications in this room"
-msgstr "कौन से संदेश इस कक्ष में सूचनाएं सक्रिय करते हैं"
+msgstr "कौन से संदेश इस कक्ष में अधिसूचनाएं सक्रिय करते हैं"
 
 #: src/session/view/content/room_details/general_page.ui:117
 msgid "Use Global Setting"
@@ -3128,7 +3128,7 @@ msgstr "केवल उल्लेख और खोजशब्द"
 
 #: src/session/view/content/room_details/general_page.ui:138
 msgid "Disable Notifications"
-msgstr "सूचनाएं अक्षम करें"
+msgstr "अधिसूचनाएं अक्षम करें"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_details/general_page.ui:151
@@ -4787,9 +4787,18 @@ msgstr "कक्षों के बीच नेविगेट करने �
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:272
+#: src/session/view/sidebar/room_row.rs:286
 msgid "Direct chat with {name}"
 msgstr "{name} के साथ सीधी चैट"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name. Presented to screen readers when a room has notifications
+#. for unread messages.
+#: src/session/view/sidebar/room_row.rs:298
+msgid "1 notification"
+msgid_plural "{count} notifications"
+msgstr[0] "1 अधिसूचना"
+msgstr[1] "{count} अधिसूचनाएं"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/row.rs:572
@@ -4890,37 +4899,37 @@ msgstr "होमसर्वर की स्वतः-खोज विफल �
 msgid "Could not open the store."
 msgstr "स्टोर नहीं खोल सके।"
 
-#: src/utils/matrix.rs:183
+#: src/utils/matrix.rs:184
 msgid "{user} sent an audio file."
 msgstr "{user} ने एक ऑडियो फाइल भेजी।"
 
-#: src/utils/matrix.rs:186
+#: src/utils/matrix.rs:187
 msgid "{user} sent a file."
 msgstr "{user} ने एक फाइल भेजी।"
 
-#: src/utils/matrix.rs:188
+#: src/utils/matrix.rs:189
 msgid "{user} sent an image."
 msgstr "{user} ने एक छवि भेजी।"
 
-#: src/utils/matrix.rs:191
+#: src/utils/matrix.rs:192
 msgid "{user} sent their location."
 msgstr "{user} ने अपना स्थान भेजा।"
 
-#: src/utils/matrix.rs:203
+#: src/utils/matrix.rs:204
 msgid "{user} sent a video."
 msgstr "{user} ने एक वीडियो भेजा।"
 
-#: src/utils/matrix.rs:210
+#: src/utils/matrix.rs:211
 msgid "{user} sent a sticker."
 msgstr "{user} ने एक स्टीकर भेजा।"
 
-#: src/utils/matrix.rs:220
+#: src/utils/matrix.rs:221
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/utils/matrix.rs:244
+#: src/utils/matrix.rs:245
 msgid "{user} invited you"
 msgstr "{user} ने आपको आमंत्रित किया"
 
