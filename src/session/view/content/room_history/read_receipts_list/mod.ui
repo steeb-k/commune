@@ -8,6 +8,7 @@
         <property name="spacing">6</property>
         <child>
           <object class="GtkLabel" id="label">
+            <property name="margin-start">2</property>
             <style>
               <class name="caption"/>
               <class name="dim-label"/>
