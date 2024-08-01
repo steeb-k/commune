@@ -72,6 +72,7 @@ mod imp {
         empty: PhantomData<bool>,
         pub room_members: RefCell<Option<MemberList>>,
         pub timeline_handlers: RefCell<Vec<glib::SignalHandlerId>>,
+        /// Whether the current room history scrolling is automatic.
         pub is_auto_scrolling: Cell<bool>,
         /// Whether the room history should stick to the newest message in the
         /// timeline.
@@ -280,19 +281,22 @@ mod imp {
                 #[weak]
                 obj,
                 move |_| {
+                    tracing::trace!("Scroll value changed");
                     let imp = obj.imp();
 
                     obj.trigger_read_receipts_update();
 
                     let is_at_bottom = obj.is_at_bottom();
                     if imp.is_auto_scrolling.get() {
+                        tracing::trace!("Automatically scrolled");
                         if is_at_bottom {
-                            imp.is_auto_scrolling.set(false);
+                            imp.set_is_auto_scrolling(false);
                             obj.set_sticky(true);
                         } else {
                             obj.scroll_down();
                         }
                     } else {
+                        tracing::trace!("User scrolled");
                         obj.set_sticky(is_at_bottom);
                     }
 
@@ -310,6 +314,7 @@ mod imp {
                 #[weak]
                 obj,
                 move |_| {
+                    tracing::trace!("Scroll upper changed");
                     if obj.sticky() {
                         obj.scroll_down();
                     }
@@ -320,6 +325,7 @@ mod imp {
                 #[weak]
                 obj,
                 move |_| {
+                    tracing::trace!("Scroll page size changed");
                     if obj.sticky() {
                         obj.scroll_down();
                     }
@@ -512,9 +518,11 @@ mod imp {
         /// Set whether the room history should stick to the newest message in
         /// the timeline.
         fn set_sticky(&self, sticky: bool) {
+            tracing::trace!("set_sticky: {sticky:?}");
             if self.sticky.get() == sticky {
                 return;
             }
+            tracing::trace!("sticky changed");
 
             if !sticky {
                 self.scroll_btn_revealer.set_visible(true);
@@ -523,6 +531,17 @@ mod imp {
 
             self.sticky.set(sticky);
             self.obj().notify_sticky();
+        }
+
+        /// Set whether the current room history scrolling is automatic.
+        pub(super) fn set_is_auto_scrolling(&self, is_auto: bool) {
+            tracing::trace!("set_is_auto_scrolling: {is_auto:?}");
+            if self.is_auto_scrolling.get() == is_auto {
+                return;
+            }
+
+            tracing::trace!("is_auto_scrolling changed");
+            self.is_auto_scrolling.set(is_auto);
         }
     }
 }
@@ -744,9 +763,10 @@ impl RoomHistory {
 
     /// Scroll to the newest message in the timeline
     pub fn scroll_down(&self) {
+        tracing::trace!("scroll_down");
         let imp = self.imp();
 
-        imp.is_auto_scrolling.set(true);
+        imp.set_is_auto_scrolling(true);
 
         let n_items = self.selection_model().n_items();
 
@@ -965,6 +985,10 @@ impl RoomHistory {
         let Some(session) = room.session() else {
             return;
         };
+        tracing::trace!(
+            "{}::send_receipt: {receipt_type:?} at {position:?}",
+            room.human_readable_id()
+        );
         let send_public_receipt = session.settings().public_read_receipts_enabled();
 
         let receipt_type = match receipt_type {
@@ -1057,6 +1081,7 @@ impl RoomHistory {
 }
 
 /// The position of the receipt to send.
+#[derive(Debug, Clone)]
 enum ReceiptPosition {
     /// We are at the end of the timeline (bottom of the view).
     End,
