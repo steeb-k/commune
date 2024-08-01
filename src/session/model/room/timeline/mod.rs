@@ -733,13 +733,23 @@ impl Timeline {
         let own_user_id = session.user_id().clone();
         let matrix_timeline = self.matrix_timeline();
 
-        let user_receipt_item = spawn_tokio!(async move {
-            matrix_timeline
-                .latest_user_read_receipt_timeline_event_id(&own_user_id)
+        let (actual_receipt_event_id, user_receipt_item) = spawn_tokio!(async move {
+            let actual_receipt_event_id = matrix_timeline
+                .latest_user_read_receipt(&own_user_id)
                 .await
+                .map(|(event_id, _)| event_id);
+            let user_receipt_item = matrix_timeline
+                .latest_user_read_receipt_timeline_event_id(&own_user_id)
+                .await;
+            (actual_receipt_event_id, user_receipt_item)
         })
         .await
         .unwrap();
+
+        tracing::trace!(
+            "{}::has_unread_messages: Read receipt at actual event {actual_receipt_event_id:?}, visible at timeline event {user_receipt_item:?}",
+            room.human_readable_id(),
+        );
 
         let sdk_items = &self.imp().sdk_items;
         let count = sdk_items.n_items();
@@ -751,10 +761,20 @@ impl Timeline {
 
             if user_receipt_item.is_some() && event.event_id() == user_receipt_item {
                 // The event is the oldest one, we have read it all.
+                tracing::trace!(
+                    "{}::has_unread_messages: Got event {:?} from read receipt",
+                    room.human_readable_id(),
+                    event.key()
+                );
                 return Some(false);
             }
             if event.counts_as_unread() {
                 // There is at least one unread event.
+                tracing::trace!(
+                    "{}::has_unread_messages: Event {:?} is unread",
+                    room.human_readable_id(),
+                    event.key()
+                );
                 return Some(true);
             }
         }

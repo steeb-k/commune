@@ -1183,6 +1183,7 @@ impl Room {
         for (_event_id, receipts) in content.iter() {
             if let Some(users) = receipts.get(&ReceiptType::Read) {
                 if users.contains_key(own_user_id) {
+                    tracing::trace!("{}: Got own receipt", self.human_readable_id());
                     spawn!(clone!(
                         #[weak(rename_to = obj)]
                         self,
@@ -1285,15 +1286,18 @@ impl Room {
 
     /// Set how this room is highlighted.
     fn set_highlight(&self, highlight: HighlightFlags) {
+        tracing::trace!("{}::set_highlight: {highlight:?}", self.human_readable_id());
         if self.highlight() == highlight {
             return;
         }
+        tracing::trace!("{}: highlight changed", self.human_readable_id());
 
         self.imp().highlight.set(highlight);
         self.notify_highlight();
     }
 
     async fn update_is_read(&self) {
+        tracing::trace!("{}::update_is_read", self.human_readable_id());
         if let Some(has_unread) = self.timeline().has_unread_messages().await {
             self.set_is_read(!has_unread);
         }
@@ -1303,10 +1307,12 @@ impl Room {
 
     /// Set whether all messages of this room are read.
     fn set_is_read(&self, is_read: bool) {
+        tracing::trace!("{}::set_is_read: {is_read:?}", self.human_readable_id());
         if is_read == self.is_read() {
             return;
         }
 
+        tracing::trace!("{}: is_read changed", self.human_readable_id());
         self.imp().is_read.set(is_read);
         self.notify_is_read();
     }
