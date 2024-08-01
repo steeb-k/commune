@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-07-26 11:10+0000\n"
-"PO-Revision-Date: 2024-08-01 18:59+0200\n"
+"PO-Revision-Date: 2024-08-02 00:23+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -778,25 +778,20 @@ msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:170
 #: src/components/user_page.rs:423
-#, fuzzy
-#| msgid "Invite"
 msgid "Revoke Invite"
-msgstr "Povabi"
+msgstr "Prekliči povabila"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:177
-#, fuzzy
 msgid "Deny Access to {user}?"
-msgstr "Zavrni dostop do {user}?"
+msgstr "Želite zavrniti dostop do {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:183
-#, fuzzy
-#| msgid "Are you sure you want to delete your account?"
 msgid "Are you sure you want to deny access to {user_id}?"
-msgstr "Ali ste prepričani, da želite izbrisati račun?"
+msgstr "Ali ste prepričani, da želite zavrniti dostop do {user_id}?"
 
 #: src/components/dialogs/message_dialogs.rs:186
 #: src/components/user_page.rs:424
@@ -806,9 +801,8 @@ msgstr "Zavrni dostop"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:192
-#, fuzzy
 msgid "Kick {user}?"
-msgstr "Brcni tega uporabnika"
+msgstr "Želite brcniti {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -837,9 +831,8 @@ msgstr ""
 #: src/components/dialogs/message_dialogs.rs:208
 #: src/components/user_page.rs:426
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
-#, fuzzy
 msgid "Kick"
-msgstr "Brcniti"
+msgstr "Brcni"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -1144,18 +1137,14 @@ msgstr "Ni bilo mogoče nehati ignorirati uporabnika"
 #: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
 #: src/session/view/sidebar/row.rs:582
-#, fuzzy
-#| msgid "Could not download the file"
 msgid "Could not ignore user"
-msgstr "Ni mogoče prejeti datoteke"
+msgstr "Uporabnika ni bilo mogoče prezreti"
 
 #: src/components/user_page.ui:66
 #: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
-#, fuzzy
-#| msgid "Matrix ID"
 msgid "Copy Matrix User ID"
-msgstr "Matrix ID"
+msgstr "Kopiraj ID uporabnika Matrix"
 
 #: src/components/user_page.ui:114
 msgid "Role"
@@ -1163,9 +1152,8 @@ msgstr "Vloga"
 
 #. Translators: value used to assign room member roles
 #: src/components/user_page.ui:127
-#, fuzzy
 msgid "Power Level"
-msgstr "Privzeta raven moči za pošiljanje sporočil"
+msgstr "Raven moči"
 
 #. Translators: As in, 'Unban room member'.
 #: src/components/user_page.ui:181
@@ -1190,9 +1178,8 @@ msgid "Verify"
 msgstr "Preveri"
 
 #: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
-#, fuzzy
 msgid "Could Not Connect to Camera"
-msgstr "Povezave s fotoaparatom ni bilo mogoče vzpostaviti"
+msgstr "Povezave s kamero ni mogoče vzpostaviti"
 
 #: src/contrib/qr_code_scanner/mod.ui:36
 msgid "Camera"
@@ -1324,12 +1311,10 @@ msgstr "Preverjanje je bilo preklicano iz druge seje."
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/cancelled_page.rs:144
-#, fuzzy
 msgid "The verification was cancelled by {user}."
 msgstr "Preverjanje je preklical {user}."
 
 #: src/identity_verification_view/cancelled_page.rs:150
-#, fuzzy
 msgid "The verification process failed because it reached a timeout."
 msgstr "Postopek preverjanja ni uspel, ker je dosegel časovno omejitev."
 
@@ -1426,9 +1411,8 @@ msgstr "Skenirajte QR-kodo s to sejo"
 
 #: src/identity_verification_view/choose_method_page.ui:69
 #: src/identity_verification_view/scan_qr_code_page.ui:67
-#, fuzzy
 msgid "Compare Emoji"
-msgstr "Primerjava emojijev"
+msgstr "Primerjava čustvenih simbolov"
 
 #: src/identity_verification_view/choose_method_page.ui:80
 #: src/identity_verification_view/no_supported_methods_page.rs:167
@@ -1438,9 +1422,8 @@ msgid "Cancel Verification"
 msgstr "Prekliči preverjanje"
 
 #: src/identity_verification_view/completed_page.rs:121
-#, fuzzy
 msgid "Request Complete"
-msgstr "Zahteva za dokončanje"
+msgstr "Zahteva dokončana"
 
 #: src/identity_verification_view/completed_page.rs:123
 #, fuzzy
@@ -1471,17 +1454,14 @@ msgstr "Ali druga seja prikazuje potrditev?"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/confirm_qr_code_page.rs:134
-#, fuzzy
 msgid "Does {user} see a confirmation on their session?"
 msgstr "Ali {user} vidi potrditev svoje seje?"
 
 #: src/identity_verification_view/confirm_qr_code_page.rs:160
-#, fuzzy
 msgid "Could not confirm the scan of the QR Code"
 msgstr "Skeniranja QR kode ni bilo mogoče potrditi"
 
 #: src/identity_verification_view/confirm_qr_code_page.ui:19
-#, fuzzy
 msgid "Confirm Scan"
 msgstr "Potrdi optično branje"
 
@@ -1490,26 +1470,21 @@ msgid "Confirm"
 msgstr "Potrdi"
 
 #: src/identity_verification_view/mod.ui:14
-#, fuzzy
 msgid "New Identity Verification Request"
 msgstr "Nova zahteva za preverjanje identitete"
 
 #: src/identity_verification_view/mod.ui:25
-#, fuzzy
 msgid "Wait for Other Party"
-msgstr "Počakajte na drugo zabavo"
+msgstr "Počakaj na drugo stranko"
 
 #: src/identity_verification_view/mod.ui:36
 #: src/identity_verification_view/no_supported_methods_page.ui:22
-#, fuzzy
-#| msgid "Notification sounds"
 msgid "No Supported Verification Methods"
-msgstr "Zvočna obvestila"
+msgstr "Ni podprtih načinov preverjanja"
 
 #: src/identity_verification_view/mod.ui:47
-#, fuzzy
 msgid "Verification Request Methods"
-msgstr "Metode zahteve za preverjanje"
+msgstr "Načini zahteve za preverjanje"
 
 #: src/identity_verification_view/mod.ui:58
 msgid "Scan QR Code"
@@ -1517,7 +1492,6 @@ msgstr "Preberi kodo QR"
 
 #: src/identity_verification_view/mod.ui:69
 #: src/identity_verification_view/qr_code_scanned_page.ui:19
-#, fuzzy
 msgid "Scan Complete"
 msgstr "Optično branje je dokončano"
 
@@ -1532,7 +1506,6 @@ msgid "Short Authentication String Verification"
 msgstr "Preverjanje nizov za kratko preverjanje pristnosti"
 
 #: src/identity_verification_view/mod.ui:102
-#, fuzzy
 msgid "Verification Successful"
 msgstr "Preverjanje uspešno"
 
@@ -1587,7 +1560,6 @@ msgstr ""
 "To preverjanje lahko sprejmete iz druge seje ali ga zavrnete za vse seje"
 
 #: src/identity_verification_view/qr_code_scanned_page.rs:118
-#, fuzzy
 msgid ""
 "You scanned the QR code successfully. You may need to confirm the "
 "verification from the other session."
@@ -1598,7 +1570,6 @@ msgstr ""
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/qr_code_scanned_page.rs:123
-#, fuzzy
 msgid ""
 "You scanned the QR code successfully. {user} may need to confirm the "
 "verification."
@@ -1607,19 +1578,16 @@ msgstr ""
 "preverjanje."
 
 #: src/identity_verification_view/room_left_page.ui:37
-#, fuzzy
 msgid "You are no longer in the room where the verification was taking place"
 msgstr "Niste več v sobi, kjer je potekalo preverjanje"
 
 #: src/identity_verification_view/sas_page.rs:150
-#, fuzzy
 msgid "Check if the same emoji appear in the same order on the other client."
 msgstr ""
 "Preverite, ali so isti čustveni simboli prikazani v istem vrstnem redu v "
 "drugem odjemalcu."
 
 #: src/identity_verification_view/sas_page.rs:154
-#, fuzzy
 msgid "Check if the same numbers appear in the same order on the other client."
 msgstr ""
 "Preverite, ali so iste številke v drugem odjemalcu prikazane v istem vrstnem "
@@ -1628,7 +1596,6 @@ msgstr ""
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/sas_page.rs:164
-#, fuzzy
 msgid ""
 "Ask {user} if they see the following emoji appear in the same order on their "
 "screen."
@@ -1639,7 +1606,6 @@ msgstr ""
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/identity_verification_view/sas_page.rs:171
-#, fuzzy
 msgid ""
 "Ask {user} if they see the following numbers appear in the same order on "
 "their screen."
@@ -1682,22 +1648,18 @@ msgid "Scan the QR code shown on the device of {user}."
 msgstr "Optično preberite kodo QR, prikazano v napravi {user}."
 
 #: src/identity_verification_view/scan_qr_code_page.rs:227
-#, fuzzy
 msgid "Could not validate scanned QR Code"
 msgstr "Optično prebrane kode QR ni bilo mogoče preveriti"
 
 #: src/identity_verification_view/scan_qr_code_page.ui:58
-#, fuzzy
 msgid "Show a QR code to scan with another device"
 msgstr "Prikaz kode QR za optično branje z drugo napravo"
 
 #: src/identity_verification_view/wait_for_other_page.rs:123
-#, fuzzy
 msgid "Get Another Device"
-msgstr "Pridobite drugo napravo"
+msgstr "Pridobi drugo napravo"
 
 #: src/identity_verification_view/wait_for_other_page.rs:125
-#, fuzzy
 msgid "Accept the verification request from another session or device."
 msgstr "Sprejmite zahtevo za preverjanje iz druge seje ali naprave."
 
@@ -1826,12 +1788,10 @@ msgid "Log in"
 msgstr "Prijava"
 
 #: src/login/method_page.rs:186
-#, fuzzy
 msgid "More SSO Providers"
-msgstr "Več ponudnikov SSO"
+msgstr "Več ponudnikov enotne prijave"
 
 #: src/login/method_page.rs:189
-#, fuzzy
 msgid "Login via SSO"
 msgstr "Prijava prek enotne prijave"
 
@@ -1848,7 +1808,6 @@ msgid "Password"
 msgstr "Geslo"
 
 #: src/login/method_page.ui:132
-#, fuzzy
 msgid "Single Sign-On Providers"
 msgstr "Ponudniki enotne prijave"
 
@@ -1873,13 +1832,10 @@ msgid "Session Setup"
 msgstr "Nastavitev seje"
 
 #: src/login/session_setup_view.ui:45
-#, fuzzy
-#| msgid "Deactivate Account"
 msgid "Fetching Account Data…"
-msgstr "Izbriši račun"
+msgstr "Pridobivanje podatkov o računu ..."
 
 #: src/login/sso_page.ui:5 src/login/sso_page.ui:41
-#, fuzzy
 msgid "Single Sign-On"
 msgstr "Enotna prijava"
 
@@ -1900,24 +1856,20 @@ msgid "Malformed version in stored session"
 msgstr "Nepravilna različica v shranjeni seji"
 
 #: src/secret/linux.rs:187
-#, fuzzy
 msgid "Could not find profile in stored session"
 msgstr "Profila v shranjeni seji ni bilo mogoče najti"
 
 #: src/secret/linux.rs:200
-#, fuzzy
 msgid "Malformed homeserver in stored session"
-msgstr "Malformiran domači strežnik v shranjeni seji"
+msgstr "Napačno oblikovan domači strežnik v shranjeni seji"
 
 #: src/secret/linux.rs:206
-#, fuzzy
 msgid "Could not find homeserver in stored session"
-msgstr "Domačega strežnika ni bilo mogoče najti v shranjeni seji"
+msgstr "V shranjeni seji ni bilo mogoče najti domačega strežnika"
 
 #: src/secret/linux.rs:216
-#, fuzzy
 msgid "Malformed user ID in stored session"
-msgstr "Nepravilno oblikovan ID uporabnika v shranjeni seji"
+msgstr "Napačno oblikovan ID uporabnika v shranjeni seji"
 
 #: src/secret/linux.rs:222
 #, fuzzy
@@ -1940,12 +1892,10 @@ msgid "Malformed secret in stored session"
 msgstr "Nepravilna skrivnost v shranjeni seji"
 
 #: src/secret/linux.rs:269
-#, fuzzy
 msgid "Could not get secret in stored session"
 msgstr "Ni bilo mogoče dobiti skrivnosti v shranjeni seji"
 
 #: src/secret/linux.rs:418
-#, fuzzy
 msgid "The secret storage file is corrupted."
 msgstr "Skrivna datoteka za shranjevanje je poškodovana."
 
@@ -2469,21 +2419,18 @@ msgstr ""
 "Katera sporočila sprožijo obvestila v sobah, ki nimajo natančnejših pravil"
 
 #: src/session/view/account_settings/notifications_page.ui:31
-#, fuzzy
 msgid "All messages in all rooms"
-msgstr "Vsa sporočila v vseh sobah"
+msgstr "Vsa sporočila v vseh klepetalnicah"
 
 #: src/session/view/account_settings/notifications_page.ui:38
-#, fuzzy
 msgid "All messages in direct chats, and mentions and keywords in all rooms"
 msgstr ""
 "Vsa sporočila v neposrednih klepetih ter omembe in ključne besede v vseh "
-"sobah"
+"klepetalnicah"
 
 #: src/session/view/account_settings/notifications_page.ui:45
-#, fuzzy
 msgid "Only mentions and keywords in all rooms"
-msgstr "Samo omembe in ključne besede v vseh sobah"
+msgstr "Samo omembe in ključne besede v vseh klepetalnicah"
 
 #: src/session/view/account_settings/notifications_page.ui:54
 msgid "Keywords"
@@ -2514,15 +2461,12 @@ msgid "Toggle Ignored Users Search"
 msgstr "Preklop prezrtega iskanja uporabnikov"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:33
-#, fuzzy
-#| msgid "Search for room members"
 msgid "Search for ignored users"
-msgstr "Poišči člane klepetalnice"
+msgstr "Iskanje prezrtih uporabnikov"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:74
-#, fuzzy
 msgid "No Ignored Users"
-msgstr "Prezrti uporabniki"
+msgstr "Brez prezrtih uporabnikov"
 
 #: src/session/view/account_settings/security_page/ignored_users_subpage/mod.ui:75
 #, fuzzy
@@ -2605,10 +2549,8 @@ msgstr "Uvozi šifrirne ključe iz ..."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:231
 #: src/utils/media.rs:218
-#, fuzzy
-#| msgid "Couldn’t save file"
 msgid "Could not access file"
-msgstr "Datoteke ni mogoče shraniti"
+msgstr "Ni mogoče dostopati do datoteke"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:261
 #, fuzzy
