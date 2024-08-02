@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-29 17:46+0000\n"
-"PO-Revision-Date: 2024-07-31 11:11+0200\n"
+"POT-Creation-Date: 2024-07-31 09:13+0000\n"
+"PO-Revision-Date: 2024-08-02 14:11+0200\n"
 "Last-Translator: Alexandre Franke <afranke@gnome.org>\n"
 "Language-Team: French - France <gnomefr@traduc.org>\n"
 "Language: fr_FR\n"
@@ -1158,7 +1158,7 @@ msgstr "Annuler le bannissement"
 
 #: src/components/user_page.ui:196
 msgid "Remove Messages"
-msgstr "Supprimer le message"
+msgstr "Supprimer les messages"
 
 #: src/components/user_page.ui:210
 #: src/session/view/account_settings/security_page/mod.ui:5
@@ -1220,7 +1220,8 @@ msgid ""
 "Make sure you have a Secret Portal Backend Provider installed, like gnome-"
 "keyring."
 msgstr ""
-"Assurez-vous d’avoir un fournisseur de moteur de portail de secrets installé, comme gnome-keyring."
+"Assurez-vous d’avoir un fournisseur de moteur de portail de secrets "
+"installé, comme gnome-keyring."
 
 #: src/error_page.ui:91
 msgid ""
