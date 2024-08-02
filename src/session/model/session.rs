@@ -424,7 +424,7 @@ impl Session {
         Ok(glib::Object::builder()
             .property("info", &stored_session)
             .property("settings", settings)
-            .property("client", &BoxedClient(client))
+            .property("client", BoxedClient(client))
             .build())
     }
 
