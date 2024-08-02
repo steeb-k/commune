@@ -11,7 +11,7 @@ option(
   description: 'The build profile for Fractal. One of "default", "beta", "development" or "hack".'
 )
 option(
-  'sandboxed',
+  'sandboxed-build',
   type : 'boolean',
   value : false,
   description: 'Whether the build happens in a sandbox.' +
