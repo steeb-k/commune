@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-07-26 11:10+0000\n"
-"PO-Revision-Date: 2024-08-02 19:30+0200\n"
+"PO-Revision-Date: 2024-08-02 19:45+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -3524,13 +3524,12 @@ msgstr[2] "Povabi novega člana"
 msgstr[3] "Povabi novega člana"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
-#, fuzzy
 msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
-msgstr[0] "Član prepovedane sobe"
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "Prepovedani člani klepetalnice"
+msgstr[1] "Prepovedani član klepetalnice"
+msgstr[2] "Prepovedana člana klepetalnice"
+msgstr[3] "Prepovedani člani klepetalnice"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
 #, fuzzy
@@ -4201,25 +4200,19 @@ msgid "%B %-e at %H∶%M"
 msgstr "%A, %e. %B %Y %H.%M"
 
 #: src/session/view/content/room_history/mod.rs:354
-#, fuzzy
-#| msgid "Error searching for rooms"
 msgid "Error getting file from drop"
-msgstr "Prišlo je do napake med iskanjem klepetalnic"
+msgstr "Napaka pri pridobivanju datoteke iz spusta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:578
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Close the active room"
 msgid "Could not leave {room}"
-msgstr "Zapre dejavno okno"
+msgstr "Ni možno zapustiti {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/mod.rs:614
 #: src/session/view/sidebar/row.rs:593
-#, fuzzy
 msgid "Could not forget {room}"
-msgstr "Nisem mogel pozabiti {room}"
+msgstr "Ni možno pozabiti {room}"
 
 #: src/session/view/content/room_history/mod.rs:785
 #: src/session/view/sidebar/mod.rs:430
@@ -4233,15 +4226,12 @@ msgstr "Kontekstni meni pošiljatelja"
 #: src/session/view/content/room_history/mod.rs:1007
 #: src/session/view/content/room_history/mod.rs:1011
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
-#, fuzzy
 msgid "There is a newer version of this room"
-msgstr "Obstaja novejša različica te sobe"
+msgstr "Obstaja novejša različica te klepetalnice"
 
 #: src/session/view/content/room_history/mod.rs:1014
-#, fuzzy
-#| msgid "The room ID is malformed"
 msgid "This room was closed"
-msgstr "Določilo ID klepetalnice ni pravilno oblikovano"
+msgstr "Ta klepetalnica je bila zaprta"
 
 #: src/session/view/content/room_history/mod.ui:6
 msgid "Room _Details"
@@ -4286,10 +4276,8 @@ msgid "_Invite"
 msgstr "Pova_bi"
 
 #: src/session/view/content/room_history/mod.ui:66
-#, fuzzy
-#| msgid "Invite"
 msgid "Revoke _Invite"
-msgstr "Povabi"
+msgstr "Prekli_či povabilo"
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
 #: src/session/view/content/room_history/mod.ui:72
@@ -4337,18 +4325,14 @@ msgstr "Meni klepetalnic"
 
 #: src/session/view/content/room_history/mod.ui:192
 #: src/session/view/content/room_history/mod.ui:199
-#, fuzzy
 msgid "Could Not Load Room"
-msgstr "Ni bilo mogoče naložiti prostora"
+msgstr "Ni bilo mogoče naložiti klepetalnice"
 
 #: src/session/view/content/room_history/mod.ui:234
-#, fuzzy
-#| msgid "Scroll to bottom"
 msgid "Scroll to Bottom"
-msgstr "Drsenje na spodnji rob"
+msgstr "Pomakni se na dno"
 
 #: src/session/view/content/room_history/mod.ui:246
-#, fuzzy
 msgid "Drop Here to Send"
 msgstr "Spustite tukaj za pošiljanje"
 
@@ -4424,14 +4408,12 @@ msgid "Could not unmute member"
 msgstr "Zvoka članu ni bilo mogoče vklopiti"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:669
-#, fuzzy
 msgid "Banning user…"
-msgstr "Prepoved uporabnika ..."
+msgstr "Prepovedovanje uporabnika ..."
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:693
-#, fuzzy
 msgid "Unbanning user…"
-msgstr "Prepoved uporabnika ..."
+msgstr "Preklicevanje prepovedi uporabnika ..."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -4449,7 +4431,6 @@ msgid "Stop ignoring user…"
 msgstr "Nehaj ignorirati uporabnika ..."
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:771
-#, fuzzy
 msgid "Ignoring user…"
 msgstr "Prezrtje uporabnika ..."
 
@@ -4572,42 +4553,36 @@ msgstr "Prejet je bil nepodprt dogodek za člane klepetalnice."
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:317
-#, fuzzy
 msgid "{previous_user_name} changed their display name to {new_user_name}."
-msgstr "{previous_user_name} je spremenil prikazno ime v {new_user_name}."
+msgstr "{previous_user_name} je spremenil pojavno ime v {new_user_name}."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:327
-#, fuzzy
 msgid "{previous_user_name} removed their display name."
-msgstr "{previous_user_name} je odstranil prikazno ime."
+msgstr "{previous_user_name} je odstranil pojavno ime."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:339
-#, fuzzy
 msgid "{user_id} set their display name to {new_user_name}."
-msgstr "{user_id} nastavite prikazano ime na {new_user_name}."
+msgstr "{user_id} je nastavil pojavno ime na {new_user_name}."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:351
-#, fuzzy
 msgid "{user} set their avatar."
-msgstr "{user} nastavite svoj avatar."
+msgstr "{user} je nastavil svoj avatar."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:358
-#, fuzzy
 msgid "{user} removed their avatar."
 msgstr "{user} je odstranil svoj avatar."
 
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:365
-#, fuzzy
 msgid "{user} changed their avatar."
 msgstr "{user} je spremenil svoj avatar."
 
@@ -4665,9 +4640,8 @@ msgid "New Direct Chat"
 msgstr "Nov neposreden klepet"
 
 #: src/session/view/create_dm_dialog/mod.ui:54
-#, fuzzy
 msgid "Search for people to start a new chat with"
-msgstr "Iskanje oseb, s katerimi želite začeti nov klepet"
+msgstr "Poiščite osebe, s katerimi želite začeti nov klepet"
 
 #: src/session/view/create_dm_dialog/mod.ui:93
 msgid "No users matching the search pattern were found"
@@ -4952,20 +4926,16 @@ msgid "Move to _Rooms"
 msgstr "Premakni med _klepetalnice"
 
 #: src/session/view/sidebar/mod.ui:54
-#, fuzzy
 msgid "Move to Low _Priority"
 msgstr "Premakni na nizko _prioriteto"
 
 #: src/session/view/sidebar/mod.ui:59
-#, fuzzy
 msgid "Mark as _Direct Chat"
-msgstr "Označi kot neposredni klepet"
+msgstr "Označi kot _neposredni klepet"
 
 #: src/session/view/sidebar/mod.ui:64
-#, fuzzy
-#| msgid "New Direct Chat"
 msgid "Unmark as _Direct Chat"
-msgstr "Novo neposredno klepetanje"
+msgstr "Počisti oznako kot _neposredni klepet"
 
 #: src/session/view/sidebar/mod.ui:88
 msgid "Sidebar"
@@ -5015,7 +4985,6 @@ msgstr[3] "{count} obvestila"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
 #: src/session/view/sidebar/row.rs:572
-#, fuzzy
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 "{room} ni bilo mogoče premakniti iz {previous_category} v {new_category}"
@@ -5023,18 +4992,14 @@ msgstr ""
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/sidebar/row.rs:609
-#, fuzzy
-#| msgid "Could not retrieve file URI"
 msgid "Could not mark {room} as direct chat"
-msgstr "Ni mogoče pridobiti naslova URI datoteke"
+msgstr "Ni mogoče označiti {room} kot neposrednega klepeta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/sidebar/row.rs:614
-#, fuzzy
-#| msgid "Publish in room directory"
 msgid "Could not unmark {room} as direct chat"
-msgstr "Objavi v mapi klepetalnice"
+msgstr "Ni mogoče umakniti oznake {room} kot neposrednega klepeta"
 
 #: src/session_list/mod.rs:272
 msgid "Could not restore previous sessions"
