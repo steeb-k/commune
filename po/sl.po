@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-07-26 11:10+0000\n"
-"PO-Revision-Date: 2024-08-02 19:45+0200\n"
+"PO-Revision-Date: 2024-08-03 12:44+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -58,7 +58,6 @@ msgid "Window maximized state"
 msgstr "Stanje razpetega glavnega okna"
 
 #: data/org.gnome.Fractal.gschema.xml.in:18
-#, fuzzy
 msgid "Enable markdown formatting"
 msgstr "Omogoči oblikovanje markdown"
 
@@ -1121,9 +1120,8 @@ msgstr "Prezri"
 #: src/components/user_page.rs:782
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
 #: src/session/view/content/room_history/sender_avatar/mod.rs:777
-#, fuzzy
 msgid "Could not stop ignoring user"
-msgstr "Ni bilo mogoče nehati ignorirati uporabnika"
+msgstr "Ni bilo mogoče prenehati prezirati uporabnika"
 
 #: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
@@ -1191,9 +1189,8 @@ msgstr "Ukaz je kopiran na odložišče"
 
 #: src/error_page.ui:25
 #, fuzzy
-#| msgid "Secret Service Error"
 msgid "Secret Portal Error"
-msgstr "Napaka tajne storitve"
+msgstr "Napaka skrivnega portala"
 
 #: src/error_page.ui:39
 #, fuzzy
@@ -1202,7 +1199,7 @@ msgid ""
 "information and an error occurred while we were trying to restore your "
 "sessions."
 msgstr ""
-"Fractal se zanaša na ponudnika tajnih storitev za upravljanje vaših "
+"Fraktal se zanaša na ponudnika tajnih storitev za upravljanje vaših "
 "občutljivih podatkov o seji in prišlo je do napake, ko smo poskušali "
 "shraniti ali dobiti vašo sejo."
 
@@ -1239,9 +1236,8 @@ msgstr ""
 "interakcijo z njim, kot je ta:"
 
 #: src/error_page.ui:113
-#, fuzzy
 msgid "Copy Command"
-msgstr "Ukaz »Kopiraj«"
+msgstr "Ukaz Kopiraj"
 
 #: src/error_page.ui:148
 msgid "Check that you have a default keyring and that it is unlocked."
@@ -1858,9 +1854,8 @@ msgid "The secret storage file is corrupted."
 msgstr "Skrivna datoteka za shranjevanje je poškodovana."
 
 #: src/secret/linux.rs:422
-#, fuzzy
 msgid "Could not access the secret storage file location."
-msgstr "Ni bilo mogoče dostopati do skrivnega mesta datoteke za shranjevanje."
+msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
 #: src/secret/linux.rs:425
 #, fuzzy
@@ -1940,13 +1935,12 @@ msgstr ""
 "zahtevajo dostop do njega."
 
 #: src/secret/linux.rs:474
-#, fuzzy
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
 msgstr ""
-"Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bil obroč za "
-"ključe ustvarjen in nastavljen kot privzet."
+"Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka "
+"ključev ustvarjena in nastavljena kot privzeta."
 
 #: src/session/model/session.rs:950
 msgid "Could not log the session out"
@@ -2029,9 +2023,9 @@ msgstr "Utišan"
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
 #: src/session/view/content/room_history/mod.rs:597
-#, fuzzy
 msgid "Could not join room {room_name}. Try again later."
-msgstr "Ni se mogel pridružiti sobi {room_name}. Poskusite znova pozneje."
+msgstr ""
+"Ni se možno pridružiti klepetalnici {room_name}. Poskusite znova pozneje."
 
 #: src/session/model/sidebar_data/category/category_type.rs:29
 msgid "Verifications"
@@ -2317,9 +2311,8 @@ msgid "Could not disable account notifications"
 msgstr "Obvestil o računu ni bilo mogoče onemogočiti"
 
 #: src/session/view/account_settings/notifications_page.rs:369
-#, fuzzy
 msgid "Could not change global notifications setting"
-msgstr "Nastavitve globalnih obvestil ni bilo mogoče spremeniti"
+msgstr "Nastavitve splošnih obvestil ni bilo mogoče spremeniti"
 
 #: src/session/view/account_settings/notifications_page.rs:386
 msgid "Remove “{keyword}”"
@@ -2469,9 +2462,8 @@ msgstr "Uvozi ključe"
 #. Translators: Do no translate "fractal" as it is the application
 #. name.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:210
-#, fuzzy
 msgid "fractal-encryption-keys"
-msgstr "Fraktal-šifrirni ključi"
+msgstr "fraktal-šifrirni-ključi"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:215
 msgid "Save Encryption Keys To…"
@@ -2495,14 +2487,12 @@ msgid "Room encryption keys exported successfully"
 msgstr "Ključi za šifriranje sobe so uspešno izvoženi"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:338
-#, fuzzy
-#| msgid "No room description"
 msgid "Imported 1 room encryption key"
 msgid_plural "Imported {n} room encryption keys"
-msgstr[0] "Ni opisa klepetalnice"
-msgstr[1] "Ni opisa klepetalnice"
-msgstr[2] "Ni opisa klepetalnice"
-msgstr[3] "Ni opisa klepetalnice"
+msgstr[0] "Uvoženih {n} šifrirnih ključev klepetalnice"
+msgstr[1] "Uvožen {n} šifrirni ključ klepetalnice"
+msgstr[2] "Uvožena {n} šifrirna ključa klepetalnice"
+msgstr[3] "Uvoženi {n} šifrirni ključi klepetalnice"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:352
 msgid "Could not export the keys"
@@ -2765,18 +2755,18 @@ msgstr "Nazadnje videni: %-e. %B ob %I:%M %p"
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
-#, fuzzy, no-c-format
+#, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
-msgstr "Zadnji vidni %B %-e %Y pri %H:%M"
+msgstr "Nazadnje videni: %-e. %B %Y ob %H:%M"
 
 #. Translators: this is the full date and the time in 12h format, i.e. "Last
 #. seen February 3 2015 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:285
-#, fuzzy, no-c-format
+#, no-c-format
 msgid "Last seen %B %-e %Y at %I:%M %p"
-msgstr "Zadnji vidni %B %-e %Y pri %I:%M %p"
+msgstr "Nazadnje videni: %-e. %B %Y ob %I:%M %p"
 
 #. Translators: As in 'A verified session'.
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:34
@@ -3170,13 +3160,13 @@ msgstr "Šifriranja ni bilo mogoče omogočiti"
 #: src/session/view/content/room_details/general_page.rs:1059
 #, fuzzy
 msgid "Federated"
-msgstr "Federativnimi"
+msgstr "Federirana"
 
 #. Translators: As in, 'Room not federated'.
 #: src/session/view/content/room_details/general_page.rs:1062
 #, fuzzy
 msgid "Not federated"
-msgstr "Ni združeno"
+msgstr "Ni moderirana/združena"
 
 #: src/session/view/content/room_details/general_page.rs:1092
 msgid "Room upgraded successfully"
@@ -3216,9 +3206,8 @@ msgid "Which messages trigger notifications in this room"
 msgstr "Katera sporočila sprožijo obvestila v tej klepetalnici"
 
 #: src/session/view/content/room_details/general_page.ui:117
-#, fuzzy
 msgid "Use Global Setting"
-msgstr "Uporabi sistemske nastavitve"
+msgstr "Uporabi splošno nastavitev"
 
 #: src/session/view/content/room_details/general_page.ui:124
 msgid "All Messages"
@@ -3401,10 +3390,8 @@ msgstr "Zgodovina datoteke"
 
 #: src/session/view/content/room_details/history_viewer/media.ui:39
 #: src/session/view/content/room_details/history_viewer/media.ui:46
-#, fuzzy
-#| msgid "Media"
 msgid "No Media"
-msgstr "Nosilci"
+msgstr "Ni medijev"
 
 #: src/session/view/content/room_details/history_viewer/media.ui:47
 msgid "This room does not contain any media"
@@ -3412,20 +3399,16 @@ msgstr "Ta klepetalnica ne vsebuje nobenih medijev."
 
 #: src/session/view/content/room_details/history_viewer/media.ui:55
 #: src/session/view/content/room_details/history_viewer/media.ui:62
-#, fuzzy
 msgid "Could Not Load Media"
-msgstr "Ni bilo mogoče naložiti prostora"
+msgstr "Medija ni bilo mogoče naložiti"
 
 #: src/session/view/content/room_details/history_viewer/media.ui:82
-#, fuzzy
-#| msgid "Room History"
 msgid "Media History"
-msgstr "Zgodovina klepetalnice"
+msgstr "Zgodovina medijev"
 
 #: src/session/view/content/room_details/invite_subpage/list.rs:269
-#, fuzzy
 msgid "Banned"
-msgstr "prepovedan %1 iz sobe"
+msgstr "Prepovedan"
 
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
@@ -3454,15 +3437,12 @@ msgid "Search"
 msgstr "Omogoči iskanje"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:65
-#, fuzzy
 msgid "Search for users to invite them to this room"
-msgstr "Poiščite uporabnike, ki jih bodo povabili v to sobo"
+msgstr "Poiščite uporabnike, da jih povabite v to klepetalnico"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:73
-#, fuzzy
-#| msgid "Matrix ID"
 msgid "Matching Users"
-msgstr "Matrix ID"
+msgstr "Ujemajoči se uporabniki"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:123
 #: src/session/view/content/room_details/invite_subpage/mod.ui:127
@@ -3471,10 +3451,8 @@ msgid "No Users Found"
 msgstr "Ni najdenih uporabnikov"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:128
-#, fuzzy
-#| msgid "No matching members found"
 msgid "No users matching the search were found"
-msgstr "Ni članov skladnih z iskalnim nizom"
+msgstr "Ni članov, skladnih z iskalnim nizom"
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:141
 #: src/session/view/create_dm_dialog/mod.ui:105
@@ -3514,14 +3492,12 @@ msgstr[2] "Prepovedana"
 msgstr[3] "Prepovedani"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
-#, fuzzy
-#| msgid "Invite New Member"
 msgid "Invited Room Member"
 msgid_plural "Invited Room Members"
-msgstr[0] "Povabi novega člana"
-msgstr[1] "Povabi novega člana"
-msgstr[2] "Povabi novega člana"
-msgstr[3] "Povabi novega člana"
+msgstr[0] "Povabljeni novi člani"
+msgstr[1] "Povabljeni novi član"
+msgstr[2] "Povabljena nova člana"
+msgstr[3] "Povabljeni novi člani"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
 msgid "Banned Room Member"
@@ -3532,23 +3508,19 @@ msgstr[2] "Prepovedana člana klepetalnice"
 msgstr[3] "Prepovedani člani klepetalnice"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
-#, fuzzy
-#| msgid "Room · {} member"
-#| msgid_plural "Room · {} members"
 msgid "Room Member"
 msgid_plural "Room Members"
-msgstr[0] "Klepetalnica · {} članov"
-msgstr[1] "Klepetalnica · {} član"
-msgstr[2] "Klepetalnica · {} člana"
-msgstr[3] "Klepetalnica · {} člani"
+msgstr[0] "Člani klepetalnice"
+msgstr[1] "Član klepetalnice"
+msgstr[2] "Člana klepetalnice"
+msgstr[3] "Člani klepetalnice"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
 #: src/session/view/content/room_details/permissions/members_subpage.ui:12
 #: src/session/view/content/room_details/permissions/members_subpage.ui:14
-#, fuzzy
 msgid "Toggle Room Members Search"
-msgstr "Preklop na iskanje članov sobe"
+msgstr "Preklopi iskanje članov klepetalnice"
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:29
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:33
@@ -3558,9 +3530,8 @@ msgid "Search for room members"
 msgstr "Poišči člane klepetalnice"
 
 #: src/session/view/content/room_details/members_page/mod.rs:90
-#, fuzzy
 msgid "The user is not in the room members list anymore"
-msgstr "Uporabnika ni več na seznamu članov sobe"
+msgstr "Uporabnika ni več na seznamu članov klepetalnice"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:4
 msgid "Add Custom Permissions"
@@ -3581,20 +3552,16 @@ msgstr "Zadetki iskanja"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:96
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:100
-#, fuzzy
-#| msgid "No matching members found"
 msgid "No Matching Members Found"
-msgstr "Ni članov skladnih z iskalnim nizom"
+msgstr "Ni članov, skladnih z iskalnim nizom"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:101
-#, fuzzy
 msgid "No room members matching the search were found"
-msgstr "Najdeni niso bili nobeni člani sobe, ki bi ustrezali iskanju"
+msgstr "Najdeni niso bili nobeni člani klepetalnice, ki bi ustrezali iskanju"
 
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:279
-#, fuzzy
 msgid "Members With Assigned Power Levels"
 msgstr "Člani z dodeljenimi ravnmi moči"
 
@@ -3607,10 +3574,8 @@ msgid "Save Changes?"
 msgstr "Ali želite shraniti spremembe?"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:641
-#, fuzzy
-#| msgid "Couldn’t save file"
 msgid "Could not save permissions"
-msgstr "Datoteke ni mogoče shraniti"
+msgstr "Dovoljenj ni bilo mogoče shraniti"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:30
 msgid "_Save"
@@ -3622,9 +3587,8 @@ msgstr "Dejanja klepetalnice"
 
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:45
-#, fuzzy
 msgid "Power level required to perform different actions in the room"
-msgstr "Raven moči, potrebna za izvajanje različnih dejanj v prostoru"
+msgstr "Raven moči, potrebna za izvajanje različnih dejanj v klepetalnici"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:48
 msgid "Send Messages"
@@ -3671,9 +3635,8 @@ msgid "Change Permissions"
 msgstr "Spremeni dovoljenja"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:180
-#, fuzzy
 msgid "Change Server Access Control List"
-msgstr "Spreminjanje seznama za nadzor dostopa do strežnika"
+msgstr "Spremeni seznam za nadzor dostopa do strežnika"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:191
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:75
@@ -3686,9 +3649,9 @@ msgstr "Dejanja članov"
 
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:205
-#, fuzzy
 msgid "Power level required to perform different actions on room members"
-msgstr "Raven moči, potrebna za izvajanje različnih dejanj na članih sobe"
+msgstr ""
+"Raven moči, potrebna za izvajanje različnih dejanj s člani klepetalnice"
 
 #. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:246
@@ -3829,8 +3792,6 @@ msgstr "To je začetek vidne zgodovine"
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/item_row.rs:376
-#, fuzzy
-#| msgid "%B %e"
 msgid "%A, %B %-e"
 msgstr "%A, %e. %B"
 
@@ -3839,10 +3800,8 @@ msgstr "%A, %e. %B"
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/item_row.rs:382
-#, fuzzy
-#| msgid "%B %e, %Y"
 msgid "%A, %B %-e, %Y"
-msgstr "%A %B %e %Y"
+msgstr "%A, %e. %B %Y"
 
 #: src/session/view/content/room_history/item_row.rs:388
 msgid "New Messages"
@@ -3888,7 +3847,6 @@ msgid "Report Event?"
 msgstr "Želite prijaviti dogodek?"
 
 #: src/session/view/content/room_history/item_row.rs:989
-#, fuzzy
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3924,7 +3882,6 @@ msgid "Error reading audio file"
 msgstr "Napaka pri branju zvočne datoteke"
 
 #: src/session/view/content/room_history/message_row/content.rs:240
-#, fuzzy
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
@@ -3983,10 +3940,8 @@ msgstr "Slikovna datoteka ni podprta"
 
 #: src/session/view/content/room_history/message_row/media.rs:455
 #: src/session/view/content/room_history/message_row/media.rs:461
-#, fuzzy
-#| msgid "Could not retrieve file URI"
 msgid "Could not retrieve media"
-msgstr "Ni mogoče pridobiti naslova URI datoteke"
+msgstr "Medija ni mogoče pridobiti"
 
 #. Translators: As in 'Sending message…'.
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:14
@@ -4011,9 +3966,8 @@ msgstr "Poslano"
 #. Translators: As in 'Edited message'.
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:83
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:86
-#, fuzzy
 msgid "Edited"
-msgstr "Urejena paleta"
+msgstr "Urejeno"
 
 #: src/session/view/content/room_history/message_row/mod.rs:254
 msgid "Sent at {time}"
@@ -4022,18 +3976,16 @@ msgstr "Poslano {time}"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/message_row/reaction/mod.rs:210
-#, fuzzy
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
-msgstr[0] "1 član je reagiral z {reaction_key}"
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "{n} članov se je odzvalo s/z {reaction_key}"
+msgstr[1] "{n} član se je odzval s/z {reaction_key}"
+msgstr[2] "{n} člana sta se odzvala s/z {reaction_key}"
+msgstr[3] "{n} člani so se odzvali s/z {reaction_key}"
 
 #: src/session/view/content/room_history/message_row/reaction/mod.rs:228
-#, fuzzy
 msgid "{user} reacted with {reaction_key}"
-msgstr "{user} je reagiral z {reaction_key}"
+msgstr "{user} se je odzval/a s/z {reaction_key}"
 
 #: src/session/view/content/room_history/message_row/reaction_list.ui:5
 msgid "Reactions"
@@ -4053,14 +4005,12 @@ msgid "_Send"
 msgstr "_Pošlji"
 
 #: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:677
-#, fuzzy
 msgid "Public Room Mention Auto-completion"
-msgstr "Omemba javne sobe Samodokončanje"
+msgstr "Samodokončanje omembe javne klepetalnice"
 
 #: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:679
-#, fuzzy
 msgid "Room Member Mention Auto-completion"
-msgstr "Omemba člana sobe Samodokončanje"
+msgstr "Samodokončanje omemba člana klepetalnice"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
@@ -4094,9 +4044,8 @@ msgstr "Vaša lokacija"
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
 #: src/session/view/content/room_history/message_toolbar/mod.rs:750
-#, fuzzy
 msgid "User Location {geo_uri} at {iso8601_datetime}"
-msgstr "Lokacija uporabnika {geo_uri} at {iso8601_datetime}"
+msgstr "Lokacija uporabnika {geo_uri} ob {iso8601_datetime}"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:772
 msgid "Could not send location"
@@ -4185,19 +4134,16 @@ msgstr "Nimate ustreznih dovoljenj za objavljanje sporočil v to klepetalnico"
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:120
-#, fuzzy
-#| msgid "%l∶%M %p"
 msgid "%B %-e at %I∶%M %p"
-msgstr "%b %e %Y, %I∶%M %p"
+msgstr "%-e. %b %Y ob %I∶%M %p"
 
 #. Translators: this is a date and a time in 24h format.
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
 #: src/session/view/content/room_history/member_timestamp/row.rs:126
-#, fuzzy
 msgid "%B %-e at %H∶%M"
-msgstr "%A, %e. %B %Y %H.%M"
+msgstr "%-e. %b %Y ob %H:%M"
 
 #: src/session/view/content/room_history/mod.rs:354
 msgid "Error getting file from drop"
@@ -4315,9 +4261,8 @@ msgid "I_gnore"
 msgstr "Pre_zri"
 
 #: src/session/view/content/room_history/mod.ui:114
-#, fuzzy
 msgid "Stop I_gnoring"
-msgstr "Ustavite I_gnoring"
+msgstr "Nehaj i_gnorirati"
 
 #: src/session/view/content/room_history/mod.ui:148
 msgid "Room Menu"
@@ -4339,21 +4284,19 @@ msgstr "Spustite tukaj za pošiljanje"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/read_receipts_list/mod.rs:267
-#, fuzzy
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
-msgstr[0] "Videl 1 član"
-msgstr[1] ""
-msgstr[2] ""
-msgstr[3] ""
+msgstr[0] "Videlo {n} članov"
+msgstr[1] "Videl {n} član"
+msgstr[2] "Videla {n} člana"
+msgstr[3] "Videli {n} člani"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/read_receipts_list/mod.rs:280
 #, fuzzy
-#| msgid "Invite to {name}"
 msgid "Seen by {name}"
-msgstr "Povabilo za {name}"
+msgstr "Videl {name}"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
 msgid "Link copied to clipboard"
@@ -4426,7 +4369,6 @@ msgstr[2] "Odstranjevanje {n} sporočil, ki ju je poslal uporabnik …"
 msgstr[3] "Odstranjevanje {n} sporočil, ki jih je poslal uporabnik …"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:769
-#, fuzzy
 msgid "Stop ignoring user…"
 msgstr "Nehaj ignorirati uporabnika ..."
 
@@ -4492,9 +4434,8 @@ msgstr "{user} je bil/a prepovedan/a."
 #. Translators: Do NOT translate the content between
 #. '{' and '}', this is a variable name.
 #: src/session/view/content/room_history/state_row/mod.rs:232
-#, fuzzy
 msgid "{user} was unbanned."
-msgstr "{user} ni bil prepovedan."
+msgstr "{user} je bila odstranjena prepoved."
 
 #. Translators: Do NOT translate the content between '{' and
 #. '}', this is a variable name.
@@ -4599,15 +4540,12 @@ msgstr "{user} vpisuje besedilo …"
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
 #: src/session/view/content/room_history/typing_row.rs:149
-#, fuzzy
-#| msgid "<b>{}</b> is typing…"
-#| msgid_plural "<b>{}</b> and <b>{}</b> are typing…"
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
-msgstr[0] "<b>{}</b> in <b>{}</b> vpisujejo besedilo …"
-msgstr[1] "<b>{}</b> vpisuje besedilo …"
-msgstr[2] "<b>{}</b> in <b>{}</b> vpisujeta besedilo …"
-msgstr[3] "<b>{}</b> in <b>{}</b> vpisujejo besedilo …"
+msgstr[0] "{n} članov vpisuje besedilo …"
+msgstr[1] "{n} član vpisuje besedilo …"
+msgstr[2] "{n} člana vpisujeta besedilo …"
+msgstr[3] "{n} člani vpisujejo besedilo …"
 
 #: src/session/view/content/room_history/verification_info_bar.rs:67
 msgid "Could not accept verification"
@@ -4648,13 +4586,10 @@ msgid "No users matching the search pattern were found"
 msgstr "Ni uporabnikov, ki bi ustrezali vzorcu iskanja,"
 
 #: src/session/view/event_details_dialog.rs:53
-#, fuzzy
-#| msgid "Copy To Clipboard"
 msgid "Source copied to clipboard"
-msgstr "Kopiraj v odložišče"
+msgstr "Vir je kopiran v odložišče"
 
 #: src/session/view/event_details_dialog.rs:114
-#, fuzzy
 msgid "Original Event Source"
 msgstr "Izvirni vir dogodka"
 
@@ -4663,7 +4598,6 @@ msgid "Event Source"
 msgstr "Vir dogodka"
 
 #: src/session/view/event_details_dialog.rs:130
-#, fuzzy
 msgid "Latest Edit Source"
 msgstr "Najnovejši vir urejanja"
 
@@ -4752,7 +4686,6 @@ msgid "_Copy Image"
 msgstr "_Kopiraj sliko"
 
 #: src/session/view/media_viewer.ui:66 src/session/view/media_viewer.ui:68
-#, fuzzy
 msgid "Media Menu"
 msgstr "Meni z mediji"
 
@@ -5022,11 +4955,9 @@ msgstr "Konča program"
 
 #. Translators: This shows and focuses the search input to find a room by its name in the room list.
 #: src/shortcuts.ui:27
-#, fuzzy
-#| msgid "Search for room members"
 msgctxt "shortcut window"
 msgid "Search Room List"
-msgstr "Poišči člane klepetalnice"
+msgstr "Išči na seznamu klepetalnic"
 
 #: src/shortcuts.ui:33
 msgctxt "shortcut window"
@@ -5064,13 +4995,11 @@ msgstr[3] ""
 "Presegli ste omejitev hitrosti domačega strežnika, poskusite znova čez {n} s."
 
 #: src/user_facing_error.rs:61
-#, fuzzy
 msgid "You exceeded the homeserver’s rate limit, try again later."
 msgstr ""
 "Presegli ste omejitev hitrosti domačega strežnika, poskusite znova pozneje."
 
 #: src/user_facing_error.rs:71
-#, fuzzy
 msgid "An unknown connection error occurred."
 msgstr "Prišlo je do neznane napake povezave."
 
@@ -5087,7 +5016,6 @@ msgid "This is not a valid URL."
 msgstr "To ni veljaven URL."
 
 #: src/user_facing_error.rs:91
-#, fuzzy
 msgid "Homeserver auto-discovery failed. Try entering the full URL manually."
 msgstr ""
 "Samodejno odkrivanje domačega strežnika ni uspelo. Poskusite ročno vnesti "
