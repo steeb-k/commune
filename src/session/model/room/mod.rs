@@ -1182,8 +1182,8 @@ impl Room {
 
         for (_event_id, receipts) in content.iter() {
             if let Some(users) = receipts.get(&ReceiptType::Read) {
-                if users.contains_key(own_user_id) {
-                    tracing::trace!("{}: Got own receipt", self.human_readable_id());
+                if let Some(receipt) = users.get(own_user_id) {
+                    tracing::trace!("{}: Got own receipt: {receipt:?}", self.human_readable_id());
                     spawn!(clone!(
                         #[weak(rename_to = obj)]
                         self,
