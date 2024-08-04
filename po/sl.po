@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-07-26 11:10+0000\n"
-"PO-Revision-Date: 2024-08-03 12:44+0200\n"
+"PO-Revision-Date: 2024-08-04 11:52+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -1188,51 +1188,40 @@ msgid "Command copied to clipboard"
 msgstr "Ukaz je kopiran na odložišče"
 
 #: src/error_page.ui:25
-#, fuzzy
 msgid "Secret Portal Error"
-msgstr "Napaka skrivnega portala"
+msgstr "Napaka ponudnika tajnih storitev"
 
 #: src/error_page.ui:39
-#, fuzzy
 msgid ""
 "Fractal relies on a Secret Portal to manage your sensitive session "
 "information and an error occurred while we were trying to restore your "
 "sessions."
 msgstr ""
 "Fraktal se zanaša na ponudnika tajnih storitev za upravljanje vaših "
-"občutljivih podatkov o seji in prišlo je do napake, ko smo poskušali "
-"shraniti ali dobiti vašo sejo."
+"občutljivih podatkov o seji in prišlo je do napake pri poskusu shranjevanja "
+"ali obnovitve vaše seje."
 
 #: src/error_page.ui:51
-#, fuzzy
-#| msgid ""
-#| "Here are a few things that might help you fix issues with the Secret "
-#| "Service:"
 msgid ""
 "Here are a few things that might help you fix issues with the Secret Portal:"
 msgstr ""
-"Tukaj je nekaj stvari, ki vam lahko pomagajo pri reševanju težav s tajno "
-"storitvijo:"
+"Tukaj je nekaj stvari, ki vam lahko pomagajo pri reševanju težav s "
+"ponudnikom tajnih storitev:"
 
 #: src/error_page.ui:68
-#, fuzzy
-#| msgid ""
-#| "Make sure you have a Secret Service Provider installed, like gnome-"
-#| "keyring."
 msgid ""
 "Make sure you have a Secret Portal Backend Provider installed, like gnome-"
 "keyring."
 msgstr ""
-"Prepričajte se, da imate nameščenega ponudnika tajnih storitev, kot je gnome-"
-"keyring."
+"Prepričajte se, da imate nameščenega ponudnika zaledja tajnih storitev, kot "
+"je gnome-keyring."
 
 #: src/error_page.ui:91
-#, fuzzy
 msgid ""
 "If you prefer to use a Secret Service Provider instead, you need to allow "
 "Fractal to interact with it, like this:"
 msgstr ""
-"Če raje uporabljate ponudnika tajnih storitev, morate Fractalu dovoliti "
+"Če raje uporabljate ponudnika tajnih storitev, morate Fraktalu dovoliti "
 "interakcijo z njim, kot je ta:"
 
 #: src/error_page.ui:113
@@ -1858,81 +1847,74 @@ msgid "Could not access the secret storage file location."
 msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
 #: src/secret/linux.rs:425
-#, fuzzy
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr ""
-"Pri dostopu do skrivne datoteke za shranjevanje je prišlo do neznane napake."
+"Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do neznane "
+"napake."
 
 #: src/secret/linux.rs:428
-#, fuzzy
 msgid "The secret storage file has been changed by another process."
 msgstr ""
-"Skrivna datoteka za shranjevanje je bila spremenjena z drugim postopkom."
+"Datoteka za shranjevanje skrivnosti je bila spremenjena z drugim postopkom."
 
 #: src/secret/linux.rs:431
-#, fuzzy
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
-"Pri interakciji z zaledjem portala D-Bus Secret Portal je prišlo do neznane "
-"napake."
+"Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
+"neznane napake."
 
 #: src/secret/linux.rs:434
-#, fuzzy
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
-"Zahteva za tajni portal Flatpak je bila preklicana. Sprejmite vse pozive, ki "
-"zahtevajo dostop do njega."
+"Zahteva za portal tajnih storitev Flatpak je bila preklicana. Sprejmite vse "
+"pozive, ki zahtevajo dostop do njega."
 
 #: src/secret/linux.rs:437
-#, fuzzy
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
 msgstr ""
-"Skrivni portal Flatpak ni na voljo. Prepričajte se, da je nameščen xdg-"
-"desktop-portal in da je nameščen vsaj pri različici 1.5.0."
+"Portal ponudbe tajnih storitev Flatpak ni na voljo. Prepričajte se, da je "
+"nameščen xdg-desktop-portal in da je nameščena vsaj različica 1.5.0."
 
 #: src/secret/linux.rs:440
-#, fuzzy
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
-"Skrivni portal Flatpak je zagotovil ključ, ki je prešibek, da bi bil varen."
+"Portal ponudnika tajnih storitev Flatpak je zagotovil ključ, ki je prešibek, "
+"da bi bil varen."
 
 #: src/secret/linux.rs:454
 msgid "The item was deleted."
 msgstr "Element je bil izbrisan."
 
 #: src/secret/linux.rs:458 src/secret/linux.rs:478
-#, fuzzy
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
-msgstr "Pri interakciji s tajno službo D-Bus je prišlo do neznane napake."
+msgstr "Pri interakciji s tajno storitvijo D-Bus je prišlo do neznane napake."
 
 #: src/secret/linux.rs:461
 msgid "The collection or item is locked."
 msgstr "Zbirka ali predmet je zaklenjen."
 
 #: src/secret/linux.rs:464
-#, fuzzy
 msgid "The D-Bus Secret Service session does not exist."
-msgstr "Seja tajne službe D-Bus ne obstaja."
+msgstr "Seja tajne storitve D-Bus ne obstaja."
 
 #: src/secret/linux.rs:467
 msgid "The collection or item does not exist."
 msgstr "Zbirka ali predmet ne obstaja."
 
 #: src/secret/linux.rs:471
-#, fuzzy
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
-"Prošnja tajni službi D-Bus je bila preklicana. Sprejmite vse pozive, ki "
-"zahtevajo dostop do njega."
+"Prošnja tajni storitvi D-Bus je bila preklicana. Sprejmite vse pozive, ki "
+"zahtevajo dostop do nje."
 
 #: src/secret/linux.rs:474
 msgid ""
@@ -3158,15 +3140,13 @@ msgstr "Šifriranja ni bilo mogoče omogočiti"
 
 #. Translators: As in, 'Room federated'.
 #: src/session/view/content/room_details/general_page.rs:1059
-#, fuzzy
 msgid "Federated"
-msgstr "Federirana"
+msgstr "Združeno"
 
 #. Translators: As in, 'Room not federated'.
 #: src/session/view/content/room_details/general_page.rs:1062
-#, fuzzy
 msgid "Not federated"
-msgstr "Ni moderirana/združena"
+msgstr "Ni združeno"
 
 #: src/session/view/content/room_details/general_page.rs:1092
 msgid "Room upgraded successfully"
@@ -3301,10 +3281,8 @@ msgid "Upgrade"
 msgstr "Nadgradi"
 
 #: src/session/view/content/room_details/general_page.ui:298
-#, fuzzy
-#| msgid "Moderator"
 msgid "Federation"
-msgstr "Moderator"
+msgstr "Združba (federacija)"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this case, the file to play is an
@@ -4294,9 +4272,8 @@ msgstr[3] "Videli {n} člani"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/view/content/room_history/read_receipts_list/mod.rs:280
-#, fuzzy
 msgid "Seen by {name}"
-msgstr "Videl {name}"
+msgstr "Videl/a: {name}"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:99
 msgid "Link copied to clipboard"
