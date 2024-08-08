@@ -106,6 +106,12 @@ mod imp {
                 .sync_create()
                 .build();
 
+            group
+                .bind_property("count", &*self.reaction_count, "visible")
+                .sync_create()
+                .transform_to(|_, count: u32| Some(count > 1))
+                .build();
+
             let items_changed_handler_id = group.connect_items_changed(clone!(
                 #[weak]
                 obj,

@@ -673,19 +673,22 @@ message-reactions flowboxchild:active {
 }
 
 message-reactions .toggle {
-  padding: 1px 4px 0 5px;
+  padding: 1px 0 1px 6px;
 }
 
 message-reactions .reaction-key {
   font-size: 0.8em;
 }
+
 message-reactions .reaction-key.emoji{
   font-size: 1.1em;
+  padding-right: 2px;
+  padding-left: 2px;
 }
 
 message-reactions .reaction-count {
   font-size: 0.8em;
-  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .reaction-chooser {
