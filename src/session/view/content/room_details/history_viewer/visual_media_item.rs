@@ -2,12 +2,15 @@ use gtk::{gdk, glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTem
 use matrix_sdk::media::{MediaEventContent, MediaThumbnailSettings};
 use ruma::{
     api::client::media::get_content_thumbnail::v3::Method,
-    events::room::message::{ImageMessageEventContent, MessageType, VideoMessageEventContent},
+    events::room::message::{ImageMessageEventContent, VideoMessageEventContent},
 };
 use tracing::warn;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
-use crate::{matrix_filename, spawn, spawn_tokio, utils::add_activate_binding_action};
+use crate::{
+    spawn, spawn_tokio,
+    utils::{add_activate_binding_action, matrix::MediaMessage},
+};
 
 /// The default size requested by a thumbnail.
 const THUMBNAIL_SIZE: u32 = 300;
@@ -102,31 +105,31 @@ mod imp {
                 return;
             };
 
+            let filename = message_content.filename();
             match message_content {
-                MessageType::Image(content) => {
-                    self.show_image(content);
+                MediaMessage::Image(content) => {
+                    self.show_image(content, filename);
                 }
-                MessageType::Video(content) => {
-                    self.show_video(content);
+                MediaMessage::Video(content) => {
+                    self.show_video(content, filename);
                 }
                 _ => {}
             }
         }
 
         /// Show the given image with this item.
-        fn show_image(&self, image: ImageMessageEventContent) {
+        fn show_image(&self, image: ImageMessageEventContent, filename: String) {
             if let Some(icon) = self.overlay_icon.take() {
                 self.overlay.remove_overlay(&icon);
             }
 
-            let filename = matrix_filename!(image, Some(mime::IMAGE));
             self.obj().set_tooltip_text(Some(&filename));
 
             self.load_thumbnail(image);
         }
 
         /// Show the given video with this item.
-        fn show_video(&self, video: VideoMessageEventContent) {
+        fn show_video(&self, video: VideoMessageEventContent, filename: String) {
             if self.overlay_icon.borrow().is_none() {
                 let icon = gtk::Image::builder()
                     .icon_name("media-playback-start-symbolic")
@@ -140,7 +143,6 @@ mod imp {
                 self.overlay_icon.replace(Some(icon));
             }
 
-            let filename = matrix_filename!(video, Some(mime::VIDEO));
             self.obj().set_tooltip_text(Some(&filename));
 
             self.load_thumbnail(video);

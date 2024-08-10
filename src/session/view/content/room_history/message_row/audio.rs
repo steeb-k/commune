@@ -226,3 +226,9 @@ impl MessageAudio {
         self.set_state(LoadingState::Ready);
     }
 }
+
+impl Default for MessageAudio {
+    fn default() -> Self {
+        Self::new()
+    }
+}

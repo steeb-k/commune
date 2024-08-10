@@ -40,7 +40,7 @@
             <property name="title-widget">
               <object class="GtkLabel">
                 <binding name="label">
-                  <lookup name="body">MediaViewer</lookup>
+                  <lookup name="filename">MediaViewer</lookup>
                 </binding>
                 <property name="single-line-mode">True</property>
                 <property name="ellipsize">end</property>

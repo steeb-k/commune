@@ -100,3 +100,9 @@ impl MessageFile {
         ));
     }
 }
+
+impl Default for MessageFile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

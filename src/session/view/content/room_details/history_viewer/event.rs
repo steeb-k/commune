@@ -10,7 +10,7 @@ use ruma::{
     OwnedEventId,
 };
 
-use crate::{session::model::Room, utils::matrix::get_media_content};
+use crate::{session::model::Room, utils::matrix::MediaMessage};
 
 /// The types of events that can be displayer in the history viewers.
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, glib::Enum)]
@@ -139,14 +139,13 @@ impl HistoryViewerEvent {
     }
 
     /// The message content of the inner event.
-    pub fn message_content(&self) -> MessageType {
-        self.matrix_event().content.msgtype.clone()
+    pub fn message_content(&self) -> MediaMessage {
+        MediaMessage::from_message(&self.matrix_event().content.msgtype)
+            .expect("HistoryViewerEvents are all media messages")
     }
 
     /// Get the binary content of this event.
-    ///
-    /// Returns `Ok((filename, binary_content))` on success.
-    pub async fn get_file_content(&self) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
+    pub async fn get_file_content(&self) -> Result<Vec<u8>, matrix_sdk::Error> {
         let Some(room) = self.room() else {
             return Err(matrix_sdk::Error::UnknownError(
                 "Could not upgrade Room".into(),
@@ -157,9 +156,8 @@ impl HistoryViewerEvent {
                 "Could not upgrade Session".into(),
             ));
         };
-        let client = session.client();
-        let message_content = self.message_content();
 
-        get_media_content(client, message_content).await
+        let client = session.client();
+        self.message_content().content(client).await
     }
 }

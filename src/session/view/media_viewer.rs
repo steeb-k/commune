@@ -1,7 +1,6 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, graphene, CompositeTemplate};
-use matrix_sdk::ruma::events::room::message::MessageType;
 use ruma::OwnedEventId;
 use tracing::{error, warn};
 
@@ -10,7 +9,7 @@ use crate::{
     prelude::*,
     session::model::Room,
     spawn, toast,
-    utils::{matrix::get_media_content, media::save_to_file},
+    utils::{matrix::MediaMessage, media::save_to_file},
 };
 
 const ANIMATION_DURATION: u32 = 250;
@@ -40,10 +39,10 @@ mod imp {
         #[property(get = Self::event_id, type = Option<String>)]
         pub event_id: RefCell<Option<OwnedEventId>>,
         /// The media message to display.
-        pub message: RefCell<Option<MessageType>>,
-        /// The body of the media event.
+        pub message: RefCell<Option<MediaMessage>>,
+        /// The filename of the media.
         #[property(get)]
-        pub body: RefCell<Option<String>>,
+        pub filename: RefCell<Option<String>>,
         pub animation: OnceCell<adw::TimedAnimation>,
         pub swipe_tracker: OnceCell<adw::SwipeTracker>,
         pub swipe_progress: Cell<f64>,
@@ -284,6 +283,16 @@ mod imp {
         fn event_id(&self) -> Option<String> {
             self.event_id.borrow().as_ref().map(ToString::to_string)
         }
+
+        /// Set the filename of the media.
+        pub(super) fn set_filename(&self, filename: String) {
+            if Some(&filename) == self.filename.borrow().as_ref() {
+                return;
+            }
+
+            self.filename.replace(Some(filename));
+            self.obj().notify_filename();
+        }
     }
 }
 
@@ -318,12 +327,12 @@ impl MediaViewer {
     }
 
     /// The media message to display.
-    pub fn message(&self) -> Option<MessageType> {
+    pub fn message(&self) -> Option<MediaMessage> {
         self.imp().message.borrow().clone()
     }
 
     /// Set the media message to display in the given room.
-    pub fn set_message(&self, room: &Room, event_id: OwnedEventId, message: MessageType) {
+    pub fn set_message(&self, room: &Room, event_id: OwnedEventId, message: MediaMessage) {
         let imp = self.imp();
 
         imp.room.set(Some(room));
@@ -336,31 +345,15 @@ impl MediaViewer {
         self.notify_event_id();
     }
 
-    /// Set the body of the media event.
-    fn set_body(&self, body: Option<String>) {
-        if body == self.body() {
-            return;
-        }
-
-        self.imp().body.replace(body);
-        self.notify_body();
-    }
-
     /// Update the actions of the menu according to the current message.
     fn update_menu_actions(&self) {
         let imp = self.imp();
 
         let borrowed_message = imp.message.borrow();
         let message = borrowed_message.as_ref();
-        let has_image = message
-            .map(|m| matches!(m, MessageType::Image(_)))
-            .unwrap_or_default();
-        let has_video = message
-            .map(|m| matches!(m, MessageType::Video(_)))
-            .unwrap_or_default();
-        let has_audio = message
-            .map(|m| matches!(m, MessageType::Audio(_)))
-            .unwrap_or_default();
+        let has_image = message.is_some_and(|m| matches!(m, MediaMessage::Image(_)));
+        let has_video = message.is_some_and(|m| matches!(m, MediaMessage::Video(_)));
+        let has_audio = message.is_some_and(|m| matches!(m, MediaMessage::Audio(_)));
 
         let has_event_id = imp.event_id.borrow().is_some();
 
@@ -372,94 +365,88 @@ impl MediaViewer {
     }
 
     fn build(&self) {
-        self.imp().media.show_loading();
+        let imp = self.imp();
+        imp.media.show_loading();
 
-        let Some(room) = self.room() else {
+        let Some(message) = self.message() else {
+            return;
+        };
+
+        let filename = message.filename();
+        imp.set_filename(filename);
+
+        spawn!(
+            glib::Priority::LOW,
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.build_inner().await;
+                }
+            )
+        );
+    }
+
+    async fn build_inner(&self) {
+        let Some(session) = self.room().and_then(|r| r.session()) else {
             return;
         };
         let Some(message) = self.message() else {
             return;
         };
-        let Some(session) = room.session() else {
-            return;
-        };
 
+        let imp = self.imp();
         let client = session.client();
 
         match &message {
-            MessageType::Image(image) => {
-                let image = image.clone();
-                self.set_body(Some(image.body));
+            MediaMessage::Image(image) => {
+                let mimetype = image.info.as_ref().and_then(|info| info.mimetype.clone());
 
-                spawn!(
-                    glib::Priority::LOW,
-                    clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        async move {
-                            let imp = obj.imp();
-
-                            match get_media_content(client, message).await {
-                                Ok((_, data)) => {
-                                    match ImagePaintable::from_bytes(
-                                        &glib::Bytes::from(&data),
-                                        image.info.and_then(|info| info.mimetype).as_deref(),
-                                    ) {
-                                        Ok(texture) => {
-                                            imp.media.view_image(&texture);
-                                            return;
-                                        }
-                                        Err(error) => {
-                                            warn!("Could not load GdkTexture from file: {error}")
-                                        }
-                                    }
-                                }
-                                Err(error) => warn!("Could not retrieve image file: {error}"),
+                match message.content(client).await {
+                    Ok(data) => {
+                        match ImagePaintable::from_bytes(
+                            &glib::Bytes::from(&data),
+                            mimetype.as_deref(),
+                        ) {
+                            Ok(texture) => {
+                                imp.media.view_image(&texture);
+                                return;
                             }
-
-                            imp.media.show_fallback(ContentType::Image);
-                        }
-                    )
-                );
-            }
-            MessageType::Video(video) => {
-                self.set_body(Some(video.body.clone()));
-
-                spawn!(
-                    glib::Priority::LOW,
-                    clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        async move {
-                            let imp = obj.imp();
-
-                            match get_media_content(client, message).await {
-                                Ok((_, data)) => {
-                                    // The GStreamer backend of GtkVideo doesn't work with input
-                                    // streams so we need to
-                                    // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                                    let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                                    file.replace_contents(
-                                        &data,
-                                        None,
-                                        false,
-                                        gio::FileCreateFlags::REPLACE_DESTINATION,
-                                        gio::Cancellable::NONE,
-                                    )
-                                    .unwrap();
-
-                                    imp.media.view_file(file);
-                                }
-                                Err(error) => {
-                                    warn!("Could not retrieve video file: {error}");
-                                    imp.media.show_fallback(ContentType::Video);
-                                }
+                            Err(error) => {
+                                warn!("Could not load GdkTexture from file: {error}")
                             }
                         }
-                    )
-                );
+                    }
+                    Err(error) => warn!("Could not retrieve image file: {error}"),
+                }
+
+                imp.media.show_fallback(ContentType::Image);
             }
-            _ => {}
+            MediaMessage::Video(_) => {
+                match message.content(client).await {
+                    Ok(data) => {
+                        // The GStreamer backend of GtkVideo doesn't work with input
+                        // streams so we need to
+                        // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
+                        let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
+                        file.replace_contents(
+                            &data,
+                            None,
+                            false,
+                            gio::FileCreateFlags::REPLACE_DESTINATION,
+                            gio::Cancellable::NONE,
+                        )
+                        .unwrap();
+
+                        imp.media.view_file(file);
+                    }
+                    Err(error) => {
+                        warn!("Could not retrieve video file: {error}");
+                        imp.media.show_fallback(ContentType::Video);
+                    }
+                }
+            }
+            _ => unreachable!(),
         }
     }
 
@@ -527,7 +514,8 @@ impl MediaViewer {
         };
         let client = session.client();
 
-        let (filename, data) = match get_media_content(client, message).await {
+        let filename = message.filename();
+        let data = match message.content(client).await {
             Ok(res) => res,
             Err(error) => {
                 error!("Could not get event file: {error}");

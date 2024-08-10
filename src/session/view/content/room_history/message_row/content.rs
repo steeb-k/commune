@@ -13,8 +13,9 @@ use super::{
 };
 use crate::{
     prelude::*,
-    session::model::{content_can_show_header, Event, Member},
+    session::model::{content_can_show_header, Event, Member, Room, Session},
     spawn,
+    utils::matrix::MediaMessage,
 };
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -263,7 +264,7 @@ fn build_content(
     }
 }
 
-/// Build the content widget of the given message event as a child of `parent`.
+/// Build the content widget of the given message as a child of `parent`.
 fn build_message_content(
     parent: &impl IsA<adw::Bin>,
     message: &Message,
@@ -272,60 +273,13 @@ fn build_message_content(
     detect_at_room: bool,
 ) {
     let room = sender.room();
-    let Some(session) = room.session() else {
+
+    if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
+        build_media_message_content(parent, media_message, format, &room, detect_at_room);
         return;
-    };
-
-    /// Show the caption of the file if applicable.
-    macro_rules! with_caption {
-        ($parent:ident, $message:ident, $widget_type:ty, $mime_fallback:expr) => {{
-            let filename = $crate::matrix_filename!($message, $mime_fallback);
-            let caption = $crate::matrix_caption!($message);
-
-            let child = if let Some((caption, formatted_caption)) = caption {
-                let caption_widget = if let Some(caption_widget) =
-                    $parent.child().and_downcast::<MessageCaption>()
-                {
-                    caption_widget
-                } else {
-                    let caption_widget = MessageCaption::new();
-                    $parent.set_child(Some(&caption_widget));
-                    caption_widget
-                };
-
-                caption_widget.set_caption(
-                    caption,
-                    formatted_caption,
-                    &room,
-                    format,
-                    detect_at_room,
-                );
-
-                if let Some(child) = caption_widget.child().and_downcast::<$widget_type>() {
-                    child
-                } else {
-                    let child = <$widget_type>::new();
-                    caption_widget.set_child(Some(child.clone()));
-                    child
-                }
-            } else if let Some(child) = $parent.child().and_downcast::<$widget_type>() {
-                child
-            } else {
-                let child = <$widget_type>::new();
-                $parent.set_child(Some(&child));
-                child
-            };
-
-            (child, filename)
-        }};
     }
 
     match message.msgtype() {
-        MessageType::Audio(message) => {
-            let (child, filename) = with_caption!(parent, message, MessageAudio, Some(mime::AUDIO));
-
-            child.audio(message.clone(), filename, &session, format);
-        }
         MessageType::Emote(message) => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
                 child
@@ -342,18 +296,6 @@ fn build_message_content(
                 format,
                 detect_at_room,
             );
-        }
-        MessageType::File(message) => {
-            let (child, filename) = with_caption!(parent, message, MessageFile, None);
-
-            child.set_filename(Some(filename));
-            child.set_format(format);
-        }
-        MessageType::Image(message) => {
-            let (child, filename) =
-                with_caption!(parent, message, MessageVisualMedia, Some(mime::IMAGE));
-
-            child.image(message.clone(), filename, &session, format);
         }
         MessageType::Location(message) => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageLocation>() {
@@ -407,12 +349,6 @@ fn build_message_content(
                 detect_at_room,
             );
         }
-        MessageType::Video(message) => {
-            let (child, filename) =
-                with_caption!(parent, message, MessageVisualMedia, Some(mime::VIDEO));
-
-            child.video(message.clone(), filename, &session, format);
-        }
         msgtype => {
             warn!("Event not supported: {msgtype:?}");
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
@@ -423,6 +359,89 @@ fn build_message_content(
                 child
             };
             child.with_plain_text(gettext("Unsupported event"), format);
+        }
+    }
+}
+
+/// Build the content widget of the given media message as a child of `parent`.
+fn build_media_message_content(
+    parent: &impl IsA<adw::Bin>,
+    media_message: MediaMessage,
+    format: ContentFormat,
+    room: &Room,
+    detect_at_room: bool,
+) {
+    let Some(session) = room.session() else {
+        return;
+    };
+
+    if let Some((caption, formatted_caption)) = media_message.caption() {
+        let caption_widget =
+            if let Some(caption_widget) = parent.child().and_downcast::<MessageCaption>() {
+                caption_widget
+            } else {
+                let caption_widget = MessageCaption::new();
+                parent.set_child(Some(&caption_widget));
+                caption_widget
+            };
+
+        caption_widget.set_caption(caption, formatted_caption, room, format, detect_at_room);
+
+        let new_widget =
+            build_media_content(caption_widget.child(), media_message, format, &session);
+        caption_widget.set_child(Some(new_widget));
+    } else {
+        let new_widget = build_media_content(parent.child(), media_message, format, &session);
+        parent.set_child(Some(&new_widget));
+    }
+}
+
+/// Build the content widget of the given media content.
+///
+/// If the given old widget is of the proper type, it is reused.
+fn build_media_content(
+    old_widget: Option<gtk::Widget>,
+    media_message: MediaMessage,
+    format: ContentFormat,
+    session: &Session,
+) -> gtk::Widget {
+    let filename = media_message.filename();
+
+    match media_message {
+        MediaMessage::Audio(audio) => {
+            let widget = old_widget
+                .and_downcast::<MessageAudio>()
+                .unwrap_or_default();
+
+            widget.audio(audio, filename, session, format);
+
+            widget.upcast()
+        }
+        MediaMessage::File(_) => {
+            let widget = old_widget.and_downcast::<MessageFile>().unwrap_or_default();
+
+            widget.set_filename(Some(filename));
+            widget.set_format(format);
+
+            widget.upcast()
+        }
+        MediaMessage::Image(image) => {
+            let widget = old_widget
+                .and_downcast::<MessageVisualMedia>()
+                .unwrap_or_default();
+
+            widget.image(image, filename, session, format);
+
+            widget.upcast()
+        }
+        MediaMessage::Video(video) => {
+            let widget = old_widget
+                .and_downcast::<MessageVisualMedia>()
+                .unwrap_or_default();
+
+            widget.video(video, filename, session, format);
+
+            widget.upcast()
         }
     }
 }

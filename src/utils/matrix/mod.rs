@@ -27,13 +27,15 @@ use ruma::{
 };
 use thiserror::Error;
 
+mod media_message;
+
+pub use self::media_message::MediaMessage;
 use crate::{
     components::Pill,
     gettext_f,
     prelude::*,
     secret::StoredSession,
     session::model::{RemoteRoom, Room},
-    spawn_tokio,
 };
 
 /// The result of a password validation.
@@ -293,92 +295,6 @@ pub async fn client_with_stored_session(
     client.restore_session(data).await?;
 
     Ok(client)
-}
-
-/// Fetch the content of the media message in the given message.
-///
-/// Compatible messages:
-///
-/// - File.
-/// - Image.
-/// - Video.
-/// - Audio.
-///
-/// Returns `Ok((filename, binary_content))` on success.
-///
-/// Returns `Err` if an error occurred while fetching the content. Panics on
-/// an incompatible event.
-pub async fn get_media_content(
-    client: Client,
-    message: MessageType,
-) -> Result<(String, Vec<u8>), matrix_sdk::Error> {
-    let media = client.media();
-
-    match message {
-        MessageType::File(content) => {
-            let filename = crate::matrix_filename!(content, None);
-            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
-            let data = handle.await.unwrap()?.unwrap();
-            Ok((filename, data))
-        }
-        MessageType::Image(content) => {
-            let filename = crate::matrix_filename!(content, Some(mime::IMAGE));
-            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
-            let data = handle.await.unwrap()?.unwrap();
-            Ok((filename, data))
-        }
-        MessageType::Video(content) => {
-            let filename = crate::matrix_filename!(content, Some(mime::VIDEO));
-            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
-            let data = handle.await.unwrap()?.unwrap();
-            Ok((filename, data))
-        }
-        MessageType::Audio(content) => {
-            let filename = crate::matrix_filename!(content, Some(mime::AUDIO));
-            let handle = spawn_tokio!(async move { media.get_file(&content, true).await });
-            let data = handle.await.unwrap()?.unwrap();
-            Ok((filename, data))
-        }
-        _ => {
-            panic!("Trying to get the media content of a message of incompatible type");
-        }
-    }
-}
-
-/// The filename of the given media message.
-///
-/// Uses the given mimetype to generate a fallback filename if none exists.
-#[macro_export]
-macro_rules! matrix_filename {
-    ($message:ident, $mime_fallback:expr) => {{
-        let mut filename = match &$message.filename {
-            Some(filename) if *filename != $message.body => filename.clone(),
-            _ => $message.body.clone(),
-        };
-
-        if filename.is_empty() {
-            let mimetype = $message
-                .info
-                .as_ref()
-                .and_then(|info| info.mimetype.as_deref());
-
-            filename = $crate::utils::media::filename_for_mime(mimetype, $mime_fallback);
-        }
-
-        filename
-    }};
-}
-
-/// The caption of the given media message, if any.
-#[macro_export]
-macro_rules! matrix_caption {
-    ($message:ident) => {{
-        $message
-            .filename
-            .as_deref()
-            .filter(|filename| *filename != $message.body)
-            .map(|_| ($message.body.clone(), $message.formatted.clone()))
-    }};
 }
 
 /// Find mentions in the given HTML string.

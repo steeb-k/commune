@@ -1,11 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gio, glib, CompositeTemplate};
-use ruma::events::room::message::MessageType;
 use tracing::error;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, matrix_filename, prelude::*, toast};
+use crate::{gettext_f, prelude::*, toast, utils::matrix::MediaMessage};
 
 mod imp {
     use std::cell::RefCell;
@@ -62,8 +61,9 @@ mod imp {
             }
 
             if let Some(event) = &event {
-                if let MessageType::File(file) = event.message_content() {
-                    let filename = matrix_filename!(file, None);
+                let message_content = event.message_content();
+                if let MediaMessage::File(file) = &message_content {
+                    let filename = message_content.filename();
 
                     self.title_label.set_label(&filename);
                     self.button
@@ -74,7 +74,7 @@ mod imp {
                             &[("filename", &filename)],
                         ))]);
 
-                    if let Some(size) = file.info.and_then(|i| i.size) {
+                    if let Some(size) = file.info.as_ref().and_then(|i| i.size) {
                         let size = glib::format_size(size.into());
                         self.size_label.set_label(&size);
                     } else {
@@ -139,7 +139,7 @@ impl FileRow {
         let Some(event) = self.event() else {
             return;
         };
-        let (filename, data) = match event.get_file_content().await {
+        let data = match event.get_file_content().await {
             Ok(res) => res,
             Err(error) => {
                 error!("Could not get file: {error}");
@@ -148,6 +148,7 @@ impl FileRow {
                 return;
             }
         };
+        let filename = event.message_content().filename();
 
         let parent_window = self.root().and_downcast::<gtk::Window>().unwrap();
         let dialog = gtk::FileDialog::builder()

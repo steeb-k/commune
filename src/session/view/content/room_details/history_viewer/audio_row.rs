@@ -2,11 +2,10 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use glib::clone;
 use gtk::{gio, glib, CompositeTemplate};
-use ruma::events::room::message::MessageType;
 use tracing::warn;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, matrix_filename, spawn, spawn_tokio};
+use crate::{gettext_f, spawn, spawn_tokio, utils::matrix::MediaMessage};
 
 mod imp {
     use std::cell::RefCell;
@@ -63,9 +62,9 @@ mod imp {
             }
 
             if let Some(event) = &event {
-                if let MessageType::Audio(audio) = event.message_content() {
-                    let filename = matrix_filename!(audio, Some(mime::AUDIO));
-
+                let message_content = event.message_content();
+                if let MediaMessage::Audio(audio) = &message_content {
+                    let filename = message_content.filename();
                     self.title_label.set_label(&filename);
                     self.play_button
                         .update_property(&[gtk::accessible::Property::Label(&gettext_f(
@@ -113,7 +112,7 @@ mod imp {
             let Some(event) = self.event.borrow().clone() else {
                 return;
             };
-            let MessageType::Audio(audio) = event.message_content() else {
+            let MediaMessage::Audio(audio) = event.message_content() else {
                 return;
             };
             let Some(session) = event.room().and_then(|r| r.session()) else {

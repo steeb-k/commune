@@ -9,14 +9,13 @@ use tracing::error;
 use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
 use crate::{
     components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser, Spinner},
-    matrix_caption,
     prelude::*,
     session::{
         model::{Event, EventKey, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
         view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
     spawn, toast,
-    utils::{media::save_to_file, BoundObjectWeakRef},
+    utils::{matrix::MediaMessage, media::save_to_file, BoundObjectWeakRef},
 };
 
 mod imp {
@@ -699,7 +698,7 @@ impl ItemRow {
                             .build()]);
                     }
                 }
-                MessageType::File(content) => {
+                MessageType::File(_) => {
                     // Save message's file.
                     action_group.add_action_entries([gio::ActionEntry::builder("file-save")
                         .activate(clone!(
@@ -712,20 +711,6 @@ impl ItemRow {
                             }
                         ))
                         .build()]);
-
-                    if let Some((caption, _)) = matrix_caption!(content) {
-                        // Copy caption.
-                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(
-                                #[weak(rename_to = obj)]
-                                self,
-                                move |_, _, _| {
-                                    obj.clipboard().set_text(&caption);
-                                    toast!(obj, gettext("Text copied to clipboard"));
-                                }
-                            ))
-                            .build()]);
-                    }
                 }
                 MessageType::Emote(message) => {
                     // Copy text message.
@@ -781,7 +766,7 @@ impl ItemRow {
                         ))
                         .build()]);
                 }
-                MessageType::Image(content) => {
+                MessageType::Image(_) => {
                     action_group.add_action_entries([
                         // Copy the texture to the clipboard.
                         gio::ActionEntry::builder("copy-image")
@@ -813,22 +798,8 @@ impl ItemRow {
                             ))
                             .build(),
                     ]);
-
-                    if let Some((caption, _)) = matrix_caption!(content) {
-                        // Copy caption.
-                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(
-                                #[weak(rename_to = obj)]
-                                self,
-                                move |_, _, _| {
-                                    obj.clipboard().set_text(&caption);
-                                    toast!(obj, gettext("Text copied to clipboard"));
-                                }
-                            ))
-                            .build()]);
-                    }
                 }
-                MessageType::Video(content) => {
+                MessageType::Video(_) => {
                     // Save the video to a file.
                     action_group.add_action_entries([gio::ActionEntry::builder("save-video")
                         .activate(clone!(
@@ -841,22 +812,8 @@ impl ItemRow {
                             }
                         ))
                         .build()]);
-
-                    if let Some((caption, _)) = matrix_caption!(content) {
-                        // Copy caption.
-                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(
-                                #[weak(rename_to = obj)]
-                                self,
-                                move |_, _, _| {
-                                    obj.clipboard().set_text(&caption);
-                                    toast!(obj, gettext("Text copied to clipboard"));
-                                }
-                            ))
-                            .build()]);
-                    }
                 }
-                MessageType::Audio(content) => {
+                MessageType::Audio(_) => {
                     // Save the audio to a file.
                     action_group.add_action_entries([gio::ActionEntry::builder("save-audio")
                         .activate(clone!(
@@ -869,22 +826,24 @@ impl ItemRow {
                             }
                         ))
                         .build()]);
-
-                    if let Some((caption, _)) = matrix_caption!(content) {
-                        // Copy caption.
-                        action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
-                            .activate(clone!(
-                                #[weak(rename_to = obj)]
-                                self,
-                                move |_, _, _| {
-                                    obj.clipboard().set_text(&caption);
-                                    toast!(obj, gettext("Text copied to clipboard"));
-                                }
-                            ))
-                            .build()]);
-                    }
                 }
                 _ => {}
+            }
+
+            if let Some(media_message) = MediaMessage::from_message(message.msgtype()) {
+                if let Some((caption, _)) = media_message.caption() {
+                    // Copy caption.
+                    action_group.add_action_entries([gio::ActionEntry::builder("copy-text")
+                        .activate(clone!(
+                            #[weak(rename_to = obj)]
+                            self,
+                            move |_, _, _| {
+                                obj.clipboard().set_text(&caption);
+                                toast!(obj, gettext("Text copied to clipboard"));
+                            }
+                        ))
+                        .build()]);
+                }
             }
         }
 
@@ -902,7 +861,7 @@ impl ItemRow {
             #[weak(rename_to = obj)]
             self,
             async move {
-                let (filename, data) = match event.get_media_content().await {
+                let data = match event.get_media_content().await {
                     Ok(res) => res,
                     Err(error) => {
                         error!("Could not get event file: {error}");
@@ -911,8 +870,11 @@ impl ItemRow {
                         return;
                     }
                 };
+                let Some(media_message) = event.media_message() else {
+                    return;
+                };
 
-                save_to_file(&obj, data, filename).await;
+                save_to_file(&obj, data, media_message.filename()).await;
             }
         ));
     }

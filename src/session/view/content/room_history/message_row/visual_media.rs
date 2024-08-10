@@ -471,3 +471,9 @@ impl MessageVisualMedia {
             .and_then(|p| p.current_frame())
     }
 }
+
+impl Default for MessageVisualMedia {
+    fn default() -> Self {
+        Self::new()
+    }
+}
