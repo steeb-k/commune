@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentMediaHistoryViewerItem" parent="GtkWidget">
+  <template class="ContentVisualMediaHistoryViewerItem" parent="GtkWidget">
     <property name="focusable">True</property>
     <property name="accessible-role">button</property>
     <child>

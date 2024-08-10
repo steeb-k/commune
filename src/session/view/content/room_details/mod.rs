@@ -15,7 +15,7 @@ use self::{
     edit_details_subpage::EditDetailsSubpage,
     general_page::GeneralPage,
     history_viewer::{
-        AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, MediaHistoryViewer,
+        AudioHistoryViewer, FileHistoryViewer, HistoryViewerTimeline, VisualMediaHistoryViewer,
     },
     invite_subpage::InviteSubpage,
     members_page::MembersPage,
@@ -28,7 +28,7 @@ pub enum SubpageName {
     EditDetails,
     Members,
     Invite,
-    MediaHistory,
+    VisualMediaHistory,
     FileHistory,
     AudioHistory,
     Addresses,
@@ -154,7 +154,9 @@ impl RoomDetails {
             SubpageName::EditDetails => EditDetailsSubpage::new(&room).upcast(),
             SubpageName::Members => MembersPage::new(&room).upcast(),
             SubpageName::Invite => InviteSubpage::new(&room).upcast(),
-            SubpageName::MediaHistory => MediaHistoryViewer::new(&self.timeline()).upcast(),
+            SubpageName::VisualMediaHistory => {
+                VisualMediaHistoryViewer::new(&self.timeline()).upcast()
+            }
             SubpageName::FileHistory => FileHistoryViewer::new(&self.timeline()).upcast(),
             SubpageName::AudioHistory => AudioHistoryViewer::new(&self.timeline()).upcast(),
             SubpageName::Addresses => AddressesSubpage::new(&room).upcast(),

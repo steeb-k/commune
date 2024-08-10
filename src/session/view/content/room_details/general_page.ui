@@ -88,7 +88,7 @@
           <object class="ButtonCountRow">
             <property name="title" translatable="yes">Media</property>
             <property name="action-name">details.show-subpage</property>
-            <property name="action-target">'media-history'</property>
+            <property name="action-target">'visual-media-history'</property>
           </object>
         </child>
         <child>

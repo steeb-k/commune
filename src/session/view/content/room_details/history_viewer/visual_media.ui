@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentMediaHistoryViewer" parent="AdwNavigationPage">
+  <template class="ContentVisualMediaHistoryViewer" parent="AdwNavigationPage">
     <property name="title" translatable="yes">Media</property>
     <child>
       <object class="GtkOverlay">

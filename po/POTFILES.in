@@ -119,7 +119,7 @@ src/session/view/content/room_details/history_viewer/audio.ui
 src/session/view/content/room_details/history_viewer/file_row.rs
 src/session/view/content/room_details/history_viewer/file_row.ui
 src/session/view/content/room_details/history_viewer/file.ui
-src/session/view/content/room_details/history_viewer/media.ui
+src/session/view/content/room_details/history_viewer/visual_media.ui
 src/session/view/content/room_details/invite_subpage/list.rs
 src/session/view/content/room_details/invite_subpage/mod.rs
 src/session/view/content/room_details/invite_subpage/mod.ui

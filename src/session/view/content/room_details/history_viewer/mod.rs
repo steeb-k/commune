@@ -3,17 +3,17 @@ mod audio_row;
 mod event;
 mod file;
 mod file_row;
-mod media;
-mod media_item;
 mod timeline;
+mod visual_media;
+mod visual_media_item;
 
 pub use self::{
-    audio::AudioHistoryViewer, file::FileHistoryViewer, media::MediaHistoryViewer,
-    timeline::HistoryViewerTimeline,
+    audio::AudioHistoryViewer, file::FileHistoryViewer, timeline::HistoryViewerTimeline,
+    visual_media::VisualMediaHistoryViewer,
 };
 use self::{
     audio_row::AudioRow,
     event::{HistoryViewerEvent, HistoryViewerEventType},
     file_row::FileRow,
-    media_item::MediaItem,
+    visual_media_item::VisualMediaItem,
 };

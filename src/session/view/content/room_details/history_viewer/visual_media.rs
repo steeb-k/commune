@@ -2,7 +2,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
-use super::{HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, MediaItem};
+use super::{HistoryViewerEvent, HistoryViewerEventType, HistoryViewerTimeline, VisualMediaItem};
 use crate::{
     components::LoadingRow,
     session::{model::TimelineState, view::MediaViewer},
@@ -22,10 +22,10 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/media.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/visual_media.ui"
     )]
-    #[properties(wrapper_type = super::MediaHistoryViewer)]
-    pub struct MediaHistoryViewer {
+    #[properties(wrapper_type = super::VisualMediaHistoryViewer)]
+    pub struct VisualMediaHistoryViewer {
         /// The timeline containing the media events.
         #[property(get, set = Self::set_timeline, construct_only)]
         pub timeline: BoundConstructOnlyObject<HistoryViewerTimeline>,
@@ -38,16 +38,16 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MediaHistoryViewer {
-        const NAME: &'static str = "ContentMediaHistoryViewer";
-        type Type = super::MediaHistoryViewer;
+    impl ObjectSubclass for VisualMediaHistoryViewer {
+        const NAME: &'static str = "ContentVisualMediaHistoryViewer";
+        type Type = super::VisualMediaHistoryViewer;
         type ParentType = adw::NavigationPage;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.set_css_name("media-history-viewer");
+            klass.set_css_name("visual-media-history-viewer");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -56,7 +56,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MediaHistoryViewer {
+    impl ObjectImpl for VisualMediaHistoryViewer {
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -89,18 +89,19 @@ mod imp {
 
                     list_item.set_child(Some(loading_row));
                 } else if let Some(event) = item.and_downcast::<HistoryViewerEvent>() {
-                    let media_item =
-                        if let Some(media_item) = list_item.child().and_downcast::<MediaItem>() {
-                            media_item
-                        } else {
-                            let media_item = MediaItem::new();
-                            media_item.set_width_request(SIZE_REQUEST);
-                            media_item.set_height_request(SIZE_REQUEST);
+                    let media_item = if let Some(media_item) =
+                        list_item.child().and_downcast::<VisualMediaItem>()
+                    {
+                        media_item
+                    } else {
+                        let media_item = VisualMediaItem::new();
+                        media_item.set_width_request(SIZE_REQUEST);
+                        media_item.set_height_request(SIZE_REQUEST);
 
-                            list_item.set_child(Some(&media_item));
+                        list_item.set_child(Some(&media_item));
 
-                            media_item
-                        };
+                        media_item
+                    };
 
                     media_item.set_event(Some(event));
                 }
@@ -110,10 +111,10 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for MediaHistoryViewer {}
-    impl NavigationPageImpl for MediaHistoryViewer {}
+    impl WidgetImpl for VisualMediaHistoryViewer {}
+    impl NavigationPageImpl for VisualMediaHistoryViewer {}
 
-    impl MediaHistoryViewer {
+    impl VisualMediaHistoryViewer {
         /// Set the timeline containing the media events.
         fn set_timeline(&self, timeline: HistoryViewerTimeline) {
             let filter = gtk::CustomFilter::new(|obj| {
@@ -208,13 +209,13 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A view presenting the list of media (image or video) events in a room.
-    pub struct MediaHistoryViewer(ObjectSubclass<imp::MediaHistoryViewer>)
+    /// A view presenting the list of visual media (image or video) events in a room.
+    pub struct VisualMediaHistoryViewer(ObjectSubclass<imp::VisualMediaHistoryViewer>)
         @extends gtk::Widget, adw::NavigationPage;
 }
 
 #[gtk::template_callbacks]
-impl MediaHistoryViewer {
+impl VisualMediaHistoryViewer {
     pub fn new(timeline: &HistoryViewerTimeline) -> Self {
         glib::Object::builder()
             .property("timeline", timeline)
@@ -222,7 +223,7 @@ impl MediaHistoryViewer {
     }
 
     /// Show the given media item.
-    pub fn show_media(&self, item: &MediaItem) {
+    pub fn show_media(&self, item: &VisualMediaItem) {
         let Some(event) = item.event() else {
             return;
         };

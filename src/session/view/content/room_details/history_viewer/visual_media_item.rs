@@ -6,7 +6,7 @@ use ruma::{
 };
 use tracing::warn;
 
-use super::{HistoryViewerEvent, MediaHistoryViewer};
+use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{matrix_filename, spawn, spawn_tokio, utils::add_activate_binding_action};
 
 /// The default size requested by a thumbnail.
@@ -21,10 +21,10 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/media_item.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_details/history_viewer/visual_media_item.ui"
     )]
-    #[properties(wrapper_type = super::MediaItem)]
-    pub struct MediaItem {
+    #[properties(wrapper_type = super::VisualMediaItem)]
+    pub struct VisualMediaItem {
         /// The file event.
         #[property(get, set = Self::set_event, explicit_notify, nullable)]
         pub event: RefCell<Option<HistoryViewerEvent>>,
@@ -36,22 +36,22 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MediaItem {
-        const NAME: &'static str = "ContentMediaHistoryViewerItem";
-        type Type = super::MediaItem;
+    impl ObjectSubclass for VisualMediaItem {
+        const NAME: &'static str = "ContentVisualMediaHistoryViewerItem";
+        type Type = super::VisualMediaItem;
         type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
-            klass.set_css_name("media-history-viewer-item");
+            klass.set_css_name("visual-media-history-viewer-item");
 
-            klass.install_action("media-item.activate", None, |obj, _, _| {
+            klass.install_action("visual-media-item.activate", None, |obj, _, _| {
                 obj.activate();
             });
 
-            add_activate_binding_action(klass, "media-item.activate");
+            add_activate_binding_action(klass, "visual-media-item.activate");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -60,13 +60,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MediaItem {
+    impl ObjectImpl for VisualMediaItem {
         fn dispose(&self) {
             self.overlay.unparent();
         }
     }
 
-    impl WidgetImpl for MediaItem {
+    impl WidgetImpl for VisualMediaItem {
         fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             // Keep the widget squared
             let (min, ..) = self.overlay.measure(orientation, for_size);
@@ -82,7 +82,7 @@ mod imp {
         }
     }
 
-    impl MediaItem {
+    impl VisualMediaItem {
         /// Set the media event.
         fn set_event(&self, event: Option<HistoryViewerEvent>) {
             if *self.event.borrow() == event {
@@ -220,14 +220,14 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A row presenting a media (image or video) event.
-    pub struct MediaItem(ObjectSubclass<imp::MediaItem>)
+    /// A row presenting a visual media (image or video) event.
+    pub struct VisualMediaItem(ObjectSubclass<imp::VisualMediaItem>)
         @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl MediaItem {
-    /// Construct a new empty `MediaItem`.
+impl VisualMediaItem {
+    /// Construct a new empty `VisualMediaItem`.
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -236,8 +236,8 @@ impl MediaItem {
     #[template_callback]
     fn activate(&self) {
         let media_history_viewer = self
-            .ancestor(MediaHistoryViewer::static_type())
-            .and_downcast::<MediaHistoryViewer>()
+            .ancestor(VisualMediaHistoryViewer::static_type())
+            .and_downcast::<VisualMediaHistoryViewer>()
             .unwrap();
         media_history_viewer.show_media(self);
     }

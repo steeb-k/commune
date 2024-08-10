@@ -89,8 +89,8 @@
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/audio_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/file.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/file_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/media.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/media_item.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/visual_media.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/history_viewer/visual_media_item.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/mod.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/invite_subpage/row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">session/view/content/room_details/members_page/members_list_view/member_row.ui</file>

@@ -937,38 +937,38 @@ sender-avatar popover button.text-button {
 	border-radius: 6px;
 }
 
-/* Media History Viewer */
+/* Visual Media History Viewer */
 
-media-history-viewer {
+visual-media-history-viewer {
   background: black;
   color: white;
 }
 
-media-history-viewer headerbar {
+visual-media-history-viewer headerbar {
   background: none;
   box-shadow: none;
 }
 
-media-history-viewer gridview {
+visual-media-history-viewer gridview {
   background: none;
   padding: 2px;
 }
 
-media-history-viewer-item {
+visual-media-history-viewer-item {
   background: none;
   /* ease-out-quad */
   transition: 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-media-history-viewer-item:hover, media-history-viewer-item:focus {
+visual-media-history-viewer-item:hover, visual-media-history-viewer-item:focus {
   transform: scale(1.03);
 }
 
-media-history-viewer-item:active {
+visual-media-history-viewer-item:active {
   transform: scale(0.98);
 }
 
-media-history-viewer-item > overlay > image {
+visual-media-history-viewer-item > overlay > image {
   border-radius: 100%;
   padding: 12px;
   -gtk-icon-size: 24px;
