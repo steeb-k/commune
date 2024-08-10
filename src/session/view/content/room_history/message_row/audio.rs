@@ -8,12 +8,13 @@ use gtk::{
 use matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use tracing::warn;
 
-use super::{media::MediaState, ContentFormat};
+use super::ContentFormat;
 use crate::{
     components::{AudioPlayer, Spinner},
     gettext_f,
     session::model::Session,
     spawn, spawn_tokio,
+    utils::LoadingState,
 };
 
 mod imp {
@@ -33,8 +34,8 @@ mod imp {
         #[property(get)]
         pub filename: RefCell<Option<String>>,
         /// The state of the audio file.
-        #[property(get, builder(MediaState::default()))]
-        pub state: Cell<MediaState>,
+        #[property(get, builder(LoadingState::default()))]
+        pub state: Cell<LoadingState>,
         /// Whether to display this audio message in a compact format.
         #[property(get)]
         pub compact: Cell<bool>,
@@ -116,7 +117,7 @@ impl MessageAudio {
     }
 
     /// Set the state of the audio file.
-    fn set_state(&self, state: MediaState) {
+    fn set_state(&self, state: LoadingState) {
         let imp = self.imp();
 
         if self.state() == state {
@@ -124,15 +125,15 @@ impl MessageAudio {
         }
 
         match state {
-            MediaState::Loading | MediaState::Initial => {
+            LoadingState::Loading | LoadingState::Initial => {
                 imp.state_spinner.set_visible(true);
                 imp.state_error.set_visible(false);
             }
-            MediaState::Ready => {
+            LoadingState::Ready => {
                 imp.state_spinner.set_visible(false);
                 imp.state_error.set_visible(false);
             }
-            MediaState::Error => {
+            LoadingState::Error => {
                 imp.state_spinner.set_visible(false);
                 imp.state_error.set_visible(true);
             }
@@ -145,7 +146,7 @@ impl MessageAudio {
     /// Convenience method to set the state to `Error` with the given error
     /// message.
     fn set_error(&self, error: String) {
-        self.set_state(MediaState::Error);
+        self.set_state(LoadingState::Error);
         self.imp().state_error.set_tooltip_text(Some(&error));
     }
 
@@ -162,11 +163,11 @@ impl MessageAudio {
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
         self.set_compact(compact);
         if compact {
-            self.set_state(MediaState::Ready);
+            self.set_state(LoadingState::Ready);
             return;
         }
 
-        self.set_state(MediaState::Loading);
+        self.set_state(LoadingState::Loading);
 
         let client = session.client();
         let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
@@ -222,6 +223,6 @@ impl MessageAudio {
         ));
 
         self.imp().player.set_media_file(Some(media_file));
-        self.set_state(MediaState::Ready);
+        self.set_state(LoadingState::Ready);
     }
 }

@@ -23,7 +23,7 @@ use crate::{
     gettext_f,
     session::model::Session,
     spawn, spawn_tokio,
-    utils::uint_to_i32,
+    utils::{uint_to_i32, LoadingState},
 };
 
 const MAX_THUMBNAIL_WIDTH: i32 = 600;
@@ -40,17 +40,6 @@ pub enum MediaType {
     Image = 0,
     Sticker = 1,
     Video = 2,
-}
-
-#[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
-#[enum_type(name = "MediaState")]
-pub enum MediaState {
-    #[default]
-    Initial = 0,
-    Loading = 1,
-    Ready = 2,
-    Error = 3,
 }
 
 mod imp {
@@ -72,9 +61,9 @@ mod imp {
         /// The intended display height of the media.
         #[property(get, set = Self::set_height, explicit_notify, default = -1, minimum = -1)]
         pub height: Cell<i32>,
-        /// The state of the media.
-        #[property(get, builder(MediaState::default()))]
-        pub state: Cell<MediaState>,
+        /// The loading state of the media.
+        #[property(get, builder(LoadingState::default()))]
+        pub state: Cell<LoadingState>,
         /// Whether to display this media in a compact format.
         #[property(get)]
         pub compact: Cell<bool>,
@@ -215,6 +204,31 @@ mod imp {
             self.height.set(height);
             self.obj().notify_height();
         }
+
+        /// Set the state of the media.
+        pub(super) fn set_state(&self, state: LoadingState) {
+            if self.state.get() == state {
+                return;
+            }
+
+            match state {
+                LoadingState::Loading | LoadingState::Initial => {
+                    self.overlay_spinner.set_visible(true);
+                    self.overlay_error.set_visible(false);
+                }
+                LoadingState::Ready => {
+                    self.overlay_spinner.set_visible(false);
+                    self.overlay_error.set_visible(false);
+                }
+                LoadingState::Error => {
+                    self.overlay_spinner.set_visible(false);
+                    self.overlay_error.set_visible(true);
+                }
+            }
+
+            self.state.set(state);
+            self.obj().notify_state();
+        }
     }
 }
 
@@ -235,33 +249,6 @@ impl MessageMedia {
     fn handle_release(&self) {
         self.activate_action("message-row.show-media", None)
             .unwrap();
-    }
-
-    /// Set the state of the media.
-    fn set_state(&self, state: MediaState) {
-        let imp = self.imp();
-
-        if self.state() == state {
-            return;
-        }
-
-        match state {
-            MediaState::Loading | MediaState::Initial => {
-                imp.overlay_spinner.set_visible(true);
-                imp.overlay_error.set_visible(false);
-            }
-            MediaState::Ready => {
-                imp.overlay_spinner.set_visible(false);
-                imp.overlay_error.set_visible(false);
-            }
-            MediaState::Error => {
-                imp.overlay_spinner.set_visible(false);
-                imp.overlay_error.set_visible(true);
-            }
-        }
-
-        imp.state.set(state);
-        self.notify_state();
     }
 
     /// Set whether to display this media in a compact format.
@@ -341,7 +328,7 @@ impl MessageMedia {
         };
         self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
 
-        self.set_state(MediaState::Loading);
+        self.imp().set_state(LoadingState::Loading);
         let scale_factor = self.scale_factor();
 
         let media = session.client().media();
@@ -415,7 +402,7 @@ impl MessageMedia {
                                             imp.overlay_error.set_tooltip_text(Some(&gettext(
                                                 "Image file not supported",
                                             )));
-                                            obj.set_state(MediaState::Error);
+                                            imp.set_state(LoadingState::Error);
                                         }
                                     }
                                 }
@@ -447,19 +434,19 @@ impl MessageMedia {
                                 }
                             };
 
-                            obj.set_state(MediaState::Ready);
+                            imp.set_state(LoadingState::Ready);
                         }
                         Ok(None) => {
                             warn!("Could not retrieve invalid media file");
                             imp.overlay_error
                                 .set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                            obj.set_state(MediaState::Error);
+                            imp.set_state(LoadingState::Error);
                         }
                         Err(error) => {
                             warn!("Could not retrieve media file: {error}");
                             imp.overlay_error
                                 .set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                            obj.set_state(MediaState::Error);
+                            imp.set_state(LoadingState::Error);
                         }
                     }
                 }
