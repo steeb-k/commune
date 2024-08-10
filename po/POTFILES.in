@@ -143,13 +143,13 @@ src/session/view/content/room_history/message_row/file.rs
 src/session/view/content/room_history/message_row/file.ui
 src/session/view/content/room_history/message_row/location.rs
 src/session/view/content/room_history/message_row/location.ui
-src/session/view/content/room_history/message_row/media.rs
 src/session/view/content/room_history/message_row/message_state_stack.ui
 src/session/view/content/room_history/message_row/mod.rs
 src/session/view/content/room_history/message_row/reaction/mod.rs
 src/session/view/content/room_history/message_row/reaction_list.ui
 src/session/view/content/room_history/message_row/reply.ui
 src/session/view/content/room_history/message_row/text/widgets.rs
+src/session/view/content/room_history/message_row/visual_media.rs
 src/session/view/content/room_history/message_toolbar/attachment_dialog.ui
 src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs
 src/session/view/content/room_history/message_toolbar/mod.rs

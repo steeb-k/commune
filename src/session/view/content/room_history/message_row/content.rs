@@ -9,7 +9,7 @@ use tracing::{error, warn};
 
 use super::{
     audio::MessageAudio, caption::MessageCaption, file::MessageFile, location::MessageLocation,
-    media::MessageMedia, reply::MessageReply, text::MessageText,
+    reply::MessageReply, text::MessageText, visual_media::MessageVisualMedia,
 };
 use crate::{
     prelude::*,
@@ -88,12 +88,12 @@ impl MessageContent {
         glib::Object::new()
     }
 
-    /// Access the widget with the media content of the event, if any.
+    /// Access the widget with the visual media content of the event, if any.
     ///
     /// This allows to access the descendant content while discarding the
     /// content of a related message, like a replied-to event, or the caption of
     /// the event.
-    pub fn media_widget(&self) -> Option<MessageMedia> {
+    pub fn visual_media_widget(&self) -> Option<MessageVisualMedia> {
         let mut child = self.child()?;
 
         // If it is a reply, the media is in the main content.
@@ -106,7 +106,7 @@ impl MessageContent {
             child = caption.child()?;
         }
 
-        child.downcast::<MessageMedia>().ok()
+        child.downcast::<MessageVisualMedia>().ok()
     }
 
     /// Update this widget to present the given `Event`.
@@ -198,7 +198,7 @@ impl MessageContent {
 
     /// Get the texture displayed by this widget, if any.
     pub fn texture(&self) -> Option<gdk::Texture> {
-        self.media_widget()?.texture()
+        self.visual_media_widget()?.texture()
     }
 }
 
@@ -220,10 +220,10 @@ fn build_content(
             build_message_content(parent, &message, format, sender, detect_at_room)
         }
         TimelineItemContent::Sticker(sticker) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageMedia>() {
+            let child = if let Some(child) = parent.child().and_downcast::<MessageVisualMedia>() {
                 child
             } else {
-                let child = MessageMedia::new();
+                let child = MessageVisualMedia::new();
                 parent.set_child(Some(&child));
                 child
             };
@@ -350,7 +350,8 @@ fn build_message_content(
             child.set_format(format);
         }
         MessageType::Image(message) => {
-            let (child, filename) = with_caption!(parent, message, MessageMedia, Some(mime::IMAGE));
+            let (child, filename) =
+                with_caption!(parent, message, MessageVisualMedia, Some(mime::IMAGE));
 
             child.image(message.clone(), filename, &session, format);
         }
@@ -407,7 +408,8 @@ fn build_message_content(
             );
         }
         MessageType::Video(message) => {
-            let (child, filename) = with_caption!(parent, message, MessageMedia, Some(mime::VIDEO));
+            let (child, filename) =
+                with_caption!(parent, message, MessageVisualMedia, Some(mime::VIDEO));
 
             child.video(message.clone(), filename, &session, format);
         }

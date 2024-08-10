@@ -8,12 +8,12 @@ mod caption;
 mod content;
 mod file;
 mod location;
-mod media;
 mod message_state_stack;
 mod reaction;
 mod reaction_list;
 mod reply;
 mod text;
+mod visual_media;
 
 pub use self::content::{ContentFormat, MessageContent};
 use self::{message_state_stack::MessageStateStack, reaction_list::MessageReactionList};
@@ -282,12 +282,14 @@ impl MessageRow {
         };
 
         if matches!(message, MessageType::Image(_) | MessageType::Video(_)) {
-            let Some(media_widget) = self.imp().content.media_widget() else {
+            let Some(visual_media_widget) = self.imp().content.visual_media_widget() else {
                 warn!("Trying to show media of a non-media message");
                 return;
             };
 
-            window.session_view().show_media(&event, &media_widget);
+            window
+                .session_view()
+                .show_media(&event, &visual_media_widget);
         }
     }
 }

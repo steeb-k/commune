@@ -35,8 +35,8 @@ const MAX_COMPACT_THUMBNAIL_HEIGHT: i32 = 50;
 
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
-#[enum_type(name = "MediaType")]
-pub enum MediaType {
+#[enum_type(name = "VisualMediaType")]
+pub enum VisualMediaType {
     Image = 0,
     Sticker = 1,
     Video = 2,
@@ -51,10 +51,10 @@ mod imp {
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
     #[template(
-        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/media.ui"
+        resource = "/org/gnome/Fractal/ui/session/view/content/room_history/message_row/visual_media.ui"
     )]
-    #[properties(wrapper_type = super::MessageMedia)]
-    pub struct MessageMedia {
+    #[properties(wrapper_type = super::MessageVisualMedia)]
+    pub struct MessageVisualMedia {
         /// The intended display width of the media.
         #[property(get, set = Self::set_width, explicit_notify, default = -1, minimum = -1)]
         pub width: Cell<i32>,
@@ -76,9 +76,9 @@ mod imp {
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for MessageMedia {
-        const NAME: &'static str = "ContentMessageMedia";
-        type Type = super::MessageMedia;
+    impl ObjectSubclass for MessageVisualMedia {
+        const NAME: &'static str = "ContentMessageVisualMedia";
+        type Type = super::MessageVisualMedia;
         type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
@@ -94,13 +94,13 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MessageMedia {
+    impl ObjectImpl for MessageVisualMedia {
         fn dispose(&self) {
             self.media.unparent();
         }
     }
 
-    impl WidgetImpl for MessageMedia {
+    impl WidgetImpl for MessageVisualMedia {
         fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             let original_width = self.width.get();
             let original_height = self.height.get();
@@ -184,7 +184,7 @@ mod imp {
         }
     }
 
-    impl MessageMedia {
+    impl MessageVisualMedia {
         /// Set the intended display width of the media.
         fn set_width(&self, width: i32) {
             if self.width.get() == width {
@@ -233,14 +233,14 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A widget displaying a media (image or video) message in the timeline.
-    pub struct MessageMedia(ObjectSubclass<imp::MessageMedia>)
+    /// A widget displaying a visual media (image or video) message in the timeline.
+    pub struct MessageVisualMedia(ObjectSubclass<imp::MessageVisualMedia>)
         @extends gtk::Widget, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]
-impl MessageMedia {
-    /// Create a new media message.
+impl MessageVisualMedia {
+    /// Create a new visual media message.
     pub fn new() -> Self {
         glib::Object::new()
     }
@@ -273,7 +273,7 @@ impl MessageMedia {
         self.set_width(width);
         self.set_height(height);
         self.set_compact(compact);
-        self.build(image, filename, MediaType::Image, session);
+        self.build(image, filename, VisualMediaType::Image, session);
     }
 
     /// Display the given `sticker`, in a `compact` format or not.
@@ -287,7 +287,7 @@ impl MessageMedia {
         self.set_width(width);
         self.set_height(height);
         self.set_compact(compact);
-        self.build(sticker, body, MediaType::Sticker, session);
+        self.build(sticker, body, VisualMediaType::Sticker, session);
     }
 
     /// Display the given `video`, in a `compact` format or not.
@@ -306,24 +306,30 @@ impl MessageMedia {
         self.set_width(width);
         self.set_height(height);
         self.set_compact(compact);
-        self.build(video, filename, MediaType::Video, session);
+        self.build(video, filename, VisualMediaType::Video, session);
     }
 
-    fn build<C>(&self, content: C, filename: String, media_type: MediaType, session: &Session)
+    fn build<C>(&self, content: C, filename: String, media_type: VisualMediaType, session: &Session)
     where
         C: MediaEventContent + Send + Sync + Clone + 'static,
     {
         let accessible_label = if !filename.is_empty() {
             match media_type {
-                MediaType::Image => gettext_f("Image: {filename}", &[("filename", &filename)]),
-                MediaType::Sticker => gettext_f("Sticker: {filename}", &[("filename", &filename)]),
-                MediaType::Video => gettext_f("Video: {filename}", &[("filename", &filename)]),
+                VisualMediaType::Image => {
+                    gettext_f("Image: {filename}", &[("filename", &filename)])
+                }
+                VisualMediaType::Sticker => {
+                    gettext_f("Sticker: {filename}", &[("filename", &filename)])
+                }
+                VisualMediaType::Video => {
+                    gettext_f("Video: {filename}", &[("filename", &filename)])
+                }
             }
         } else {
             match media_type {
-                MediaType::Image => gettext("Image"),
-                MediaType::Sticker => gettext("Sticker"),
-                MediaType::Video => gettext("Video"),
+                VisualMediaType::Image => gettext("Image"),
+                VisualMediaType::Sticker => gettext("Sticker"),
+                VisualMediaType::Video => gettext("Video"),
             }
         };
         self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
@@ -334,7 +340,7 @@ impl MessageMedia {
         let media = session.client().media();
         let handle = spawn_tokio!(async move {
             let thumbnail =
-                if media_type != MediaType::Video && content.thumbnail_source().is_some() {
+                if media_type != VisualMediaType::Video && content.thumbnail_source().is_some() {
                     media
                         .get_thumbnail(
                             &content,
@@ -370,7 +376,7 @@ impl MessageMedia {
                     match handle.await.unwrap() {
                         Ok(Some(data)) => {
                             match media_type {
-                                MediaType::Image | MediaType::Sticker => {
+                                VisualMediaType::Image | VisualMediaType::Sticker => {
                                     match ImagePaintable::from_bytes(
                                         &glib::Bytes::from(&data),
                                         None,
@@ -388,7 +394,7 @@ impl MessageMedia {
                                             child.set_paintable(Some(&texture));
 
                                             child.set_tooltip_text(Some(&filename));
-                                            if media_type == MediaType::Sticker {
+                                            if media_type == VisualMediaType::Sticker {
                                                 if imp.media.has_css_class("content-thumbnail") {
                                                     imp.media.remove_css_class("content-thumbnail");
                                                 }
@@ -406,7 +412,7 @@ impl MessageMedia {
                                         }
                                     }
                                 }
-                                MediaType::Video => {
+                                VisualMediaType::Video => {
                                     // The GStreamer backend of GtkVideo doesn't work with input
                                     // streams so we need to
                                     // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062

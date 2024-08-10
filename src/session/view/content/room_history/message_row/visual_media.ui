@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="ContentMessageMedia" parent="GtkWidget">
+  <template class="ContentMessageVisualMedia" parent="GtkWidget">
     <property name="focusable">True</property>
     <property name="halign">start</property>
     <child>
