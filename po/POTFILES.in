@@ -184,6 +184,7 @@ src/session/view/sidebar/row.rs
 src/session_list/mod.rs
 src/shortcuts.ui
 src/user_facing_error.rs
+src/utils/matrix/media_message.rs
 src/utils/matrix/mod.rs
 src/utils/media.rs
 src/window.ui

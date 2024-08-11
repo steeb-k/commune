@@ -1,20 +1,12 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
-    gdk, gio,
+    gdk,
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::{
-    media::{MediaEventContent, MediaThumbnailSettings},
-    ruma::{
-        api::client::media::get_content_thumbnail::v3::Method,
-        events::{
-            room::message::{ImageMessageEventContent, VideoMessageEventContent},
-            sticker::StickerEventContent,
-        },
-    },
-};
+use matrix_sdk::{media::MediaThumbnailSettings, Client};
+use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::warn;
 
 use super::ContentFormat;
@@ -22,8 +14,8 @@ use crate::{
     components::{ImagePaintable, Spinner, VideoPlayer},
     gettext_f,
     session::model::Session,
-    spawn, spawn_tokio,
-    utils::{uint_to_i32, LoadingState},
+    spawn,
+    utils::{matrix::VisualMediaMessage, LoadingState},
 };
 
 const MAX_THUMBNAIL_WIDTH: i32 = 600;
@@ -32,15 +24,6 @@ const FALLBACK_WIDTH: i32 = 480;
 const FALLBACK_HEIGHT: i32 = 360;
 const MAX_COMPACT_THUMBNAIL_WIDTH: i32 = 75;
 const MAX_COMPACT_THUMBNAIL_HEIGHT: i32 = 50;
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
-#[enum_type(name = "VisualMediaType")]
-pub enum VisualMediaType {
-    Image = 0,
-    Sticker = 1,
-    Video = 2,
-}
 
 mod imp {
     use std::cell::Cell;
@@ -257,113 +240,51 @@ impl MessageVisualMedia {
         self.notify_compact();
     }
 
-    /// Display the given `image`, in a `compact` format or not.
-    pub fn image(
+    /// Display the given visual media message.
+    pub fn set_media_message(
         &self,
-        image: ImageMessageEventContent,
-        filename: String,
+        media_message: VisualMediaMessage,
         session: &Session,
         format: ContentFormat,
     ) {
-        let info = image.info.as_deref();
-        let width = uint_to_i32(info.and_then(|info| info.width));
-        let height = uint_to_i32(info.and_then(|info| info.height));
+        let (width, height) = media_message.dimensions().unzip();
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
 
-        self.set_width(width);
-        self.set_height(height);
+        self.set_width(width.and_then(|w| w.try_into().ok()).unwrap_or(-1));
+        self.set_height(height.and_then(|h| h.try_into().ok()).unwrap_or(-1));
         self.set_compact(compact);
-        self.build(image, filename, VisualMediaType::Image, session);
+
+        self.build(media_message, session);
     }
 
-    /// Display the given `sticker`, in a `compact` format or not.
-    pub fn sticker(&self, sticker: StickerEventContent, session: &Session, format: ContentFormat) {
-        let info = &sticker.info;
-        let width = uint_to_i32(info.width);
-        let height = uint_to_i32(info.height);
-        let body = sticker.body.clone();
-        let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
+    /// Build the content for the given media message.
+    fn build(&self, media_message: VisualMediaMessage, session: &Session) {
+        let filename = media_message.filename();
 
-        self.set_width(width);
-        self.set_height(height);
-        self.set_compact(compact);
-        self.build(sticker, body, VisualMediaType::Sticker, session);
-    }
-
-    /// Display the given `video`, in a `compact` format or not.
-    pub fn video(
-        &self,
-        video: VideoMessageEventContent,
-        filename: String,
-        session: &Session,
-        format: ContentFormat,
-    ) {
-        let info = &video.info.as_deref();
-        let width = uint_to_i32(info.and_then(|info| info.width));
-        let height = uint_to_i32(info.and_then(|info| info.height));
-        let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
-
-        self.set_width(width);
-        self.set_height(height);
-        self.set_compact(compact);
-        self.build(video, filename, VisualMediaType::Video, session);
-    }
-
-    fn build<C>(&self, content: C, filename: String, media_type: VisualMediaType, session: &Session)
-    where
-        C: MediaEventContent + Send + Sync + Clone + 'static,
-    {
         let accessible_label = if !filename.is_empty() {
-            match media_type {
-                VisualMediaType::Image => {
+            match &media_message {
+                VisualMediaMessage::Image(_) => {
                     gettext_f("Image: {filename}", &[("filename", &filename)])
                 }
-                VisualMediaType::Sticker => {
+                VisualMediaMessage::Sticker(_) => {
                     gettext_f("Sticker: {filename}", &[("filename", &filename)])
                 }
-                VisualMediaType::Video => {
+                VisualMediaMessage::Video(_) => {
                     gettext_f("Video: {filename}", &[("filename", &filename)])
                 }
             }
         } else {
-            match media_type {
-                VisualMediaType::Image => gettext("Image"),
-                VisualMediaType::Sticker => gettext("Sticker"),
-                VisualMediaType::Video => gettext("Video"),
+            match &media_message {
+                VisualMediaMessage::Image(_) => gettext("Image"),
+                VisualMediaMessage::Sticker(_) => gettext("Sticker"),
+                VisualMediaMessage::Video(_) => gettext("Video"),
             }
         };
         self.update_property(&[gtk::accessible::Property::Label(&accessible_label)]);
 
         self.imp().set_state(LoadingState::Loading);
-        let scale_factor = self.scale_factor();
 
-        let media = session.client().media();
-        let handle = spawn_tokio!(async move {
-            let thumbnail =
-                if media_type != VisualMediaType::Video && content.thumbnail_source().is_some() {
-                    media
-                        .get_thumbnail(
-                            &content,
-                            MediaThumbnailSettings::new(
-                                Method::Scale,
-                                ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32).into(),
-                                ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32).into(),
-                            ),
-                            true,
-                        )
-                        .await
-                        .ok()
-                        .flatten()
-                } else {
-                    None
-                };
-
-            if let Some(data) = thumbnail {
-                Ok(Some(data))
-            } else {
-                media.get_file(&content, true).await
-            }
-        });
+        let client = session.client();
 
         spawn!(
             glib::Priority::LOW,
@@ -371,93 +292,103 @@ impl MessageVisualMedia {
                 #[weak(rename_to = obj)]
                 self,
                 async move {
-                    let imp = obj.imp();
+                    obj.build_inner(media_message, &client).await;
+                }
+            )
+        );
+    }
 
-                    match handle.await.unwrap() {
-                        Ok(Some(data)) => {
-                            match media_type {
-                                VisualMediaType::Image | VisualMediaType::Sticker => {
-                                    match ImagePaintable::from_bytes(
-                                        &glib::Bytes::from(&data),
-                                        None,
-                                    ) {
-                                        Ok(texture) => {
-                                            let child = if let Some(child) =
-                                                imp.media.child().and_downcast::<gtk::Picture>()
-                                            {
-                                                child
-                                            } else {
-                                                let child = gtk::Picture::new();
-                                                imp.media.set_child(Some(&child));
-                                                child
-                                            };
-                                            child.set_paintable(Some(&texture));
+    async fn build_inner(&self, media_message: VisualMediaMessage, client: &Client) {
+        let imp = self.imp();
 
-                                            child.set_tooltip_text(Some(&filename));
-                                            if media_type == VisualMediaType::Sticker {
-                                                if imp.media.has_css_class("content-thumbnail") {
-                                                    imp.media.remove_css_class("content-thumbnail");
-                                                }
-                                            } else if !imp.media.has_css_class("content-thumbnail")
-                                            {
-                                                imp.media.add_css_class("content-thumbnail");
-                                            }
-                                        }
-                                        Err(error) => {
-                                            warn!("Image file not supported: {error}");
-                                            imp.overlay_error.set_tooltip_text(Some(&gettext(
-                                                "Image file not supported",
-                                            )));
-                                            imp.set_state(LoadingState::Error);
-                                        }
-                                    }
-                                }
-                                VisualMediaType::Video => {
-                                    // The GStreamer backend of GtkVideo doesn't work with input
-                                    // streams so we need to
-                                    // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                                    let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                                    file.replace_contents(
-                                        &data,
-                                        None,
-                                        false,
-                                        gio::FileCreateFlags::REPLACE_DESTINATION,
-                                        gio::Cancellable::NONE,
-                                    )
-                                    .unwrap();
+        match &media_message {
+            VisualMediaMessage::Image(_) | VisualMediaMessage::Sticker(_) => {
+                let is_sticker = matches!(&media_message, VisualMediaMessage::Sticker(_));
+                let filename = media_message.filename();
 
-                                    let child = if let Some(child) =
-                                        imp.media.child().and_downcast::<VideoPlayer>()
-                                    {
-                                        child
-                                    } else {
-                                        let child = VideoPlayer::new();
-                                        imp.media.set_child(Some(&child));
-                                        child
-                                    };
-                                    child.set_compact(obj.compact());
-                                    child.play_media_file(file)
-                                }
-                            };
+                let scale_factor = self.scale_factor();
+                let settings = MediaThumbnailSettings::new(
+                    Method::Scale,
+                    ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32).into(),
+                    ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32).into(),
+                );
 
-                            imp.set_state(LoadingState::Ready);
-                        }
-                        Ok(None) => {
-                            warn!("Could not retrieve invalid media file");
-                            imp.overlay_error
-                                .set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                            imp.set_state(LoadingState::Error);
-                        }
+                let data = if let Some(data) = media_message
+                    .thumbnail(client, settings)
+                    .await
+                    .ok()
+                    .flatten()
+                {
+                    data
+                } else {
+                    match media_message.into_content(client).await {
+                        Ok(data) => data,
                         Err(error) => {
                             warn!("Could not retrieve media file: {error}");
                             imp.overlay_error
                                 .set_tooltip_text(Some(&gettext("Could not retrieve media")));
                             imp.set_state(LoadingState::Error);
+
+                            return;
                         }
                     }
+                };
+
+                match ImagePaintable::from_bytes(&data, None) {
+                    Ok(texture) => {
+                        let child =
+                            if let Some(child) = imp.media.child().and_downcast::<gtk::Picture>() {
+                                child
+                            } else {
+                                let child = gtk::Picture::new();
+                                imp.media.set_child(Some(&child));
+                                child
+                            };
+                        child.set_paintable(Some(&texture));
+
+                        child.set_tooltip_text(Some(&filename));
+                        if is_sticker {
+                            if imp.media.has_css_class("content-thumbnail") {
+                                imp.media.remove_css_class("content-thumbnail");
+                            }
+                        } else if !imp.media.has_css_class("content-thumbnail") {
+                            imp.media.add_css_class("content-thumbnail");
+                        }
+                    }
+                    Err(error) => {
+                        warn!("Image file not supported: {error}");
+                        imp.overlay_error
+                            .set_tooltip_text(Some(&gettext("Image file not supported")));
+                        imp.set_state(LoadingState::Error);
+                    }
                 }
-            )
-        );
+            }
+            VisualMediaMessage::Video(_) => {
+                let file = match media_message.into_tmp_file(client).await {
+                    Ok(file) => file,
+                    Err(error) => {
+                        warn!("Could not retrieve media file: {error}");
+                        imp.overlay_error
+                            .set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                        imp.set_state(LoadingState::Error);
+
+                        return;
+                    }
+                };
+
+                let child = if let Some(child) = imp.media.child().and_downcast::<VideoPlayer>() {
+                    child
+                } else {
+                    let child = VideoPlayer::new();
+                    imp.media.set_child(Some(&child));
+                    child
+                };
+                child.set_compact(self.compact());
+                child.play_media_file(file)
+            }
+        };
+
+        imp.set_state(LoadingState::Ready);
     }
 
     /// Get the texture displayed by this widget, if any.

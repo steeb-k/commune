@@ -1,15 +1,14 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gdk, gio, glib, glib::clone, graphene, CompositeTemplate};
+use gtk::{gdk, glib, glib::clone, graphene, CompositeTemplate};
 use ruma::OwnedEventId;
-use tracing::{error, warn};
+use tracing::warn;
 
 use crate::{
     components::{ContentType, ImagePaintable, MediaContentViewer, ScaleRevealer},
-    prelude::*,
     session::model::Room,
     spawn, toast,
-    utils::{matrix::MediaMessage, media::save_to_file},
+    utils::matrix::VisualMediaMessage,
 };
 
 const ANIMATION_DURATION: u32 = 250;
@@ -39,7 +38,7 @@ mod imp {
         #[property(get = Self::event_id, type = Option<String>)]
         pub event_id: RefCell<Option<OwnedEventId>>,
         /// The media message to display.
-        pub message: RefCell<Option<MediaMessage>>,
+        pub message: RefCell<Option<VisualMediaMessage>>,
         /// The filename of the media.
         #[property(get)]
         pub filename: RefCell<Option<String>>,
@@ -91,10 +90,6 @@ mod imp {
             });
 
             klass.install_action_async("media-viewer.save-video", None, |obj, _, _| async move {
-                obj.save_file().await;
-            });
-
-            klass.install_action_async("media-viewer.save-audio", None, |obj, _, _| async move {
                 obj.save_file().await;
             });
 
@@ -327,12 +322,12 @@ impl MediaViewer {
     }
 
     /// The media message to display.
-    pub fn message(&self) -> Option<MediaMessage> {
+    pub fn message(&self) -> Option<VisualMediaMessage> {
         self.imp().message.borrow().clone()
     }
 
     /// Set the media message to display in the given room.
-    pub fn set_message(&self, room: &Room, event_id: OwnedEventId, message: MediaMessage) {
+    pub fn set_message(&self, room: &Room, event_id: OwnedEventId, message: VisualMediaMessage) {
         let imp = self.imp();
 
         imp.room.set(Some(room));
@@ -351,16 +346,14 @@ impl MediaViewer {
 
         let borrowed_message = imp.message.borrow();
         let message = borrowed_message.as_ref();
-        let has_image = message.is_some_and(|m| matches!(m, MediaMessage::Image(_)));
-        let has_video = message.is_some_and(|m| matches!(m, MediaMessage::Video(_)));
-        let has_audio = message.is_some_and(|m| matches!(m, MediaMessage::Audio(_)));
+        let has_image = message.is_some_and(|m| matches!(m, VisualMediaMessage::Image(_)));
+        let has_video = message.is_some_and(|m| matches!(m, VisualMediaMessage::Video(_)));
 
         let has_event_id = imp.event_id.borrow().is_some();
 
         self.action_set_enabled("media-viewer.copy-image", has_image);
         self.action_set_enabled("media-viewer.save-image", has_image);
         self.action_set_enabled("media-viewer.save-video", has_video);
-        self.action_set_enabled("media-viewer.save-audio", has_audio);
         self.action_set_enabled("media-viewer.permalink", has_event_id);
     }
 
@@ -399,54 +392,34 @@ impl MediaViewer {
         let client = session.client();
 
         match &message {
-            MediaMessage::Image(image) => {
+            VisualMediaMessage::Image(image) => {
                 let mimetype = image.info.as_ref().and_then(|info| info.mimetype.clone());
 
-                match message.content(client).await {
-                    Ok(data) => {
-                        match ImagePaintable::from_bytes(
-                            &glib::Bytes::from(&data),
-                            mimetype.as_deref(),
-                        ) {
-                            Ok(texture) => {
-                                imp.media.view_image(&texture);
-                                return;
-                            }
-                            Err(error) => {
-                                warn!("Could not load GdkTexture from file: {error}")
-                            }
+                match message.into_content(&client).await {
+                    Ok(data) => match ImagePaintable::from_bytes(&data, mimetype.as_deref()) {
+                        Ok(texture) => {
+                            imp.media.view_image(&texture);
+                            return;
                         }
-                    }
+                        Err(error) => {
+                            warn!("Could not load GdkTexture from file: {error}")
+                        }
+                    },
                     Err(error) => warn!("Could not retrieve image file: {error}"),
                 }
 
                 imp.media.show_fallback(ContentType::Image);
             }
-            MediaMessage::Video(_) => {
-                match message.content(client).await {
-                    Ok(data) => {
-                        // The GStreamer backend of GtkVideo doesn't work with input
-                        // streams so we need to
-                        // store the file. See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                        let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                        file.replace_contents(
-                            &data,
-                            None,
-                            false,
-                            gio::FileCreateFlags::REPLACE_DESTINATION,
-                            gio::Cancellable::NONE,
-                        )
-                        .unwrap();
-
-                        imp.media.view_file(file);
-                    }
-                    Err(error) => {
-                        warn!("Could not retrieve video file: {error}");
-                        imp.media.show_fallback(ContentType::Video);
-                    }
+            VisualMediaMessage::Video(_) => match message.into_tmp_file(&client).await {
+                Ok(file) => {
+                    imp.media.view_file(file);
                 }
-            }
-            _ => unreachable!(),
+                Err(error) => {
+                    warn!("Could not retrieve video file: {error}");
+                    imp.media.show_fallback(ContentType::Video);
+                }
+            },
+            VisualMediaMessage::Sticker(_) => unreachable!(),
         }
     }
 
@@ -506,7 +479,7 @@ impl MediaViewer {
         let Some(room) = self.room() else {
             return;
         };
-        let Some(message) = self.message() else {
+        let Some(media_message) = self.message() else {
             return;
         };
         let Some(session) = room.session() else {
@@ -514,18 +487,7 @@ impl MediaViewer {
         };
         let client = session.client();
 
-        let filename = message.filename();
-        let data = match message.content(client).await {
-            Ok(res) => res,
-            Err(error) => {
-                error!("Could not get event file: {error}");
-                toast!(self, error.to_user_facing());
-
-                return;
-            }
-        };
-
-        save_to_file(self, data, filename).await;
+        media_message.save_to_file(&client, self).await;
     }
 
     /// Copy the permalink of the event of the media message to the clipboard.

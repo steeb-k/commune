@@ -212,23 +212,19 @@ fn build_content(
     detect_at_room: bool,
 ) {
     let room = sender.room();
-    let Some(session) = room.session() else {
-        return;
-    };
 
     match content {
         TimelineItemContent::Message(message) => {
             build_message_content(parent, &message, format, sender, detect_at_room)
         }
         TimelineItemContent::Sticker(sticker) => {
-            let child = if let Some(child) = parent.child().and_downcast::<MessageVisualMedia>() {
-                child
-            } else {
-                let child = MessageVisualMedia::new();
-                parent.set_child(Some(&child));
-                child
-            };
-            child.sticker(sticker.content().clone(), &session, format);
+            build_media_message_content(
+                parent,
+                sticker.content().clone().into(),
+                format,
+                &room,
+                detect_at_room,
+            );
         }
         TimelineItemContent::UnableToDecrypt(_) => {
             let child = if let Some(child) = parent.child().and_downcast::<MessageText>() {
@@ -405,22 +401,21 @@ fn build_media_content(
     format: ContentFormat,
     session: &Session,
 ) -> gtk::Widget {
-    let filename = media_message.filename();
-
     match media_message {
         MediaMessage::Audio(audio) => {
             let widget = old_widget
                 .and_downcast::<MessageAudio>()
                 .unwrap_or_default();
 
-            widget.audio(audio, filename, session, format);
+            widget.audio(audio.into(), session, format);
 
             widget.upcast()
         }
-        MediaMessage::File(_) => {
+        MediaMessage::File(file) => {
             let widget = old_widget.and_downcast::<MessageFile>().unwrap_or_default();
 
-            widget.set_filename(Some(filename));
+            let media_message = MediaMessage::from(file);
+            widget.set_filename(Some(media_message.filename()));
             widget.set_format(format);
 
             widget.upcast()
@@ -430,7 +425,7 @@ fn build_media_content(
                 .and_downcast::<MessageVisualMedia>()
                 .unwrap_or_default();
 
-            widget.image(image, filename, session, format);
+            widget.set_media_message(image.into(), session, format);
 
             widget.upcast()
         }
@@ -439,7 +434,16 @@ fn build_media_content(
                 .and_downcast::<MessageVisualMedia>()
                 .unwrap_or_default();
 
-            widget.video(video, filename, session, format);
+            widget.set_media_message(video.into(), session, format);
+
+            widget.upcast()
+        }
+        MediaMessage::Sticker(sticker) => {
+            let widget = old_widget
+                .and_downcast::<MessageVisualMedia>()
+                .unwrap_or_default();
+
+            widget.set_media_message(sticker.into(), session, format);
 
             widget.upcast()
         }

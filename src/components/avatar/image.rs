@@ -119,7 +119,7 @@ impl AvatarImage {
     /// Set the content of the image.
     fn set_image_data(&self, data: Option<Vec<u8>>) {
         let paintable = data
-            .and_then(|data| ImagePaintable::from_bytes(&glib::Bytes::from(&data), None).ok())
+            .and_then(|data| ImagePaintable::from_bytes(&data, None).ok())
             .map(|texture| texture.upcast());
         self.imp().paintable.replace(paintable);
         self.notify_paintable();

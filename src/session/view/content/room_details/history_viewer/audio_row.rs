@@ -5,7 +5,7 @@ use gtk::{gio, glib, CompositeTemplate};
 use tracing::warn;
 
 use super::HistoryViewerEvent;
-use crate::{gettext_f, spawn, spawn_tokio, utils::matrix::MediaMessage};
+use crate::{gettext_f, spawn, utils::matrix::MediaMessage};
 
 mod imp {
     use std::cell::RefCell;
@@ -62,9 +62,9 @@ mod imp {
             }
 
             if let Some(event) = &event {
-                let message_content = event.message_content();
-                if let MediaMessage::Audio(audio) = &message_content {
-                    let filename = message_content.filename();
+                let media_message = event.media_message();
+                if let MediaMessage::Audio(audio) = &media_message {
+                    let filename = media_message.filename();
                     self.title_label.set_label(&filename);
                     self.play_button
                         .update_property(&[gtk::accessible::Property::Label(&gettext_f(
@@ -112,33 +112,16 @@ mod imp {
             let Some(event) = self.event.borrow().clone() else {
                 return;
             };
-            let MediaMessage::Audio(audio) = event.message_content() else {
-                return;
-            };
             let Some(session) = event.room().and_then(|r| r.session()) else {
                 return;
             };
-            let client = session.client();
-            let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
 
-            match handle.await.unwrap() {
-                Ok(Some(data)) => {
-                    // The GStreamer backend doesn't work with input streams so
-                    // we need to store the file.
-                    // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                    let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                    file.replace_contents(
-                        &data,
-                        None,
-                        false,
-                        gio::FileCreateFlags::REPLACE_DESTINATION,
-                        gio::Cancellable::NONE,
-                    )
-                    .unwrap();
+            let media_message = event.media_message();
+            let client = session.client();
+
+            match media_message.into_tmp_file(&client).await {
+                Ok(file) => {
                     self.set_media_file(file);
-                }
-                Ok(None) => {
-                    warn!("Could not retrieve invalid audio file");
                 }
                 Err(error) => {
                     warn!("Could not retrieve audio file: {error}");

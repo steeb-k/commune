@@ -29,7 +29,7 @@ use thiserror::Error;
 
 mod media_message;
 
-pub use self::media_message::MediaMessage;
+pub use self::media_message::{MediaMessage, VisualMediaMessage};
 use crate::{
     components::Pill,
     gettext_f,

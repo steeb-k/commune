@@ -18,11 +18,6 @@
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">S_ave Audio</attribute>
-        <attribute name="action">media-viewer.save-audio</attribute>
-        <attribute name="hidden-when">action-disabled</attribute>
-      </item>
-      <item>
         <attribute name="label" translatable="yes">Copy Message _Link</attribute>
         <attribute name="action">media-viewer.permalink</attribute>
         <attribute name="hidden-when">action-disabled</attribute>

@@ -232,8 +232,11 @@ impl VisualMediaHistoryViewer {
         };
 
         let imp = self.imp();
+        let media_message = event
+            .visual_media_message()
+            .expect("Visual media items contain only visual message content");
         imp.media_viewer
-            .set_message(&room, event.event_id(), event.message_content());
+            .set_message(&room, event.event_id(), media_message);
         imp.media_viewer.reveal(item);
     }
 

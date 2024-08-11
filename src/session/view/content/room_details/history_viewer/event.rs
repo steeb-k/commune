@@ -10,7 +10,10 @@ use ruma::{
     OwnedEventId,
 };
 
-use crate::{session::model::Room, utils::matrix::MediaMessage};
+use crate::{
+    session::model::Room,
+    utils::matrix::{MediaMessage, VisualMediaMessage},
+};
 
 /// The types of events that can be displayer in the history viewers.
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, glib::Enum)]
@@ -138,10 +141,15 @@ impl HistoryViewerEvent {
         self.matrix_event().event_id.clone()
     }
 
-    /// The message content of the inner event.
-    pub fn message_content(&self) -> MediaMessage {
+    /// The media message content of this event.
+    pub fn media_message(&self) -> MediaMessage {
         MediaMessage::from_message(&self.matrix_event().content.msgtype)
             .expect("HistoryViewerEvents are all media messages")
+    }
+
+    /// The visual media message of this event, if any.
+    pub fn visual_media_message(&self) -> Option<VisualMediaMessage> {
+        VisualMediaMessage::from_message(&self.matrix_event().content.msgtype)
     }
 
     /// Get the binary content of this event.
@@ -158,6 +166,6 @@ impl HistoryViewerEvent {
         };
 
         let client = session.client();
-        self.message_content().content(client).await
+        self.media_message().into_content(&client).await
     }
 }

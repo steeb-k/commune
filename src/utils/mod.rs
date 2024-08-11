@@ -23,7 +23,6 @@ use futures_util::{
     pin_mut,
 };
 use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk::ruma::UInt;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -34,21 +33,6 @@ pub use self::{
     single_item_list_model::SingleItemListModel,
 };
 use crate::RUNTIME;
-
-/// Converts a `UInt` to `i32`.
-///
-/// Returns `-1` if the conversion didn't work.
-pub fn uint_to_i32(u: Option<UInt>) -> i32 {
-    u.and_then(|ui| {
-        let u: Option<u16> = ui.try_into().ok();
-        u
-    })
-    .map(|u| {
-        let i: i32 = u.into();
-        i
-    })
-    .unwrap_or(-1)
-}
 
 pub enum TimeoutFuture {
     Timeout,

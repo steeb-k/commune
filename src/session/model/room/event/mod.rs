@@ -30,7 +30,7 @@ use super::{
 use crate::{
     prelude::*,
     spawn_tokio,
-    utils::matrix::{raw_eq, MediaMessage},
+    utils::matrix::{raw_eq, MediaMessage, VisualMediaMessage},
 };
 
 /// The unique key to identify an event in a room.
@@ -596,6 +596,14 @@ impl Event {
         }
     }
 
+    /// The visual media message of this `Event`, if any.
+    pub fn visual_media_message(&self) -> Option<VisualMediaMessage> {
+        match self.imp().item.borrow().as_ref().unwrap().content() {
+            TimelineItemContent::Message(msg) => VisualMediaMessage::from_message(msg.msgtype()),
+            _ => None,
+        }
+    }
+
     /// The mentions from this message, if any.
     pub fn mentions(&self) -> Option<Mentions> {
         match self.imp().item.borrow().as_ref().unwrap().content() {
@@ -764,33 +772,6 @@ impl Event {
         spawn_tokio!(async move { timeline.fetch_details_for_event(&event_id).await })
             .await
             .unwrap()
-    }
-
-    /// Fetch the content of the media message in this `Event`.
-    ///
-    /// Compatible events:
-    ///
-    /// - File message (`MessageType::File`).
-    /// - Image message (`MessageType::Image`).
-    /// - Video message (`MessageType::Video`).
-    /// - Audio message (`MessageType::Audio`).
-    ///
-    /// Returns `Ok(binary_content)` on success.
-    ///
-    /// Returns `Err` if an error occurred while fetching the content. Panics on
-    /// an incompatible event.
-    pub async fn get_media_content(&self) -> Result<Vec<u8>, matrix_sdk::Error> {
-        let Some(session) = self.room().session() else {
-            return Err(matrix_sdk::Error::UnknownError(
-                "Could not upgrade Session".into(),
-            ));
-        };
-        let Some(message) = self.media_message() else {
-            panic!("Trying to get the media content of an event of incompatible type");
-        };
-
-        let client = session.client();
-        message.content(client).await
     }
 
     /// Whether this `Event` is considered a message.

@@ -5,7 +5,6 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::ruma::events::room::message::AudioMessageEventContent;
 use tracing::warn;
 
 use super::ContentFormat;
@@ -13,8 +12,8 @@ use crate::{
     components::{AudioPlayer, Spinner},
     gettext_f,
     session::model::Session,
-    spawn, spawn_tokio,
-    utils::LoadingState,
+    spawn,
+    utils::{matrix::MediaMessage, LoadingState},
 };
 
 mod imp {
@@ -151,14 +150,8 @@ impl MessageAudio {
     }
 
     /// Display the given `audio` message.
-    pub fn audio(
-        &self,
-        audio: AudioMessageEventContent,
-        filename: String,
-        session: &Session,
-        format: ContentFormat,
-    ) {
-        self.set_filename(Some(filename));
+    pub fn audio(&self, message: MediaMessage, session: &Session, format: ContentFormat) {
+        self.set_filename(Some(message.filename()));
 
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
         self.set_compact(compact);
@@ -170,7 +163,6 @@ impl MessageAudio {
         self.set_state(LoadingState::Loading);
 
         let client = session.client();
-        let handle = spawn_tokio!(async move { client.media().get_file(&audio, true).await });
 
         spawn!(
             glib::Priority::LOW,
@@ -178,25 +170,9 @@ impl MessageAudio {
                 #[weak(rename_to = obj)]
                 self,
                 async move {
-                    match handle.await.unwrap() {
-                        Ok(Some(data)) => {
-                            // The GStreamer backend doesn't work with input streams so
-                            // we need to store the file.
-                            // See: https://gitlab.gnome.org/GNOME/gtk/-/issues/4062
-                            let (file, _) = gio::File::new_tmp(None::<String>).unwrap();
-                            file.replace_contents(
-                                &data,
-                                None,
-                                false,
-                                gio::FileCreateFlags::REPLACE_DESTINATION,
-                                gio::Cancellable::NONE,
-                            )
-                            .unwrap();
+                    match message.into_tmp_file(&client).await {
+                        Ok(file) => {
                             obj.display_file(file);
-                        }
-                        Ok(None) => {
-                            warn!("Could not retrieve invalid audio file");
-                            obj.set_error(gettext("Could not retrieve audio file"));
                         }
                         Err(error) => {
                             warn!("Could not retrieve audio file: {error}");

@@ -370,8 +370,10 @@ impl SessionView {
 
     /// Show a media event.
     pub fn show_media(&self, event: &Event, source_widget: &impl IsA<gtk::Widget>) {
-        let Some(media_message) = event.media_message() else {
-            error!("Trying to open the media viewer with an event that is not a media message");
+        let Some(media_message) = event.visual_media_message() else {
+            error!(
+                "Trying to open the media viewer with an event that is not a visual media message"
+            );
             return;
         };
 

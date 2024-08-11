@@ -15,7 +15,7 @@ use crate::{
         view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
     spawn, toast,
-    utils::{matrix::MediaMessage, media::save_to_file, BoundObjectWeakRef},
+    utils::{matrix::MediaMessage, BoundObjectWeakRef},
 };
 
 mod imp {
@@ -852,29 +852,21 @@ impl ItemRow {
         self.set_has_context_menu(true);
     }
 
-    /// Save the file in `event`.
-    ///
-    /// See [`Event::get_media_content()`] for compatible events.
-    /// Panics on an incompatible event.
+    /// Save the media file in the given event.
     fn save_event_file(&self, event: Event) {
         spawn!(clone!(
             #[weak(rename_to = obj)]
             self,
             async move {
-                let data = match event.get_media_content().await {
-                    Ok(res) => res,
-                    Err(error) => {
-                        error!("Could not get event file: {error}");
-                        toast!(obj, error.to_user_facing());
-
-                        return;
-                    }
+                let Some(session) = event.room().session() else {
+                    return;
                 };
                 let Some(media_message) = event.media_message() else {
                     return;
                 };
 
-                save_to_file(&obj, data, media_message.filename()).await;
+                let client = session.client();
+                media_message.save_to_file(&client, &obj).await;
             }
         ));
     }
