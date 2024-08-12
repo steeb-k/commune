@@ -3,9 +3,12 @@
 use std::{cell::Cell, str::FromStr, sync::Mutex};
 
 use gettextrs::gettext;
-use gtk::{gio, glib, prelude::*};
+use glycin::Image;
+use gtk::{gdk, gio, glib, prelude::*};
 use matrix_sdk::attachment::{BaseAudioInfo, BaseImageInfo, BaseVideoInfo};
 use mime::Mime;
+
+use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SANDBOX};
 
 /// Get a default filename for a mime type.
 ///
@@ -94,7 +97,40 @@ pub async fn load_file(file: &gio::File) -> Result<(Vec<u8>, FileInfo), glib::Er
     ))
 }
 
-pub async fn get_image_info(file: &gio::File) -> BaseImageInfo {
+/// Get an image reader for the given file.
+pub async fn image_reader(file: gio::File) -> Result<Image<'static>, glycin::ErrorCtx> {
+    let mut loader = glycin::Loader::new(file);
+
+    if DISABLE_GLYCIN_SANDBOX {
+        loader.sandbox_selector(glycin::SandboxSelector::NotSandboxed);
+    }
+
+    spawn_tokio!(async move { loader.load().await })
+        .await
+        .unwrap()
+}
+
+/// Load the given file as an image into a `GdkPaintable`.
+pub async fn load_image(file: gio::File) -> Result<gdk::Paintable, glycin::ErrorCtx> {
+    let image = image_reader(file).await?;
+
+    let (image, first_frame) = spawn_tokio!(async move {
+        let first_frame = image.next_frame().await?;
+        Ok((image, first_frame))
+    })
+    .await
+    .unwrap()?;
+
+    let paintable = if first_frame.delay().is_some() {
+        AnimatedImagePaintable::new(image, first_frame).upcast()
+    } else {
+        first_frame.texture().upcast()
+    };
+
+    Ok(paintable)
+}
+
+pub async fn get_image_info(file: gio::File) -> BaseImageInfo {
     let mut info = BaseImageInfo {
         width: None,
         height: None,
@@ -102,17 +138,10 @@ pub async fn get_image_info(file: &gio::File) -> BaseImageInfo {
         blurhash: None,
     };
 
-    let path = match file.path() {
-        Some(path) => path,
-        None => return info,
-    };
-
-    if let Some((w, h)) = image::io::Reader::open(path)
-        .ok()
-        .and_then(|reader| reader.into_dimensions().ok())
-    {
-        info.width = Some(w.into());
-        info.height = Some(h.into());
+    if let Ok(image) = image_reader(file).await {
+        let image_info = image.info();
+        info.width = Some(image_info.width.into());
+        info.height = Some(image_info.height.into());
     }
 
     info

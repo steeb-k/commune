@@ -11,11 +11,11 @@ use tracing::warn;
 
 use super::ContentFormat;
 use crate::{
-    components::{ImagePaintable, Spinner, VideoPlayer},
+    components::{AnimatedImagePaintable, Spinner, VideoPlayer},
     gettext_f,
     session::model::Session,
     spawn,
-    utils::{matrix::VisualMediaMessage, LoadingState},
+    utils::{matrix::VisualMediaMessage, media::load_image, LoadingState},
 };
 
 const MAX_THUMBNAIL_WIDTH: i32 = 600;
@@ -313,16 +313,16 @@ impl MessageVisualMedia {
                     ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32).into(),
                 );
 
-                let data = if let Some(data) = media_message
-                    .thumbnail(client, settings)
+                let file = if let Some(file) = media_message
+                    .thumbnail_tmp_file(client, settings)
                     .await
                     .ok()
                     .flatten()
                 {
-                    data
+                    file
                 } else {
-                    match media_message.into_content(client).await {
-                        Ok(data) => data,
+                    match media_message.into_tmp_file(client).await {
+                        Ok(file) => file,
                         Err(error) => {
                             warn!("Could not retrieve media file: {error}");
                             imp.overlay_error
@@ -334,8 +334,8 @@ impl MessageVisualMedia {
                     }
                 };
 
-                match ImagePaintable::from_bytes(&data, None) {
-                    Ok(texture) => {
+                match load_image(file).await {
+                    Ok(paintable) => {
                         let child =
                             if let Some(child) = imp.media.child().and_downcast::<gtk::Picture>() {
                                 child
@@ -344,7 +344,7 @@ impl MessageVisualMedia {
                                 imp.media.set_child(Some(&child));
                                 child
                             };
-                        child.set_paintable(Some(&texture));
+                        child.set_paintable(Some(&paintable));
 
                         child.set_tooltip_text(Some(&filename));
                         if is_sticker {
@@ -393,13 +393,20 @@ impl MessageVisualMedia {
 
     /// Get the texture displayed by this widget, if any.
     pub fn texture(&self) -> Option<gdk::Texture> {
-        self.imp()
+        let paintable = self
+            .imp()
             .media
             .child()
             .and_downcast::<gtk::Picture>()
-            .and_then(|p| p.paintable())
-            .and_downcast::<ImagePaintable>()
-            .and_then(|p| p.current_frame())
+            .and_then(|p| p.paintable())?;
+
+        if let Some(paintable) = paintable.downcast_ref::<AnimatedImagePaintable>() {
+            paintable.current_texture()
+        } else if let Ok(texture) = paintable.downcast::<gdk::Texture>() {
+            Some(texture)
+        } else {
+            None
+        }
     }
 }
 

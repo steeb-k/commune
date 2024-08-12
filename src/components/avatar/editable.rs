@@ -12,9 +12,9 @@ use tracing::{debug, error};
 
 use super::{AvatarData, AvatarImage};
 use crate::{
-    components::{ActionButton, ActionState, ImagePaintable},
+    components::{ActionButton, ActionState},
     toast,
-    utils::expression,
+    utils::{expression, media::load_image},
 };
 
 /// The state of the editable avatar.
@@ -192,7 +192,7 @@ mod imp {
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(true);
 
-                    obj.set_temp_image_from_file(None);
+                    obj.set_temp_image(None);
                 }
                 EditableAvatarState::EditInProgress => {
                     obj.show_temp_image(true);
@@ -207,7 +207,7 @@ mod imp {
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(true);
 
-                    obj.set_temp_image_from_file(None);
+                    obj.set_temp_image(None);
 
                     // Animation for success.
                     obj.set_edit_state(ActionState::Success);
@@ -332,11 +332,13 @@ impl EditableAvatar {
         self.imp().remove_sensitive.set(sensitive);
     }
 
-    fn set_temp_image_from_file(&self, file: Option<&gio::File>) {
-        self.imp().temp_image.replace(
-            file.and_then(|file| ImagePaintable::from_file(file).ok())
-                .map(|texture| texture.upcast()),
-        );
+    async fn set_temp_image_from_file(&self, file: gio::File) {
+        let paintable = load_image(file).await.ok();
+        self.set_temp_image(paintable);
+    }
+
+    fn set_temp_image(&self, temp_image: Option<gdk::Paintable>) {
+        self.imp().temp_image.replace(temp_image);
         self.notify_temp_image();
     }
 
@@ -392,7 +394,7 @@ impl EditableAvatar {
             .and_then(|info| info.content_type())
         {
             if gio::content_type_is_a(&content_type, "image/*") {
-                self.set_temp_image_from_file(Some(&file));
+                self.set_temp_image_from_file(file.clone()).await;
                 self.emit_by_name::<()>("edit-avatar", &[&file]);
             } else {
                 error!("The chosen file is not an image");

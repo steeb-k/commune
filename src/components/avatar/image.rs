@@ -8,7 +8,11 @@ use matrix_sdk::{
 };
 use tracing::error;
 
-use crate::{components::ImagePaintable, session::model::Session, spawn, spawn_tokio};
+use crate::{
+    session::model::Session,
+    spawn, spawn_tokio,
+    utils::{media::load_image, save_data_to_tmp_file},
+};
 
 /// The source of an avatar's URI.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
@@ -93,10 +97,16 @@ mod imp {
             if has_uri {
                 obj.load();
             } else {
-                obj.set_image_data(None);
+                self.set_paintable(None);
             }
 
             obj.notify_uri();
+        }
+
+        /// Set the image content as a paintable
+        pub(super) fn set_paintable(&self, paintable: Option<gdk::Paintable>) {
+            self.paintable.replace(paintable);
+            self.obj().notify_paintable();
         }
     }
 }
@@ -117,12 +127,13 @@ impl AvatarImage {
     }
 
     /// Set the content of the image.
-    fn set_image_data(&self, data: Option<Vec<u8>>) {
-        let paintable = data
-            .and_then(|data| ImagePaintable::from_bytes(&data, None).ok())
-            .map(|texture| texture.upcast());
-        self.imp().paintable.replace(paintable);
-        self.notify_paintable();
+    async fn set_image_data(&self, data: Vec<u8>) {
+        let Ok(file) = save_data_to_tmp_file(&data) else {
+            return;
+        };
+
+        let paintable = load_image(file).await.ok();
+        self.imp().set_paintable(paintable);
     }
 
     fn load(&self) {
@@ -155,7 +166,7 @@ impl AvatarImage {
                 self,
                 async move {
                     match handle.await.unwrap() {
-                        Ok(data) => obj.set_image_data(Some(data)),
+                        Ok(data) => obj.set_image_data(data).await,
                         Err(error) => error!("Could not fetch avatar: {error}"),
                     };
                 }

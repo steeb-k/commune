@@ -1,0 +1,188 @@
+use glycin::{Frame, Image};
+use gtk::{gdk, glib, glib::clone, graphene, prelude::*, subclass::prelude::*};
+use tracing::error;
+
+use crate::{spawn, spawn_tokio};
+
+mod imp {
+    use std::{
+        cell::{OnceCell, RefCell},
+        sync::Arc,
+    };
+
+    use super::*;
+
+    #[derive(Default)]
+    pub struct AnimatedImagePaintable {
+        /// The source image.
+        image: OnceCell<Arc<Image<'static>>>,
+        /// The current frame that is displayed.
+        pub current_frame: RefCell<Option<Frame>>,
+        /// The next frame of the animation, if any.
+        next_frame: RefCell<Option<Frame>>,
+        /// The source ID of the timeout to load the next frame, if any.
+        timeout_source_id: RefCell<Option<glib::SourceId>>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for AnimatedImagePaintable {
+        const NAME: &'static str = "AnimatedImagePaintable";
+        type Type = super::AnimatedImagePaintable;
+        type Interfaces = (gdk::Paintable,);
+    }
+
+    impl ObjectImpl for AnimatedImagePaintable {}
+
+    impl PaintableImpl for AnimatedImagePaintable {
+        fn intrinsic_height(&self) -> i32 {
+            self.current_frame
+                .borrow()
+                .as_ref()
+                .map(|f| f.height())
+                .unwrap_or_else(|| self.image().info().height) as i32
+        }
+
+        fn intrinsic_width(&self) -> i32 {
+            self.current_frame
+                .borrow()
+                .as_ref()
+                .map(|f| f.width())
+                .unwrap_or_else(|| self.image().info().width) as i32
+        }
+
+        fn snapshot(&self, snapshot: &gdk::Snapshot, width: f64, height: f64) {
+            if let Some(frame) = &*self.current_frame.borrow() {
+                frame.texture().snapshot(snapshot, width, height);
+            } else {
+                let snapshot = snapshot.downcast_ref::<gtk::Snapshot>().unwrap();
+                snapshot.append_color(
+                    &gdk::RGBA::BLACK,
+                    &graphene::Rect::new(0., 0., width as f32, height as f32),
+                );
+            }
+        }
+
+        fn flags(&self) -> gdk::PaintableFlags {
+            gdk::PaintableFlags::SIZE
+        }
+
+        fn current_image(&self) -> gdk::Paintable {
+            let snapshot = gtk::Snapshot::new();
+            self.snapshot(
+                snapshot.upcast_ref(),
+                self.intrinsic_width() as f64,
+                self.intrinsic_height() as f64,
+            );
+
+            snapshot
+                .to_paintable(None)
+                .expect("snapshot should always work")
+        }
+    }
+
+    impl AnimatedImagePaintable {
+        /// The source image.
+        fn image(&self) -> &Arc<Image<'static>> {
+            self.image.get().unwrap()
+        }
+
+        /// Initialize the image.
+        pub(super) fn init(&self, image: Image<'static>, first_frame: Frame) {
+            self.image.set(Arc::new(image)).unwrap();
+            self.current_frame.replace(Some(first_frame));
+
+            self.prepare_next_frame();
+        }
+
+        /// Show the next frame of the animation.
+        fn show_next_frame(&self) {
+            // Drop the timeout source ID so we know we are not waiting for it.
+            self.timeout_source_id.take();
+
+            let Some(next_frame) = self.next_frame.take() else {
+                // Wait for the next frame to be loaded.
+                return;
+            };
+
+            self.current_frame.replace(Some(next_frame));
+
+            // Invalidate the contents so that the new frame will be rendered.
+            self.obj().invalidate_contents();
+
+            self.prepare_next_frame();
+        }
+
+        /// Prepare the next frame of the animation.
+        fn prepare_next_frame(&self) {
+            let Some(delay) = self.current_frame.borrow().as_ref().and_then(|f| f.delay()) else {
+                return;
+            };
+
+            // Set the timeout to update the animation.
+            let source_id = glib::timeout_add_local_once(
+                delay,
+                clone!(
+                    #[weak(rename_to = imp)]
+                    self,
+                    move || {
+                        imp.show_next_frame();
+                    }
+                ),
+            );
+            self.timeout_source_id.replace(Some(source_id));
+
+            spawn!(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                async move {
+                    imp.load_next_frame_inner().await;
+                }
+            ));
+        }
+
+        async fn load_next_frame_inner(&self) {
+            let image = self.image().clone();
+
+            let result = spawn_tokio!(async move { image.next_frame().await })
+                .await
+                .unwrap();
+
+            match result {
+                Ok(next_frame) => {
+                    self.next_frame.replace(Some(next_frame));
+
+                    // In case loading the frame took longer than the delay between frames.
+                    if self.timeout_source_id.borrow().is_none() {
+                        self.show_next_frame();
+                    }
+                }
+                Err(error) => {
+                    error!("Failed to load next frame: {error}");
+                    // Do nothing, the animation will stop.
+                }
+            }
+        }
+    }
+}
+
+glib::wrapper! {
+    /// A paintable to display an animated image.
+    pub struct AnimatedImagePaintable(ObjectSubclass<imp::AnimatedImagePaintable>)
+        @implements gdk::Paintable;
+}
+
+impl AnimatedImagePaintable {
+    /// Load an image from the given file.
+    pub fn new(image: Image<'static>, first_frame: Frame) -> Self {
+        let obj = glib::Object::new::<Self>();
+
+        obj.imp().init(image, first_frame);
+
+        obj
+    }
+
+    /// Get the current `GdkTexture` of this paintable, if any.
+    pub fn current_texture(&self) -> Option<gdk::Texture> {
+        Some(self.imp().current_frame.borrow().as_ref()?.texture())
+    }
+}

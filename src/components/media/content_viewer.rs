@@ -4,8 +4,8 @@ use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use tracing::warn;
 
-use super::{AudioPlayer, ImagePaintable, LocationViewer};
-use crate::{components::Spinner, spawn};
+use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
+use crate::{components::Spinner, spawn, utils::media::load_image};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum ContentType {
@@ -197,13 +197,13 @@ impl MediaContentViewer {
             .unwrap_or_default();
 
         match content_type {
-            ContentType::Image => match ImagePaintable::from_file(&file) {
+            ContentType::Image => match load_image(file).await {
                 Ok(texture) => {
                     self.view_image(&texture);
                     return;
                 }
                 Err(error) => {
-                    warn!("Could not load GdkTexture from file: {error}");
+                    warn!("Could not load image from file: {error}");
                 }
             },
             ContentType::Audio => {
@@ -265,12 +265,19 @@ impl MediaContentViewer {
 
     /// Get the texture displayed by this widget, if any.
     pub fn texture(&self) -> Option<gdk::Texture> {
-        self.imp()
+        let paintable = self
+            .imp()
             .viewer
             .child()
             .and_downcast::<gtk::Picture>()
-            .and_then(|p| p.paintable())
-            .and_downcast::<ImagePaintable>()
-            .and_then(|p| p.current_frame())
+            .and_then(|p| p.paintable())?;
+
+        if let Some(paintable) = paintable.downcast_ref::<AnimatedImagePaintable>() {
+            paintable.current_texture()
+        } else if let Ok(texture) = paintable.downcast::<gdk::Texture>() {
+            Some(texture)
+        } else {
+            None
+        }
     }
 }

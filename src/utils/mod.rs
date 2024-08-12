@@ -22,7 +22,7 @@ use futures_util::{
     future::{self, Either, Future},
     pin_mut,
 };
-use gtk::{gdk, glib, prelude::*, subclass::prelude::*};
+use gtk::{gdk, gio, glib, prelude::*, subclass::prelude::*};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -488,4 +488,18 @@ pub fn add_activate_binding_action<T: WidgetClassExt>(klass: &mut T, action: &st
     for key in ACTIVATE_KEYS {
         klass.add_binding_action(*key, gdk::ModifierType::empty(), action);
     }
+}
+
+/// Save the given data to a temporary file.
+pub fn save_data_to_tmp_file(data: &[u8]) -> Result<gio::File, glib::Error> {
+    let (file, _) = gio::File::new_tmp(None::<String>)?;
+    file.replace_contents(
+        data,
+        None,
+        false,
+        gio::FileCreateFlags::REPLACE_DESTINATION,
+        gio::Cancellable::NONE,
+    )?;
+
+    Ok(file)
 }

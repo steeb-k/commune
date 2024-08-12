@@ -5,9 +5,8 @@ use tracing::warn;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
-    components::ImagePaintable,
     spawn,
-    utils::{add_activate_binding_action, matrix::VisualMediaMessage},
+    utils::{add_activate_binding_action, matrix::VisualMediaMessage, media::load_image},
 };
 
 /// The default size requested by a thumbnail.
@@ -165,21 +164,21 @@ mod imp {
                 ((THUMBNAIL_SIZE * scale_factor) as u32).into(),
             );
 
-            let data = media_message
-                .thumbnail(&client, settings)
+            let file = media_message
+                .thumbnail_tmp_file(&client, settings)
                 .await
                 .ok()
                 .flatten();
 
-            if data.is_none() && matches!(media_message, VisualMediaMessage::Video(_)) {
+            if file.is_none() && matches!(media_message, VisualMediaMessage::Video(_)) {
                 // No image to show for the video.
                 return;
             }
 
-            let data = match data {
-                Some(data) => data,
-                None => match media_message.into_content(&client).await {
-                    Ok(data) => data,
+            let file = match file {
+                Some(file) => file,
+                None => match media_message.into_tmp_file(&client).await {
+                    Ok(file) => file,
                     Err(error) => {
                         warn!("Could not retrieve media file: {error}");
                         return;
@@ -187,9 +186,9 @@ mod imp {
                 },
             };
 
-            match ImagePaintable::from_bytes(&data, None) {
-                Ok(texture) => {
-                    self.picture.set_paintable(Some(&texture));
+            match load_image(file).await {
+                Ok(paintable) => {
+                    self.picture.set_paintable(Some(&paintable));
                 }
                 Err(error) => {
                     warn!("Image file not supported: {error}");

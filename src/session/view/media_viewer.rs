@@ -5,7 +5,7 @@ use ruma::OwnedEventId;
 use tracing::warn;
 
 use crate::{
-    components::{ContentType, ImagePaintable, MediaContentViewer, ScaleRevealer},
+    components::{ContentType, MediaContentViewer, ScaleRevealer},
     session::model::Room,
     spawn, toast,
     utils::matrix::VisualMediaMessage,
@@ -391,35 +391,22 @@ impl MediaViewer {
         let imp = self.imp();
         let client = session.client();
 
-        match &message {
-            VisualMediaMessage::Image(image) => {
-                let mimetype = image.info.as_ref().and_then(|info| info.mimetype.clone());
+        let is_video = matches!(message, VisualMediaMessage::Video(_));
 
-                match message.into_content(&client).await {
-                    Ok(data) => match ImagePaintable::from_bytes(&data, mimetype.as_deref()) {
-                        Ok(texture) => {
-                            imp.media.view_image(&texture);
-                            return;
-                        }
-                        Err(error) => {
-                            warn!("Could not load GdkTexture from file: {error}")
-                        }
-                    },
-                    Err(error) => warn!("Could not retrieve image file: {error}"),
-                }
-
-                imp.media.show_fallback(ContentType::Image);
+        match message.into_tmp_file(&client).await {
+            Ok(file) => {
+                imp.media.view_file(file);
             }
-            VisualMediaMessage::Video(_) => match message.into_tmp_file(&client).await {
-                Ok(file) => {
-                    imp.media.view_file(file);
-                }
-                Err(error) => {
-                    warn!("Could not retrieve video file: {error}");
-                    imp.media.show_fallback(ContentType::Video);
-                }
-            },
-            VisualMediaMessage::Sticker(_) => unreachable!(),
+            Err(error) => {
+                warn!("Could not retrieve media file: {error}");
+
+                let content_type = if is_video {
+                    ContentType::Video
+                } else {
+                    ContentType::Image
+                };
+                imp.media.show_fallback(content_type);
+            }
         }
     }
 

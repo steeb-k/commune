@@ -13,7 +13,7 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use crate::{prelude::*, toast};
+use crate::{prelude::*, toast, utils::save_data_to_tmp_file};
 
 /// Get the filename of a media message.
 macro_rules! filename {
@@ -134,17 +134,7 @@ impl MediaMessage {
     /// Returns an error if something occurred while fetching the content.
     pub async fn into_tmp_file(self, client: &Client) -> Result<gio::File, MediaFileError> {
         let data = self.into_content(client).await?;
-
-        let (file, _) = gio::File::new_tmp(None::<String>)?;
-        file.replace_contents(
-            &data,
-            None,
-            false,
-            gio::FileCreateFlags::REPLACE_DESTINATION,
-            gio::Cancellable::NONE,
-        )?;
-
-        Ok(file)
+        Ok(save_data_to_tmp_file(&data)?)
     }
 
     /// Save the content of the media to a file selected by the user.
@@ -270,7 +260,7 @@ impl VisualMediaMessage {
         }
     }
 
-    /// Fetch the content of the media with the given client and thumbnail
+    /// Fetch a thumbnail of the media with the given client and thumbnail
     /// settings.
     ///
     /// This might not return a thumbnail at the requested size, depending on
@@ -307,6 +297,28 @@ impl VisualMediaMessage {
                 thumbnail!(c)
             }
         }
+    }
+
+    /// Fetch a thumbnail of the media with the given client and thumbnail
+    /// settings and write it to a temporary file.
+    ///
+    /// This might not return a thumbnail at the requested size, depending on
+    /// the homeserver.
+    ///
+    /// Returns `Ok(None)` if no thumbnail could be retrieved. Returns an error
+    /// if something occurred while fetching the content.
+    pub async fn thumbnail_tmp_file(
+        &self,
+        client: &Client,
+        settings: MediaThumbnailSettings,
+    ) -> Result<Option<gio::File>, MediaFileError> {
+        let data = self.thumbnail(client, settings).await?;
+
+        let Some(data) = data else {
+            return Ok(None);
+        };
+
+        Ok(Some(save_data_to_tmp_file(&data)?))
     }
 
     /// Fetch the content of the media with the given client.

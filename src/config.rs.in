@@ -1,6 +1,7 @@
 use crate::application::AppProfile;
 
 pub const APP_ID: &str = @APP_ID@;
+pub const DISABLE_GLYCIN_SANDBOX: bool = @DISABLE_GLYCIN_SANDBOX@;
 pub const GETTEXT_PACKAGE: &str = @GETTEXT_PACKAGE@;
 pub const LOCALEDIR: &str = @LOCALEDIR@;
 pub const PKGDATADIR: &str = @PKGDATADIR@;

@@ -16,5 +16,12 @@ option(
   value : false,
   description: 'Whether the build happens in a sandbox.' +
                'When that is the case, cargo will not be able to download the dependencies during' +
-               'the build so they are assumed to be in meson.project_source_root()/cargo'
+               'the build so they are assumed to be in `{meson.project_source_root()}/cargo`.'
+)
+option(
+  'disable-glycin-sandbox',
+  type : 'boolean',
+  value : false,
+  description: 'Whether the sandbox of glycin should be disabled.' +
+               'This is only useful during development.'
 )

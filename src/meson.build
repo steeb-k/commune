@@ -9,11 +9,12 @@ ui_resources = gnome.compile_resources(
 
 global_conf = configuration_data()
 global_conf.set_quoted('APP_ID', application_id)
+global_conf.set('DISABLE_GLYCIN_SANDBOX', get_option('disable-glycin-sandbox').to_string())
+global_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
+global_conf.set_quoted('LOCALEDIR', localedir)
 global_conf.set_quoted('PKGDATADIR', pkgdatadir)
 global_conf.set('PROFILE', profile)
 global_conf.set_quoted('VERSION', full_version)
-global_conf.set_quoted('GETTEXT_PACKAGE', gettext_package)
-global_conf.set_quoted('LOCALEDIR', localedir)
 config = configure_file(
   input: 'config.rs.in',
   output: 'config.rs',

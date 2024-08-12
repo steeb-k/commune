@@ -183,7 +183,7 @@ mod imp {
                 }
             };
 
-            let base_image_info = get_image_info(&file).await;
+            let base_image_info = get_image_info(file).await;
             let image_info = assign!(ImageInfo::new(), {
                 width: base_image_info.width,
                 height: base_image_info.height,

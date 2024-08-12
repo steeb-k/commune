@@ -914,7 +914,7 @@ impl MessageToolbar {
         let size = file_info.size.map(Into::into);
         let info = match file_info.mime.type_() {
             mime::IMAGE => {
-                let mut info = get_image_info(&file).await;
+                let mut info = get_image_info(file).await;
                 info.size = size;
                 AttachmentInfo::Image(info)
             }
