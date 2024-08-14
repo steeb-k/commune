@@ -17,7 +17,7 @@ use crate::{
     session::model::Room,
     spawn_tokio, toast,
     utils::{
-        media::{load_file, ImageInfoLoader},
+        media::{image::ImageInfoLoader, load_file},
         template_callbacks::TemplateCallbacks,
         BoundObjectWeakRef, OngoingAsyncAction,
     },

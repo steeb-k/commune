@@ -14,7 +14,7 @@ use super::{AvatarData, AvatarImage};
 use crate::{
     components::{ActionButton, ActionState},
     toast,
-    utils::{expression, media::load_image},
+    utils::{expression, media::image::load_image},
 };
 
 /// The state of the editable avatar.

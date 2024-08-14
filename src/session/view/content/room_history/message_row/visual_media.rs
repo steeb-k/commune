@@ -15,7 +15,7 @@ use crate::{
     gettext_f,
     session::model::Session,
     spawn,
-    utils::{matrix::VisualMediaMessage, media::load_image, LoadingState},
+    utils::{matrix::VisualMediaMessage, media::image::load_image, LoadingState},
 };
 
 const MAX_THUMBNAIL_WIDTH: i32 = 600;

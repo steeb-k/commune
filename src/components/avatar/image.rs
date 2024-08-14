@@ -11,7 +11,7 @@ use tracing::error;
 use crate::{
     session::model::Session,
     spawn, spawn_tokio,
-    utils::{media::load_image, save_data_to_tmp_file},
+    utils::{media::image::load_image, save_data_to_tmp_file},
 };
 
 /// The source of an avatar's URI.

@@ -5,7 +5,7 @@ use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use tracing::warn;
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
-use crate::{components::Spinner, spawn, utils::media::load_image};
+use crate::{components::Spinner, spawn, utils::media::image::load_image};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum ContentType {

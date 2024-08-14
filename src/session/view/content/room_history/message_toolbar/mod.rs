@@ -40,7 +40,9 @@ use crate::{
     spawn, spawn_tokio, toast,
     utils::{
         matrix::AT_ROOM,
-        media::{filename_for_mime, get_audio_info, get_video_info, load_file, ImageInfoLoader},
+        media::{
+            filename_for_mime, get_audio_info, get_video_info, image::ImageInfoLoader, load_file,
+        },
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
     },

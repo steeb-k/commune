@@ -6,7 +6,7 @@ use tracing::warn;
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
     spawn,
-    utils::{add_activate_binding_action, matrix::VisualMediaMessage, media::load_image},
+    utils::{add_activate_binding_action, matrix::VisualMediaMessage, media::image::load_image},
 };
 
 /// The default size requested by a thumbnail.
