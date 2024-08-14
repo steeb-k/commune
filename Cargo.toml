@@ -49,6 +49,7 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
+webp = "0.3"
 
 # gtk-rs project and dependents. These usually need to be updated together.
 adw = { package = "libadwaita", version = "0.7", features = ["v1_5"] }
@@ -71,7 +72,6 @@ features = [
     "sso-login",
     "markdown",
     "qrcode",
-    "image-rayon",
 ]
 
 [dependencies.matrix-sdk-ui]

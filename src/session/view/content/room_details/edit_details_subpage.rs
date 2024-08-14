@@ -17,7 +17,7 @@ use crate::{
     session::model::Room,
     spawn_tokio, toast,
     utils::{
-        media::{get_image_info, load_file},
+        media::{load_file, ImageInfoLoader},
         template_callbacks::TemplateCallbacks,
         BoundObjectWeakRef, OngoingAsyncAction,
     },
@@ -183,7 +183,7 @@ mod imp {
                 }
             };
 
-            let base_image_info = get_image_info(file).await;
+            let base_image_info = ImageInfoLoader::from(file).load_info().await;
             let image_info = assign!(ImageInfo::new(), {
                 width: base_image_info.width,
                 height: base_image_info.height,

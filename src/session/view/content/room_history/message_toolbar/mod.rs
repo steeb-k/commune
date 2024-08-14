@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Write, io::Cursor};
+use std::{collections::HashMap, fmt::Write};
 
 use adw::{prelude::*, subclass::prelude::*};
 use futures_util::{future, pin_mut, StreamExt};
@@ -8,12 +8,8 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use image::ImageFormat;
 use matrix_sdk::{
-    attachment::{
-        generate_image_thumbnail, AttachmentConfig, AttachmentInfo, BaseFileInfo, BaseImageInfo,
-        ThumbnailFormat,
-    },
+    attachment::{AttachmentConfig, AttachmentInfo, BaseFileInfo, Thumbnail},
     room::edit::EditedContent,
 };
 use matrix_sdk_ui::timeline::{RepliedToInfo, TimelineItemContent};
@@ -44,7 +40,7 @@ use crate::{
     spawn, spawn_tokio, toast,
     utils::{
         matrix::AT_ROOM,
-        media::{filename_for_mime, get_audio_info, get_image_info, get_video_info, load_file},
+        media::{filename_for_mime, get_audio_info, get_video_info, load_file, ImageInfoLoader},
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
     },
@@ -791,31 +787,22 @@ impl MessageToolbar {
         mime: mime::Mime,
         body: String,
         info: AttachmentInfo,
+        thumbnail: Option<Thumbnail>,
     ) {
         let Some(room) = self.room() else {
             return;
         };
 
+        let config = if let Some(thumbnail) = thumbnail {
+            AttachmentConfig::with_thumbnail(thumbnail)
+        } else {
+            AttachmentConfig::new()
+        }
+        .info(info);
+
         let matrix_room = room.matrix_room().clone();
 
         let handle = spawn_tokio!(async move {
-            // The method will filter compatible mime types so we don't need to,
-            // since we ignore errors.
-            let thumbnail = generate_image_thumbnail(
-                &mime,
-                Cursor::new(&bytes),
-                None,
-                ThumbnailFormat::Fallback(ImageFormat::Jpeg),
-            )
-            .ok();
-
-            let config = if let Some(thumbnail) = thumbnail {
-                AttachmentConfig::with_thumbnail(thumbnail)
-            } else {
-                AttachmentConfig::new()
-            }
-            .info(info);
-
             matrix_room
                 .send_attachment(&body, &mime, bytes, config)
                 .await
@@ -845,14 +832,15 @@ impl MessageToolbar {
         }
 
         let bytes = image.save_to_png_bytes();
-        let info = AttachmentInfo::Image(BaseImageInfo {
-            width: Some((image.width() as u32).into()),
-            height: Some((image.height() as u32).into()),
-            size: Some((bytes.len() as u32).into()),
-            blurhash: None,
-        });
+        let filesize = bytes.len().try_into().ok();
 
-        self.send_attachment(bytes.to_vec(), mime::IMAGE_PNG, filename, info)
+        let (mut base_info, thumbnail) = ImageInfoLoader::from(image)
+            .load_info_and_thumbnail(filesize)
+            .await;
+        base_info.size = filesize.map(Into::into);
+
+        let info = AttachmentInfo::Image(base_info);
+        self.send_attachment(bytes.to_vec(), mime::IMAGE_PNG, filename, info, thumbnail)
             .await;
     }
 
@@ -912,26 +900,29 @@ impl MessageToolbar {
         }
 
         let size = file_info.size.map(Into::into);
-        let info = match file_info.mime.type_() {
+        let (info, thumbnail) = match file_info.mime.type_() {
             mime::IMAGE => {
-                let mut info = get_image_info(file).await;
+                let (mut info, thumbnail) = ImageInfoLoader::from(file)
+                    .load_info_and_thumbnail(file_info.size)
+                    .await;
                 info.size = size;
-                AttachmentInfo::Image(info)
+
+                (AttachmentInfo::Image(info), thumbnail)
             }
             mime::VIDEO => {
                 let mut info = get_video_info(&file).await;
                 info.size = size;
-                AttachmentInfo::Video(info)
+                (AttachmentInfo::Video(info), None)
             }
             mime::AUDIO => {
                 let mut info = get_audio_info(&file).await;
                 info.size = size;
-                AttachmentInfo::Audio(info)
+                (AttachmentInfo::Audio(info), None)
             }
-            _ => AttachmentInfo::File(BaseFileInfo { size }),
+            _ => (AttachmentInfo::File(BaseFileInfo { size }), None),
         };
 
-        self.send_attachment(bytes, file_info.mime, file_info.filename, info)
+        self.send_attachment(bytes, file_info.mime, file_info.filename, info, thumbnail)
             .await;
     }
 

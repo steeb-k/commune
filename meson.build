@@ -39,6 +39,7 @@ dependency(
   fallback: ['gtksourceview', 'gtksource_dep'],
   default_options: ['gtk_doc=false', 'sysprof=false', 'gir=false', 'vapi=false', 'install_tests=false']
 )
+dependency('libwebp', version: '>= 1.0.0')
 dependency('openssl', version: '>= 1.0.1')
 dependency('shumate-1.0', version: '>= 1.0.0')
 dependency('sqlite3', version: '>= 3.24.0')
