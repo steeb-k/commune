@@ -4,7 +4,19 @@ use std::str::FromStr;
 
 use gtk::{gdk, gio, prelude::*};
 use image::{ColorType, DynamicImage, ImageDecoder, ImageResult};
-use matrix_sdk::attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail};
+use matrix_sdk::{
+    attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail},
+    media::{MediaFormat, MediaRequest, MediaThumbnailSettings, MediaThumbnailSize},
+    Client,
+};
+use ruma::{
+    api::client::media::get_content_thumbnail::v3::Method,
+    events::{
+        room::{ImageInfo, MediaSource as CommonMediaSource, ThumbnailInfo},
+        sticker::StickerMediaSource,
+    },
+};
+use tracing::warn;
 
 use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SANDBOX};
 
@@ -12,6 +24,8 @@ use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SAND
 const THUMBNAIL_DEFAULT_WIDTH: u32 = 800;
 /// The default height of a generated thumbnail.
 const THUMBNAIL_DEFAULT_HEIGHT: u32 = 600;
+/// The content type of SVG.
+const SVG_CONTENT_TYPE: &str = "image/svg+xml";
 /// The content type of WebP.
 const WEBP_CONTENT_TYPE: &str = "image/webp";
 /// The default WebP quality used for a generated thumbnail.
@@ -321,6 +335,253 @@ impl From<ImageDimensions> for BaseImageInfo {
             width: width.map(Into::into),
             size: None,
             blurhash: None,
+        }
+    }
+}
+
+/// An API to download a thumbnail for a media.
+#[derive(Debug, Clone, Copy)]
+pub struct ThumbnailDownloader<'a> {
+    /// The source of a thumbnail of the media.
+    pub thumbnail: Option<ImageSource<'a>>,
+    /// The source of the original image.
+    pub original: Option<ImageSource<'a>>,
+}
+
+impl<'a> ThumbnailDownloader<'a> {
+    /// Download the thumbnail of the media.
+    ///
+    /// This might not return a thumbnail at the requested size, depending on
+    /// the sources and the homeserver.
+    ///
+    /// Returns `Ok(None)` if no thumbnail could be retrieved. Returns an error
+    /// if something occurred while fetching the content.
+    pub async fn download(
+        self,
+        client: &Client,
+        settings: ThumbnailSettings,
+    ) -> Result<Option<Vec<u8>>, matrix_sdk::Error> {
+        // First, select which source we are going to download from.
+        let source = if let Some((original, thumbnail)) = self.original.zip(self.thumbnail) {
+            if !original.can_be_thumbnailed()
+                && (original.filesize_is_too_big()
+                    || thumbnail.dimensions_are_too_big(settings.width, settings.height, false))
+            {
+                // Use the thumbnail as source to save bandwidth.
+                thumbnail
+            } else {
+                original
+            }
+        } else if let Some(original) = self.original {
+            original
+        } else if let Some(thumbnail) = self.thumbnail {
+            thumbnail
+        } else {
+            return Ok(None);
+        };
+
+        if source.can_be_thumbnailed()
+            && (source.filesize_is_too_big()
+                || source.dimensions_are_too_big(settings.width, settings.height, true))
+        {
+            // Try to get a thumbnail.
+            let media = client.media();
+            let request = MediaRequest {
+                source: source.source.to_common_media_source(),
+                format: MediaFormat::Thumbnail(settings.into()),
+            };
+            let handle = spawn_tokio!(async move { media.get_media_content(&request, true).await });
+
+            match handle.await.unwrap() {
+                Ok(data) => return Ok(Some(data)),
+                Err(error) => {
+                    warn!("Could not retrieve media thumbnail: {error}");
+                }
+            }
+        }
+
+        // Fallback to downloading the full source.
+        let media = client.media();
+        let request = MediaRequest {
+            source: source.source.to_common_media_source(),
+            format: MediaFormat::File,
+        };
+
+        let data = spawn_tokio!(async move { media.get_media_content(&request, true).await })
+            .await
+            .unwrap()?;
+
+        Ok(Some(data))
+    }
+}
+
+/// The source of an image.
+#[derive(Debug, Clone, Copy)]
+pub struct ImageSource<'a> {
+    /// The source of the image.
+    pub source: MediaSource<'a>,
+    /// Information about the image.
+    pub info: Option<ImageSourceInfo<'a>>,
+}
+
+impl<'a> ImageSource<'a> {
+    /// Whether this source can be thumbnailed by the media repo.
+    ///
+    /// Returns `false` in these cases:
+    ///
+    /// - The image is encrypted, because it is not possible for the media repo
+    ///   to make a thumbnail.
+    /// - The image uses the SVG format, because media repos usually do not
+    ///   accept to create a thumbnail of those.
+    fn can_be_thumbnailed(&self) -> bool {
+        !self.source.is_encrypted()
+            && !self
+                .info
+                .is_some_and(|i| i.mimetype.is_some_and(|m| m == SVG_CONTENT_TYPE))
+    }
+
+    /// Whether the filesize of this source is too big.
+    ///
+    /// It means that it is worth it to download a thumbnail instead of the
+    /// original file, even if its dimensions are smaller than requested.
+    fn filesize_is_too_big(&self) -> bool {
+        self.info
+            .is_some_and(|i| i.size.is_some_and(|s| s > THUMBNAIL_MAX_FILESIZE_THRESHOLD))
+    }
+
+    /// Whether the dimensions of this source are too big for the given
+    /// requested dimensions.
+    fn dimensions_are_too_big(
+        &self,
+        requested_width: u32,
+        requested_height: u32,
+        increase_threshold: bool,
+    ) -> bool {
+        self.info.is_some_and(|i| {
+            i.width.is_some_and(|w| {
+                let threshold = if increase_threshold {
+                    requested_width.saturating_add(THUMBNAIL_DIMENSIONS_THRESHOLD)
+                } else {
+                    requested_width
+                };
+
+                w > threshold
+            }) || i.height.is_some_and(|h| {
+                let threshold = if increase_threshold {
+                    requested_height.saturating_add(THUMBNAIL_DIMENSIONS_THRESHOLD)
+                } else {
+                    requested_height
+                };
+
+                h > threshold
+            })
+        })
+    }
+}
+
+/// The source of a media file.
+#[derive(Debug, Clone, Copy)]
+pub enum MediaSource<'a> {
+    /// A common media source.
+    Common(&'a CommonMediaSource),
+    /// The media source of a sticker.
+    Sticker(&'a StickerMediaSource),
+}
+
+impl<'a> MediaSource<'a> {
+    /// Whether this source is encrypted.
+    fn is_encrypted(&self) -> bool {
+        match self {
+            Self::Common(source) => matches!(source, CommonMediaSource::Encrypted(_)),
+            Self::Sticker(source) => matches!(source, StickerMediaSource::Encrypted(_)),
+        }
+    }
+
+    /// Get this source as a `CommonMediaSource`.
+    fn to_common_media_source(self) -> CommonMediaSource {
+        match self {
+            Self::Common(source) => source.clone(),
+            Self::Sticker(source) => source.clone().into(),
+        }
+    }
+}
+
+impl<'a> From<&'a CommonMediaSource> for MediaSource<'a> {
+    fn from(value: &'a CommonMediaSource) -> Self {
+        Self::Common(value)
+    }
+}
+
+impl<'a> From<&'a StickerMediaSource> for MediaSource<'a> {
+    fn from(value: &'a StickerMediaSource) -> Self {
+        Self::Sticker(value)
+    }
+}
+
+/// Information about the source of an image.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ImageSourceInfo<'a> {
+    /// The width of the image.
+    width: Option<u32>,
+    /// The height of the image.
+    height: Option<u32>,
+    /// The MIME type of the image.
+    mimetype: Option<&'a str>,
+    /// The file size of the image.
+    size: Option<u32>,
+}
+
+impl<'a> From<&'a ImageInfo> for ImageSourceInfo<'a> {
+    fn from(value: &'a ImageInfo) -> Self {
+        Self {
+            width: value.width.and_then(|u| u.try_into().ok()),
+            height: value.height.and_then(|u| u.try_into().ok()),
+            mimetype: value.mimetype.as_deref(),
+            size: value.size.and_then(|u| u.try_into().ok()),
+        }
+    }
+}
+
+impl<'a> From<&'a ThumbnailInfo> for ImageSourceInfo<'a> {
+    fn from(value: &'a ThumbnailInfo) -> Self {
+        Self {
+            width: value.width.and_then(|u| u.try_into().ok()),
+            height: value.height.and_then(|u| u.try_into().ok()),
+            mimetype: value.mimetype.as_deref(),
+            size: value.size.and_then(|u| u.try_into().ok()),
+        }
+    }
+}
+
+/// The settings for downloading a thumbnail.
+#[derive(Debug, Clone)]
+pub struct ThumbnailSettings {
+    /// The resquested width of the thumbnail.
+    pub width: u32,
+    /// The requested height of the thumbnail.
+    pub height: u32,
+    /// The method to use to resize the thumbnail.
+    pub method: Method,
+    /// Whether to request an animated thumbnail.
+    pub animated: bool,
+}
+
+impl From<ThumbnailSettings> for MediaThumbnailSettings {
+    fn from(value: ThumbnailSettings) -> Self {
+        let ThumbnailSettings {
+            width,
+            height,
+            method,
+            animated,
+        } = value;
+
+        MediaThumbnailSettings {
+            size: MediaThumbnailSize {
+                method,
+                width: width.into(),
+                height: height.into(),
+            },
+            animated,
         }
     }
 }

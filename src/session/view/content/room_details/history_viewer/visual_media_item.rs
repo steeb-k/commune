@@ -1,12 +1,15 @@
 use gtk::{glib, glib::clone, prelude::*, subclass::prelude::*, CompositeTemplate};
-use matrix_sdk::media::MediaThumbnailSettings;
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::warn;
 
 use super::{HistoryViewerEvent, VisualMediaHistoryViewer};
 use crate::{
     spawn,
-    utils::{add_activate_binding_action, matrix::VisualMediaMessage, media::image::load_image},
+    utils::{
+        add_activate_binding_action,
+        matrix::VisualMediaMessage,
+        media::image::{load_image, ThumbnailSettings},
+    },
 };
 
 /// The default size requested by a thumbnail.
@@ -158,32 +161,20 @@ mod imp {
             let client = session.client();
 
             let scale_factor = self.obj().scale_factor();
-            let settings = MediaThumbnailSettings::new(
-                Method::Scale,
-                ((THUMBNAIL_SIZE * scale_factor) as u32).into(),
-                ((THUMBNAIL_SIZE * scale_factor) as u32).into(),
-            );
+            let settings = ThumbnailSettings {
+                width: ((THUMBNAIL_SIZE * scale_factor) as u32),
+                height: ((THUMBNAIL_SIZE * scale_factor) as u32),
+                method: Method::Scale,
+                animated: false,
+            };
 
-            let file = media_message
-                .thumbnail_tmp_file(&client, settings)
-                .await
-                .ok()
-                .flatten();
-
-            if file.is_none() && matches!(media_message, VisualMediaMessage::Video(_)) {
-                // No image to show for the video.
-                return;
-            }
-
-            let file = match file {
-                Some(file) => file,
-                None => match media_message.into_tmp_file(&client).await {
-                    Ok(file) => file,
-                    Err(error) => {
-                        warn!("Could not retrieve media file: {error}");
-                        return;
-                    }
-                },
+            let file = match media_message.thumbnail_tmp_file(&client, settings).await {
+                Ok(Some(file)) => file,
+                Ok(None) => return,
+                Err(error) => {
+                    warn!("Could not retrieve media file: {error}");
+                    return;
+                }
             };
 
             match load_image(file).await {

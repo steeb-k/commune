@@ -5,7 +5,7 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use matrix_sdk::{media::MediaThumbnailSettings, Client};
+use matrix_sdk::Client;
 use ruma::api::client::media::get_content_thumbnail::v3::Method;
 use tracing::warn;
 
@@ -15,7 +15,11 @@ use crate::{
     gettext_f,
     session::model::Session,
     spawn,
-    utils::{matrix::VisualMediaMessage, media::image::load_image, LoadingState},
+    utils::{
+        matrix::VisualMediaMessage,
+        media::image::{load_image, ThumbnailSettings},
+        LoadingState,
+    },
 };
 
 const MAX_THUMBNAIL_WIDTH: i32 = 600;
@@ -307,30 +311,23 @@ impl MessageVisualMedia {
                 let filename = media_message.filename();
 
                 let scale_factor = self.scale_factor();
-                let settings = MediaThumbnailSettings::new(
-                    Method::Scale,
-                    ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32).into(),
-                    ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32).into(),
-                );
+                let settings = ThumbnailSettings {
+                    method: Method::Scale,
+                    width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32),
+                    height: ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32),
+                    animated: true,
+                };
 
-                let file = if let Some(file) = media_message
-                    .thumbnail_tmp_file(client, settings)
-                    .await
-                    .ok()
-                    .flatten()
-                {
-                    file
-                } else {
-                    match media_message.into_tmp_file(client).await {
-                        Ok(file) => file,
-                        Err(error) => {
-                            warn!("Could not retrieve media file: {error}");
-                            imp.overlay_error
-                                .set_tooltip_text(Some(&gettext("Could not retrieve media")));
-                            imp.set_state(LoadingState::Error);
+                let file = match media_message.thumbnail_tmp_file(client, settings).await {
+                    Ok(Some(file)) => file,
+                    Ok(None) => unreachable!("Only video messages do not have a fallback"),
+                    Err(error) => {
+                        warn!("Could not retrieve media file: {error}");
+                        imp.overlay_error
+                            .set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                        imp.set_state(LoadingState::Error);
 
-                            return;
-                        }
+                        return;
                     }
                 };
 

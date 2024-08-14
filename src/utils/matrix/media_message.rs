@@ -1,6 +1,6 @@
 use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*};
-use matrix_sdk::{media::MediaThumbnailSettings, Client};
+use matrix_sdk::Client;
 use ruma::{
     events::{
         room::message::{
@@ -13,7 +13,14 @@ use ruma::{
 };
 use tracing::{debug, error};
 
-use crate::{prelude::*, toast, utils::save_data_to_tmp_file};
+use crate::{
+    prelude::*,
+    toast,
+    utils::{
+        media::image::{ImageSource, ThumbnailDownloader, ThumbnailSettings},
+        save_data_to_tmp_file,
+    },
+};
 
 /// Get the filename of a media message.
 macro_rules! filename {
@@ -264,53 +271,78 @@ impl VisualMediaMessage {
     /// settings.
     ///
     /// This might not return a thumbnail at the requested size, depending on
-    /// the homeserver.
+    /// the message and the homeserver.
     ///
-    /// Returns `Ok(None)` if no thumbnail could be retrieved. Returns an error
-    /// if something occurred while fetching the content.
+    /// Returns `Ok(None)` if no thumbnail could be retrieved and no fallback
+    /// could be downloaded. This only applies to video messages.
+    ///
+    /// Returns an error if something occurred while fetching the content.
     pub async fn thumbnail(
         &self,
         client: &Client,
-        settings: MediaThumbnailSettings,
+        settings: ThumbnailSettings,
     ) -> Result<Option<Vec<u8>>, matrix_sdk::Error> {
-        let media = client.media();
-
-        macro_rules! thumbnail {
-            ($event_content:ident) => {{
-                let event_content = $event_content.clone();
-                $crate::spawn_tokio!(async move {
-                    media.get_thumbnail(&event_content, settings, true).await
-                })
-                .await
-                .unwrap()
-            }};
-        }
-
-        match self {
+        let downloader = match &self {
             Self::Image(c) => {
-                thumbnail!(c)
+                let image_info = c.info.as_deref();
+                ThumbnailDownloader {
+                    thumbnail: image_info.and_then(|i| {
+                        i.thumbnail_source.as_ref().map(|s| ImageSource {
+                            source: s.into(),
+                            info: i.thumbnail_info.as_deref().map(Into::into),
+                        })
+                    }),
+                    original: Some(ImageSource {
+                        source: (&c.source).into(),
+                        info: image_info.map(Into::into),
+                    }),
+                }
             }
             Self::Video(c) => {
-                thumbnail!(c)
+                let video_info = c.info.as_deref();
+                ThumbnailDownloader {
+                    thumbnail: video_info.and_then(|i| {
+                        i.thumbnail_source.as_ref().map(|s| ImageSource {
+                            source: s.into(),
+                            info: i.thumbnail_info.as_deref().map(Into::into),
+                        })
+                    }),
+                    original: None,
+                }
             }
             Self::Sticker(c) => {
-                thumbnail!(c)
+                let image_info = &c.info;
+                ThumbnailDownloader {
+                    thumbnail: image_info.thumbnail_source.as_ref().map(|s| ImageSource {
+                        source: s.into(),
+                        info: image_info.thumbnail_info.as_deref().map(Into::into),
+                    }),
+                    original: Some(ImageSource {
+                        source: (&c.source).into(),
+                        info: Some(image_info.into()),
+                    }),
+                }
             }
-        }
+        };
+
+        downloader.download(client, settings).await
     }
 
     /// Fetch a thumbnail of the media with the given client and thumbnail
     /// settings and write it to a temporary file.
     ///
     /// This might not return a thumbnail at the requested size, depending on
-    /// the homeserver.
+    /// the message and the homeserver.
     ///
-    /// Returns `Ok(None)` if no thumbnail could be retrieved. Returns an error
-    /// if something occurred while fetching the content.
+    /// Returns `Ok(None)` if no thumbnail could be retrieved and no fallback
+    /// could be downloaded. This only applies to video messages.
+    ///
+    /// Returns an error if something occurred while fetching the content or
+    /// saving the content to a file.
     pub async fn thumbnail_tmp_file(
         &self,
         client: &Client,
-        settings: MediaThumbnailSettings,
+        settings: ThumbnailSettings,
     ) -> Result<Option<gio::File>, MediaFileError> {
         let data = self.thumbnail(client, settings).await?;
 
@@ -331,7 +363,8 @@ impl VisualMediaMessage {
     /// Fetch the content of the media with the given client and write it to a
     /// temporary file.
     ///
-    /// Returns an error if something occurred while fetching the content.
+    /// Returns an error if something occurred while fetching the content or
+    /// saving the content to a file.
     pub async fn into_tmp_file(self, client: &Client) -> Result<gio::File, MediaFileError> {
         MediaMessage::from(self).into_tmp_file(client).await
     }
