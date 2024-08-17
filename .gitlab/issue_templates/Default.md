@@ -19,7 +19,7 @@ or videos showing the issue.
 
 <!-- If you have error logs or a crash report, use the "Attach A File" button in the issue editor to attach it, or paste it in a code block below.
 
-To access the logs, you can run `journalctl -e -o cat _COMM=fractal`
+To access the logs, you can run `SYSTEMD_LESS=FRXMK journalctl -e -o cat _COMM=fractal`
 
 To generate a stack trace in case of a crash, you can follow this guide: https://handbook.gnome.org/issues/stack-traces.html
 
