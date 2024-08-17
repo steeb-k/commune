@@ -166,6 +166,7 @@ mod imp {
                 height: ((THUMBNAIL_SIZE * scale_factor) as u32),
                 method: Method::Scale,
                 animated: false,
+                prefer_thumbnail: false,
             };
 
             let file = match media_message.thumbnail_tmp_file(&client, settings).await {

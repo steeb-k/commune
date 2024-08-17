@@ -6,7 +6,7 @@ use gtk::{
     CompositeTemplate,
 };
 use matrix_sdk::RoomState;
-use ruma::{assign, events::room::avatar::ImageInfo};
+use ruma::{assign, events::room::avatar::ImageInfo, OwnedMxcUri};
 use tracing::error;
 
 use crate::{
@@ -51,7 +51,7 @@ mod imp {
         /// The presented room.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         room: BoundObjectWeakRef<Room>,
-        changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
+        changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
         changing_name: RefCell<Option<OngoingAsyncAction<String>>>,
         changing_topic: RefCell<Option<OngoingAsyncAction<String>>>,
         expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
@@ -97,7 +97,7 @@ mod imp {
 
             let avatar_data = room.avatar_data();
             let expr_watch = AvatarData::this_expression("image")
-                .chain_property::<AvatarImage>("uri")
+                .chain_property::<AvatarImage>("uri-string")
                 .watch(
                     Some(&avatar_data),
                     clone!(
@@ -132,7 +132,7 @@ mod imp {
         }
 
         /// Handle when we receive an avatar URI change from the homeserver.
-        fn avatar_changed(&self, uri: Option<String>) {
+        fn avatar_changed(&self, uri: Option<OwnedMxcUri>) {
             if let Some(action) = self.changing_avatar.borrow().as_ref() {
                 if uri.as_ref() != action.as_value() {
                     // This is not the change we expected, maybe another device did a change too.
@@ -207,7 +207,7 @@ mod imp {
                 }
             };
 
-            let (action, weak_action) = OngoingAsyncAction::set(uri.to_string());
+            let (action, weak_action) = OngoingAsyncAction::set(uri.clone());
             self.changing_avatar.replace(Some(action));
 
             let matrix_room = matrix_room.clone();

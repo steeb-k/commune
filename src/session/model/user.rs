@@ -70,7 +70,7 @@ mod imp {
             self.parent_constructed();
             let obj = self.obj();
 
-            let avatar_image = AvatarImage::new(&obj.session(), None, AvatarUriSource::User);
+            let avatar_image = AvatarImage::new(&obj.session(), AvatarUriSource::User, None, None);
             obj.avatar_data().set_image(Some(avatar_image));
         }
 
@@ -352,7 +352,8 @@ pub trait UserExt: IsA<User> {
             .avatar_data()
             .image()
             .unwrap()
-            .set_uri(uri.map(String::from));
+            // User avatars never have information.
+            .set_uri_and_info(uri, None);
     }
 
     /// Get the `matrix.to` URI representation for this `User`.

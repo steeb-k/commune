@@ -200,7 +200,7 @@ impl Member {
         self.avatar_data()
             .image()
             .unwrap()
-            .set_uri(member.avatar_url().map(ToString::to_string));
+            .set_uri_and_info(member.avatar_url().map(ToOwned::to_owned), None);
         self.set_power_level(member.power_level());
         self.set_membership(member.membership().into());
     }

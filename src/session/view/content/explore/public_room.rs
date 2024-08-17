@@ -51,7 +51,12 @@ mod imp {
             let obj = self.obj();
 
             let avatar_data = if let Some(session) = obj.room_list().session() {
-                AvatarData::with_image(AvatarImage::new(&session, None, AvatarUriSource::Room))
+                AvatarData::with_image(AvatarImage::new(
+                    &session,
+                    AvatarUriSource::Room,
+                    None,
+                    None,
+                ))
             } else {
                 AvatarData::new()
             };
@@ -120,7 +125,7 @@ impl PublicRoom {
         self.avatar_data()
             .image()
             .unwrap()
-            .set_uri(room.avatar_url.clone().map(String::from));
+            .set_uri_and_info(room.avatar_url.clone(), None);
 
         if let Some(room) = self.room_list().get(&room.room_id) {
             self.set_room(room);

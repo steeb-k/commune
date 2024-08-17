@@ -9,7 +9,9 @@ use gtk::{
     subclass::prelude::*,
 };
 use matrix_sdk::{
-    deserialized_responses::{AmbiguityChange, MemberEvent, SyncTimelineEvent},
+    deserialized_responses::{
+        AmbiguityChange, MemberEvent, SyncOrStrippedState, SyncTimelineEvent,
+    },
     event_handler::EventHandlerDropGuard,
     room::Room as MatrixRoom,
     send_queue::RoomSendQueueUpdate,
@@ -22,8 +24,8 @@ use ruma::{
         receipt::{ReceiptEventContent, ReceiptType},
         relation::Annotation,
         room::{
-            encryption::SyncRoomEncryptionEvent, guest_access::GuestAccess,
-            history_visibility::HistoryVisibility,
+            avatar::RoomAvatarEventContent, encryption::SyncRoomEncryptionEvent,
+            guest_access::GuestAccess, history_visibility::HistoryVisibility,
         },
         tag::{TagInfo, TagName},
         typing::TypingEventContent,
@@ -515,7 +517,6 @@ impl Room {
         imp.matrix_room.set(matrix_room).unwrap();
 
         imp.update_topic();
-        self.update_avatar();
         self.load_predecessor();
         self.load_tombstone();
         self.load_category();
@@ -526,6 +527,17 @@ impl Room {
         self.aliases().init(self);
         self.update_guests_allowed();
         self.update_history_visibility();
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.update_avatar().await;
+                }
+            )
+        );
 
         spawn!(
             glib::Priority::DEFAULT_IDLE,
@@ -752,7 +764,17 @@ impl Room {
 
         self.imp().direct_member.replace(member);
         self.notify_direct_member();
-        self.update_avatar();
+
+        spawn!(
+            glib::Priority::DEFAULT_IDLE,
+            clone!(
+                #[weak(rename_to = obj)]
+                self,
+                async move {
+                    obj.update_avatar().await;
+                }
+            )
+        );
     }
 
     /// Load the other member of the room, if this room is a direct chat and
@@ -1455,8 +1477,17 @@ impl Room {
                             }
                         ));
                     }
-                    AnySyncStateEvent::RoomAvatar(SyncStateEvent::Original(_)) => {
-                        self.update_avatar();
+                    AnySyncStateEvent::RoomAvatar(_) => {
+                        spawn!(
+                            glib::Priority::DEFAULT_IDLE,
+                            clone!(
+                                #[weak(rename_to = obj)]
+                                self,
+                                async move {
+                                    obj.update_avatar().await;
+                                }
+                            )
+                        );
                     }
                     AnySyncStateEvent::RoomName(_) => {
                         self.notify_name();
@@ -2042,43 +2073,90 @@ impl Room {
     }
 
     /// Update the avatar for the room.
-    fn update_avatar(&self) {
+    async fn update_avatar(&self) {
         let Some(session) = self.session() else {
             return;
         };
         let imp = self.imp();
         let avatar_data = self.avatar_data();
 
-        if let Some(avatar_url) = self.matrix_room().avatar_url() {
+        let matrix_room = self.matrix_room().clone();
+        let handle = spawn_tokio!(async move {
+            matrix_room
+                .get_state_event_static::<RoomAvatarEventContent>()
+                .await
+        });
+
+        let avatar_event = match handle.await.unwrap() {
+            Ok(Some(raw_event)) => match raw_event.deserialize() {
+                Ok(event) => Some(event),
+                Err(error) => {
+                    warn!("Could not deserialize room avatar event: {error}");
+                    None
+                }
+            },
+            Ok(None) => None,
+            Err(error) => {
+                warn!("Could not get room avatar event: {error}");
+                None
+            }
+        };
+
+        let (avatar_url, avatar_info) = match avatar_event {
+            Some(event) => match event {
+                SyncOrStrippedState::Sync(event) => match event {
+                    SyncStateEvent::Original(e) => (e.content.url, e.content.info),
+                    SyncStateEvent::Redacted(_) => (None, None),
+                },
+                SyncOrStrippedState::Stripped(event) => (event.content.url, event.content.info),
+            },
+            None => (None, None),
+        };
+
+        if let Some(avatar_url) = avatar_url {
             imp.set_has_avatar(true);
 
-            let avatar_image = if let Some(avatar_image) = avatar_data
+            if let Some(avatar_image) = avatar_data
                 .image()
                 .filter(|i| i.uri_source() == AvatarUriSource::Room)
             {
-                avatar_image
+                avatar_image.set_uri_and_info(Some(avatar_url), avatar_info);
             } else {
-                let avatar_image =
-                    AvatarImage::new(&session, Some(&avatar_url), AvatarUriSource::Room);
+                let avatar_image = AvatarImage::new(
+                    &session,
+                    AvatarUriSource::Room,
+                    Some(avatar_url),
+                    avatar_info,
+                );
+
                 avatar_data.set_image(Some(avatar_image.clone()));
-                avatar_image
-            };
-            avatar_image.set_uri(Some(avatar_url.to_string()));
+            }
 
             return;
         }
 
         imp.set_has_avatar(false);
 
+        // If we have a direct member, use their avatar.
         if let Some(direct_member) = self.direct_member() {
             avatar_data.set_image(direct_member.avatar_data().image());
         }
 
-        if avatar_data.image().is_none() {
+        let avatar_image = avatar_data.image();
+
+        if let Some(avatar_image) = avatar_image
+            .as_ref()
+            .filter(|i| i.uri_source() == AvatarUriSource::Room)
+        {
+            // The room has no avatar, make sure we remove it.
+            avatar_image.set_uri_and_info(None, None);
+        } else if avatar_image.is_none() {
+            // We always need an avatar image, even if it is empty.
             avatar_data.set_image(Some(AvatarImage::new(
                 &session,
-                None,
                 AvatarUriSource::Room,
+                None,
+                None,
             )))
         }
     }

@@ -5,6 +5,7 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
+use ruma::OwnedMxcUri;
 use tracing::error;
 
 mod change_password_subpage;
@@ -53,7 +54,7 @@ mod imp {
         pub user_id: TemplateChild<CopyableRow>,
         #[template_child]
         pub session_id: TemplateChild<CopyableRow>,
-        pub changing_avatar: RefCell<Option<OngoingAsyncAction<String>>>,
+        pub changing_avatar: RefCell<Option<OngoingAsyncAction<OwnedMxcUri>>>,
         pub changing_display_name: RefCell<Option<OngoingAsyncAction<String>>>,
         pub avatar_uri_handler: RefCell<Option<glib::SignalHandlerId>>,
         pub display_name_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -116,17 +117,17 @@ mod imp {
             self.session_id.set_subtitle(session.device_id().as_str());
 
             let user = session.user();
-            let avatar_uri_handler =
-                user.avatar_data()
-                    .image()
-                    .unwrap()
-                    .connect_uri_notify(clone!(
-                        #[weak]
-                        obj,
-                        move |avatar_image| {
-                            obj.user_avatar_changed(avatar_image.uri());
-                        }
-                    ));
+            let avatar_uri_handler = user
+                .avatar_data()
+                .image()
+                .unwrap()
+                .connect_uri_string_notify(clone!(
+                    #[weak]
+                    obj,
+                    move |avatar_image| {
+                        obj.user_avatar_changed(avatar_image.uri());
+                    }
+                ));
             self.avatar_uri_handler.replace(Some(avatar_uri_handler));
 
             let display_name_handler = user.connect_display_name_notify(clone!(
@@ -186,7 +187,7 @@ impl GeneralPage {
     }
 
     /// Update the view when the user's avatar changed.
-    fn user_avatar_changed(&self, uri: Option<String>) {
+    fn user_avatar_changed(&self, uri: Option<OwnedMxcUri>) {
         let imp = self.imp();
 
         if let Some(action) = imp.changing_avatar.borrow().as_ref() {
@@ -246,7 +247,7 @@ impl GeneralPage {
             }
         };
 
-        let (action, weak_action) = OngoingAsyncAction::set(uri.to_string());
+        let (action, weak_action) = OngoingAsyncAction::set(uri.clone());
         imp.changing_avatar.replace(Some(action));
 
         let uri_clone = uri.clone();

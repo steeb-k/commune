@@ -12,13 +12,22 @@ use matrix_sdk::{
 use ruma::{
     api::client::media::get_content_thumbnail::v3::Method,
     events::{
-        room::{ImageInfo, MediaSource as CommonMediaSource, ThumbnailInfo},
+        room::{
+            avatar::ImageInfo as AvatarImageInfo, ImageInfo, MediaSource as CommonMediaSource,
+            ThumbnailInfo,
+        },
         sticker::StickerMediaSource,
     },
+    OwnedMxcUri,
 };
 use tracing::warn;
 
-use crate::{components::AnimatedImagePaintable, spawn_tokio, DISABLE_GLYCIN_SANDBOX};
+use crate::{
+    components::AnimatedImagePaintable,
+    spawn_tokio,
+    utils::{matrix::MediaFileError, save_data_to_tmp_file},
+    DISABLE_GLYCIN_SANDBOX,
+};
 
 /// The default width of a generated thumbnail.
 const THUMBNAIL_DEFAULT_WIDTH: u32 = 800;
@@ -342,10 +351,14 @@ impl From<ImageDimensions> for BaseImageInfo {
 /// An API to download a thumbnail for a media.
 #[derive(Debug, Clone, Copy)]
 pub struct ThumbnailDownloader<'a> {
-    /// The source of a thumbnail of the media.
-    pub thumbnail: Option<ImageSource<'a>>,
-    /// The source of the original image.
-    pub original: Option<ImageSource<'a>>,
+    /// The main source of the image.
+    ///
+    /// This should be the source with the best quality.
+    pub main: ImageSource<'a>,
+    /// An alternative source for the image.
+    ///
+    /// This should be a source with a lower quality.
+    pub alt: Option<ImageSource<'a>>,
 }
 
 impl<'a> ThumbnailDownloader<'a> {
@@ -356,34 +369,31 @@ impl<'a> ThumbnailDownloader<'a> {
     ///
     /// Returns `Ok(None)` if no thumbnail could be retrieved. Returns an error
     /// if something occurred while fetching the content.
-    pub async fn download(
+    pub async fn download_to_file(
         self,
         client: &Client,
         settings: ThumbnailSettings,
-    ) -> Result<Option<Vec<u8>>, matrix_sdk::Error> {
+    ) -> Result<gio::File, MediaFileError> {
         // First, select which source we are going to download from.
-        let source = if let Some((original, thumbnail)) = self.original.zip(self.thumbnail) {
-            if !original.can_be_thumbnailed()
-                && (original.filesize_is_too_big()
-                    || thumbnail.dimensions_are_too_big(settings.width, settings.height, false))
+        let source = if let Some(alt) = self.alt {
+            if !self.main.can_be_thumbnailed()
+                && (self.main.filesize_is_too_big()
+                    || alt.dimensions_are_too_big(settings.width, settings.height, false))
             {
-                // Use the thumbnail as source to save bandwidth.
-                thumbnail
+                // Use the alternative as source to save bandwidth.
+                alt
             } else {
-                original
+                self.main
             }
-        } else if let Some(original) = self.original {
-            original
-        } else if let Some(thumbnail) = self.thumbnail {
-            thumbnail
         } else {
-            return Ok(None);
+            self.main
         };
 
-        if source.can_be_thumbnailed()
-            && (source.filesize_is_too_big()
-                || source.dimensions_are_too_big(settings.width, settings.height, true))
-        {
+        let data = if source.should_thumbnail(
+            settings.prefer_thumbnail,
+            settings.width,
+            settings.height,
+        ) {
             // Try to get a thumbnail.
             let media = client.media();
             let request = MediaRequest {
@@ -393,25 +403,32 @@ impl<'a> ThumbnailDownloader<'a> {
             let handle = spawn_tokio!(async move { media.get_media_content(&request, true).await });
 
             match handle.await.unwrap() {
-                Ok(data) => return Ok(Some(data)),
+                Ok(data) => Some(data),
                 Err(error) => {
                     warn!("Could not retrieve media thumbnail: {error}");
+                    None
                 }
             }
-        }
-
-        // Fallback to downloading the full source.
-        let media = client.media();
-        let request = MediaRequest {
-            source: source.source.to_common_media_source(),
-            format: MediaFormat::File,
+        } else {
+            None
         };
 
-        let data = spawn_tokio!(async move { media.get_media_content(&request, true).await })
-            .await
-            .unwrap()?;
+        // Fallback to downloading the full source.
+        let data = if let Some(data) = data {
+            data
+        } else {
+            let media = client.media();
+            let request = MediaRequest {
+                source: source.source.to_common_media_source(),
+                format: MediaFormat::File,
+            };
 
-        Ok(Some(data))
+            spawn_tokio!(async move { media.get_media_content(&request, true).await })
+                .await
+                .unwrap()?
+        };
+
+        Ok(save_data_to_tmp_file(&data)?)
     }
 }
 
@@ -425,6 +442,26 @@ pub struct ImageSource<'a> {
 }
 
 impl<'a> ImageSource<'a> {
+    /// Whether we should try to thumbnail this source for the given requested
+    /// dimensions.
+    fn should_thumbnail(
+        &self,
+        prefer_thumbnail: bool,
+        requested_width: u32,
+        requested_height: u32,
+    ) -> bool {
+        if !self.can_be_thumbnailed() {
+            return false;
+        }
+
+        if prefer_thumbnail && !self.has_dimensions() {
+            return true;
+        }
+
+        self.filesize_is_too_big()
+            || self.dimensions_are_too_big(requested_width, requested_height, true)
+    }
+
     /// Whether this source can be thumbnailed by the media repo.
     ///
     /// Returns `false` in these cases:
@@ -447,6 +484,12 @@ impl<'a> ImageSource<'a> {
     fn filesize_is_too_big(&self) -> bool {
         self.info
             .is_some_and(|i| i.size.is_some_and(|s| s > THUMBNAIL_MAX_FILESIZE_THRESHOLD))
+    }
+
+    /// Whether we have the dimensions of this source.
+    fn has_dimensions(&self) -> bool {
+        self.info
+            .is_some_and(|i| i.width.is_some() && i.height.is_some())
     }
 
     /// Whether the dimensions of this source are too big for the given
@@ -486,6 +529,8 @@ pub enum MediaSource<'a> {
     Common(&'a CommonMediaSource),
     /// The media source of a sticker.
     Sticker(&'a StickerMediaSource),
+    /// An MXC URI.
+    Uri(&'a OwnedMxcUri),
 }
 
 impl<'a> MediaSource<'a> {
@@ -494,6 +539,7 @@ impl<'a> MediaSource<'a> {
         match self {
             Self::Common(source) => matches!(source, CommonMediaSource::Encrypted(_)),
             Self::Sticker(source) => matches!(source, StickerMediaSource::Encrypted(_)),
+            Self::Uri(_) => false,
         }
     }
 
@@ -502,6 +548,7 @@ impl<'a> MediaSource<'a> {
         match self {
             Self::Common(source) => source.clone(),
             Self::Sticker(source) => source.clone().into(),
+            Self::Uri(uri) => CommonMediaSource::Plain(uri.clone()),
         }
     }
 }
@@ -515,6 +562,12 @@ impl<'a> From<&'a CommonMediaSource> for MediaSource<'a> {
 impl<'a> From<&'a StickerMediaSource> for MediaSource<'a> {
     fn from(value: &'a StickerMediaSource) -> Self {
         Self::Sticker(value)
+    }
+}
+
+impl<'a> From<&'a OwnedMxcUri> for MediaSource<'a> {
+    fn from(value: &'a OwnedMxcUri) -> Self {
+        Self::Uri(value)
     }
 }
 
@@ -553,6 +606,17 @@ impl<'a> From<&'a ThumbnailInfo> for ImageSourceInfo<'a> {
     }
 }
 
+impl<'a> From<&'a AvatarImageInfo> for ImageSourceInfo<'a> {
+    fn from(value: &'a AvatarImageInfo) -> Self {
+        Self {
+            width: value.width.and_then(|u| u.try_into().ok()),
+            height: value.height.and_then(|u| u.try_into().ok()),
+            mimetype: value.mimetype.as_deref(),
+            size: value.size.and_then(|u| u.try_into().ok()),
+        }
+    }
+}
+
 /// The settings for downloading a thumbnail.
 #[derive(Debug, Clone)]
 pub struct ThumbnailSettings {
@@ -564,6 +628,14 @@ pub struct ThumbnailSettings {
     pub method: Method,
     /// Whether to request an animated thumbnail.
     pub animated: bool,
+    /// Whether we should prefer to get a thumbnail if dimensions are unknown.
+    ///
+    /// This is particularly useful for avatars where we will prefer to save
+    /// bandwidth and memory usage as we download a lot of them and they might
+    /// appear several times on the screen. For media messages, we will on the
+    /// contrary prefer to download the original content to reduce the space
+    /// taken in the media cache.
+    pub prefer_thumbnail: bool,
 }
 
 impl From<ThumbnailSettings> for MediaThumbnailSettings {
@@ -573,6 +645,7 @@ impl From<ThumbnailSettings> for MediaThumbnailSettings {
             height,
             method,
             animated,
+            ..
         } = value;
 
         MediaThumbnailSettings {

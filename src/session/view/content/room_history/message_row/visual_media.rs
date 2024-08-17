@@ -316,11 +316,12 @@ impl MessageVisualMedia {
                     width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32),
                     height: ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32),
                     animated: true,
+                    prefer_thumbnail: false,
                 };
 
                 let file = match media_message.thumbnail_tmp_file(client, settings).await {
                     Ok(Some(file)) => file,
-                    Ok(None) => unreachable!("Only video messages do not have a fallback"),
+                    Ok(None) => unreachable!("Image messages should always have a fallback"),
                     Err(error) => {
                         warn!("Could not retrieve media file: {error}");
                         imp.overlay_error

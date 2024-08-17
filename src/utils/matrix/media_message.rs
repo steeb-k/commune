@@ -268,67 +268,6 @@ impl VisualMediaMessage {
     }
 
     /// Fetch a thumbnail of the media with the given client and thumbnail
-    /// settings.
-    ///
-    /// This might not return a thumbnail at the requested size, depending on
-    /// the message and the homeserver.
-    ///
-    /// Returns `Ok(None)` if no thumbnail could be retrieved and no fallback
-    /// could be downloaded. This only applies to video messages.
-    ///
-    /// Returns an error if something occurred while fetching the content.
-    pub async fn thumbnail(
-        &self,
-        client: &Client,
-        settings: ThumbnailSettings,
-    ) -> Result<Option<Vec<u8>>, matrix_sdk::Error> {
-        let downloader = match &self {
-            Self::Image(c) => {
-                let image_info = c.info.as_deref();
-                ThumbnailDownloader {
-                    thumbnail: image_info.and_then(|i| {
-                        i.thumbnail_source.as_ref().map(|s| ImageSource {
-                            source: s.into(),
-                            info: i.thumbnail_info.as_deref().map(Into::into),
-                        })
-                    }),
-                    original: Some(ImageSource {
-                        source: (&c.source).into(),
-                        info: image_info.map(Into::into),
-                    }),
-                }
-            }
-            Self::Video(c) => {
-                let video_info = c.info.as_deref();
-                ThumbnailDownloader {
-                    thumbnail: video_info.and_then(|i| {
-                        i.thumbnail_source.as_ref().map(|s| ImageSource {
-                            source: s.into(),
-                            info: i.thumbnail_info.as_deref().map(Into::into),
-                        })
-                    }),
-                    original: None,
-                }
-            }
-            Self::Sticker(c) => {
-                let image_info = &c.info;
-                ThumbnailDownloader {
-                    thumbnail: image_info.thumbnail_source.as_ref().map(|s| ImageSource {
-                        source: s.into(),
-                        info: image_info.thumbnail_info.as_deref().map(Into::into),
-                    }),
-                    original: Some(ImageSource {
-                        source: (&c.source).into(),
-                        info: Some(image_info.into()),
-                    }),
-                }
-            }
-        };
-
-        downloader.download(client, settings).await
-    }
-
-    /// Fetch a thumbnail of the media with the given client and thumbnail
     /// settings and write it to a temporary file.
     ///
     /// This might not return a thumbnail at the requested size, depending on
@@ -344,13 +283,56 @@ impl VisualMediaMessage {
         client: &Client,
         settings: ThumbnailSettings,
     ) -> Result<Option<gio::File>, MediaFileError> {
-        let data = self.thumbnail(client, settings).await?;
+        let downloader = match &self {
+            Self::Image(c) => {
+                let image_info = c.info.as_deref();
+                ThumbnailDownloader {
+                    main: ImageSource {
+                        source: (&c.source).into(),
+                        info: image_info.map(Into::into),
+                    },
+                    alt: image_info.and_then(|i| {
+                        i.thumbnail_source.as_ref().map(|s| ImageSource {
+                            source: s.into(),
+                            info: i.thumbnail_info.as_deref().map(Into::into),
+                        })
+                    }),
+                }
+            }
+            Self::Video(c) => {
+                let Some(video_info) = c.info.as_deref() else {
+                    return Ok(None);
+                };
+                let Some(thumbnail_source) = video_info.thumbnail_source.as_ref() else {
+                    return Ok(None);
+                };
 
-        let Some(data) = data else {
-            return Ok(None);
+                ThumbnailDownloader {
+                    main: ImageSource {
+                        source: thumbnail_source.into(),
+                        info: video_info.thumbnail_info.as_deref().map(Into::into),
+                    },
+                    alt: None,
+                }
+            }
+            Self::Sticker(c) => {
+                let image_info = &c.info;
+                ThumbnailDownloader {
+                    main: ImageSource {
+                        source: (&c.source).into(),
+                        info: Some(image_info.into()),
+                    },
+                    alt: image_info.thumbnail_source.as_ref().map(|s| ImageSource {
+                        source: s.into(),
+                        info: image_info.thumbnail_info.as_deref().map(Into::into),
+                    }),
+                }
+            }
         };
 
-        Ok(Some(save_data_to_tmp_file(&data)?))
+        let file = downloader.download_to_file(client, settings).await?;
+
+        Ok(Some(file))
     }
 
     /// Fetch the content of the media with the given client.

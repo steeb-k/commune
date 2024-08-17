@@ -78,8 +78,9 @@ mod imp {
 
             self.obj().avatar_data().set_image(Some(AvatarImage::new(
                 &session,
-                None,
                 AvatarUriSource::Room,
+                None,
+                None,
             )));
         }
 
@@ -180,7 +181,7 @@ mod imp {
             self.set_joined_members_count(data.num_joined_members.try_into().unwrap_or(u32::MAX));
 
             if let Some(image) = self.obj().avatar_data().image() {
-                image.set_uri(data.avatar_url.map(String::from));
+                image.set_uri_and_info(data.avatar_url, None);
             }
 
             self.set_loading_state(LoadingState::Ready);

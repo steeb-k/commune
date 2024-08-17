@@ -836,9 +836,10 @@ impl Session {
         let user = self.user();
 
         if Some(user.display_name()) == profile.displayname
-            && user.avatar_data().image().is_some_and(|i| {
-                i.uri().as_deref() == profile.avatar_url.as_ref().map(|url| url.as_str())
-            })
+            && user
+                .avatar_data()
+                .image()
+                .is_some_and(|i| i.uri() == profile.avatar_url)
         {
             // Nothing to update.
             return;
