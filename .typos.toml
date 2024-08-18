@@ -1,6 +1,7 @@
 [default.extend-words]
 gir = "gir"
 inout = "inout"
+numer = "numer" # Short for numerator in GStreamer
 
 [type.po]
 extend-glob = ["*.po"]

@@ -30,6 +30,7 @@ dependency(
 
 # Please keep these dependencies sorted.
 dependency('gstreamer-1.0', version: '>= 1.20')
+dependency('gstreamer-app-1.0', version: '>= 1.20')
 dependency('gstreamer-base-1.0', version: '>= 1.20')
 dependency('gstreamer-pbutils-1.0', version: '>= 1.20')
 dependency('gstreamer-play-1.0', version: '>= 1.20')

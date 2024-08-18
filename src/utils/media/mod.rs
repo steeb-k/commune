@@ -4,10 +4,11 @@ use std::{cell::Cell, str::FromStr, sync::Mutex};
 
 use gettextrs::gettext;
 use gtk::{gio, glib, prelude::*};
-use matrix_sdk::attachment::{BaseAudioInfo, BaseVideoInfo};
+use matrix_sdk::attachment::BaseAudioInfo;
 use mime::Mime;
 
 pub mod image;
+pub mod video;
 
 /// Get a default filename for a mime type.
 ///
@@ -116,34 +117,6 @@ async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::Disc
     discoverer.stop();
 
     Some(media_info)
-}
-
-/// Load information for the video in the given file.
-pub async fn load_video_info(file: &gio::File) -> BaseVideoInfo {
-    let mut info = BaseVideoInfo {
-        duration: None,
-        width: None,
-        height: None,
-        size: None,
-        blurhash: None,
-    };
-
-    let Some(media_info) = load_gstreamer_media_info(file).await else {
-        return info;
-    };
-
-    info.duration = media_info.duration().map(Into::into);
-
-    if let Some(stream_info) = media_info
-        .video_streams()
-        .first()
-        .and_then(|s| s.downcast_ref::<gst_pbutils::DiscovererVideoInfo>())
-    {
-        info.width = Some(stream_info.width().into());
-        info.height = Some(stream_info.height().into());
-    }
-
-    info
 }
 
 /// Load information for the audio in the given file.

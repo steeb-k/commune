@@ -234,38 +234,7 @@ impl Frame {
         let image = DynamicImage::from_decoder(self).ok()?;
         let thumbnail = image.thumbnail(THUMBNAIL_DEFAULT_WIDTH, THUMBNAIL_DEFAULT_HEIGHT);
 
-        // Convert to RGB8/RGBA8 since it's the only format supported by webp.
-        let thumbnail: DynamicImage = match &thumbnail {
-            DynamicImage::ImageLuma8(_)
-            | DynamicImage::ImageRgb8(_)
-            | DynamicImage::ImageLuma16(_)
-            | DynamicImage::ImageRgb16(_)
-            | DynamicImage::ImageRgb32F(_) => thumbnail.into_rgb8().into(),
-            DynamicImage::ImageLumaA8(_)
-            | DynamicImage::ImageRgba8(_)
-            | DynamicImage::ImageLumaA16(_)
-            | DynamicImage::ImageRgba16(_)
-            | DynamicImage::ImageRgba32F(_) => thumbnail.into_rgba8().into(),
-            _ => return None,
-        };
-
-        let encoder = webp::Encoder::from_image(&thumbnail).ok()?;
-        let thumbnail_bytes = encoder.encode(WEBP_DEFAULT_QUALITY).to_vec();
-
-        let thumbnail_content_type = mime::Mime::from_str(WEBP_CONTENT_TYPE)
-            .expect("image should provide a valid content type");
-
-        let thumbnail_info = BaseThumbnailInfo {
-            width: Some(thumbnail.width().into()),
-            height: Some(thumbnail.height().into()),
-            size: thumbnail_bytes.len().try_into().ok(),
-        };
-
-        Some(Thumbnail {
-            data: thumbnail_bytes,
-            content_type: thumbnail_content_type,
-            info: Some(thumbnail_info),
-        })
+        prepare_thumbnail_for_sending(thumbnail)
     }
 }
 
@@ -334,6 +303,66 @@ struct ImageDimensions {
     width: Option<u32>,
     /// The height of the image.
     height: Option<u32>,
+}
+
+/// Compute the dimensions of the thumbnail while preserving the aspect ratio of
+/// the image.
+///
+/// Returns `None` if the dimensions are smaller than the wanted dimensions.
+pub(super) fn thumbnail_dimensions(width: u32, height: u32) -> Option<(u32, u32)> {
+    if width <= (THUMBNAIL_DEFAULT_WIDTH + THUMBNAIL_DIMENSIONS_THRESHOLD)
+        && height <= (THUMBNAIL_DEFAULT_HEIGHT + THUMBNAIL_DIMENSIONS_THRESHOLD)
+    {
+        return None;
+    }
+
+    let w_ratio = width as f64 / THUMBNAIL_DEFAULT_WIDTH as f64;
+    let h_ratio = height as f64 / THUMBNAIL_DEFAULT_HEIGHT as f64;
+
+    if w_ratio > h_ratio {
+        let new_height = height as f64 / w_ratio;
+        Some((THUMBNAIL_DEFAULT_WIDTH, new_height as u32))
+    } else {
+        let new_width = width as f64 / h_ratio;
+        Some((new_width as u32, THUMBNAIL_DEFAULT_HEIGHT))
+    }
+}
+
+/// Prepare the given thumbnail to send it.
+pub(super) fn prepare_thumbnail_for_sending(thumbnail: image::DynamicImage) -> Option<Thumbnail> {
+    // Convert to RGB8/RGBA8 since those are the only formats supported by WebP.
+    let thumbnail: DynamicImage = match &thumbnail {
+        DynamicImage::ImageLuma8(_)
+        | DynamicImage::ImageRgb8(_)
+        | DynamicImage::ImageLuma16(_)
+        | DynamicImage::ImageRgb16(_)
+        | DynamicImage::ImageRgb32F(_) => thumbnail.into_rgb8().into(),
+        DynamicImage::ImageLumaA8(_)
+        | DynamicImage::ImageRgba8(_)
+        | DynamicImage::ImageLumaA16(_)
+        | DynamicImage::ImageRgba16(_)
+        | DynamicImage::ImageRgba32F(_) => thumbnail.into_rgba8().into(),
+        _ => return None,
+    };
+
+    // Encode to WebP.
+    let encoder = webp::Encoder::from_image(&thumbnail).ok()?;
+    let thumbnail_bytes = encoder.encode(WEBP_DEFAULT_QUALITY).to_vec();
+
+    let thumbnail_content_type =
+        mime::Mime::from_str(WEBP_CONTENT_TYPE).expect("image should provide a valid content type");
+
+    let thumbnail_info = BaseThumbnailInfo {
+        width: Some(thumbnail.width().into()),
+        height: Some(thumbnail.height().into()),
+        size: thumbnail_bytes.len().try_into().ok(),
+    };
+
+    Some(Thumbnail {
+        data: thumbnail_bytes,
+        content_type: thumbnail_content_type,
+        info: Some(thumbnail_info),
+    })
 }
 
 impl From<ImageDimensions> for BaseImageInfo {
