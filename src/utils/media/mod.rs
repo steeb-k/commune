@@ -96,7 +96,8 @@ pub async fn load_file(file: &gio::File) -> Result<(Vec<u8>, FileInfo), glib::Er
     ))
 }
 
-async fn get_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::DiscovererInfo> {
+/// Load information for the given file with GStreamer.
+async fn load_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::DiscovererInfo> {
     let timeout = gst::ClockTime::from_seconds(15);
     let discoverer = gst_pbutils::Discoverer::new(timeout).ok()?;
 
@@ -117,7 +118,8 @@ async fn get_gstreamer_media_info(file: &gio::File) -> Option<gst_pbutils::Disco
     Some(media_info)
 }
 
-pub async fn get_video_info(file: &gio::File) -> BaseVideoInfo {
+/// Load information for the video in the given file.
+pub async fn load_video_info(file: &gio::File) -> BaseVideoInfo {
     let mut info = BaseVideoInfo {
         duration: None,
         width: None,
@@ -126,9 +128,8 @@ pub async fn get_video_info(file: &gio::File) -> BaseVideoInfo {
         blurhash: None,
     };
 
-    let media_info = match get_gstreamer_media_info(file).await {
-        Some(media_info) => media_info,
-        None => return info,
+    let Some(media_info) = load_gstreamer_media_info(file).await else {
+        return info;
     };
 
     info.duration = media_info.duration().map(Into::into);
@@ -145,15 +146,15 @@ pub async fn get_video_info(file: &gio::File) -> BaseVideoInfo {
     info
 }
 
-pub async fn get_audio_info(file: &gio::File) -> BaseAudioInfo {
+/// Load information for the audio in the given file.
+pub async fn load_audio_info(file: &gio::File) -> BaseAudioInfo {
     let mut info = BaseAudioInfo {
         duration: None,
         size: None,
     };
 
-    let media_info = match get_gstreamer_media_info(file).await {
-        Some(media_info) => media_info,
-        None => return info,
+    let Some(media_info) = load_gstreamer_media_info(file).await else {
+        return info;
     };
 
     info.duration = media_info.duration().map(Into::into);

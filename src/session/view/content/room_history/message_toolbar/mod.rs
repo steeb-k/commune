@@ -41,7 +41,7 @@ use crate::{
     utils::{
         matrix::AT_ROOM,
         media::{
-            filename_for_mime, get_audio_info, get_video_info, image::ImageInfoLoader, load_file,
+            filename_for_mime, image::ImageInfoLoader, load_audio_info, load_file, load_video_info,
         },
         template_callbacks::TemplateCallbacks,
         Location, LocationError, TokioDrop,
@@ -912,12 +912,12 @@ impl MessageToolbar {
                 (AttachmentInfo::Image(info), thumbnail)
             }
             mime::VIDEO => {
-                let mut info = get_video_info(&file).await;
+                let mut info = load_video_info(&file).await;
                 info.size = size;
                 (AttachmentInfo::Video(info), None)
             }
             mime::AUDIO => {
-                let mut info = get_audio_info(&file).await;
+                let mut info = load_audio_info(&file).await;
                 info.size = size;
                 (AttachmentInfo::Audio(info), None)
             }
