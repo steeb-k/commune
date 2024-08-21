@@ -199,7 +199,12 @@ impl AvatarImage {
     async fn load_inner(&self, uri: OwnedMxcUri) {
         let client = self.session().client();
         let info = self.info();
+
         let needed_size = self.needed_size();
+        let dimensions = ImageDimensions {
+            width: needed_size,
+            height: needed_size,
+        };
 
         let downloader = ThumbnailDownloader {
             main: ImageSource {
@@ -210,10 +215,7 @@ impl AvatarImage {
             alt: None,
         };
         let settings = ThumbnailSettings {
-            dimensions: ImageDimensions {
-                width: needed_size,
-                height: needed_size,
-            },
+            dimensions,
             method: Method::Crop,
             animated: true,
             prefer_thumbnail: true,
@@ -221,7 +223,7 @@ impl AvatarImage {
 
         match downloader.download_to_file(&client, settings).await {
             Ok(file) => {
-                let paintable = load_image(file).await.ok();
+                let paintable = load_image(file, Some(dimensions)).await.ok();
                 self.imp().set_paintable(paintable);
             }
             Err(error) => error!("Could not fetch avatar: {error}"),

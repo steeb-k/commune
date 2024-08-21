@@ -162,12 +162,13 @@ mod imp {
 
             let scale_factor = self.obj().scale_factor();
             let size = (THUMBNAIL_SIZE * scale_factor) as u32;
+            let dimensions = ImageDimensions {
+                width: size,
+                height: size,
+            };
 
             let settings = ThumbnailSettings {
-                dimensions: ImageDimensions {
-                    width: size,
-                    height: size,
-                },
+                dimensions,
                 method: Method::Scale,
                 animated: false,
                 prefer_thumbnail: false,
@@ -182,7 +183,7 @@ mod imp {
                 }
             };
 
-            match load_image(file).await {
+            match load_image(file, Some(dimensions)).await {
                 Ok(paintable) => {
                     self.picture.set_paintable(Some(&paintable));
                 }

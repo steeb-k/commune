@@ -197,7 +197,7 @@ impl MediaContentViewer {
             .unwrap_or_default();
 
         match content_type {
-            ContentType::Image => match load_image(file).await {
+            ContentType::Image => match load_image(file, None).await {
                 Ok(texture) => {
                     self.view_image(&texture);
                     return;

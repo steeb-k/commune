@@ -334,7 +334,7 @@ impl MessageVisualMedia {
                     }
                 };
 
-                match load_image(file).await {
+                match load_image(file, None).await {
                     Ok(paintable) => {
                         let child =
                             if let Some(child) = imp.media.child().and_downcast::<gtk::Picture>() {

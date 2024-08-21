@@ -14,7 +14,10 @@ use super::{AvatarData, AvatarImage};
 use crate::{
     components::{ActionButton, ActionState},
     toast,
-    utils::{expression, media::image::load_image},
+    utils::{
+        expression,
+        media::image::{load_image, ImageDimensions},
+    },
 };
 
 /// The state of the editable avatar.
@@ -72,6 +75,8 @@ mod imp {
         pub temp_image: RefCell<Option<gdk::Paintable>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
+        #[template_child]
+        pub temp_avatar: TemplateChild<adw::Avatar>,
         #[template_child]
         pub button_remove: TemplateChild<ActionButton>,
         #[template_child]
@@ -332,8 +337,20 @@ impl EditableAvatar {
         self.imp().remove_sensitive.set(sensitive);
     }
 
+    /// The dimensions of the avatar in this widget.
+    fn avatar_dimensions(&self) -> ImageDimensions {
+        let scale_factor = self.scale_factor();
+        let avatar_size = self.imp().temp_avatar.size();
+        let size = (avatar_size * scale_factor) as u32;
+
+        ImageDimensions {
+            width: size,
+            height: size,
+        }
+    }
+
     async fn set_temp_image_from_file(&self, file: gio::File) {
-        let paintable = load_image(file).await.ok();
+        let paintable = load_image(file, Some(self.avatar_dimensions())).await.ok();
         self.set_temp_image(paintable);
     }
 

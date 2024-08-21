@@ -73,11 +73,32 @@ async fn image_reader(file: gio::File) -> Result<glycin::Image<'static>, glycin:
 }
 
 /// Load the given file as an image into a `GdkPaintable`.
-pub async fn load_image(file: gio::File) -> Result<gdk::Paintable, glycin::ErrorCtx> {
+///
+/// Set `request_dimensions` if the image will be shown at specific dimensions.
+/// To show the image at its natural size, set it to `None`.
+pub async fn load_image(
+    file: gio::File,
+    request_dimensions: Option<ImageDimensions>,
+) -> Result<gdk::Paintable, glycin::ErrorCtx> {
     let image = image_reader(file).await?;
 
+    let frame_request = request_dimensions.map(|request| {
+        let image_info = image.info();
+
+        let original_dimensions = ImageDimensions {
+            width: image_info.width,
+            height: image_info.height,
+        };
+
+        original_dimensions.to_image_loader_request(request)
+    });
+
     let (image, first_frame) = spawn_tokio!(async move {
-        let first_frame = image.next_frame().await?;
+        let first_frame = if let Some(frame_request) = frame_request {
+            image.specific_frame(frame_request).await?
+        } else {
+            image.next_frame().await?
+        };
         Ok((image, first_frame))
     })
     .await
@@ -373,6 +394,16 @@ impl ImageDimensions {
         }
 
         Some(self.resize(thumbnail_dimensions, ResizeStrategy::Contain))
+    }
+
+    /// Convert these dimensions to a request for the image loader with the
+    /// requested dimensions.
+    pub fn to_image_loader_request(
+        self,
+        requested_dimensions: ImageDimensions,
+    ) -> glycin::FrameRequest {
+        let resized_dimensions = self.resize(requested_dimensions, ResizeStrategy::Cover);
+        glycin::FrameRequest::new().scale(resized_dimensions.width, resized_dimensions.height)
     }
 }
 

@@ -23,7 +23,7 @@
               <object class="GtkStackPage">
                 <property name="name">temp</property>
                 <property name="child">
-                  <object class="AdwAvatar">
+                  <object class="AdwAvatar" id="temp_avatar">
                     <property name="size">128</property>
                     <property name="show-initials">true</property>
                     <binding name="text">
