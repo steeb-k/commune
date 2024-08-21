@@ -8,7 +8,7 @@ use crate::{
     utils::{
         add_activate_binding_action,
         matrix::VisualMediaMessage,
-        media::image::{load_image, ThumbnailSettings},
+        media::image::{load_image, ImageDimensions, ThumbnailSettings},
     },
 };
 
@@ -161,9 +161,13 @@ mod imp {
             let client = session.client();
 
             let scale_factor = self.obj().scale_factor();
+            let size = (THUMBNAIL_SIZE * scale_factor) as u32;
+
             let settings = ThumbnailSettings {
-                width: ((THUMBNAIL_SIZE * scale_factor) as u32),
-                height: ((THUMBNAIL_SIZE * scale_factor) as u32),
+                dimensions: ImageDimensions {
+                    width: size,
+                    height: size,
+                },
                 method: Method::Scale,
                 animated: false,
                 prefer_thumbnail: false,

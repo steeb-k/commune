@@ -17,7 +17,7 @@ use crate::{
     spawn,
     utils::{
         matrix::VisualMediaMessage,
-        media::image::{load_image, ThumbnailSettings},
+        media::image::{load_image, ImageDimensions, ThumbnailSettings},
         LoadingState,
     },
 };
@@ -312,9 +312,11 @@ impl MessageVisualMedia {
 
                 let scale_factor = self.scale_factor();
                 let settings = ThumbnailSettings {
+                    dimensions: ImageDimensions {
+                        width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32),
+                        height: ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32),
+                    },
                     method: Method::Scale,
-                    width: ((MAX_THUMBNAIL_WIDTH * scale_factor) as u32),
-                    height: ((MAX_THUMBNAIL_HEIGHT * scale_factor) as u32),
                     animated: true,
                     prefer_thumbnail: false,
                 };

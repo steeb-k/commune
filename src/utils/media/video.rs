@@ -11,7 +11,7 @@ use matrix_sdk::attachment::{BaseVideoInfo, Thumbnail};
 use tracing::warn;
 
 use super::{
-    image::{prepare_thumbnail_for_sending, thumbnail_dimensions},
+    image::{prepare_thumbnail_for_sending, ImageDimensions},
     load_gstreamer_media_info,
 };
 
@@ -212,11 +212,17 @@ fn create_thumbnailer_pipeline(
                 };
 
                 // Reduce the dimensions if the thumbnail is bigger than the wanted size.
-                let thumbnail = if let Some((target_width, target_height)) = thumbnail_dimensions(
-                    frame.width() * info.par().numer() as u32,
-                    frame.height() * info.par().denom() as u32,
-                ) {
-                    image::imageops::thumbnail(&view, target_width, target_height)
+                let dimensions = ImageDimensions {
+                    width: frame.width() * info.par().numer() as u32,
+                    height: frame.height() * info.par().denom() as u32,
+                };
+
+                let thumbnail = if let Some(target_dimensions) = dimensions.resize_for_thumbnail() {
+                    image::imageops::thumbnail(
+                        &view,
+                        target_dimensions.width,
+                        target_dimensions.height,
+                    )
                 } else {
                     image::ImageBuffer::from_fn(view.width(), view.height(), |x, y| {
                         view.get_pixel(x, y)

@@ -8,7 +8,9 @@ use tracing::error;
 use crate::{
     session::model::Session,
     spawn,
-    utils::media::image::{load_image, ImageSource, ThumbnailDownloader, ThumbnailSettings},
+    utils::media::image::{
+        load_image, ImageDimensions, ImageSource, ThumbnailDownloader, ThumbnailSettings,
+    },
 };
 
 /// The source of an avatar's URI.
@@ -208,8 +210,10 @@ impl AvatarImage {
             alt: None,
         };
         let settings = ThumbnailSettings {
-            width: needed_size,
-            height: needed_size,
+            dimensions: ImageDimensions {
+                width: needed_size,
+                height: needed_size,
+            },
             method: Method::Crop,
             animated: true,
             prefer_thumbnail: true,
