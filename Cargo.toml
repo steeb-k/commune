@@ -26,7 +26,7 @@ futures-channel = "0.3"
 futures-util = "0.3"
 geo-uri = "0.2"
 gettext-rs = { version = "0.7", features = ["gettext-system"] }
-image = "0.25"
+image = { version = "0.25", default-features = false, features = ["rayon"] }
 indexmap = "2"
 linkify = "0.10.0"
 mime = "0.3"
