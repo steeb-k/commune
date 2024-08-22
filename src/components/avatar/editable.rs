@@ -12,11 +12,12 @@ use tracing::{debug, error};
 
 use super::{AvatarData, AvatarImage};
 use crate::{
-    components::{ActionButton, ActionState},
+    components::{ActionButton, ActionState, AnimatedImagePaintable},
     toast,
     utils::{
         expression,
         media::image::{load_image, ImageDimensions},
+        CountedRef,
     },
 };
 
@@ -70,9 +71,10 @@ mod imp {
         pub remove_state: Cell<ActionState>,
         /// Whether the remove button is sensitive.
         pub remove_sensitive: Cell<bool>,
-        /// A temporary image to show instead of the avatar.
+        /// A temporary paintable to show instead of the avatar.
         #[property(get)]
-        pub temp_image: RefCell<Option<gdk::Paintable>>,
+        pub temp_paintable: RefCell<Option<gdk::Paintable>>,
+        temp_paintable_animation_ref: RefCell<Option<CountedRef>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -145,6 +147,21 @@ mod imp {
 
             let button_remove_visible = expression::and(can_remove_expr, image_present_expr);
             button_remove_visible.bind(&*self.button_remove, "visible", glib::Object::NONE);
+
+            self.temp_avatar.connect_map(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_temp_paintable_state();
+                }
+            ));
+            self.temp_avatar.connect_unmap(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_temp_paintable_state();
+                }
+            ));
         }
     }
 
@@ -191,28 +208,28 @@ mod imp {
 
             match state {
                 EditableAvatarState::Default => {
-                    obj.show_temp_image(false);
+                    self.show_temp_paintable(false);
                     obj.set_edit_state(ActionState::Default);
                     obj.set_edit_sensitive(true);
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(true);
 
-                    obj.set_temp_image(None);
+                    self.set_temp_paintable(None);
                 }
                 EditableAvatarState::EditInProgress => {
-                    obj.show_temp_image(true);
+                    self.show_temp_paintable(true);
                     obj.set_edit_state(ActionState::Loading);
                     obj.set_edit_sensitive(true);
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(false);
                 }
                 EditableAvatarState::EditSuccessful => {
-                    obj.show_temp_image(false);
+                    self.show_temp_paintable(false);
                     obj.set_edit_sensitive(true);
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(true);
 
-                    obj.set_temp_image(None);
+                    self.set_temp_paintable(None);
 
                     // Animation for success.
                     obj.set_edit_state(ActionState::Success);
@@ -228,7 +245,7 @@ mod imp {
                     );
                 }
                 EditableAvatarState::RemovalInProgress => {
-                    obj.show_temp_image(true);
+                    self.show_temp_paintable(true);
                     obj.set_edit_state(ActionState::Default);
                     obj.set_edit_sensitive(false);
                     obj.set_remove_state(ActionState::Loading);
@@ -238,6 +255,65 @@ mod imp {
 
             self.state.set(state);
             obj.notify_state();
+        }
+
+        /// The dimensions of the avatar in this widget.
+        fn avatar_dimensions(&self) -> ImageDimensions {
+            let scale_factor = self.obj().scale_factor();
+            let avatar_size = self.temp_avatar.size();
+            let size = (avatar_size * scale_factor) as u32;
+
+            ImageDimensions {
+                width: size,
+                height: size,
+            }
+        }
+
+        /// Load the temporary paintable from the given file.
+        pub(super) async fn set_temp_paintable_from_file(&self, file: gio::File) {
+            let paintable = load_image(file, Some(self.avatar_dimensions())).await.ok();
+            self.set_temp_paintable(paintable);
+        }
+
+        /// Set the temporary paintable.
+        fn set_temp_paintable(&self, paintable: Option<gdk::Paintable>) {
+            if *self.temp_paintable.borrow() == paintable {
+                return;
+            }
+
+            self.temp_paintable.replace(paintable);
+
+            self.update_temp_paintable_state();
+            self.obj().notify_temp_paintable();
+        }
+
+        /// Show the temporary paintable instead of the current avatar.
+        fn show_temp_paintable(&self, show: bool) {
+            let stack = &self.stack;
+            if show {
+                stack.set_visible_child_name("temp");
+            } else {
+                stack.set_visible_child_name("default");
+            }
+        }
+
+        /// Update the state of the temp paintable.
+        fn update_temp_paintable_state(&self) {
+            self.temp_paintable_animation_ref.take();
+
+            let Some(paintable) = self
+                .temp_paintable
+                .borrow()
+                .clone()
+                .and_downcast::<AnimatedImagePaintable>()
+            else {
+                return;
+            };
+
+            if self.temp_avatar.is_mapped() {
+                self.temp_paintable_animation_ref
+                    .replace(Some(paintable.animation_ref()));
+            }
         }
     }
 }
@@ -337,38 +413,6 @@ impl EditableAvatar {
         self.imp().remove_sensitive.set(sensitive);
     }
 
-    /// The dimensions of the avatar in this widget.
-    fn avatar_dimensions(&self) -> ImageDimensions {
-        let scale_factor = self.scale_factor();
-        let avatar_size = self.imp().temp_avatar.size();
-        let size = (avatar_size * scale_factor) as u32;
-
-        ImageDimensions {
-            width: size,
-            height: size,
-        }
-    }
-
-    async fn set_temp_image_from_file(&self, file: gio::File) {
-        let paintable = load_image(file, Some(self.avatar_dimensions())).await.ok();
-        self.set_temp_image(paintable);
-    }
-
-    fn set_temp_image(&self, temp_image: Option<gdk::Paintable>) {
-        self.imp().temp_image.replace(temp_image);
-        self.notify_temp_image();
-    }
-
-    /// Show an avatar with `temp_image` instead of `avatar`.
-    fn show_temp_image(&self, show_temp: bool) {
-        let stack = &self.imp().stack;
-        if show_temp {
-            stack.set_visible_child_name("temp");
-        } else {
-            stack.set_visible_child_name("default");
-        }
-    }
-
     async fn choose_avatar(&self) {
         let filters = gio::ListStore::new::<gtk::FileFilter>();
 
@@ -411,7 +455,7 @@ impl EditableAvatar {
             .and_then(|info| info.content_type())
         {
             if gio::content_type_is_a(&content_type, "image/*") {
-                self.set_temp_image_from_file(file.clone()).await;
+                self.imp().set_temp_paintable_from_file(file.clone()).await;
                 self.emit_by_name::<()>("edit-avatar", &[&file]);
             } else {
                 error!("The chosen file is not an image");

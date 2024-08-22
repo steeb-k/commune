@@ -2,7 +2,7 @@ use glycin::{Frame, Image};
 use gtk::{gdk, glib, glib::clone, graphene, prelude::*, subclass::prelude::*};
 use tracing::error;
 
-use crate::{spawn, spawn_tokio};
+use crate::{spawn, spawn_tokio, utils::CountedRef};
 
 mod imp {
     use std::{
@@ -22,6 +22,10 @@ mod imp {
         next_frame: RefCell<Option<Frame>>,
         /// The source ID of the timeout to load the next frame, if any.
         timeout_source_id: RefCell<Option<glib::SourceId>>,
+        /// The counted reference for the animation.
+        ///
+        /// When the count is 0, the animation is paused.
+        animation_ref: OnceCell<CountedRef>,
     }
 
     #[glib::object_subclass]
@@ -91,7 +95,7 @@ mod imp {
             self.image.set(Arc::new(image)).unwrap();
             self.current_frame.replace(Some(first_frame));
 
-            self.prepare_next_frame();
+            self.update_animation();
         }
 
         /// Show the next frame of the animation.
@@ -109,11 +113,45 @@ mod imp {
             // Invalidate the contents so that the new frame will be rendered.
             self.obj().invalidate_contents();
 
-            self.prepare_next_frame();
+            self.update_animation();
         }
 
-        /// Prepare the next frame of the animation.
-        fn prepare_next_frame(&self) {
+        /// The counted reference of the animation.
+        pub(super) fn animation_ref(&self) -> &CountedRef {
+            self.animation_ref.get_or_init(|| {
+                CountedRef::new(
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            imp.update_animation();
+                        }
+                    ),
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            imp.update_animation();
+                        }
+                    ),
+                )
+            })
+        }
+
+        /// Prepare the next frame of the animation or stop the animation,
+        /// depending on the refcount.
+        fn update_animation(&self) {
+            if self.animation_ref().count() == 0 {
+                // We should not animate, remove the timeout if it exists.
+                if let Some(source) = self.timeout_source_id.take() {
+                    source.remove();
+                }
+                return;
+            } else if self.timeout_source_id.borrow().is_some() {
+                // We are already waiting for the next update.
+                return;
+            }
+
             let Some(delay) = self.current_frame.borrow().as_ref().and_then(|f| f.delay()) else {
                 return;
             };
@@ -184,5 +222,10 @@ impl AnimatedImagePaintable {
     /// Get the current `GdkTexture` of this paintable, if any.
     pub fn current_texture(&self) -> Option<gdk::Texture> {
         Some(self.imp().current_frame.borrow().as_ref()?.texture())
+    }
+
+    /// Get an animation ref.
+    pub fn animation_ref(&self) -> CountedRef {
+        self.imp().animation_ref().clone()
     }
 }

@@ -33,7 +33,7 @@
                         </lookup>
                       </lookup>
                     </binding>
-                    <property name="custom-image" bind-source="EditableAvatar" bind-property="temp-image" bind-flags="sync-create"/>
+                    <property name="custom-image" bind-source="EditableAvatar" bind-property="temp-paintable" bind-flags="sync-create"/>
                   </object>
                 </property>
               </object>

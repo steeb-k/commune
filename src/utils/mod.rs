@@ -14,7 +14,8 @@ pub mod string;
 pub mod template_callbacks;
 
 use std::{
-    cell::{OnceCell, RefCell},
+    cell::{Cell, OnceCell, RefCell},
+    fmt,
     rc::{Rc, Weak},
 };
 
@@ -502,4 +503,75 @@ pub fn save_data_to_tmp_file(data: &[u8]) -> Result<gio::File, glib::Error> {
     )?;
 
     Ok(file)
+}
+
+/// A counted reference.
+///
+/// Can be used to perform some actions when the count is 0 or non-zero.
+pub struct CountedRef(Rc<InnerCountedRef>);
+
+struct InnerCountedRef {
+    /// The count of the reference
+    count: Cell<usize>,
+    /// The function to call when the count decreases to zero.
+    on_zero: Box<dyn Fn()>,
+    /// The function to call when the count increases from zero.
+    on_non_zero: Box<dyn Fn()>,
+}
+
+impl CountedRef {
+    /// Construct a counted reference.
+    pub fn new<F1, F2>(on_zero: F1, on_non_zero: F2) -> Self
+    where
+        F1: Fn() + 'static,
+        F2: Fn() + 'static,
+    {
+        Self(
+            InnerCountedRef {
+                count: Default::default(),
+                on_zero: Box::new(on_zero),
+                on_non_zero: Box::new(on_non_zero),
+            }
+            .into(),
+        )
+    }
+
+    /// The current count of the reference.
+    pub fn count(&self) -> usize {
+        self.0.count.get()
+    }
+}
+
+impl fmt::Debug for CountedRef {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CountedRef")
+            .field("count", &self.count())
+            .finish_non_exhaustive()
+    }
+}
+
+impl Clone for CountedRef {
+    fn clone(&self) -> Self {
+        let count = self.count();
+        self.0.count.set(count.saturating_add(1));
+        tracing::debug!("Increasing refcount to: {}", count.saturating_add(1));
+
+        if count == 0 {
+            (self.0.on_non_zero)();
+        }
+
+        Self(self.0.clone())
+    }
+}
+
+impl Drop for CountedRef {
+    fn drop(&mut self) {
+        let count = self.count();
+        self.0.count.set(count.saturating_sub(1));
+        tracing::debug!("Decreasing refcount to: {}", count.saturating_sub(1));
+
+        if count == 1 {
+            (self.0.on_zero)();
+        }
+    }
 }

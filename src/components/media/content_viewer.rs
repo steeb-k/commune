@@ -5,7 +5,11 @@ use gtk::{gdk, gio, glib, glib::clone, CompositeTemplate};
 use tracing::warn;
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
-use crate::{components::Spinner, spawn, utils::media::image::load_image};
+use crate::{
+    components::Spinner,
+    spawn,
+    utils::{media::image::load_image, CountedRef},
+};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub enum ContentType {
@@ -39,7 +43,7 @@ impl From<&str> for ContentType {
 }
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -49,9 +53,6 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/media/content_viewer.ui")]
     #[properties(wrapper_type = super::MediaContentViewer)]
     pub struct MediaContentViewer {
-        /// Whether to play the media content automatically.
-        #[property(get, construct_only)]
-        pub autoplay: Cell<bool>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
@@ -60,6 +61,10 @@ mod imp {
         pub fallback: TemplateChild<adw::StatusPage>,
         #[template_child]
         pub spinner: TemplateChild<Spinner>,
+        /// Whether to play the media content automatically.
+        #[property(get, construct_only)]
+        pub autoplay: Cell<bool>,
+        paintable_animation_ref: RefCell<Option<CountedRef>>,
     }
 
     #[glib::object_subclass]
@@ -79,10 +84,51 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for MediaContentViewer {}
+    impl ObjectImpl for MediaContentViewer {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.viewer.connect_map(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_animated_paintable_state();
+                }
+            ));
+            self.viewer.connect_unmap(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |_| {
+                    imp.update_animated_paintable_state();
+                }
+            ));
+        }
+    }
 
     impl WidgetImpl for MediaContentViewer {}
     impl BinImpl for MediaContentViewer {}
+
+    impl MediaContentViewer {
+        /// Update the state of the animated paintable, if any.
+        pub(super) fn update_animated_paintable_state(&self) {
+            self.paintable_animation_ref.take();
+
+            let Some(paintable) = self
+                .viewer
+                .child()
+                .and_downcast::<gtk::Picture>()
+                .and_then(|p| p.paintable())
+                .and_downcast::<AnimatedImagePaintable>()
+            else {
+                return;
+            };
+
+            if self.viewer.is_mapped() {
+                self.paintable_animation_ref
+                    .replace(Some(paintable.animation_ref()));
+            }
+        }
+    }
 }
 
 glib::wrapper! {
@@ -161,6 +207,7 @@ impl MediaContentViewer {
         };
 
         picture.set_paintable(Some(image));
+        imp.update_animated_paintable_state();
         self.show_viewer();
     }
 
@@ -221,6 +268,7 @@ impl MediaContentViewer {
                 };
 
                 audio.set_file(Some(&file));
+                imp.update_animated_paintable_state();
                 self.show_viewer();
                 return;
             }
@@ -238,6 +286,7 @@ impl MediaContentViewer {
                 };
 
                 video.set_file(Some(&file));
+                imp.update_animated_paintable_state();
                 self.show_viewer();
                 return;
             }
@@ -260,6 +309,7 @@ impl MediaContentViewer {
         };
 
         location.set_location(geo_uri);
+        imp.update_animated_paintable_state();
         self.show_viewer();
     }
 

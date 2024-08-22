@@ -18,7 +18,7 @@ use crate::{
     utils::{
         matrix::VisualMediaMessage,
         media::image::{load_image, ImageDimensions, ThumbnailSettings},
-        LoadingState,
+        CountedRef, LoadingState,
     },
 };
 
@@ -30,7 +30,7 @@ const MAX_COMPACT_THUMBNAIL_WIDTH: i32 = 75;
 const MAX_COMPACT_THUMBNAIL_HEIGHT: i32 = 50;
 
 mod imp {
-    use std::cell::Cell;
+    use std::cell::{Cell, RefCell};
 
     use glib::subclass::InitializingObject;
 
@@ -42,6 +42,12 @@ mod imp {
     )]
     #[properties(wrapper_type = super::MessageVisualMedia)]
     pub struct MessageVisualMedia {
+        #[template_child]
+        pub media: TemplateChild<gtk::Overlay>,
+        #[template_child]
+        pub overlay_error: TemplateChild<gtk::Image>,
+        #[template_child]
+        pub overlay_spinner: TemplateChild<Spinner>,
         /// The intended display width of the media.
         #[property(get, set = Self::set_width, explicit_notify, default = -1, minimum = -1)]
         pub width: Cell<i32>,
@@ -54,12 +60,7 @@ mod imp {
         /// Whether to display this media in a compact format.
         #[property(get)]
         pub compact: Cell<bool>,
-        #[template_child]
-        pub media: TemplateChild<gtk::Overlay>,
-        #[template_child]
-        pub overlay_error: TemplateChild<gtk::Image>,
-        #[template_child]
-        pub overlay_spinner: TemplateChild<Spinner>,
+        paintable_animation_ref: RefCell<Option<CountedRef>>,
     }
 
     #[glib::object_subclass]
@@ -169,6 +170,16 @@ mod imp {
                 self.media.allocate(width, height, baseline, None)
             }
         }
+
+        fn map(&self) {
+            self.parent_map();
+            self.update_animated_paintable_state();
+        }
+
+        fn unmap(&self) {
+            self.parent_unmap();
+            self.update_animated_paintable_state();
+        }
     }
 
     impl MessageVisualMedia {
@@ -215,6 +226,26 @@ mod imp {
 
             self.state.set(state);
             self.obj().notify_state();
+        }
+
+        /// Update the state of the animated paintable, if any.
+        pub(super) fn update_animated_paintable_state(&self) {
+            self.paintable_animation_ref.take();
+
+            let Some(paintable) = self
+                .media
+                .child()
+                .and_downcast::<gtk::Picture>()
+                .and_then(|p| p.paintable())
+                .and_downcast::<AnimatedImagePaintable>()
+            else {
+                return;
+            };
+
+            if self.obj().is_mapped() {
+                self.paintable_animation_ref
+                    .replace(Some(paintable.animation_ref()));
+            }
         }
     }
 }
@@ -388,6 +419,7 @@ impl MessageVisualMedia {
             }
         };
 
+        imp.update_animated_paintable_state();
         imp.set_state(LoadingState::Ready);
     }
 

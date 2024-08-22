@@ -1,5 +1,5 @@
 use adw::subclass::prelude::*;
-use gtk::{glib, prelude::*, CompositeTemplate};
+use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
 
 mod crop_circle;
 mod data;
@@ -13,6 +13,7 @@ pub use self::{
     image::{AvatarImage, AvatarUriSource},
     overlapping::OverlappingAvatars,
 };
+use crate::{components::AnimatedImagePaintable, utils::CountedRef};
 
 mod imp {
     use std::{cell::RefCell, marker::PhantomData};
@@ -25,14 +26,16 @@ mod imp {
     #[template(resource = "/org/gnome/Fractal/ui/components/avatar/mod.ui")]
     #[properties(wrapper_type = super::Avatar)]
     pub struct Avatar {
+        #[template_child]
+        pub avatar: TemplateChild<adw::Avatar>,
         /// The [`AvatarData`] displayed by this widget.
         #[property(get, set = Self::set_data, explicit_notify, nullable)]
         pub data: RefCell<Option<AvatarData>>,
         /// The size of the Avatar.
         #[property(get = Self::size, set = Self::set_size, explicit_notify, builder().default_value(-1).minimum(-1))]
         pub size: PhantomData<i32>,
-        #[template_child]
-        pub avatar: TemplateChild<adw::Avatar>,
+        paintable_animation_ref: RefCell<Option<CountedRef>>,
+        image_watches: RefCell<Vec<gtk::ExpressionWatch>>,
     }
 
     #[glib::object_subclass]
@@ -56,16 +59,26 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Avatar {
-        fn constructed(&self) {
-            self.parent_constructed();
-
-            self.obj().connect_map(|avatar| {
-                avatar.request_custom_avatar();
-            });
+        fn dispose(&self) {
+            for watch in self.image_watches.take() {
+                watch.unwatch();
+            }
         }
     }
 
-    impl WidgetImpl for Avatar {}
+    impl WidgetImpl for Avatar {
+        fn map(&self) {
+            self.parent_map();
+            self.update_image_size();
+            self.update_animated_paintable_state();
+        }
+
+        fn unmap(&self) {
+            self.parent_unmap();
+            self.update_animated_paintable_state();
+        }
+    }
+
     impl BinImpl for Avatar {}
 
     impl AccessibleImpl for Avatar {
@@ -89,12 +102,8 @@ mod imp {
 
             self.avatar.set_size(size);
 
-            let obj = self.obj();
-            if obj.is_mapped() {
-                obj.request_custom_avatar();
-            }
-
-            obj.notify_size();
+            self.update_image_size();
+            self.obj().notify_size();
         }
 
         /// Set the [`AvatarData`] displayed by this widget.
@@ -103,14 +112,77 @@ mod imp {
                 return;
             }
 
-            self.data.replace(data);
-
-            let obj = self.obj();
-            if obj.is_mapped() {
-                obj.request_custom_avatar();
+            for watch in self.image_watches.take() {
+                watch.unwatch();
             }
 
-            obj.notify_data();
+            if let Some(data) = &data {
+                let image_watch = data.property_expression("image").watch(
+                    None::<&glib::Object>,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            imp.update_image_size();
+                        }
+                    ),
+                );
+                let paintable_watch = data
+                    .property_expression("image")
+                    .chain_property::<AvatarImage>("paintable")
+                    .watch(
+                        None::<&glib::Object>,
+                        clone!(
+                            #[weak(rename_to = imp)]
+                            self,
+                            move || {
+                                imp.update_animated_paintable_state();
+                            }
+                        ),
+                    );
+                self.image_watches
+                    .replace(vec![image_watch, paintable_watch]);
+            }
+
+            self.data.set(data);
+
+            self.update_image_size();
+            self.update_animated_paintable_state();
+            self.obj().notify_data();
+        }
+
+        /// Update the size of the image for this avatar.
+        fn update_image_size(&self) {
+            let Some(image) = self.data.borrow().as_ref().and_then(|d| d.image()) else {
+                return;
+            };
+            let obj = self.obj();
+
+            if obj.is_mapped() {
+                let needed_size = self.size() * obj.scale_factor();
+                image.set_needed_size(needed_size as u32);
+            }
+        }
+
+        /// Update the state of the animated paintable for this avatar.
+        fn update_animated_paintable_state(&self) {
+            self.paintable_animation_ref.take();
+
+            let Some(paintable) = self
+                .data
+                .borrow()
+                .as_ref()
+                .and_then(|d| d.image())
+                .and_then(|i| i.paintable())
+                .and_downcast::<AnimatedImagePaintable>()
+            else {
+                return;
+            };
+
+            if self.obj().is_mapped() {
+                self.paintable_animation_ref
+                    .replace(Some(paintable.animation_ref()));
+            }
         }
     }
 }
@@ -124,12 +196,5 @@ glib::wrapper! {
 impl Avatar {
     pub fn new() -> Self {
         glib::Object::new()
-    }
-
-    fn request_custom_avatar(&self) {
-        if let Some(image) = self.imp().data.borrow().as_ref().and_then(|d| d.image()) {
-            let size = self.size() * self.scale_factor();
-            image.set_needed_size(size as u32);
-        }
     }
 }
