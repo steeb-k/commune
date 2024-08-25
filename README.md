@@ -8,7 +8,12 @@
 Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for
 collaboration in large groups, such as free software projects, and will fit all screens, big or small.
 
-![screenshot](https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png)
+<img
+    src="https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png"
+    alt="Fractal’s main window"
+    width="885"
+    height="699"
+/>
 
 Highlights:
 
