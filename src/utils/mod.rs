@@ -554,7 +554,6 @@ impl Clone for CountedRef {
     fn clone(&self) -> Self {
         let count = self.count();
         self.0.count.set(count.saturating_add(1));
-        tracing::debug!("Increasing refcount to: {}", count.saturating_add(1));
 
         if count == 0 {
             (self.0.on_non_zero)();
@@ -568,7 +567,6 @@ impl Drop for CountedRef {
     fn drop(&mut self) {
         let count = self.count();
         self.0.count.set(count.saturating_sub(1));
-        tracing::debug!("Decreasing refcount to: {}", count.saturating_sub(1));
 
         if count == 1 {
             (self.0.on_zero)();
