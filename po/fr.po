@@ -11,8 +11,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-31 09:13+0000\n"
-"PO-Revision-Date: 2024-08-02 14:11+0200\n"
+"POT-Creation-Date: 2024-08-04 09:53+0000\n"
+"PO-Revision-Date: 2024-08-30 11:40+0200\n"
 "Last-Translator: Alexandre Franke <afranke@gnome.org>\n"
 "Language-Team: French - France <gnomefr@traduc.org>\n"
 "Language: fr_FR\n"
@@ -603,7 +603,7 @@ msgstr "C_onfirmer"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:227
 #: src/session/view/content/explore/public_room_row.rs:199
-#: src/session/view/content/room_history/mod.rs:1009
+#: src/session/view/content/room_history/mod.rs:1033
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Voir"
@@ -652,7 +652,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:193
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:1012
+#: src/session/view/content/room_history/mod.rs:1036
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Rejoindre"
@@ -1987,17 +1987,17 @@ msgstr "Tout utilisateur inscrit"
 msgid "Unsupported rule"
 msgstr "Règle non prise en charge"
 
-#: src/session/model/room/mod.rs:1330
+#: src/session/model/room/mod.rs:1336
 msgid "Empty Room (was {user})"
 msgstr "Salon vide (était {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1333
+#: src/session/model/room/mod.rs:1339
 msgid "Empty Room"
 msgstr "Salon vide"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1343
+#: src/session/model/room/mod.rs:1349
 msgid "Unknown"
 msgstr "Inconnue"
 
@@ -2022,7 +2022,7 @@ msgstr "Silencieux"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:597
+#: src/session/view/content/room_history/mod.rs:616
 msgid "Could not join room {room_name}. Try again later."
 msgstr "Impossible de rejoindre le salon {room_name}. Réessayez plus tard."
 
@@ -2831,7 +2831,7 @@ msgstr "Supprimer le serveur"
 
 #: src/session/view/content/invite.rs:187
 msgid "{user_name} ({user_id}) invited you"
-msgstr "{user} ({user_id}) vous a invité"
+msgstr "{user_name} ({user_id}) vous a invité"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
@@ -4143,37 +4143,37 @@ msgstr "%-e %B à %I:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e %B à %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:354
+#: src/session/view/content/room_history/mod.rs:360
 msgid "Error getting file from drop"
 msgstr "Erreur lors de l’obtention du fichier déposé"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:578
+#: src/session/view/content/room_history/mod.rs:597
 msgid "Could not leave {room}"
 msgstr "Impossible de quitter {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:614
+#: src/session/view/content/room_history/mod.rs:633
 #: src/session/view/sidebar/row.rs:593
 msgid "Could not forget {room}"
 msgstr "Impossible d’oublier {room}"
 
-#: src/session/view/content/room_history/mod.rs:785
+#: src/session/view/content/room_history/mod.rs:805
 #: src/session/view/sidebar/mod.rs:430
 msgid "Context Menu"
 msgstr "Menu contextuel"
 
-#: src/session/view/content/room_history/mod.rs:805
+#: src/session/view/content/room_history/mod.rs:825
 msgid "Sender Context Menu"
 msgstr "Menu contextuel de l’expéditeur"
 
-#: src/session/view/content/room_history/mod.rs:1007
-#: src/session/view/content/room_history/mod.rs:1011
+#: src/session/view/content/room_history/mod.rs:1031
+#: src/session/view/content/room_history/mod.rs:1035
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Il y a une version plus récente de ce salon"
 
-#: src/session/view/content/room_history/mod.rs:1014
+#: src/session/view/content/room_history/mod.rs:1038
 msgid "This room was closed"
 msgstr "Le salon a été fermé"
 
