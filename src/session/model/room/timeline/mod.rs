@@ -523,7 +523,8 @@ impl Timeline {
             };
             let matrix_room = room.matrix_room().clone();
             let event_id_clone = event_id.clone();
-            let handle = spawn_tokio!(async move { matrix_room.event(&event_id_clone).await });
+            let handle =
+                spawn_tokio!(async move { matrix_room.event(&event_id_clone, None).await });
             match handle.await.unwrap() {
                 Ok(room_event) => room_event.event.deserialize_as().map_err(Into::into),
                 Err(error) => {

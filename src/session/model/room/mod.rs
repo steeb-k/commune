@@ -22,7 +22,6 @@ use ruma::{
     api::client::error::{ErrorKind, RetryAfter},
     events::{
         receipt::{ReceiptEventContent, ReceiptType},
-        relation::Annotation,
         room::{
             avatar::RoomAvatarEventContent, encryption::SyncRoomEncryptionEvent,
             guest_access::GuestAccess, history_visibility::HistoryVisibility,
@@ -1527,12 +1526,13 @@ impl Room {
         self.notify_latest_activity();
     }
 
-    /// Toggle a `key` reaction for the `relates_to` event ID in this room.
-    pub async fn toggle_reaction(&self, key: String, relates_to: OwnedEventId) -> Result<(), ()> {
+    /// Toggle the `key` reaction on the given related event in this room.
+    pub async fn toggle_reaction(&self, key: String, event: &Event) -> Result<(), ()> {
         let timeline = self.timeline().matrix_timeline();
-        let annotation = Annotation::new(relates_to, key);
+        let event_timeline_id = event.timeline_id();
 
-        let handle = spawn_tokio!(async move { timeline.toggle_reaction(&annotation).await });
+        let handle =
+            spawn_tokio!(async move { timeline.toggle_reaction(&event_timeline_id, &key).await });
 
         if let Err(error) = handle.await.unwrap() {
             error!("Could not toggle reaction: {error}");

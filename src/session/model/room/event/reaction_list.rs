@@ -1,5 +1,5 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk_ui::timeline::BundledReactions;
+use matrix_sdk_ui::timeline::ReactionsByKeyBySender;
 
 use super::ReactionGroup;
 use crate::session::model::User;
@@ -72,7 +72,7 @@ impl ReactionList {
     }
 
     /// Update the reaction list with the given reactions.
-    pub fn update(&self, new_reactions: BundledReactions) {
+    pub fn update(&self, new_reactions: ReactionsByKeyBySender) {
         let reactions = &self.imp().reactions;
 
         let changed = {
@@ -92,11 +92,11 @@ impl ReactionList {
             let new_len = new_reactions.len();
 
             *reactions = new_reactions
-                .into_iter()
+                .iter()
                 .map(|(key, reactions)| {
-                    let group = ReactionGroup::new(&key, user);
+                    let group = ReactionGroup::new(key, user);
                     group.update(reactions);
-                    (key, group)
+                    (key.clone(), group)
                 })
                 .collect();
 
@@ -107,7 +107,7 @@ impl ReactionList {
             self.items_changed(0, prev_len as u32, new_len as u32);
         } else {
             let reactions = reactions.borrow();
-            for (reactions, group) in new_reactions.into_values().zip(reactions.values()) {
+            for (reactions, group) in new_reactions.values().zip(reactions.values()) {
                 group.update(reactions);
             }
         }

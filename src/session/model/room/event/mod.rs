@@ -22,7 +22,10 @@ use tracing::error;
 mod reaction_group;
 mod reaction_list;
 
-pub use self::{reaction_group::ReactionGroup, reaction_list::ReactionList};
+pub use self::{
+    reaction_group::{ReactionData, ReactionGroup},
+    reaction_list::ReactionList,
+};
 use super::{
     timeline::{TimelineItem, TimelineItemImpl},
     Member, Room,
@@ -144,6 +147,9 @@ mod imp {
         /// server, as a string.
         #[property(get = Self::event_id_string)]
         pub event_id_string: PhantomData<Option<String>>,
+        /// The ID of this `Event` in the SDK timeline.
+        #[property(get = Self::timeline_id, type = String)]
+        pub timeline_id: RefCell<Option<String>>,
         /// The ID of the sender of this `Event`, as a string.
         #[property(get = Self::sender_id_string)]
         pub sender_id_string: PhantomData<String>,
@@ -188,6 +194,7 @@ mod imp {
                 source: Default::default(),
                 has_source: Default::default(),
                 event_id_string: Default::default(),
+                timeline_id: Default::default(),
                 sender_id_string: Default::default(),
                 timestamp: Default::default(),
                 timestamp_full: Default::default(),
@@ -238,7 +245,7 @@ mod imp {
 
     impl Event {
         /// Set the underlying SDK timeline item of this `Event`.
-        pub fn set_item(&self, item: EventTimelineItem) {
+        pub fn set_item(&self, item: EventTimelineItem, timeline_id: &str) {
             let obj = self.obj();
 
             let prev_raw = self.raw();
@@ -252,6 +259,7 @@ mod imp {
             obj.update_read_receipts(item.read_receipts());
 
             self.item.replace(Some(item));
+            self.timeline_id.replace(Some(timeline_id.to_owned()));
 
             if !raw_eq(prev_raw.as_ref(), self.raw().as_ref()) {
                 obj.notify_source();
@@ -280,6 +288,7 @@ mod imp {
 
             obj.update_state();
             obj.emit_by_name::<()>("item-changed", &[]);
+            obj.notify_timeline_id();
         }
 
         /// The raw JSON source for this `Event`, if it has been echoed back
@@ -314,6 +323,14 @@ mod imp {
                 .as_ref()?
                 .event_id()
                 .map(ToString::to_string)
+        }
+
+        /// The ID of this `Event` in the SDK timeline.
+        fn timeline_id(&self) -> String {
+            self.timeline_id
+                .borrow()
+                .clone()
+                .expect("event should always have timeline ID after construction")
         }
 
         /// The ID of the sender of this `Event`, as a string.
@@ -446,12 +463,12 @@ glib::wrapper! {
 
 impl Event {
     /// Create a new `Event` with the given SDK timeline item.
-    pub fn new(item: EventTimelineItem, room: &Room) -> Self {
+    pub fn new(item: EventTimelineItem, timeline_id: &str, room: &Room) -> Self {
         let obj = glib::Object::builder::<Self>()
             .property("room", room)
             .build();
 
-        obj.imp().set_item(item);
+        obj.imp().set_item(item, timeline_id);
 
         obj
     }
@@ -459,18 +476,18 @@ impl Event {
     /// Try to update this `Event` with the given SDK timeline item.
     ///
     /// Returns `true` if the update succeeded.
-    pub fn try_update_with(&self, item: &EventTimelineItem) -> bool {
+    pub fn try_update_with(&self, item: &EventTimelineItem, timeline_id: &str) -> bool {
         match &self.key() {
             EventKey::TransactionId(txn_id)
                 if item.is_local_echo() && item.transaction_id() == Some(txn_id) =>
             {
-                self.imp().set_item(item.clone());
+                self.imp().set_item(item.clone(), timeline_id);
                 return true;
             }
             EventKey::EventId(event_id)
                 if !item.is_local_echo() && item.event_id() == Some(event_id) =>
             {
-                self.imp().set_item(item.clone());
+                self.imp().set_item(item.clone(), timeline_id);
                 return true;
             }
             _ => {}

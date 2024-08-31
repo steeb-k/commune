@@ -907,11 +907,8 @@ impl ItemRow {
         let Some(event) = self.item().and_downcast::<Event>() else {
             return;
         };
-        let Some(event_id) = event.event_id() else {
-            return;
-        };
 
-        if event.room().toggle_reaction(key, event_id).await.is_err() {
+        if event.room().toggle_reaction(key, &event).await.is_err() {
             toast!(self, gettext("Could not toggle reaction"));
         }
     }

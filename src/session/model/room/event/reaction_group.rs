@@ -1,8 +1,21 @@
 use gtk::{gio, glib, prelude::*, subclass::prelude::*};
-use matrix_sdk_ui::timeline::ReactionGroup as SdkReactionGroup;
+use indexmap::IndexMap;
+use matrix_sdk_ui::timeline::ReactionInfo;
+use ruma::{MilliSecondsSinceUnixEpoch, OwnedUserId};
 
-use super::EventKey;
 use crate::{prelude::*, session::model::User};
+
+/// A map of user ID to reaction info.
+type ReactionsMap = IndexMap<OwnedUserId, ReactionInfo>;
+
+/// Data of a reaction in a reaction group.
+#[derive(Clone, Debug)]
+pub struct ReactionData {
+    /// The sender of the reaction.
+    pub sender_id: OwnedUserId,
+    /// The timestamp of the reaction.
+    pub timestamp: MilliSecondsSinceUnixEpoch,
+}
 
 mod imp {
     use std::{
@@ -22,7 +35,7 @@ mod imp {
         #[property(get, construct_only)]
         pub key: OnceCell<String>,
         /// The reactions in the group.
-        pub reactions: RefCell<Option<SdkReactionGroup>>,
+        pub reactions: RefCell<Option<ReactionsMap>>,
         /// The number of reactions in this group.
         #[property(get = Self::count)]
         pub count: PhantomData<u32>,
@@ -50,17 +63,22 @@ mod imp {
             self.reactions
                 .borrow()
                 .as_ref()
-                .map(|reactions| reactions.senders().count())
+                .map(|reactions| reactions.len())
                 .unwrap_or_default() as u32
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            self.reactions.borrow().as_ref().and_then(|reactions| {
-                reactions
-                    .senders()
-                    .nth(position as usize)
-                    .map(|sd| glib::BoxedAnyObject::new(sd.clone()).upcast())
-            })
+            self.reactions
+                .borrow()
+                .as_ref()
+                .and_then(|reactions| reactions.get_index(position as usize))
+                .map(|(user_id, info)| {
+                    glib::BoxedAnyObject::new(ReactionData {
+                        sender_id: user_id.clone(),
+                        timestamp: info.timestamp,
+                    })
+                    .upcast()
+                })
         }
     }
 
@@ -76,8 +94,7 @@ mod imp {
             self.reactions
                 .borrow()
                 .as_ref()
-                .filter(|reactions| reactions.by_sender(user_id).next().is_some())
-                .is_some()
+                .is_some_and(|reactions| reactions.contains_key(user_id))
         }
     }
 }
@@ -96,42 +113,20 @@ impl ReactionGroup {
             .build()
     }
 
-    /// The event ID of the reaction in this group sent by the logged-in user,
-    /// if any.
-    pub fn user_reaction_event_key(&self) -> Option<EventKey> {
-        let user = self.user();
-        let user_id = user.user_id();
-
-        self.imp()
-            .reactions
-            .borrow()
-            .as_ref()
-            .and_then(|reactions| {
-                reactions
-                    .by_sender(user_id)
-                    .next()
-                    .and_then(|timeline_key| match timeline_key {
-                        (Some(txn_id), None) => Some(EventKey::TransactionId(txn_id.clone())),
-                        (_, Some(event_id)) => Some(EventKey::EventId(event_id.clone())),
-                        _ => None,
-                    })
-            })
-    }
-
     /// Update this group with the given reactions.
-    pub fn update(&self, new_reactions: SdkReactionGroup) {
+    pub fn update(&self, new_reactions: &ReactionsMap) {
         let prev_has_user = self.has_user();
         let prev_count = self.count();
-        let new_count = new_reactions.senders().count() as u32;
+        let new_count = new_reactions.len() as u32;
         let reactions = &self.imp().reactions;
 
         let same_reactions = match reactions.borrow().as_ref() {
             Some(old_reactions) => {
                 prev_count == new_count
-                    && new_reactions.senders().zip(old_reactions.senders()).all(
-                        |(old_sender, new_sender)| {
-                            old_sender.sender_id == new_sender.sender_id
-                                && old_sender.timestamp == new_sender.timestamp
+                    && new_reactions.iter().zip(old_reactions.iter()).all(
+                        |((old_sender_id, old_info), (new_sender_id, new_info))| {
+                            old_sender_id == new_sender_id
+                                && old_info.timestamp == new_info.timestamp
                         },
                     )
             }
@@ -142,7 +137,7 @@ impl ReactionGroup {
             return;
         }
 
-        *reactions.borrow_mut() = Some(new_reactions);
+        *reactions.borrow_mut() = Some(new_reactions.clone());
 
         self.items_changed(0, prev_count, new_count);
 

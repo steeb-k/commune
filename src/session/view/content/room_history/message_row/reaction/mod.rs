@@ -1,6 +1,5 @@
 use adw::subclass::prelude::*;
 use gtk::{gio, glib, glib::clone, prelude::*, CompositeTemplate};
-use matrix_sdk_ui::timeline::ReactionSenderData as SdkReactionSenderData;
 
 mod reaction_popover;
 
@@ -9,7 +8,7 @@ use crate::{
     gettext_f, ngettext_f,
     prelude::*,
     session::{
-        model::{Member, MemberList, ReactionGroup},
+        model::{Member, MemberList, ReactionData, ReactionGroup},
         view::content::room_history::member_timestamp::MemberTimestamp,
     },
     utils::{BoundObjectWeakRef, EMOJI_REGEX},
@@ -165,9 +164,9 @@ impl MessageReaction {
                 break;
             };
 
-            let sender_data = boxed.borrow::<SdkReactionSenderData>();
-            let member = members.get_or_create(sender_data.sender_id.clone());
-            let timestamp = sender_data.timestamp.as_secs().into();
+            let reaction_data = boxed.borrow::<ReactionData>();
+            let member = members.get_or_create(reaction_data.sender_id.clone());
+            let timestamp = reaction_data.timestamp.as_secs().into();
             let sender = MemberTimestamp::new(&member, Some(timestamp));
 
             new_senders.push(sender);
