@@ -11,7 +11,8 @@ use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
     session::model::{
-        Event, IdentityVerification, Room, Selection, Session, SidebarListModel, VerificationKey,
+        Event, IdentityVerification, Room, RoomType, Selection, Session, SidebarListModel,
+        VerificationKey,
     },
     toast,
     utils::matrix::{MatrixEventIdUri, MatrixIdUri, MatrixRoomIdUri},
@@ -112,6 +113,16 @@ mod imp {
                 gdk::Key::k,
                 gdk::ModifierType::CONTROL_MASK,
                 "session.toggle-room-search",
+            );
+
+            klass.install_action("session.select-unread-room", None, |obj, _, _| {
+                obj.select_unread_room();
+            });
+
+            klass.add_binding_action(
+                gdk::Key::asterisk,
+                gdk::ModifierType::CONTROL_MASK,
+                "session.select-unread-room",
             );
 
             klass.install_action(
@@ -282,6 +293,45 @@ impl SessionView {
             true
         } else {
             false
+        }
+    }
+
+    /// Select a room which should be read.
+    pub fn select_unread_room(&self) {
+        let Some(session) = self.session() else {
+            return;
+        };
+        let room_list = session.room_list().snapshot();
+        let current_room = self.selected_room();
+
+        /// The order in which rooms are selected
+        ///
+        /// Returns None if the room should never be selected.
+        ///
+        /// First by category, then by notification count so DMs are backlogged
+        /// before group chats, and finally by recency.
+        fn score_for_room(room: &Room) -> Option<(u8, u64, u64)> {
+            if room.is_read() {
+                return None;
+            }
+            let category = match room.category() {
+                RoomType::Invited => 5,
+                RoomType::Favorite => 4,
+                RoomType::Normal => 3,
+                RoomType::LowPriority => 2,
+                RoomType::Left => 1,
+                RoomType::Ignored | RoomType::Outdated | RoomType::Space => return None,
+            };
+            Some((category, room.notification_count(), room.latest_activity()))
+        }
+
+        if let Some((unread_room, _score)) = room_list
+            .into_iter()
+            .filter(|room| Some(room) != current_room.as_ref())
+            .filter_map(|room| score_for_room(&room).map(|score| (room, score)))
+            .max_by_key(|&(ref _room, score)| score)
+        {
+            self.select_room(Some(unread_room));
         }
     }
 
