@@ -593,12 +593,12 @@ room-history-row.has-header {
 
 room-history-row:not(.has-header) .event-content:dir(ltr),
 room-history-row:not(.has-header) message-reactions:dir(ltr) {
-  margin-left: 46px;
+  margin-left: 54px;
 }
 
 room-history-row:not(.has-header) .event-content:dir(rtl),
 room-history-row:not(.has-header) message-reactions:dir(rtl) {
-  margin-right: 46px;
+  margin-right: 54px;
 }
 
 room-history-row:focus {
@@ -883,6 +883,10 @@ sender-avatar popover button.text-button {
   padding-left: 10px;
   padding-right: 10px;
   font-weight: 400;
+}
+
+button.send-text-message-button image {
+  transform: translateX(2px);
 }
 
 

@@ -3,7 +3,7 @@
   <template class="ContentMessageRow" parent="AdwBin">
     <child>
       <object class="GtkGrid">
-        <property name="column-spacing">4</property>
+        <property name="column-spacing">12</property>
         <child>
           <object class="ContentSenderAvatar" id="avatar">
             <layout>

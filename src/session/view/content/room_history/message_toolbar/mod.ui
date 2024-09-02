@@ -159,6 +159,7 @@
                         <style>
                           <class name="suggested-action"/>
                           <class name="circular"/>
+                          <class name="send-text-message-button"/>
                         </style>
                         <accessibility>
                           <property name="label" translatable="yes">Send Message</property>
