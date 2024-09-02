@@ -1,7 +1,7 @@
 //! Linux API to store the data of a session, using the Secret Service or Secret
 //! portal.
 
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
 use gettextrs::gettext;
 use oo7::{Item, Keyring};
@@ -10,11 +10,15 @@ use thiserror::Error;
 use tracing::{debug, error, info};
 use url::Url;
 
-use super::{Secret, SecretError, StoredSession, DATA_PATH};
+use super::{Secret, SecretError, StoredSession};
 use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
 
 /// The current version of the stored session.
 pub const CURRENT_VERSION: u8 = 5;
+/// The minimum supported version for the stored sessions.
+///
+/// Currently, this matches the version when Fractal 5 was released.
+pub const MIN_SUPPORTED_VERSION: u8 = 4;
 /// The attribute to identify the schema in the Secret Service.
 const SCHEMA_ATTRIBUTE: &str = "xdg:schema";
 
@@ -35,7 +39,10 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
     keyring.unlock().await?;
 
     let items = keyring
-        .search_items(&HashMap::from([(SCHEMA_ATTRIBUTE, APP_ID)]))
+        .search_items(&HashMap::from([
+            (SCHEMA_ATTRIBUTE, APP_ID),
+            ("profile", PROFILE.as_str()),
+        ]))
         .await?;
 
     let mut sessions = Vec::with_capacity(items.len());
@@ -50,9 +57,9 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                 item,
                 mut session,
             }) => {
-                if version == 0 {
+                if version < MIN_SUPPORTED_VERSION {
                     info!(
-                        "Found old session for user {} with sled store, removing…",
+                        "Found old session for user {} with version {version} that is no longer supported, removing…",
                         session.user_id
                     );
 
@@ -73,7 +80,6 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
 
                 sessions.push(session);
             }
-            Err(LinuxSecretError::WrongProfile) => {}
             Err(error) => {
                 error!("Could not restore previous session: {error}");
             }
@@ -166,30 +172,8 @@ impl StoredSession {
             None => 0,
         };
         if version > CURRENT_VERSION {
-            return Err(LinuxSecretError::UnsupportedVersion {
-                version,
-                item,
-                attributes: attr,
-            });
+            return Err(LinuxSecretError::UnsupportedVersion(version));
         }
-
-        // TODO: Remove this and request profile in Keyring::search_items when we remove
-        // migration.
-        match attr.get("profile") {
-            // Ignore the item if it's for another profile.
-            Some(profile) if *profile != PROFILE.as_str() => {
-                return Err(LinuxSecretError::WrongProfile)
-            }
-            // It's an error if the version is at least 2 but there is no profile.
-            // Versions older than 2 will be migrated.
-            None if version >= 2 => {
-                return Err(LinuxSecretError::Invalid(gettext(
-                    "Could not find profile in stored session",
-                )));
-            }
-            // No issue for other cases.
-            _ => {}
-        };
 
         let homeserver = match attr.get("homeserver") {
             Some(string) => match Url::parse(string) {
@@ -312,41 +296,24 @@ impl StoredSession {
     }
 
     /// Migrate this session to the current version.
-    async fn apply_migrations(&mut self, current_version: u8, item: Item) {
-        if current_version < 4 {
-            info!("Migrating to version 4…");
+    async fn apply_migrations(&mut self, from_version: u8, item: Item) {
+        if from_version < 5 {
+            // Version 5 changes the serialization of the secret from MessagePack to JSON.
+            info!("Migrating to version 5…");
 
-            let target_path = DATA_PATH.join(self.id());
-
-            if self.path != target_path {
-                debug!("Moving database to: {}", target_path.to_string_lossy());
-
-                if let Err(error) = fs::create_dir_all(&target_path) {
-                    error!("Could not create new directory: {error}");
+            let clone = self.clone();
+            spawn_tokio!(async move {
+                if let Err(error) = item.delete().await {
+                    error!("Could not remove outdated session: {error}");
                 }
 
-                if let Err(error) = fs::rename(&self.path, &target_path) {
-                    error!("Could not move database: {error}");
+                if let Err(error) = store_session_inner(clone).await {
+                    error!("Could not store updated session: {error}");
                 }
-
-                self.path = target_path;
-            }
+            })
+            .await
+            .unwrap();
         }
-
-        info!("Migrating to version 5…");
-
-        let clone = self.clone();
-        spawn_tokio!(async move {
-            if let Err(error) = item.delete().await {
-                error!("Could not remove outdated session: {error}");
-            }
-
-            if let Err(error) = store_session_inner(clone).await {
-                error!("Could not store updated session: {error}");
-            }
-        })
-        .await
-        .unwrap();
     }
 }
 
@@ -354,12 +321,8 @@ impl StoredSession {
 #[derive(Debug, Error)]
 pub enum LinuxSecretError {
     /// A session with an unsupported version was found.
-    #[error("Session found with unsupported version {version}")]
-    UnsupportedVersion {
-        version: u8,
-        item: Item,
-        attributes: HashMap<String, String>,
-    },
+    #[error("Session found with unsupported version {0}")]
+    UnsupportedVersion(u8),
 
     /// A session with an old version was found.
     #[error("Session found with old version")]
@@ -379,10 +342,6 @@ pub enum LinuxSecretError {
     /// An error occurred interacting with the secret service.
     #[error(transparent)]
     Oo7(#[from] oo7::Error),
-
-    /// Trying to restore a session with the wrong profile.
-    #[error("Session found for wrong profile")]
-    WrongProfile,
 }
 
 impl From<oo7::Error> for SecretError {
