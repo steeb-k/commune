@@ -1,13 +1,12 @@
 //! API to store the data of a session in a secret store on the system.
 
-use std::{ffi::OsStr, fmt, path::PathBuf};
+use std::{fmt, path::PathBuf};
 
 use gtk::glib;
 use matrix_sdk::{
     matrix_auth::{MatrixSession, MatrixSessionTokens},
     SessionMeta,
 };
-use once_cell::sync::Lazy;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use ruma::{OwnedDeviceId, OwnedUserId};
 use serde::{Deserialize, Serialize};
@@ -29,17 +28,12 @@ pub use self::linux::{restore_sessions, store_session};
 use self::unimplemented::delete_session;
 #[cfg(not(target_os = "linux"))]
 pub use self::unimplemented::{restore_sessions, store_session};
-use crate::{application::AppProfile, prelude::*, spawn_tokio, PROFILE};
+use crate::{application::AppProfile, prelude::*, spawn_tokio, GETTEXT_PACKAGE, PROFILE};
 
-/// The path where the database should be stored.
-static DATA_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let dir_name = match PROFILE {
-        AppProfile::Stable => "fractal".to_owned(),
-        _ => format!("fractal-{PROFILE}"),
-    };
-
-    glib::user_data_dir().join(dir_name)
-});
+/// The length of a session ID, in chars or bytes as the string is ASCII.
+pub const SESSION_ID_LENGTH: usize = 8;
+/// The length of a passphrase, in chars or bytes as the string is ASCII.
+pub const PASSPHRASE_LENGTH: usize = 30;
 
 /// Any error that can happen when interacting with the secret service.
 #[derive(Debug, Error)]
@@ -61,10 +55,17 @@ impl UserFacingError for SecretError {
 #[derive(Clone, glib::Boxed)]
 #[boxed_type(name = "StoredSession")]
 pub struct StoredSession {
+    /// The URL of the homeserver where the account lives.
     pub homeserver: Url,
+    /// The unique identifier of the user.
     pub user_id: OwnedUserId,
+    /// The unique identifier of the session on the homeserver.
     pub device_id: OwnedDeviceId,
-    pub path: PathBuf,
+    /// The unique local identifier of the session.
+    ///
+    /// This is the name of the directories where the session data lives.
+    pub id: String,
+    /// The secrets of the session.
     pub secret: Secret,
 }
 
@@ -74,24 +75,49 @@ impl fmt::Debug for StoredSession {
             .field("homeserver", &self.homeserver)
             .field("user_id", &self.user_id)
             .field("device_id", &self.device_id)
-            .field("path", &self.path)
-            .finish()
+            .field("id", &self.id)
+            .finish_non_exhaustive()
     }
 }
 
 impl StoredSession {
     /// Construct a `StoredSession` from the given login data.
-    pub fn with_login_data(homeserver: Url, data: MatrixSession) -> Self {
+    ///
+    /// Returns an error if we failed to generate a unique session ID for the
+    /// new session.
+    pub fn with_login_data(homeserver: Url, data: MatrixSession) -> Result<Self, ()> {
         let MatrixSession {
             meta: SessionMeta { user_id, device_id },
             tokens: MatrixSessionTokens { access_token, .. },
         } = data;
 
-        let path = DATA_PATH.join(glib::uuid_string_random().as_str());
+        // Generate a unique random session ID.
+        let mut id = None;
+        let data_path = db_dir_path(DbContentType::Data);
+
+        // Try 10 times, so we do not have an infinite loop.
+        for _ in 0..10 {
+            let generated = thread_rng()
+                .sample_iter(Alphanumeric)
+                .take(SESSION_ID_LENGTH)
+                .map(char::from)
+                .collect::<String>();
+
+            // Make sure that the ID is not already in use.
+            let path = data_path.join(&generated);
+            if !path.exists() {
+                id = Some(generated);
+                break;
+            }
+        }
+
+        let Some(id) = id else {
+            return Err(());
+        };
 
         let passphrase = thread_rng()
             .sample_iter(Alphanumeric)
-            .take(30)
+            .take(PASSPHRASE_LENGTH)
             .map(char::from)
             .collect();
 
@@ -100,63 +126,40 @@ impl StoredSession {
             passphrase,
         };
 
-        Self {
+        Ok(Self {
             homeserver,
             user_id,
             device_id,
-            path,
+            id,
             secret,
-        }
+        })
     }
 
-    /// Split this `StoredSession` into parts.
-    pub fn into_parts(self) -> (Url, PathBuf, String, MatrixSession) {
-        let Self {
-            homeserver,
-            user_id,
-            device_id,
-            path,
-            secret: Secret {
-                access_token,
-                passphrase,
-            },
-        } = self;
-
-        let data = MatrixSession {
-            meta: SessionMeta { user_id, device_id },
-            tokens: MatrixSessionTokens {
-                access_token,
-                refresh_token: None,
-            },
-        };
-
-        (homeserver, path, passphrase, data)
+    /// The path where the persistent data of this session lives.
+    pub fn data_path(&self) -> PathBuf {
+        db_dir_path(DbContentType::Data).join(&self.id)
     }
 
-    /// The unique ID for this `StoredSession`.
-    ///
-    /// This is the name of the folder where the DB is stored.
-    pub fn id(&self) -> &str {
-        self.path
-            .iter()
-            .next_back()
-            .and_then(OsStr::to_str)
-            .unwrap()
+    /// The path where the cached data of this session lives.
+    pub fn cache_path(&self) -> PathBuf {
+        db_dir_path(DbContentType::Cache).join(&self.id)
     }
 
     /// Delete this session from the system.
     pub async fn delete(self) {
         debug!(
             "Removing stored session {} for Matrix user {}…",
-            self.id(),
-            self.user_id,
+            self.id, self.user_id,
         );
 
         delete_session(self.clone()).await;
 
         spawn_tokio!(async move {
-            if let Err(error) = fs::remove_dir_all(self.path).await {
+            if let Err(error) = fs::remove_dir_all(self.data_path()).await {
                 error!("Could not remove session database: {error}");
+            }
+            if let Err(error) = fs::remove_dir_all(self.cache_path()).await {
+                error!("Could not remove session cache: {error}");
             }
         })
         .await
@@ -167,6 +170,30 @@ impl StoredSession {
 /// A `Secret` that can be stored in the `SecretService`.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Secret {
+    /// The access token to provide to the homeserver for authentication.
     pub access_token: String,
+    /// The passphrase used to encrypt the local databases.
     pub passphrase: String,
+}
+
+/// The path of the directory where a database should be stored, depending on
+/// the type of content.
+fn db_dir_path(content_type: DbContentType) -> PathBuf {
+    let dir_name = match PROFILE {
+        AppProfile::Stable => GETTEXT_PACKAGE.to_owned(),
+        _ => format!("{GETTEXT_PACKAGE}-{PROFILE}"),
+    };
+
+    match content_type {
+        DbContentType::Data => glib::user_data_dir().join(dir_name),
+        DbContentType::Cache => glib::user_cache_dir().join(dir_name),
+    }
+}
+
+/// The type of content of a database.
+enum DbContentType {
+    /// Data that should not be deleted.
+    Data,
+    /// Cache that can be deleted freely.
+    Cache,
 }

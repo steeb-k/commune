@@ -1,20 +1,21 @@
 //! Linux API to store the data of a session, using the Secret Service or Secret
 //! portal.
 
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::Path};
 
 use gettextrs::gettext;
 use oo7::{Item, Keyring};
 use ruma::{OwnedDeviceId, UserId};
 use thiserror::Error;
+use tokio::fs;
 use tracing::{debug, error, info};
 use url::Url;
 
-use super::{Secret, SecretError, StoredSession};
+use super::{Secret, SecretError, StoredSession, SESSION_ID_LENGTH};
 use crate::{gettext_f, prelude::*, spawn_tokio, utils::matrix, APP_ID, PROFILE};
 
 /// The current version of the stored session.
-pub const CURRENT_VERSION: u8 = 5;
+pub const CURRENT_VERSION: u8 = 6;
 /// The minimum supported version for the stored sessions.
 ///
 /// Currently, this matches the version when Fractal 5 was released.
@@ -22,7 +23,7 @@ pub const MIN_SUPPORTED_VERSION: u8 = 4;
 /// The attribute to identify the schema in the Secret Service.
 const SCHEMA_ATTRIBUTE: &str = "xdg:schema";
 
-/// Retrieves all sessions stored to the `SecretService`.
+/// Retrieves all sessions stored in the secret backend.
 pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
     match restore_sessions_inner().await {
         Ok(sessions) => Ok(sessions),
@@ -54,8 +55,8 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
             Ok(session) => sessions.push(session),
             Err(LinuxSecretError::OldVersion {
                 version,
-                item,
                 mut session,
+                attributes,
             }) => {
                 if version < MIN_SUPPORTED_VERSION {
                     info!(
@@ -66,17 +67,32 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                     // Try to log it out.
                     log_out_session(session.clone()).await;
 
-                    session.delete().await;
+                    // Delete the session from the secret backend.
+                    delete_session(session.clone()).await;
+
+                    // Delete the session data folders.
+                    spawn_tokio!(async move {
+                        if let Err(error) = fs::remove_dir_all(session.data_path()).await {
+                            error!("Could not remove session database: {error}");
+                        }
+
+                        if version >= 6 {
+                            if let Err(error) = fs::remove_dir_all(session.cache_path()).await {
+                                error!("Could not remove session cache: {error}");
+                            }
+                        }
+                    })
+                    .await
+                    .unwrap();
+
                     continue;
                 }
 
                 info!(
                     "Found session {} for user {} with old version {}, applying migrations…",
-                    session.id(),
-                    session.user_id,
-                    version,
+                    session.id, session.user_id, version,
                 );
-                session.apply_migrations(version, item).await;
+                session.apply_migrations(version, attributes).await;
 
                 sessions.push(session);
             }
@@ -89,8 +105,10 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
     Ok(sessions)
 }
 
-/// Write the given session to the `SecretService`, overwriting any previously
-/// stored session with the same attributes.
+/// Write the given session to the secret backend.
+///
+/// Note that this overwrites any previously stored session with the same
+/// attributes.
 pub async fn store_session(session: StoredSession) -> Result<(), SecretError> {
     match store_session_inner(session).await {
         Ok(()) => Ok(()),
@@ -124,11 +142,11 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
     Ok(())
 }
 
-/// Delete the given session from the secret service.
+/// Delete the given session from the secret backend.
 pub async fn delete_session(session: StoredSession) {
     spawn_tokio!(async move {
-        if let Err(error) = session.delete_from_secret_service().await {
-            error!("Could not delete session data from Secret Service: {error}");
+        if let Err(error) = delete_item_with_attributes(&session.attributes()).await {
+            error!("Could not delete session data from secret backend: {error}");
         }
     })
     .await
@@ -157,9 +175,9 @@ async fn log_out_session(session: StoredSession) {
 impl StoredSession {
     /// Build self from a secret.
     async fn try_from_secret_item(item: Item) -> Result<Self, LinuxSecretError> {
-        let attr = item.attributes().await?;
+        let attributes = item.attributes().await?;
 
-        let version = match attr.get("version") {
+        let version = match attributes.get("version") {
             Some(string) => match string.parse::<u8>() {
                 Ok(version) => version,
                 Err(error) => {
@@ -175,7 +193,7 @@ impl StoredSession {
             return Err(LinuxSecretError::UnsupportedVersion(version));
         }
 
-        let homeserver = match attr.get("homeserver") {
+        let homeserver = match attributes.get("homeserver") {
             Some(string) => match Url::parse(string) {
                 Ok(homeserver) => homeserver,
                 Err(error) => {
@@ -191,8 +209,8 @@ impl StoredSession {
                 )));
             }
         };
-        let user_id = match attr.get("user") {
-            Some(string) => match UserId::parse(string.as_str()) {
+        let user_id = match attributes.get("user") {
+            Some(string) => match UserId::parse(string) {
                 Ok(user_id) => user_id,
                 Err(error) => {
                     error!("Could not parse 'user' attribute in stored session: {error}");
@@ -207,7 +225,7 @@ impl StoredSession {
                 )));
             }
         };
-        let device_id = match attr.get("device-id") {
+        let device_id = match attributes.get("device-id") {
             Some(string) => OwnedDeviceId::from(string.as_str()),
             None => {
                 return Err(LinuxSecretError::Invalid(gettext(
@@ -215,12 +233,28 @@ impl StoredSession {
                 )));
             }
         };
-        let path = match attr.get("db-path") {
-            Some(string) => PathBuf::from(string),
-            None => {
-                return Err(LinuxSecretError::Invalid(gettext(
-                    "Could not find database path in stored session",
-                )));
+        let id = if version <= 5 {
+            match attributes.get("db-path") {
+                Some(string) => Path::new(string)
+                    .iter()
+                    .next_back()
+                    .and_then(|s| s.to_str())
+                    .expect("Session ID in db-path should be valid UTF-8")
+                    .to_owned(),
+                None => {
+                    return Err(LinuxSecretError::Invalid(gettext(
+                        "Could not find database path in stored session",
+                    )));
+                }
+            }
+        } else {
+            match attributes.get("id") {
+                Some(string) => string.clone(),
+                None => {
+                    return Err(LinuxSecretError::Invalid(gettext(
+                        "Could not find session ID in stored session",
+                    )));
+                }
             }
         };
         let secret = match item.secret().await {
@@ -259,15 +293,15 @@ impl StoredSession {
             homeserver,
             user_id,
             device_id,
-            path,
+            id,
             secret,
         };
 
         if version < CURRENT_VERSION {
             Err(LinuxSecretError::OldVersion {
                 version,
-                item,
                 session,
+                attributes,
             })
         } else {
             Ok(session)
@@ -280,30 +314,43 @@ impl StoredSession {
             ("homeserver", self.homeserver.to_string()),
             ("user", self.user_id.to_string()),
             ("device-id", self.device_id.to_string()),
-            ("db-path", self.path.to_str().unwrap().to_owned()),
+            ("id", self.id.clone()),
             ("version", CURRENT_VERSION.to_string()),
             ("profile", PROFILE.to_string()),
             (SCHEMA_ATTRIBUTE, APP_ID.to_owned()),
         ])
     }
 
-    /// Remove this session from the `SecretService`
-    async fn delete_from_secret_service(&self) -> Result<(), SecretError> {
-        let keyring = Keyring::new().await?;
-        keyring.delete(&self.attributes()).await?;
-
-        Ok(())
-    }
-
     /// Migrate this session to the current version.
-    async fn apply_migrations(&mut self, from_version: u8, item: Item) {
-        if from_version < 5 {
+    async fn apply_migrations(&mut self, from_version: u8, attributes: HashMap<String, String>) {
+        if from_version < 6 {
             // Version 5 changes the serialization of the secret from MessagePack to JSON.
-            info!("Migrating to version 5…");
+            // Version 6 truncates sessions IDs, changing the path of the databases, and
+            // removes the `db-path` attribute to replace it with the `id` attribute.
+            // They both remove and add again the item in the secret backend so we merged
+            // the migrations.
+            info!("Migrating to version 6…");
+
+            // Keep the old state of the session.
+            let old_path = self.data_path();
+
+            // Truncate the session ID.
+            self.id.truncate(SESSION_ID_LENGTH);
+            let new_path = self.data_path();
 
             let clone = self.clone();
             spawn_tokio!(async move {
-                if let Err(error) = item.delete().await {
+                debug!(
+                    "Renaming databases directory to: {}",
+                    new_path.to_string_lossy()
+                );
+                if let Err(error) = fs::rename(old_path, new_path).await {
+                    error!("Could not rename databases directory: {error}");
+                }
+
+                // Changing an attribute in an item creates a new item in oo7 because of a bug,
+                // so we need to delete it and create a new one.
+                if let Err(error) = delete_item_with_attributes(&attributes).await {
                     error!("Could not remove outdated session: {error}");
                 }
 
@@ -317,8 +364,21 @@ impl StoredSession {
     }
 }
 
-/// Any error that can happen when interacting with the Secret Service on Linux.
+/// Remove the item with the given attributes from the secret backend.
+async fn delete_item_with_attributes(
+    attributes: &impl oo7::AsAttributes,
+) -> Result<(), oo7::Error> {
+    let keyring = Keyring::new().await?;
+    keyring.delete(attributes).await?;
+
+    Ok(())
+}
+
+/// Any error that can happen when interacting with the secret backends on
+/// Linux.
 #[derive(Debug, Error)]
+// Complains about StoredSession in OldVersion, but we need it.
+#[allow(clippy::large_enum_variant)]
 pub enum LinuxSecretError {
     /// A session with an unsupported version was found.
     #[error("Session found with unsupported version {0}")]
@@ -327,9 +387,16 @@ pub enum LinuxSecretError {
     /// A session with an old version was found.
     #[error("Session found with old version")]
     OldVersion {
+        /// The version that was found.
         version: u8,
-        item: Item,
+        /// The session that was found.
         session: StoredSession,
+        /// The attributes of the secret item for the session.
+        ///
+        /// We use it to update the secret item because, if we use the `Item`
+        /// directly, the Secret portal API returns errors saying that the file
+        /// has changed after the first item was modified.
+        attributes: HashMap<String, String>,
     },
 
     /// An invalid session was found.
@@ -339,7 +406,7 @@ pub enum LinuxSecretError {
     #[error("Invalid session: {0}")]
     Invalid(String),
 
-    /// An error occurred interacting with the secret service.
+    /// An error occurred interacting with the secret backend.
     #[error(transparent)]
     Oo7(#[from] oo7::Error),
 }

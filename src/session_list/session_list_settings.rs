@@ -3,6 +3,7 @@ use indexmap::{IndexMap, IndexSet};
 use tracing::error;
 
 use crate::{
+    secret::SESSION_ID_LENGTH,
     session::model::{SessionSettings, StoredSessionSettings},
     Application,
 };
@@ -53,15 +54,28 @@ impl SessionListSettings {
                 }
             };
 
+        // Do we need to update the settings?
+        let mut needs_update = false;
+
         let sessions = stored_sessions
             .into_iter()
-            .map(|(session_id, stored_session)| {
+            .map(|(mut session_id, stored_session)| {
+                // Session IDs have been truncated in version 6 of StoredSession.
+                if session_id.len() > SESSION_ID_LENGTH {
+                    session_id.truncate(SESSION_ID_LENGTH);
+                    needs_update = true;
+                }
+
                 let session = SessionSettings::restore(&session_id, stored_session);
                 (session_id, session)
             })
             .collect();
 
         self.imp().sessions.replace(sessions);
+
+        if needs_update {
+            self.save();
+        }
     }
 
     /// Save the settings in the GSettings.

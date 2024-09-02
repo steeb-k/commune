@@ -230,8 +230,8 @@ impl SessionList {
 
                 // Keep the order from the settings.
                 sessions.sort_by(|a, b| {
-                    let pos_a = session_ids.get_index_of(a.id());
-                    let pos_b = session_ids.get_index_of(b.id());
+                    let pos_a = session_ids.get_index_of(&a.id);
+                    let pos_b = session_ids.get_index_of(&b.id);
 
                     match (pos_a, pos_b) {
                         (Some(pos_a), Some(pos_b)) => pos_a.cmp(&pos_b),
@@ -244,12 +244,9 @@ impl SessionList {
 
                 for stored_session in sessions {
                     info!(
-                        "Restoring previous session for user: {}",
-                        stored_session.user_id
+                        "Restoring previous session {} for user {}",
+                        stored_session.id, stored_session.user_id,
                     );
-                    if let Some(path) = stored_session.path.to_str() {
-                        info!("Database path: {path}");
-                    }
                     self.insert(NewSession::new(stored_session.clone()));
 
                     spawn!(
@@ -281,7 +278,7 @@ impl SessionList {
 
     /// Restore a stored session.
     async fn restore_stored_session(&self, session_info: StoredSession) {
-        let settings = self.settings().get_or_create(session_info.id());
+        let settings = self.settings().get_or_create(&session_info.id);
         match Session::restore(session_info.clone(), settings).await {
             Ok(session) => {
                 session.prepare().await;

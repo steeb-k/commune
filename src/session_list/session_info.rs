@@ -81,7 +81,7 @@ mod imp {
 
         /// The local session's ID.
         fn session_id(&self) -> String {
-            self.info().id().to_owned()
+            self.info().id.clone()
         }
 
         /// The avatar data to represent this session.
@@ -124,7 +124,7 @@ pub trait SessionInfoExt: 'static {
 
     /// The local session's ID.
     fn session_id(&self) -> &str {
-        self.info().id()
+        &self.info().id
     }
 
     /// The avatar data to represent this session.

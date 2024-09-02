@@ -399,11 +399,12 @@ glib::wrapper! {
 impl Session {
     /// Create a new session.
     pub async fn new(homeserver: Url, data: MatrixSession) -> Result<Self, ClientSetupError> {
-        let stored_session = StoredSession::with_login_data(homeserver, data);
+        let stored_session = StoredSession::with_login_data(homeserver, data)
+            .map_err(|_| ClientSetupError::NoSessionId)?;
         let settings = Application::default()
             .session_list()
             .settings()
-            .get_or_create(stored_session.id());
+            .get_or_create(&stored_session.id);
 
         Self::restore(stored_session, settings).await
     }

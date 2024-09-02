@@ -2,12 +2,14 @@
 
 use std::{borrow::Cow, str::FromStr};
 
+use gettextrs::gettext;
 use gtk::{glib, prelude::*};
 use matrix_sdk::{
     config::RequestConfig,
     deserialized_responses::RawAnySyncOrStrippedTimelineEvent,
     encryption::{BackupDownloadStrategy, EncryptionSettings},
-    Client, ClientBuildError,
+    matrix_auth::{MatrixSession, MatrixSessionTokens},
+    Client, ClientBuildError, SessionMeta,
 };
 use matrix_sdk_ui::timeline::{Message, TimelineItemContent};
 use ruma::{
@@ -34,7 +36,7 @@ use crate::{
     components::Pill,
     gettext_f,
     prelude::*,
-    secret::StoredSession,
+    secret::{Secret, StoredSession},
     session::model::{RemoteRoom, Room},
 };
 
@@ -254,17 +256,23 @@ pub fn get_stripped_state_event_body(
 /// All errors that can occur when setting up the Matrix client.
 #[derive(Error, Debug)]
 pub enum ClientSetupError {
+    /// An error when building the client.
     #[error(transparent)]
     Client(#[from] ClientBuildError),
+    /// An error when using the client.
     #[error(transparent)]
     Sdk(#[from] matrix_sdk::Error),
+    /// An error creating the unique local ID of the session.
+    #[error("Could not generate unique session ID")]
+    NoSessionId,
 }
 
 impl UserFacingError for ClientSetupError {
     fn to_user_facing(&self) -> String {
         match self {
-            ClientSetupError::Client(err) => err.to_user_facing(),
-            ClientSetupError::Sdk(err) => err.to_user_facing(),
+            Self::Client(err) => err.to_user_facing(),
+            Self::Sdk(err) => err.to_user_facing(),
+            Self::NoSessionId => gettext("Could not generate unique session ID"),
         }
     }
 }
@@ -273,7 +281,27 @@ impl UserFacingError for ClientSetupError {
 pub async fn client_with_stored_session(
     session: StoredSession,
 ) -> Result<Client, ClientSetupError> {
-    let (homeserver, path, passphrase, data) = session.into_parts();
+    let data_path = session.data_path();
+    let cache_path = session.cache_path();
+
+    let StoredSession {
+        homeserver,
+        user_id,
+        device_id,
+        id: _,
+        secret: Secret {
+            access_token,
+            passphrase,
+        },
+    } = session;
+
+    let session_data = MatrixSession {
+        meta: SessionMeta { user_id, device_id },
+        tokens: MatrixSessionTokens {
+            access_token,
+            refresh_token: None,
+        },
+    };
 
     let encryption_settings = EncryptionSettings {
         auto_enable_cross_signing: true,
@@ -283,7 +311,7 @@ pub async fn client_with_stored_session(
 
     let client = Client::builder()
         .homeserver_url(homeserver)
-        .sqlite_store(path, Some(&passphrase))
+        .sqlite_store_with_cache_path(data_path, cache_path, Some(&passphrase))
         // force_auth option to solve an issue with some servers configuration to require
         // auth for profiles:
         // https://gitlab.gnome.org/World/fractal/-/issues/934
@@ -292,7 +320,7 @@ pub async fn client_with_stored_session(
         .build()
         .await?;
 
-    client.restore_session(data).await?;
+    client.restore_session(session_data).await?;
 
     Ok(client)
 }
