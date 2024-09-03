@@ -16,6 +16,9 @@ use crate::{
     Window,
 };
 
+/// The key for the current session setting.
+pub const SETTINGS_KEY_CURRENT_SESSION: &str = "current-session";
+
 mod imp {
     use super::*;
 

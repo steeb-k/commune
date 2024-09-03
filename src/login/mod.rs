@@ -23,7 +23,7 @@ use self::{
 };
 use crate::{
     components::OfflineBanner, prelude::*, secret::store_session, session::model::Session, spawn,
-    spawn_tokio, toast, Application, Window, RUNTIME,
+    spawn_tokio, toast, Application, Window, RUNTIME, SETTINGS_KEY_CURRENT_SESSION,
 };
 
 #[derive(Clone, Debug, Default, glib::Boxed)]
@@ -468,7 +468,7 @@ impl Login {
 
         // Save ID of logging in session to GSettings
         let settings = Application::default().settings();
-        if let Err(err) = settings.set_string("current-session", session.session_id()) {
+        if let Err(err) = settings.set_string(SETTINGS_KEY_CURRENT_SESSION, session.session_id()) {
             warn!("Could not save current session: {err}");
         }
 

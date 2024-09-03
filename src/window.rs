@@ -13,6 +13,7 @@ use crate::{
     intent,
     login::Login,
     prelude::*,
+    secret::SESSION_ID_LENGTH,
     session::{
         model::{IdentityVerification, Session, SessionState},
         view::{AccountSettings, SessionView},
@@ -20,7 +21,7 @@ use crate::{
     session_list::{FailedSession, SessionInfo},
     toast,
     utils::LoadingState,
-    Application, APP_ID, PROFILE,
+    Application, APP_ID, PROFILE, SETTINGS_KEY_CURRENT_SESSION,
 };
 
 /// A page of the main window stack.
@@ -176,6 +177,21 @@ mod imp {
                         return;
                     }
 
+                    let settings = Application::default().settings();
+                    let mut current_session_setting =
+                        settings.string(SETTINGS_KEY_CURRENT_SESSION).to_string();
+
+                    // Session IDs have been truncated in version 6 of StoredSession.
+                    if current_session_setting.len() > SESSION_ID_LENGTH {
+                        current_session_setting.truncate(SESSION_ID_LENGTH);
+
+                        if let Err(error) = settings
+                            .set_string(SETTINGS_KEY_CURRENT_SESSION, &current_session_setting)
+                        {
+                            warn!("Could not save current session: {error}");
+                        }
+                    }
+
                     for i in pos..pos + added {
                         let Some(session) = session_selection.item(i).and_downcast::<SessionInfo>()
                         else {
@@ -186,8 +202,7 @@ mod imp {
                             toast!(obj, failed.error().to_user_facing());
                         }
 
-                        let settings = Application::default().settings();
-                        if session.session_id() == settings.string("current-session") {
+                        if session.session_id() == current_session_setting {
                             session_selection.set_selected(i);
                         }
                     }
@@ -288,7 +303,7 @@ mod imp {
             let settings = Application::default().settings();
 
             settings.set_string(
-                "current-session",
+                SETTINGS_KEY_CURRENT_SESSION,
                 self.current_session_id().unwrap_or_default().as_str(),
             )?;
 
