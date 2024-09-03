@@ -96,6 +96,9 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
 
                 sessions.push(session);
             }
+            Err(LinuxSecretError::InvalidField) => {
+                // We already log the specific errors for this.
+            }
             Err(error) => {
                 error!("Could not restore previous session: {error}");
             }
@@ -181,13 +184,13 @@ impl StoredSession {
             Some(string) => match string.parse::<u8>() {
                 Ok(version) => version,
                 Err(error) => {
-                    error!("Could not parse 'version' attribute in stored session: {error}");
-                    return Err(LinuxSecretError::Invalid(gettext(
-                        "Malformed version in stored session",
-                    )));
+                    error!("Could not parse version in stored session: {error}");
+                    return Err(LinuxSecretError::InvalidField);
                 }
             },
-            None => 0,
+            None => {
+                return Err(LinuxSecretError::MissingField("version"));
+            }
         };
         if version > CURRENT_VERSION {
             return Err(LinuxSecretError::UnsupportedVersion(version));
@@ -197,40 +200,30 @@ impl StoredSession {
             Some(string) => match Url::parse(string) {
                 Ok(homeserver) => homeserver,
                 Err(error) => {
-                    error!("Could not parse 'homeserver' attribute in stored session: {error}");
-                    return Err(LinuxSecretError::Invalid(gettext(
-                        "Malformed homeserver in stored session",
-                    )));
+                    error!("Could not parse homeserver in stored session: {error}");
+                    return Err(LinuxSecretError::InvalidField);
                 }
             },
             None => {
-                return Err(LinuxSecretError::Invalid(gettext(
-                    "Could not find homeserver in stored session",
-                )));
+                return Err(LinuxSecretError::MissingField("homeserver"));
             }
         };
         let user_id = match attributes.get("user") {
             Some(string) => match UserId::parse(string) {
                 Ok(user_id) => user_id,
                 Err(error) => {
-                    error!("Could not parse 'user' attribute in stored session: {error}");
-                    return Err(LinuxSecretError::Invalid(gettext(
-                        "Malformed user ID in stored session",
-                    )));
+                    error!("Could not parse user ID in stored session: {error}");
+                    return Err(LinuxSecretError::InvalidField);
                 }
             },
             None => {
-                return Err(LinuxSecretError::Invalid(gettext(
-                    "Could not find user ID in stored session",
-                )));
+                return Err(LinuxSecretError::MissingField("user ID"));
             }
         };
         let device_id = match attributes.get("device-id") {
             Some(string) => OwnedDeviceId::from(string.as_str()),
             None => {
-                return Err(LinuxSecretError::Invalid(gettext(
-                    "Could not find device ID in stored session",
-                )));
+                return Err(LinuxSecretError::MissingField("device ID"));
             }
         };
         let id = if version <= 5 {
@@ -242,18 +235,14 @@ impl StoredSession {
                     .expect("Session ID in db-path should be valid UTF-8")
                     .to_owned(),
                 None => {
-                    return Err(LinuxSecretError::Invalid(gettext(
-                        "Could not find database path in stored session",
-                    )));
+                    return Err(LinuxSecretError::MissingField("database path"));
                 }
             }
         } else {
             match attributes.get("id") {
                 Some(string) => string.clone(),
                 None => {
-                    return Err(LinuxSecretError::Invalid(gettext(
-                        "Could not find session ID in stored session",
-                    )));
+                    return Err(LinuxSecretError::MissingField("session ID"));
                 }
             }
         };
@@ -264,9 +253,7 @@ impl StoredSession {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error}");
-                            return Err(LinuxSecretError::Invalid(gettext(
-                                "Malformed secret in stored session",
-                            )));
+                            return Err(LinuxSecretError::InvalidField);
                         }
                     }
                 } else {
@@ -274,18 +261,14 @@ impl StoredSession {
                         Ok(secret) => secret,
                         Err(error) => {
                             error!("Could not parse secret in stored session: {error:?}");
-                            return Err(LinuxSecretError::Invalid(gettext(
-                                "Malformed secret in stored session",
-                            )));
+                            return Err(LinuxSecretError::InvalidField);
                         }
                     }
                 }
             }
             Err(error) => {
                 error!("Could not get secret in stored session: {error}");
-                return Err(LinuxSecretError::Invalid(gettext(
-                    "Could not get secret in stored session",
-                )));
+                return Err(LinuxSecretError::InvalidField);
             }
         };
 
@@ -399,12 +382,19 @@ pub enum LinuxSecretError {
         attributes: HashMap<String, String>,
     },
 
+    /// An attribute is missing.
+    ///
+    /// This should only happen if for some reason we get an item from a
+    /// different application.
+    #[error("Could not find {0} in stored session")]
+    MissingField(&'static str),
+
     /// An invalid session was found.
     ///
     /// This should only happen if for some reason we get an item from a
     /// different application.
-    #[error("Invalid session: {0}")]
-    Invalid(String),
+    #[error("Invalid field in stored session")]
+    InvalidField,
 
     /// An error occurred interacting with the secret backend.
     #[error(transparent)]
