@@ -20,8 +20,26 @@ pub const CURRENT_VERSION: u8 = 6;
 ///
 /// Currently, this matches the version when Fractal 5 was released.
 pub const MIN_SUPPORTED_VERSION: u8 = 4;
-/// The attribute to identify the schema in the Secret Service.
-const SCHEMA_ATTRIBUTE: &str = "xdg:schema";
+
+/// Keys used in the Linux secret backend.
+mod keys {
+    /// The attribute for the schema in the Secret Service.
+    pub(super) const XDG_SCHEMA: &str = "xdg:schema";
+    /// The attribute for the profile of the app.
+    pub(super) const PROFILE: &str = "profile";
+    /// The attribute for the version of the stored session.
+    pub(super) const VERSION: &str = "version";
+    /// The attribute for the URL of the homeserver.
+    pub(super) const HOMESERVER: &str = "homeserver";
+    /// The attribute for the user ID.
+    pub(super) const USER: &str = "user";
+    /// The attribute for the device ID.
+    pub(super) const DEVICE_ID: &str = "device-id";
+    /// The deprecated attribute for the database path.
+    pub(super) const DB_PATH: &str = "db-path";
+    /// The attribute for the session ID.
+    pub(super) const ID: &str = "id";
+}
 
 /// Retrieves all sessions stored in the secret backend.
 pub async fn restore_sessions() -> Result<Vec<StoredSession>, SecretError> {
@@ -41,8 +59,8 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
 
     let items = keyring
         .search_items(&HashMap::from([
-            (SCHEMA_ATTRIBUTE, APP_ID),
-            ("profile", PROFILE.as_str()),
+            (keys::XDG_SCHEMA, APP_ID),
+            (keys::PROFILE, PROFILE.as_str()),
         ]))
         .await?;
 
@@ -180,7 +198,7 @@ impl StoredSession {
     async fn try_from_secret_item(item: Item) -> Result<Self, LinuxSecretError> {
         let attributes = item.attributes().await?;
 
-        let version = match attributes.get("version") {
+        let version = match attributes.get(keys::VERSION) {
             Some(string) => match string.parse::<u8>() {
                 Ok(version) => version,
                 Err(error) => {
@@ -196,7 +214,7 @@ impl StoredSession {
             return Err(LinuxSecretError::UnsupportedVersion(version));
         }
 
-        let homeserver = match attributes.get("homeserver") {
+        let homeserver = match attributes.get(keys::HOMESERVER) {
             Some(string) => match Url::parse(string) {
                 Ok(homeserver) => homeserver,
                 Err(error) => {
@@ -208,7 +226,7 @@ impl StoredSession {
                 return Err(LinuxSecretError::MissingField("homeserver"));
             }
         };
-        let user_id = match attributes.get("user") {
+        let user_id = match attributes.get(keys::USER) {
             Some(string) => match UserId::parse(string) {
                 Ok(user_id) => user_id,
                 Err(error) => {
@@ -220,14 +238,14 @@ impl StoredSession {
                 return Err(LinuxSecretError::MissingField("user ID"));
             }
         };
-        let device_id = match attributes.get("device-id") {
+        let device_id = match attributes.get(keys::DEVICE_ID) {
             Some(string) => OwnedDeviceId::from(string.as_str()),
             None => {
                 return Err(LinuxSecretError::MissingField("device ID"));
             }
         };
         let id = if version <= 5 {
-            match attributes.get("db-path") {
+            match attributes.get(keys::DB_PATH) {
                 Some(string) => Path::new(string)
                     .iter()
                     .next_back()
@@ -239,7 +257,7 @@ impl StoredSession {
                 }
             }
         } else {
-            match attributes.get("id") {
+            match attributes.get(keys::ID) {
                 Some(string) => string.clone(),
                 None => {
                     return Err(LinuxSecretError::MissingField("session ID"));
@@ -294,13 +312,13 @@ impl StoredSession {
     /// Get the attributes from `self`.
     fn attributes(&self) -> HashMap<&str, String> {
         HashMap::from([
-            ("homeserver", self.homeserver.to_string()),
-            ("user", self.user_id.to_string()),
-            ("device-id", self.device_id.to_string()),
-            ("id", self.id.clone()),
-            ("version", CURRENT_VERSION.to_string()),
-            ("profile", PROFILE.to_string()),
-            (SCHEMA_ATTRIBUTE, APP_ID.to_owned()),
+            (keys::HOMESERVER, self.homeserver.to_string()),
+            (keys::USER, self.user_id.to_string()),
+            (keys::DEVICE_ID, self.device_id.to_string()),
+            (keys::ID, self.id.clone()),
+            (keys::VERSION, CURRENT_VERSION.to_string()),
+            (keys::PROFILE, PROFILE.to_string()),
+            (keys::XDG_SCHEMA, APP_ID.to_owned()),
         ])
     }
 
