@@ -21,7 +21,6 @@ use matrix_sdk::{
 use ruma::{
     api::client::error::{ErrorKind, RetryAfter},
     events::{
-        receipt::{ReceiptEventContent, ReceiptType},
         room::{
             avatar::RoomAvatarEventContent, encryption::SyncRoomEncryptionEvent,
             guest_access::GuestAccess, history_visibility::HistoryVisibility,
@@ -217,7 +216,6 @@ mod imp {
         #[property(get, builder(HistoryVisibilityValue::default()))]
         pub history_visibility: Cell<HistoryVisibilityValue>,
         pub typing_drop_guard: OnceCell<EventHandlerDropGuard>,
-        pub receipts_drop_guard: OnceCell<EventHandlerDropGuard>,
     }
 
     #[glib::object_subclass]
@@ -519,7 +517,6 @@ impl Room {
         self.load_predecessor();
         self.load_tombstone();
         self.load_category();
-        self.set_up_receipts();
         self.set_up_typing();
         self.init_timeline();
         self.set_up_is_encrypted();
@@ -628,15 +625,14 @@ impl Room {
     }
 
     fn init_timeline(&self) {
-        let timeline = Timeline::new(self);
-        self.imp().timeline.set(timeline.clone()).unwrap();
+        let timeline = self.imp().timeline.get_or_init(|| Timeline::new(self));
 
-        timeline.sdk_items().connect_items_changed(clone!(
+        timeline.connect_read_change_trigger(clone!(
             #[weak(rename_to = obj)]
             self,
-            move |_, _, _, _| {
-                spawn!(async move {
-                    obj.update_is_read().await;
+            move |_| {
+                spawn!(glib::Priority::DEFAULT_IDLE, async move {
+                    obj.handle_read_change_trigger().await
                 });
             }
         ));
@@ -1164,59 +1160,6 @@ impl Room {
         imp.typing_drop_guard.set(drop_guard).unwrap();
     }
 
-    /// Start listening to read receipts events.
-    fn set_up_receipts(&self) {
-        let imp = self.imp();
-        if imp.receipts_drop_guard.get().is_some() {
-            // The event handler is already set up.
-            return;
-        }
-
-        // Listen to changes in the read receipts.
-        let matrix_room = self.matrix_room();
-        let room_weak = glib::SendWeakRef::from(self.downgrade());
-        let handle = matrix_room.add_event_handler(
-            move |event: SyncEphemeralRoomEvent<ReceiptEventContent>| {
-                let room_weak = room_weak.clone();
-                async move {
-                    let ctx = glib::MainContext::default();
-                    ctx.spawn(async move {
-                        spawn!(async move {
-                            if let Some(obj) = room_weak.upgrade() {
-                                obj.handle_receipt_event(event.content)
-                            }
-                        });
-                    });
-                }
-            },
-        );
-
-        let drop_guard = matrix_room.client().event_handler_drop_guard(handle);
-        imp.receipts_drop_guard.set(drop_guard).unwrap();
-    }
-
-    fn handle_receipt_event(&self, content: ReceiptEventContent) {
-        let Some(session) = self.session() else {
-            return;
-        };
-        let own_user_id = session.user_id();
-
-        for (_event_id, receipts) in content.iter() {
-            if let Some(users) = receipts.get(&ReceiptType::Read) {
-                if let Some(receipt) = users.get(own_user_id) {
-                    tracing::trace!("{}: Got own receipt: {receipt:?}", self.human_readable_id());
-                    spawn!(clone!(
-                        #[weak(rename_to = obj)]
-                        self,
-                        async move {
-                            obj.update_is_read().await;
-                        }
-                    ));
-                }
-            }
-        }
-    }
-
     fn handle_typing_event(&self, content: TypingEventContent) {
         let Some(session) = self.session() else {
             return;
@@ -1317,8 +1260,9 @@ impl Room {
         self.notify_highlight();
     }
 
-    async fn update_is_read(&self) {
-        tracing::trace!("{}::update_is_read", self.human_readable_id());
+    /// Handle the trigger emitted when a read change might have occurred.
+    async fn handle_read_change_trigger(&self) {
+        tracing::trace!("{}::handle_read_change_trigger", self.human_readable_id());
         if let Some(has_unread) = self.timeline().has_unread_messages().await {
             self.set_is_read(!has_unread);
         }

@@ -66,8 +66,8 @@ shumate = { package = "libshumate", version = "0.6" }
 sourceview = { package = "sourceview5", version = "0.9" }
 
 [dependencies.matrix-sdk]
-git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "7f4e79e2a3bb07fa189c62987a06b3f78f2e4286"
+git = "https://github.com/zecakeh/matrix-rust-sdk.git"
+rev = "2837564fea7018dfc1e355f6cc051e35ce86ff66"
 features = [
     "socks",
     "sso-login",
@@ -76,8 +76,8 @@ features = [
 ]
 
 [dependencies.matrix-sdk-ui]
-git = "https://github.com/matrix-org/matrix-rust-sdk.git"
-rev = "7f4e79e2a3bb07fa189c62987a06b3f78f2e4286"
+git = "https://github.com/zecakeh/matrix-rust-sdk.git"
+rev = "2837564fea7018dfc1e355f6cc051e35ce86ff66"
 default-features = false
 features = ["e2e-encryption", "native-tls"]
 

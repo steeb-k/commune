@@ -4,7 +4,12 @@ mod virtual_item;
 use std::{collections::HashMap, sync::Arc};
 
 use futures_util::StreamExt;
-use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use gtk::{
+    gio, glib,
+    glib::{clone, closure_local},
+    prelude::*,
+    subclass::prelude::*,
+};
 use matrix_sdk::Error as MatrixError;
 use matrix_sdk_ui::{
     eyeball_im::VectorDiff,
@@ -72,6 +77,9 @@ mod imp {
         marker::PhantomData,
     };
 
+    use glib::subclass::Signal;
+    use once_cell::sync::Lazy;
+
     use super::*;
 
     #[derive(Debug, glib::Properties)]
@@ -98,14 +106,15 @@ mod imp {
         pub state: Cell<TimelineState>,
         /// Whether this timeline has a typing row.
         pub has_typing: Cell<bool>,
-        pub diff_handle: OnceCell<AbortHandle>,
-        pub back_pagination_status_handle: OnceCell<AbortHandle>,
         /// Whether the timeline is empty.
         #[property(get = Self::is_empty)]
         pub empty: PhantomData<bool>,
         /// Whether the timeline has the `m.room.create` event of the room.
         #[property(get)]
         pub has_room_create: Cell<bool>,
+        pub diff_handle: OnceCell<AbortHandle>,
+        pub back_pagination_status_handle: OnceCell<AbortHandle>,
+        pub read_receipts_changed_handle: OnceCell<AbortHandle>,
     }
 
     impl Default for Timeline {
@@ -129,10 +138,11 @@ mod imp {
                 event_map: Default::default(),
                 state: Default::default(),
                 has_typing: Default::default(),
-                diff_handle: Default::default(),
-                back_pagination_status_handle: Default::default(),
                 empty: Default::default(),
                 has_room_create: Default::default(),
+                diff_handle: Default::default(),
+                back_pagination_status_handle: Default::default(),
+                read_receipts_changed_handle: Default::default(),
             }
         }
     }
@@ -145,11 +155,20 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Timeline {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> =
+                Lazy::new(|| vec![Signal::builder("read-change-trigger").build()]);
+            SIGNALS.as_ref()
+        }
+
         fn dispose(&self) {
             if let Some(handle) = self.diff_handle.get() {
                 handle.abort();
             }
             if let Some(handle) = self.back_pagination_status_handle.get() {
+                handle.abort();
+            }
+            if let Some(handle) = self.read_receipts_changed_handle.get() {
                 handle.abort();
             }
         }
@@ -366,6 +385,8 @@ impl Timeline {
         if self.empty() != was_empty {
             self.notify_empty();
         }
+
+        self.emit_read_change_trigger();
     }
 
     /// Update `nb` items' headers starting at `pos`.
@@ -633,6 +654,7 @@ impl Timeline {
         imp.diff_handle.set(diff_handle.abort_handle()).unwrap();
 
         self.setup_back_pagination_status().await;
+        self.setup_read_receipts().await;
     }
 
     /// Setup the back-pagination status.
@@ -672,6 +694,43 @@ impl Timeline {
         self.imp()
             .back_pagination_status_handle
             .set(back_pagination_status_handle.abort_handle())
+            .unwrap();
+    }
+
+    /// Listen to read receipts changes.
+    async fn setup_read_receipts(&self) {
+        let Some(room) = self.room() else {
+            return;
+        };
+        let room_id = room.room_id().to_owned();
+        let matrix_timeline = self.matrix_timeline();
+
+        let stream = matrix_timeline
+            .subscribe_own_user_read_receipts_changed()
+            .await;
+
+        let obj_weak = glib::SendWeakRef::from(self.downgrade());
+        let fut = stream.for_each(move |_| {
+            let obj_weak = obj_weak.clone();
+            let room_id = room_id.clone();
+            async move {
+                let ctx = glib::MainContext::default();
+                ctx.spawn(async move {
+                    spawn!(async move {
+                        if let Some(obj) = obj_weak.upgrade() {
+                            obj.emit_read_change_trigger();
+                        } else {
+                            error!("Could not emit read change trigger for room {room_id}: could not upgrade weak reference");
+                        }
+                    });
+                });
+            }
+        });
+
+        let handle = spawn_tokio!(fut);
+        self.imp()
+            .read_receipts_changed_handle
+            .set(handle.abort_handle())
             .unwrap();
     }
 
@@ -811,6 +870,25 @@ impl Timeline {
         }
 
         events
+    }
+
+    /// Emit the trigger that a read change might have occurred.
+    fn emit_read_change_trigger(&self) {
+        self.emit_by_name::<()>("read-change-trigger", &[]);
+    }
+
+    /// Connect to the trigger emitted when a read change might have occurred.
+    pub fn connect_read_change_trigger<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "read-change-trigger",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }
 
