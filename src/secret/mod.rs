@@ -1,6 +1,6 @@
 //! API to store the data of a session in a secret store on the system.
 
-use std::{fmt, path::PathBuf};
+use std::{borrow::Cow, fmt, path::PathBuf};
 
 use gtk::glib;
 use matrix_sdk::{
@@ -137,12 +137,16 @@ impl StoredSession {
 
     /// The path where the persistent data of this session lives.
     pub fn data_path(&self) -> PathBuf {
-        db_dir_path(DbContentType::Data).join(&self.id)
+        let mut path = db_dir_path(DbContentType::Data);
+        path.push(&self.id);
+        path
     }
 
     /// The path where the cached data of this session lives.
     pub fn cache_path(&self) -> PathBuf {
-        db_dir_path(DbContentType::Cache).join(&self.id)
+        let mut path = db_dir_path(DbContentType::Cache);
+        path.push(&self.id);
+        path
     }
 
     /// Delete this session from the system.
@@ -152,7 +156,7 @@ impl StoredSession {
             self.id, self.user_id,
         );
 
-        delete_session(self.clone()).await;
+        delete_session(&self).await;
 
         spawn_tokio!(async move {
             if let Err(error) = fs::remove_dir_all(self.data_path()).await {
@@ -180,14 +184,17 @@ pub struct Secret {
 /// the type of content.
 fn db_dir_path(content_type: DbContentType) -> PathBuf {
     let dir_name = match PROFILE {
-        AppProfile::Stable => GETTEXT_PACKAGE.to_owned(),
-        _ => format!("{GETTEXT_PACKAGE}-{PROFILE}"),
+        AppProfile::Stable => Cow::Borrowed(GETTEXT_PACKAGE),
+        _ => Cow::Owned(format!("{GETTEXT_PACKAGE}-{PROFILE}")),
     };
 
-    match content_type {
-        DbContentType::Data => glib::user_data_dir().join(dir_name),
-        DbContentType::Cache => glib::user_cache_dir().join(dir_name),
-    }
+    let mut path = match content_type {
+        DbContentType::Data => glib::user_data_dir(),
+        DbContentType::Cache => glib::user_cache_dir(),
+    };
+    path.push(dir_name.as_ref());
+
+    path
 }
 
 /// The type of content of a database.

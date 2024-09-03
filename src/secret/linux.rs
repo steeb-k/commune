@@ -86,7 +86,7 @@ async fn restore_sessions_inner() -> Result<Vec<StoredSession>, oo7::Error> {
                     log_out_session(session.clone()).await;
 
                     // Delete the session from the secret backend.
-                    delete_session(session.clone()).await;
+                    delete_session(&session).await;
 
                     // Delete the session data folders.
                     spawn_tokio!(async move {
@@ -164,9 +164,11 @@ async fn store_session_inner(session: StoredSession) -> Result<(), oo7::Error> {
 }
 
 /// Delete the given session from the secret backend.
-pub async fn delete_session(session: StoredSession) {
+pub async fn delete_session(session: &StoredSession) {
+    let attributes = session.attributes();
+
     spawn_tokio!(async move {
-        if let Err(error) = delete_item_with_attributes(&session.attributes()).await {
+        if let Err(error) = delete_item_with_attributes(&attributes).await {
             error!("Could not delete session data from secret backend: {error}");
         }
     })
@@ -310,7 +312,7 @@ impl StoredSession {
     }
 
     /// Get the attributes from `self`.
-    fn attributes(&self) -> HashMap<&str, String> {
+    fn attributes(&self) -> HashMap<&'static str, String> {
         HashMap::from([
             (keys::HOMESERVER, self.homeserver.to_string()),
             (keys::USER, self.user_id.to_string()),
