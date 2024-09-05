@@ -1,6 +1,7 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
+use ruma::api::client::receipt::create_receipt::v3::ReceiptType;
 use tracing::error;
 
 use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
@@ -9,8 +10,8 @@ use crate::{
         confirm_leave_room_dialog, ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl,
     },
     session::model::{
-        Category, CategoryType, IdentityVerification, Room, RoomType, SidebarIconItem,
-        SidebarIconItemType, User,
+        Category, CategoryType, IdentityVerification, ReceiptPosition, Room, RoomType,
+        SidebarIconItem, SidebarIconItemType, User,
     },
     spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
@@ -32,6 +33,7 @@ mod imp {
         pub item: RefCell<Option<glib::Object>>,
         room_handler: RefCell<Option<glib::SignalHandlerId>>,
         room_join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
+        room_is_read_handler: RefCell<Option<glib::SignalHandlerId>>,
     }
 
     #[glib::object_subclass]
@@ -85,6 +87,9 @@ mod imp {
             if let Some(room) = self.room() {
                 if let Some(handler) = self.room_join_rule_handler.take() {
                     room.join_rule().disconnect(handler);
+                }
+                if let Some(handler) = self.room_is_read_handler.take() {
+                    room.disconnect(handler);
                 }
             }
         }
@@ -150,6 +155,9 @@ mod imp {
                 if let Some(handler) = self.room_join_rule_handler.take() {
                     room.join_rule().disconnect(handler);
                 }
+                if let Some(handler) = self.room_is_read_handler.take() {
+                    room.disconnect(handler);
+                }
             }
 
             self.item.replace(item.clone());
@@ -194,6 +202,16 @@ mod imp {
                         ));
                     self.room_join_rule_handler
                         .replace(Some(room_join_rule_handler));
+
+                    let room_is_read_handler = room.connect_is_read_notify(clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move |_| {
+                            imp.update_context_menu();
+                        }
+                    ));
+                    self.room_is_read_handler
+                        .replace(Some(room_is_read_handler));
 
                     child.set_room(Some(room.clone()));
                 } else if let Some(icon_item) = item.downcast_ref::<SidebarIconItem>() {
@@ -365,6 +383,23 @@ mod imp {
                             }
                         ))
                         .build()]);
+
+                    if !room.is_read() {
+                        action_group.add_action_entries([gio::ActionEntry::builder(
+                            "mark-as-read",
+                        )
+                        .activate(clone!(
+                            #[weak]
+                            room,
+                            move |_, _, _| {
+                                spawn!(async move {
+                                    room.send_receipt(ReceiptType::Read, ReceiptPosition::End)
+                                        .await;
+                                });
+                            }
+                        ))
+                        .build()]);
+                    }
                 }
                 RoomType::Left => {
                     if room.join_rule().we_can_join() {

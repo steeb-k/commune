@@ -19,8 +19,12 @@ use matrix_sdk::{
     DisplayName, Result as MatrixResult, RoomInfo, RoomMemberships, RoomState,
 };
 use ruma::{
-    api::client::error::{ErrorKind, RetryAfter},
+    api::client::{
+        error::{ErrorKind, RetryAfter},
+        receipt::create_receipt::v3::ReceiptType as ApiReceiptType,
+    },
     events::{
+        receipt::ReceiptThread,
         room::{
             avatar::RoomAvatarEventContent, encryption::SyncRoomEncryptionEvent,
             guest_access::GuestAccess, history_visibility::HistoryVisibility,
@@ -1282,6 +1286,39 @@ impl Room {
         self.notify_is_read();
     }
 
+    /// Send the given receipt.
+    pub async fn send_receipt(&self, receipt_type: ApiReceiptType, position: ReceiptPosition) {
+        let Some(session) = self.session() else {
+            return;
+        };
+        tracing::trace!(
+            "{}::send_receipt: {receipt_type:?} at {position:?}",
+            self.human_readable_id()
+        );
+        let send_public_receipt = session.settings().public_read_receipts_enabled();
+
+        let receipt_type = match receipt_type {
+            ApiReceiptType::Read if !send_public_receipt => ApiReceiptType::ReadPrivate,
+            t => t,
+        };
+
+        let matrix_timeline = self.timeline().matrix_timeline();
+        let handle = spawn_tokio!(async move {
+            match position {
+                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
+                ReceiptPosition::Event(event_id) => {
+                    matrix_timeline
+                        .send_single_receipt(receipt_type, ReceiptThread::Unthreaded, event_id)
+                        .await
+                }
+            }
+        });
+
+        if let Err(error) = handle.await.unwrap() {
+            error!("Could not send read receipt: {error}");
+        }
+    }
+
     /// Load the display name from the SDK.
     async fn load_display_name(&self) {
         let matrix_room = self.matrix_room().clone();
@@ -2302,4 +2339,13 @@ impl From<HistoryVisibilityValue> for HistoryVisibility {
             HistoryVisibilityValue::Unsupported => unimplemented!(),
         }
     }
+}
+
+/// The position of the receipt to send.
+#[derive(Debug, Clone)]
+pub enum ReceiptPosition {
+    /// We are at the end of the timeline (bottom of the view).
+    End,
+    /// We are at the event with the given ID.
+    Event(OwnedEventId),
 }

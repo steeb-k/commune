@@ -41,6 +41,13 @@
     </section>
     <section>
       <item>
+        <attribute name="label" translatable="yes">_Mark as Read</attribute>
+        <attribute name="action">room-row.mark-as-read</attribute>
+        <attribute name="hidden-when">action-missing</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">Move to _Favorites</attribute>
         <attribute name="action">room-row.set-favorite</attribute>
         <attribute name="hidden-when">action-missing</attribute>

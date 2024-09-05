@@ -16,10 +16,7 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{gdk, gio, glib, glib::clone, graphene::Point, CompositeTemplate};
 use matrix_sdk::ruma::EventId;
-use ruma::{
-    api::client::receipt::create_receipt::v3::ReceiptType, events::receipt::ReceiptThread,
-    OwnedEventId,
-};
+use ruma::{api::client::receipt::create_receipt::v3::ReceiptType, OwnedEventId};
 use tracing::{error, warn};
 
 use self::{
@@ -34,9 +31,10 @@ use crate::{
     i18n::gettext_f,
     prelude::*,
     session::model::{
-        Event, EventKey, MemberList, Membership, Room, RoomType, Timeline, TimelineState,
+        Event, EventKey, MemberList, Membership, ReceiptPosition, Room, RoomType, Timeline,
+        TimelineState,
     },
-    spawn, spawn_tokio, toast,
+    spawn, toast,
     utils::{template_callbacks::TemplateCallbacks, BoundObject},
     Window,
 };
@@ -902,7 +900,8 @@ impl RoomHistory {
             #[weak(rename_to = obj)]
             self,
             async move {
-                obj.send_receipt(ReceiptType::Read, position).await;
+                let Some(room) = obj.room() else { return };
+                room.send_receipt(ReceiptType::Read, position).await;
             }
         ));
     }
@@ -920,7 +919,8 @@ impl RoomHistory {
             #[weak(rename_to = obj)]
             self,
             async move {
-                obj.send_receipt(ReceiptType::FullyRead, position).await;
+                let Some(room) = obj.room() else { return };
+                room.send_receipt(ReceiptType::FullyRead, position).await;
             }
         ));
     }
@@ -975,42 +975,6 @@ impl RoomHistory {
         }
 
         None
-    }
-
-    /// Send the given receipt.
-    async fn send_receipt(&self, receipt_type: ReceiptType, position: ReceiptPosition) {
-        let Some(room) = self.room() else {
-            return;
-        };
-        let Some(session) = room.session() else {
-            return;
-        };
-        tracing::trace!(
-            "{}::send_receipt: {receipt_type:?} at {position:?}",
-            room.human_readable_id()
-        );
-        let send_public_receipt = session.settings().public_read_receipts_enabled();
-
-        let receipt_type = match receipt_type {
-            ReceiptType::Read if !send_public_receipt => ReceiptType::ReadPrivate,
-            t => t,
-        };
-
-        let matrix_timeline = room.timeline().matrix_timeline();
-        let handle = spawn_tokio!(async move {
-            match position {
-                ReceiptPosition::End => matrix_timeline.mark_as_read(receipt_type).await,
-                ReceiptPosition::Event(event_id) => {
-                    matrix_timeline
-                        .send_single_receipt(receipt_type, ReceiptThread::Unthreaded, event_id)
-                        .await
-                }
-            }
-        });
-
-        if let Err(error) = handle.await.unwrap() {
-            error!("Could not send read receipt: {error}");
-        }
     }
 
     /// Update the tombstoned banner according to the state of the current room.
@@ -1078,13 +1042,4 @@ impl RoomHistory {
             }
         }
     }
-}
-
-/// The position of the receipt to send.
-#[derive(Debug, Clone)]
-enum ReceiptPosition {
-    /// We are at the end of the timeline (bottom of the view).
-    End,
-    /// We are at the event with the given ID.
-    Event(OwnedEventId),
 }
