@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-02 17:50+0000\n"
-"PO-Revision-Date: 2024-09-02 21:40+0300\n"
+"POT-Creation-Date: 2024-09-05 13:03+0000\n"
+"PO-Revision-Date: 2024-09-05 21:54+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -172,24 +172,24 @@ msgstr "Д_одати обліковий запис"
 msgid "Account Settings"
 msgstr "Налаштування облікового запису"
 
-#: src/application.rs:209
+#: src/application.rs:212
 msgid "The Fractal Team"
 msgstr "Команда «Фрактал»"
 
-#: src/application.rs:215
+#: src/application.rs:218
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© Команда «Фрактал», 2017-2024"
 
-#: src/application.rs:229
+#: src/application.rs:232
 msgid "translator-credits"
 msgstr "Artem Polishchuk <ego.cordatus@gmail.com>, 2019."
 
 #. This can't be added via the builder
-#: src/application.rs:233
+#: src/application.rs:236
 msgid "Name by"
 msgstr "Авторка назви"
 
-#: src/application.rs:348
+#: src/application.rs:351
 msgid "Session not found"
 msgstr "Не знайдено сеансу"
 
@@ -599,7 +599,7 @@ msgstr "_Підтвердити"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:227
 #: src/session/view/content/explore/public_room_row.rs:199
-#: src/session/view/content/room_history/mod.rs:1033
+#: src/session/view/content/room_history/mod.rs:997
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Перегляд"
@@ -651,7 +651,7 @@ msgstr ""
 
 #: src/components/dialogs/join_room.ui:193
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:1036
+#: src/session/view/content/room_history/mod.rs:1000
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Увійти"
@@ -1144,7 +1144,7 @@ msgstr "Не вдалося припинити ігнорувати корист
 
 #: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
-#: src/session/view/sidebar/row.rs:582
+#: src/session/view/sidebar/row.rs:617
 msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
@@ -1818,74 +1818,32 @@ msgstr "Будь ласка, виконайте настанови з брауз
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:133
+#: src/secret/linux.rs:154
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Фрактал: реєстраційні дані Matrix для {user_id}"
 
-#: src/secret/linux.rs:186
-msgid "Malformed version in stored session"
-msgstr "Помилкове форматування запису версії у збереженому сеансі"
-
-#: src/secret/linux.rs:202
-msgid "Malformed homeserver in stored session"
-msgstr "Помилкове форматування запису домашнього сервера у збереженому сеансі"
-
-#: src/secret/linux.rs:208
-msgid "Could not find homeserver in stored session"
-msgstr "Не вдалося знайти дані домашнього сервера у збереженому сеансі"
-
-#: src/secret/linux.rs:218
-msgid "Malformed user ID in stored session"
-msgstr ""
-"Помилкове форматування ідентифікатора користувача у збереженому сеансі"
-
-#: src/secret/linux.rs:224
-msgid "Could not find user ID in stored session"
-msgstr "Не вдалося знайти ідентифікатор користувача у збереженому сеансі"
-
-#: src/secret/linux.rs:232
-msgid "Could not find device ID in stored session"
-msgstr "Не вдалося знайти ідентифікатор пристрою у збереженому сеансі"
-
-#: src/secret/linux.rs:246
-msgid "Could not find database path in stored session"
-msgstr "Не вдалося знайти шлях до бази даних у збереженому сеансі"
-
-#: src/secret/linux.rs:255
-#| msgid "Could not find user ID in stored session"
-msgid "Could not find session ID in stored session"
-msgstr "Не вдалося знайти ідентифікатор сеансу у збереженому сеансі"
-
-#: src/secret/linux.rs:268 src/secret/linux.rs:278
-msgid "Malformed secret in stored session"
-msgstr "Помилкове форматування реєстраційних даних у збереженому сеансі"
-
-#: src/secret/linux.rs:287
-msgid "Could not get secret in stored session"
-msgstr "Не вдалося отримати зашифровані дані у збереженому сеансі"
-
-#: src/secret/linux.rs:444
+#: src/secret/linux.rs:454
 msgid "The secret storage file is corrupted."
 msgstr "Файл сховища реєстраційних даних пошкоджено."
 
-#: src/secret/linux.rs:448
+#: src/secret/linux.rs:458
 msgid "Could not access the secret storage file location."
 msgstr ""
 "Не вдалося отримати доступ до місця зберігання файл сховища реєстраційних "
 "даних."
 
-#: src/secret/linux.rs:451
+#: src/secret/linux.rs:461
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr ""
 "Під час спроби доступу до файла сховища реєстраційних даних сталася невідома "
 "помилка"
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
-#: src/secret/linux.rs:457
+#: src/secret/linux.rs:467
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -1893,7 +1851,7 @@ msgstr ""
 "Під час роботи із модулем порталу реєстраційних даних за допомогою D-Bus "
 "сталася невідома помилка"
 
-#: src/secret/linux.rs:460
+#: src/secret/linux.rs:470
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1901,7 +1859,7 @@ msgstr ""
 "Запит до порталу реєстраційних даних Flatpak було скасовано. Переконайтеся, "
 "що прийнято усі запити, що вимагають доступу до нього."
 
-#: src/secret/linux.rs:463
+#: src/secret/linux.rs:473
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1909,37 +1867,37 @@ msgstr ""
 "Немає доступу до порталу реєстраційних даних Flatpak. Переконайтеся, що "
 "встановлено пакунок xdg-desktop-portal версії, яка є не меншою за 1.5.0."
 
-#: src/secret/linux.rs:466
+#: src/secret/linux.rs:476
 msgid ""
 "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Портал реєстраційних даних Flatpak надав ключ, який є надто простим, щоб "
 "бути безпечним."
 
-#: src/secret/linux.rs:480
+#: src/secret/linux.rs:490
 msgid "The item was deleted."
 msgstr "Запис було вилучено."
 
-#: src/secret/linux.rs:484 src/secret/linux.rs:504
+#: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Під час роботи із службою реєстраційних даних за допомогою D-Bus сталася "
 "невідома помилка"
 
-#: src/secret/linux.rs:487
+#: src/secret/linux.rs:497
 msgid "The collection or item is locked."
 msgstr "Збірку або запис замкнено."
 
-#: src/secret/linux.rs:490
+#: src/secret/linux.rs:500
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "Сеансу D-Bus «Секретної служби» не існує."
 
-#: src/secret/linux.rs:493
+#: src/secret/linux.rs:503
 msgid "The collection or item does not exist."
 msgstr "Збірки або запису не існує."
 
-#: src/secret/linux.rs:497
+#: src/secret/linux.rs:507
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
@@ -1948,7 +1906,7 @@ msgstr ""
 "скасовано. Переконайтеся, що прийнято усі запити, що вимагають доступу до "
 "неї."
 
-#: src/secret/linux.rs:500
+#: src/secret/linux.rs:510
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -2001,17 +1959,17 @@ msgstr "Будь-який зареєстрований користувач"
 msgid "Unsupported rule"
 msgstr "Непідтримуване правило"
 
-#: src/session/model/room/mod.rs:1357
+#: src/session/model/room/mod.rs:1338
 msgid "Empty Room (was {user})"
 msgstr "Порожня кімната (був {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1360
+#: src/session/model/room/mod.rs:1341
 msgid "Empty Room"
 msgstr "Порожня кімната"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1370
+#: src/session/model/room/mod.rs:1351
 msgid "Unknown"
 msgstr "Невідомий"
 
@@ -2036,7 +1994,7 @@ msgstr "Вимкнено"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:616
+#: src/session/view/content/room_history/mod.rs:614
 msgid "Could not join room {room_name}. Try again later."
 msgstr ""
 "Не вдалося долучитися до кімнати {room_name}. Повторіть спробу пізніше."
@@ -4168,37 +4126,37 @@ msgstr "%-e %B о %I∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%-e %B о %H∶%M"
 
-#: src/session/view/content/room_history/mod.rs:360
+#: src/session/view/content/room_history/mod.rs:358
 msgid "Error getting file from drop"
 msgstr "Помилка під час отримання файла зі скидання"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:597
+#: src/session/view/content/room_history/mod.rs:595
 msgid "Could not leave {room}"
 msgstr "Не вдалося полишити {room}."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:633
-#: src/session/view/sidebar/row.rs:593
+#: src/session/view/content/room_history/mod.rs:631
+#: src/session/view/sidebar/row.rs:628
 msgid "Could not forget {room}"
 msgstr "Не вдалося забути про {room}"
 
-#: src/session/view/content/room_history/mod.rs:805
+#: src/session/view/content/room_history/mod.rs:803
 #: src/session/view/sidebar/mod.rs:430
 msgid "Context Menu"
 msgstr "Контекстне меню"
 
-#: src/session/view/content/room_history/mod.rs:825
+#: src/session/view/content/room_history/mod.rs:823
 msgid "Sender Context Menu"
 msgstr "Контекстне меню відправника"
 
-#: src/session/view/content/room_history/mod.rs:1031
-#: src/session/view/content/room_history/mod.rs:1035
+#: src/session/view/content/room_history/mod.rs:995
+#: src/session/view/content/room_history/mod.rs:999
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Існує новіша версія цієї кімнати"
 
-#: src/session/view/content/room_history/mod.rs:1038
+#: src/session/view/content/room_history/mod.rs:1002
 msgid "This room was closed"
 msgstr "Цю кімнату було закрито"
 
@@ -4211,17 +4169,17 @@ msgid "_Invite New Members…"
 msgstr "З_апросити нових учасників…"
 
 #: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:78
 msgid "_Leave Room"
 msgstr "По_лишити кімнату"
 
 #: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:76
+#: src/session/view/sidebar/mod.ui:83
 msgid "Re_join Room"
 msgstr "Увійти до кімнати"
 
 #: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:81
+#: src/session/view/sidebar/mod.ui:88
 msgid "_Forget Room"
 msgstr "За_бути про кімнату"
 
@@ -4871,50 +4829,55 @@ msgid "_Reject"
 msgstr "Від_хилити"
 
 #: src/session/view/sidebar/mod.ui:44
+#| msgid "Mark as _Direct Chat"
+msgid "_Mark as Read"
+msgstr "Позначити як про_читане"
+
+#: src/session/view/sidebar/mod.ui:51
 msgid "Move to _Favorites"
 msgstr "Пересунути до «_Улюблених»"
 
-#: src/session/view/sidebar/mod.ui:49
+#: src/session/view/sidebar/mod.ui:56
 msgid "Move to _Rooms"
 msgstr "Пересунути до «_Кімнат»"
 
-#: src/session/view/sidebar/mod.ui:54
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to Low _Priority"
 msgstr "Пересунути до «_Низький пріоритет»"
 
-#: src/session/view/sidebar/mod.ui:59
+#: src/session/view/sidebar/mod.ui:66
 msgid "Mark as _Direct Chat"
 msgstr "Позначити як _безпосередній чат"
 
-#: src/session/view/sidebar/mod.ui:64
+#: src/session/view/sidebar/mod.ui:71
 msgid "Unmark as _Direct Chat"
 msgstr "Зняти позначення _безпосереднього чату"
 
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/sidebar/mod.ui:95
 msgid "Sidebar"
 msgstr "Бічна панель"
 
-#: src/session/view/sidebar/mod.ui:105
+#: src/session/view/sidebar/mod.ui:112
 msgid "Main Menu"
 msgstr "Головне меню"
 
-#: src/session/view/sidebar/mod.ui:114
+#: src/session/view/sidebar/mod.ui:121
 msgid "Toggle Room Search"
 msgstr "Увімкнути або вимкнути пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:127
+#: src/session/view/sidebar/mod.ui:134
 msgid "Room Search"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:128
+#: src/session/view/sidebar/mod.ui:135
 msgid "Search for a room"
 msgstr "Пошук кімнати"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:170
 msgid "Room List"
 msgstr "Список кімнат"
 
-#: src/session/view/sidebar/mod.ui:164
+#: src/session/view/sidebar/mod.ui:171
 msgid "Allows to navigate between rooms"
 msgstr "Дозволяє навігацію між кімнатами"
 
@@ -4937,19 +4900,19 @@ msgstr[2] "{count} сповіщень"
 msgstr[3] "{count} сповіщення"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:572
+#: src/session/view/sidebar/row.rs:607
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "Не вдалося пересунути {room} з {previous_category} до {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:609
+#: src/session/view/sidebar/row.rs:644
 msgid "Could not mark {room} as direct chat"
 msgstr "Не вдалося позначити {room} як безпосереднє спілкування"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:614
+#: src/session/view/sidebar/row.rs:649
 msgid "Could not unmark {room} as direct chat"
 msgstr "Не вдалося зняти з {room} позначення безпосереднього спілкування"
 
@@ -5090,7 +5053,6 @@ msgid "{user} invited you"
 msgstr "{user} запросив/запросила вас"
 
 #: src/utils/matrix/mod.rs:275
-#| msgid "Could not get secret in stored session"
 msgid "Could not generate unique session ID"
 msgstr "Не вдалося створити унікальний ідентифікатор сеансу"
 
@@ -5117,6 +5079,39 @@ msgstr "файл"
 #: src/window.ui:66
 msgid "Session"
 msgstr "Сеанс"
+
+#~ msgid "Malformed version in stored session"
+#~ msgstr "Помилкове форматування запису версії у збереженому сеансі"
+
+#~ msgid "Malformed homeserver in stored session"
+#~ msgstr ""
+#~ "Помилкове форматування запису домашнього сервера у збереженому сеансі"
+
+#~ msgid "Could not find homeserver in stored session"
+#~ msgstr "Не вдалося знайти дані домашнього сервера у збереженому сеансі"
+
+#~ msgid "Malformed user ID in stored session"
+#~ msgstr ""
+#~ "Помилкове форматування ідентифікатора користувача у збереженому сеансі"
+
+#~ msgid "Could not find user ID in stored session"
+#~ msgstr "Не вдалося знайти ідентифікатор користувача у збереженому сеансі"
+
+#~ msgid "Could not find device ID in stored session"
+#~ msgstr "Не вдалося знайти ідентифікатор пристрою у збереженому сеансі"
+
+#~ msgid "Could not find database path in stored session"
+#~ msgstr "Не вдалося знайти шлях до бази даних у збереженому сеансі"
+
+#~| msgid "Could not find user ID in stored session"
+#~ msgid "Could not find session ID in stored session"
+#~ msgstr "Не вдалося знайти ідентифікатор сеансу у збереженому сеансі"
+
+#~ msgid "Malformed secret in stored session"
+#~ msgstr "Помилкове форматування реєстраційних даних у збереженому сеансі"
+
+#~ msgid "Could not get secret in stored session"
+#~ msgstr "Не вдалося отримати зашифровані дані у збереженому сеансі"
 
 #~ msgid "Could not find profile in stored session"
 #~ msgstr "Не вдалося знайти профіль у збереженому сеансі"
