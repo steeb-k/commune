@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-02 17:50+0000\n"
-"PO-Revision-Date: 2024-09-03 08:16+0800\n"
+"POT-Creation-Date: 2024-09-05 13:03+0000\n"
+"PO-Revision-Date: 2024-09-06 19:52+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -160,26 +160,26 @@ msgstr "添加账号(_A)"
 msgid "Account Settings"
 msgstr "账号设置"
 
-#: src/application.rs:209
+#: src/application.rs:212
 msgid "The Fractal Team"
 msgstr "Fractal 团队"
 
-#: src/application.rs:215
+#: src/application.rs:218
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Fractal 团队"
 
-#: src/application.rs:229
+#: src/application.rs:232
 msgid "translator-credits"
 msgstr ""
 "lumingzh <lumingzh@qq.com>, 2018-2024\n"
 "WodeShengli <wodeshengli@disroot.org>, 2024"
 
 #. This can't be added via the builder
-#: src/application.rs:233
+#: src/application.rs:236
 msgid "Name by"
 msgstr "名字"
 
-#: src/application.rs:348
+#: src/application.rs:351
 msgid "Session not found"
 msgstr "会话未找到"
 
@@ -557,7 +557,7 @@ msgstr "确认(_O)"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:227
 #: src/session/view/content/explore/public_room_row.rs:199
-#: src/session/view/content/room_history/mod.rs:1033
+#: src/session/view/content/room_history/mod.rs:997
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "查看"
@@ -603,7 +603,7 @@ msgstr "输入聊天室标识、别名或链接来查找聊天室"
 
 #: src/components/dialogs/join_room.ui:193
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:1036
+#: src/session/view/content/room_history/mod.rs:1000
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "加入"
@@ -1055,7 +1055,7 @@ msgstr "无法停止忽略用户"
 
 #: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
-#: src/session/view/sidebar/row.rs:582
+#: src/session/view/sidebar/row.rs:617
 msgid "Could not ignore user"
 msgstr "无法忽略用户"
 
@@ -1692,79 +1692,39 @@ msgstr "请遵循浏览器中的步骤"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:133
+#: src/secret/linux.rs:154
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal：用于 {user_id} 的 Matrix 证书"
 
-#: src/secret/linux.rs:186
-msgid "Malformed version in stored session"
-msgstr "已存储会话中的不良版本"
-
-#: src/secret/linux.rs:202
-msgid "Malformed homeserver in stored session"
-msgstr "已存储会话中存在不良主服务器"
-
-#: src/secret/linux.rs:208
-msgid "Could not find homeserver in stored session"
-msgstr "无法在已存储会话中找到主服务器"
-
-#: src/secret/linux.rs:218
-msgid "Malformed user ID in stored session"
-msgstr "已存储会话中存在不良用户标识"
-
-#: src/secret/linux.rs:224
-msgid "Could not find user ID in stored session"
-msgstr "无法在已存储会话中找到用户标识"
-
-#: src/secret/linux.rs:232
-msgid "Could not find device ID in stored session"
-msgstr "无法在已存储会话中找到设备标识"
-
-#: src/secret/linux.rs:246
-msgid "Could not find database path in stored session"
-msgstr "无法在已存储会话中找到数据库路径"
-
-#: src/secret/linux.rs:255
-msgid "Could not find session ID in stored session"
-msgstr "无法在已存储会话中找到会话标识"
-
-#: src/secret/linux.rs:268 src/secret/linux.rs:278
-msgid "Malformed secret in stored session"
-msgstr "已存储会话中存在不良保密"
-
-#: src/secret/linux.rs:287
-msgid "Could not get secret in stored session"
-msgstr "无法从已存储会话获取保密"
-
-#: src/secret/linux.rs:444
+#: src/secret/linux.rs:454
 msgid "The secret storage file is corrupted."
 msgstr "该保密存储文件已损坏。"
 
-#: src/secret/linux.rs:448
+#: src/secret/linux.rs:458
 msgid "Could not access the secret storage file location."
 msgstr "无法访问保密存储文件位置。"
 
-#: src/secret/linux.rs:451
+#: src/secret/linux.rs:461
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr "访问保密存储文件时发生未知错误。"
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
 msgstr "保密存储文件已被其它进程修改。"
 
-#: src/secret/linux.rs:457
+#: src/secret/linux.rs:467
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr "与 D-Bus 保密服务门户后端交互时发生未知错误。"
 
-#: src/secret/linux.rs:460
+#: src/secret/linux.rs:470
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr "对 Flatpak 保密门户的请求已取消。请确保接受任何即时询问来访问它。"
 
-#: src/secret/linux.rs:463
+#: src/secret/linux.rs:473
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
@@ -1772,38 +1732,38 @@ msgstr ""
 "Flatpak 保密门户不可用。请确保 xdg-desktop-portal 已安装，且其版本至少为 "
 "1.5.0。"
 
-#: src/secret/linux.rs:466
+#: src/secret/linux.rs:476
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr "Flatpak 保密门户提供了一个太弱而不安全的密钥。"
 
-#: src/secret/linux.rs:480
+#: src/secret/linux.rs:490
 msgid "The item was deleted."
 msgstr "该项目已删除。"
 
-#: src/secret/linux.rs:484 src/secret/linux.rs:504
+#: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr "与 D-Bus 保密服务交互时发生未知错误。"
 
-#: src/secret/linux.rs:487
+#: src/secret/linux.rs:497
 msgid "The collection or item is locked."
 msgstr "该集合或项目已锁定。"
 
-#: src/secret/linux.rs:490
+#: src/secret/linux.rs:500
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "D-Bus 保密服务会话不存在。"
 
-#: src/secret/linux.rs:493
+#: src/secret/linux.rs:503
 msgid "The collection or item does not exist."
 msgstr "该集合或项目不存在。"
 
-#: src/secret/linux.rs:497
+#: src/secret/linux.rs:507
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr "对 D-Bus 保密服务的请求已取消。请确保接受任何即时询问来访问它。"
 
-#: src/secret/linux.rs:500
+#: src/secret/linux.rs:510
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
@@ -1854,17 +1814,17 @@ msgstr "任何注册的用户"
 msgid "Unsupported rule"
 msgstr "不支持的规则"
 
-#: src/session/model/room/mod.rs:1357
+#: src/session/model/room/mod.rs:1338
 msgid "Empty Room (was {user})"
 msgstr "空聊天室（曾有成员 {user}）"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1360
+#: src/session/model/room/mod.rs:1341
 msgid "Empty Room"
 msgstr "空聊天室"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1370
+#: src/session/model/room/mod.rs:1351
 msgid "Unknown"
 msgstr "未知"
 
@@ -1889,7 +1849,7 @@ msgstr "已禁言"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:616
+#: src/session/view/content/room_history/mod.rs:614
 msgid "Could not join room {room_name}. Try again later."
 msgstr "无法加入聊天室 {room_name}。请稍后重试。"
 
@@ -3940,37 +3900,37 @@ msgstr "%m 月 %d 日 %I:%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr "%m 月 %d 日 %H:%M"
 
-#: src/session/view/content/room_history/mod.rs:360
+#: src/session/view/content/room_history/mod.rs:358
 msgid "Error getting file from drop"
 msgstr "从拖放获取文件时出错"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:597
+#: src/session/view/content/room_history/mod.rs:595
 msgid "Could not leave {room}"
 msgstr "无法离开 {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:633
-#: src/session/view/sidebar/row.rs:593
+#: src/session/view/content/room_history/mod.rs:631
+#: src/session/view/sidebar/row.rs:628
 msgid "Could not forget {room}"
 msgstr "无法忘记 {room}"
 
-#: src/session/view/content/room_history/mod.rs:805
+#: src/session/view/content/room_history/mod.rs:803
 #: src/session/view/sidebar/mod.rs:430
 msgid "Context Menu"
 msgstr "上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:825
+#: src/session/view/content/room_history/mod.rs:823
 msgid "Sender Context Menu"
 msgstr "发送者上下文菜单"
 
-#: src/session/view/content/room_history/mod.rs:1031
-#: src/session/view/content/room_history/mod.rs:1035
+#: src/session/view/content/room_history/mod.rs:995
+#: src/session/view/content/room_history/mod.rs:999
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "该聊天室有新版本"
 
-#: src/session/view/content/room_history/mod.rs:1038
+#: src/session/view/content/room_history/mod.rs:1002
 msgid "This room was closed"
 msgstr "该聊天室已关闭"
 
@@ -3983,17 +3943,17 @@ msgid "_Invite New Members…"
 msgstr "邀请新成员(_I)…"
 
 #: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:78
 msgid "_Leave Room"
 msgstr "离开聊天室(_L)"
 
 #: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:76
+#: src/session/view/sidebar/mod.ui:83
 msgid "Re_join Room"
 msgstr "重新加入聊天室(_J)"
 
 #: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:81
+#: src/session/view/sidebar/mod.ui:88
 msgid "_Forget Room"
 msgstr "忘记聊天室(_F)"
 
@@ -4634,50 +4594,54 @@ msgid "_Reject"
 msgstr "拒绝(_R)"
 
 #: src/session/view/sidebar/mod.ui:44
+msgid "_Mark as Read"
+msgstr "标记为已读(_M)"
+
+#: src/session/view/sidebar/mod.ui:51
 msgid "Move to _Favorites"
 msgstr "移至最爱(_F)"
 
-#: src/session/view/sidebar/mod.ui:49
+#: src/session/view/sidebar/mod.ui:56
 msgid "Move to _Rooms"
 msgstr "移至聊天室(_R)"
 
-#: src/session/view/sidebar/mod.ui:54
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to Low _Priority"
 msgstr "移至低优先级(_P)"
 
-#: src/session/view/sidebar/mod.ui:59
+#: src/session/view/sidebar/mod.ui:66
 msgid "Mark as _Direct Chat"
 msgstr "标记为直接聊天(_D)"
 
-#: src/session/view/sidebar/mod.ui:64
+#: src/session/view/sidebar/mod.ui:71
 msgid "Unmark as _Direct Chat"
 msgstr "取消标记直接聊天(_D)"
 
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/sidebar/mod.ui:95
 msgid "Sidebar"
 msgstr "侧边栏"
 
-#: src/session/view/sidebar/mod.ui:105
+#: src/session/view/sidebar/mod.ui:112
 msgid "Main Menu"
 msgstr "主菜单"
 
-#: src/session/view/sidebar/mod.ui:114
+#: src/session/view/sidebar/mod.ui:121
 msgid "Toggle Room Search"
 msgstr "切换聊天室搜索"
 
-#: src/session/view/sidebar/mod.ui:127
+#: src/session/view/sidebar/mod.ui:134
 msgid "Room Search"
 msgstr "聊天室搜索"
 
-#: src/session/view/sidebar/mod.ui:128
+#: src/session/view/sidebar/mod.ui:135
 msgid "Search for a room"
 msgstr "搜索聊天室"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:170
 msgid "Room List"
 msgstr "聊天室列表"
 
-#: src/session/view/sidebar/mod.ui:164
+#: src/session/view/sidebar/mod.ui:171
 msgid "Allows to navigate between rooms"
 msgstr "允许在聊天室间导览"
 
@@ -4697,19 +4661,19 @@ msgid_plural "{count} notifications"
 msgstr[0] "{count} 条通知"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:572
+#: src/session/view/sidebar/row.rs:607
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr "无法将 {room} 从 {previous_category} 移至 {new_category}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:609
+#: src/session/view/sidebar/row.rs:644
 msgid "Could not mark {room} as direct chat"
 msgstr "无法将 {room} 标记为直接聊天"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:614
+#: src/session/view/sidebar/row.rs:649
 msgid "Could not unmark {room} as direct chat"
 msgstr "无法取消将 {room} 标记为直接聊天"
 
@@ -4859,6 +4823,36 @@ msgstr "文件"
 #: src/window.ui:66
 msgid "Session"
 msgstr "会话"
+
+#~ msgid "Malformed version in stored session"
+#~ msgstr "已存储会话中的不良版本"
+
+#~ msgid "Malformed homeserver in stored session"
+#~ msgstr "已存储会话中存在不良主服务器"
+
+#~ msgid "Could not find homeserver in stored session"
+#~ msgstr "无法在已存储会话中找到主服务器"
+
+#~ msgid "Malformed user ID in stored session"
+#~ msgstr "已存储会话中存在不良用户标识"
+
+#~ msgid "Could not find user ID in stored session"
+#~ msgstr "无法在已存储会话中找到用户标识"
+
+#~ msgid "Could not find device ID in stored session"
+#~ msgstr "无法在已存储会话中找到设备标识"
+
+#~ msgid "Could not find database path in stored session"
+#~ msgstr "无法在已存储会话中找到数据库路径"
+
+#~ msgid "Could not find session ID in stored session"
+#~ msgstr "无法在已存储会话中找到会话标识"
+
+#~ msgid "Malformed secret in stored session"
+#~ msgstr "已存储会话中存在不良保密"
+
+#~ msgid "Could not get secret in stored session"
+#~ msgstr "无法从已存储会话获取保密"
 
 #~ msgid "Could not find profile in stored session"
 #~ msgstr "无法在已存储会话中找到用户配置"
