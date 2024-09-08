@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-05-21 15:46+0000\n"
-"PO-Revision-Date: 2024-05-25 19:48+0300\n"
+"POT-Creation-Date: 2024-09-05 13:03+0000\n"
+"PO-Revision-Date: 2024-09-08 13:45+0300\n"
 "Last-Translator: Jiri Grönroos <jiri.gronroos+l10n@iki.fi>\n"
 "Language-Team: Finnish <lokalisointi-lista@googlegroups.com>\n"
 "Language: fi\n"
@@ -19,7 +19,8 @@ msgstr ""
 "X-Generator: Poedit 3.4.4\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
-#: data/org.gnome.Fractal.metainfo.xml.in.in:7 src/window.ui:8
+#: data/org.gnome.Fractal.metainfo.xml.in.in:7
+#: src/login/session_setup_view.ui:22 src/window.ui:8
 msgid "Fractal"
 msgstr "Fractal"
 
@@ -134,7 +135,7 @@ msgstr "Näytä Matrix-huoneen mediahistoria"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:47
 msgid "Fractal’s interface adapts to small screens"
-msgstr ""
+msgstr "Fractalin käyttöliittymä mukautuu pienille näytöille"
 
 #: src/account_chooser_dialog/mod.ui:4 src/account_chooser_dialog/mod.ui:33
 msgid "Select an Account"
@@ -158,24 +159,24 @@ msgstr "_Lisää tili"
 msgid "Account Settings"
 msgstr "Tilin asetukset"
 
-#: src/application.rs:192
+#: src/application.rs:212
 msgid "The Fractal Team"
 msgstr "Fractal-tiimi"
 
-#: src/application.rs:198
+#: src/application.rs:218
 msgid "© 2017-2024 The Fractal Team"
 msgstr "© 2017-2024 Fractal-tiimi"
 
-#: src/application.rs:212
+#: src/application.rs:232
 msgid "translator-credits"
 msgstr "Jiri Grönroos"
 
 #. This can't be added via the builder
-#: src/application.rs:216
+#: src/application.rs:236
 msgid "Name by"
 msgstr "Nimennyt"
 
-#: src/application.rs:313
+#: src/application.rs:351
 msgid "Session not found"
 msgstr "Istuntoa ei löydy"
 
@@ -184,15 +185,22 @@ msgid "Confirm Change"
 msgstr "Vahvista muutos"
 
 #: src/components/action_button.ui:54 src/components/rows/loading_row.ui:26
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:125
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
-#: src/session/view/content/room_history/mod.ui:216
+#: src/session/view/content/room_details/history_viewer/audio.ui:61
+#: src/session/view/content/room_details/history_viewer/file.ui:60
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:67
+#: src/session/view/content/room_history/mod.ui:204
 msgid "Try Again"
 msgstr "Yritä uudelleen"
 
-#: src/components/action_button.ui:67 src/components/spinner.rs:31
+#: src/components/action_button.ui:67 src/components/loading/spinner.rs:31
 #: src/login/session_setup_view.ui:15
 #: src/session/view/content/explore/mod.ui:53
-#: src/session/view/content/room_history/mod.ui:188 src/window.ui:18
+#: src/session/view/content/room_details/history_viewer/audio.ui:17
+#: src/session/view/content/room_details/history_viewer/file.ui:16
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:23
+#: src/session/view/content/room_history/mod.ui:176 src/window.ui:18
 msgid "Loading"
 msgstr "Ladataan"
 
@@ -212,92 +220,47 @@ msgstr ""
 msgid "Error"
 msgstr "Virhe"
 
-#: src/components/auth_dialog.rs:236
-msgid "Please authenticate the operation with your password"
-msgstr "Todenna toimenpide salasanallasi"
+#: src/components/avatar/editable.rs:420
+msgid "Images"
+msgstr "Kuvat"
 
-#: src/components/auth_dialog.rs:275
-msgid ""
-"Please authenticate the operation via the browser and, once completed, press "
-"confirm"
-msgstr "Tunnistaudu selaimen kautta ja sen jälkeen paina Vahvista"
+#: src/components/avatar/editable.rs:425
+msgid "Choose Avatar"
+msgstr "Valitse avatar"
 
-#: src/components/auth_dialog.ui:4
-msgid "Authentication"
-msgstr "Tunnistautuminen"
+#: src/components/avatar/editable.rs:427
+#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
+msgid "Choose"
+msgstr "Valitse"
 
-#: src/components/auth_dialog.ui:20
-msgid "Authenticate via Browser"
-msgstr "Tunnistaudu selaimen kautta"
+#: src/components/avatar/editable.rs:441
+#, fuzzy
+#| msgid "Could not save the file"
+msgid "Could not open avatar file"
+msgstr "Tiedostoa ei voitu tallentaa"
 
-#: src/components/auth_dialog.ui:43
-#: src/session/view/content/room_details/invite_subpage/mod.ui:13
-#: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
-msgid "_Cancel"
-msgstr "_Peru"
+#: src/components/avatar/editable.rs:462
+msgid "The chosen file is not an image"
+msgstr "Valittu tiedosto ei ole kuva"
 
-#: src/components/auth_dialog.ui:44
-msgid "C_onfirm"
-msgstr "_Vahvista"
+#: src/components/avatar/editable.rs:468
+msgid "Could not determine the type of the chosen file"
+msgstr "Valitun tiedoston tyyppiä ei voitu määrittää"
 
-#: src/components/crypto/identity_setup_view.rs:273
-#: src/session/view/account_settings/security_page/mod.rs:241
-msgid "Reset Crypto Identity"
-msgstr "Nollaa salausidentiteetti"
+#: src/components/avatar/editable.ui:54
+msgid "Remove Avatar"
+msgstr "Poista avatar"
 
-#: src/components/crypto/identity_setup_view.rs:275
-msgid "This will invalidate the verifications of all users and sessions."
-msgstr ""
+#: src/components/avatar/editable.ui:71
+msgid "Select New Avatar"
+msgstr "Valitse uusi avatar"
 
-#: src/components/crypto/identity_setup_view.rs:279
-#: src/components/crypto/identity_setup_view.ui:85
-#: src/components/crypto/recovery_setup_view.ui:98
-#: src/components/crypto/recovery_setup_view.ui:189
-#: src/session/view/account_settings/security_page/mod.rs:238
-#: src/session/view/account_settings/security_page/mod.rs:306
-msgid "Reset"
-msgstr "Nollaa"
-
-#: src/components/crypto/identity_setup_view.rs:284
-msgid ""
-"You should reset your crypto identity if a device that does not belong to "
-"you managed to be verified."
-msgstr ""
-
-#: src/components/crypto/identity_setup_view.rs:286
-msgid ""
-"Since no other sessions are available to verify this device and account "
-"recovery cannot be used, you need to reset your crypto identity."
-msgstr ""
-
-#: src/components/crypto/identity_setup_view.rs:290
-#: src/components/crypto/identity_setup_view.ui:125
-msgid "Set Up Crypto Identity"
-msgstr "Määritä salausidentiteetti"
-
-#: src/components/crypto/identity_setup_view.rs:292
-msgid "You need to set up a crypto identity, since it has never been created."
-msgstr ""
-"Sinun tulee määrittää salausidentiteetti, sillä sellaista ei ole vielä luotu."
-
-#: src/components/crypto/identity_setup_view.rs:295
-msgid ""
-"Your crypto identity allows you to verify other Matrix accounts and "
-"automatically trust their verified sessions."
-msgstr ""
-
-#: src/components/crypto/identity_setup_view.rs:299
-#: src/components/crypto/recovery_setup_view.ui:285
-msgid "Set Up"
-msgstr "Määritä"
-
-#: src/components/crypto/identity_setup_view.rs:422
-#: src/identity_verification_view/cancelled_page.rs:185
+#: src/components/crypto/identity_setup_view.rs:400
+#: src/identity_verification_view/cancelled_page.rs:189
 msgid "Could not send a new verification request"
 msgstr "Uutta vahvistuspyyntöä ei voitu lähettää"
 
-#: src/components/crypto/identity_setup_view.rs:473
-#: src/components/crypto/recovery_setup_view.rs:336
+#: src/components/crypto/identity_setup_view.rs:451
 msgid "Could not create the crypto identity"
 msgstr "Salausidentiteettiä ei voitu luoda"
 
@@ -328,59 +291,132 @@ msgstr "Eikö tälle tilille ole muita kirjautuneita laitteita?"
 msgid "Recover Account"
 msgstr "Palauta tili"
 
+#: src/components/crypto/identity_setup_view.ui:85
+#: src/components/crypto/identity_setup_view.ui:262
+#: src/components/crypto/recovery_setup_view.ui:98
+#: src/components/crypto/recovery_setup_view.ui:209
+#: src/components/crypto/recovery_setup_view.ui:513
+#: src/session/view/account_settings/security_page/mod.rs:251
+#: src/session/view/account_settings/security_page/mod.rs:319
+msgid "Reset"
+msgstr "Nollaa"
+
 #: src/components/crypto/identity_setup_view.ui:106
 #: src/identity_verification_view/mod.ui:5 src/session/view/content/mod.ui:70
 msgid "Identity Verification"
 msgstr "Identiteetin vahvistaminen"
 
-#: src/components/crypto/recovery_setup_view.rs:174
-msgid "Reset Crypto Identity and Account Recovery Key"
-msgstr "Nollaa salausidentiteetti ja tilin palautusavain"
+#: src/components/crypto/identity_setup_view.ui:125
+#: src/components/crypto/identity_setup_view.ui:151
+msgid "Set Up Crypto Identity"
+msgstr "Määritä salausidentiteetti"
 
-#: src/components/crypto/recovery_setup_view.rs:176
-#: src/session/view/account_settings/security_page/mod.rs:309
-msgid "Reset Account Recovery Key"
-msgstr "Nollaa tilin palautusavain"
-
-#: src/components/crypto/recovery_setup_view.rs:182
+#: src/components/crypto/identity_setup_view.ui:162
+#: src/components/crypto/identity_setup_view.ui:237
 msgid ""
-"This will invalidate the verifications of all users and sessions, and you "
-"might not be able to read your encrypted messages anymore."
+"Your crypto identity allows you to verify other Matrix accounts and "
+"automatically trust their verified sessions."
+msgstr ""
+"Salausidentiteetti mahdollistaa sinun vahvistaa toisten Matrix-tilejä ja "
+"automaattisesti asettamaan luottamuksen heidän vahvistettuihin istuntoihin."
+
+#: src/components/crypto/identity_setup_view.ui:170
+msgid "You need to set up a crypto identity, since it has never been created."
+msgstr ""
+"Sinun tulee määrittää salausidentiteetti, sillä sellaista ei ole vielä luotu."
+
+#: src/components/crypto/identity_setup_view.ui:178
+#: src/components/crypto/recovery_setup_view.ui:305
+msgid "Set Up"
+msgstr "Määritä"
+
+#: src/components/crypto/identity_setup_view.ui:200
+#: src/components/crypto/identity_setup_view.ui:226
+#: src/components/crypto/recovery_setup_view.ui:169
+#: src/session/view/account_settings/security_page/mod.rs:254
+msgid "Reset Crypto Identity"
+msgstr "Nollaa salausidentiteetti"
+
+#: src/components/crypto/identity_setup_view.ui:245
+msgid ""
+"You should reset your crypto identity if a device that does not belong to "
+"you managed to be verified."
 msgstr ""
 
-#: src/components/crypto/recovery_setup_view.rs:184
-msgid "You might not be able to read your encrypted messages anymore."
+#: src/components/crypto/identity_setup_view.ui:253
+msgid "To proceed, you will also need to reset your account recovery key."
+msgstr "Jatkaaksesi sinun täytyy nollata myös tilisi palautusavain."
+
+#: src/components/crypto/recovery_setup_view.rs:174
+msgid "Invalidates the verifications of all users and sessions"
+msgstr "Mitätöi kaikkien käyttäjien ja istuntojen vahvistukset"
+
+#: src/components/crypto/recovery_setup_view.rs:179
+msgid ""
+"Required because the crypto identity in the recovery data is incomplete. "
+"Invalidates the verifications of all users and sessions."
+msgstr ""
+
+#: src/components/crypto/recovery_setup_view.rs:189
+msgid "You might not be able to read your past encrypted messages anymore"
+msgstr "Et välttämättä voi enää lukea aiemmin salattuja viestejäsi"
+
+#: src/components/crypto/recovery_setup_view.rs:194
+#, fuzzy
+#| msgid "You might not be able to read your encrypted messages anymore."
+msgid ""
+"Required because the backup is not set up properly. You might not be able to "
+"read your past encrypted messages anymore."
 msgstr "Et välttämättä voi enää lukea salattuja viestejäsi."
 
-#: src/components/crypto/recovery_setup_view.rs:199
+#: src/components/crypto/recovery_setup_view.rs:212
 msgid ""
 "Make sure to store this recovery key in a safe place. You will need it to "
 "recover your account if you lose access to all your sessions."
 msgstr ""
+"Varmista, että talletat tämän palautusavaimen turvalliseen sijaintiin. "
+"Tarvitset sitä palauttaaksesi tilisi, jos menetät pääsyn kaikkiin olemassa "
+"oleviin istuntoihin."
 
-#: src/components/crypto/recovery_setup_view.rs:201
+#: src/components/crypto/recovery_setup_view.rs:214
 msgid ""
 "Make sure to remember your passphrase or to store it in a safe place. You "
 "will need it to recover your account if you lose access to all your sessions."
 msgstr ""
+"Varmista, että talletat tämän tunnuslauseen turvalliseen sijaintiin. "
+"Tarvitset sitä palauttaaksesi tilisi, jos menetät pääsyn kaikkiin olemassa "
+"oleviin istuntoihin."
 
-#: src/components/crypto/recovery_setup_view.rs:285
+#: src/components/crypto/recovery_setup_view.rs:295
 msgid "The recovery passphrase or key is invalid"
 msgstr "Palautuksen tunnuslause tai avain on virheellinen"
 
-#: src/components/crypto/recovery_setup_view.rs:288
+#: src/components/crypto/recovery_setup_view.rs:298
 #, fuzzy
 #| msgid "Could not access camera"
 msgid "Could not access recovery data"
 msgstr "Kameraa ei voitu käyttää"
 
-#: src/components/crypto/recovery_setup_view.rs:371
+#: src/components/crypto/recovery_setup_view.rs:354
+#, fuzzy
+#| msgid "Could not create the crypto identity"
+msgid "Could not reset the crypto identity"
+msgstr "Salausidentiteettiä ei voitu luoda"
+
+#: src/components/crypto/recovery_setup_view.rs:378
+#: src/components/crypto/recovery_setup_view.rs:403
+#, fuzzy
+#| msgid "Could not retrieve media"
+msgid "Could not reset account recovery"
+msgstr "Mediaa ei voitu noutaa"
+
+#: src/components/crypto/recovery_setup_view.rs:438
 #, fuzzy
 #| msgid "Could not retrieve media"
 msgid "Could not reset account recovery key"
 msgstr "Mediaa ei voitu noutaa"
 
-#: src/components/crypto/recovery_setup_view.rs:409
+#: src/components/crypto/recovery_setup_view.rs:476
 msgid "Could not enable account recovery"
 msgstr "Tilin palautusta ei voitu ottaa käyttöön"
 
@@ -393,155 +429,167 @@ msgid ""
 "To access the recovery data, we need the recovery passphrase or the recovery "
 "key that is usually set up when you create your account."
 msgstr ""
+"Käyttääksesi palautusdataasi tarvitset palautukseen tarkoitetun "
+"tunnuslauseen tai palautusaimen, joka yleensä määritetään, kun luot tilin."
 
 #: src/components/crypto/recovery_setup_view.ui:67
 msgid "Recovery Passphrase or Key"
 msgstr "Palautuksen tunnuslause tai avain"
 
 #: src/components/crypto/recovery_setup_view.ui:77
-#: src/session/view/account_settings/security_page/mod.rs:326
-#: src/session/view/sidebar/mod.rs:315
-#, fuzzy
-#| msgid "Recovery"
+#: src/session/view/account_settings/security_page/mod.rs:339
+#: src/session/view/sidebar/mod.rs:327
 msgid "Recover"
-msgstr "Palautus"
+msgstr "Palauta"
 
 #: src/components/crypto/recovery_setup_view.ui:88
 msgid "Lost your recovery passphrase or key?"
 msgstr "Kadotitko palautuksen tunnuslauseen tai avaimen?"
 
-#: src/components/crypto/recovery_setup_view.ui:161
+#: src/components/crypto/recovery_setup_view.ui:119
+#: src/components/crypto/recovery_setup_view.ui:145
+#, fuzzy
+#| msgid "Reset Account Recovery Key"
+msgid "Reset Account Recovery"
+msgstr "Nollaa tilin palautusavain"
+
+#: src/components/crypto/recovery_setup_view.ui:156
+msgid ""
+"Resetting account recovery can allow you to fix or reset part or all of your "
+"recovery setup."
+msgstr ""
+
+#: src/components/crypto/recovery_setup_view.ui:174
+#, fuzzy
+#| msgid "Room Encryption Keys"
+msgid "Reset Room Encryption Keys Backup"
+msgstr "Huoneen salausavaimet"
+
+#: src/components/crypto/recovery_setup_view.ui:181
 msgid ""
 "If you do not provide a new recovery passphrase, a recovery key will be "
 "created."
 msgstr ""
 
-#: src/components/crypto/recovery_setup_view.ui:169
-#: src/components/crypto/recovery_setup_view.ui:264
+#: src/components/crypto/recovery_setup_view.ui:189
+#: src/components/crypto/recovery_setup_view.ui:284
 msgid ""
 "You should not reuse the password of your Matrix account as a passphrase. "
 "Otherwise, if someone manages to get your account password, they will also "
 "be able to access all your encrypted conversations and to impersonate you."
 msgstr ""
 
-#: src/components/crypto/recovery_setup_view.ui:182
-#: src/components/crypto/recovery_setup_view.ui:277
+#: src/components/crypto/recovery_setup_view.ui:202
+#: src/components/crypto/recovery_setup_view.ui:297
 msgid "Recovery Passphrase (Optional)"
 msgstr "Palautuksen tunnuslause (valinnainen)"
 
-#: src/components/crypto/recovery_setup_view.ui:211
-#: src/components/crypto/recovery_setup_view.ui:237
+#: src/components/crypto/recovery_setup_view.ui:231
+#: src/components/crypto/recovery_setup_view.ui:257
 msgid "Set Up Account Recovery"
 msgstr "Määritä tilin palautus"
 
-#: src/components/crypto/recovery_setup_view.ui:248
+#: src/components/crypto/recovery_setup_view.ui:268
 msgid ""
 "Account recovery allows you to recover your crypto identity and to read your "
 "encrypted messages even if you lose access to all your sessions."
 msgstr ""
+"Tilin palauttaminen mahdollistaa salausidentiteetin palauttamisen ja "
+"salattujen viestien lukemisen niissä tilanteissa, kun menetät pääsyn "
+"olemassa oleviin istuntoihin."
 
-#: src/components/crypto/recovery_setup_view.ui:256
+#: src/components/crypto/recovery_setup_view.ui:276
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
 msgstr ""
+"Jos et anna palautukseen tarvittavaa tunnuslausetta, luodaan sen sijaan "
+"palautusavain."
 
-#: src/components/crypto/recovery_setup_view.ui:307
-#: src/components/crypto/recovery_setup_view.ui:334
+#: src/components/crypto/recovery_setup_view.ui:327
+#: src/components/crypto/recovery_setup_view.ui:354
 msgid "Account Recovery Set Up Successfully"
 msgstr "Tilin palautus määritetty onnistuneesti"
 
-#: src/components/crypto/recovery_setup_view.ui:371
+#: src/components/crypto/recovery_setup_view.ui:391
 msgid "Copy Recovery Key"
 msgstr "Kopioi palautusavain"
 
-#: src/components/crypto/recovery_setup_view.ui:388
-#: src/components/crypto/recovery_setup_view.ui:473
+#: src/components/crypto/recovery_setup_view.ui:408
+#: src/components/crypto/recovery_setup_view.ui:493
 msgid "OK"
 msgstr "OK"
 
-#: src/components/crypto/recovery_setup_view.ui:410
-#: src/components/crypto/recovery_setup_view.ui:437
-#: src/session/view/account_settings/security_page/mod.rs:321
+#: src/components/crypto/recovery_setup_view.ui:430
+#: src/components/crypto/recovery_setup_view.ui:457
+#: src/session/view/account_settings/security_page/mod.rs:334
 msgid "Account Recovery Incomplete"
 msgstr "Tilin palautus puutteellinen"
 
-#: src/components/crypto/recovery_setup_view.ui:448
+#: src/components/crypto/recovery_setup_view.ui:468
 msgid "The recovery was successful but the recovery data was incomplete."
 msgstr ""
 
-#: src/components/crypto/recovery_setup_view.ui:456
+#: src/components/crypto/recovery_setup_view.ui:476
 msgid ""
 "To fix this, you should reset the recovery from a session that has all the "
 "data, and attempt to recover this session again."
 msgstr ""
 
-#: src/components/crypto/recovery_setup_view.ui:464
+#: src/components/crypto/recovery_setup_view.ui:484
 msgid ""
 "Note that account recovery can have a different name in other Matrix "
 "clients, like “key backup” or “secure backup”."
 msgstr ""
 
-#: src/components/editable_avatar.rs:349
-msgid "Images"
-msgstr "Kuvat"
-
-#: src/components/editable_avatar.rs:354
-msgid "Choose Avatar"
-msgstr "Valitse avatar"
-
-#: src/components/editable_avatar.rs:356
-#: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
-msgid "Choose"
-msgstr "Valitse"
-
-#: src/components/editable_avatar.rs:370
+#: src/components/crypto/recovery_setup_view.ui:504
 #, fuzzy
-#| msgid "Could not save the file"
-msgid "Could not open avatar file"
-msgstr "Tiedostoa ei voitu tallentaa"
+#| msgid "Enable Account Recovery"
+msgid "Alternatively, you can reset Account Recovery"
+msgstr "Ota tilin palautus käyttöön"
 
-#: src/components/editable_avatar.rs:391
-msgid "The chosen file is not an image"
-msgstr "Valittu tiedosto ei ole kuva"
+#: src/components/dialogs/auth.rs:239
+msgid "Please authenticate the operation with your password"
+msgstr "Todenna toimenpide salasanallasi"
 
-#: src/components/editable_avatar.rs:397
-msgid "Could not determine the type of the chosen file"
-msgstr "Valitun tiedoston tyyppiä ei voitu määrittää"
+#: src/components/dialogs/auth.rs:278
+msgid ""
+"Please authenticate the operation via the browser and, once completed, press "
+"confirm"
+msgstr "Tunnistaudu selaimen kautta ja sen jälkeen paina Vahvista"
 
-#: src/components/editable_avatar.ui:54
-msgid "Remove Avatar"
-msgstr "Poista avatar"
+#: src/components/dialogs/auth.ui:4
+msgid "Authentication"
+msgstr "Tunnistautuminen"
 
-#: src/components/editable_avatar.ui:71
-msgid "Select New Avatar"
-msgstr "Valitse uusi avatar"
+#: src/components/dialogs/auth.ui:20
+msgid "Authenticate via Browser"
+msgstr "Tunnistaudu selaimen kautta"
 
-#: src/components/offline_banner.rs:96
-msgid "Offline"
-msgstr "Ei verkossa"
+#: src/components/dialogs/auth.ui:43
+#: src/session/view/content/room_details/invite_subpage/mod.ui:13
+#: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:14
+msgid "_Cancel"
+msgstr "_Peru"
 
-#: src/components/offline_banner.rs:103
-msgid "No network connection"
-msgstr "Ei verkkoyhteyttä"
-
-#: src/components/offline_banner.rs:106
-msgid "No Internet connection"
-msgstr "Ei internetyhteyttä"
+#: src/components/dialogs/auth.ui:44
+msgid "C_onfirm"
+msgstr "_Vahvista"
 
 #. Translators: This is a verb, as in 'View Room'.
-#: src/components/join_room_dialog.rs:191
-#: src/session/view/content/explore/public_room_row.rs:168
-#: src/session/view/content/room_history/mod.rs:959
-#: src/session/view/content/room_history/state_row/tombstone.rs:88
+#: src/components/dialogs/join_room.rs:227
+#: src/session/view/content/explore/public_room_row.rs:199
+#: src/session/view/content/room_history/mod.rs:997
+#: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "Näytä"
 
 #. Translators: This is a verb, as in 'Look up Room'.
-#: src/components/join_room_dialog.rs:194 src/components/join_room_dialog.ui:91
+#: src/components/dialogs/join_room.rs:230
+#: src/components/dialogs/join_room.ui:91
 msgid "Look Up"
 msgstr ""
 
-#: src/components/join_room_dialog.rs:257
+#: src/components/dialogs/join_room.rs:293
 msgid ""
 "The room details cannot be previewed. It can be because the room is not "
 "known by the homeserver or because its details are private. You can still "
@@ -550,56 +598,343 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/join_room_dialog.rs:279
-#: src/session/view/content/explore/public_room_row.rs:149
+#: src/components/dialogs/join_room.rs:315
+#: src/session/view/content/explore/public_room_row.rs:180
 msgid "1 member"
 msgid_plural "{n} members"
 msgstr[0] "1 jäsen"
 msgstr[1] "{n} jäsentä"
 
-#: src/components/join_room_dialog.ui:4 src/components/join_room_dialog.ui:38
+#: src/components/dialogs/join_room.ui:4 src/components/dialogs/join_room.ui:38
 msgid "Join a Room"
 msgstr "Liity huoneeseen"
 
-#: src/components/join_room_dialog.ui:17 src/login/greeter.ui:16
+#: src/components/dialogs/join_room.ui:17 src/login/greeter.ui:16
 #: src/login/greeter.ui:18
+#: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:56 src/session/view/media_viewer.ui:58
+#: src/session/view/media_viewer.ui:51 src/session/view/media_viewer.ui:53
 msgid "Back"
 msgstr "Takaisin"
 
-#: src/components/join_room_dialog.ui:72
+#: src/components/dialogs/join_room.ui:72
 #, fuzzy
 #| msgid "Enter a room ID, room alias, or permalink."
-msgid "Enter a room ID, room alias, or permalink to look up a room"
+msgid "Enter a room ID, room alias, or link to look up a room"
 msgstr "Anna huoneen ID-tunniste, aliasnimi tai pysyväislinkki."
 
-#: src/components/join_room_dialog.ui:191
-#: src/session/view/content/explore/public_room_row.rs:170
-#: src/session/view/content/room_history/mod.rs:962
-#: src/session/view/content/room_history/state_row/tombstone.rs:90
+#: src/components/dialogs/join_room.ui:193
+#: src/session/view/content/explore/public_room_row.rs:201
+#: src/session/view/content/room_history/mod.rs:1000
+#: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "Liity"
 
-#: src/components/location_viewer.rs:135
-msgid "Location at latitude {latitude} and longitude {longitude}"
-msgstr "Sijainti, leveysaste {latitude} ja pituusaste {longitude}"
+#. We are rejecting an invite.
+#: src/components/dialogs/message_dialogs.rs:24
+msgid "Decline Invite?"
+msgstr "Hylätäänkö kutsu?"
 
-#: src/components/media_content_viewer.rs:132
+#: src/components/dialogs/message_dialogs.rs:26
+msgid ""
+"Do you really want to decline this invite? You can join this room on your "
+"own later."
+msgstr ""
+"Haluatko kieltäytyä tästä kutsusta? Voit liittyä tähän huoneeseen myöhemmin "
+"niin halutessasi."
+
+#: src/components/dialogs/message_dialogs.rs:29
+msgid ""
+"Do you really want to decline this invite? You will not be able to join this "
+"room without it."
+msgstr ""
+"Haluatko kieltäytyä tästä kutsusta? Et voi liittyä tähän huoneeseen ilman "
+"kutsua."
+
+#: src/components/dialogs/message_dialogs.rs:32
+#: src/identity_verification_view/accept_request_page.ui:46
+#: src/session/view/content/room_history/verification_info_bar.rs:173
+msgid "Decline"
+msgstr "Kieltäydy"
+
+#. We are leaving a room that was joined.
+#: src/components/dialogs/message_dialogs.rs:37
+msgid "Leave Room?"
+msgstr "Poistutaanko huoneesta?"
+
+#: src/components/dialogs/message_dialogs.rs:39
+msgid "Do you really want to leave this room? You can come back later."
+msgstr ""
+"Haluatko varmasti poistua tästä huoneesta? Voit palata takaisin myöhemmin."
+
+#: src/components/dialogs/message_dialogs.rs:42
+msgid ""
+"Do you really want to leave this room? You will not be able to come back "
+"without an invitation."
+msgstr "Haluatko varmasti poistua tästä huoneesta? Et voi palata ilman kutsua."
+
+#: src/components/dialogs/message_dialogs.rs:45
+msgid "Leave"
+msgstr "Poistu"
+
+#: src/components/dialogs/message_dialogs.rs:56
+#: src/components/dialogs/message_dialogs.rs:308
+#: src/components/dialogs/message_dialogs.rs:369
+#: src/components/dialogs/message_dialogs.rs:404
+#: src/identity_verification_view/confirm_qr_code_page.ui:61
+#: src/session/view/account_settings/general_page/mod.rs:294
+#: src/session/view/content/room_details/edit_details_subpage.rs:258
+#: src/session/view/content/room_details/edit_details_subpage.rs:537
+#: src/session/view/content/room_details/general_page.rs:1022
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
+#: src/session/view/content/room_details/room_upgrade_dialog.rs:80
+#: src/session/view/content/room_history/item_row.rs:891
+#: src/session/view/content/room_history/item_row.rs:945
+#: src/session/view/content/room_history/message_toolbar/mod.ui:78
+#: src/session/view/content/room_history/message_toolbar/mod.ui:80
+#: src/session/view/content/room_history/verification_info_bar.rs:177
+msgid "Cancel"
+msgstr "Peru"
+
+#: src/components/dialogs/message_dialogs.rs:65
+#, fuzzy
+#| msgid "Ignored Users"
+msgid "Ignore {user}"
+msgstr "Sivuutetut käyttäjät"
+
+#: src/components/dialogs/message_dialogs.rs:69
+msgid "All messages or invitations sent by this user will be ignored"
+msgstr ""
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:134
+#, fuzzy
+#| msgid "Waiting for {user}"
+msgid "Ban {user}?"
+msgstr "Odotetaan käyttäjää {user}"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:138
+msgid ""
+"Are you sure you want to ban {user_id}? They will not be able to join the "
+"room again until someone unbans them."
+msgstr ""
+
+#. Translators: As in, 'Ban room member'.
+#: src/components/dialogs/message_dialogs.rs:141
+#: src/components/user_page.ui:169
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
+#, fuzzy
+#| msgid "Banned"
+msgid "Ban"
+msgstr "Porttikiellossa"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:152
+#, fuzzy
+#| msgid "Waiting for {user}"
+msgid "Revoke Invite for {user}?"
+msgstr "Odotetaan käyttäjää {user}"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:159
+msgid ""
+"Are you sure you want to revoke the invite for {user_id}? They will still be "
+"able to join the room on their own."
+msgstr ""
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:166
+msgid ""
+"Are you sure you want to revoke the invite for {user_id}? They will not be "
+"able to join the room again until someone reinvites them."
+msgstr ""
+
+#: src/components/dialogs/message_dialogs.rs:170
+#: src/components/user_page.rs:423
+msgid "Revoke Invite"
+msgstr "Kumoa kutsu"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:177
+#, fuzzy
+#| msgid "Reply to {user}"
+msgid "Deny Access to {user}?"
+msgstr "Vastaus käyttäjälle {user}"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:183
+#, fuzzy
+#| msgid "Are you sure you want to delete your account?"
+msgid "Are you sure you want to deny access to {user_id}?"
+msgstr "Haluatko varmasti poistaa tilisi?"
+
+#: src/components/dialogs/message_dialogs.rs:186
+#: src/components/user_page.rs:424
+msgid "Deny Access"
+msgstr "Estä pääsy"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:192
+msgid "Kick {user}?"
+msgstr "Potkitaanko käyttäjä {user}?"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:197
+msgid ""
+"Are you sure you want to kick {user_id}? They will still be able to join the "
+"room again on their own."
+msgstr ""
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:204
+msgid ""
+"Are you sure you want to kick {user_id}? They will not be able to join the "
+"room again until someone invites them."
+msgstr ""
+
+#. Translators: As in, 'Kick room member'.
+#. // Translators: As in, 'Kick room member'.
+#: src/components/dialogs/message_dialogs.rs:208
+#: src/components/user_page.rs:426
+#: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
+msgid "Kick"
+msgstr "Potki"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:219
+msgid "Remove Messages Sent by {user}?"
+msgstr "Poistetaanko käyttäjän {user} lähettämät viestit?"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:225
+msgid ""
+"This removes all the messages received from the homeserver. Are you sure you "
+"want to remove 1 message sent by {user_id}? This cannot be undone."
+msgid_plural ""
+"This removes all the messages received from the homeserver. Are you sure you "
+"want to remove {n} messages sent by {user_id}? This cannot be undone."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/components/dialogs/message_dialogs.rs:230
+#: src/session/view/account_settings/general_page/mod.rs:295
+#: src/session/view/content/room_details/edit_details_subpage.rs:259
+#: src/session/view/content/room_history/item_row.rs:892
+msgid "Remove"
+msgstr "Poista"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:236
+msgid "No Messages Sent by {user}"
+msgstr "Ei käyttäjän {user} lähettämiä viestejä"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:242
+msgid ""
+"There are no messages received from the homeserver sent by {user_id}. You "
+"can try to load more by going further back in the room history."
+msgstr ""
+
+#: src/components/dialogs/message_dialogs.rs:257
+#: src/session/view/content/room_history/item_row.rs:927
+msgid "Reason (optional)"
+msgstr "Syy (valinnainen)"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:281
+msgid "Remove the latest message sent by the user"
+msgid_plural "Remove the {n} latest messages sent by the user"
+msgstr[0] "Poista käyttäjän viimeksi lähettämä viesti"
+msgstr[1] "Poista käyttäjän {n} viimeksi lähettämää viestiä"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:352
+msgid "Mute {user}?"
+msgstr "Vaimennetaanko käyttäjä {user}?"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:358
+msgid ""
+"Are you sure you want to mute {user_id}? They will not be able to send new "
+"messages."
+msgstr ""
+
+#. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
+#: src/components/dialogs/message_dialogs.rs:371
+msgid "Mute"
+msgstr "Vaimenna"
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:387
+msgid "Promote {user}?"
+msgstr ""
+
+#. Translators: Do NOT translate the content between '{' and '}',
+#. this is a variable name.
+#: src/components/dialogs/message_dialogs.rs:393
+msgid ""
+"If you promote {user_id} to the same level as yours, you will not be able to "
+"demote them in the future."
+msgstr ""
+
+#: src/components/dialogs/message_dialogs.rs:405
+msgid "Promote"
+msgstr "Korota"
+
+#: src/components/dialogs/user_profile.ui:4
+msgid "User Profile"
+msgstr "Käyttäjäprofiili"
+
+#: src/components/offline_banner.rs:102
+msgid "Offline"
+msgstr "Ei verkossa"
+
+#: src/components/offline_banner.rs:109
+msgid "No network connection"
+msgstr "Ei verkkoyhteyttä"
+
+#: src/components/offline_banner.rs:112
+msgid "No Internet connection"
+msgstr "Ei internetyhteyttä"
+
+#: src/components/media/content_viewer.rs:178
 msgid "Image not Viewable"
 msgstr "Kuva ei ole katseltavissa"
 
-#: src/components/media_content_viewer.rs:133
+#: src/components/media/content_viewer.rs:179
 msgid "Audio Clip not Playable"
 msgstr "Äänileike ei ole toistettavissa"
 
-#: src/components/media_content_viewer.rs:134
+#: src/components/media/content_viewer.rs:180
 msgid "Video not Playable"
 msgstr "Video ei ole toistettavissa"
 
-#: src/components/media_content_viewer.rs:135
+#: src/components/media/content_viewer.rs:181
 msgid "File not Viewable"
 msgstr "Tiedosto ei ole katseltavissa"
+
+#: src/components/media/location_viewer.rs:135
+msgid "Location at latitude {latitude} and longitude {longitude}"
+msgstr "Sijainti, leveysaste {latitude} ja pituusaste {longitude}"
 
 #: src/components/reaction_chooser.ui:7
 msgid "Send a Reaction"
@@ -611,10 +946,10 @@ msgstr "Lisää reaktioita"
 
 #: src/components/pill/at_room.rs:29
 msgid "Notify the whole room"
-msgstr ""
+msgstr "Ilmoita koko huoneelle"
 
 #. Translators: As in 'Custom role'.
-#. Translators: As in, 'Custom power level'.
+#. Translators: As in, 'Custom power level', meaning permissions.
 #: src/components/power_level_selection/popover.ui:149
 #: src/session/model/room/permissions.rs:73
 msgid "Custom"
@@ -624,38 +959,38 @@ msgstr "Mukautettu"
 msgid "Confirm Custom Role"
 msgstr "Vahvista mukautettu rolli"
 
-#: src/components/user_page.rs:264
+#: src/components/user_page.rs:283
 #: src/session/view/account_settings/general_page/mod.ui:74
-#: src/session/view/content/room_history/sender_avatar/mod.rs:80
+#: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matrix-käyttäjätunniste kopioitu leikepöydälle"
 
-#: src/components/user_page.rs:286
+#: src/components/user_page.rs:305
 msgid "Open Direct Chat"
 msgstr "Uusi suorakeskustelu"
 
-#: src/components/user_page.rs:288
+#: src/components/user_page.rs:307
 msgid "Create Direct Chat"
 msgstr "Luo suorakeskustelu"
 
-#: src/components/user_page.rs:312
-#: src/session/view/content/room_history/sender_avatar/mod.rs:517
-#: src/session/view/create_dm_dialog/mod.rs:198
+#: src/components/user_page.rs:331
+#: src/session/view/content/room_history/sender_avatar/mod.rs:534
+#: src/session/view/create_dm_dialog/mod.rs:202
 msgid "Could not create a new Direct Chat"
 msgstr "Uuden suorakeskustelun luominen ei onnistu"
 
-#: src/components/user_page.rs:345
+#: src/components/user_page.rs:364
 msgid "In {room_name}"
 msgstr "Huoneessa {room_name}"
 
 #. Translators: As in, 'The room member was invited'.
-#: src/components/user_page.rs:356
+#: src/components/user_page.rs:375
 msgctxt "member"
 msgid "Invited"
 msgstr "Kutsuttu"
 
 #. Translators: As in, 'The room member was banned'.
-#: src/components/user_page.rs:361
+#: src/components/user_page.rs:380
 #, fuzzy
 #| msgid "Banned"
 msgctxt "member"
@@ -663,78 +998,60 @@ msgid "Banned"
 msgstr "Porttikiellossa"
 
 #. Translators: As in, 'The room member knocked to request access to the room'.
-#: src/components/user_page.rs:366
+#: src/components/user_page.rs:385
 msgctxt "member"
 msgid "Knocked"
 msgstr ""
 
 #. Translators: As in, 'The room member has an unknown role'.
-#: src/components/user_page.rs:371
+#: src/components/user_page.rs:390
 msgctxt "member"
 msgid "Unknown"
 msgstr "Tuntematon"
 
-#: src/components/user_page.rs:392
+#: src/components/user_page.rs:411
 msgid "Allow Access"
 msgstr "Salli pääsy"
 
-#: src/components/user_page.rs:404 src/utils/message_dialog.rs:121
-msgid "Revoke Invite"
-msgstr "Kumoa kutsu"
-
-#: src/components/user_page.rs:405 src/utils/message_dialog.rs:137
-msgid "Deny Access"
-msgstr "Estä pääsy"
-
-#. Translators: As in, 'Kick room member'.
-#. // Translators: As in, 'Kick room member'.
-#: src/components/user_page.rs:407
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:221
-#: src/utils/message_dialog.rs:159
-#, fuzzy
-#| msgid "_Kick"
-msgid "Kick"
-msgstr "_Potki"
-
-#: src/components/user_page.rs:494
+#: src/components/user_page.rs:513
 msgid "Could not change the role"
 msgstr "Roolia ei voitu vaihtaa"
 
-#: src/components/user_page.rs:516
-#: src/session/view/content/room_history/sender_avatar/mod.rs:541
+#: src/components/user_page.rs:535
+#: src/session/view/content/room_history/sender_avatar/mod.rs:558
 msgid "Could not invite user"
 msgstr "Käyttäjää ei voitu kutsua"
 
-#: src/components/user_page.rs:550
-#: src/session/view/content/room_history/sender_avatar/mod.rs:574
+#: src/components/user_page.rs:569
+#: src/session/view/content/room_history/sender_avatar/mod.rs:591
 #, fuzzy
 #| msgid "Could not save the file"
 msgid "Could not revoke invite of user"
 msgstr "Tiedostoa ei voitu tallentaa"
 
-#: src/components/user_page.rs:551
-#: src/session/view/content/room_history/sender_avatar/mod.rs:575
+#: src/components/user_page.rs:570
+#: src/session/view/content/room_history/sender_avatar/mod.rs:592
 #, fuzzy
 #| msgid "Couldn’t save file"
 msgid "Could not deny access to user"
 msgstr "Tiedostoa ei voitu tallentaa"
 
-#: src/components/user_page.rs:552
-#: src/session/view/content/room_history/sender_avatar/mod.rs:576
+#: src/components/user_page.rs:571
+#: src/session/view/content/room_history/sender_avatar/mod.rs:593
 #, fuzzy
 #| msgid "Couldn’t save file"
 msgid "Could not kick user"
 msgstr "Tiedostoa ei voitu tallentaa"
 
-#: src/components/user_page.rs:598
-#: src/session/view/content/room_history/sender_avatar/mod.rs:661
+#: src/components/user_page.rs:617
+#: src/session/view/content/room_history/sender_avatar/mod.rs:678
 #, fuzzy
 #| msgid "Could not load file"
 msgid "Could not ban user"
 msgstr "Tiedostoa ei voitu ladata"
 
-#: src/components/user_page.rs:626
-#: src/session/view/content/room_history/sender_avatar/mod.rs:681
+#: src/components/user_page.rs:645
+#: src/session/view/content/room_history/sender_avatar/mod.rs:698
 #, fuzzy
 #| msgid "Could not change password"
 msgid "Could not unban user"
@@ -742,8 +1059,8 @@ msgstr "Salasanaa ei voitu vaihtaa"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/components/user_page.rs:674
-#: src/session/view/content/room_history/sender_avatar/mod.rs:735
+#: src/components/user_page.rs:693
+#: src/session/view/content/room_history/sender_avatar/mod.rs:752
 #, fuzzy
 #| msgid "Could not save the file"
 msgid "Could not remove 1 message sent by the user"
@@ -751,94 +1068,85 @@ msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "Tiedostoa ei voitu tallentaa"
 msgstr[1] "Tiedostoa ei voitu tallentaa"
 
-#: src/components/user_page.rs:691
+#: src/components/user_page.rs:710
 msgid "Identity verified"
 msgstr "Identiteetti vahvistettu"
 
-#: src/components/user_page.rs:698
+#: src/components/user_page.rs:717
 msgid "Identity not verified"
 msgstr "Identiteettiä ei ole vahvistettu"
 
-#: src/components/user_page.rs:714
+#: src/components/user_page.rs:733
 msgid "Could not start user verification"
 msgstr "Käyttäjävahvistusta ei voitu aloittaa"
 
-#: src/components/user_page.rs:740
+#: src/components/user_page.rs:759
 msgid "Ignored"
 msgstr "Sivuutettu"
 
-#: src/components/user_page.rs:742
+#: src/components/user_page.rs:761
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.ui:30
 msgid "Stop Ignoring"
 msgstr "Lopeta sivuuttaminen"
 
-#: src/components/user_page.rs:745
+#: src/components/user_page.rs:764
 msgid "Not Ignored"
 msgstr "Ei sivuutettu"
 
-#: src/components/user_page.rs:746
+#: src/components/user_page.rs:765
 msgid "Ignore"
 msgstr "Sivuuta"
 
-#: src/components/user_page.rs:763
+#: src/components/user_page.rs:782
 #: src/session/view/account_settings/security_page/ignored_users_subpage/ignored_user_row.rs:100
-#: src/session/view/content/room_history/sender_avatar/mod.rs:760
+#: src/session/view/content/room_history/sender_avatar/mod.rs:777
 msgid "Could not stop ignoring user"
 msgstr "Ei voitu lopettaa käyttäjän sivuuttamista"
 
-#: src/components/user_page.rs:766
-#: src/session/view/content/room_history/sender_avatar/mod.rs:763
+#: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
+#: src/session/view/content/room_history/sender_avatar/mod.rs:780
+#: src/session/view/sidebar/row.rs:617
 msgid "Could not ignore user"
 msgstr "Ei voitu sivuuttaa käyttäjää"
 
-#: src/components/user_page.ui:67
+#: src/components/user_page.ui:66
 #: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
-msgid "Copy Matrix User ID to Clipboard"
-msgstr "Kopioi Matrix-käyttäjätunniste leikepöydälle"
+#, fuzzy
+#| msgid "Matrix User ID"
+msgid "Copy Matrix User ID"
+msgstr "Matrix-käyttäjätunniste"
 
-#: src/components/user_page.ui:115
+#: src/components/user_page.ui:114
 msgid "Role"
 msgstr "Rooli"
 
-#: src/components/user_page.ui:128
+#. Translators: value used to assign room member roles
+#: src/components/user_page.ui:127
 msgid "Power Level"
 msgstr "Voimataso"
 
-#. Translators: As in, 'Ban room member'.
-#: src/components/user_page.ui:170
-#: src/session/view/content/room_details/permissions/permissions_subpage.ui:233
-#: src/utils/message_dialog.rs:92
-#, fuzzy
-#| msgid "Banned"
-msgid "Ban"
-msgstr "Porttikiellossa"
-
 #. Translators: As in, 'Unban room member'.
-#: src/components/user_page.ui:182
+#: src/components/user_page.ui:181
 msgid "Unban"
 msgstr ""
 
-#: src/components/user_page.ui:197
+#: src/components/user_page.ui:196
 msgid "Remove Messages"
 msgstr "Poista viestit"
 
-#: src/components/user_page.ui:211
+#: src/components/user_page.ui:210
 #: src/session/view/account_settings/security_page/mod.ui:5
 msgid "Security"
 msgstr "Turvallisuus"
 
-#: src/components/user_page.ui:238
-#: src/identity_verification_view/accept_request_page.ui:58
-#: src/session/view/account_settings/security_page/mod.rs:257
-#: src/session/view/content/room_history/verification_info_bar.rs:165
-#: src/session/view/sidebar/mod.rs:308
+#: src/components/user_page.ui:237
+#: src/identity_verification_view/accept_request_page.ui:57
+#: src/session/view/account_settings/security_page/mod.rs:270
+#: src/session/view/content/room_history/verification_info_bar.rs:172
+#: src/session/view/sidebar/mod.rs:320
 msgid "Verify"
 msgstr "Vahvista"
-
-#: src/components/user_profile_dialog.ui:4
-msgid "User Profile"
-msgstr "Käyttäjäprofiili"
 
 #: src/contrib/qr_code_scanner/mod.ui:13 src/contrib/qr_code_scanner/mod.ui:26
 msgid "Could Not Connect to Camera"
@@ -862,7 +1170,6 @@ msgid "Command copied to clipboard"
 msgstr "Komento kopioitu leikepöydälle"
 
 #: src/error_page.ui:25
-#| msgid "Secret Service Error"
 msgid "Secret Portal Error"
 msgstr "Secret Portal -virhe"
 
@@ -891,41 +1198,46 @@ msgid ""
 msgstr ""
 
 #: src/error_page.ui:113
-msgid "Copy Command to Clipboard"
-msgstr "Kopioi komento leikepöydälle"
+msgid "Copy Command"
+msgstr "Kopioi komento"
 
 #: src/error_page.ui:148
 msgid "Check that you have a default keyring and that it is unlocked."
 msgstr ""
+"Varmista, että sinulla on oletusarvoinen avainnippu ja että sen lukitus on "
+"avattu."
 
 #: src/error_page.ui:160
 msgid ""
 "Check the application logs and your distribution’s documentation for more "
 "details."
 msgstr ""
+"Tarkista sovelluslokit ja jakelun dokumentaatio saadaksesi lisätietoja."
 
 #: src/error_page.ui:176
 msgid "Could Not Initialize Session"
 msgstr "Istuntoa ei voitu alustaa"
 
-#: src/identity_verification_view/accept_request_page.rs:128
+#: src/identity_verification_view/accept_request_page.rs:129
+#: src/session/model/notifications/mod.rs:296
 msgid "Login Request From Another Session"
 msgstr "Kirjautumispyyntö toisesta istunnosta"
 
-#: src/identity_verification_view/accept_request_page.rs:130
+#: src/identity_verification_view/accept_request_page.rs:131
 msgid "Verify the new session from the current session."
 msgstr "Vahvista uusi istunto nykyisestä istunnosta."
 
-#: src/identity_verification_view/accept_request_page.rs:133
-#: src/identity_verification_view/choose_method_page.rs:178
-#: src/identity_verification_view/sas_page.rs:155
-#: src/identity_verification_view/scan_qr_code_page.rs:167
+#: src/identity_verification_view/accept_request_page.rs:134
+#: src/identity_verification_view/choose_method_page.rs:183
+#: src/identity_verification_view/sas_page.rs:159
+#: src/identity_verification_view/scan_qr_code_page.rs:179
+#: src/session/model/notifications/mod.rs:227
 msgid "Verification Request"
 msgstr "Vahvistuspyyntö"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/accept_request_page.rs:137
+#: src/identity_verification_view/accept_request_page.rs:138
 msgid ""
 "{user} asked to be verified. Verifying a user increases the security of the "
 "conversation."
@@ -933,62 +1245,58 @@ msgstr ""
 "{user} pyysi vahvistusta. Käyttäjän vahvistaminen parantaa keskustelun "
 "turvallisuutta."
 
-#: src/identity_verification_view/accept_request_page.rs:160
+#: src/identity_verification_view/accept_request_page.rs:161
 #, fuzzy
 #| msgid "{user} sent a verification request."
 msgid "Could not decline verification request"
 msgstr "{user} lähetti vahvistuspyynnön."
 
-#: src/identity_verification_view/accept_request_page.rs:176
+#: src/identity_verification_view/accept_request_page.rs:177
 #, fuzzy
 #| msgid "{user} sent a verification request."
 msgid "Could not accept verification request"
 msgstr "{user} lähetti vahvistuspyynnön."
 
-#: src/identity_verification_view/accept_request_page.ui:47
-#: src/session/view/content/room_history/verification_info_bar.rs:166
-#: src/utils/message_dialog.rs:27
-msgid "Decline"
-msgstr "Kieltäydy"
-
-#: src/identity_verification_view/cancelled_page.rs:134
+#: src/identity_verification_view/cancelled_page.rs:138
 msgid "The verification was cancelled from the other session."
 msgstr "Vahvistus peruttiin toisesta istunnosta."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/cancelled_page.rs:140
+#: src/identity_verification_view/cancelled_page.rs:144
 msgid "The verification was cancelled by {user}."
-msgstr ""
+msgstr "Käyttäjä {user} perui vahvistuksen."
 
-#: src/identity_verification_view/cancelled_page.rs:146
+#: src/identity_verification_view/cancelled_page.rs:150
 msgid "The verification process failed because it reached a timeout."
 msgstr "Vahvistusprosessi epäonnistui aikakatkaisun vuoksi."
 
-#: src/identity_verification_view/cancelled_page.rs:148
+#: src/identity_verification_view/cancelled_page.rs:152
 msgid "You accepted the request from another session."
 msgstr "Hyväksyit pyynnön toisesta istunnosta."
 
-#: src/identity_verification_view/cancelled_page.rs:151
+#: src/identity_verification_view/cancelled_page.rs:155
 msgid "The emoji did not match."
 msgstr "Emoji ei täsmännyt."
 
-#: src/identity_verification_view/cancelled_page.rs:153
+#: src/identity_verification_view/cancelled_page.rs:157
 msgid "The numbers did not match."
 msgstr "Numerot eivät täsmänneet."
 
-#: src/identity_verification_view/cancelled_page.rs:156
+#: src/identity_verification_view/cancelled_page.rs:160
 #, fuzzy
 #| msgid "An unknown error occurred during the verification process."
 msgid "An unexpected error happened during the verification process."
 msgstr "Vahvistuksen aikana tapahtui tuntematon virhe."
 
-#: src/identity_verification_view/cancelled_page.rs:161
+#: src/identity_verification_view/cancelled_page.rs:165
 #: src/identity_verification_view/mod.ui:113
+#: src/identity_verification_view/mod.ui:124
+#: src/identity_verification_view/room_left_page.ui:22
 msgid "Verification Cancelled"
 msgstr "Vahvistus peruttu"
 
-#: src/identity_verification_view/cancelled_page.rs:163
+#: src/identity_verification_view/cancelled_page.rs:167
 msgid "Verification Error"
 msgstr "Vahvistusvirhe"
 
@@ -997,49 +1305,50 @@ msgid "Send New Request"
 msgstr "Lähetä uusi pyyntö"
 
 #: src/identity_verification_view/cancelled_page.ui:52
-#: src/identity_verification_view/completed_page.ui:47
+#: src/identity_verification_view/completed_page.ui:48
+#: src/identity_verification_view/room_left_page.ui:44
 msgid "Dismiss"
 msgstr "Hylkää"
 
-#: src/identity_verification_view/choose_method_page.rs:170
-#: src/identity_verification_view/sas_page.rs:143
-#: src/identity_verification_view/scan_qr_code_page.rs:162
+#: src/identity_verification_view/choose_method_page.rs:175
+#: src/identity_verification_view/sas_page.rs:147
+#: src/identity_verification_view/scan_qr_code_page.rs:174
 #: src/session/view/account_settings/user_sessions_page/user_session_row.ui:74
 msgid "Verify Session"
 msgstr "Vahvista istunto"
 
-#: src/identity_verification_view/choose_method_page.rs:174
+#: src/identity_verification_view/choose_method_page.rs:179
 msgid "Scan this QR code from the other session."
 msgstr "Skannaa tämä QR-koodi toisesta istunnosta."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/choose_method_page.rs:184
+#: src/identity_verification_view/choose_method_page.rs:189
 msgid "Ask {user} to scan this QR code from their session."
 msgstr "Pyydä käyttäjää {user} skannaamaan tämä QR-koodi istunnostaan."
 
-#: src/identity_verification_view/choose_method_page.rs:193
+#: src/identity_verification_view/choose_method_page.rs:198
 msgid "Select a verification method to proceed."
 msgstr "Valitse vahvistustapa jatkaaksesi."
 
-#: src/identity_verification_view/choose_method_page.rs:196
+#: src/identity_verification_view/choose_method_page.rs:201
 msgid "Click on the verification method to proceed."
 msgstr "Napsauta vahvistustapaa jatkaaksesi."
 
-#: src/identity_verification_view/choose_method_page.rs:228
+#: src/identity_verification_view/choose_method_page.rs:233
 msgid "Could not access camera"
 msgstr "Kameraa ei voitu käyttää"
 
-#: src/identity_verification_view/choose_method_page.rs:245
-#: src/identity_verification_view/scan_qr_code_page.rs:239
+#: src/identity_verification_view/choose_method_page.rs:250
+#: src/identity_verification_view/scan_qr_code_page.rs:255
 msgid "Could not start emoji verification"
 msgstr "Emojivahvistusta ei voitu käynnistää"
 
-#: src/identity_verification_view/choose_method_page.rs:261
-#: src/identity_verification_view/confirm_qr_code_page.rs:175
-#: src/identity_verification_view/qr_code_scanned_page.rs:143
-#: src/identity_verification_view/scan_qr_code_page.rs:255
-#: src/identity_verification_view/wait_for_other_page.rs:162
+#: src/identity_verification_view/choose_method_page.rs:266
+#: src/identity_verification_view/confirm_qr_code_page.rs:176
+#: src/identity_verification_view/qr_code_scanned_page.rs:144
+#: src/identity_verification_view/scan_qr_code_page.rs:271
+#: src/identity_verification_view/wait_for_other_page.rs:163
 msgid "Could not cancel the verification"
 msgstr "Vahvistusta ei voitu perua"
 
@@ -1053,33 +1362,33 @@ msgid "Scan QR code with this session"
 msgstr "Skannaa QR-koodi tässä istunnossa"
 
 #: src/identity_verification_view/choose_method_page.ui:69
-#: src/identity_verification_view/scan_qr_code_page.ui:66
+#: src/identity_verification_view/scan_qr_code_page.ui:67
 msgid "Compare Emoji"
 msgstr "Vertaa emojia"
 
 #: src/identity_verification_view/choose_method_page.ui:80
-#: src/identity_verification_view/no_supported_methods_page.rs:163
+#: src/identity_verification_view/no_supported_methods_page.rs:167
 #: src/identity_verification_view/qr_code_scanned_page.ui:48
-#: src/identity_verification_view/scan_qr_code_page.ui:77
+#: src/identity_verification_view/scan_qr_code_page.ui:78
 msgid "Cancel Verification"
 msgstr "Peru vahvistus"
 
-#: src/identity_verification_view/completed_page.rs:120
+#: src/identity_verification_view/completed_page.rs:121
 msgid "Request Complete"
 msgstr "Pyyntö valmistui"
 
-#: src/identity_verification_view/completed_page.rs:122
+#: src/identity_verification_view/completed_page.rs:123
 msgid "The new session is now ready to send and receive secure messages."
 msgstr ""
 "Uusi istunto on nyt valmis lähettämään ja vastaanottamaan salattuja viestejä."
 
-#: src/identity_verification_view/completed_page.rs:126
+#: src/identity_verification_view/completed_page.rs:127
 msgid "Verification Complete"
 msgstr "Vahvistus valmistui"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/completed_page.rs:129
+#: src/identity_verification_view/completed_page.rs:130
 msgid ""
 "{user} is verified and you can now be sure that your communication will be "
 "private."
@@ -1087,19 +1396,19 @@ msgstr ""
 "{user} on vahvistettu ja voit olla nyt varma, että yhteydenpito on "
 "yksityistä."
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:127
+#: src/identity_verification_view/confirm_qr_code_page.rs:128
 msgid "Does the other session show a confirmation?"
 msgstr "Näyttääkö toinen istunto vahvistuksen?"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/confirm_qr_code_page.rs:133
+#: src/identity_verification_view/confirm_qr_code_page.rs:134
 #, fuzzy
 #| msgid "Ask {user} to scan this QR code from their session."
 msgid "Does {user} see a confirmation on their session?"
 msgstr "Pyydä käyttäjää {user} skannaamaan tämä QR-koodi istunnostaan."
 
-#: src/identity_verification_view/confirm_qr_code_page.rs:159
+#: src/identity_verification_view/confirm_qr_code_page.rs:160
 #, fuzzy
 #| msgid "Could not save the file"
 msgid "Could not confirm the scan of the QR Code"
@@ -1112,22 +1421,6 @@ msgstr "Vahvista skannaus"
 #: src/identity_verification_view/confirm_qr_code_page.ui:47
 msgid "Confirm"
 msgstr "Vahvista"
-
-#: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:280
-#: src/session/view/content/room_details/general_page/mod.rs:525
-#: src/session/view/content/room_details/general_page/mod.rs:1299
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:588
-#: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:774
-#: src/session/view/content/room_history/item_row.rs:831
-#: src/session/view/content/room_history/message_toolbar/mod.ui:78
-#: src/session/view/content/room_history/message_toolbar/mod.ui:80
-#: src/session/view/content/room_history/verification_info_bar.rs:170
-#: src/utils/message_dialog.rs:51 src/utils/message_dialog.rs:259
-#: src/utils/message_dialog.rs:317 src/utils/message_dialog.rs:352
-msgid "Cancel"
-msgstr "Peru"
 
 #: src/identity_verification_view/mod.ui:14
 #, fuzzy
@@ -1173,12 +1466,13 @@ msgstr ""
 msgid "Verification Successful"
 msgstr "Vahvistus onnistui"
 
-#: src/identity_verification_view/no_supported_methods_page.rs:134
+#: src/identity_verification_view/no_supported_methods_page.rs:138
 msgid ""
 "None of the methods offered by the other client are supported by Fractal."
 msgstr ""
+"Yksikään toisen asiakasohjelmiston tarjoama tapa ei ole Fractalin tukema."
 
-#: src/identity_verification_view/no_supported_methods_page.rs:137
+#: src/identity_verification_view/no_supported_methods_page.rs:141
 msgid ""
 "A login request was received, but none of the methods offered by the other "
 "client are supported by Fractal."
@@ -1186,26 +1480,26 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:146
+#: src/identity_verification_view/no_supported_methods_page.rs:150
 msgid ""
 "None of the methods offered by {user}’s client are supported by Fractal."
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/no_supported_methods_page.rs:153
+#: src/identity_verification_view/no_supported_methods_page.rs:157
 msgid ""
 "{user} sent a verification request, but none of the methods offered by the "
 "other client are supported by Fractal."
 msgstr ""
 
-#: src/identity_verification_view/no_supported_methods_page.rs:165
+#: src/identity_verification_view/no_supported_methods_page.rs:169
 #, fuzzy
 #| msgid "Verifications"
 msgid "Decline Verification"
 msgstr "Vahvistukset"
 
-#: src/identity_verification_view/no_supported_methods_page.rs:187
+#: src/identity_verification_view/no_supported_methods_page.rs:191
 #, fuzzy
 #| msgid "Could not enable account notifications"
 msgid "Could not decline the verification"
@@ -1219,7 +1513,7 @@ msgid ""
 "your sessions"
 msgstr "Hyväksy vahvistuspyyntö toisesta istunnosta tai toiselta laitteelta."
 
-#: src/identity_verification_view/qr_code_scanned_page.rs:117
+#: src/identity_verification_view/qr_code_scanned_page.rs:118
 msgid ""
 "You scanned the QR code successfully. You may need to confirm the "
 "verification from the other session."
@@ -1229,19 +1523,25 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/qr_code_scanned_page.rs:122
+#: src/identity_verification_view/qr_code_scanned_page.rs:123
 msgid ""
 "You scanned the QR code successfully. {user} may need to confirm the "
 "verification."
 msgstr ""
+"Skannasit QR-koodin onnistuneesti. Käyttäjän {user} voi olla tarve varmistaa "
+"vahvistus."
 
-#: src/identity_verification_view/sas_page.rs:146
+#: src/identity_verification_view/room_left_page.ui:37
+msgid "You are no longer in the room where the verification was taking place"
+msgstr "Et ole enää huoneessa, jossa vahvistusta suoritettiin"
+
+#: src/identity_verification_view/sas_page.rs:150
 msgid "Check if the same emoji appear in the same order on the other client."
 msgstr ""
 "Tarkista näkyvätkö samat emojit samassa järjestyksessä toisessa "
 "sovelluksessa."
 
-#: src/identity_verification_view/sas_page.rs:150
+#: src/identity_verification_view/sas_page.rs:154
 msgid "Check if the same numbers appear in the same order on the other client."
 msgstr ""
 "Tarkista näkyvätkö samat numerot samassa järjestyksessä toisessa "
@@ -1249,7 +1549,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:160
+#: src/identity_verification_view/sas_page.rs:164
 msgid ""
 "Ask {user} if they see the following emoji appear in the same order on their "
 "screen."
@@ -1259,7 +1559,7 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/sas_page.rs:167
+#: src/identity_verification_view/sas_page.rs:171
 #, fuzzy
 #| msgid ""
 #| "Ask {user} if they see the following emoji appear in the same order on "
@@ -1271,11 +1571,11 @@ msgstr ""
 "Kysy käyttäjältä {user}, näkeekö hän seuraavien emojit samassa "
 "järjestyksessä omalla näytöllään."
 
-#: src/identity_verification_view/sas_page.rs:249
+#: src/identity_verification_view/sas_page.rs:253
 msgid "Could not send that the data does not match"
 msgstr ""
 
-#: src/identity_verification_view/sas_page.rs:266
+#: src/identity_verification_view/sas_page.rs:270
 msgid "Could not send confirmation that the data matches"
 msgstr ""
 
@@ -1289,41 +1589,41 @@ msgstr "Ei täsmää"
 msgid "Match"
 msgstr "Täsmää"
 
-#: src/identity_verification_view/scan_qr_code_page.rs:164
+#: src/identity_verification_view/scan_qr_code_page.rs:176
 msgid "Scan the QR code displayed by the other session."
 msgstr "Skannaa QR-koodi toisesta istunnosta."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/scan_qr_code_page.rs:171
+#: src/identity_verification_view/scan_qr_code_page.rs:183
 msgid "Scan the QR code shown on the device of {user}."
 msgstr "Skannaa käyttäjän {user} laitteella näkyvä QR-koodi."
 
-#: src/identity_verification_view/scan_qr_code_page.rs:212
+#: src/identity_verification_view/scan_qr_code_page.rs:227
 msgid "Could not validate scanned QR Code"
 msgstr "Skannatun QR-koodin validointi ei onnistu"
 
-#: src/identity_verification_view/scan_qr_code_page.ui:57
+#: src/identity_verification_view/scan_qr_code_page.ui:58
 msgid "Show a QR code to scan with another device"
-msgstr ""
+msgstr "Näytä QR-koodi skannattavaksi toisella laitteella"
 
-#: src/identity_verification_view/wait_for_other_page.rs:122
+#: src/identity_verification_view/wait_for_other_page.rs:123
 msgid "Get Another Device"
 msgstr "Käytä toista laitetta"
 
-#: src/identity_verification_view/wait_for_other_page.rs:124
+#: src/identity_verification_view/wait_for_other_page.rs:125
 msgid "Accept the verification request from another session or device."
 msgstr "Hyväksy vahvistuspyyntö toisesta istunnosta tai toiselta laitteelta."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:132
+#: src/identity_verification_view/wait_for_other_page.rs:133
 msgid "Waiting for {user}"
 msgstr "Odotetaan käyttäjää {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/identity_verification_view/wait_for_other_page.rs:138
+#: src/identity_verification_view/wait_for_other_page.rs:139
 msgid "Ask {user} to accept the verification request."
 msgstr "Pyydä käyttäjää {user} hyväksymään vahvistuspyynnön."
 
@@ -1359,8 +1659,6 @@ msgstr ""
 "itse."
 
 #: src/login/advanced_dialog.ui:14
-#, fuzzy
-#| msgid "_Auto-discovery"
 msgid "_Auto-Discovery"
 msgstr "_Automaattinen löytäminen"
 
@@ -1382,21 +1680,21 @@ msgstr "_Kirjaudu sisään"
 msgid "_Create Account"
 msgstr "_Luo tili"
 
-#: src/login/homeserver_page.rs:115
+#: src/login/homeserver_page.rs:119
 msgid "Domain Name"
 msgstr "Verkkotunnus"
 
-#: src/login/homeserver_page.rs:117
+#: src/login/homeserver_page.rs:121
 msgid "The domain of your Matrix homeserver, for example gnome.org"
 msgstr "Matrix-kotipalvelimesi verkkotunnus, esimerkiksi gnome.org"
 
-#: src/login/homeserver_page.rs:120 src/login/method_page.ui:68
+#: src/login/homeserver_page.rs:124 src/login/method_page.ui:68
 msgid "Homeserver URL"
 msgstr "Kotipalvelimen osoite"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/homeserver_page.rs:124
+#: src/login/homeserver_page.rs:128
 msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Kotipalvelimesi URL-osoite, esimerkiksi {address}"
 
@@ -1418,25 +1716,25 @@ msgstr "Lisäasetukset…"
 #. variable name.
 #. This is the tooltip text on buttons to log in via Single Sign-On.
 #. The brand is something like Facebook, Apple, GitHub…
-#: src/login/idp_button.rs:121
+#: src/login/idp_button.rs:124
 msgid "Log in with {brand}"
 msgstr "Kirjaudu käyttäen palvelua {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/login/method_page.rs:129
+#: src/login/method_page.rs:136
 msgid "Log in to {domain_name}"
 msgstr "Kirjaudu palveluun {domain_name}"
 
-#: src/login/method_page.rs:136
+#: src/login/method_page.rs:143
 msgid "Log in"
 msgstr "Kirjaudu sisään"
 
-#: src/login/method_page.rs:179
+#: src/login/method_page.rs:186
 msgid "More SSO Providers"
 msgstr "Lisää kertakirjautumisen palveluntarjoajia"
 
-#: src/login/method_page.rs:182
+#: src/login/method_page.rs:189
 msgid "Login via SSO"
 msgstr "Kirjaudu kertakirjautumisella"
 
@@ -1456,9 +1754,7 @@ msgstr "Salasana"
 msgid "Single Sign-On Providers"
 msgstr "Kertakirjautumisen palveluntarjoajat"
 
-#: src/login/mod.rs:464
-#, fuzzy
-#| msgid "Unable to store session"
+#: src/login/mod.rs:479
 msgid "Could not store session"
 msgstr "Istuntoa ei voi tallettaa"
 
@@ -1467,11 +1763,9 @@ msgid "Login Complete"
 msgstr "Kirjautuminen valmis"
 
 #: src/login/mod.ui:80
-#, fuzzy
-#| msgid "This session is ready to send and receive secure messages."
 msgid "This session is ready to send and receive secure messages"
 msgstr ""
-"Tämä istunto on valmis lähettämään ja vastaanottamaan salattuja viestejä."
+"Tämä istunto on valmis lähettämään ja vastaanottamaan salattuja viestejä"
 
 #: src/login/mod.ui:86
 msgid "Start Chatting"
@@ -1480,6 +1774,11 @@ msgstr "Aloita keskustelu"
 #: src/login/session_setup_view.ui:5
 msgid "Session Setup"
 msgstr "Istunnon määritys"
+
+#: src/login/session_setup_view.ui:45
+#| msgid "Account Settings"
+msgid "Fetching Account Data…"
+msgstr "Noudetaan tilin tietoja…"
 
 #: src/login/sso_page.ui:5 src/login/sso_page.ui:41
 msgid "Single Sign-On"
@@ -1491,173 +1790,147 @@ msgstr "Seuraa vaiheita selaimessa"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:109
+#: src/secret/linux.rs:154
 msgid "Fractal: Matrix credentials for {user_id}"
 msgstr "Fractal: Matrix-kirjautumistiedot käyttäjälle {user_id}"
 
-#: src/secret/linux.rs:162
-msgid "Malformed version in stored session"
-msgstr "Virheellisesti muodostettu versio talletetussa istunnossa"
-
-#: src/secret/linux.rs:187
-msgid "Could not find profile in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:200
-msgid "Malformed homeserver in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:206
-msgid "Could not find homeserver in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:216
-msgid "Malformed user ID in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:222
-msgid "Could not find user ID in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:230
-msgid "Could not find device ID in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:238
-msgid "Could not find database path in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:250 src/secret/linux.rs:260
-msgid "Malformed secret in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:269
-msgid "Could not get secret in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:418
+#: src/secret/linux.rs:454
 msgid "The secret storage file is corrupted."
 msgstr ""
 
-#: src/secret/linux.rs:422
+#: src/secret/linux.rs:458
 #, fuzzy
 #| msgid "Could not download the file"
 msgid "Could not access the secret storage file location."
 msgstr "Tiedostoa ei voitu ladata"
 
-#: src/secret/linux.rs:425
+#: src/secret/linux.rs:461
 #, fuzzy
 #| msgid "An error occurred during the creation of the encryption keys."
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr "Salausavainten luomisen aikana tapahtui virhe."
 
-#: src/secret/linux.rs:428
+#: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 
-#: src/secret/linux.rs:431
+#: src/secret/linux.rs:467
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 
-#: src/secret/linux.rs:434
+#: src/secret/linux.rs:470
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
 
-#: src/secret/linux.rs:437
+#: src/secret/linux.rs:473
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
 msgstr ""
 
-#: src/secret/linux.rs:440
+#: src/secret/linux.rs:476
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:490
 msgid "The item was deleted."
 msgstr "Tietue poistettiin."
 
-#: src/secret/linux.rs:458 src/secret/linux.rs:478
+#: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 
-#: src/secret/linux.rs:461
+#: src/secret/linux.rs:497
 msgid "The collection or item is locked."
 msgstr "Kokoelma tai tietue on lukittu."
 
-#: src/secret/linux.rs:464
+#: src/secret/linux.rs:500
 msgid "The D-Bus Secret Service session does not exist."
 msgstr "D-Busin Secret Service -istuntoa ei ole olemassa."
 
-#: src/secret/linux.rs:467
+#: src/secret/linux.rs:503
 msgid "The collection or item does not exist."
 msgstr "Kokoelmaa tai tietuetta ei ole olemassa."
 
-#: src/secret/linux.rs:471
+#: src/secret/linux.rs:507
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
 
-#: src/secret/linux.rs:474
+#: src/secret/linux.rs:510
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
 msgstr ""
+"Ei pääsyä oletuskokoelmaan. Varmista, että avainnippu luotiin ja asetettiin "
+"oletukseksi."
 
-#: src/session/model/session.rs:827
+#: src/session/model/session.rs:952
 msgid "Could not log the session out"
 msgstr "Istuntoa ei voitu kirjata ulos"
 
-#: src/session/model/room/join_rule.rs:276
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:231
+msgid "{user} sent a verification request"
+msgstr "{user} lähetti vahvistuspyynnön"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/model/notifications/mod.rs:300
+msgid "Verify your new session “{name}”"
+msgstr "Vahvista uusi istunto “{name}”"
+
+#: src/session/model/room/join_rule.rs:281
 msgid "Only invited users, and users can knock"
 msgstr "Vain kutsutut käyttäjät, ja käyttäjät voivat koputtaa"
 
-#: src/session/model/room/join_rule.rs:278
+#: src/session/model/room/join_rule.rs:283
 msgid "Only invited users"
 msgstr "Vain kutsutut käyttäjät"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:292
+#: src/session/model/room/join_rule.rs:297
 msgid "Members of {room}, and users can knock"
 msgstr "Huoneen {room} jäsenet, ja käyttäjät voivat koputtaa"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/model/room/join_rule.rs:299
+#: src/session/model/room/join_rule.rs:304
 msgid "Members of {room}"
 msgstr "Huoneen {room} jäsenet"
 
-#: src/session/model/room/join_rule.rs:304
+#: src/session/model/room/join_rule.rs:309
 msgid "Any registered user"
 msgstr "Kuka tahansa rekisteröitynyt käyttäjä"
 
-#: src/session/model/room/join_rule.rs:305
-#: src/session/view/content/room_details/general_page/mod.rs:1203
+#: src/session/model/room/join_rule.rs:310
+#: src/session/view/content/room_details/general_page.rs:926
 msgid "Unsupported rule"
 msgstr "Sääntö ei ole tuettu"
 
-#: src/session/model/room/mod.rs:1177
+#: src/session/model/room/mod.rs:1338
 msgid "Empty Room (was {user})"
 msgstr "Tyhjä huone (oli {user})"
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1180
+#: src/session/model/room/mod.rs:1341
 msgid "Empty Room"
 msgstr "Tyhjä huone"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1190
+#: src/session/model/room/mod.rs:1351
 msgid "Unknown"
 msgstr "Tuntematon"
 
-#. Translators: As in 'Default power level'.
+#. Translators: As in 'Default power level', meaning permissions.
 #: src/session/model/room/permissions.rs:71
 msgid "Default"
 msgstr "Oletus"
@@ -1678,7 +1951,7 @@ msgstr "Vaimennettu"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:556
+#: src/session/view/content/room_history/mod.rs:614
 msgid "Could not join room {room_name}. Try again later."
 msgstr ""
 "Huoneeseen {room_name} liittyminen ei onnistunut. Yritä myöhemmin uudelleen."
@@ -1688,7 +1961,7 @@ msgid "Verifications"
 msgstr "Vahvistukset"
 
 #: src/session/model/sidebar_data/category/category_type.rs:30
-#: src/session/view/content/room_details/invite_subpage/list.rs:266
+#: src/session/view/content/room_details/invite_subpage/list.rs:270
 msgid "Invited"
 msgstr "Kutsuttu"
 
@@ -1716,39 +1989,39 @@ msgstr "Tutki"
 msgid "Forget Room"
 msgstr "Unohda huone"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:147
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:154
 msgid "Password must be at least 8 characters long"
 msgstr "Salasanan tulee olla vähintään 8 merkkiä pitkä"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:150
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:157
 msgid "Password must have at least one lower-case letter"
 msgstr "Salasanan tulee sisältää vähintään yksi pieni kirjain"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:154
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:161
 msgid "Password must have at least one upper-case letter"
 msgstr "Salasanan tulee sisältää vähintään yksi iso kirjain"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:157
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:164
 msgid "Password must have at least one digit"
 msgstr "Salasanan tulee sisältää vähintään yksi numero"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:159
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:166
 msgid "Password must have at least one symbol"
 msgstr "Salasanassa tulee olla vähintään yksi merkki"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:189
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:196
 msgid "Passwords do not match"
 msgstr "Salasanat eivät täsmää"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:239
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:246
 msgid "Password changed successfully"
 msgstr "Salasana vaihdettu onnistuneesti"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:251
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:258
 msgid "Password rejected for being too weak"
 msgstr "Salasana hylättiin, koska se on liian heikko"
 
-#: src/session/view/account_settings/general_page/change_password_subpage.rs:255
+#: src/session/view/account_settings/general_page/change_password_subpage.rs:262
 msgid "Could not change password"
 msgstr "Salasanaa ei voitu vaihtaa"
 
@@ -1770,26 +2043,28 @@ msgid "Confirm New Password"
 msgstr "Vahvista uusi salasana"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:70
-#: src/session/view/content/room_history/verification_info_bar.rs:169
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:73
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:77
+#: src/session/view/content/room_history/verification_info_bar.rs:176
 msgid "Continue"
 msgstr "Jatka"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:139
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:149
 msgid "Account successfully deactivated"
 msgstr "Tili deaktivoitu onnistuneesti"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:148
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.rs:158
 msgid "Could not deactivate account"
 msgstr "Tiliä ei voitu deaktivoida"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:117
+#. Translators: Deactivation is a permanent action that occurs on the server.
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
+#: src/session/view/account_settings/general_page/mod.ui:118
 msgid "Deactivate Account"
 msgstr "Deaktivoi tili"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:41
+#. Translators: Deactivation is a permanent action that occurs on the server.
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:43
 msgid ""
 "Deactivating your account means you will lose access to all your messages, "
 "contacts, files, and more, forever."
@@ -1797,95 +2072,121 @@ msgstr ""
 "Tilin deaktivointi tarkoittaa, että menetät kaikki viestit, yhteystiedot, "
 "tiedostot ja muut tiedot lopullisesti."
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:49
+#. Translators: Deactivation is a permanent action that occurs on the server.
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:52
 msgid ""
 "To confirm that you really want to deactivate this account, type in your "
 "Matrix user ID:"
 msgstr "Vahvista tilin deaktivointi antamalla Matrix-käyttäjätunnisteesi:"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:79
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:86
 msgid ""
 "The crypto identity and account recovery are not set up properly. If this is "
 "your last connected session and you have no recent local backup of your "
 "encryption keys, you will not be able to restore your account."
 msgstr ""
 
-#: src/session/view/account_settings/general_page/log_out_subpage.rs:87
+#: src/session/view/account_settings/general_page/log_out_subpage.rs:94
 msgid ""
 "This is your last connected session. Make sure that you can still access "
 "your recovery key or passphrase, or to backup your encryption keys before "
 "logging out."
 msgstr ""
+"Tämä on viimeinen yhdistettynä oleva istunto. Varmista, että sinulla on "
+"käytettävissä palautusavain tai palautukseen tarvittava tunnuslause, tai "
+"varmuuskopioi salausavaimet ennen uloskirjautumista."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
+#: src/session/view/account_settings/general_page/mod.ui:102
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
+msgid "Log Out"
+msgstr "Kirjaudu ulos"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:14
 msgid "Log Out of This Session"
 msgstr "Kirjaudu ulos tästä istunnosta"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:35
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:42
 msgid "Are you sure you want to log out of this session?"
 msgstr "Haluatko varmasti kirjautua ulos tästä istunnosta?"
 
-#: src/session/view/account_settings/general_page/log_out_subpage.ui:58
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:65
 msgid "Review Account Security"
 msgstr "Katselmoi tilin tietoturva"
 
-#: src/session/view/account_settings/general_page/mod.rs:194
-#: src/session/view/content/room_details/general_page/mod.rs:429
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:94
+msgid "Logout Failed"
+msgstr "Uloskirjautuminen epäonnistui"
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:113
+msgid ""
+"Logging out of this session failed. You can try again, or, if this is a "
+"permanent error, you can remove the session."
+msgstr ""
+"Tästä istunnosta uloskirjautuminen epäonnistui. Voit yrittää uudelleen, tai "
+"jos tämä on pysyvä virhe, voit poistaa istunnon."
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:131
+msgid ""
+"Removing the session deletes the associated data from the system, but your "
+"homeserver and other sessions will not be aware that this session was logged "
+"out."
+msgstr ""
+
+#: src/session/view/account_settings/general_page/log_out_subpage.ui:143
+msgid "Remove Session"
+msgstr "Poista istunto"
+
+#: src/session/view/account_settings/general_page/mod.rs:208
+#: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "Avatar poistettu onnistuneesti"
 
-#: src/session/view/account_settings/general_page/mod.rs:196
-#: src/session/view/content/room_details/general_page/mod.rs:431
+#: src/session/view/account_settings/general_page/mod.rs:210
+#: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "Avatar vaihdettu onnistuneesti"
 
-#: src/session/view/account_settings/general_page/mod.rs:215
-#: src/session/view/content/room_details/general_page/mod.rs:454
+#: src/session/view/account_settings/general_page/mod.rs:229
+#: src/session/view/content/room_details/edit_details_subpage.rs:180
 msgid "Could not load file"
 msgstr "Tiedostoa ei voitu ladata"
 
-#: src/session/view/account_settings/general_page/mod.rs:230
-#: src/session/view/content/room_details/general_page/mod.rs:478
+#: src/session/view/account_settings/general_page/mod.rs:244
+#: src/session/view/content/room_details/edit_details_subpage.rs:204
 msgid "Could not upload avatar"
 msgstr "Avatarkuvaa ei voitu lähettää"
 
-#: src/session/view/account_settings/general_page/mod.rs:259
-#: src/session/view/content/room_details/general_page/mod.rs:499
+#: src/session/view/account_settings/general_page/mod.rs:273
+#: src/session/view/content/room_details/edit_details_subpage.rs:227
 msgid "Could not change avatar"
 msgstr "Avatarkuvaa ei voitu vaihtaa"
 
-#: src/session/view/account_settings/general_page/mod.rs:276
-#: src/session/view/content/room_details/general_page/mod.rs:519
+#: src/session/view/account_settings/general_page/mod.rs:290
+#: src/session/view/content/room_details/edit_details_subpage.rs:252
 #, fuzzy
 #| msgid "Choose Avatar"
 msgid "Remove Avatar?"
 msgstr "Valitse avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:277
+#: src/session/view/account_settings/general_page/mod.rs:291
 #, fuzzy
 #| msgid "Are you sure you want to delete your account?"
 msgid "Do you really want to remove your avatar?"
 msgstr "Haluatko varmasti poistaa tilisi?"
 
-#: src/session/view/account_settings/general_page/mod.rs:281
-#: src/session/view/content/room_details/general_page/mod.rs:526
-#: src/session/view/content/room_history/item_row.rs:775
-#: src/utils/message_dialog.rs:181
-msgid "Remove"
-msgstr "Poista"
-
-#: src/session/view/account_settings/general_page/mod.rs:315
-#: src/session/view/content/room_details/general_page/mod.rs:552
+#: src/session/view/account_settings/general_page/mod.rs:329
+#: src/session/view/content/room_details/edit_details_subpage.rs:284
 #, fuzzy
 #| msgid "Could not save the file"
 msgid "Could not remove avatar"
 msgstr "Tiedostoa ei voitu tallentaa"
 
-#: src/session/view/account_settings/general_page/mod.rs:367
+#: src/session/view/account_settings/general_page/mod.rs:381
 msgid "Name changed successfully"
 msgstr "Nimi vaihdettu onnistuneesti"
 
-#: src/session/view/account_settings/general_page/mod.rs:418
+#: src/session/view/account_settings/general_page/mod.rs:432
 msgid "Could not change display name"
 msgstr "Näyttönimeä ei voitu vaihtaa"
 
@@ -1900,12 +2201,14 @@ msgid "Account Avatar"
 msgstr "Tilin asetukset"
 
 #: src/session/view/account_settings/general_page/mod.ui:32
-#: src/session/view/room_creation.ui:53
+#: src/session/view/content/room_details/edit_details_subpage.ui:58
+#: src/session/view/content/room_details/edit_details_subpage.ui:68
+#: src/session/view/room_creation.ui:47 src/session/view/room_creation.ui:50
 msgid "Name"
 msgstr "Nimi"
 
 #: src/session/view/account_settings/general_page/mod.ui:68
-#: src/session/view/content/room_details/general_page/mod.ui:280
+#: src/session/view/content/room_details/general_page.ui:238
 msgid "Advanced Information"
 msgstr "Lisätiedot"
 
@@ -1914,8 +2217,8 @@ msgid "Matrix User ID"
 msgstr "Matrix-käyttäjätunniste"
 
 #: src/session/view/account_settings/general_page/mod.ui:81
-msgid "Copy Homeserver Address to Clipboard"
-msgstr "Kopioi kotipalvelimen osoite leikepöydälle"
+msgid "Copy Homeserver Address"
+msgstr "Kopioi kotipalvelimen osoite"
 
 #: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver address copied to clipboard"
@@ -1926,50 +2229,45 @@ msgid "Session ID"
 msgstr "Istunnon ID-tunniste"
 
 #: src/session/view/account_settings/general_page/mod.ui:89
-msgid "Copy Session ID to Clipboard"
-msgstr "Kopioi istuntotunniste leikepöydälle"
+msgid "Copy Session ID"
+msgstr "Kopioi istuntotunniste"
 
 #: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
 msgstr "Istuntotunniste kopioitu leikepöydälle"
 
-#: src/session/view/account_settings/general_page/mod.ui:102
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:108
-msgid "Log Out"
-msgstr "Kirjaudu ulos"
-
-#: src/session/view/account_settings/notifications_page.rs:287
+#: src/session/view/account_settings/notifications_page.rs:315
 msgid "Could not enable account notifications"
 msgstr "Tili-ilmoitusten ottaminen käyttöön ei onnistunut"
 
-#: src/session/view/account_settings/notifications_page.rs:289
+#: src/session/view/account_settings/notifications_page.rs:317
 msgid "Could not disable account notifications"
 msgstr "Tili-ilmoitusten poistaminen käytöstä ei onnistunut"
 
-#: src/session/view/account_settings/notifications_page.rs:341
+#: src/session/view/account_settings/notifications_page.rs:369
 #, fuzzy
 #| msgid "Could not enable account notifications"
 msgid "Could not change global notifications setting"
 msgstr "Tili-ilmoitusten ottaminen käyttöön ei onnistunut"
 
-#: src/session/view/account_settings/notifications_page.rs:358
+#: src/session/view/account_settings/notifications_page.rs:386
 msgid "Remove “{keyword}”"
 msgstr "Poista “{keyword}”"
 
-#: src/session/view/account_settings/notifications_page.rs:385
+#: src/session/view/account_settings/notifications_page.rs:420
 #, fuzzy
 #| msgid "Could not enable account notifications"
 msgid "Could not remove notification keyword"
 msgstr "Tili-ilmoitusten ottaminen käyttöön ei onnistunut"
 
-#: src/session/view/account_settings/notifications_page.rs:456
+#: src/session/view/account_settings/notifications_page.rs:491
 #, fuzzy
 #| msgid "Could not enable account notifications"
 msgid "Could not add notification keyword"
 msgstr "Tili-ilmoitusten ottaminen käyttöön ei onnistunut"
 
 #: src/session/view/account_settings/notifications_page.ui:5
-#: src/session/view/content/room_details/general_page/mod.ui:165
+#: src/session/view/content/room_details/general_page.ui:113
 msgid "Notifications"
 msgstr "Ilmoitukset"
 
@@ -2060,12 +2358,17 @@ msgid ""
 "to decrypt your messages in end-to-end encrypted rooms on another device or "
 "with another Matrix client."
 msgstr ""
+"Huoneesi salausavainten vienti mahdollistaa varmuuskopion tekemisen, ja "
+"siten salattujen huoneiden viestien salauksen purkamisen toisella laitteella "
+"tai toisessa Matrix-asiakasohjelmistossa."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:174
 msgid ""
 "The backup must be stored in a safe place and must be protected with a "
 "strong passphrase that will be used to encrypt the data."
 msgstr ""
+"Varmuuskopio tulee tallettaa turvalliseen sijaintiin ja suojata vahvalla "
+"tunnuslauseella, jota käytetään datan salaukseen."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:177
 msgid "Export Keys"
@@ -2083,10 +2386,13 @@ msgid ""
 "Importing your room encryption keys allows you to decrypt your messages in "
 "end-to-end encrypted rooms with a previous backup from a Matrix client."
 msgstr ""
+"Huoneesi salausavainten tuonti mahdollistaa salattujen huoneiden viestien "
+"salauksen purkamisen aiemmin Matrix-asiakasohjelmistossa tehdystä "
+"varmuuskopiosta."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:186
 msgid "Enter the passphrase provided when the backup file was created."
-msgstr ""
+msgstr "Kirjoita varmuuskopiotiedostoa luotaessa määritetty tunnuslause."
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:189
 msgid "Import Keys"
@@ -2107,7 +2413,7 @@ msgid "Import Encryption Keys From…"
 msgstr "Tuo salausavaimet sijainnista…"
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:231
-#: src/utils/media.rs:218
+#: src/utils/matrix/media_message.rs:191
 #, fuzzy
 #| msgid "Couldn’t save file"
 msgid "Could not access file"
@@ -2158,76 +2464,78 @@ msgstr "Tiedosto"
 msgid "Choose…"
 msgstr "Valitse…"
 
-#: src/session/view/account_settings/security_page/mod.rs:209
+#: src/session/view/account_settings/security_page/mod.rs:222
 msgid "No Crypto Identity"
 msgstr "Ei salausidentiteettiä"
 
-#: src/session/view/account_settings/security_page/mod.rs:211
+#: src/session/view/account_settings/security_page/mod.rs:224
 msgid "Verifying your own devices or other users is not possible"
 msgstr ""
 
-#: src/session/view/account_settings/security_page/mod.rs:214
-#: src/session/view/account_settings/security_page/mod.rs:287
-#: src/session/view/content/room_details/general_page/mod.rs:1300
-#: src/session/view/sidebar/mod.rs:306 src/session/view/sidebar/mod.rs:312
+#: src/session/view/account_settings/security_page/mod.rs:227
+#: src/session/view/account_settings/security_page/mod.rs:300
+#: src/session/view/content/room_details/general_page.rs:1023
+#: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
 msgid "Enable"
 msgstr "Käytä"
 
-#: src/session/view/account_settings/security_page/mod.rs:217
+#: src/session/view/account_settings/security_page/mod.rs:230
 msgid "Enable Crypto Identity"
 msgstr "Ota salausidentiteetti käyttöön"
 
-#: src/session/view/account_settings/security_page/mod.rs:233
+#: src/session/view/account_settings/security_page/mod.rs:246
 msgid "Crypto Identity Enabled"
 msgstr "Salausidentiteetti käytössä"
 
-#: src/session/view/account_settings/security_page/mod.rs:235
+#: src/session/view/account_settings/security_page/mod.rs:248
 msgid "The crypto identity exists and this device is verified"
 msgstr "Salausidentiteetti on olemassa ja tämä laite on vahvistettu"
 
-#: src/session/view/account_settings/security_page/mod.rs:252
+#: src/session/view/account_settings/security_page/mod.rs:265
 msgid "Crypto Identity Incomplete"
 msgstr "Salausidentiteetti puutteellinen"
 
-#: src/session/view/account_settings/security_page/mod.rs:254
+#: src/session/view/account_settings/security_page/mod.rs:267
 msgid "The crypto identity exists but this device is not verified"
 msgstr "Salausidentiteetti on olemassa, mutta tätä laitetta ei ole vahvistettu"
 
-#: src/session/view/account_settings/security_page/mod.rs:260
+#: src/session/view/account_settings/security_page/mod.rs:273
 msgid "Verify This Session"
 msgstr "Vahvista tämä istunto"
 
-#: src/session/view/account_settings/security_page/mod.rs:282
+#: src/session/view/account_settings/security_page/mod.rs:295
 msgid "Account Recovery Disabled"
 msgstr "Tilin palautus ei käytössä"
 
-#: src/session/view/account_settings/security_page/mod.rs:284
+#: src/session/view/account_settings/security_page/mod.rs:297
 msgid ""
 "Enable recovery to be able to restore your account without another device"
 msgstr ""
 "Ota palautus käyttöön, jotta voit palauttaa tilisi ilman toista laitetta"
 
-#: src/session/view/account_settings/security_page/mod.rs:290
+#: src/session/view/account_settings/security_page/mod.rs:303
 msgid "Enable Account Recovery"
 msgstr "Ota tilin palautus käyttöön"
 
-#: src/session/view/account_settings/security_page/mod.rs:301
+#: src/session/view/account_settings/security_page/mod.rs:314
 msgid "Account Recovery Enabled"
 msgstr "Tilin palautus käytössä"
 
-#: src/session/view/account_settings/security_page/mod.rs:303
+#: src/session/view/account_settings/security_page/mod.rs:316
 msgid "Your signing keys and encryption keys are synchronized"
-msgstr "Allekirjoitusavaimesi ja salausavaimesi on synkronoitu"
+msgstr "Allekirjoitus- ja salausavaimesi on synkronoitu"
 
-#: src/session/view/account_settings/security_page/mod.rs:323
+#: src/session/view/account_settings/security_page/mod.rs:322
+msgid "Reset Account Recovery Key"
+msgstr "Nollaa tilin palautusavain"
+
+#: src/session/view/account_settings/security_page/mod.rs:336
 msgid "Recover to synchronize your signing keys and encryption keys"
-msgstr ""
+msgstr "Palauta synkronoidaksesi allekirjoitus- ja salausavaimet"
 
-#: src/session/view/account_settings/security_page/mod.rs:329
-#, fuzzy
-#| msgid "Account Settings"
+#: src/session/view/account_settings/security_page/mod.rs:342
 msgid "Recover Account Data"
-msgstr "Tilin asetukset"
+msgstr "Palauta tilin data"
 
 #: src/session/view/account_settings/security_page/mod.ui:9
 msgid "Privacy"
@@ -2308,25 +2616,25 @@ msgstr "Muut aktiiviset istunnot"
 msgid "Could not load the list of connected devices"
 msgstr "Yhdistettyjen laitteiden luettelon lataaminen epäonnistui"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:110
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:113
 msgid "Disconnect Session"
 msgstr "Katkaise istunnon yhteys"
 
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:163
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:166
 msgid "Could not disconnect device “{device_name}”"
 msgstr "Ei voitu katkaista laitteen “{device_name}” yhteyttä"
 
 #. Translators: Time in 24h format, i.e. "23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:211
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:214
 msgid "Last seen at %H:%M"
 msgstr "Viimeksi nähty %H.%M"
 
 #. Translators: Time in 12h format, i.e. "11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:216
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:219
 #, fuzzy
 #| msgid "Last seen at %l:%M %p"
 msgid "Last seen at %I:%M %p"
@@ -2335,8 +2643,8 @@ msgstr "Viimeksi nähty %l:%M %p"
 #. Translators: this a time in 24h format, i.e. "Last seen yesterday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:226
-#, fuzzy, no-c-format
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:229
+#, no-c-format
 #| msgid "Last seen Yesterday at %H:%M"
 msgid "Last seen yesterday at %H:%M"
 msgstr "Viimeksi nähty eilen %H.%M"
@@ -2345,7 +2653,7 @@ msgstr "Viimeksi nähty eilen %H.%M"
 #. PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:233
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:236
 #, fuzzy, no-c-format
 #| msgid "Last seen Yesterday at %H:%M"
 msgid "Last seen yesterday at %I:%M %p"
@@ -2355,7 +2663,7 @@ msgstr "Viimeksi nähty eilen %H.%M"
 #. format, i.e. "Last seen Monday at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:244
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:247
 #, no-c-format
 msgid "Last seen %A at %H:%M"
 msgstr "Viimeksi nähty %A klo %H.%M"
@@ -2364,7 +2672,7 @@ msgstr "Viimeksi nähty %A klo %H.%M"
 #. "Last seen Monday at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:251
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:254
 #, fuzzy, no-c-format
 #| msgid "Last seen %A at %H:%M"
 msgid "Last seen %A at %I:%M %p"
@@ -2374,7 +2682,7 @@ msgstr "Viimeksi nähty %A klo %H.%M"
 #. seen February 3 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:260
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:263
 #, no-c-format
 msgid "Last seen %B %-e at %H:%M"
 msgstr "Viimeksi nähty %-e. %Bta klo %H.%M"
@@ -2383,7 +2691,7 @@ msgstr "Viimeksi nähty %-e. %Bta klo %H.%M"
 #. seen February 3 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:267
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:270
 #, fuzzy, no-c-format
 #| msgid "Last seen %B %-e at %H:%M"
 msgid "Last seen %B %-e at %I:%M %p"
@@ -2393,7 +2701,7 @@ msgstr "Viimeksi nähty %-e. %Bta klo %H.%M"
 #. seen February 3 2015 at 23:04".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:275
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:278
 #, no-c-format
 msgid "Last seen %B %-e %Y at %H:%M"
 msgstr "Viimeksi nähty %-e. %Bta %Y klo %H.%M"
@@ -2402,7 +2710,7 @@ msgstr "Viimeksi nähty %-e. %Bta %Y klo %H.%M"
 #. seen February 3 2015 at 11:04 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:282
+#: src/session/view/account_settings/user_sessions_page/user_session_row.rs:285
 #, fuzzy, no-c-format
 #| msgid "Last seen %B %-e %Y at %H:%M"
 msgid "Last seen %B %-e %Y at %I:%M %p"
@@ -2414,10 +2722,8 @@ msgid "Verified"
 msgstr "Vahvistettu"
 
 #: src/session/view/content/explore/mod.ui:20
-#, fuzzy
-#| msgid "Room Search"
 msgid "Public Rooms Search"
-msgstr "Huonehaku"
+msgstr "Julkisten huoneiden haku"
 
 #: src/session/view/content/explore/mod.ui:21
 msgid "Search for a room in the public directory of the selected server"
@@ -2439,11 +2745,11 @@ msgstr "Hakua vastaavia huoneita ei löytynyt"
 msgid "List of Public Rooms"
 msgstr "Luettelo julkisista huoneista"
 
-#: src/session/view/content/explore/public_room_row.rs:176
+#: src/session/view/content/explore/public_room_row.rs:207
 msgid "View {room_name}"
 msgstr "Katsele huonetta {room_name}"
 
-#: src/session/view/content/explore/public_room_row.rs:178
+#: src/session/view/content/explore/public_room_row.rs:209
 msgid "Join {room_name}"
 msgstr "Liity huoneeseen {room_name}"
 
@@ -2461,21 +2767,20 @@ msgstr "Lisää palvelin"
 msgid "Remove Server"
 msgstr "Poista palvelin"
 
-#. Translators: Do NOT translate the content between '{' and '}', this is a
-#. variable name.
-#: src/session/view/content/invite.rs:83 src/utils/matrix.rs:248
-msgid "{user} invited you"
-msgstr "{user} kutsui sinut"
+#: src/session/view/content/invite.rs:187
+#| msgid "{user} invited you"
+msgid "{user_name} ({user_id}) invited you"
+msgstr "{user_name} ({user_id}) kutsui sinut"
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:209
+#: src/session/view/content/invite.rs:249
 msgid "Could not accept invitation for {room}. Try again later."
 msgstr "Ei voitu hyväksyä kutsua huoneeseen {room}. Yritä myöhemmin uudelleen."
 
 #. Translators: Do NOT translate the content between '{' and '}', this
 #. is a variable name.
-#: src/session/view/content/invite.rs:242
+#: src/session/view/content/invite.rs:289
 #, fuzzy
 #| msgid "Failed to accept invitation for {room}. Try again later."
 msgid "Could not decline invitation for {room}. Try again later."
@@ -2489,11 +2794,11 @@ msgstr ""
 msgid "Invite"
 msgstr "Kutsu"
 
-#: src/session/view/content/invite.ui:100
+#: src/session/view/content/invite.ui:125
 msgid "_Decline"
 msgstr "_Kieltäydy"
 
-#: src/session/view/content/invite.ui:110 src/session/view/sidebar/mod.ui:32
+#: src/session/view/content/invite.ui:135 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
 msgstr "Hy_väksy"
 
@@ -2506,13 +2811,11 @@ msgid "No Room Selected"
 msgstr "Ei huonetta valittuna"
 
 #: src/session/view/content/mod.ui:29
-#, fuzzy
-#| msgid "Join a room to start chatting."
 msgid "Join a room to start chatting"
-msgstr "Liity huoneeseen aloittaaksesi keskustelun."
+msgstr "Liity huoneeseen aloittaaksesi keskustelun"
 
 #: src/session/view/content/mod.ui:39
-#: src/session/view/content/room_history/mod.ui:231
+#: src/session/view/content/room_history/mod.ui:219
 msgid "Room History"
 msgstr "Huonehistoria"
 
@@ -2530,71 +2833,69 @@ msgstr "Osoitteen automaattinen täydentäminen"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:303
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:328
 msgid "Local Addresses on {homeserver}"
 msgstr "Paikalliset osoitteet palvelimella {homeserver}"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:377
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:402
 msgid "Remove address"
 msgstr "Poista osoite"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:381
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:406
 msgid "Remove “{address}”"
 msgstr "Poista “{address}”"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:408
-#: src/session/view/content/room_details/general_page/mod.rs:913
-#: src/session/view/room_creation.ui:116
-#, fuzzy
-#| msgid "Room Address"
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:447
+#: src/session/view/content/room_details/general_page.rs:624
+#: src/session/view/room_creation.ui:132
 msgid "Main Address"
-msgstr "Huoneen osoite"
+msgstr "Pääosoite"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:432
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:471
 msgid "Set as main address"
 msgstr "Aseta pääosoitteeksi"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:438
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:477
 msgid "Set “{address}” as main address"
 msgstr "Aseta “{address}” pääosoitteeksi"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:476
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:521
 msgid "Could not remove public address"
 msgstr "Julkista osoitetta ei voitu poistaa"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:502
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:547
 #, fuzzy
 #| msgid "Couldn’t add the email address."
 msgid "Could not set main public address"
 msgstr "Sähköpostiosoitetta ei voitu lisätä."
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:556
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:601
 msgid "Could not add public address"
 msgstr "Julkista osoitetta ei voitu lisätä"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:560
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:605
 msgid "This address is not registered as a local address"
 msgstr "Tätä osoitetta ei ole rekisteröity paikalliseksi osoitteeksi"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:563
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:608
 msgid "This address does not belong to this room"
 msgstr "Osoite ei kuulu tälle huoneelle"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:617
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:662
 msgid "Unregister local address"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:621
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:666
 msgid "Unregister “{address}”"
 msgstr ""
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:652
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:705
 #, fuzzy
 #| msgid "Couldn’t add the email address."
 msgid "Could not unregister local address"
@@ -2602,15 +2903,15 @@ msgstr "Sähköpostiosoitetta ei voitu lisätä."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:685
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:738
 msgid "Register “{address}”"
 msgstr "Rekisteröi “{address}”"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:723
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:776
 msgid "Could not register local address"
 msgstr "Paikallista osoitetta ei voitu rekisteröidä"
 
-#: src/session/view/content/room_details/addresses_subpage/mod.rs:727
+#: src/session/view/content/room_details/addresses_subpage/mod.rs:780
 msgid "This address is already registered"
 msgstr "Tämä osoite on jo rekisteröity"
 
@@ -2619,7 +2920,7 @@ msgid "Edit Room Addresses"
 msgstr "Muokkaa huoneen osoitteita"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:14
-#: src/session/view/content/room_details/general_page/mod.ui:199
+#: src/session/view/content/room_details/general_page.ui:147
 msgid "Public Addresses"
 msgstr "Julkiset osoitteet"
 
@@ -2648,65 +2949,109 @@ msgstr "Rekisteröi paikallinen osoite"
 
 #. Translators: This is the placeholder for the first part of a room address, as in '@my-room:example.org'.
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:89
-#: src/session/view/room_creation.ui:118
+#: src/session/view/room_creation.ui:134
 msgid "my-room"
 msgstr "oma-huone"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:90
-#: src/session/view/room_creation.ui:119
+#: src/session/view/room_creation.ui:135
 msgid "First part of the address, for example “my-room”"
 msgstr "Ensimmäinen osa osoitetta, esimerkiksi \"oma-huone\""
 
-#: src/session/view/content/room_details/general_page/mod.rs:521
+#: src/session/view/content/room_details/edit_details_subpage.rs:254
 msgid "Do you really want to remove the avatar for this room?"
 msgstr "Haluatko varmasti poistaa tämän huoneen avatarin?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:630
+#: src/session/view/content/room_details/edit_details_subpage.rs:318
 msgid "Room name saved successfully"
 msgstr "Huoneen nimi tallennettiin"
 
-#: src/session/view/content/room_details/general_page/mod.rs:655
-msgid "Room topic saved successfully"
-msgstr "Huoneen nimi tallennettiin"
-
-#: src/session/view/content/room_details/general_page/mod.rs:727
+#: src/session/view/content/room_details/edit_details_subpage.rs:390
 msgid "Could not change room name"
 msgstr "Huoneen nimeä ei voitu muuttaa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:751
-msgid "Could not change room topic"
-msgstr "Huoneen aihetta ei voitu vaihtaa"
+#: src/session/view/content/room_details/edit_details_subpage.rs:429
+msgid "Room description saved successfully"
+msgstr "Huoneen kuvaus tallennettu"
 
-#: src/session/view/content/room_details/general_page/mod.rs:764
-#: src/session/view/content/room_details/invite_subpage/list.rs:264
+#: src/session/view/content/room_details/edit_details_subpage.rs:506
+msgid "Could not change room description"
+msgstr "Huoneen kuvausta ei voitu vaihtaa"
+
+#: src/session/view/content/room_details/edit_details_subpage.rs:526
+msgid "Discard Unsaved Changes?"
+msgstr "Hylätäänkö tallentamattomat muutokset?"
+
+#: src/session/view/content/room_details/edit_details_subpage.rs:528
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:586
+msgid ""
+"This page contains unsaved changes. Changes which are not saved will be lost."
+msgstr ""
+"Tämä sivu sisältää tallentamattomia muutoksia. Tallentamattomat muutokset "
+"katoavat pysyvästi."
+
+#: src/session/view/content/room_details/edit_details_subpage.rs:538
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:596
+msgid "Discard"
+msgstr "Hylkää"
+
+#: src/session/view/content/room_details/edit_details_subpage.ui:4
+msgid "Edit Room Details"
+msgstr "Muokkaa huoneen tietoja"
+
+#: src/session/view/content/room_details/edit_details_subpage.ui:29
+msgid "Room Avatar"
+msgstr "Huoneen avatar"
+
+#: src/session/view/content/room_details/edit_details_subpage.ui:92
+msgid "Description"
+msgstr "Kuvaus"
+
+#: src/session/view/content/room_details/edit_details_subpage.ui:140
+#: src/session/view/content/room_details/history_viewer/file_row.rs:156
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
+#: src/utils/matrix/media_message.rs:166
+msgid "Save"
+msgstr "Tallenna"
+
+#: src/session/view/content/room_details/edit_details_subpage.ui:143
+msgid "Save Description"
+msgstr "Tallenna kuvaus"
+
+#: src/session/view/content/room_details/general_page.rs:502
+#: src/session/view/content/room_details/invite_subpage/list.rs:268
 msgid "Member"
 msgid_plural "Members"
 msgstr[0] "Jäsen"
 msgstr[1] "Jäsenet"
 
-#: src/session/view/content/room_details/general_page/mod.rs:867
+#: src/session/view/content/room_details/general_page.rs:578
 #, fuzzy
 #| msgid "Could not enable account notifications"
 msgid "Could not change notifications setting"
 msgstr "Tili-ilmoitusten ottaminen käyttöön ei onnistunut"
 
-#: src/session/view/content/room_details/general_page/mod.rs:908
-#: src/session/view/content/room_details/general_page/mod.rs:947
+#: src/session/view/content/room_details/general_page.rs:619
+#: src/session/view/content/room_details/general_page.rs:658
 msgid "Copy address"
 msgstr "Kopioi osoite"
 
-#: src/session/view/content/room_details/general_page/mod.rs:909
-#: src/session/view/content/room_details/general_page/mod.rs:948
+#: src/session/view/content/room_details/general_page.rs:620
+#: src/session/view/content/room_details/general_page.rs:659
 msgid "Address copied to clipboard"
 msgstr "Osoite kopioitu leikepöydälle"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1031
+#: src/session/view/content/room_details/general_page.rs:701
+msgid "Room link copied to clipboard"
+msgstr "Huoneen linkki kopioitu leikepöydälle"
+
+#: src/session/view/content/room_details/general_page.rs:754
 #, fuzzy
 #| msgid "Could not change room topic"
 msgid "Could not change who can join"
 msgstr "Huoneen aihetta ei voitu vaihtaa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1079
+#: src/session/view/content/room_details/general_page.rs:802
 #, fuzzy
 #| msgid "Could not change password"
 msgid "Could not change guest access"
@@ -2714,224 +3059,218 @@ msgstr "Salasanaa ei voitu vaihtaa"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/general_page/mod.rs:1096
+#: src/session/view/content/room_details/general_page.rs:819
 msgid "Publish in the {homeserver} directory"
 msgstr "Julkaise palvelimen {homeserver} huonehakemistossa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1173
+#: src/session/view/content/room_details/general_page.rs:896
 #, fuzzy
 #| msgid "Publish in room directory"
 msgid "Could not publish room in directory"
 msgstr "Julkaise huonehakemistossa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1175
+#: src/session/view/content/room_details/general_page.rs:898
 #, fuzzy
 #| msgid "Publish in room directory"
 msgid "Could not unpublish room from directory"
 msgstr "Julkaise huonehakemistossa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1196
-#: src/session/view/content/room_details/general_page/mod.ui:266
+#: src/session/view/content/room_details/general_page.rs:919
+#: src/session/view/content/room_details/general_page.ui:224
 msgid "Anyone, even if they are not in the room"
 msgstr "Kuka tahansa, vaikka ei olisi mukana huoneessa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1199
-#: src/session/view/content/room_details/general_page/mod.ui:267
+#: src/session/view/content/room_details/general_page.rs:922
+#: src/session/view/content/room_details/general_page.ui:225
 msgid "Members only, since this option was selected"
 msgstr "Vain jäsenet, siitä lähtien kun tämä valinta valittiin"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1201
-#: src/session/view/content/room_details/general_page/mod.ui:269
+#: src/session/view/content/room_details/general_page.rs:924
+#: src/session/view/content/room_details/general_page.ui:227
 msgid "Members only, since they were invited"
 msgstr "Vain jäsenet, siitä lähtien kun heidät kutsuttiin"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1202
-#: src/session/view/content/room_details/general_page/mod.ui:268
+#: src/session/view/content/room_details/general_page.rs:925
+#: src/session/view/content/room_details/general_page.ui:226
 msgid "Members only, since they joined the room"
 msgstr "Vain jäsenet, siitä lähtien kun he liittyivät huoneeseen"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1250
+#: src/session/view/content/room_details/general_page.rs:973
 #, fuzzy
 #| msgid "Could not change avatar"
 msgid "Could not change who can read history"
 msgstr "Avatarkuvaa ei voitu vaihtaa"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1294
+#: src/session/view/content/room_details/general_page.rs:1017
 msgid "Enable Encryption?"
 msgstr "Otetaanko salaus käyttöön?"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1295
+#: src/session/view/content/room_details/general_page.rs:1018
 msgid ""
 "Enabling encryption will prevent new members to read the history before they "
 "arrived. This cannot be disabled later."
 msgstr ""
+"Salauksen käyttöönottaminen estää uusia jäseniä lukemasta historiaa ennen "
+"heidän liittymisajankohtaa. Tätä asetusta ei voi poistaa käytöstä myöhemmin."
 
-#: src/session/view/content/room_details/general_page/mod.rs:1310
+#: src/session/view/content/room_details/general_page.rs:1033
 msgid "Could not enable encryption"
 msgstr "Salausta ei voitu ottaa käyttöön"
 
 #. Translators: As in, 'Room federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:1336
+#: src/session/view/content/room_details/general_page.rs:1059
 msgid "Federated"
 msgstr "Federoitu"
 
 #. Translators: As in, 'Room not federated'.
-#: src/session/view/content/room_details/general_page/mod.rs:1339
+#: src/session/view/content/room_details/general_page.rs:1062
 msgid "Not federated"
 msgstr "Ei federoitu"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1369
+#: src/session/view/content/room_details/general_page.rs:1092
 msgid "Room upgraded successfully"
 msgstr "Huone päivitetty onnistuneesti"
 
-#: src/session/view/content/room_details/general_page/mod.rs:1373
+#: src/session/view/content/room_details/general_page.rs:1096
 msgid "Could not upgrade room"
 msgstr "Huonetta ei voitu päivittää"
 
-#: src/session/view/content/room_details/general_page/mod.ui:4
+#: src/session/view/content/room_details/general_page.ui:4
 #: src/session/view/content/room_details/mod.ui:4
 msgid "Room Details"
 msgstr "Huoneen tiedot"
 
-#: src/session/view/content/room_details/general_page/mod.ui:13
-msgid "Room Avatar"
-msgstr "Huoneen avatar"
-
-#: src/session/view/content/room_details/general_page/mod.ui:63
-msgid "Description"
-msgstr "Kuvaus"
-
-#: src/session/view/content/room_details/general_page/mod.ui:104
+#: src/session/view/content/room_details/general_page.ui:62
 msgid "Edit Details"
 msgstr "Muokkaa tietoja"
 
-#: src/session/view/content/room_details/general_page/mod.ui:115
-msgid "Save Details"
-msgstr "Tallenna tiedot"
-
-#: src/session/view/content/room_details/general_page/mod.ui:141
-#: src/session/view/content/room_details/history_viewer/media.ui:4
+#: src/session/view/content/room_details/general_page.ui:89
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:4
 msgid "Media"
 msgstr "Media"
 
-#: src/session/view/content/room_details/general_page/mod.ui:148
+#: src/session/view/content/room_details/general_page.ui:96
 msgid "Files"
 msgstr "Tiedostot"
 
 #. Translators: As in 'Audio file'.
-#: src/session/view/content/room_details/general_page/mod.ui:156
+#: src/session/view/content/room_details/general_page.ui:104
 #: src/session/view/content/room_details/history_viewer/audio.ui:5
 #: src/session/view/content/room_history/message_row/audio.rs:94
 msgid "Audio"
 msgstr "Ääni"
 
-#: src/session/view/content/room_details/general_page/mod.ui:166
+#: src/session/view/content/room_details/general_page.ui:114
 msgid "Which messages trigger notifications in this room"
 msgstr "Mitkä viestit aiheuttavat ilmoituksia tässä huoneessa"
 
-#: src/session/view/content/room_details/general_page/mod.ui:169
+#: src/session/view/content/room_details/general_page.ui:117
 msgid "Use Global Setting"
 msgstr "Käytä yleistä asetusta"
 
-#: src/session/view/content/room_details/general_page/mod.ui:176
+#: src/session/view/content/room_details/general_page.ui:124
 msgid "All Messages"
 msgstr "Kaikki viestit"
 
-#: src/session/view/content/room_details/general_page/mod.ui:183
+#: src/session/view/content/room_details/general_page.ui:131
 msgid "Only Mentions and Keywords"
 msgstr "Vain maininnat ja avainsanat"
 
-#: src/session/view/content/room_details/general_page/mod.ui:190
+#: src/session/view/content/room_details/general_page.ui:138
 msgid "Disable Notifications"
 msgstr "Poista ilmoitukset käytöstä"
 
 #. Translators: In this string, 'Edit' is a verb.
-#: src/session/view/content/room_details/general_page/mod.ui:203
+#: src/session/view/content/room_details/general_page.ui:151
 msgctxt "room details"
 msgid "Edit"
 msgstr "Muokkaa"
 
-#: src/session/view/content/room_details/general_page/mod.ui:207
+#: src/session/view/content/room_details/general_page.ui:155
 msgid "Edit Public Addresses"
 msgstr "Muokkaa julkisia osoitteita"
 
-#: src/session/view/content/room_details/general_page/mod.ui:216
+#: src/session/view/content/room_details/general_page.ui:164
 msgid "This room has no public addresses"
 msgstr "Tällä huoneella ei ole julkisia osoitteita"
 
-#: src/session/view/content/room_details/general_page/mod.ui:226
+#: src/session/view/content/room_details/general_page.ui:176
+msgid "Copy Room Link"
+msgstr "Kopioi huoneen linkki"
+
+#: src/session/view/content/room_details/general_page.ui:184
 msgid "Access and Visibility"
 msgstr "Pääsy ja näkyvyys"
 
-#: src/session/view/content/room_details/general_page/mod.ui:229
+#: src/session/view/content/room_details/general_page.ui:187
 msgid "Who Can Join"
 msgstr "Ketkä voivat liittyä"
 
-#: src/session/view/content/room_details/general_page/mod.ui:233
+#: src/session/view/content/room_details/general_page.ui:191
 msgid "Only Invited Users"
 msgstr "Vain kutsutut käyttäjät"
 
-#: src/session/view/content/room_details/general_page/mod.ui:234
+#: src/session/view/content/room_details/general_page.ui:192
 msgid "Any Registered User"
 msgstr "Kuka tahansa rekisteröitynyt käyttäjä"
 
-#: src/session/view/content/room_details/general_page/mod.ui:250
+#: src/session/view/content/room_details/general_page.ui:208
 msgid "Allow Guests"
 msgstr "Salli vieraat"
 
-#: src/session/view/content/room_details/general_page/mod.ui:251
+#: src/session/view/content/room_details/general_page.ui:209
 msgid "Guests are Matrix users without a registered account"
 msgstr "Vieraat ovat Matrix-käyttäjiä ilman rekisteröityä tiliä"
 
-#: src/session/view/content/room_details/general_page/mod.ui:262
+#: src/session/view/content/room_details/general_page.ui:220
 msgid "Who Can Read History"
 msgstr "Kuka voi lukea historiaa"
 
-#: src/session/view/content/room_details/general_page/mod.ui:283
+#: src/session/view/content/room_details/general_page.ui:241
 msgid "Matrix Room ID"
 msgstr "Matrix-huonetunniste"
 
-#: src/session/view/content/room_details/general_page/mod.ui:290
-msgid "Copy Matrix Room ID to Clipboard"
-msgstr "Kopioi Matrix-huonetunniste leikepöydälle"
+#: src/session/view/content/room_details/general_page.ui:248
+msgid "Copy Matrix Room ID"
+msgstr "Kopioi Matrix-huonetunniste"
 
-#: src/session/view/content/room_details/general_page/mod.ui:291
+#: src/session/view/content/room_details/general_page.ui:249
 msgid "Matrix room ID copied to clipboard"
 msgstr "Matrix-huonetunniste kopioitu leikepöydälle"
 
-#: src/session/view/content/room_details/general_page/mod.ui:296
+#: src/session/view/content/room_details/general_page.ui:254
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:158
 msgid "Enable Encryption"
 msgstr "Ota salaus käyttöön"
 
-#: src/session/view/content/room_details/general_page/mod.ui:307
+#: src/session/view/content/room_details/general_page.ui:265
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:9
 msgid "Permissions"
 msgstr "Oikeudet"
 
-#: src/session/view/content/room_details/general_page/mod.ui:315
+#: src/session/view/content/room_details/general_page.ui:273
 msgid "Room Version"
 msgstr "Huoneen versio"
 
 #. Translators: In this string, 'Upgrade' is a verb, as in 'Upgrade Room'.
-#: src/session/view/content/room_details/general_page/mod.ui:327
+#: src/session/view/content/room_details/general_page.ui:285
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:82
 msgid "Upgrade"
 msgstr "Päivitä"
 
-#: src/session/view/content/room_details/general_page/mod.ui:340
+#: src/session/view/content/room_details/general_page.ui:298
 msgid "Federation"
 msgstr "Federaatio"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this case, the file to play is an
 #. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:79
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:74
 msgid "Play {filename}"
 msgstr "Toista {filename}"
 
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:97
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:92
 msgid "Unknown duration"
 msgstr "Tuntematon kesto"
 
@@ -2940,37 +3279,97 @@ msgstr "Tuntematon kesto"
 msgid "Play"
 msgstr "Toista"
 
+#: src/session/view/content/room_details/history_viewer/audio.ui:33
+#: src/session/view/content/room_details/history_viewer/audio.ui:40
+msgid "No Audio"
+msgstr "Ei ääntä"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:41
+msgid "This room does not contain any audio"
+msgstr "Tämä huone ei sisällä ääntä"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:49
+#: src/session/view/content/room_details/history_viewer/audio.ui:56
+msgid "Could Not Load Audio"
+msgstr "Ääntä ei voitu ladata"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:57
+#: src/session/view/content/room_details/history_viewer/file.ui:56
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:63
+#: src/session/view/content/room_history/mod.ui:200
+msgid "Check your network connection"
+msgstr "Tarkista verkkoyhteyden tila"
+
+#: src/session/view/content/room_details/history_viewer/audio.ui:76
+msgid "Audio History"
+msgstr "Äänihistoria"
+
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_details/history_viewer/file_row.rs:79
+#: src/session/view/content/room_details/history_viewer/file_row.rs:73
 msgid "Save {filename}"
 msgstr "Tallenna {filename}"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:87
+#: src/session/view/content/room_details/history_viewer/file_row.rs:81
 msgid "Unknown size"
 msgstr "Tuntematon koko"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:118
+#: src/session/view/content/room_details/history_viewer/file_row.rs:97
+msgid "Open File"
+msgstr "Avaa tiedosto"
+
+#: src/session/view/content/room_details/history_viewer/file_row.rs:100
+#: src/session/view/content/room_details/history_viewer/file_row.rs:155
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/media.rs:191
+#: src/utils/matrix/media_message.rs:164
 msgid "Save File"
 msgstr "Tallenna tiedosto"
 
-#: src/session/view/content/room_details/history_viewer/file_row.rs:119
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:590
-#: src/utils/media.rs:193
-msgid "Save"
-msgstr "Tallenna"
+#: src/session/view/content/room_details/history_viewer/file.ui:32
+#: src/session/view/content/room_details/history_viewer/file.ui:39
+msgid "No Files"
+msgstr "Ei tiedostoja"
 
-#: src/session/view/content/room_details/invite_subpage/list.rs:265
+#: src/session/view/content/room_details/history_viewer/file.ui:40
+msgid "This room does not contain any files"
+msgstr "Tämä huone ei sisällä tiedostoja"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:48
+#: src/session/view/content/room_details/history_viewer/file.ui:55
+msgid "Could Not Load Files"
+msgstr "Tiedostoja ei voitu ladata"
+
+#: src/session/view/content/room_details/history_viewer/file.ui:75
+msgid "File History"
+msgstr "Tiedostohistoria"
+
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:39
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:46
+msgid "No Media"
+msgstr "Ei mediaa"
+
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:47
+msgid "This room does not contain any media"
+msgstr "Tämä huone ei sisällä mediaa"
+
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:55
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:62
+msgid "Could Not Load Media"
+msgstr "Mediaa ei voitu ladata"
+
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:82
+msgid "Media History"
+msgstr "Mediahistoria"
+
+#: src/session/view/content/room_details/invite_subpage/list.rs:269
 msgid "Banned"
 msgstr "Porttikiellossa"
 
 #. Translators: Do NOT translate the content between '{' and '}', these
 #. are variable names.
-#: src/session/view/content/room_details/invite_subpage/mod.rs:229
+#: src/session/view/content/room_details/invite_subpage/mod.rs:241
 msgid "Could not invite {user} to {room}. Try again later."
 msgid_plural "Could not invite {n} users to {room}. Try again later."
 msgstr[0] ""
@@ -3028,18 +3427,16 @@ msgstr "Virhe huoneita etsiessä"
 msgid "Searching for Users"
 msgstr "Etsitään käyttäjiä"
 
-#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:161
-#, fuzzy
-#| msgid "Could not save the file"
+#: src/session/view/content/room_details/members_page/members_list_view/extra_lists.rs:170
 msgid "Could not load the full list of room members"
-msgstr "Tiedostoa ei voitu tallentaa"
+msgstr "Ei voitu ladata huoneen kokonaista jäsenlistaa"
 
 #: src/session/view/content/room_details/members_page/members_list_view/member_row.ui:45
 msgid "Identity Verified"
 msgstr "Identiteetti vahvistettu"
 
 #. Translators: As in 'Invited Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:117
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
 #, fuzzy
 #| msgid "Invited"
 msgctxt "members"
@@ -3049,7 +3446,7 @@ msgstr[0] "Kutsuttu"
 msgstr[1] "Kutsuttu"
 
 #. Translators: As in 'Banned Room Member(s)'.
-#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:119
+#: src/session/view/content/room_details/members_page/members_list_view/membership_subpage_row.rs:121
 #, fuzzy
 #| msgid "Banned"
 msgctxt "members"
@@ -3058,7 +3455,7 @@ msgid_plural "Banned"
 msgstr[0] "Porttikiellossa"
 msgstr[1] "Porttikiellossa"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:214
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:220
 #, fuzzy
 #| msgid "Invited Room Members"
 msgid "Invited Room Member"
@@ -3066,7 +3463,7 @@ msgid_plural "Invited Room Members"
 msgstr[0] "Kutsutut huoneen jäsenet"
 msgstr[1] "Kutsutut huoneen jäsenet"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:215
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:221
 #, fuzzy
 #| msgid "Banned Room Members"
 msgid "Banned Room Member"
@@ -3074,7 +3471,7 @@ msgid_plural "Banned Room Members"
 msgstr[0] "Porttikieltoon asetetut huoneen jäsenet"
 msgstr[1] "Porttikieltoon asetetut huoneen jäsenet"
 
-#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:216
+#: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
 msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "Huoneen jäsen"
@@ -3096,9 +3493,9 @@ msgstr "Näytä/piilota huonehaku"
 msgid "Search for room members"
 msgstr "Etsi huoneen jäseniä"
 
-#: src/session/view/content/room_details/members_page/mod.rs:84
+#: src/session/view/content/room_details/members_page/mod.rs:90
 msgid "The user is not in the room members list anymore"
-msgstr ""
+msgstr "Käyttäjä ei ole enää huoneen jäsenluettelossa"
 
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:4
 msgid "Add Custom Permissions"
@@ -3108,6 +3505,7 @@ msgstr "Lisää mukautettuja oikeuksia"
 msgid "_Add"
 msgstr "_Lisää"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/add_members_subpage.ui:50
 msgid "Assign Power Level"
 msgstr "Aseta voimataso"
@@ -3125,6 +3523,7 @@ msgstr "Vastaavia jäseniä ei löytynyt"
 msgid "No room members matching the search were found"
 msgstr "Hakua vastaavia huonejäseniä ei löytynyt"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/members_subpage.ui:4
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:279
 msgid "Members With Assigned Power Levels"
@@ -3134,20 +3533,11 @@ msgstr "Jäsenet, joille määritetty voimatasoja"
 msgid "Add"
 msgstr "Lisää"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:577
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:584
 msgid "Save Changes?"
 msgstr "Tallennetaanko muutokset?"
 
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:579
-msgid ""
-"This page contains unsaved changes. Changes which are not saved will be lost."
-msgstr ""
-
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:589
-msgid "Discard"
-msgstr "Hylkää"
-
-#: src/session/view/content/room_details/permissions/permissions_subpage.rs:634
+#: src/session/view/content/room_details/permissions/permissions_subpage.rs:641
 msgid "Could not save permissions"
 msgstr "Oikeuksia ei voitu tallentaa"
 
@@ -3159,6 +3549,7 @@ msgstr "_Tallenna"
 msgid "Room Actions"
 msgstr "Huoneen toiminnot"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:45
 msgid "Power level required to perform different actions in the room"
 msgstr ""
@@ -3188,8 +3579,8 @@ msgid "Change Room Name"
 msgstr "Muuta huoneen nimi"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:114
-msgid "Change Room Topic"
-msgstr "Muuta huoneen aihe"
+msgid "Change Room Description"
+msgstr "Muuta huoneen kuvausta"
 
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:125
 msgid "Change Room Avatar"
@@ -3220,18 +3611,22 @@ msgstr "Päivitä huone"
 msgid "Member Actions"
 msgstr "Jäsentoiminnot"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:205
 msgid "Power level required to perform different actions on room members"
 msgstr ""
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:246
 msgid "Members Power Levels"
 msgstr "Jäsenten voimatasot"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:247
 msgid "Power levels defined for all members of the room"
 msgstr "Huoneen kaikille jäsenille määritetyt voimatasot"
 
+#. Translators: value used to assign room member roles
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:250
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:266
 msgid "Default Power Level"
@@ -3258,31 +3653,31 @@ msgstr "{version} (epävakaa)"
 
 #. Translators: In this string, 'Reply' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:12
-#: src/session/view/content/room_history/event_actions.ui:103
+#: src/session/view/content/room_history/event_actions.ui:98
 msgid "_Reply"
 msgstr "_Vastaa"
 
 #. Translators: In this string, 'Edit' is a verb.
 #: src/session/view/content/room_history/event_actions.ui:18
-#: src/session/view/content/room_history/event_actions.ui:109
+#: src/session/view/content/room_history/event_actions.ui:104
 msgid "_Edit"
 msgstr "_Muokkaa"
 
 #. Translators: In this string, 'Forward' is a verb, this is to
 #. re-send the same message in another room, like forwarding an e-mail.
 #: src/session/view/content/room_history/event_actions.ui:25
-#: src/session/view/content/room_history/event_actions.ui:116
+#: src/session/view/content/room_history/event_actions.ui:111
 msgid "_Forward"
 msgstr "_Välitä"
 
 #: src/session/view/content/room_history/event_actions.ui:32
-#: src/session/view/content/room_history/event_actions.ui:123
-#: src/session/view/content/room_history/event_actions.ui:193
+#: src/session/view/content/room_history/event_actions.ui:118
+#: src/session/view/content/room_history/event_actions.ui:183
 msgid "_Select"
 msgstr "_Valitse"
 
 #: src/session/view/content/room_history/event_actions.ui:39
-#: src/session/view/content/room_history/event_actions.ui:130
+#: src/session/view/content/room_history/event_actions.ui:125
 msgid "_Copy Text"
 msgstr "_Kopioi teksti"
 
@@ -3291,68 +3686,61 @@ msgid "Copy T_humbnail"
 msgstr "_Kopioi pikkukuva"
 
 #: src/session/view/content/room_history/event_actions.ui:49
-#: src/session/view/content/room_history/event_actions.ui:140
+#: src/session/view/content/room_history/event_actions.ui:135
 #: src/session/view/media_viewer.ui:11
 msgid "S_ave Image"
 msgstr "Tallenna _kuva"
 
 #: src/session/view/content/room_history/event_actions.ui:54
-#: src/session/view/content/room_history/event_actions.ui:145
+#: src/session/view/content/room_history/event_actions.ui:140
 #: src/session/view/media_viewer.ui:16
 msgid "S_ave Video"
 msgstr "_Tallenna video"
 
 #: src/session/view/content/room_history/event_actions.ui:59
-#: src/session/view/content/room_history/event_actions.ui:150
-#: src/session/view/media_viewer.ui:21
+#: src/session/view/content/room_history/event_actions.ui:145
 msgid "S_ave Audio"
 msgstr "_Tallenna ääni"
 
 #: src/session/view/content/room_history/event_actions.ui:64
-#: src/session/view/content/room_history/event_actions.ui:155
-#: src/session/view/content/room_history/event_actions.ui:200
-#: src/session/view/content/room_history/mod.ui:58
-#: src/session/view/media_viewer.ui:26
-msgid "_Permalink"
-msgstr "_Pysyväislinkki"
+#: src/session/view/content/room_history/event_actions.ui:150
+#: src/session/view/content/room_history/event_actions.ui:190
+#: src/session/view/media_viewer.ui:21
+msgid "Copy Message _Link"
+msgstr "Kopioi viestin _linkki"
 
 #: src/session/view/content/room_history/event_actions.ui:69
-#: src/session/view/content/room_history/event_actions.ui:160
-#: src/session/view/content/room_history/event_actions.ui:205
-#: src/session/view/content/room_history/mod.ui:125
+#: src/session/view/content/room_history/event_actions.ui:155
+#: src/session/view/content/room_history/event_actions.ui:195
+#: src/session/view/content/room_history/mod.ui:121
 msgid "_View Details"
 msgstr "Näytä yk_sityiskohdat"
 
 #: src/session/view/content/room_history/event_actions.ui:76
-#: src/session/view/content/room_history/event_actions.ui:167
-msgid "_Try Again"
-msgstr "_Yritä uudelleen"
-
-#: src/session/view/content/room_history/event_actions.ui:81
-#: src/session/view/content/room_history/event_actions.ui:172
+#: src/session/view/content/room_history/event_actions.ui:162
 msgid "_Discard"
 msgstr "_Hylkää"
 
-#: src/session/view/content/room_history/event_actions.ui:88
+#: src/session/view/content/room_history/event_actions.ui:83
 msgid "Rep_ort…"
-msgstr ""
+msgstr "Ilmoita…"
 
-#: src/session/view/content/room_history/event_actions.ui:93
-#: src/session/view/content/room_history/event_actions.ui:184
-#: src/session/view/content/room_history/event_actions.ui:217
+#: src/session/view/content/room_history/event_actions.ui:88
+#: src/session/view/content/room_history/event_actions.ui:174
+#: src/session/view/content/room_history/event_actions.ui:207
 msgid "Re_move"
 msgstr "_Poista"
 
-#: src/session/view/content/room_history/event_actions.ui:135
+#: src/session/view/content/room_history/event_actions.ui:130
 msgid "_Copy Thumbnail"
 msgstr "_Kopioi pikkukuva"
 
-#: src/session/view/content/room_history/event_actions.ui:179
-#: src/session/view/content/room_history/event_actions.ui:212
+#: src/session/view/content/room_history/event_actions.ui:169
+#: src/session/view/content/room_history/event_actions.ui:202
 msgid "Rep_ort"
-msgstr ""
+msgstr "_Ilmoita"
 
-#: src/session/view/content/room_history/item_row.rs:279
+#: src/session/view/content/room_history/item_row.rs:335
 msgid "This is the start of the visible history"
 msgstr "Tämä on näkyvän historian alku"
 
@@ -3360,7 +3748,7 @@ msgstr "Tämä on näkyvän historian alku"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:319
+#: src/session/view/content/room_history/item_row.rs:375
 #, fuzzy
 #| msgid "%A, %B %e"
 msgid "%A, %B %-e"
@@ -3370,65 +3758,55 @@ msgstr "%A %e. %Bta"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:325
+#: src/session/view/content/room_history/item_row.rs:381
 #, fuzzy
 #| msgid "%A, %B %e, %Y"
 msgid "%A, %B %-e, %Y"
 msgstr "%A %e. %Bta %Y"
 
-#: src/session/view/content/room_history/item_row.rs:331
+#: src/session/view/content/room_history/item_row.rs:387
 msgid "New Messages"
 msgstr "Uudet viestit"
 
-#: src/session/view/content/room_history/item_row.rs:475
-#: src/session/view/content/room_history/mod.rs:586
-#: src/session/view/content/room_history/sender_avatar/mod.rs:103
-#: src/session/view/media_viewer.rs:518
-msgid "Permalink copied to clipboard"
-msgstr "Pysyväislinkki kopioitu leikepöydälle"
+#: src/session/view/content/room_history/item_row.rs:539
+#: src/session/view/media_viewer.rs:491
+msgid "Message link copied to clipboard"
+msgstr "Viestin linkki kopioitu leikepöydälle"
 
-#: src/session/view/content/room_history/item_row.rs:586
-#: src/session/view/content/room_history/item_row.rs:617
-#: src/session/view/content/room_history/item_row.rs:631
-#: src/session/view/content/room_history/item_row.rs:656
-#: src/session/view/content/room_history/item_row.rs:687
-#: src/session/view/content/room_history/item_row.rs:705
-#: src/session/view/content/room_history/item_row.rs:723
+#: src/session/view/content/room_history/item_row.rs:676
+#: src/session/view/content/room_history/item_row.rs:729
+#: src/session/view/content/room_history/item_row.rs:764
+#: src/session/view/content/room_history/item_row.rs:842
 msgid "Text copied to clipboard"
 msgstr "Teksti kopioitu leikepöydälle"
 
-#: src/session/view/content/room_history/item_row.rs:671
+#: src/session/view/content/room_history/item_row.rs:784
 msgid "Thumbnail copied to clipboard"
 msgstr "Pikkukuva kopioitu leikepöydälle"
 
-#: src/session/view/content/room_history/item_row.rs:768
+#: src/session/view/content/room_history/item_row.rs:885
 msgid "Remove Message?"
 msgstr "Poistetaanko viesti?"
 
-#: src/session/view/content/room_history/item_row.rs:770
+#: src/session/view/content/room_history/item_row.rs:887
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr "Haluatko varmasti poistaa tämän viestin? Toimintoa ei voi perua."
 
-#: src/session/view/content/room_history/item_row.rs:784
+#: src/session/view/content/room_history/item_row.rs:901
 msgid "Could not remove message"
 msgstr "Viestiä ei voitu poistaa"
 
-#: src/session/view/content/room_history/item_row.rs:798
+#: src/session/view/content/room_history/item_row.rs:912
 #, fuzzy
 #| msgid "Could not deactivate account"
 msgid "Could not toggle reaction"
 msgstr "Tiliä ei voitu deaktivoida"
 
-#: src/session/view/content/room_history/item_row.rs:813
-#: src/utils/message_dialog.rs:208
-msgid "Reason (optional)"
-msgstr "Syy (valinnainen)"
-
-#: src/session/view/content/room_history/item_row.rs:824
+#: src/session/view/content/room_history/item_row.rs:938
 msgid "Report Event?"
 msgstr "Ilmoitetaanko tapahtumasta?"
 
-#: src/session/view/content/room_history/item_row.rs:826
+#: src/session/view/content/room_history/item_row.rs:940
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3436,47 +3814,33 @@ msgid ""
 msgstr ""
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:833
+#: src/session/view/content/room_history/item_row.rs:947
 msgid "Report"
-msgstr ""
+msgstr "Ilmoita"
 
-#: src/session/view/content/room_history/item_row.rs:851
-#, fuzzy
-#| msgid "Could not decrypt the event"
+#: src/session/view/content/room_history/item_row.rs:965
 msgid "Could not report event"
-msgstr "Tämän tapahtuman salauksen purkaminen epäonnistui"
+msgstr "Ei voitu ilmoittaa tapahtumasta"
 
-#: src/session/view/content/room_history/item_row.rs:871
+#: src/session/view/content/room_history/item_row.rs:983
 #, fuzzy
 #| msgid "Could not send the message"
 msgid "Could not discard message"
 msgstr "Viestiä ei voitu lähettää"
 
-#: src/session/view/content/room_history/item_row.rs:892
-#, fuzzy
-#| msgid "Could not remove message"
-msgid "Could not retry to send message"
-msgstr "Viestiä ei voitu poistaa"
-
 #: src/session/view/content/room_history/message_row/audio.rs:92
 msgid "Audio: {filename}"
 msgstr "Ääni: {filename}"
 
-#: src/session/view/content/room_history/message_row/audio.rs:195
-#: src/session/view/content/room_history/message_row/audio.rs:199
+#: src/session/view/content/room_history/message_row/audio.rs:179
 msgid "Could not retrieve audio file"
 msgstr "Äänitiedostoa ei voitu noutaa"
 
-#: src/session/view/content/room_history/message_row/audio.rs:212
+#: src/session/view/content/room_history/message_row/audio.rs:196
 msgid "Error reading audio file"
 msgstr "Virhe äänitiedostoa luettaessa"
 
-#: src/session/view/content/room_history/message_row/content.rs:346
-#: src/session/view/content/room_history/message_row/content.rs:388
-msgid "Unsupported event"
-msgstr "Tapahtuma ei tuettu"
-
-#: src/session/view/content/room_history/message_row/content.rs:367
+#: src/session/view/content/room_history/message_row/content.rs:237
 #, fuzzy
 #| msgid ""
 #| "Unable to decrypt this message, decryption will be retried once the keys "
@@ -3488,9 +3852,14 @@ msgstr ""
 "Viestin salauksen purkaminen ei onnistunut. Salauksen purkamista yritetään "
 "uudelleen, kun avaimet ovat saatavilla."
 
-#: src/session/view/content/room_history/message_row/content.rs:377
+#: src/session/view/content/room_history/message_row/content.rs:247
 msgid "This message was removed."
 msgstr "Tämä viesti poistettiin."
+
+#: src/session/view/content/room_history/message_row/content.rs:258
+#: src/session/view/content/room_history/message_row/content.rs:357
+msgid "Unsupported event"
+msgstr "Tapahtuma ei tuettu"
 
 #: src/session/view/content/room_history/message_row/file.rs:63
 msgid "File: {filename}"
@@ -3504,80 +3873,47 @@ msgstr "Sijainti on virheellinen eikä sitä voida näyttää"
 msgid "User Location"
 msgstr "Käyttäjän sijainti"
 
-#: src/session/view/content/room_history/message_row/media.rs:331
-msgid "Image: {filename}"
-msgstr "Kuva: {filename}"
-
-#: src/session/view/content/room_history/message_row/media.rs:332
-msgid "Sticker: {filename}"
-msgstr "Tarra: {filename}"
-
-#: src/session/view/content/room_history/message_row/media.rs:333
-msgid "Video: {filename}"
-msgstr "Video: {filename}"
-
-#: src/session/view/content/room_history/message_row/media.rs:337
-msgid "Image"
-msgstr "Kuva"
-
-#: src/session/view/content/room_history/message_row/media.rs:338
-msgid "Sticker"
-msgstr "Tarra"
-
-#: src/session/view/content/room_history/message_row/media.rs:339
-msgid "Video"
-msgstr "Video"
-
-#: src/session/view/content/room_history/message_row/media.rs:409
-msgid "Image file not supported"
-msgstr "Kuvatiedosto ei ole tuettu"
-
-#: src/session/view/content/room_history/message_row/media.rs:446
-#: src/session/view/content/room_history/message_row/media.rs:451
-msgid "Could not retrieve media"
-msgstr "Mediaa ei voitu noutaa"
-
-#: src/session/view/content/room_history/message_row/message_state_stack.rs:91
-msgid "Could not send the message"
-msgstr "Viestiä ei voitu lähettää"
-
-#: src/session/view/content/room_history/message_row/message_state_stack.rs:97
-#, fuzzy
-#| msgid "An error occurred while searching for users"
-msgid "An error occurred with the sending queue"
-msgstr "Käyttäjiä etsittäessä tapahtui virhe"
-
 #. Translators: As in 'Sending message…'.
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:14
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:17
 msgid "Sending…"
 msgstr "Lähetetään…"
 
-#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:30
+#, fuzzy
+#| msgid "Error deleting message"
+msgid "Temporary Error Sending Message"
+msgstr "Virhe viestiä poistaessa"
+
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:45
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:48
+msgid "Message Cannot Be Sent"
+msgstr "Viestiä ei voi lähettää"
+
+#. Translators: As in 'Sent message'.
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:61
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:64
 msgid "Sent"
 msgstr "Lähetetty"
 
 #. Translators: As in 'Edited message'.
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:67
-#: src/session/view/content/room_history/message_row/message_state_stack.ui:70
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:83
+#: src/session/view/content/room_history/message_row/message_state_stack.ui:86
 msgid "Edited"
 msgstr "Muokattu"
 
-#: src/session/view/content/room_history/message_row/mod.rs:242
+#: src/session/view/content/room_history/message_row/mod.rs:254
 msgid "Sent at {time}"
 msgstr "Lähetetty {time}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:206
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:215
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:224
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:233
 msgid "{user} reacted with {reaction_key}"
 msgstr "{user} reagoi reaktiolla {reaction_key}"
 
@@ -3594,76 +3930,127 @@ msgstr ""
 msgid "Details"
 msgstr "Tiedot"
 
+#: src/session/view/content/room_history/message_row/visual_media.rs:302
+msgid "Image: {filename}"
+msgstr "Kuva: {filename}"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:305
+msgid "Sticker: {filename}"
+msgstr "Tarra: {filename}"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:308
+msgid "Video: {filename}"
+msgstr "Video: {filename}"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:313
+msgid "Image"
+msgstr "Kuva"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:314
+msgid "Sticker"
+msgstr "Tarra"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:315
+msgid "Video"
+msgstr "Video"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:361
+#: src/session/view/content/room_history/message_row/visual_media.rs:403
+msgid "Could not retrieve media"
+msgstr "Mediaa ei voitu noutaa"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:392
+msgid "Image file not supported"
+msgstr "Kuvatiedosto ei ole tuettu"
+
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
 msgstr "_Lähetä"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:619
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:677
 msgid "Public Room Mention Auto-completion"
 msgstr ""
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:621
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:679
 msgid "Room Member Mention Auto-completion"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:403
+#: src/session/view/content/room_history/message_toolbar/mod.rs:432
 msgid "Reply to {user}"
 msgstr "Vastaus käyttäjälle {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:475
+#: src/session/view/content/room_history/message_toolbar/mod.rs:444
 msgctxt "room-history"
 msgid "Edit"
 msgstr "Muokkaa"
 
+#: src/session/view/content/room_history/message_toolbar/mod.rs:620
+msgid "Could not send reply"
+msgstr "Vastausta ei voitu lähettää"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:635
+msgid "Could not send edit"
+msgstr "Muokkausta ei voitu lähettää"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:646
+msgid "Could not send message"
+msgstr "Viestiä ei voitu lähettää"
+
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:680
+#: src/session/view/content/room_history/message_toolbar/mod.rs:688
 msgid "Your Location"
 msgstr "Sijaintisi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:741
+#: src/session/view/content/room_history/message_toolbar/mod.rs:749
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "Käyttäjän sijainti {geo_uri} {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:767
-#, fuzzy
-#| msgid "The location request has been cancelled."
-msgid "The location request has been cancelled"
-msgstr "Sijaintipyyntö on peruttu."
+#: src/session/view/content/room_history/message_toolbar/mod.rs:771
+msgid "Could not send location"
+msgstr "Sijaintia ei voitu lähettää"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:768
+#: src/session/view/content/room_history/message_toolbar/mod.rs:778
+msgid "The location request has been cancelled"
+msgstr "Sijaintipyyntö on peruttu"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:779
 msgid "The location services are disabled"
 msgstr "Sijaintipalvelut on poistettu käytöstä"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:769
+#: src/session/view/content/room_history/message_toolbar/mod.rs:780
 msgid "Could not retrieve current location"
 msgstr "Nykyistä sijaintia ei voitu paikantaa"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:854
+#: src/session/view/content/room_history/message_toolbar/mod.rs:816
+msgid "Could not send file"
+msgstr "Tiedostoa ei voitu lähettää"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:857
 msgid "Select File"
 msgstr "Valitse tiedosto"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:856
+#: src/session/view/content/room_history/message_toolbar/mod.rs:859
 msgid "Select"
 msgstr "Valitse"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:871
+#: src/session/view/content/room_history/message_toolbar/mod.rs:874
 msgid "Could not open file"
 msgstr "Tiedostoa ei voitu avata"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:890
+#: src/session/view/content/room_history/message_toolbar/mod.rs:893
 msgid "Error reading file"
 msgstr "Virhe tiedostoa luettaessa"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:947
+#: src/session/view/content/room_history/message_toolbar/mod.rs:953
 msgid "Error getting image from clipboard"
 msgstr "Virhe saataessa kuvaa leikepöydältä"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:964
+#: src/session/view/content/room_history/message_toolbar/mod.rs:970
 msgid "Error getting file from clipboard"
 msgstr "Virhe saataessa tiedostoa leikepöydältä"
 
@@ -3694,14 +4081,14 @@ msgstr "Viestin lähetysikkuna"
 #: src/session/view/content/room_history/message_toolbar/mod.ui:146
 #: src/session/view/content/room_history/message_toolbar/mod.ui:148
 msgid "More Options"
-msgstr ""
+msgstr "Lisää valintoja"
 
 #: src/session/view/content/room_history/message_toolbar/mod.ui:158
-#: src/session/view/content/room_history/message_toolbar/mod.ui:164
+#: src/session/view/content/room_history/message_toolbar/mod.ui:165
 msgid "Send Message"
 msgstr "Lähetä viesti"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:179
+#: src/session/view/content/room_history/message_toolbar/mod.ui:180
 msgid "You don’t have permission to send messages to this room"
 msgstr "Sinulla ei ole oikeutta lähettää viestejä tähän huoneeseen"
 
@@ -3709,7 +4096,7 @@ msgstr "Sinulla ei ole oikeutta lähettää viestejä tähän huoneeseen"
 #. For example, "May 5 at 01:20 PM".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/row.rs:117
+#: src/session/view/content/room_history/member_timestamp/row.rs:120
 #, fuzzy
 #| msgid "%l∶%M %p"
 msgid "%B %-e at %I∶%M %p"
@@ -3719,49 +4106,45 @@ msgstr "%l∶%M %p"
 #. For example, "May 5 at 13:20".
 #. Do not change the time format as it will follow the system settings.
 #. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/member_timestamp/row.rs:123
+#: src/session/view/content/room_history/member_timestamp/row.rs:126
 #, fuzzy
 #| msgid "Last seen %B %-e at %H:%M"
 msgid "%B %-e at %H∶%M"
 msgstr "Viimeksi nähty %-e. %Bta klo %H.%M"
 
-#: src/session/view/content/room_history/mod.rs:338
+#: src/session/view/content/room_history/mod.rs:358
 #, fuzzy
 #| msgid "Error searching for rooms"
 msgid "Error getting file from drop"
 msgstr "Virhe huoneita etsiessä"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:537
+#: src/session/view/content/room_history/mod.rs:595
 msgid "Could not leave {room}"
 msgstr "Ei voitu poistua huoneesta {room}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:573
-#: src/session/view/sidebar/row.rs:490
-#, fuzzy
-#| msgid "Could not forget {room}."
+#: src/session/view/content/room_history/mod.rs:631
+#: src/session/view/sidebar/row.rs:628
 msgid "Could not forget {room}"
-msgstr "Ei voitu unohtaa huonetta {room}."
+msgstr "Ei voitu unohtaa huonetta {room}"
 
-#: src/session/view/content/room_history/mod.rs:751
-#: src/session/view/sidebar/mod.rs:418
-#, fuzzy
-#| msgid "Continue"
+#: src/session/view/content/room_history/mod.rs:803
+#: src/session/view/sidebar/mod.rs:430
 msgid "Context Menu"
-msgstr "Jatka"
+msgstr "Kontekstivalikko"
 
-#: src/session/view/content/room_history/mod.rs:771
+#: src/session/view/content/room_history/mod.rs:823
 msgid "Sender Context Menu"
-msgstr ""
+msgstr "Lähettäjän kontekstivalikko"
 
-#: src/session/view/content/room_history/mod.rs:957
-#: src/session/view/content/room_history/mod.rs:961
+#: src/session/view/content/room_history/mod.rs:995
+#: src/session/view/content/room_history/mod.rs:999
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 msgid "There is a newer version of this room"
 msgstr "Tästä huoneesta on uudempi versio"
 
-#: src/session/view/content/room_history/mod.rs:964
+#: src/session/view/content/room_history/mod.rs:1002
 msgid "This room was closed"
 msgstr "Huone suljettiin"
 
@@ -3773,107 +4156,103 @@ msgstr "Huoneen _tiedot"
 msgid "_Invite New Members…"
 msgstr "_Kutsu uusia jäseniä…"
 
-#: src/session/view/content/room_history/mod.ui:16
-msgid "Room _Permalink"
-msgstr "Huoneen _pysyväislinkki"
-
-#: src/session/view/content/room_history/mod.ui:22
-#: src/session/view/sidebar/mod.ui:61
+#: src/session/view/content/room_history/mod.ui:18
+#: src/session/view/sidebar/mod.ui:78
 msgid "_Leave Room"
 msgstr "_Poistu huoneesta"
 
-#: src/session/view/content/room_history/mod.ui:27
-#: src/session/view/sidebar/mod.ui:66
+#: src/session/view/content/room_history/mod.ui:23
+#: src/session/view/sidebar/mod.ui:83
 msgid "Re_join Room"
 msgstr "Liity _uudelleen huoneeseen"
 
-#: src/session/view/content/room_history/mod.ui:32
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/content/room_history/mod.ui:28
+#: src/session/view/sidebar/mod.ui:88
 msgid "_Forget Room"
 msgstr "_Unohda huone"
 
 #. Translators: In this string, 'Mention' is a verb.
-#: src/session/view/content/room_history/mod.ui:47
+#: src/session/view/content/room_history/mod.ui:43
 msgid "_Mention"
 msgstr "_Mainitse"
 
 #. Translators: In this string, 'Open' is a verb.
-#: src/session/view/content/room_history/mod.ui:53
+#: src/session/view/content/room_history/mod.ui:49
 msgid "_Open Direct Chat"
 msgstr "_Avaa suorakeskustelu"
 
+#: src/session/view/content/room_history/mod.ui:54
+msgid "Copy _Link"
+msgstr "Kopioi _linkki"
+
 #. Translators: In this string, 'Invite' is a verb.
-#: src/session/view/content/room_history/mod.ui:65
+#: src/session/view/content/room_history/mod.ui:61
 msgid "_Invite"
 msgstr "_Kutsu"
 
-#: src/session/view/content/room_history/mod.ui:70
+#: src/session/view/content/room_history/mod.ui:66
 msgid "Revoke _Invite"
 msgstr "Kumoa _kutsu"
 
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
-#: src/session/view/content/room_history/mod.ui:76
+#: src/session/view/content/room_history/mod.ui:72
 msgid "M_ute"
 msgstr "_Vaimenna"
 
-#: src/session/view/content/room_history/mod.ui:81
+#: src/session/view/content/room_history/mod.ui:77
 msgid "_Unmute"
-msgstr ""
+msgstr "_Poista mykistys"
 
 #. Translators: In this string, 'Kick' is a verb.
-#: src/session/view/content/room_history/mod.ui:87
+#: src/session/view/content/room_history/mod.ui:83
 msgid "_Kick"
 msgstr "_Potki"
 
-#: src/session/view/content/room_history/mod.ui:92
+#: src/session/view/content/room_history/mod.ui:88
 msgid "_Deny Access"
 msgstr "_Estä pääsy"
 
 #. Translators: In this string, 'Ban' is a verb.
-#: src/session/view/content/room_history/mod.ui:98
+#: src/session/view/content/room_history/mod.ui:94
 msgid "_Ban"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:103
+#: src/session/view/content/room_history/mod.ui:99
 msgid "Un_ban"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.ui:108
+#: src/session/view/content/room_history/mod.ui:104
 msgid "_Remove Messages"
 msgstr "_Poista viestit"
 
-#: src/session/view/content/room_history/mod.ui:113
+#: src/session/view/content/room_history/mod.ui:109
 msgid "I_gnore"
 msgstr "_Sivuuta"
 
-#: src/session/view/content/room_history/mod.ui:118
+#: src/session/view/content/room_history/mod.ui:114
 msgid "Stop I_gnoring"
 msgstr "Lopeta _sivuuttaminen"
 
-#: src/session/view/content/room_history/mod.ui:160
+#: src/session/view/content/room_history/mod.ui:148
 msgid "Room Menu"
 msgstr "Huonevalikko"
 
-#: src/session/view/content/room_history/mod.ui:204
-#: src/session/view/content/room_history/mod.ui:211
+#: src/session/view/content/room_history/mod.ui:192
+#: src/session/view/content/room_history/mod.ui:199
 msgid "Could Not Load Room"
 msgstr "Huonetta ei voitu ladata"
 
-#: src/session/view/content/room_history/mod.ui:212
-msgid "Check your network connection."
-msgstr "Tarkista internetyhteyden tila."
-
-#: src/session/view/content/room_history/mod.ui:246
+#: src/session/view/content/room_history/mod.ui:234
 msgid "Scroll to Bottom"
 msgstr "Vieritä alas"
 
-#: src/session/view/content/room_history/mod.ui:258
+#: src/session/view/content/room_history/mod.ui:246
 msgid "Drop Here to Send"
 msgstr "Pudota tähän lähettääksesi"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:259
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:267
 msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] "Nähty 1 jäsenen toimesta"
@@ -3881,97 +4260,89 @@ msgstr[1] "Nähty {n} jäsenen toimesta"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/read_receipts_list/mod.rs:272
+#: src/session/view/content/room_history/read_receipts_list/mod.rs:280
 msgid "Seen by {name}"
 msgstr "Nähty käyttäjän {name} toimesta"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:271
+#: src/session/view/content/room_history/sender_avatar/mod.rs:99
+msgid "Link copied to clipboard"
+msgstr "Linkki kopioitu leikepöydälle"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:281
 msgid "{user}’s avatar"
 msgstr "Käyttäjän {user} avatar"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:512
+#: src/session/view/content/room_history/sender_avatar/mod.rs:529
 msgid "Creating a new Direct Chat…"
 msgstr "Luodaan uusi suorakeskustelu…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:536
+#: src/session/view/content/room_history/sender_avatar/mod.rs:553
 msgid "Inviting user…"
 msgstr "Kutsutaan käyttäjä…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:564
+#: src/session/view/content/room_history/sender_avatar/mod.rs:581
 msgid "Revoking invite…"
 msgstr "Kumotaan kutsu…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:565
+#: src/session/view/content/room_history/sender_avatar/mod.rs:582
 msgid "Denying access…"
 msgstr "Estetään pääsy…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:566
+#: src/session/view/content/room_history/sender_avatar/mod.rs:583
 msgid "Kicking user…"
 msgstr "Potkitaan käyttäjä…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:601
-#, fuzzy
-#| msgid "Inviting user…"
+#: src/session/view/content/room_history/sender_avatar/mod.rs:618
 msgid "Muting member…"
-msgstr "Kutsutaan käyttäjä…"
-
-#: src/session/view/content/room_history/sender_avatar/mod.rs:604
-#, fuzzy
-#| msgid "Inviting user…"
-msgid "Unmuting member…"
-msgstr "Kutsutaan käyttäjä…"
-
-#: src/session/view/content/room_history/sender_avatar/mod.rs:614
-#, fuzzy
-#| msgid "Member"
-msgid "Member muted"
-msgstr "Jäsen"
-
-#: src/session/view/content/room_history/sender_avatar/mod.rs:616
-#, fuzzy
-#| msgid "Member"
-msgid "Member unmuted"
-msgstr "Jäsen"
+msgstr "Mykistetään käyttäjä…"
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:621
-#, fuzzy
-#| msgid "Could not invite user"
+msgid "Unmuting member…"
+msgstr "Poistetaan käyttäjän mykistys…"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:631
+msgid "Member muted"
+msgstr "Jäsen mykistetty"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:633
+msgid "Member unmuted"
+msgstr "Jäsenen mykistys poistettu"
+
+#: src/session/view/content/room_history/sender_avatar/mod.rs:638
 msgid "Could not mute member"
-msgstr "Käyttäjää ei voitu kutsua"
+msgstr "Käyttäjää ei voitu mykistää"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:623
-#, fuzzy
-#| msgid "Could not invite user"
+#: src/session/view/content/room_history/sender_avatar/mod.rs:640
 msgid "Could not unmute member"
-msgstr "Käyttäjää ei voitu kutsua"
+msgstr "Käyttäjän mykistystä ei voitu poistaa"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:652
+#: src/session/view/content/room_history/sender_avatar/mod.rs:669
 msgid "Banning user…"
 msgstr ""
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:676
+#: src/session/view/content/room_history/sender_avatar/mod.rs:693
 msgid "Unbanning user…"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
-#: src/session/view/content/room_history/sender_avatar/mod.rs:719
+#: src/session/view/content/room_history/sender_avatar/mod.rs:736
 msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Poista 1 käyttäjän lähettämä viesti…"
+msgstr[1] "Poista {n} käyttäjän lähettämää viestiä…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:752
+#: src/session/view/content/room_history/sender_avatar/mod.rs:769
 msgid "Stop ignoring user…"
 msgstr "Lopeta käyttäjän sivuuttaminen…"
 
-#: src/session/view/content/room_history/sender_avatar/mod.rs:754
+#: src/session/view/content/room_history/sender_avatar/mod.rs:771
 msgid "Ignoring user…"
 msgstr "Sivuutetaan käyttäjä…"
 
 #: src/session/view/content/room_history/sender_avatar/mod.ui:5
 msgid "Open Sender Context Menu"
-msgstr ""
+msgstr "Avaa lähettäjän kontekstivalikko"
 
 #: src/session/view/content/room_history/state_row/creation.rs:69
 msgid "This is the continuation of an upgraded room."
@@ -4124,16 +4495,19 @@ msgstr "{user} poisti avatarkuvansa."
 msgid "{user} changed their avatar."
 msgstr "{user} vaihtoi avatarkuvansa."
 
+#: src/session/view/content/room_history/title.ui:9
+msgid "Open Room Details"
+msgstr "Avaa huoneen tiedot"
+
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:137
-#| msgid "<b>{user}</b> is typing…"
+#: src/session/view/content/room_history/typing_row.rs:142
 msgid "{user} is typing…"
 msgstr "{user} kirjoittaa…"
 
 #. Translators: Do NOT translate the content between '{' and '}', these are
 #. variable names.
-#: src/session/view/content/room_history/typing_row.rs:144
+#: src/session/view/content/room_history/typing_row.rs:149
 msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "{n} jäsen kirjoittaa…"
@@ -4143,7 +4517,7 @@ msgstr[1] "{n} jäsentä kirjoittaa…"
 msgid "Could not accept verification"
 msgstr "Vahvistusta ei voitu hyväksyä"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:86
+#: src/session/view/content/room_history/verification_info_bar.rs:88
 #, fuzzy
 #| msgid "Could not disable account notifications"
 msgid "Could not decline verification"
@@ -4151,15 +4525,15 @@ msgstr "Tili-ilmoitusten poistaminen käytöstä ei onnistunut"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/verification_info_bar.rs:159
+#: src/session/view/content/room_history/verification_info_bar.rs:166
 msgid "{user_name} wants to be verified"
 msgstr "{user_name} haluaa tulla vahvistetuksi"
 
-#: src/session/view/content/room_history/verification_info_bar.rs:168
+#: src/session/view/content/room_history/verification_info_bar.rs:175
 msgid "Verification in progress"
 msgstr "Vahvistaminen meneillään"
 
-#: src/session/view/create_dm_dialog/mod.rs:140
+#: src/session/view/create_dm_dialog/mod.rs:144
 msgid "An error occurred while searching for users"
 msgstr "Käyttäjiä etsittäessä tapahtui virhe"
 
@@ -4213,8 +4587,8 @@ msgstr "Tapahtuman tunniste"
 
 #: src/session/view/event_details_dialog.ui:69
 #: src/session/view/event_details_dialog.ui:163
-msgid "Copy Event ID to Clipboard"
-msgstr "Kopioi tapahtumatunniste leikepöydälle"
+msgid "Copy Event ID"
+msgstr "Kopioi tapahtuman tunniste"
 
 #: src/session/view/event_details_dialog.ui:70
 #: src/session/view/event_details_dialog.ui:164
@@ -4226,8 +4600,8 @@ msgid "Room ID"
 msgstr "Huoneen tunniste"
 
 #: src/session/view/event_details_dialog.ui:84
-msgid "Copy Room ID to Clipboard"
-msgstr "Kopioi huonetunniste leikepöydälle"
+msgid "Copy Room ID"
+msgstr "Kopioi huoneen tunniste"
 
 #: src/session/view/event_details_dialog.ui:85
 msgid "Room ID copied to clipboard"
@@ -4238,8 +4612,8 @@ msgid "Sender ID"
 msgstr "Lähettäjän tunniste"
 
 #: src/session/view/event_details_dialog.ui:97
-msgid "Copy Sender ID to Clipboard"
-msgstr "Kopioi lähettäjän tunniste leikepöydälle"
+msgid "Copy Sender ID"
+msgstr "Kopioi lähettäjän tunniste"
 
 #: src/session/view/event_details_dialog.ui:98
 msgid "Sender ID copied to clipboard"
@@ -4252,8 +4626,8 @@ msgstr "Aikaleima"
 
 #: src/session/view/event_details_dialog.ui:110
 #: src/session/view/event_details_dialog.ui:176
-msgid "Copy Timestamp to Clipboard"
-msgstr "Kopioi aikaleima leikepöydälle"
+msgid "Copy Timestamp"
+msgstr "Kopioi aikaleima"
 
 #: src/session/view/event_details_dialog.ui:111
 #: src/session/view/event_details_dialog.ui:177
@@ -4270,10 +4644,10 @@ msgid "Latest Edit"
 msgstr "Viimeisin muokkaus"
 
 #: src/session/view/event_details_dialog.ui:213
-msgid "Copy Source to Clipboard"
-msgstr "Kopioi lähde leikepöydälle"
+msgid "Copy Source"
+msgstr "Kopioi lähde"
 
-#: src/session/view/media_viewer.rs:478
+#: src/session/view/media_viewer.rs:461
 msgid "Image copied to clipboard"
 msgstr "Kuva kopioitu leikepöydälle"
 
@@ -4281,148 +4655,146 @@ msgstr "Kuva kopioitu leikepöydälle"
 msgid "_Copy Image"
 msgstr "_Kopioi kuva"
 
-#: src/session/view/media_viewer.ui:66 src/session/view/media_viewer.ui:68
-#, fuzzy
-#| msgid "Media"
+#: src/session/view/media_viewer.ui:61 src/session/view/media_viewer.ui:63
 msgid "Media Menu"
-msgstr "Media"
+msgstr "Mediavalikko"
 
-#: src/session/view/media_viewer.ui:78 src/session/view/media_viewer.ui:80
+#: src/session/view/media_viewer.ui:73 src/session/view/media_viewer.ui:75
 msgid "Fullscreen"
 msgstr "Koko näyttö"
 
-#: src/session/view/media_viewer.ui:89 src/session/view/media_viewer.ui:91
+#: src/session/view/media_viewer.ui:84 src/session/view/media_viewer.ui:86
 msgid "Exit Fullscreen"
 msgstr "Poistu koko näytön tilasta"
 
-#: src/session/view/room_creation.rs:185
+#: src/session/view/room_creation.rs:192
 msgid "The address is already taken."
 msgstr "Osoite on jo käytössä."
 
-#: src/session/view/room_creation.rs:217
+#: src/session/view/room_creation.rs:224
 msgid "Cannot contain “:”"
 msgstr "Ei voi sisältää “:”"
 
-#: src/session/view/room_creation.rs:222
+#: src/session/view/room_creation.rs:229
 msgid "Cannot contain “#”"
 msgstr "Ei voi sisältää “#”"
 
-#: src/session/view/room_creation.rs:227
+#: src/session/view/room_creation.rs:234
 msgid "Too long. Use a shorter address."
 msgstr "Liian pitkä. Käytä lyhyempää osoitetta."
 
-#: src/session/view/room_creation.ui:36
+#: src/session/view/room_creation.ui:35
 msgid "New Room"
 msgstr "Uusi huone"
 
-#: src/session/view/room_creation.ui:60
-msgid "Topic (Optional)"
-msgstr "Aihe (valinnainen)"
+#: src/session/view/room_creation.ui:59
+msgid "Description (Optional)"
+msgstr "Kuvaus (valinnainen)"
 
-#: src/session/view/room_creation.ui:68
+#: src/session/view/room_creation.ui:84
 msgid "Room Visibility"
 msgstr "Huoneen näkyvyys"
 
-#: src/session/view/room_creation.ui:71
+#: src/session/view/room_creation.ui:87
 msgid "Private"
 msgstr "Yksityinen"
 
-#: src/session/view/room_creation.ui:72
+#: src/session/view/room_creation.ui:88
 msgid "Only invited people can join this room"
 msgstr "Vain kutsutut ihmiset voivat liittyä tähän huoneeseen"
 
-#: src/session/view/room_creation.ui:85
+#: src/session/view/room_creation.ui:101
 msgid "Public"
 msgstr "Julkinen"
 
-#: src/session/view/room_creation.ui:86
+#: src/session/view/room_creation.ui:102
 msgid "Anyone can find and join this room"
 msgstr "Kuka tahansa voi löytää ja liittyä tähän huoneeseen"
 
-#: src/session/view/room_creation.ui:104
+#: src/session/view/room_creation.ui:120
 msgid "End-to-End Encryption"
 msgstr "Päästä päähän -salaus"
 
-#: src/session/view/room_creation.ui:105
+#: src/session/view/room_creation.ui:121
 msgid "Cannot be disabled later"
 msgstr "Ei mahdollista poistaa käytöstä myöhemmin"
 
-#: src/session/view/room_creation.ui:147
+#: src/session/view/room_creation.ui:163
 msgid "_Create Room"
 msgstr "_Luo huone"
 
 #. Translators: This is an action to join a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/category_row.rs:96
+#: src/session/view/sidebar/category_row.rs:115
 msgid "Join Room as Favorite"
 msgstr "Liity huoneeseen suosikkina"
 
-#: src/session/view/sidebar/category_row.rs:97
+#: src/session/view/sidebar/category_row.rs:116
 msgid "Join Room"
 msgstr "Liity huoneeseen"
 
 #. Translators: This is an action to join a room and put it in the "Low
 #. Priority" section.
-#: src/session/view/sidebar/category_row.rs:100
+#: src/session/view/sidebar/category_row.rs:119
 msgid "Join Room as Low Priority"
 msgstr "Liity huoneeseen matalalla prioriteetilla"
 
-#: src/session/view/sidebar/category_row.rs:101
+#: src/session/view/sidebar/category_row.rs:120
 msgid "Reject Invite"
 msgstr "Hylkää ktusu"
 
-#: src/session/view/sidebar/category_row.rs:105
-#: src/session/view/sidebar/category_row.rs:118
+#: src/session/view/sidebar/category_row.rs:124
+#: src/session/view/sidebar/category_row.rs:137
 msgid "Move to Rooms"
 msgstr "Siirrä huoneisiin"
 
-#: src/session/view/sidebar/category_row.rs:106
-#: src/session/view/sidebar/category_row.rs:112
+#: src/session/view/sidebar/category_row.rs:125
+#: src/session/view/sidebar/category_row.rs:131
 msgid "Move to Low Priority"
 msgstr "Siirrä matalaan prioriteettiin"
 
-#: src/session/view/sidebar/category_row.rs:107
-#: src/session/view/sidebar/category_row.rs:113
-#: src/session/view/sidebar/category_row.rs:119
+#: src/session/view/sidebar/category_row.rs:126
+#: src/session/view/sidebar/category_row.rs:132
+#: src/session/view/sidebar/category_row.rs:138
 msgid "Leave Room"
 msgstr "Poistu huoneesta"
 
-#: src/session/view/sidebar/category_row.rs:111
-#: src/session/view/sidebar/category_row.rs:117
+#: src/session/view/sidebar/category_row.rs:130
+#: src/session/view/sidebar/category_row.rs:136
 msgid "Move to Favorites"
 msgstr "Siirrä suosikkeihin"
 
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
-#: src/session/view/sidebar/category_row.rs:125
+#: src/session/view/sidebar/category_row.rs:144
 #, fuzzy
 #| msgid "Join Room as Favorite"
 msgid "Rejoin Room as Favorite"
 msgstr "Liity huoneeseen suosikkina"
 
-#: src/session/view/sidebar/category_row.rs:126
+#: src/session/view/sidebar/category_row.rs:145
 msgid "Rejoin Room"
 msgstr "Liity uudelleen huoneeseen"
 
 #. Translators: This is an action to rejoin a room and put it in the "Low
 #. Priority" section.
-#: src/session/view/sidebar/category_row.rs:129
+#: src/session/view/sidebar/category_row.rs:148
 msgid "Rejoin Room as Low Priority"
 msgstr ""
 
-#: src/session/view/sidebar/mod.rs:306
+#: src/session/view/sidebar/mod.rs:318
 msgid "No crypto identity"
 msgstr "Ei salausidentiteettiä"
 
-#: src/session/view/sidebar/mod.rs:308
+#: src/session/view/sidebar/mod.rs:320
 msgid "Crypto identity incomplete"
 msgstr "Salausidentiteetti puutteellinen"
 
-#: src/session/view/sidebar/mod.rs:312
+#: src/session/view/sidebar/mod.rs:324
 msgid "Account recovery disabled"
-msgstr "Tilin palautus poistettu käytöstä"
+msgstr "Tilin palautus ei käytössä"
 
-#: src/session/view/sidebar/mod.rs:315
+#: src/session/view/sidebar/mod.rs:327
 msgid "Account recovery incomplete"
 msgstr "Tilin palautus puutteellinen"
 
@@ -4451,58 +4823,98 @@ msgid "_Reject"
 msgstr "H_ylkää"
 
 #: src/session/view/sidebar/mod.ui:44
+msgid "_Mark as Read"
+msgstr "Merkitse _luetuksi"
+
+#: src/session/view/sidebar/mod.ui:51
 msgid "Move to _Favorites"
 msgstr "Siirrä _suosikkeihin"
 
-#: src/session/view/sidebar/mod.ui:49
+#: src/session/view/sidebar/mod.ui:56
 msgid "Move to _Rooms"
 msgstr "Siirrä _huoneisiin"
 
-#: src/session/view/sidebar/mod.ui:54
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to Low _Priority"
 msgstr "Siirrä _matalaan prioriteettiin"
 
-#: src/session/view/sidebar/mod.ui:78
+#: src/session/view/sidebar/mod.ui:66
+msgid "Mark as _Direct Chat"
+msgstr "Merkitse _suorakeskusteluksi"
+
+#: src/session/view/sidebar/mod.ui:71
+#, fuzzy
+#| msgid "Create Direct Chat"
+msgid "Unmark as _Direct Chat"
+msgstr "Luo suorakeskustelu"
+
+#: src/session/view/sidebar/mod.ui:95
 msgid "Sidebar"
 msgstr "Sivupalkki"
 
-#: src/session/view/sidebar/mod.ui:92
+#: src/session/view/sidebar/mod.ui:112
 msgid "Main Menu"
 msgstr "Päävalikko"
 
-#: src/session/view/sidebar/mod.ui:100
+#: src/session/view/sidebar/mod.ui:121
 msgid "Toggle Room Search"
 msgstr "Näytä/piilota huonehaku"
 
-#: src/session/view/sidebar/mod.ui:113
+#: src/session/view/sidebar/mod.ui:134
 msgid "Room Search"
 msgstr "Huonehaku"
 
-#: src/session/view/sidebar/mod.ui:114
+#: src/session/view/sidebar/mod.ui:135
 msgid "Search for a room"
 msgstr "Etsi huonetta"
 
-#: src/session/view/sidebar/mod.ui:149
+#: src/session/view/sidebar/mod.ui:170
 msgid "Room List"
 msgstr "Huoneluettelo"
 
-#: src/session/view/sidebar/mod.ui:150
+#: src/session/view/sidebar/mod.ui:171
 msgid "Allows to navigate between rooms"
 msgstr "Mahdollistaa liikkumisen huoneiden välillä"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name. Presented to screen readers when a
 #. room is a direct chat with another user.
-#: src/session/view/sidebar/room_row.rs:251
+#: src/session/view/sidebar/room_row.rs:286
 msgid "Direct chat with {name}"
 msgstr "Suorakeskustelu käyttäjän {name} kanssa"
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name. Presented to screen readers when a room has notifications
+#. for unread messages.
+#: src/session/view/sidebar/room_row.rs:298
+#| msgid "Notifications"
+msgid "1 notification"
+msgid_plural "{count} notifications"
+msgstr[0] "1 ilmoitus"
+msgstr[1] "{count} ilmoitusta"
+
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:475
+#: src/session/view/sidebar/row.rs:607
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 
-#: src/session_list/mod.rs:262
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/view/sidebar/row.rs:644
+#, fuzzy
+#| msgid "Could not create a new Direct Chat"
+msgid "Could not mark {room} as direct chat"
+msgstr "Uuden suorakeskustelun luominen ei onnistu"
+
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/session/view/sidebar/row.rs:649
+#, fuzzy
+#| msgid "Publish in room directory"
+msgid "Could not unmark {room} as direct chat"
+msgstr "Julkaise huonehakemistossa"
+
+#: src/session_list/mod.rs:269
 msgid "Could not restore previous sessions"
 msgstr "Aiempia istuntoja ei voitu palauttaa"
 
@@ -4590,261 +5002,129 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "Tiedostoa ei voitu tallentaa"
 
-#: src/utils/matrix.rs:183
+#: src/utils/matrix/media_message.rs:183
+msgid "Could not save file"
+msgstr "Tiedostoa ei voitu tallentaa"
+
+#: src/utils/matrix/mod.rs:188
 msgid "{user} sent an audio file."
 msgstr "{user} lähetti äänitiedoston."
 
-#: src/utils/matrix.rs:186
+#: src/utils/matrix/mod.rs:191
 msgid "{user} sent a file."
 msgstr "{user} lähetti tiedoston."
 
-#: src/utils/matrix.rs:188
+#: src/utils/matrix/mod.rs:193
 msgid "{user} sent an image."
 msgstr "{user} lähetti kuvan."
 
-#: src/utils/matrix.rs:191
+#: src/utils/matrix/mod.rs:196
 msgid "{user} sent their location."
 msgstr "{user} lähetti sijaintinsa."
 
-#: src/utils/matrix.rs:203
+#: src/utils/matrix/mod.rs:208
 msgid "{user} sent a video."
 msgstr "{user} lähetti videon."
 
-#: src/utils/matrix.rs:206
-msgid "{user} sent a verification request."
-msgstr "{user} lähetti vahvistuspyynnön."
-
-#: src/utils/matrix.rs:214
+#: src/utils/matrix/mod.rs:215
 msgid "{user} sent a sticker."
 msgstr "{user} lähetti tarran."
 
-#: src/utils/matrix.rs:224
+#: src/utils/matrix/mod.rs:225
 msgid "{user}: {message}"
 msgstr "{user}: {message}"
 
+#. Translators: Do NOT translate the content between '{' and '}', this is a
+#. variable name.
+#: src/utils/matrix/mod.rs:249
+msgid "{user} invited you"
+msgstr "{user} kutsui sinut"
+
+#: src/utils/matrix/mod.rs:275
+msgid "Could not generate unique session ID"
+msgstr "Ei voitu generoida yksilöllistä istuntotunnistetta"
+
 #. Translators: Default name for image files.
-#: src/utils/media.rs:33
+#: src/utils/media/mod.rs:33
 msgid "image"
 msgstr "kuva"
 
 #. Translators: Default name for video files.
-#: src/utils/media.rs:35
+#: src/utils/media/mod.rs:35
 msgid "video"
 msgstr "video"
 
 #. Translators: Default name for audio files.
-#: src/utils/media.rs:37
+#: src/utils/media/mod.rs:37
 msgid "audio"
 msgstr "ääni"
 
 #. Translators: Default name for files.
-#: src/utils/media.rs:39
+#: src/utils/media/mod.rs:39
 msgid "file"
 msgstr "tiedosto"
-
-#: src/utils/media.rs:210
-msgid "Could not save file"
-msgstr "Tiedostoa ei voitu tallentaa"
-
-#. We are rejecting an invite.
-#: src/utils/message_dialog.rs:19
-msgid "Decline Invite?"
-msgstr "Hylätäänkö kutsu?"
-
-#: src/utils/message_dialog.rs:21
-msgid ""
-"Do you really want to decline this invite? You can join this room on your "
-"own later."
-msgstr ""
-"Haluatko kieltäytyä tästä kutsusta? Voit liittyä tähän huoneeseen myöhemmin "
-"niin halutessasi."
-
-#: src/utils/message_dialog.rs:24
-msgid ""
-"Do you really want to decline this invite? You will not be able to join this "
-"room without it."
-msgstr ""
-"Haluatko kieltäytyä tästä kutsusta? Et voi liittyä tähän huoneeseen ilman "
-"kutsua."
-
-#. We are leaving a room that was joined.
-#: src/utils/message_dialog.rs:32
-msgid "Leave Room?"
-msgstr "Poistutaanko huoneesta?"
-
-#: src/utils/message_dialog.rs:34
-msgid "Do you really want to leave this room? You can come back later."
-msgstr ""
-"Haluatko varmasti poistua tästä huoneesta? Voit palata takaisin myöhemmin."
-
-#: src/utils/message_dialog.rs:37
-msgid ""
-"Do you really want to leave this room? You will not be able to come back "
-"without an invitation."
-msgstr "Haluatko varmasti poistua tästä huoneesta? Et voi palata ilman kutsua."
-
-#: src/utils/message_dialog.rs:40
-msgid "Leave"
-msgstr "Poistu"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:85
-#, fuzzy
-#| msgid "Waiting for {user}"
-msgid "Ban {user}?"
-msgstr "Odotetaan käyttäjää {user}"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:89
-msgid ""
-"Are you sure you want to ban {user_id}? They will not be able to join the "
-"room again until someone unbans them."
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:103
-#, fuzzy
-#| msgid "Waiting for {user}"
-msgid "Revoke Invite for {user}?"
-msgstr "Odotetaan käyttäjää {user}"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:110
-msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will still be "
-"able to join the room on their own."
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:117
-msgid ""
-"Are you sure you want to revoke the invite for {user_id}? They will not be "
-"able to join the room again until someone reinvites them."
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:128
-#, fuzzy
-#| msgid "Reply to {user}"
-msgid "Deny Access to {user}?"
-msgstr "Vastaus käyttäjälle {user}"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:134
-#, fuzzy
-#| msgid "Are you sure you want to delete your account?"
-msgid "Are you sure you want to deny access to {user_id}?"
-msgstr "Haluatko varmasti poistaa tilisi?"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:143
-msgid "Kick {user}?"
-msgstr "Potkitaanko käyttäjä {user}?"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:148
-msgid ""
-"Are you sure you want to kick {user_id}? They will still be able to join the "
-"room again on their own."
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:155
-msgid ""
-"Are you sure you want to kick {user_id}? They will not be able to join the "
-"room again until someone invites them."
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:170
-msgid "Remove Messages Sent by {user}?"
-msgstr "Poistetaanko käyttäjän {user} lähettämät viestit?"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:176
-msgid ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove 1 message sent by {user_id}? This cannot be undone."
-msgid_plural ""
-"This removes all the messages received from the homeserver. Are you sure you "
-"want to remove {n} messages sent by {user_id}? This cannot be undone."
-msgstr[0] ""
-msgstr[1] ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:187
-msgid "No Messages Sent by {user}"
-msgstr "Ei käyttäjän {user} lähettämiä viestejä"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:193
-msgid ""
-"There are no messages received from the homeserver sent by {user_id}. You "
-"can try to load more by going further back in the room history."
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:232
-msgid "Remove the latest message sent by the user"
-msgid_plural "Remove the {n} latest messages sent by the user"
-msgstr[0] ""
-msgstr[1] ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:300
-msgid "Mute {user}?"
-msgstr "Vaimennetaanko käyttäjä {user}?"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:306
-msgid ""
-"Are you sure you want to mute {user_id}? They will not be able to send new "
-"messages."
-msgstr ""
-
-#. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
-#: src/utils/message_dialog.rs:319
-msgid "Mute"
-msgstr "Vaimenna"
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:335
-msgid "Promote {user}?"
-msgstr ""
-
-#. Translators: Do NOT translate the content between '{' and '}',
-#. this is a variable name.
-#: src/utils/message_dialog.rs:341
-msgid ""
-"If you promote {user_id} to the same level as yours, you will not be able to "
-"demote them in the future."
-msgstr ""
-
-#: src/utils/message_dialog.rs:353
-msgid "Promote"
-msgstr ""
 
 #: src/window.ui:66
 msgid "Session"
 msgstr "Istunto"
+
+#~ msgid "Reset Crypto Identity and Account Recovery Key"
+#~ msgstr "Nollaa salausidentiteetti ja tilin palautusavain"
+
+#~ msgid "Copy Matrix User ID to Clipboard"
+#~ msgstr "Kopioi Matrix-käyttäjätunniste leikepöydälle"
+
+#~ msgid "Malformed version in stored session"
+#~ msgstr "Virheellisesti muodostettu versio talletetussa istunnossa"
+
+#~ msgid "Copy Session ID to Clipboard"
+#~ msgstr "Kopioi istuntotunniste leikepöydälle"
+
+#~ msgid "Save Details"
+#~ msgstr "Tallenna tiedot"
+
+#~ msgid "Copy Matrix Room ID to Clipboard"
+#~ msgstr "Kopioi Matrix-huonetunniste leikepöydälle"
+
+#~ msgid "Change Room Topic"
+#~ msgstr "Muuta huoneen aihe"
+
+#~ msgid "_Permalink"
+#~ msgstr "_Pysyväislinkki"
+
+#~ msgid "_Try Again"
+#~ msgstr "_Yritä uudelleen"
+
+#, fuzzy
+#~| msgid "Could not remove message"
+#~ msgid "Could not retry to send message"
+#~ msgstr "Viestiä ei voitu poistaa"
+
+#, fuzzy
+#~| msgid "An error occurred while searching for users"
+#~ msgid "An error occurred with the sending queue"
+#~ msgstr "Käyttäjiä etsittäessä tapahtui virhe"
+
+#~ msgid "Room _Permalink"
+#~ msgstr "Huoneen _pysyväislinkki"
+
+#~ msgid "Copy Event ID to Clipboard"
+#~ msgstr "Kopioi tapahtumatunniste leikepöydälle"
+
+#~ msgid "Copy Room ID to Clipboard"
+#~ msgstr "Kopioi huonetunniste leikepöydälle"
+
+#~ msgid "Copy Sender ID to Clipboard"
+#~ msgstr "Kopioi lähettäjän tunniste leikepöydälle"
+
+#~ msgid "Copy Timestamp to Clipboard"
+#~ msgstr "Kopioi aikaleima leikepöydälle"
+
+#~ msgid "Copy Source to Clipboard"
+#~ msgstr "Kopioi lähde leikepöydälle"
+
+#~ msgid "Topic (Optional)"
+#~ msgstr "Aihe (valinnainen)"
 
 #~ msgid "Try again"
 #~ msgstr "Yritä uudelleen"
@@ -4871,9 +5151,6 @@ msgstr "Istunto"
 
 #~ msgid "Not available"
 #~ msgstr "Ei käytettävissä"
-
-#~ msgid "Room Encryption Keys"
-#~ msgstr "Huoneen salausavaimet"
 
 #~ msgid "Add server…"
 #~ msgstr "Lisää palvelin…"
@@ -4903,9 +5180,6 @@ msgstr "Istunto"
 
 #~ msgid "Upgrade the Room"
 #~ msgstr "Päivitä huone"
-
-#~ msgid "Message copied to clipboard"
-#~ msgstr "Viesti kopioitu leikepöydälle"
 
 #~ msgid "Identity verification was started"
 #~ msgstr "Identiteetin vahvistaminen aloitettiin"
@@ -4986,9 +5260,6 @@ msgstr "Istunto"
 
 #~ msgid "Open Emoji Picker"
 #~ msgstr "Avaa emojivalitsin"
-
-#~ msgid "Open Message Menu"
-#~ msgstr "Avaa viestivalikko"
 
 #~ msgid "<b>{user1}</b> and <b>{user2}</b> are typing…"
 #~ msgstr "<b>{user1}</b> ja <b>{user2}</b> kirjoittavat…"
@@ -5334,9 +5605,6 @@ msgstr "Istunto"
 
 #~ msgid "Can’t login, try again"
 #~ msgstr "Kirjautuminen ei onnistu, yritä uudelleen"
-
-#~ msgid "Error deleting message"
-#~ msgstr "Virhe viestiä poistaessa"
 
 #~ msgid "Can’t join the room, try again."
 #~ msgstr "Huoneeseen ei voitu liittyä, yritä uudelleen."
