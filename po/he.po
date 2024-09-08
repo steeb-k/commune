@@ -8,17 +8,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-07-20 09:31+0000\n"
-"PO-Revision-Date: 2024-07-21 13:50+0300\n"
-"Last-Translator: Yosef Or Boczko <yoseforb@gmail.com>\n"
+"POT-Creation-Date: 2024-09-05 13:03+0000\n"
+"PO-Revision-Date: 2024-09-08 21:36+0300\n"
+"Last-Translator: Yaron Shahrabani <sh.yaron@gmail.com>\n"
 "Language-Team: Hebrew\n"
 "Language: he\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=4; plural=(n==1 ? 0 : n==2 ? 1 : n>10 && n%10==0 ? "
-"2 : 3)\n"
-"X-Generator: Gtranslator 46.1\n"
+"2 : 3);\n"
+"X-Generator: Poedit 3.4.2\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
 #: data/org.gnome.Fractal.metainfo.xml.in.in:7
@@ -95,7 +95,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:14
 msgid "Highlights:"
-msgstr ""
+msgstr "נקודות מפתח:"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:16
 msgid ""
@@ -129,7 +129,7 @@ msgstr ""
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:39
 msgid "Fractal’s main window"
-msgstr ""
+msgstr "החלון הראשי של פרקטל"
 
 #: data/org.gnome.Fractal.metainfo.xml.in.in:43
 msgid "View the media history of a Matrix room"
@@ -163,15 +163,15 @@ msgstr "_הוספת חשבון"
 msgid "Account Settings"
 msgstr "הגדרות חשבון"
 
-#: src/application.rs:209
+#: src/application.rs:212
 msgid "The Fractal Team"
 msgstr "צוות פרקטל"
 
-#: src/application.rs:215
+#: src/application.rs:218
 msgid "© 2017-2024 The Fractal Team"
 msgstr "‏© 2017-2024 צוות פרקטל"
 
-#: src/application.rs:229
+#: src/application.rs:232
 msgid "translator-credits"
 msgstr ""
 "ירון שהרבני <sh.yaron@gmail.com>\n"
@@ -179,11 +179,11 @@ msgstr ""
 "מיזם תרגום GNOME לעברית https://l10n.gnome.org/teams/he/"
 
 #. This can't be added via the builder
-#: src/application.rs:233
+#: src/application.rs:236
 msgid "Name by"
 msgstr "השם מאת"
 
-#: src/application.rs:348
+#: src/application.rs:351
 msgid "Session not found"
 msgstr "לא נמצאה הפעלה"
 
@@ -196,7 +196,7 @@ msgstr "אימות השינוי"
 #: src/session/view/account_settings/user_sessions_page/mod.ui:89
 #: src/session/view/content/room_details/history_viewer/audio.ui:61
 #: src/session/view/content/room_details/history_viewer/file.ui:60
-#: src/session/view/content/room_details/history_viewer/media.ui:67
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:67
 #: src/session/view/content/room_history/mod.ui:204
 msgid "Try Again"
 msgstr "ניסיון חוזר"
@@ -206,7 +206,7 @@ msgstr "ניסיון חוזר"
 #: src/session/view/content/explore/mod.ui:53
 #: src/session/view/content/room_details/history_viewer/audio.ui:17
 #: src/session/view/content/room_details/history_viewer/file.ui:16
-#: src/session/view/content/room_details/history_viewer/media.ui:23
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:23
 #: src/session/view/content/room_history/mod.ui:176 src/window.ui:18
 msgid "Loading"
 msgstr "בטעינה"
@@ -227,28 +227,28 @@ msgstr "אזהרה"
 msgid "Error"
 msgstr "שגיאה"
 
-#: src/components/avatar/editable.rs:357
+#: src/components/avatar/editable.rs:420
 msgid "Images"
 msgstr "תמונות"
 
-#: src/components/avatar/editable.rs:362
+#: src/components/avatar/editable.rs:425
 msgid "Choose Avatar"
 msgstr "בחירת תמונה אישית"
 
-#: src/components/avatar/editable.rs:364
+#: src/components/avatar/editable.rs:427
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:202
 msgid "Choose"
 msgstr "בחירה"
 
-#: src/components/avatar/editable.rs:378
+#: src/components/avatar/editable.rs:441
 msgid "Could not open avatar file"
 msgstr "לא ניתן לפתוח תמונה אישית"
 
-#: src/components/avatar/editable.rs:399
+#: src/components/avatar/editable.rs:462
 msgid "The chosen file is not an image"
 msgstr "הקובץ הנבחר אינו תמונה"
 
-#: src/components/avatar/editable.rs:405
+#: src/components/avatar/editable.rs:468
 msgid "Could not determine the type of the chosen file"
 msgstr "לא ניתן לקבוע את סוג הקובץ שנבחר"
 
@@ -280,7 +280,7 @@ msgid ""
 "that no one is trying to impersonate you or intercept your conversations."
 msgstr ""
 "אימות ההפעלה שלך מאפשר לך ולאנשים אחרים שמשוחחים אתך להיות בטוחים שאף אחד לא "
-"מתחזה אליך"
+"מתחזה אליך."
 
 #: src/components/crypto/identity_setup_view.ui:55
 msgid "Verify With Another Session"
@@ -330,14 +330,14 @@ msgstr ""
 #: src/components/crypto/identity_setup_view.ui:178
 #: src/components/crypto/recovery_setup_view.ui:305
 msgid "Set Up"
-msgstr ""
+msgstr "הגדרה"
 
 #: src/components/crypto/identity_setup_view.ui:200
 #: src/components/crypto/identity_setup_view.ui:226
 #: src/components/crypto/recovery_setup_view.ui:169
 #: src/session/view/account_settings/security_page/mod.rs:254
 msgid "Reset Crypto Identity"
-msgstr ""
+msgstr "איפוס זהות קריפטוגרפית"
 
 #: src/components/crypto/identity_setup_view.ui:245
 msgid ""
@@ -416,7 +416,7 @@ msgstr "לא ניתן למחוק את החשבון"
 
 #: src/components/crypto/recovery_setup_view.ui:46
 msgid "Restore full access to your account."
-msgstr "שחזור "
+msgstr "שחזור גישה מלאה לחשבון שלך."
 
 #: src/components/crypto/recovery_setup_view.ui:54
 msgid ""
@@ -510,11 +510,11 @@ msgstr "אישור"
 #: src/components/crypto/recovery_setup_view.ui:457
 #: src/session/view/account_settings/security_page/mod.rs:334
 msgid "Account Recovery Incomplete"
-msgstr ""
+msgstr "שחזור החשבון חלקי"
 
 #: src/components/crypto/recovery_setup_view.ui:468
 msgid "The recovery was successful but the recovery data was incomplete."
-msgstr ""
+msgstr "השחזור הצליח אבל נתוני השחזור אינם שלמים."
 
 #: src/components/crypto/recovery_setup_view.ui:476
 msgid ""
@@ -567,7 +567,7 @@ msgstr "_אישור"
 #. Translators: This is a verb, as in 'View Room'.
 #: src/components/dialogs/join_room.rs:227
 #: src/session/view/content/explore/public_room_row.rs:199
-#: src/session/view/content/room_history/mod.rs:1009
+#: src/session/view/content/room_history/mod.rs:997
 #: src/session/view/content/room_history/state_row/tombstone.rs:94
 msgid "View"
 msgstr "הצגה"
@@ -604,7 +604,7 @@ msgstr "הצטרפות לחדר"
 #: src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:56 src/session/view/media_viewer.ui:58
+#: src/session/view/media_viewer.ui:51 src/session/view/media_viewer.ui:53
 msgid "Back"
 msgstr "חזרה"
 
@@ -614,7 +614,7 @@ msgstr "יש להזין מזהה חדר, כינוי חדר או קישור למ�
 
 #: src/components/dialogs/join_room.ui:193
 #: src/session/view/content/explore/public_room_row.rs:201
-#: src/session/view/content/room_history/mod.rs:1012
+#: src/session/view/content/room_history/mod.rs:1000
 #: src/session/view/content/room_history/state_row/tombstone.rs:96
 msgid "Join"
 msgstr "הצטרפות"
@@ -628,14 +628,13 @@ msgstr "לדחות את ההזמנה?"
 msgid ""
 "Do you really want to decline this invite? You can join this room on your "
 "own later."
-msgstr "האם אכן ברצונך לדחות את ההזמנה הזאת? באפשרותך להצטרף לחדר זה בהמשך."
+msgstr "לדחות את ההזמנה הזאת? ניתן להצטרף לחדר הזה בהמשך."
 
 #: src/components/dialogs/message_dialogs.rs:29
 msgid ""
 "Do you really want to decline this invite? You will not be able to join this "
 "room without it."
-msgstr ""
-"האם האכן ברצונך לדחות את ההזמנה הזאת? לא יתאפשר לך להצטרף לחדר זה ללא ההזמנה."
+msgstr "לדחות את ההזמנה הזאת? אי אפשר להצטרף לחדר זה ללא ההזמנה."
 
 #: src/components/dialogs/message_dialogs.rs:32
 #: src/identity_verification_view/accept_request_page.ui:46
@@ -650,14 +649,13 @@ msgstr "לעזוב את החדר?"
 
 #: src/components/dialogs/message_dialogs.rs:39
 msgid "Do you really want to leave this room? You can come back later."
-msgstr "האם אכן ברצונך לעזוב את החדר? יתאפשר לך לחזור בהמשך."
+msgstr "לעזוב את החדר? אפשר לחזור אליו בהמשך."
 
 #: src/components/dialogs/message_dialogs.rs:42
 msgid ""
 "Do you really want to leave this room? You will not be able to come back "
 "without an invitation."
-msgstr ""
-"האם אכן ברצונך לעזוב את החדר? לא יתאפשר לך לחזור לחדר בהמשך ללא קבלת הזמנה. "
+msgstr "לעזוב את החדר? אי אפשר לחזור לחדר בהמשך ללא הזמנה."
 
 #: src/components/dialogs/message_dialogs.rs:45
 msgid "Leave"
@@ -668,14 +666,14 @@ msgstr "לעזוב"
 #: src/components/dialogs/message_dialogs.rs:369
 #: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:293
+#: src/session/view/account_settings/general_page/mod.rs:294
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
 #: src/session/view/content/room_details/general_page.rs:1022
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:595
 #: src/session/view/content/room_details/room_upgrade_dialog.rs:80
-#: src/session/view/content/room_history/item_row.rs:937
-#: src/session/view/content/room_history/item_row.rs:994
+#: src/session/view/content/room_history/item_row.rs:891
+#: src/session/view/content/room_history/item_row.rs:945
 #: src/session/view/content/room_history/message_toolbar/mod.ui:78
 #: src/session/view/content/room_history/message_toolbar/mod.ui:80
 #: src/session/view/content/room_history/verification_info_bar.rs:177
@@ -772,7 +770,7 @@ msgstr ""
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:192
 msgid "Kick {user}?"
-msgstr ""
+msgstr "לבעוט את {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -780,7 +778,7 @@ msgstr ""
 msgid ""
 "Are you sure you want to kick {user_id}? They will still be able to join the "
 "room again on their own."
-msgstr ""
+msgstr "לבעוט את {user_id}? עדיין תהיה להם אפשרות להצטרף מחדש באופן עצמאי."
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -817,11 +815,13 @@ msgid_plural ""
 "want to remove {n} messages sent by {user_id}? This cannot be undone."
 msgstr[0] ""
 msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/components/dialogs/message_dialogs.rs:230
-#: src/session/view/account_settings/general_page/mod.rs:294
+#: src/session/view/account_settings/general_page/mod.rs:295
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
-#: src/session/view/content/room_history/item_row.rs:938
+#: src/session/view/content/room_history/item_row.rs:892
 #, fuzzy
 #| msgid "Re_move"
 msgid "Remove"
@@ -831,7 +831,7 @@ msgstr "ה_סרה"
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:236
 msgid "No Messages Sent by {user}"
-msgstr ""
+msgstr "לא נשלחה אף הודעה מאת {user}"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -842,7 +842,7 @@ msgid ""
 msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:257
-#: src/session/view/content/room_history/item_row.rs:976
+#: src/session/view/content/room_history/item_row.rs:927
 msgid "Reason (optional)"
 msgstr ""
 
@@ -853,12 +853,14 @@ msgid "Remove the latest message sent by the user"
 msgid_plural "Remove the {n} latest messages sent by the user"
 msgstr[0] ""
 msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:352
 msgid "Mute {user}?"
-msgstr ""
+msgstr "להשתיק את {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -871,13 +873,13 @@ msgstr ""
 #. Translators: In this string, 'Mute' is a verb, as in 'Mute room member'.
 #: src/components/dialogs/message_dialogs.rs:371
 msgid "Mute"
-msgstr ""
+msgstr "השתקה"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
 #: src/components/dialogs/message_dialogs.rs:387
 msgid "Promote {user}?"
-msgstr ""
+msgstr "לקדם את {user}?"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -889,11 +891,11 @@ msgstr ""
 
 #: src/components/dialogs/message_dialogs.rs:405
 msgid "Promote"
-msgstr ""
+msgstr "קידום"
 
 #: src/components/dialogs/user_profile.ui:4
 msgid "User Profile"
-msgstr ""
+msgstr "פרופיל משתמש"
 
 #: src/components/offline_banner.rs:102
 msgid "Offline"
@@ -905,39 +907,39 @@ msgstr "אין חיבור לרשת"
 
 #: src/components/offline_banner.rs:112
 msgid "No Internet connection"
-msgstr "אין חיבור לרשת"
+msgstr "אין חיבור לאינטרנט"
 
-#: src/components/media/content_viewer.rs:132
+#: src/components/media/content_viewer.rs:178
 msgid "Image not Viewable"
 msgstr "התמונה לא ניתנת להצגה"
 
-#: src/components/media/content_viewer.rs:133
+#: src/components/media/content_viewer.rs:179
 msgid "Audio Clip not Playable"
-msgstr ""
+msgstr "מקטע השמע לא זמין להשמעה"
 
-#: src/components/media/content_viewer.rs:134
+#: src/components/media/content_viewer.rs:180
 msgid "Video not Playable"
 msgstr "סרטון לא ניתן לנגינה"
 
-#: src/components/media/content_viewer.rs:135
+#: src/components/media/content_viewer.rs:181
 msgid "File not Viewable"
 msgstr "קובץ לא ניתן הלצגה"
 
 #: src/components/media/location_viewer.rs:135
 msgid "Location at latitude {latitude} and longitude {longitude}"
-msgstr ""
+msgstr "מקום בקו אורך {latitude} ובקו רוחב {longitude}"
 
 #: src/components/reaction_chooser.ui:7
 msgid "Send a Reaction"
-msgstr ""
+msgstr "שליחת רגש"
 
 #: src/components/reaction_chooser.ui:17
 msgid "More Reactions"
-msgstr ""
+msgstr "רגשות נוספים"
 
 #: src/components/pill/at_room.rs:29
 msgid "Notify the whole room"
-msgstr ""
+msgstr "להודיע לכל החדר"
 
 #. Translators: As in 'Custom role'.
 #. Translators: As in, 'Custom power level', meaning permissions.
@@ -948,7 +950,7 @@ msgstr "מותאם אישית"
 
 #: src/components/power_level_selection/popover.ui:164
 msgid "Confirm Custom Role"
-msgstr ""
+msgstr "אישור תפקיד מותאם אישית"
 
 #: src/components/user_page.rs:283
 #: src/session/view/account_settings/general_page/mod.ui:74
@@ -1060,14 +1062,16 @@ msgid "Could not remove 1 message sent by the user"
 msgid_plural "Could not remove {n} messages sent by the user"
 msgstr[0] "לא ניתן להסיר את ההפעלה מאחסון מאובטח"
 msgstr[1] "לא ניתן להסיר את ההפעלה מאחסון מאובטח"
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/components/user_page.rs:710
 msgid "Identity verified"
-msgstr ""
+msgstr "הזהות אומתה"
 
 #: src/components/user_page.rs:717
 msgid "Identity not verified"
-msgstr ""
+msgstr "הזהות לא אומתה"
 
 #: src/components/user_page.rs:733
 #, fuzzy
@@ -1102,7 +1106,7 @@ msgstr "לא ניתן להוריד את הקובץ"
 
 #: src/components/user_page.rs:785 src/session/view/content/invite.rs:302
 #: src/session/view/content/room_history/sender_avatar/mod.rs:780
-#: src/session/view/sidebar/row.rs:582
+#: src/session/view/sidebar/row.rs:617
 #, fuzzy
 #| msgid "Couldn’t delete the account"
 msgid "Could not ignore user"
@@ -1118,7 +1122,7 @@ msgstr "מזהה משתמש Matrix"
 
 #: src/components/user_page.ui:114
 msgid "Role"
-msgstr ""
+msgstr "תפקיד"
 
 #. Translators: value used to assign room member roles
 #: src/components/user_page.ui:127
@@ -1128,7 +1132,7 @@ msgstr ""
 #. Translators: As in, 'Unban room member'.
 #: src/components/user_page.ui:181
 msgid "Unban"
-msgstr ""
+msgstr "שחרור חסימה"
 
 #: src/components/user_page.ui:196
 #, fuzzy
@@ -1172,7 +1176,7 @@ msgstr "הפקודה הועתקה ללוח הגזירים"
 
 #: src/error_page.ui:25
 msgid "Secret Portal Error"
-msgstr ""
+msgstr "שגיאת שער גישה סודי"
 
 #: src/error_page.ui:39
 msgid ""
@@ -1308,13 +1312,13 @@ msgstr "התראות"
 
 #: src/identity_verification_view/cancelled_page.ui:41
 msgid "Send New Request"
-msgstr ""
+msgstr "שליחת בקשה חדשה"
 
 #: src/identity_verification_view/cancelled_page.ui:52
 #: src/identity_verification_view/completed_page.ui:48
 #: src/identity_verification_view/room_left_page.ui:44
 msgid "Dismiss"
-msgstr ""
+msgstr "התעלמות"
 
 #: src/identity_verification_view/choose_method_page.rs:175
 #: src/identity_verification_view/sas_page.rs:147
@@ -1399,7 +1403,7 @@ msgstr ""
 
 #: src/identity_verification_view/completed_page.rs:127
 msgid "Verification Complete"
-msgstr ""
+msgstr "האימות הושלם"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1441,7 +1445,7 @@ msgstr "צלילי התראות"
 
 #: src/identity_verification_view/mod.ui:25
 msgid "Wait for Other Party"
-msgstr ""
+msgstr "בהמתנה לצד השני"
 
 #: src/identity_verification_view/mod.ui:36
 #: src/identity_verification_view/no_supported_methods_page.ui:22
@@ -1649,7 +1653,7 @@ msgstr ""
 
 #: src/login/advanced_dialog.ui:14
 msgid "_Auto-Discovery"
-msgstr ""
+msgstr "_גילוי אוטומטי"
 
 #. Translators: Fractal is the application name.
 #: src/login/greeter.ui:6 src/login/greeter.ui:91
@@ -1711,7 +1715,7 @@ msgstr "מתקדם…"
 #. The brand is something like Facebook, Apple, GitHub…
 #: src/login/idp_button.rs:124
 msgid "Log in with {brand}"
-msgstr ""
+msgstr "כניסה עם {brand}"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -1733,7 +1737,7 @@ msgstr "ספקי SSO נוספים"
 
 #: src/login/method_page.rs:189
 msgid "Login via SSO"
-msgstr ""
+msgstr "כניסה דרך SSO (כניסה אחודה)"
 
 #: src/login/method_page.ui:5 src/window.ui:57
 msgid "Log In"
@@ -1767,7 +1771,7 @@ msgstr "סריקה הושלמה"
 
 #: src/login/mod.ui:80
 msgid "This session is ready to send and receive secure messages"
-msgstr ""
+msgstr "ההפעלה הזאת מוכנה לשלוח ולקבל הודעות מאובטחות"
 
 #: src/login/mod.ui:86
 #, fuzzy
@@ -1783,11 +1787,11 @@ msgstr "מזהה הפעלה"
 
 #: src/login/session_setup_view.ui:45
 msgid "Fetching Account Data…"
-msgstr ""
+msgstr "נתוני החשבון מתקבלים…"
 
 #: src/login/sso_page.ui:5 src/login/sso_page.ui:41
 msgid "Single Sign-On"
-msgstr ""
+msgstr "Single Sign-On (כניסה אחודה)"
 
 #: src/login/sso_page.ui:56
 #, fuzzy
@@ -1797,128 +1801,86 @@ msgstr "נא לעקוב אחר הצעדים בדפדפן."
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/secret/linux.rs:109
+#: src/secret/linux.rs:154
 msgid "Fractal: Matrix credentials for {user_id}"
-msgstr ""
+msgstr "פרקטל: פרטי גישה ב־Matrix עבור {user_id}"
 
-#: src/secret/linux.rs:162
-#, fuzzy
-#| msgid "Unable to store session"
-msgid "Malformed version in stored session"
-msgstr "לא ניתן לאחסן את ההפעלה"
-
-#: src/secret/linux.rs:187
-msgid "Could not find profile in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:200
-msgid "Malformed homeserver in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:206
-msgid "Could not find homeserver in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:216
-msgid "Malformed user ID in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:222
-msgid "Could not find user ID in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:230
-msgid "Could not find device ID in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:238
-msgid "Could not find database path in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:250 src/secret/linux.rs:260
-msgid "Malformed secret in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:269
-msgid "Could not get secret in stored session"
-msgstr ""
-
-#: src/secret/linux.rs:418
+#: src/secret/linux.rs:454
 msgid "The secret storage file is corrupted."
 msgstr "קובץ האחסון המאובטח פגום."
 
-#: src/secret/linux.rs:422
+#: src/secret/linux.rs:458
 msgid "Could not access the secret storage file location."
 msgstr "לא ניתן למיקום קובץ האחסון המאובטח."
 
-#: src/secret/linux.rs:425
+#: src/secret/linux.rs:461
 msgid "An unknown error occurred when accessing the secret storage file."
 msgstr ""
 
-#: src/secret/linux.rs:428
+#: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
 msgstr ""
 
-#: src/secret/linux.rs:431
+#: src/secret/linux.rs:467
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 
-#: src/secret/linux.rs:434
+#: src/secret/linux.rs:470
 msgid ""
 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
 
-#: src/secret/linux.rs:437
+#: src/secret/linux.rs:473
 msgid ""
 "The Flatpak Secret Portal is not available. Make sure xdg-desktop-portal is "
 "installed, and it is at least at version 1.5.0."
 msgstr ""
 
-#: src/secret/linux.rs:440
+#: src/secret/linux.rs:476
 msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 
-#: src/secret/linux.rs:454
+#: src/secret/linux.rs:490
 msgid "The item was deleted."
 msgstr "הפריט נמחק."
 
-#: src/secret/linux.rs:458 src/secret/linux.rs:478
+#: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
 "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 
-#: src/secret/linux.rs:461
+#: src/secret/linux.rs:497
 #, fuzzy
 #| msgid "The secret storage file is corrupted."
 msgid "The collection or item is locked."
 msgstr "קובץ האחסון המאובטח פגום."
 
-#: src/secret/linux.rs:464
+#: src/secret/linux.rs:500
 msgid "The D-Bus Secret Service session does not exist."
 msgstr ""
 
-#: src/secret/linux.rs:467
+#: src/secret/linux.rs:503
 #, fuzzy
 #| msgid "The validation code is not correct."
 msgid "The collection or item does not exist."
 msgstr "קוד האימות שגוי."
 
-#: src/secret/linux.rs:471
+#: src/secret/linux.rs:507
 msgid ""
 "The request to the D-Bus Secret Service was cancelled. Make sure to accept "
 "any prompt asking to access it."
 msgstr ""
 
-#: src/secret/linux.rs:474
+#: src/secret/linux.rs:510
 msgid ""
 "Could not access the default collection. Make sure a keyring was created and "
 "set as default."
 msgstr ""
 
-#: src/session/model/session.rs:950
+#: src/session/model/session.rs:952
 #, fuzzy
 #| msgid "Could not download the file"
 msgid "Could not log the session out"
@@ -1969,17 +1931,17 @@ msgstr "כל משתמש רשום"
 msgid "Unsupported rule"
 msgstr "אירוע לא נתמך"
 
-#: src/session/model/room/mod.rs:1330
+#: src/session/model/room/mod.rs:1338
 msgid "Empty Room (was {user})"
 msgstr ""
 
 #. Translators: This is the name of a room without other users.
-#: src/session/model/room/mod.rs:1333
+#: src/session/model/room/mod.rs:1341
 msgid "Empty Room"
 msgstr "חדר ריק"
 
 #. Translators: This is displayed when the room name is unknown yet.
-#: src/session/model/room/mod.rs:1343
+#: src/session/model/room/mod.rs:1351
 msgid "Unknown"
 msgstr "לא ידוע"
 
@@ -2004,7 +1966,7 @@ msgstr "מושתק"
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
 #: src/session/model/room_list/mod.rs:406
-#: src/session/view/content/room_history/mod.rs:597
+#: src/session/view/content/room_history/mod.rs:614
 msgid "Could not join room {room_name}. Try again later."
 msgstr "לא ניתן להצטרף לחדר {room_name}. נא לנסות שוב בהמשך."
 
@@ -2099,7 +2061,7 @@ msgid "Confirm New Password"
 msgstr "אימות הססמה החדשה"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:147
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:70
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:73
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:77
 #: src/session/view/content/room_history/verification_info_bar.rs:176
 msgid "Continue"
@@ -2113,12 +2075,14 @@ msgstr "החשבון הושבת בהצלחה"
 msgid "Could not deactivate account"
 msgstr "לא ניתן להשבית את החשבון"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:117
+#. Translators: Deactivation is a permanent action that occurs on the server.
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
+#: src/session/view/account_settings/general_page/mod.ui:118
 msgid "Deactivate Account"
 msgstr "השבתת חשבון"
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:41
+#. Translators: Deactivation is a permanent action that occurs on the server.
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:43
 msgid ""
 "Deactivating your account means you will lose access to all your messages, "
 "contacts, files, and more, forever."
@@ -2126,7 +2090,8 @@ msgstr ""
 "משמעות השבתת החשבון שלך היא שכל ההודעות, אנשי הקשר, הקבצים שלך ועוד יאבדו "
 "לצמיתות."
 
-#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:49
+#. Translators: Deactivation is a permanent action that occurs on the server.
+#: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:52
 msgid ""
 "To confirm that you really want to deactivate this account, type in your "
 "Matrix user ID:"
@@ -2189,50 +2154,50 @@ msgstr ""
 msgid "Remove Session"
 msgstr "אימות הפעלה"
 
-#: src/session/view/account_settings/general_page/mod.rs:207
+#: src/session/view/account_settings/general_page/mod.rs:208
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "התמונה הייצוגית הוסרה בהצלחה"
 
-#: src/session/view/account_settings/general_page/mod.rs:209
+#: src/session/view/account_settings/general_page/mod.rs:210
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "התמונה הייצוגית הוחלפה בהצלחה"
 
-#: src/session/view/account_settings/general_page/mod.rs:228
+#: src/session/view/account_settings/general_page/mod.rs:229
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 msgid "Could not load file"
 msgstr "לא ניתן לטעון קובץ"
 
-#: src/session/view/account_settings/general_page/mod.rs:243
+#: src/session/view/account_settings/general_page/mod.rs:244
 #: src/session/view/content/room_details/edit_details_subpage.rs:204
 msgid "Could not upload avatar"
 msgstr "לא ניתן להעלות תמונה אישית"
 
-#: src/session/view/account_settings/general_page/mod.rs:272
+#: src/session/view/account_settings/general_page/mod.rs:273
 #: src/session/view/content/room_details/edit_details_subpage.rs:227
 msgid "Could not change avatar"
 msgstr "לא ניתן לשנות תמונה אישית"
 
-#: src/session/view/account_settings/general_page/mod.rs:289
+#: src/session/view/account_settings/general_page/mod.rs:290
 #: src/session/view/content/room_details/edit_details_subpage.rs:252
 msgid "Remove Avatar?"
 msgstr "להסיר את התמונה האישית?"
 
-#: src/session/view/account_settings/general_page/mod.rs:290
+#: src/session/view/account_settings/general_page/mod.rs:291
 msgid "Do you really want to remove your avatar?"
 msgstr "האם אכן ברצונך להסיר את התמונה האישית שלך?"
 
-#: src/session/view/account_settings/general_page/mod.rs:328
+#: src/session/view/account_settings/general_page/mod.rs:329
 #: src/session/view/content/room_details/edit_details_subpage.rs:284
 msgid "Could not remove avatar"
 msgstr "לא ניתן למחוק תמונה אישית"
 
-#: src/session/view/account_settings/general_page/mod.rs:380
+#: src/session/view/account_settings/general_page/mod.rs:381
 msgid "Name changed successfully"
 msgstr "השם הוחלף בהצלחה"
 
-#: src/session/view/account_settings/general_page/mod.rs:431
+#: src/session/view/account_settings/general_page/mod.rs:432
 msgid "Could not change display name"
 msgstr "לא ניתן להחליף את שם התצוגה"
 
@@ -2409,7 +2374,7 @@ msgstr ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:177
 msgid "Export Keys"
-msgstr ""
+msgstr "ייצוא מפתחות"
 
 #. Translators: 'Room encryption keys' are encryption keys for all rooms.
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:180
@@ -2447,7 +2412,7 @@ msgid "Import Encryption Keys From…"
 msgstr ""
 
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:231
-#: src/utils/media.rs:218
+#: src/utils/matrix/media_message.rs:191
 #, fuzzy
 #| msgid "Couldn’t save file"
 msgid "Could not access file"
@@ -2803,17 +2768,13 @@ msgstr ""
 
 #: src/session/view/content/explore/servers_popover.ui:38
 #: src/session/view/content/explore/servers_popover.ui:45
-#, fuzzy
-#| msgid "Add server…"
 msgid "Add Server"
-msgstr "הוספת שרת…"
+msgstr "הוספת שרת"
 
 #: src/session/view/content/explore/server_row.ui:28
 #: src/session/view/content/explore/server_row.ui:30
-#, fuzzy
-#| msgid "Homeserver"
 msgid "Remove Server"
-msgstr "שרת ביתי"
+msgstr "הסרת שרת"
 
 #: src/session/view/content/invite.rs:187
 #, fuzzy
@@ -2845,10 +2806,8 @@ msgid "Invite"
 msgstr "הזמנה"
 
 #: src/session/view/content/invite.ui:125
-#, fuzzy
-#| msgid "Decline"
 msgid "_Decline"
-msgstr "סירוב"
+msgstr "_סירוב"
 
 #: src/session/view/content/invite.ui:135 src/session/view/sidebar/mod.ui:32
 msgid "_Accept"
@@ -2874,16 +2833,12 @@ msgid "Room History"
 msgstr "היסטוריית חדר"
 
 #: src/session/view/content/mod.ui:50
-#, fuzzy
-#| msgid "Invite"
 msgid "Room Invite"
-msgstr "הזמנה"
+msgstr "הזמנה לחדר"
 
 #: src/session/view/content/mod.ui:59
-#, fuzzy
-#| msgid "Explore"
 msgid "Explore Rooms"
-msgstr "חשיפה"
+msgstr "חקירת חדרים"
 
 #: src/session/view/content/room_details/addresses_subpage/completion_popover.ui:5
 msgid "Address auto-completion"
@@ -2896,10 +2851,8 @@ msgid "Local Addresses on {homeserver}"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:402
-#, fuzzy
-#| msgid "Room Address"
 msgid "Remove address"
-msgstr "כתובת חדר"
+msgstr "הסרת כתובת"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -2910,10 +2863,8 @@ msgstr ""
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:447
 #: src/session/view/content/room_details/general_page.rs:624
 #: src/session/view/room_creation.ui:132
-#, fuzzy
-#| msgid "Room Address"
 msgid "Main Address"
-msgstr "כתובת חדר"
+msgstr "כתובת ראשית"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:471
 msgid "Set as main address"
@@ -2926,32 +2877,24 @@ msgid "Set “{address}” as main address"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:521
-#, fuzzy
-#| msgid "Could not remove avatar"
 msgid "Could not remove public address"
-msgstr "לא ניתן למחוק תמונה אישית"
+msgstr "לא ניתן להסיר כתובת ציבורית"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:547
-#, fuzzy
-#| msgid "Couldn’t add the email address."
 msgid "Could not set main public address"
-msgstr "לא ניתן להוסיף את כתובת הדוא״ל."
+msgstr "לא ניתן להגדיר את הכתובת הציבורית הראשית"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:601
-#, fuzzy
-#| msgid "Couldn’t add the email address."
 msgid "Could not add public address"
-msgstr "לא ניתן להוסיף את כתובת הדוא״ל."
+msgstr "לא נוסית להוסיף את הכתובת הראשית"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:605
 msgid "This address is not registered as a local address"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:608
-#, fuzzy
-#| msgid "There is a newer version of this room."
 msgid "This address does not belong to this room"
-msgstr "יש גרסה חדשה יותר של החדר הזה."
+msgstr "הכתובת הזאת לא שייכת לחדר הזה"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:662
 msgid "Unregister local address"
@@ -2964,10 +2907,8 @@ msgid "Unregister “{address}”"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:705
-#, fuzzy
-#| msgid "Couldn’t add the email address."
 msgid "Could not unregister local address"
-msgstr "לא ניתן להוסיף את כתובת הדוא״ל."
+msgstr "לא ניתן לבטל את רישום הכתובת המקומית"
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name.
@@ -2976,20 +2917,16 @@ msgid "Register “{address}”"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:776
-#, fuzzy
-#| msgid "Couldn’t add the email address."
 msgid "Could not register local address"
-msgstr "לא ניתן להוסיף את כתובת הדוא״ל."
+msgstr "לא ניתן לרשום כתובת מקומית"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.rs:780
 msgid "This address is already registered"
 msgstr ""
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:4
-#, fuzzy
-#| msgid "Room Address"
 msgid "Edit Room Addresses"
-msgstr "כתובת חדר"
+msgstr "עריכת כתובות חדר"
 
 #: src/session/view/content/room_details/addresses_subpage/mod.ui:14
 #: src/session/view/content/room_details/general_page.ui:147
@@ -3035,28 +2972,20 @@ msgid "Do you really want to remove the avatar for this room?"
 msgstr ""
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:318
-#, fuzzy
-#| msgid "Name changed successfully"
 msgid "Room name saved successfully"
-msgstr "השם הוחלף בהצלחה"
+msgstr "שם החדר נשמר בהצלחה"
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:390
-#, fuzzy
-#| msgid "Could not change display name"
 msgid "Could not change room name"
-msgstr "לא ניתן להחליף את שם התצוגה"
+msgstr "לא ניתן להחליף את שם החדר"
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:429
-#, fuzzy
-#| msgid "Session removed successfully."
 msgid "Room description saved successfully"
-msgstr "הפעלה הוסרה בהצלחה."
+msgstr "תיאור החדר נשמחר בהצלחה"
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:506
-#, fuzzy
-#| msgid "Could not change display name"
 msgid "Could not change room description"
-msgstr "לא ניתן להחליף את שם התצוגה"
+msgstr "לא ניתן להחליף את תיאור החדר"
 
 #: src/session/view/content/room_details/edit_details_subpage.rs:526
 msgid "Discard Unsaved Changes?"
@@ -3074,10 +3003,8 @@ msgid "Discard"
 msgstr ""
 
 #: src/session/view/content/room_details/edit_details_subpage.ui:4
-#, fuzzy
-#| msgid "Room Details"
 msgid "Edit Room Details"
-msgstr "פרטי החדר"
+msgstr "עריכת פרטי החדר"
 
 #: src/session/view/content/room_details/edit_details_subpage.ui:29
 #, fuzzy
@@ -3090,9 +3017,9 @@ msgid "Description"
 msgstr "תיאור"
 
 #: src/session/view/content/room_details/edit_details_subpage.ui:140
-#: src/session/view/content/room_details/history_viewer/file_row.rs:155
+#: src/session/view/content/room_details/history_viewer/file_row.rs:156
 #: src/session/view/content/room_details/permissions/permissions_subpage.rs:597
-#: src/utils/media.rs:193
+#: src/utils/matrix/media_message.rs:166
 msgid "Save"
 msgstr "שמירה"
 
@@ -3110,6 +3037,8 @@ msgid "Member"
 msgid_plural "Members"
 msgstr[0] "חבר"
 msgstr[1] "חבר"
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/session/view/content/room_details/general_page.rs:578
 #, fuzzy
@@ -3245,7 +3174,7 @@ msgid "Edit Details"
 msgstr "עריכת פרטים"
 
 #: src/session/view/content/room_details/general_page.ui:89
-#: src/session/view/content/room_details/history_viewer/media.ui:4
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:4
 msgid "Media"
 msgstr ""
 
@@ -3370,11 +3299,11 @@ msgstr "פיקוח"
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this case, the file to play is an
 #. audio file.
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:75
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:74
 msgid "Play {filename}"
 msgstr ""
 
-#: src/session/view/content/room_details/history_viewer/audio_row.rs:93
+#: src/session/view/content/room_details/history_viewer/audio_row.rs:92
 msgid "Unknown duration"
 msgstr "אורך לא ידוע"
 
@@ -3399,7 +3328,7 @@ msgstr "לא ניתן לטעון שמע"
 
 #: src/session/view/content/room_details/history_viewer/audio.ui:57
 #: src/session/view/content/room_details/history_viewer/file.ui:56
-#: src/session/view/content/room_details/history_viewer/media.ui:63
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:63
 #: src/session/view/content/room_history/mod.ui:200
 msgid "Check your network connection"
 msgstr "יש לבדוק את חיבור הרשת שלך"
@@ -3423,11 +3352,11 @@ msgid "Open File"
 msgstr "פתיחת קובץ"
 
 #: src/session/view/content/room_details/history_viewer/file_row.rs:100
-#: src/session/view/content/room_details/history_viewer/file_row.rs:154
+#: src/session/view/content/room_details/history_viewer/file_row.rs:155
 #: src/session/view/content/room_details/history_viewer/file_row.ui:12
 #: src/session/view/content/room_history/message_row/file.ui:25
 #: src/session/view/content/room_history/message_row/file.ui:27
-#: src/utils/media.rs:191
+#: src/utils/matrix/media_message.rs:164
 msgid "Save File"
 msgstr "שמירת קובץ"
 
@@ -3449,21 +3378,21 @@ msgstr "לא ניתן לטעון קבצים"
 msgid "File History"
 msgstr "היסטוריית קבצים"
 
-#: src/session/view/content/room_details/history_viewer/media.ui:39
-#: src/session/view/content/room_details/history_viewer/media.ui:46
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:39
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:46
 msgid "No Media"
 msgstr "איו מדיה"
 
-#: src/session/view/content/room_details/history_viewer/media.ui:47
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:47
 msgid "This room does not contain any media"
 msgstr "חדר זה לא מכיל אף מדיה"
 
-#: src/session/view/content/room_details/history_viewer/media.ui:55
-#: src/session/view/content/room_details/history_viewer/media.ui:62
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:55
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:62
 msgid "Could Not Load Media"
 msgstr "לא ניתן לטעון מדיה"
 
-#: src/session/view/content/room_details/history_viewer/media.ui:82
+#: src/session/view/content/room_details/history_viewer/visual_media.ui:82
 msgid "Media History"
 msgstr "היסטוריית מדיה"
 
@@ -3480,6 +3409,8 @@ msgid "Could not invite {user} to {room}. Try again later."
 msgid_plural "Could not invite {n} users to {room}. Try again later."
 msgstr[0] "ההצטרפות לחדר {room_name} נכשלה. נא לנסות שוב בהמשך."
 msgstr[1] "ההצטרפות לחדר {room_name} נכשלה. נא לנסות שוב בהמשך."
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/session/view/content/room_details/invite_subpage/mod.ui:4
 msgid "Invite New Members"
@@ -3566,6 +3497,8 @@ msgid "Banned Room Member"
 msgid_plural "Banned Room Members"
 msgstr[0] "חברי חדר מורחקים"
 msgstr[1] "חברי חדר מורחקים"
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.rs:222
 #, fuzzy
@@ -3574,6 +3507,8 @@ msgid "Room Member"
 msgid_plural "Room Members"
 msgstr[0] "חברי חדר"
 msgstr[1] "חברי חדר"
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:11
 #: src/session/view/content/room_details/members_page/members_list_view/mod.ui:13
@@ -3807,7 +3742,6 @@ msgstr "_שמירת סרטון"
 
 #: src/session/view/content/room_history/event_actions.ui:59
 #: src/session/view/content/room_history/event_actions.ui:145
-#: src/session/view/media_viewer.ui:21
 msgid "S_ave Audio"
 msgstr "שמירת _שמע"
 
@@ -3815,7 +3749,7 @@ msgstr "שמירת _שמע"
 #: src/session/view/content/room_history/event_actions.ui:64
 #: src/session/view/content/room_history/event_actions.ui:150
 #: src/session/view/content/room_history/event_actions.ui:190
-#: src/session/view/media_viewer.ui:26
+#: src/session/view/media_viewer.ui:21
 #, fuzzy
 #| msgid "Open Message Menu"
 msgid "Copy Message _Link"
@@ -3854,7 +3788,7 @@ msgstr "_העתקת תמונה ממוזערת"
 msgid "Rep_ort"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:336
+#: src/session/view/content/room_history/item_row.rs:335
 msgid "This is the start of the visible history"
 msgstr "זוהי תחילתה של ההיסטוריה הניתן לצפייה"
 
@@ -3862,7 +3796,7 @@ msgstr "זוהי תחילתה של ההיסטוריה הניתן לצפייה"
 #. year. For example, "Friday, May 5".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:376
+#: src/session/view/content/room_history/item_row.rs:375
 #, fuzzy
 #| msgid "%B %e"
 msgid "%A, %B %-e"
@@ -3872,68 +3806,65 @@ msgstr "‫%e ב%B"
 #. year. For ex. "Friday, May 5, 2023".
 #. Please use `-` before specifiers that add spaces on single
 #. digits. See `man strftime` or the documentation of g_date_time_format for the available specifiers: <https://docs.gtk.org/glib/method.DateTime.format.html>
-#: src/session/view/content/room_history/item_row.rs:382
+#: src/session/view/content/room_history/item_row.rs:381
 #, fuzzy
 #| msgid "%B %e, %Y"
 msgid "%A, %B %-e, %Y"
 msgstr "‫%e ב%B, %Y"
 
-#: src/session/view/content/room_history/item_row.rs:388
+#: src/session/view/content/room_history/item_row.rs:387
 msgid "New Messages"
 msgstr "הודעות חדשות"
 
-#: src/session/view/content/room_history/item_row.rs:540
-#: src/session/view/media_viewer.rs:554
+#: src/session/view/content/room_history/item_row.rs:539
+#: src/session/view/media_viewer.rs:491
 #, fuzzy
 #| msgid "Permalink copied to clipboard"
 msgid "Message link copied to clipboard"
 msgstr "הקישור הקבוע הועתק ללוח הגזירים"
 
-#: src/session/view/content/room_history/item_row.rs:677
-#: src/session/view/content/room_history/item_row.rs:724
-#: src/session/view/content/room_history/item_row.rs:744
-#: src/session/view/content/room_history/item_row.rs:779
-#: src/session/view/content/room_history/item_row.rs:825
-#: src/session/view/content/room_history/item_row.rs:853
-#: src/session/view/content/room_history/item_row.rs:881
+#: src/session/view/content/room_history/item_row.rs:676
+#: src/session/view/content/room_history/item_row.rs:729
+#: src/session/view/content/room_history/item_row.rs:764
+#: src/session/view/content/room_history/item_row.rs:842
 #, fuzzy
 #| msgid "Image from Clipboard"
 msgid "Text copied to clipboard"
 msgstr "תמונה מלוח הגזירים"
 
-#: src/session/view/content/room_history/item_row.rs:799
+#: src/session/view/content/room_history/item_row.rs:784
 msgid "Thumbnail copied to clipboard"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:931
+#: src/session/view/content/room_history/item_row.rs:885
 #, fuzzy
 #| msgid "Send Message"
 msgid "Remove Message?"
 msgstr "שליחת הודעה"
 
-#: src/session/view/content/room_history/item_row.rs:933
+#: src/session/view/content/room_history/item_row.rs:887
 msgid "Do you really want to remove this message? This cannot be undone."
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:947
+#: src/session/view/content/room_history/item_row.rs:901
 #, fuzzy
 #| msgid "Could not retrieve file URI"
 msgid "Could not remove message"
 msgstr "לא ניתן לקבל את כתובת הקובץ"
 
-#: src/session/view/content/room_history/item_row.rs:961
+#: src/session/view/content/room_history/item_row.rs:912
 #, fuzzy
 #| msgid "Couldn’t delete the account"
 msgid "Could not toggle reaction"
 msgstr "לא ניתן למחוק את החשבון"
 
-#: src/session/view/content/room_history/item_row.rs:987
+#: src/session/view/content/room_history/item_row.rs:938
 #, fuzzy
 #| msgid "Unsupported event"
 msgid "Report Event?"
 msgstr "אירוע לא נתמך"
 
-#: src/session/view/content/room_history/item_row.rs:989
+#: src/session/view/content/room_history/item_row.rs:940
 msgid ""
 "Reporting an event will send its unique ID to the administrator of your "
 "homeserver. The administrator will not be able to see the content of the "
@@ -3941,17 +3872,17 @@ msgid ""
 msgstr ""
 
 #. Translators: This is a verb, as in 'Report Event'.
-#: src/session/view/content/room_history/item_row.rs:996
+#: src/session/view/content/room_history/item_row.rs:947
 msgid "Report"
 msgstr ""
 
-#: src/session/view/content/room_history/item_row.rs:1014
+#: src/session/view/content/room_history/item_row.rs:965
 #, fuzzy
 #| msgid "Couldn’t delete the account"
 msgid "Could not report event"
 msgstr "לא ניתן למחוק את החשבון"
 
-#: src/session/view/content/room_history/item_row.rs:1032
+#: src/session/view/content/room_history/item_row.rs:983
 #, fuzzy
 #| msgid "Could not retrieve file URI"
 msgid "Could not discard message"
@@ -3961,29 +3892,28 @@ msgstr "לא ניתן לקבל את כתובת הקובץ"
 msgid "Audio: {filename}"
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/audio.rs:198
-#: src/session/view/content/room_history/message_row/audio.rs:202
+#: src/session/view/content/room_history/message_row/audio.rs:179
 msgid "Could not retrieve audio file"
 msgstr "לא ניתן לקבל את קובץ השמע"
 
-#: src/session/view/content/room_history/message_row/audio.rs:219
+#: src/session/view/content/room_history/message_row/audio.rs:196
 msgid "Error reading audio file"
 msgstr "שגיאה בקריאת קובץ השמע"
 
-#: src/session/view/content/room_history/message_row/content.rs:240
+#: src/session/view/content/room_history/message_row/content.rs:237
 msgid ""
 "Could not decrypt this message, decryption will be retried once the keys are "
 "available."
 msgstr ""
 
-#: src/session/view/content/room_history/message_row/content.rs:250
+#: src/session/view/content/room_history/message_row/content.rs:247
 #, fuzzy
 #| msgid "This message has no source."
 msgid "This message was removed."
 msgstr "להודעה הזאת אין מקור."
 
-#: src/session/view/content/room_history/message_row/content.rs:261
-#: src/session/view/content/room_history/message_row/content.rs:423
+#: src/session/view/content/room_history/message_row/content.rs:258
+#: src/session/view/content/room_history/message_row/content.rs:357
 msgid "Unsupported event"
 msgstr "אירוע לא נתמך"
 
@@ -4000,45 +3930,6 @@ msgstr ""
 #| msgid "Your Location"
 msgid "User Location"
 msgstr "המיקום שלך"
-
-#: src/session/view/content/room_history/message_row/media.rs:331
-msgid "Image: {filename}"
-msgstr ""
-
-#: src/session/view/content/room_history/message_row/media.rs:332
-msgid "Sticker: {filename}"
-msgstr ""
-
-#: src/session/view/content/room_history/message_row/media.rs:333
-#, fuzzy
-#| msgid "Invite to {name}"
-msgid "Video: {filename}"
-msgstr "הזמנה אל {name}"
-
-#: src/session/view/content/room_history/message_row/media.rs:337
-#, fuzzy
-#| msgid "Images"
-msgid "Image"
-msgstr "תמונות"
-
-#: src/session/view/content/room_history/message_row/media.rs:338
-msgid "Sticker"
-msgstr ""
-
-#: src/session/view/content/room_history/message_row/media.rs:339
-#, fuzzy
-#| msgid "video"
-msgid "Video"
-msgstr "סרט"
-
-#: src/session/view/content/room_history/message_row/media.rs:416
-msgid "Image file not supported"
-msgstr ""
-
-#: src/session/view/content/room_history/message_row/media.rs:455
-#: src/session/view/content/room_history/message_row/media.rs:461
-msgid "Could not retrieve media"
-msgstr "לא ניתן לקבל את המדיה"
 
 #. Translators: As in 'Sending message…'.
 #: src/session/view/content/room_history/message_row/message_state_stack.ui:14
@@ -4074,13 +3965,15 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:210
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:215
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] ""
 msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
-#: src/session/view/content/room_history/message_row/reaction/mod.rs:228
+#: src/session/view/content/room_history/message_row/reaction/mod.rs:233
 #, fuzzy
 #| msgid "Search for users to invite them to this room."
 msgid "{user} reacted with {reaction_key}"
@@ -4103,6 +3996,45 @@ msgstr ""
 msgid "Details"
 msgstr "פרטי החדר"
 
+#: src/session/view/content/room_history/message_row/visual_media.rs:302
+msgid "Image: {filename}"
+msgstr ""
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:305
+msgid "Sticker: {filename}"
+msgstr ""
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:308
+#, fuzzy
+#| msgid "Invite to {name}"
+msgid "Video: {filename}"
+msgstr "הזמנה אל {name}"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:313
+#, fuzzy
+#| msgid "Images"
+msgid "Image"
+msgstr "תמונות"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:314
+msgid "Sticker"
+msgstr ""
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:315
+#, fuzzy
+#| msgid "video"
+msgid "Video"
+msgstr "סרט"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:361
+#: src/session/view/content/room_history/message_row/visual_media.rs:403
+msgid "Could not retrieve media"
+msgstr "לא ניתן לקבל את המדיה"
+
+#: src/session/view/content/room_history/message_row/visual_media.rs:392
+msgid "Image file not supported"
+msgstr ""
+
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
 msgstr "_שליחה"
@@ -4117,104 +4049,80 @@ msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}',
 #. this is a variable name. In this string, 'Reply' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:433
+#: src/session/view/content/room_history/message_toolbar/mod.rs:432
 msgid "Reply to {user}"
 msgstr "לענות למשתמש {user}"
 
 #. Translators: In this string, 'Edit' is a noun.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:445
-#, fuzzy
-#| msgid "_Edit"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:444
 msgctxt "room-history"
 msgid "Edit"
-msgstr "_עריכה"
+msgstr "עריכה"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:621
-#, fuzzy
-#| msgid "Could not download the file"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:620
 msgid "Could not send reply"
-msgstr "לא ניתן להוריד את הקובץ"
+msgstr "לא ניתן לשלוח תגובה"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:636
-#, fuzzy
-#| msgid "Could not retrieve media"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:635
 msgid "Could not send edit"
-msgstr "לא ניתן לקבל את המדיה"
+msgstr "לא ניתן לשלוח עריכה"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:647
-#, fuzzy
-#| msgid "Could not retrieve file URI"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:646
 msgid "Could not send message"
-msgstr "לא ניתן לקבל את כתובת הקובץ"
+msgstr "לא ניתן לשלוח הודעה"
 
 #. Show the dialog as loading.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:689
+#: src/session/view/content/room_history/message_toolbar/mod.rs:688
 msgid "Your Location"
 msgstr "המיקום שלך"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable
 #. name.
-#: src/session/view/content/room_history/message_toolbar/mod.rs:750
+#: src/session/view/content/room_history/message_toolbar/mod.rs:749
 msgid "User Location {geo_uri} at {iso8601_datetime}"
 msgstr "מיקום המשתמש {geo_uri} בתאריך {iso8601_datetime}"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:772
-#, fuzzy
-#| msgid "Couldn’t delete the account"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:771
 msgid "Could not send location"
-msgstr "לא ניתן למחוק את החשבון"
+msgstr "לא ניתן לשלוח מקום"
+
+#: src/session/view/content/room_history/message_toolbar/mod.rs:778
+msgid "The location request has been cancelled"
+msgstr "בקשת המקום בוטלה"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:779
-#, fuzzy
-#| msgid "The location request has been cancelled."
-msgid "The location request has been cancelled"
-msgstr "בקשת המיקום בוטלה."
+msgid "The location services are disabled"
+msgstr "שירותי המיקום מושבתים"
 
 #: src/session/view/content/room_history/message_toolbar/mod.rs:780
-#, fuzzy
-#| msgid "The location request has been cancelled."
-msgid "The location services are disabled"
-msgstr "בקשת המיקום בוטלה."
-
-#: src/session/view/content/room_history/message_toolbar/mod.rs:781
-#, fuzzy
-#| msgid "Failed to retrieve current location."
 msgid "Could not retrieve current location"
-msgstr "אירעה שגיאה בקבלת המיקום הנוכחי."
+msgstr "לא ניתן לקבל את המקום הנוכחי"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:826
-#, fuzzy
-#| msgid "Couldn’t save file"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:816
 msgid "Could not send file"
-msgstr "לא ניתן לשמור קובץ"
+msgstr "לא ניתן לשלוח קובץ"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:866
-#, fuzzy
-#| msgid "_Select"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:857
 msgid "Select File"
-msgstr "_בחירה"
+msgstr "בחירת קובץ"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:868
-#, fuzzy
-#| msgid "_Select"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:859
 msgid "Select"
-msgstr "_בחירה"
+msgstr "בחירה"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:883
-#, fuzzy
-#| msgid "Couldn’t open file"
+#: src/session/view/content/room_history/message_toolbar/mod.rs:874
 msgid "Could not open file"
 msgstr "לא ניתן לפתוח קובץ"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:902
+#: src/session/view/content/room_history/message_toolbar/mod.rs:893
 msgid "Error reading file"
 msgstr "שגיאה בעת קריאת קובץ"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:959
+#: src/session/view/content/room_history/message_toolbar/mod.rs:953
 msgid "Error getting image from clipboard"
 msgstr "שגיאה בקבלת תמונה מלוח הגזירים"
 
-#: src/session/view/content/room_history/message_toolbar/mod.rs:976
+#: src/session/view/content/room_history/message_toolbar/mod.rs:970
 msgid "Error getting file from clipboard"
 msgstr "שגיאה בקבלת קובץ מלוח הגזירים"
 
@@ -4228,10 +4136,8 @@ msgstr "_Markdown"
 
 #: src/session/view/content/room_history/message_toolbar/mod.ui:96
 #: src/session/view/content/room_history/message_toolbar/mod.ui:98
-#, fuzzy
-#| msgid "Save"
 msgid "Send a File"
-msgstr "שמירה"
+msgstr "שליחת קובץ"
 
 #: src/session/view/content/room_history/message_toolbar/mod.ui:107
 #: src/session/view/content/room_history/message_toolbar/mod.ui:109
@@ -4241,10 +4147,8 @@ msgstr ""
 #. Translators: This is the name of the input widget where messages
 #. are entered before being sent, for accessibility tools.
 #: src/session/view/content/room_history/message_toolbar/mod.ui:132
-#, fuzzy
-#| msgid "Message Entry"
 msgid "Message Composer"
-msgstr "כתיבת הודעה"
+msgstr "מחבר הודעות"
 
 #: src/session/view/content/room_history/message_toolbar/mod.ui:146
 #: src/session/view/content/room_history/message_toolbar/mod.ui:148
@@ -4252,15 +4156,13 @@ msgid "More Options"
 msgstr ""
 
 #: src/session/view/content/room_history/message_toolbar/mod.ui:158
-#: src/session/view/content/room_history/message_toolbar/mod.ui:164
+#: src/session/view/content/room_history/message_toolbar/mod.ui:165
 msgid "Send Message"
 msgstr "שליחת הודעה"
 
-#: src/session/view/content/room_history/message_toolbar/mod.ui:179
-#, fuzzy
-#| msgid "You don’t have permission to post to this room"
+#: src/session/view/content/room_history/message_toolbar/mod.ui:180
 msgid "You don’t have permission to send messages to this room"
-msgstr "אין לך הרשאות לפרסם בחדר הזה"
+msgstr "אין לך הרשאה לשלוח הודעות לחדר הזה"
 
 #. Translators: this is a date and a time in 12h format.
 #. For example, "May 5 at 01:20 PM".
@@ -4280,45 +4182,45 @@ msgstr "%l∶%M %p"
 msgid "%B %-e at %H∶%M"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:354
+#: src/session/view/content/room_history/mod.rs:358
 msgid "Error getting file from drop"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:578
+#: src/session/view/content/room_history/mod.rs:595
 #, fuzzy
 #| msgid "Could not remove avatar"
 msgid "Could not leave {room}"
 msgstr "לא ניתן למחוק תמונה אישית"
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/content/room_history/mod.rs:614
-#: src/session/view/sidebar/row.rs:593
+#: src/session/view/content/room_history/mod.rs:631
+#: src/session/view/sidebar/row.rs:628
 #, fuzzy
 #| msgid "Unable to load room"
 msgid "Could not forget {room}"
 msgstr "לא ניתן לטעון את החדר"
 
-#: src/session/view/content/room_history/mod.rs:785
+#: src/session/view/content/room_history/mod.rs:803
 #: src/session/view/sidebar/mod.rs:430
 #, fuzzy
 #| msgid "Continue"
 msgid "Context Menu"
 msgstr "המשך"
 
-#: src/session/view/content/room_history/mod.rs:805
+#: src/session/view/content/room_history/mod.rs:823
 msgid "Sender Context Menu"
 msgstr ""
 
-#: src/session/view/content/room_history/mod.rs:1007
-#: src/session/view/content/room_history/mod.rs:1011
+#: src/session/view/content/room_history/mod.rs:995
+#: src/session/view/content/room_history/mod.rs:999
 #: src/session/view/content/room_history/state_row/tombstone.ui:14
 #, fuzzy
 #| msgid "There is a newer version of this room."
 msgid "There is a newer version of this room"
 msgstr "יש גרסה חדשה יותר של החדר הזה."
 
-#: src/session/view/content/room_history/mod.rs:1014
+#: src/session/view/content/room_history/mod.rs:1002
 #, fuzzy
 #| msgid "This room was upgraded."
 msgid "This room was closed"
@@ -4335,17 +4237,17 @@ msgid "_Invite New Members…"
 msgstr "ה_זמנת חבר חדש"
 
 #: src/session/view/content/room_history/mod.ui:18
-#: src/session/view/sidebar/mod.ui:71
+#: src/session/view/sidebar/mod.ui:78
 msgid "_Leave Room"
 msgstr "י_ציאה מהחדר"
 
 #: src/session/view/content/room_history/mod.ui:23
-#: src/session/view/sidebar/mod.ui:76
+#: src/session/view/sidebar/mod.ui:83
 msgid "Re_join Room"
 msgstr "הצטרפות מ_חדש לחדר"
 
 #: src/session/view/content/room_history/mod.ui:28
-#: src/session/view/sidebar/mod.ui:81
+#: src/session/view/sidebar/mod.ui:88
 msgid "_Forget Room"
 msgstr "_לשכוח חדר"
 
@@ -4439,6 +4341,8 @@ msgid "Seen by 1 member"
 msgid_plural "Seen by {n} members"
 msgstr[0] ""
 msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
@@ -4523,6 +4427,8 @@ msgid "Removing 1 message sent by the user…"
 msgid_plural "Removing {n} messages sent by the user…"
 msgstr[0] ""
 msgstr[1] ""
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/session/view/content/room_history/sender_avatar/mod.rs:769
 msgid "Stop ignoring user…"
@@ -4718,6 +4624,8 @@ msgid "{n} member is typing…"
 msgid_plural "{n} members are typing…"
 msgstr[0] "הקלדה אצל <b>{}</b>…"
 msgstr[1] "הקלדה אצל <b>{}</b>…"
+msgstr[2] ""
+msgstr[3] ""
 
 #: src/session/view/content/room_history/verification_info_bar.rs:67
 #, fuzzy
@@ -4748,10 +4656,8 @@ msgid "An error occurred while searching for users"
 msgstr "ארעה שגיאה במהלך החיפוש עבור התאמות."
 
 #: src/session/view/create_dm_dialog/mod.ui:4
-#, fuzzy
-#| msgid "New Direct Chat"
 msgid "Direct Chat"
-msgstr "התכתבות ישירה חדשה"
+msgstr "התכתבות ישירה"
 
 #: src/session/view/create_dm_dialog/mod.ui:30
 msgid "New Direct Chat"
@@ -4762,39 +4668,29 @@ msgid "Search for people to start a new chat with"
 msgstr ""
 
 #: src/session/view/create_dm_dialog/mod.ui:93
-#, fuzzy
-#| msgid "No users matching the search were found."
 msgid "No users matching the search pattern were found"
-msgstr "לא נמצאו משתמשים המתאימים לחיפוש."
+msgstr "לא נמצא משתמשים שתואמים לתבנית החיפוש"
 
 #: src/session/view/event_details_dialog.rs:53
-#, fuzzy
-#| msgid "Image from Clipboard"
 msgid "Source copied to clipboard"
-msgstr "תמונה מלוח הגזירים"
+msgstr "המקור הועתק ללוח הגזירים"
 
 #: src/session/view/event_details_dialog.rs:114
-#, fuzzy
-#| msgid "Event Source"
 msgid "Original Event Source"
-msgstr "מקור אירוע"
+msgstr "מקור האירוע המקורי"
 
 #: src/session/view/event_details_dialog.rs:116
 msgid "Event Source"
 msgstr "מקור אירוע"
 
 #: src/session/view/event_details_dialog.rs:130
-#, fuzzy
-#| msgid "Event Source"
 msgid "Latest Edit Source"
-msgstr "מקור אירוע"
+msgstr "מקור העריכה האחרון"
 
 #: src/session/view/event_details_dialog.ui:4
 #: src/session/view/event_details_dialog.ui:14
-#, fuzzy
-#| msgid "Edit Details"
 msgid "Event Details"
-msgstr "עריכת פרטים"
+msgstr "פרטי אירוע"
 
 #: src/session/view/event_details_dialog.ui:47
 msgid "Original Event"
@@ -4802,43 +4698,30 @@ msgstr ""
 
 #: src/session/view/event_details_dialog.ui:63
 #: src/session/view/event_details_dialog.ui:157
-#, fuzzy
-#| msgid "Event Source"
 msgid "Event ID"
-msgstr "מקור אירוע"
+msgstr "מזהה אירוע"
 
 #: src/session/view/event_details_dialog.ui:69
 #: src/session/view/event_details_dialog.ui:163
-#, fuzzy
-#| msgid "_Copy Text"
 msgid "Copy Event ID"
-msgstr "_העתקת טקסט"
+msgstr "העתקת מזהה אירוע"
 
 #: src/session/view/event_details_dialog.ui:70
 #: src/session/view/event_details_dialog.ui:164
-#, fuzzy
-#| msgid "Image from Clipboard"
 msgid "Event ID copied to clipboard"
-msgstr "תמונה מלוח הגזירים"
+msgstr "מזהה האירוע הועתק ללוח הגזירים"
 
 #: src/session/view/event_details_dialog.ui:76
-#, fuzzy
-#| msgid "Rooms"
 msgid "Room ID"
-msgstr "חדרים"
+msgstr "מזהה חדר"
 
 #: src/session/view/event_details_dialog.ui:84
-#, fuzzy
-#| msgctxt "shortcut window"
-#| msgid "Close Room"
 msgid "Copy Room ID"
-msgstr "סגירת חדר"
+msgstr "העתקת מזהה החדר"
 
 #: src/session/view/event_details_dialog.ui:85
-#, fuzzy
-#| msgid "Image from Clipboard"
 msgid "Room ID copied to clipboard"
-msgstr "תמונה מלוח הגזירים"
+msgstr "מזהה החדר הועתק ללוח הגזירים"
 
 #: src/session/view/event_details_dialog.ui:91
 msgid "Sender ID"
@@ -4849,10 +4732,8 @@ msgid "Copy Sender ID"
 msgstr ""
 
 #: src/session/view/event_details_dialog.ui:98
-#, fuzzy
-#| msgid "Image from Clipboard"
 msgid "Sender ID copied to clipboard"
-msgstr "תמונה מלוח הגזירים"
+msgstr "מזהה המוען הועתק ללוח הגזירים"
 
 #: src/session/view/event_details_dialog.ui:104
 #: src/session/view/event_details_dialog.ui:170
@@ -4861,112 +4742,86 @@ msgstr ""
 
 #: src/session/view/event_details_dialog.ui:110
 #: src/session/view/event_details_dialog.ui:176
-#, fuzzy
-#| msgid "_Copy Text"
 msgid "Copy Timestamp"
-msgstr "_העתקת טקסט"
+msgstr "העתקת חותם זמן"
 
 #: src/session/view/event_details_dialog.ui:111
 #: src/session/view/event_details_dialog.ui:177
-#, fuzzy
-#| msgid "Image from Clipboard"
 msgid "Timestamp copied to clipboard"
-msgstr "תמונה מלוח הגזירים"
+msgstr "חותם הזמן הועתק ללוח הגזירים"
 
 #: src/session/view/event_details_dialog.ui:121
 #: src/session/view/event_details_dialog.ui:182
-#, fuzzy
-#| msgid "_View Source"
 msgid "View Source"
-msgstr "הצגת מ_קור"
+msgstr "הצגת מקור"
 
 #: src/session/view/event_details_dialog.ui:141
 msgid "Latest Edit"
 msgstr ""
 
 #: src/session/view/event_details_dialog.ui:213
-#, fuzzy
-#| msgid "_View Source"
 msgid "Copy Source"
-msgstr "הצגת מ_קור"
+msgstr "העתקת מקור"
 
-#: src/session/view/media_viewer.rs:514
-#, fuzzy
-#| msgid "Image from Clipboard"
+#: src/session/view/media_viewer.rs:461
 msgid "Image copied to clipboard"
-msgstr "תמונה מלוח הגזירים"
+msgstr "התמונה הועתקה ללוח הגזירים"
 
 #: src/session/view/media_viewer.ui:6
 msgid "_Copy Image"
 msgstr "הע_תקת תמונה"
 
-#: src/session/view/media_viewer.ui:66 src/session/view/media_viewer.ui:68
+#: src/session/view/media_viewer.ui:61 src/session/view/media_viewer.ui:63
 msgid "Media Menu"
 msgstr ""
 
-#: src/session/view/media_viewer.ui:78 src/session/view/media_viewer.ui:80
-#, fuzzy
-#| msgid "Toggle fullscreen"
+#: src/session/view/media_viewer.ui:73 src/session/view/media_viewer.ui:75
 msgid "Fullscreen"
-msgstr "כיסוי המסך/הקטנה"
+msgstr "מסך מלא"
 
-#: src/session/view/media_viewer.ui:89 src/session/view/media_viewer.ui:91
-#, fuzzy
-#| msgid "Toggle fullscreen"
+#: src/session/view/media_viewer.ui:84 src/session/view/media_viewer.ui:86
 msgid "Exit Fullscreen"
-msgstr "כיסוי המסך/הקטנה"
+msgstr "יציאה ממסך מלא"
 
 #: src/session/view/room_creation.rs:192
 msgid "The address is already taken."
 msgstr ""
 
 #: src/session/view/room_creation.rs:224
-#, fuzzy
-#| msgid "Can’t login, try again"
 msgid "Cannot contain “:”"
-msgstr "לא ניתן להיכנס, נא לנסות שוב"
+msgstr "לא יכול להכיל „:”"
 
 #: src/session/view/room_creation.rs:229
-#, fuzzy
-#| msgid "Can’t login, try again"
 msgid "Cannot contain “#”"
-msgstr "לא ניתן להיכנס, נא לנסות שוב"
+msgstr "לא יכול להכיל „#”"
 
 #: src/session/view/room_creation.rs:234
 msgid "Too long. Use a shorter address."
 msgstr "ארוכה מדי. יש להשתמש בכתובת קצרה יותר."
 
 #: src/session/view/room_creation.ui:35
-#, fuzzy
-#| msgid "_New Room"
 msgid "New Room"
-msgstr "חדר _חדש"
+msgstr "חדר חדש"
 
 #: src/session/view/room_creation.ui:59
-#, fuzzy
-#| msgid "Description"
 msgid "Description (Optional)"
-msgstr "תיאור"
+msgstr "תיאור (רשות)"
 
 #: src/session/view/room_creation.ui:84
 msgid "Room Visibility"
 msgstr "חשיפת החדר"
 
 #: src/session/view/room_creation.ui:87
-#, fuzzy
-#| msgid "_Private"
 msgid "Private"
-msgstr "_פרטי"
+msgstr "פרטי"
 
 #: src/session/view/room_creation.ui:88
 msgid "Only invited people can join this room"
 msgstr ""
 
 #: src/session/view/room_creation.ui:101
-#, fuzzy
-#| msgid "P_ublic"
 msgid "Public"
-msgstr "_ציבורי"
+msgstr "ציבורי"
 
 #: src/session/view/room_creation.ui:102
 msgid "Anyone can find and join this room"
@@ -4981,18 +4836,14 @@ msgid "Cannot be disabled later"
 msgstr ""
 
 #: src/session/view/room_creation.ui:163
-#, fuzzy
-#| msgid "Create new Room"
 msgid "_Create Room"
-msgstr "יצירת חדר חדש"
+msgstr "י_צירת חדר"
 
 #. Translators: This is an action to join a room and put it in the "Favorites"
 #. section.
 #: src/session/view/sidebar/category_row.rs:115
-#, fuzzy
-#| msgid "Join Room"
 msgid "Join Room as Favorite"
-msgstr "הצטרפות לחדר"
+msgstr "הצטרפות לחדר כמועדף"
 
 #: src/session/view/sidebar/category_row.rs:116
 msgid "Join Room"
@@ -5015,10 +4866,8 @@ msgstr "העברה לחדרים"
 
 #: src/session/view/sidebar/category_row.rs:125
 #: src/session/view/sidebar/category_row.rs:131
-#, fuzzy
-#| msgid "Low Priority"
 msgid "Move to Low Priority"
-msgstr "עדיפות נמוכה"
+msgstr "העברה לעדיפות נמוכה"
 
 #: src/session/view/sidebar/category_row.rs:126
 #: src/session/view/sidebar/category_row.rs:132
@@ -5034,16 +4883,12 @@ msgstr "העברה למועדפים"
 #. Translators: This is an action to rejoin a room and put it in the "Favorites"
 #. section.
 #: src/session/view/sidebar/category_row.rs:144
-#, fuzzy
-#| msgid "Join Room"
 msgid "Rejoin Room as Favorite"
-msgstr "הצטרפות לחדר"
+msgstr "הצטרפות לחדר מחדש כמועדף"
 
 #: src/session/view/sidebar/category_row.rs:145
-#, fuzzy
-#| msgid "Join Room"
 msgid "Rejoin Room"
-msgstr "הצטרפות לחדר"
+msgstr "הצטרפות לחדר מחדש"
 
 #. Translators: This is an action to rejoin a room and put it in the "Low
 #. Priority" section.
@@ -5068,22 +4913,16 @@ msgid "Account recovery incomplete"
 msgstr ""
 
 #: src/session/view/sidebar/mod.ui:6
-#, fuzzy
-#| msgid "New Direct Chat"
 msgid "New _Direct Chat…"
-msgstr "התכתבות ישירה חדשה"
+msgstr "התכתבות י_שירה חדשה…"
 
 #: src/session/view/sidebar/mod.ui:10
-#, fuzzy
-#| msgid "_New Room"
 msgid "_New Room…"
-msgstr "חדר _חדש"
+msgstr "חדר _חדש…"
 
 #: src/session/view/sidebar/mod.ui:14
-#, fuzzy
-#| msgid "_Join Room"
 msgid "_Join Room…"
-msgstr "ה_צטרפות לחדר"
+msgstr "ה_צטרפות לחדר…"
 
 #: src/session/view/sidebar/mod.ui:20
 msgid "_Keyboard Shortcuts"
@@ -5098,56 +4937,62 @@ msgid "_Reject"
 msgstr "_דחייה"
 
 #: src/session/view/sidebar/mod.ui:44
+#, fuzzy
+#| msgid "New Direct Chat"
+msgid "_Mark as Read"
+msgstr "התכתבות ישירה חדשה"
+
+#: src/session/view/sidebar/mod.ui:51
 msgid "Move to _Favorites"
 msgstr "העברה ל_מועדפים"
 
-#: src/session/view/sidebar/mod.ui:49
+#: src/session/view/sidebar/mod.ui:56
 msgid "Move to _Rooms"
 msgstr "העברה ל_חדרים"
 
-#: src/session/view/sidebar/mod.ui:54
+#: src/session/view/sidebar/mod.ui:61
 msgid "Move to Low _Priority"
 msgstr "העברה ל_עדיפות נמוכה"
 
-#: src/session/view/sidebar/mod.ui:59
+#: src/session/view/sidebar/mod.ui:66
 #, fuzzy
 #| msgid "New Direct Chat"
 msgid "Mark as _Direct Chat"
 msgstr "התכתבות ישירה חדשה"
 
-#: src/session/view/sidebar/mod.ui:64
+#: src/session/view/sidebar/mod.ui:71
 #, fuzzy
 #| msgid "New Direct Chat"
 msgid "Unmark as _Direct Chat"
 msgstr "התכתבות ישירה חדשה"
 
-#: src/session/view/sidebar/mod.ui:88
+#: src/session/view/sidebar/mod.ui:95
 msgid "Sidebar"
 msgstr "סרגל צד"
 
-#: src/session/view/sidebar/mod.ui:105
+#: src/session/view/sidebar/mod.ui:112
 msgid "Main Menu"
 msgstr ""
 
-#: src/session/view/sidebar/mod.ui:114
+#: src/session/view/sidebar/mod.ui:121
 #, fuzzy
 #| msgid "Room search"
 msgid "Toggle Room Search"
 msgstr "חיפוש חדרים"
 
-#: src/session/view/sidebar/mod.ui:127
+#: src/session/view/sidebar/mod.ui:134
 msgid "Room Search"
 msgstr "חיפוש חדר"
 
-#: src/session/view/sidebar/mod.ui:128
+#: src/session/view/sidebar/mod.ui:135
 msgid "Search for a room"
 msgstr "חיפוש אחר חדר"
 
-#: src/session/view/sidebar/mod.ui:163
+#: src/session/view/sidebar/mod.ui:170
 msgid "Room List"
 msgstr "רשימת חדרים"
 
-#: src/session/view/sidebar/mod.ui:164
+#: src/session/view/sidebar/mod.ui:171
 msgid "Allows to navigate between rooms"
 msgstr "לאפשר ניווט בין חדרים"
 
@@ -5168,25 +5013,27 @@ msgid "1 notification"
 msgid_plural "{count} notifications"
 msgstr[0] "התראות"
 msgstr[1] "התראות"
+msgstr[2] ""
+msgstr[3] ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-#: src/session/view/sidebar/row.rs:572
+#: src/session/view/sidebar/row.rs:607
 msgid "Could not move {room} from {previous_category} to {new_category}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:609
+#: src/session/view/sidebar/row.rs:644
 msgid "Could not mark {room} as direct chat"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/session/view/sidebar/row.rs:614
+#: src/session/view/sidebar/row.rs:649
 msgid "Could not unmark {room} as direct chat"
 msgstr ""
 
-#: src/session_list/mod.rs:272
+#: src/session_list/mod.rs:269
 #, fuzzy
 #| msgid "Could not retrieve file URI"
 msgid "Could not restore previous sessions"
@@ -5229,10 +5076,8 @@ msgid "Could not connect to the homeserver."
 msgstr "לא ניתן להוריד את הקובץ"
 
 #: src/user_facing_error.rs:38
-#, fuzzy
-#| msgid "Invalid username or password"
 msgid "The provided username or password is invalid."
-msgstr "שם משתמש או ססמה שגויים"
+msgstr "שם המשתמש והסיסמה שסופקו שגויים."
 
 #: src/user_facing_error.rs:39
 msgid "The account is deactivated."
@@ -5257,10 +5102,8 @@ msgid "An unknown connection error occurred."
 msgstr ""
 
 #: src/user_facing_error.rs:79
-#, fuzzy
-#| msgid "Couldn’t delete the account"
 msgid "Could not decrypt the event."
-msgstr "לא ניתן למחוק את החשבון"
+msgstr "לא ניתן לפענח את האירוע."
 
 #: src/user_facing_error.rs:81 src/user_facing_error.rs:95
 msgid "An unknown error occurred."
@@ -5280,77 +5123,77 @@ msgstr ""
 msgid "Could not open the store."
 msgstr "לא ניתן להוריד את הקובץ"
 
-#: src/utils/matrix.rs:184
+#: src/utils/matrix/media_message.rs:183
+msgid "Could not save file"
+msgstr "לא ניתן לשמור קובץ"
+
+#: src/utils/matrix/mod.rs:188
 msgid "{user} sent an audio file."
 msgstr ""
 
-#: src/utils/matrix.rs:187
-#, fuzzy
-#| msgid "Select a file"
+#: src/utils/matrix/mod.rs:191
 msgid "{user} sent a file."
-msgstr "בחירת קובץ"
+msgstr "קובץ נשלח על ידי {user}."
 
-#: src/utils/matrix.rs:189
+#: src/utils/matrix/mod.rs:193
 msgid "{user} sent an image."
 msgstr ""
 
-#: src/utils/matrix.rs:192
-#, fuzzy
-#| msgid "Search for users to invite them to this room."
+#: src/utils/matrix/mod.rs:196
 msgid "{user} sent their location."
-msgstr "חיפוש משתמשים על מנת להזמין אותם לחדר זה."
+msgstr "המקום של {user} נשלח."
 
-#: src/utils/matrix.rs:204
-#, fuzzy
+#: src/utils/matrix/mod.rs:208
 #| msgid "<widget> invited you"
 msgid "{user} sent a video."
-msgstr "הוזמנת על ידי <widget>"
+msgstr "נשלח סרטון על ידי {user}."
 
-#: src/utils/matrix.rs:211
+#: src/utils/matrix/mod.rs:215
 msgid "{user} sent a sticker."
 msgstr ""
 
-#: src/utils/matrix.rs:221
+#: src/utils/matrix/mod.rs:225
 msgid "{user}: {message}"
 msgstr ""
 
 #. Translators: Do NOT translate the content between '{' and '}', this is a
 #. variable name.
-#: src/utils/matrix.rs:245
+#: src/utils/matrix/mod.rs:249
 msgid "{user} invited you"
 msgstr "הוזמנת על ידי {user}"
 
+#: src/utils/matrix/mod.rs:275
+msgid "Could not generate unique session ID"
+msgstr "לא ניתן לייצר מזהה הפעלה ייחודי"
+
 #. Translators: Default name for image files.
-#: src/utils/media.rs:33
+#: src/utils/media/mod.rs:33
 msgid "image"
 msgstr "תמונה"
 
 #. Translators: Default name for video files.
-#: src/utils/media.rs:35
+#: src/utils/media/mod.rs:35
 msgid "video"
 msgstr "סרט"
 
 #. Translators: Default name for audio files.
-#: src/utils/media.rs:37
+#: src/utils/media/mod.rs:37
 msgid "audio"
 msgstr "שמע"
 
 #. Translators: Default name for files.
-#: src/utils/media.rs:39
+#: src/utils/media/mod.rs:39
 msgid "file"
 msgstr "קובץ"
 
-#: src/utils/media.rs:210
-#, fuzzy
-#| msgid "Couldn’t save file"
-msgid "Could not save file"
-msgstr "לא ניתן לשמור קובץ"
-
 #: src/window.ui:66
-#, fuzzy
-#| msgid "Sessions"
 msgid "Session"
-msgstr "הפעלות"
+msgstr "הפעלה"
+
+#, fuzzy
+#~| msgid "Unable to store session"
+#~ msgid "Malformed version in stored session"
+#~ msgstr "לא ניתן לאחסן את ההפעלה"
 
 #~ msgid "Matrix group messaging app"
 #~ msgstr "יישומון התכתבות קבוצתית ב־Matrix"
