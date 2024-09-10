@@ -340,11 +340,11 @@ pub fn find_html_mentions(html: &str, room: &Room) -> Vec<(Pill, StrTendril)> {
 /// Find mentions in the given child nodes and append them to the given list.
 fn append_children_mentions(
     mentions: &mut Vec<(Pill, StrTendril)>,
-    children: Children<'_>,
+    children: Children,
     room: &Room,
 ) {
     for node in children {
-        if let Some(mention) = node_as_mention(node, room) {
+        if let Some(mention) = node_as_mention(&node, room) {
             mentions.push(mention);
             continue;
         }
@@ -356,7 +356,7 @@ fn append_children_mentions(
 /// Try to convert the given node to a mention.
 ///
 /// This does not recurse into children.
-fn node_as_mention(node: NodeRef<'_>, room: &Room) -> Option<(Pill, StrTendril)> {
+fn node_as_mention(node: &NodeRef, room: &Room) -> Option<(Pill, StrTendril)> {
     // Mentions are links.
     let MatrixElement::A(anchor) = node.as_element()?.to_matrix().element else {
         return None;
@@ -372,7 +372,7 @@ fn node_as_mention(node: NodeRef<'_>, room: &Room) -> Option<(Pill, StrTendril)>
         return None;
     }
 
-    let content = child.as_text()?.clone();
+    let content = child.as_text()?.borrow().clone();
     let pill = id.into_pill(room)?;
 
     Some((pill, content))

@@ -95,7 +95,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     /// constructed, if any.
     pub(super) fn build_with_nodes(
         mut self,
-        nodes: impl IntoIterator<Item = NodeRef<'a>>,
+        nodes: impl IntoIterator<Item = NodeRef>,
     ) -> (String, Option<Vec<Pill>>) {
         self.append_nodes(nodes, true);
         self.build()
@@ -108,7 +108,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     /// not removed.
     pub(super) fn build_with_nodes_text(
         mut self,
-        nodes: impl IntoIterator<Item = NodeRef<'a>>,
+        nodes: impl IntoIterator<Item = NodeRef>,
     ) -> String {
         self.append_nodes_text(nodes);
 
@@ -117,7 +117,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     }
 
     /// Append the given inline node by converting it to Pango markup.
-    fn append_node(&mut self, node: NodeRef<'a>, should_linkify: bool) {
+    fn append_node(&mut self, node: NodeRef, should_linkify: bool) {
         match node.data() {
             NodeData::Element(data) => {
                 let data = data.to_matrix();
@@ -194,7 +194,7 @@ impl<'a> InlineHtmlBuilder<'a> {
                 }
             }
             NodeData::Text(text) => {
-                let text = text.remove_newlines();
+                let text = text.borrow().remove_newlines();
 
                 if should_linkify {
                     if let MentionsMode::WithMentions {
@@ -220,7 +220,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     }
 
     /// Append the given inline nodes, converted to Pango markup.
-    fn append_nodes(&mut self, nodes: impl IntoIterator<Item = NodeRef<'a>>, should_linkify: bool) {
+    fn append_nodes(&mut self, nodes: impl IntoIterator<Item = NodeRef>, should_linkify: bool) {
         for node in nodes {
             self.append_node(node, should_linkify);
 
@@ -236,7 +236,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     fn append_tags_and_children(
         &mut self,
         tag_name: &str,
-        children: Children<'a>,
+        children: Children,
         should_linkify: bool,
     ) {
         let _ = write!(self.inner, "<{tag_name}>");
@@ -276,7 +276,7 @@ impl<'a> InlineHtmlBuilder<'a> {
     ///
     /// Whether we are an inside an anchor or not decides if we try to linkify
     /// the text contained in the children nodes.
-    fn append_span(&mut self, span: &SpanData, children: Children<'a>, should_linkify: bool) {
+    fn append_span(&mut self, span: &SpanData, children: Children, should_linkify: bool) {
         self.inner.push_str("<span");
 
         if let Some(bg_color) = &span.bg_color {
@@ -296,11 +296,12 @@ impl<'a> InlineHtmlBuilder<'a> {
     /// Append the text contained in the nodes to the string.
     ///
     /// Returns `true` if the text was ellipsized.
-    fn append_nodes_text(&mut self, nodes: impl IntoIterator<Item = NodeRef<'a>>) {
+    fn append_nodes_text(&mut self, nodes: impl IntoIterator<Item = NodeRef>) {
         for node in nodes.into_iter() {
             match node.data() {
                 NodeData::Text(t) => {
-                    let t = t.as_ref();
+                    let borrowed_t = t.borrow();
+                    let t = borrowed_t.as_ref();
 
                     if self.single_line {
                         if let Some(newline) = t.find(|c: char| c == '\n') {

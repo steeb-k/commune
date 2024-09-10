@@ -44,9 +44,9 @@ pub(super) fn new_message_label() -> gtk::Label {
 /// If the sender name is set, it will be added as soon as possible.
 ///
 /// Returns `None` if the widget would have been empty.
-pub(super) fn widget_for_html_nodes<'a>(
-    nodes: impl IntoIterator<Item = NodeRef<'a>>,
-    config: HtmlWidgetConfig<'a>,
+pub(super) fn widget_for_html_nodes(
+    nodes: impl IntoIterator<Item = NodeRef>,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
@@ -120,17 +120,17 @@ pub(super) fn widget_for_html_nodes<'a>(
 }
 
 /// A group of nodes, representing the nodes contained in a single widget.
-enum NodeGroup<'a> {
+enum NodeGroup {
     /// A group of inline nodes.
-    Inline(Vec<NodeRef<'a>>),
+    Inline(Vec<NodeRef>),
     /// A block node.
-    Block(NodeRef<'a>),
+    Block(NodeRef),
 }
 
 /// Group subsequent nodes that are inline.
 ///
 /// Allows to group nodes by widget that will need to be constructed.
-fn group_inline_nodes(nodes: Vec<NodeRef<'_>>) -> Vec<NodeGroup<'_>> {
+fn group_inline_nodes(nodes: Vec<NodeRef>) -> Vec<NodeGroup> {
     let mut result = Vec::new();
     let mut inline_group = None;
 
@@ -161,9 +161,9 @@ fn group_inline_nodes(nodes: Vec<NodeRef<'_>>) -> Vec<NodeGroup<'_>> {
 /// Construct a `GtkLabel` for the given inline nodes.
 ///
 /// Returns `None` if the label would have been empty.
-fn label_for_inline_html<'a>(
-    nodes: impl IntoIterator<Item = NodeRef<'a>>,
-    config: HtmlWidgetConfig<'a>,
+fn label_for_inline_html(
+    nodes: impl IntoIterator<Item = NodeRef>,
+    config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
 ) -> Option<gtk::Widget> {
@@ -201,7 +201,7 @@ fn label_for_inline_html<'a>(
 
 /// Create a widget for the given HTML block node.
 fn widget_for_html_block(
-    node: NodeRef<'_>,
+    node: NodeRef,
     config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
     sender_name: &mut Option<&str>,
@@ -248,7 +248,7 @@ fn widget_for_html_block(
 /// Create a widget for a list.
 fn widget_for_list(
     list_type: ListType,
-    list_items: Children<'_>,
+    list_items: Children,
     config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
@@ -333,7 +333,7 @@ impl From<OrderedListData> for ListType {
 
 /// Create a widget for preformatted text.
 fn widget_for_preformatted_text(
-    children: Children<'_>,
+    children: Children,
     ellipsize: bool,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
@@ -405,7 +405,7 @@ fn widget_for_preformatted_text(
 
 /// Create a widget for a details disclosure element.
 fn widget_for_details(
-    children: Children<'_>,
+    children: Children,
     config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
@@ -441,7 +441,7 @@ fn widget_for_details(
 
 /// Create a widget for a details disclosure element's summary.
 fn widget_for_details_summary(
-    children: Children<'_>,
+    children: Children,
     config: HtmlWidgetConfig<'_>,
     add_ellipsis: bool,
 ) -> Option<gtk::Widget> {
@@ -461,7 +461,9 @@ fn widget_for_details_summary(
                 )
             })
         }) {
-            if let Some(widget) = widget_for_html_block(*node, config, add_ellipsis, &mut None) {
+            if let Some(widget) =
+                widget_for_html_block(node.clone(), config, add_ellipsis, &mut None)
+            {
                 return Some(widget);
             }
         }

@@ -317,7 +317,7 @@ impl MessageText {
         let detect_at_room = self.detect_at_room();
         let ellipsize = self.format() == ContentFormat::Ellipsized;
 
-        let mut html = Html::parse(html.trim_matches('\n'));
+        let html = Html::parse(html.trim_matches('\n'));
         html.sanitize_with(&HTML_MESSAGE_SANITIZER_CONFIG);
 
         if !html.has_children() {

@@ -144,7 +144,7 @@ mod imp {
                     .replace(vec![image_watch, paintable_watch]);
             }
 
-            self.data.set(data);
+            self.data.replace(data);
 
             self.update_image_size();
             self.update_animated_paintable_state();
