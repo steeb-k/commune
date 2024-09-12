@@ -3,7 +3,7 @@
   tags:
     - flatpak
   script:
-    - flatpak install --user --noninteractive org.freedesktop.Sdk.Extension.rust-nightly//24.08beta
+    - flatpak install --user --noninteractive org.freedesktop.Sdk.Extension.rust-nightly//24.08
     # We want to use rust-nightly to build the app, but mold is in rust-stable
     - sed -i 's|"org.freedesktop.Sdk.Extension.rust-stable"|"org.freedesktop.Sdk.Extension.rust-stable","org.freedesktop.Sdk.Extension.rust-nightly"|g' ${MANIFEST_PATH}
     - sed -i 's|:/usr/lib/sdk/rust-stable/bin|:/usr/lib/sdk/rust-nightly/extra/sdk/rust-nightly/bin|g' ${MANIFEST_PATH}
