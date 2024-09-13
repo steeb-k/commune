@@ -97,7 +97,7 @@ mod imp {
 
     impl SidebarItemList {
         /// The list of top-level items.
-        fn list(&self) -> &[SidebarItem; TOP_LEVEL_ITEMS_COUNT] {
+        pub(super) fn list(&self) -> &[SidebarItem; TOP_LEVEL_ITEMS_COUNT] {
             self.list.get().unwrap()
         }
 
@@ -157,5 +157,20 @@ impl SidebarItemList {
     /// "is-expanded" property.
     pub fn inhibit_expanded(&self, inhibit: bool) {
         self.imp().inhibit_expanded(inhibit);
+    }
+
+    /// Returns the `Category` object representing the item that a user can
+    /// toggle to show or hide the given room `CategoryType`
+    pub fn category_from_type(&self, category_type: CategoryType) -> Option<Category> {
+        let list = self.imp().list();
+        match category_type {
+            CategoryType::VerificationRequest => list[1].inner_item().downcast().ok(),
+            CategoryType::Invited => list[2].inner_item().downcast().ok(),
+            CategoryType::Favorite => list[3].inner_item().downcast().ok(),
+            CategoryType::Normal => list[4].inner_item().downcast().ok(),
+            CategoryType::LowPriority => list[5].inner_item().downcast().ok(),
+            CategoryType::Left => list[6].inner_item().downcast().ok(),
+            _ => None,
+        }
     }
 }

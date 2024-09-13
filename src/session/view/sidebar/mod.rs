@@ -1,6 +1,10 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{gio, glib, glib::clone, CompositeTemplate};
+use gtk::{
+    gio,
+    glib::{self, clone},
+    CompositeTemplate, ListScrollFlags,
+};
 use tracing::error;
 
 mod category_row;
@@ -436,5 +440,20 @@ impl Sidebar {
     /// The `adw::HeaderBar` of the sidebar.
     pub fn header_bar(&self) -> &adw::HeaderBar {
         &self.imp().header_bar
+    }
+
+    /// Scroll to the currently selected element (room) of the sidebar.
+    pub fn scroll_to_selection(&self) {
+        let imp = self.imp();
+        let Some(list_model) = self.list_model() else {
+            return;
+        };
+
+        let selected = list_model.selection_model().selected();
+
+        if selected != gtk::INVALID_LIST_POSITION {
+            imp.listview
+                .scroll_to(selected, ListScrollFlags::FOCUS, None);
+        }
     }
 }
