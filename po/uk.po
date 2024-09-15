@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-05 13:03+0000\n"
+"POT-Creation-Date: 2024-09-06 11:54+0000\n"
 "PO-Revision-Date: 2024-09-05 21:54+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
@@ -16,8 +16,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=4; plural=n==1 ? 3 : n%10==1 && n%100!=11 ? 0 : n"
-"%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
+"Plural-Forms: nplurals=4; plural=n==1 ? 3 : n%10==1 && n%100!=11 ? 0 : "
+"n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2;\n"
 "X-Generator: Lokalize 23.04.3\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
@@ -517,8 +517,7 @@ msgstr ""
 #: src/components/crypto/recovery_setup_view.ui:276
 msgid ""
 "If you do not provide a recovery passphrase, a recovery key will be created."
-msgstr ""
-"Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
+msgstr "Якщо ви не вкажете пароль відновлення, буде створено ключ відновлення."
 
 #: src/components/crypto/recovery_setup_view.ui:327
 #: src/components/crypto/recovery_setup_view.ui:354
@@ -542,8 +541,7 @@ msgstr "Відновлення облікового запису є неповн
 
 #: src/components/crypto/recovery_setup_view.ui:468
 msgid "The recovery was successful but the recovery data was incomplete."
-msgstr ""
-"Відновлення успішно виконано, але дані для відновлення були неповними."
+msgstr "Відновлення успішно виконано, але дані для відновлення були неповними."
 
 #: src/components/crypto/recovery_setup_view.ui:476
 msgid ""
@@ -1574,8 +1572,7 @@ msgstr ""
 "клієнті."
 
 #: src/identity_verification_view/sas_page.rs:154
-msgid ""
-"Check if the same numbers appear in the same order on the other client."
+msgid "Check if the same numbers appear in the same order on the other client."
 msgstr ""
 "Перевірте, чи ті самі числа було показано у тому самому порядку на іншому "
 "клієнті."
@@ -1840,8 +1837,7 @@ msgstr ""
 
 #: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
-msgstr ""
-"До файла сховища реєстраційних даних внесено зміни стороннім процесом."
+msgstr "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
 #: src/secret/linux.rs:467
 msgid ""
@@ -1868,8 +1864,7 @@ msgstr ""
 "встановлено пакунок xdg-desktop-portal версії, яка є не меншою за 1.5.0."
 
 #: src/secret/linux.rs:476
-msgid ""
-"The Flatpak Secret Portal provided a key that is too weak to be secure."
+msgid "The Flatpak Secret Portal provided a key that is too weak to be secure."
 msgstr ""
 "Портал реєстраційних даних Flatpak надав ключ, який є надто простим, щоб "
 "бути безпечним."
@@ -3927,8 +3922,8 @@ msgstr "Надіслано {time}"
 msgid "1 member reacted with {reaction_key}"
 msgid_plural "{n} members reacted with {reaction_key}"
 msgstr[0] "{n} учасник відреагував за допомогою {reaction_key}"
-msgstr[1] "{n} учасники відреагував за допомогою {reaction_key}"
-msgstr[2] "{n} учасників відреагував за допомогою {reaction_key}"
+msgstr[1] "{n} учасники відреагували за допомогою {reaction_key}"
+msgstr[2] "{n} учасників відреагували за допомогою {reaction_key}"
 msgstr[3] "{n} учасник відреагував за допомогою {reaction_key}"
 
 #: src/session/view/content/room_history/message_row/reaction/mod.rs:233
@@ -4829,7 +4824,6 @@ msgid "_Reject"
 msgstr "Від_хилити"
 
 #: src/session/view/sidebar/mod.ui:44
-#| msgid "Mark as _Direct Chat"
 msgid "_Mark as Read"
 msgstr "Позначити як про_читане"
 
