@@ -37,6 +37,18 @@
             "--share=network"
         ]
     },
+    "add-extensions": {
+        "org.freedesktop.Platform.ffmpeg-full": {
+            "version": "24.08",
+            "directory": "lib/ffmpeg",
+            "add-ld-path": ".",
+            "no-autodownload": false,
+            "autodelete": false
+        }
+    },
+    "cleanup-commands": [
+        "mkdir -p ${FLATPAK_DEST}/lib/ffmpeg"
+    ],
     "modules": [
         {
             "name": "protobuf-c",
@@ -68,45 +80,6 @@
                     "url": "https://gitlab.gnome.org/GNOME/libshumate.git",
                     "tag": "1.3.0",
                     "commit": "e08d1442b80d0a352026505564e2cbe164b03997"
-                }
-            ]
-        },
-        {
-            "name": "libde265",
-            "buildsystem": "cmake",
-            "config-opts": [
-                "-DCMAKE_INSTALL_PREFIX=/app/lib/libheif-heic",
-                "-DENABLE_SDL=Off"
-            ],
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/strukturag/libde265.git",
-                    "tag": "v1.0.15"
-                }
-            ]
-        },
-        {
-            "name": "libheif",
-            "buildsystem": "cmake",
-            "config-opts": [
-                "-DWITH_LIBDE265_PLUGIN=On",
-                "-DPLUGIN_DIRECTORY=/app/lib/libheif-heic/lib",
-                "-DLIBDE265_INCLUDE_DIR=/app/lib/libheif-heic/include",
-                "-DLIBDE265_PKGCONF_LIBRARY_DIRS=/app/lib/libheif-heic/lib",
-                "-DWITH_X265=Off",
-                "-DWITH_SvtEnc=Off",
-                "-DWITH_SvtEnc_PLUGIN=Off",
-                "-DWITH_AOM_ENCODER=Off",
-                "-DWITH_RAV1E_PLUGIN=Off",
-                "-DWITH_RAV1E=Off",
-                "-DWITH_EXAMPLES=Off"
-            ],
-            "sources": [
-                {
-                    "type": "git",
-                    "url": "https://github.com/strukturag/libheif.git",
-                    "tag": "v1.17.6"
                 }
             ]
         },
