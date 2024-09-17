@@ -64,7 +64,7 @@ pub trait StrMutExt {
 
 impl StrMutExt for String {
     fn truncate_newline(&mut self) -> bool {
-        let newline = self.find(|c: char| c == '\n');
+        let newline = self.find('\n');
 
         if let Some(newline) = newline {
             self.truncate(newline);

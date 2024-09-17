@@ -304,7 +304,7 @@ impl<'a> InlineHtmlBuilder<'a> {
                     let t = borrowed_t.as_ref();
 
                     if self.single_line {
-                        if let Some(newline) = t.find(|c: char| c == '\n') {
+                        if let Some(newline) = t.find('\n') {
                             self.truncated = true;
 
                             self.inner.push_str(&t[..newline]);
