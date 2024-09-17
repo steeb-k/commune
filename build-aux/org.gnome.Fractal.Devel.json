@@ -66,8 +66,8 @@
                 {
                     "type": "git",
                     "url": "https://gitlab.gnome.org/GNOME/libshumate.git",
-                    "tag": "1.2.2",
-                    "commit": "fab290f36bb7043fe6107308ff4f91c80492aa11"
+                    "tag": "1.3.0",
+                    "commit": "e08d1442b80d0a352026505564e2cbe164b03997"
                 }
             ]
         },
@@ -125,8 +125,8 @@
                 {
                     "type": "git",
                     "url": "https://gitlab.gnome.org/sophie-h/glycin.git",
-                    "tag": "1.1.beta",
-                    "commit": "bb5bf87ed35d3cff5fe1f094c89762e96e60c44a"
+                    "tag": "1.1.1",
+                    "commit": "ce58882288245c1650a444243e0e90c87e53f835"
                 }
             ]
         },
