@@ -24,10 +24,12 @@ rust-tests:
   tags:
     - flatpak
   variables:
-    MANIFEST_PATH: ".gitlab-ci/org.gnome.Fractal.CiRust.yml"
+    TMP_MANIFEST_PATH: "build-aux/org.gnome.Fractal.CiRust.json"
   script:
-    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${MANIFEST_PATH}
-    - echo "cargo-nextest nextest run --config-file ../.gitlab-ci/nextest.toml" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${MANIFEST_PATH}
+    # Add a module for nextest to the Flatpak manifest
+    - jq --slurpfile nextest .gitlab-ci/nextest.module.json '.modules = [$nextest[], .modules[]]' ${MANIFEST_PATH} > ${TMP_MANIFEST_PATH}
+    - flatpak-builder --keep-build-dirs --user --disable-rofiles-fuse --stop-at=${FLATPAK_MODULE} flatpak_app --repo=repo ${BRANCH:+--default-branch=$BRANCH} ${TMP_MANIFEST_PATH}
+    - echo "cargo-nextest nextest run --config-file ../.gitlab-ci/nextest.toml" | flatpak-builder --disable-rofiles-fuse --build-shell=${FLATPAK_MODULE} flatpak_app ${TMP_MANIFEST_PATH}
   dependencies: []
   artifacts:
     reports:

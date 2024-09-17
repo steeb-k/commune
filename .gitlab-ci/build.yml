@@ -27,13 +27,19 @@ build@aarch64:
 # Test builds with the stable runtime to make sure that the Flatpak will build on Flathub.
 # Should be run manually before tagging a new release.
 .build-stable:
-  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-46'
+  image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-${GNOME_STABLE_VERSION}'
   variables:
-    MANIFEST_PATH: ".gitlab-ci/org.gnome.Fractal.CiBuildStable.yml"
-    APP_ID: "org.gnome.Fractal.CiBuildStable"
+    GNOME_STABLE_VERSION: "46"
+    LLVM_NIGHTLY_VERSION: "18"
+    LLVM_STABLE_VERSION: "16"
     RUNTIME_REPO: "https://flathub.org/repo/flathub.flatpakrepo"
-    BUNDLE: "${APP_ID}.flatpak"
     RUN_TESTS: 0
+  before_script:
+    # We want to use the latest stable GNOME runtime instead of the nightly runtime.
+    - sed -i "s|master|${GNOME_STABLE_VERSION}|g" ${MANIFEST_PATH}
+    # We want to use the latest LLVM extension for the stable runtime.
+    - sed -i "s|llvm${LLVM_NIGHTLY_VERSION}|llvm${LLVM_STABLE_VERSION}|g" ${MANIFEST_PATH}
+    
 
 build-stable@x86_64:
   extends:

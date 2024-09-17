@@ -1,0 +1,17 @@
+{
+    "name": "cargo-nextest",
+    "buildsystem": "simple",
+    "sources": [
+        {
+            "type": "archive",
+            "url": "https://github.com/nextest-rs/nextest/releases/download/cargo-nextest-0.9.72/cargo-nextest-0.9.72-x86_64-unknown-linux-gnu.tar.gz",
+            "sha256": "e6f66397d3ba9a150b5debbc414a9ad1f87e4707da1f989c0681444ba5d15571",
+            "dest": "cargo-nextest",
+            "strip-components": 0
+        }
+    ],
+    "build-commands": [
+        "mkdir /app/bin",
+        "mv cargo-nextest/cargo-nextest /app/bin/"
+    ]
+}
