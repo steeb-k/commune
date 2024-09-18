@@ -30,3 +30,5 @@ code goes here
 ```
 
 -->
+
+/label ~"1. Bug"
