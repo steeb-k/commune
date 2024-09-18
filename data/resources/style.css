@@ -1,5 +1,9 @@
 /* Global */
 
+:root {
+  --focus-outline-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
+}
+
 textview, text {
   color: inherit;
   background: none;
@@ -17,23 +21,8 @@ button.pill.large {
   font-size: 2em;
 }
 
-listview.content {
-	border-radius: 9px;
-	border-width: 1px;
-	border-style: solid;
-}
-
-listview.content row:last-child {
-	border-bottom-width: 0px;
-}
-
 headerbar .suggested-action, .standalone-button {
   min-width: 70px;
-}
-
-button.opaque.success {
-  color: @success_fg_color;
-  background-color: @success_bg_color;
 }
 
 .extra-large-icon {
@@ -41,7 +30,7 @@ button.opaque.success {
 }
 
 .extra-large-icon.error {
-  color: @error_bg_color;
+  color: var(--error-bg-color);
 }
 
 button.row {
@@ -68,22 +57,6 @@ button.row {
 
 box.paragraphs {
   border-spacing: 12px;
-}
-
-levelbar.discrete.accent block.filled {
-  background-color: @accent_color;
-}
-
-levelbar.discrete.success block.filled {
-  background-color: @success_color;
-}
-
-levelbar.discrete.warning block.filled {
-  background-color: @warning_color;
-}
-
-levelbar.discrete.error block.filled {
-  background-color: @error_color;
 }
 
 .content .label-button {
@@ -133,20 +106,17 @@ button.overlaid {
   outline-width: 0;
 }
 
-.avatar-row-list row:focus, .string-row-list row:focus {
-  background-color: alpha(currentColor, .07);
-}
-
+.avatar-row-list row:focus, .string-row-list row:focus,
 .avatar-row-list row:hover, .string-row-list row:hover {
-  background-color: alpha(currentColor, .07);
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 .avatar-row-list row:active, .string-row-list row:active {
-  background-color: alpha(currentColor, .16);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 .avatar-row-list row:checked, .string-row-list row:checked {
-  background-color: alpha(currentColor, .1);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 .entry-row-error-revealer {
@@ -157,21 +127,7 @@ button.overlaid {
   padding: 12px;
   border-radius: 100%;
   -gtk-icon-size: 20px;
-}
-
-.card-icon.success {
-  color: @success_color;
-  background-color: alpha(@success_bg_color,.3);
-}
-
-.card-icon.warning {
-  color: @warning_color;
-  background-color: alpha(@warning_bg_color,.3);
-}
-
-.card-icon.error {
-  color: @error_color;
-  background-color: alpha(@error_bg_color,.3);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 30%, transparent);
 }
 
 .card.command {
@@ -188,7 +144,7 @@ scrolledwindow.card {
 }
 
 scrolledwindow.card:focus-within {
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
@@ -202,7 +158,7 @@ scrolledwindow.card > textview {
 
 inline-pill {
   border-radius: 9999px;
-  background-color: alpha(@view_fg_color, 0.1);
+  background-color: color-mix(in srgb, var(--view-fg-color) 10%, transparent);
   padding-right: 6px;
   transition-property: outline, outline-width, outline-offset, outline-color;
   transition-duration: 300ms;
@@ -212,13 +168,13 @@ inline-pill {
 }
 
 inline-pill:focus {
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
 
 inline-pill.activatable:hover {
-  background-color: alpha(currentColor, .17);
+  background-color: color-mix(in srgb, currentColor 17%, transparent);
 }
 
 inline-pill.activatable:hover image {
@@ -226,7 +182,7 @@ inline-pill.activatable:hover image {
 }
 
 inline-pill.activatable:active {
-  background-color: alpha(currentColor, .26);
+  background-color: color-mix(in srgb, currentColor 26%, transparent);
 }
 
 inline-pill.activatable:active image {
@@ -239,41 +195,41 @@ inline-pill.activatable:active image {
 }
 
 .app-notification inline-pill {
-  background-color: alpha(@window_bg_color, 0.2);
+  background-color: color-mix(in srgb, var(--window-bg-color) 20%, transparent);
 }
 
 .selected-avatar avatar {
-  border: 2px solid @accent_bg_color;
+  border: 2px solid var(--accent-bg-color);
 }
 
 .blue-checkmark {
-  color: @light_1;
+  color: var(--accent-fg-color);
   border-radius: 9999px;
-  border: solid @accent_bg_color 2px;
-  background-color: @accent_bg_color;
+  border: solid var(--accent-bg-color) 2px;
+  background-color: var(--accent-bg-color);
 }
 
 role-badge {
-  color: @dark_5;
-  background-color: @light_3;
+  color: var(--dark-5);
+  background-color: var(--light-3);
   border-radius: 0.4em;
   padding: 0.1em 0.5em;
   font-size: 0.8em;
 }
 
 role-badge.admin {
-  color: @error_fg_color;
-  background-color: @error_bg_color;
+  color: var(--error-fg-color);
+  background-color: var(--error-bg-color);
 }
 
 role-badge.mod {
-  color: @warning_fg_color;
-  background-color: @warning_bg_color;
+  color: var(--warning-fg-color);
+  background-color: var(--warning-bg-color);
 }
 
 role-badge.muted {
-  color: @light_1;
-  background-color: @dark_2;
+  color: var(--light-1);
+  background-color: var(--dark-2);
 }
 
 media-viewer toolbarview headerbar {
@@ -286,7 +242,7 @@ media-content-viewer controls {
 }
 
 location-viewer .map-marker {
-  color: @accent_color;
+  color: var(--accent-color);
 }
 
 entry inline-pill {
@@ -294,7 +250,7 @@ entry inline-pill {
 }
 
 editable-avatar .cutout {
-  background-color: @window_bg_color;
+  background-color: var(--window-bg-color);
   border-radius: 9999px;
   padding: 2px;
 }
@@ -310,7 +266,7 @@ spinner-wrapper.large spinner {
 }
 
 .substring-entry-row .header text placeholder {
-  opacity: 0.55;
+  opacity: var(--dim-opacity);
 }
 
 .role-selection-popover viewport > box {
@@ -422,7 +378,7 @@ setup-view .text-button {
 
 #new-login-icon {
   padding: 12px; /* 2 * padding + pixel-size = size (of avatar) */
-  background-color: alpha(currentColor, .1);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
   border-radius: 9999px;
 }
 
@@ -461,29 +417,29 @@ sidebar-row > *:not(popover) {
 }
 
 sidebar-row:focus > *:not(popover) {
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
 
 sidebar-row:not(.drop-mode) > *:not(popover):hover {
-  background-color: alpha(currentColor, 0.07);
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 .sidebar-list row:active sidebar-row > *:not(popover) {
-  background-color: alpha(currentColor, 0.16);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 .sidebar-list row:selected sidebar-row > *:not(popover) {
-  background-color: alpha(currentColor, 0.1);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 .sidebar-list row:selected sidebar-row:not(.drop-mode) > *:not(popover):hover {
-  background-color: alpha(currentColor, 0.13);
+  background-color: color-mix(in srgb, currentColor 13%, transparent);
 }
 
 .sidebar-list row:selected:active sidebar-row > *:not(popover) {
-  background-color: alpha(currentColor, 0.19);
+  background-color: color-mix(in srgb, currentColor 19%, transparent);
 }
 
 sidebar-row icon-item {
@@ -520,39 +476,39 @@ sidebar-row .notification-count {
   min-width: 0.7em;
   padding: 2px 5px;
   color: currentColor;
-  background-color: alpha(currentColor, 0.15);
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
 }
 
 sidebar-row .highlight {
-  color: @accent_fg_color;
-  background-color: @accent_bg_color;
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
 }
 
 sidebar-row.drag > * {
-  color: @accent_fg_color;
-  background-color: @accent_bg_color;
-  opacity: 0.6;
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
+  opacity: var(--disabled-opacity);
 }
 
 sidebar-row.drop-disabled > *:not(popover) {
-  opacity: 0.6;
+  opacity: var(--disabled-opacity);
 }
 
 sidebar-row.drop-empty > *:not(popover) {
-  color: @accent_color;
+  color: var(--accent--color);
 }
 
 sidebar-row icon-item.forget {
-  color: @error_color;
+  color: var(--error-color);
   background: none;
 }
 
 sidebar-row.drop-active {
-  background-color: alpha(@accent_color, 0.1);
+  background-color: color-mix(in srgb, var(--accent-color) 10%, transparent);
 }
 
 sidebar-row.drop-active category {
-  color: @accent_color;
+  color: var(--accent-color);
 }
 
 sidebar-row.drop-active .dim-label,
@@ -602,37 +558,37 @@ room-history-row:not(.has-header) message-reactions:dir(rtl) {
 }
 
 room-history-row:focus {
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
 
 room-history-row.has-open-popup  {
-  background-color: alpha(currentColor, 0.07);
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 room-history-row.selected {
-  background-color: alpha(currentColor, 0.1);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 room-history-row.selected.has-open-popup {
-  background-color: alpha(currentColor, 0.13);
+  background-color: color-mix(in srgb, currentColor 13%, transparent);
 }
 
 room-history-row.highlight {
-  background-color: alpha(@accent_bg_color, .2);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 20%, transparent);
 }
 
 room-history-row.highlight.has-open-popup {
-  background-color: alpha(@accent_bg_color, .25);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 25%, transparent);
 }
 
 room-history-row.highlight.selected {
-  background-color: alpha(@accent_bg_color, .3);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 30%, transparent);
 }
 
 room-history-row.highlight.selected.has-open-popup {
-  background-color: alpha(@accent_bg_color, .33);
+  background-color: color-mix(in srgb, var(--accent-bg-color) 33%, transparent);
 }
 
 room-history-row .event-content .emoji {
@@ -640,12 +596,12 @@ room-history-row .event-content .emoji {
 }
 
 room-history-row .event-content .emote {
-  color: @accent_color;
+  color: var(--accent-color);
 }
 
 .content-thumbnail {
   border-radius: 6px;
-  background-color: @borders;
+  background-color: var(--border-color);
 }
 
 .content-thumbnail .osd.circular {
@@ -661,7 +617,7 @@ room-history-row .event-content .emote {
 
 room-history-row .event-content .quote,
 .related-event-content {
-  border-left: 2px solid @accent_bg_color;
+  border-left: 2px solid var(--accent-bg-color);
   padding-left: 6px;
   opacity: 0.7;
 }
@@ -714,21 +670,21 @@ read-receipts-list {
 }
 
 read-receipts-list:focus {  
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
 
 read-receipts-list:hover {
-  background-color: alpha(currentColor, .07);
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 read-receipts-list:active {
-  background-color: alpha(currentColor, .16);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 read-receipts-list:checked {
-  background-color: alpha(currentColor, .1);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 .divider-row {
@@ -745,8 +701,8 @@ read-receipts-list:checked {
   border-radius: 5px;
   padding: 6px;
   font-family: monospace;
-  background-color: @text_view_bg;
-  color: @view_fg_color;
+  background-color: var(--text-view-bg);
+  color: var(--view-fg-color);
 }
 
 .related-event-toolbar {
@@ -850,13 +806,13 @@ sender-avatar {
 }
 
 sender-avatar:focus {
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
 
 sender-avatar:hover {
-  background-color: alpha(currentColor, .07);
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 sender-avatar:hover image {
@@ -864,7 +820,7 @@ sender-avatar:hover image {
 }
 
 sender-avatar:active {
-  background-color: alpha(currentColor, .16);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 sender-avatar:active image {
@@ -872,7 +828,7 @@ sender-avatar:active image {
 }
 
 sender-avatar:checked {
-  background-color: alpha(currentColor, .1);
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 sender-avatar:checked image {
@@ -1025,13 +981,13 @@ members-list row .icon:dir(rtl) {
 }
 
 dragoverlay statuspage {
-  background-color: alpha(@accent_bg_color, 0.5);
-  color: @accent_fg_color;
+  background-color: color-mix(in srgb, var(--accent-bg-color) var(--dim-opacity), transparent);
+  color: var(--accent-fg-color);
 }
 
 .public-address-tag {
-  color: @accent_fg_color;
-  background-color: @accent_bg_color;
+  color: var(--accent-fg-color);
+  background-color: var(--accent-bg-color);
   border-radius: 0.4em;
   padding: 0.3em 0.5em;
   margin-left: 0.5em;
@@ -1055,17 +1011,17 @@ permissions-member-row {
 }
 
 permissions-member-row:focus {
-  outline-color: alpha(@accent_color, 0.5);
+  outline-color: var(--focus-outline-color);
   outline-width: 2px;
   outline-offset: -2px;
 }
 
 permissions-member-row:hover, permissions-member-row.has-open-popup {
-  background-color: alpha(currentColor, .07);
+  background-color: color-mix(in srgb, currentColor 7%, transparent);
 }
 
 permissions-member-row:active {
-  background-color: alpha(currentColor, .16);
+  background-color: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 

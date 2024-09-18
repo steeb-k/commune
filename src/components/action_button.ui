@@ -27,7 +27,6 @@
             <property name="child">
               <object class="GtkButton">
                 <style>
-                  <class name="opaque"/>
                   <class name="circular"/>
                   <class name="suggested-action"/>
                 </style>
@@ -47,7 +46,6 @@
             <property name="child">
               <object class="GtkButton">
                 <style>
-                  <class name="opaque"/>
                   <class name="circular"/>
                   <class name="suggested-action"/>
                 </style>
@@ -89,7 +87,7 @@
             <property name="child">
               <object class="GtkButton">
                 <style>
-                  <class name="opaque"/>
+                  <class name="suggested-action"/>
                   <class name="circular"/>
                   <class name="success"/>
                 </style>
