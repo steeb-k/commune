@@ -255,11 +255,6 @@ editable-avatar .cutout {
   padding: 2px;
 }
 
-spinner-wrapper.large spinner {
-  min-width: 32px;
-  min-height: 32px;
-}
-
 .substring-entry-row .header .subtitle {
   margin-top: 4px;
   margin-bottom: -4px;

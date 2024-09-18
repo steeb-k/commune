@@ -13,7 +13,7 @@ use self::{
     row::InviteRow,
 };
 use crate::{
-    components::{LoadingButton, PillSearchEntry, PillSource, Spinner},
+    components::{LoadingButton, PillSearchEntry, PillSource},
     prelude::*,
     session::model::{Room, User},
     toast,
@@ -50,8 +50,6 @@ mod imp {
         pub no_search_page: TemplateChild<adw::StatusPage>,
         #[template_child]
         pub error_page: TemplateChild<adw::StatusPage>,
-        #[template_child]
-        pub loading_page: TemplateChild<Spinner>,
         /// The room users will be invited to.
         #[property(get, set = Self::set_room, construct_only)]
         pub room: glib::WeakRef<Room>,

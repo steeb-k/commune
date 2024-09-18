@@ -23,7 +23,10 @@
               </object>
             </child>
             <child type="end">
-              <object class="Spinner" id="state_spinner"/>
+              <object class="AdwSpinner" id="state_spinner">
+                <property name="height-request">20</property>
+                <property name="width-request">20</property>
+              </object>
             </child>
             <child type="end">
               <object class="GtkImage" id="state_error">

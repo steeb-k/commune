@@ -1,7 +1,7 @@
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 use crate::{
-    components::{Avatar, AvatarData, Spinner},
+    components::{Avatar, AvatarData},
     prelude::*,
     session::model::Session,
     session_list::{FailedSession, SessionInfo},
@@ -41,8 +41,6 @@ mod imp {
         type ParentType = gtk::ListBoxRow;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::ensure_type();
-
             Self::bind_template(klass);
         }
 

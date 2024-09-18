@@ -8,8 +8,9 @@
           <object class="GtkStackPage">
             <property name="name">sending</property>
             <property name="child">
-              <object class="Spinner" id="spinner">
-                <property name="valign">center</property>
+              <object class="AdwSpinner">
+                <property name="height-request">20</property>
+                <property name="width-request">20</property>
                 <!-- Translators: As in 'Sending message…'. -->
                 <property name="tooltip-text" translatable="yes">Sending…</property>
                 <accessibility>

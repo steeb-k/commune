@@ -14,7 +14,7 @@ pub use self::{
     servers_popover::ExploreServersPopover,
 };
 use self::{server::Server, server_list::ServerList, server_row::ExploreServerRow};
-use crate::{components::Spinner, session::model::Session};
+use crate::session::model::Session;
 
 mod imp {
     use std::cell::RefCell;
@@ -57,7 +57,6 @@ mod imp {
             PublicRoom::ensure_type();
             PublicRoomList::ensure_type();
             PublicRoomRow::ensure_type();
-            Spinner::ensure_type();
 
             Self::bind_template(klass);
 

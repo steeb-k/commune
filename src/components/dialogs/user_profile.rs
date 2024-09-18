@@ -4,7 +4,7 @@ use ruma::OwnedUserId;
 
 use super::ToastableDialog;
 use crate::{
-    components::{Spinner, UserPage},
+    components::UserPage,
     prelude::*,
     session::model::{Member, RemoteUser, Session, User},
     spawn,
@@ -31,8 +31,6 @@ mod imp {
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::ensure_type();
-
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
         }

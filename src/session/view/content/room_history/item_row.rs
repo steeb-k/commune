@@ -8,7 +8,7 @@ use tracing::error;
 
 use super::{DividerRow, MessageRow, RoomHistory, StateRow, TypingRow};
 use crate::{
-    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser, Spinner},
+    components::{ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl, ReactionChooser},
     prelude::*,
     session::{
         model::{Event, EventKey, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
@@ -308,10 +308,15 @@ mod imp {
 
                     match &*item.kind() {
                         VirtualItemKind::Spinner => {
-                            if !obj.child().is_some_and(|widget| widget.is::<Spinner>()) {
-                                let spinner = Spinner::default();
+                            if !obj
+                                .child()
+                                .is_some_and(|widget| widget.is::<adw::Spinner>())
+                            {
+                                let spinner = adw::Spinner::new();
                                 spinner.set_margin_top(12);
                                 spinner.set_margin_bottom(12);
+                                spinner.set_height_request(24);
+                                spinner.set_width_request(24);
                                 obj.set_child(Some(&spinner));
                             }
                         }

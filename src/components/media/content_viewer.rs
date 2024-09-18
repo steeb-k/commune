@@ -6,7 +6,6 @@ use tracing::warn;
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
 use crate::{
-    components::Spinner,
     spawn,
     utils::{media::image::load_image, CountedRef},
 };
@@ -59,8 +58,6 @@ mod imp {
         pub viewer: TemplateChild<adw::Bin>,
         #[template_child]
         pub fallback: TemplateChild<adw::StatusPage>,
-        #[template_child]
-        pub spinner: TemplateChild<Spinner>,
         /// Whether to play the media content automatically.
         #[property(get, construct_only)]
         pub autoplay: Cell<bool>,

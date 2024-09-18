@@ -9,7 +9,7 @@ use tracing::warn;
 
 use super::ContentFormat;
 use crate::{
-    components::{AudioPlayer, Spinner},
+    components::AudioPlayer,
     gettext_f,
     session::model::Session,
     spawn,
@@ -41,7 +41,7 @@ mod imp {
         #[template_child]
         pub player: TemplateChild<AudioPlayer>,
         #[template_child]
-        pub state_spinner: TemplateChild<Spinner>,
+        pub state_spinner: TemplateChild<adw::Spinner>,
         #[template_child]
         pub state_error: TemplateChild<gtk::Image>,
     }

@@ -27,7 +27,7 @@ use self::{
 };
 use super::{room_details, RoomDetails};
 use crate::{
-    components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser, Spinner},
+    components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser},
     i18n::gettext_f,
     prelude::*,
     session::model::{
@@ -98,7 +98,7 @@ mod imp {
         #[template_child]
         pub message_toolbar: TemplateChild<MessageToolbar>,
         #[template_child]
-        pub loading: TemplateChild<Spinner>,
+        pub loading: TemplateChild<adw::Spinner>,
         #[template_child]
         pub error: TemplateChild<adw::StatusPage>,
         #[template_child]

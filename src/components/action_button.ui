@@ -72,9 +72,12 @@
                 <property name="can-target">false</property>
                 <property name="valign">center</property>
                 <child>
-                  <object class="Spinner" id="spinner">
+                  <object class="AdwSpinner">
                     <property name="valign">center</property>
-                  </object>
+                    <property name="halign">center</property>
+                    <property name="height-request">20</property>
+                    <property name="width-request">20</property>
+                  </object> 
                 </child>
               </object>
             </property>

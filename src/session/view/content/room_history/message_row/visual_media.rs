@@ -11,7 +11,7 @@ use tracing::warn;
 
 use super::ContentFormat;
 use crate::{
-    components::{AnimatedImagePaintable, Spinner, VideoPlayer},
+    components::{AnimatedImagePaintable, VideoPlayer},
     gettext_f,
     session::model::Session,
     spawn,
@@ -47,7 +47,7 @@ mod imp {
         #[template_child]
         pub overlay_error: TemplateChild<gtk::Image>,
         #[template_child]
-        pub overlay_spinner: TemplateChild<Spinner>,
+        pub overlay_spinner: TemplateChild<adw::Spinner>,
         /// The intended display width of the media.
         #[property(get, set = Self::set_width, explicit_notify, default = -1, minimum = -1)]
         pub width: Cell<i32>,

@@ -4,9 +4,7 @@ use gtk::{gio, glib, glib::clone, CompositeTemplate};
 use tracing::error;
 
 use crate::{
-    components::{
-        CheckLoadingRow, EntryAddRow, LoadingBin, RemovableRow, Spinner, SwitchLoadingRow,
-    },
+    components::{CheckLoadingRow, EntryAddRow, RemovableRow, SwitchLoadingRow},
     i18n::gettext_f,
     session::model::{NotificationsGlobalSetting, NotificationsSettings},
     spawn, toast,
@@ -14,11 +12,7 @@ use crate::{
 };
 
 mod imp {
-    use std::{
-        cell::{Cell, RefCell},
-        collections::HashMap,
-        marker::PhantomData,
-    };
+    use std::{cell::Cell, marker::PhantomData};
 
     use glib::subclass::InitializingObject;
 
@@ -46,7 +40,6 @@ mod imp {
         pub keywords: TemplateChild<gtk::ListBox>,
         #[template_child]
         pub keywords_add_row: TemplateChild<EntryAddRow>,
-        pub keywords_suffixes: RefCell<HashMap<glib::GString, LoadingBin>>,
         /// The notifications settings of the current session.
         #[property(get, set = Self::set_notifications_settings, explicit_notify)]
         pub notifications_settings: BoundObjectWeakRef<NotificationsSettings>,
@@ -68,8 +61,6 @@ mod imp {
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::ensure_type();
-
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 

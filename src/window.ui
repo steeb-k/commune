@@ -10,7 +10,6 @@
       <object class="AdwToastOverlay" id="toast_overlay">
         <child>
           <object class="GtkStack" id="main_stack">
-            <property name="visible-child">loading</property>
             <property name="transition-type">crossfade</property>
             <child>
               <object class="GtkStackPage">
@@ -34,14 +33,9 @@
                               <object class="OfflineBanner" />
                             </child>
                             <child>
-                              <object class="Spinner" id="spinner">
-                                <property name="valign">center</property>
-                                <property name="halign">center</property>
+                              <object class="AdwSpinner">
                                 <property name="vexpand">True</property>
-                                <style>
-                                  <class name="large"/>
-                                </style>
-                              </object>
+                              </object> 
                             </child>
                           </object>
                         </property>

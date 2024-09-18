@@ -30,12 +30,10 @@
                     <property name="orientation">vertical</property>
                     <property name="spacing">18</property>
                     <child>
-                      <object class="Spinner">
-                        <property name="halign">center</property>
-                        <style>
-                          <class name="large"/>
-                        </style>
-                      </object>
+                      <object class="AdwSpinner">
+                        <property name="height-request">64</property>
+                        <property name="width-request">64</property>
+                      </object> 
                     </child>
                     <child>
                       <object class="GtkLabel">

@@ -16,14 +16,7 @@
                 <property name="name">loading</property>
                 <property name="title" translatable="yes">Loading</property>
                 <property name="child">
-                  <object class="Spinner" id="loading">
-                    <property name="valign">center</property>
-                    <property name="halign">center</property>
-                    <property name="vexpand">True</property>
-                    <style>
-                      <class name="large"/>
-                    </style>
-                  </object>
+                  <object class="AdwSpinner" />
                 </property>
               </object>
             </child>

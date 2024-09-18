@@ -4,7 +4,7 @@ use gtk::{glib, glib::clone, CompositeTemplate};
 
 use super::ToastableDialog;
 use crate::{
-    components::{Avatar, LoadingButton, Spinner},
+    components::{Avatar, LoadingButton},
     i18n::ngettext_f,
     prelude::*,
     session::model::{RemoteRoom, Session},
@@ -69,8 +69,6 @@ mod imp {
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            Spinner::ensure_type();
-
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
         }

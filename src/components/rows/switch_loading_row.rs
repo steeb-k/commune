@@ -1,7 +1,7 @@
-use adw::subclass::prelude::*;
-use gtk::{glib, glib::clone, prelude::*, CompositeTemplate};
+use adw::{prelude::*, subclass::prelude::*};
+use gtk::{glib, glib::clone, CompositeTemplate};
 
-use crate::{components::Spinner, utils::bool_to_accessible_tristate};
+use crate::utils::bool_to_accessible_tristate;
 
 mod imp {
     use std::{cell::Cell, marker::PhantomData};
@@ -15,7 +15,7 @@ mod imp {
     #[properties(wrapper_type = super::SwitchLoadingRow)]
     pub struct SwitchLoadingRow {
         #[template_child]
-        pub spinner: TemplateChild<Spinner>,
+        pub spinner: TemplateChild<adw::Spinner>,
         #[template_child]
         pub switch: TemplateChild<gtk::Switch>,
         /// Whether the switch is active.

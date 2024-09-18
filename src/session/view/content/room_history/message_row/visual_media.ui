@@ -15,9 +15,7 @@
           </object>
         </child>
         <child type="overlay">
-          <object class="Spinner" id="overlay_spinner">
-            <property name="halign">center</property>
-            <property name="valign">center</property>
+          <object class="AdwSpinner" id="overlay_spinner">
             <layout>
               <property name="measure">true</property>
             </layout>

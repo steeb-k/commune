@@ -8,7 +8,7 @@ use tracing::{error, warn};
 use crate::{
     account_chooser_dialog::AccountChooserDialog,
     account_switcher::{AccountSwitcherButton, AccountSwitcherPopover},
-    components::{OfflineBanner, Spinner},
+    components::OfflineBanner,
     error_page::ErrorPage,
     intent,
     login::Login,
@@ -59,8 +59,6 @@ mod imp {
         pub session: TemplateChild<SessionView>,
         #[template_child]
         pub toast_overlay: TemplateChild<adw::ToastOverlay>,
-        #[template_child]
-        pub spinner: TemplateChild<Spinner>,
         /// Whether the window should be in compact view.
         ///
         /// It means that the horizontal size is not large enough to hold all

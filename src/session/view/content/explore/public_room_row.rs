@@ -5,7 +5,7 @@ use ruma::ServerName;
 
 use super::PublicRoom;
 use crate::{
-    components::{Avatar, LoadingButton, Spinner},
+    components::{Avatar, LoadingButton},
     gettext_f, ngettext_f,
     prelude::*,
     spawn, toast,
@@ -131,9 +131,11 @@ mod imp {
                     self.update_button();
                     self.update_row();
                 } else if self.original_child.borrow().is_none() {
-                    let spinner = Spinner::default();
+                    let spinner = adw::Spinner::new();
                     spinner.set_margin_top(12);
                     spinner.set_margin_bottom(12);
+                    spinner.set_width_request(24);
+                    spinner.set_height_request(24);
                     self.original_child.replace(obj.child());
                     obj.set_child(Some(&spinner));
                 }

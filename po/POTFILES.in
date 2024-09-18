@@ -23,7 +23,6 @@ src/components/dialogs/join_room.ui
 src/components/dialogs/message_dialogs.rs
 src/components/dialogs/user_profile.ui
 src/components/offline_banner.rs
-src/components/loading/spinner.rs
 src/components/media/content_viewer.rs
 src/components/media/location_viewer.rs
 src/components/reaction_chooser.ui
