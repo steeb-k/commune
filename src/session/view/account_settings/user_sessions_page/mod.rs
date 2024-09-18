@@ -195,7 +195,7 @@ mod imp {
 glib::wrapper! {
     /// User sessions page.
     pub struct UserSessionsPage(ObjectSubclass<imp::UserSessionsPage>)
-        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesWindow, @implements gtk::Accessible;
+        @extends gtk::Widget, gtk::Window, adw::Window, adw::PreferencesPage, @implements gtk::Accessible;
 }
 
 #[gtk::template_callbacks]

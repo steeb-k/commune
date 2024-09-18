@@ -1,3 +1,7 @@
+// FIXME: AdwPreferencesWindow is deprecated but we cannot use
+// AdwPreferencesDialog yet because we need to be able to open the media viewer.
+#![allow(deprecated)]
+
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{glib, CompositeTemplate};
 
