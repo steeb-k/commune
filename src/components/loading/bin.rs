@@ -31,9 +31,10 @@ mod imp {
         type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
-            klass.set_layout_manager_type::<gtk::BinLayout>();
-
             Self::bind_template(klass);
+
+            klass.set_layout_manager_type::<gtk::BinLayout>();
+            klass.set_css_name("loading-bin");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {

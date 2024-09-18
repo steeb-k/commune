@@ -58,20 +58,27 @@
                       </object>
                     </child>
                     <child>
-                      <object class="AdwEntryRow" id="confirmation">
+                      <object class="GtkListBox">
                         <style>
-                          <class name="card"/>
+                          <class name="boxed-list-separate"/>
                         </style>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="LoadingButton" id="button">
-                        <style>
-                          <class name="row"/>
-                          <class name="destructive-action"/>
-                        </style>
-                        <property name="content-label" translatable="yes">Continue</property>
-                        <property name="sensitive">false</property>
+                        <child>
+                          <object class="AdwEntryRow" id="confirmation">
+                            <property name="selectable">False</property>
+                            <signal name="changed" handler="update_button" swapped="yes"/>
+                            <signal name="entry-activated" handler="deactivate_account" swapped="yes"/>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="LoadingButtonRow" id="button">
+                            <style>
+                              <class name="destructive-action"/>
+                            </style>
+                            <property name="title" translatable="yes">Continue</property>
+                            <property name="sensitive">false</property>
+                            <signal name="activated" handler="deactivate_account" swapped="yes"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>

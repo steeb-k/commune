@@ -7,7 +7,7 @@ use gtk::{
 };
 use ruma::{events::room::power_levels::PowerLevelUserAction, OwnedEventId};
 
-use super::{Avatar, ButtonRow, LoadingButton, PowerLevelSelectionRow};
+use super::{Avatar, LoadingButton, LoadingButtonRow, PowerLevelSelectionRow};
 use crate::{
     components::{
         confirm_mute_room_member_dialog, confirm_room_member_destructive_action_dialog,
@@ -37,7 +37,7 @@ mod imp {
         #[template_child]
         pub avatar: TemplateChild<Avatar>,
         #[template_child]
-        pub direct_chat_button: TemplateChild<LoadingButton>,
+        pub direct_chat_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
         pub verified_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -55,21 +55,15 @@ mod imp {
         #[template_child]
         pub power_level_row: TemplateChild<PowerLevelSelectionRow>,
         #[template_child]
-        pub invite_button: TemplateChild<LoadingButton>,
+        pub invite_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
-        pub kick_box: TemplateChild<gtk::ListBox>,
+        pub kick_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
-        pub kick_button: TemplateChild<ButtonRow>,
+        pub ban_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
-        pub ban_box: TemplateChild<gtk::ListBox>,
+        pub unban_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
-        pub ban_button: TemplateChild<ButtonRow>,
-        #[template_child]
-        pub unban_button: TemplateChild<LoadingButton>,
-        #[template_child]
-        pub remove_messages_box: TemplateChild<gtk::ListBox>,
-        #[template_child]
-        pub remove_messages_button: TemplateChild<ButtonRow>,
+        pub remove_messages_button: TemplateChild<LoadingButtonRow>,
         #[template_child]
         pub ignored_row: TemplateChild<adw::ActionRow>,
         #[template_child]
@@ -301,12 +295,12 @@ impl UserPage {
 
         let direct_chat = user.direct_chat();
 
-        let label = if direct_chat.is_some() {
+        let title = if direct_chat.is_some() {
             gettext("Open Direct Chat")
         } else {
             gettext("Create Direct Chat")
         };
-        self.imp().direct_chat_button.set_content_label(label);
+        self.imp().direct_chat_button.set_title(&title);
 
         self.set_direct_chat_loading(false);
     }
@@ -408,7 +402,7 @@ impl UserPage {
 
         let can_invite = matches!(membership, Membership::Knock) && permissions.can_invite();
         if can_invite {
-            imp.invite_button.set_content_label(gettext("Allow Access"));
+            imp.invite_button.set_title(&gettext("Allow Access"));
             imp.invite_button.set_visible(true);
         } else {
             imp.invite_button.set_visible(false);
@@ -426,21 +420,19 @@ impl UserPage {
                 _ => gettext("Kick"),
             };
             imp.kick_button.set_title(&label);
-            imp.kick_box.set_visible(true);
-        } else {
-            imp.kick_box.set_visible(false);
         }
+        imp.kick_button.set_visible(can_kick);
 
         let can_ban = membership != Membership::Ban
             && permissions.can_do_to_user(user_id, PowerLevelUserAction::Ban);
-        imp.ban_box.set_visible(can_ban);
+        imp.ban_button.set_visible(can_ban);
 
         let can_unban = matches!(membership, Membership::Ban)
             && permissions.can_do_to_user(user_id, PowerLevelUserAction::Unban);
         imp.unban_button.set_visible(can_unban);
 
         let can_redact = !member.is_own_user() && permissions.can_redact_other();
-        imp.remove_messages_box.set_visible(can_redact);
+        imp.remove_messages_button.set_visible(can_redact);
 
         imp.room_box.set_visible(true);
     }

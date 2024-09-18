@@ -24,7 +24,7 @@ use tracing::error;
 use super::{room_upgrade_dialog::confirm_room_upgrade, RoomDetails};
 use crate::{
     components::{
-        ButtonCountRow, ButtonRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
+        ButtonCountRow, CheckLoadingRow, ComboLoadingRow, CopyableRow, LoadingButton,
         SwitchLoadingRow,
     },
     gettext_f,
@@ -127,7 +127,6 @@ mod imp {
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
-            ButtonRow::ensure_type();
             CopyableRow::ensure_type();
 
             Self::bind_template(klass);

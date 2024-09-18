@@ -79,13 +79,18 @@
                       </object>
                     </child>
                     <child>
-                      <object class="LoadingButton" id="direct_chat_button">
-                        <style>
-                          <class name="row"/>
-                        </style>
+                      <object class="GtkListBox" id="direct_chat_box">
                         <property name="visible">false</property>
-                        <property name="is-loading">true</property>
-                        <property name="action-name">user-page.open-direct-chat</property>
+                        <style>
+                          <class name="boxed-list" />
+                        </style>
+                        <property name="accessible-role">group</property>
+                        <child>
+                          <object class="LoadingButtonRow" id="direct_chat_button">
+                            <property name="is-loading">true</property>
+                            <property name="action-name">user-page.open-direct-chat</property>
+                          </object>
+                        </child>
                       </object>
                     </child>
                     <child>
@@ -106,7 +111,7 @@
                         <child>
                           <object class="GtkListBox">
                             <style>
-                              <class name="boxed-list"/>
+                              <class name="boxed-list-separate"/>
                             </style>
                             <child>
                               <object class="AdwActionRow" id="membership_row">
@@ -128,70 +133,40 @@
                                 <signal name="notify::selected-power-level" handler="set_power_level" swapped="yes" />
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="LoadingButton" id="invite_button">
-                            <style>
-                              <class name="row"/>
-                            </style>
-                            <signal name="clicked" handler="invite_user" swapped="yes"/>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBox" id="kick_box">
-                            <style>
-                              <class name="boxed-list" />
-                            </style>
-                            <property name="accessible-role">group</property>
                             <child>
-                              <object class="ButtonRow" id="kick_button">
+                              <object class="LoadingButtonRow" id="invite_button">
+                                <signal name="activated" handler="invite_user" swapped="yes"/>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="LoadingButtonRow" id="kick_button">
                                 <style>
-                                  <class name="error"/>
+                                  <class name="destructive-action"/>
                                 </style>
                                 <signal name="activated" handler="kick_user" swapped="yes"/>
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBox" id="ban_box">
-                            <style>
-                              <class name="boxed-list" />
-                            </style>
-                            <property name="accessible-role">group</property>
                             <child>
-                              <object class="ButtonRow" id="ban_button">
+                              <object class="LoadingButtonRow" id="ban_button">
                                 <style>
-                                  <class name="error"/>
+                                  <class name="destructive-action"/>
                                 </style>
                                 <!-- Translators: As in, 'Ban room member'. -->
                                 <property name="title" translatable="yes">Ban</property>
                                 <signal name="activated" handler="ban_user" swapped="yes"/>
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="LoadingButton" id="unban_button">
-                            <style>
-                              <class name="row"/>
-                            </style>
-                            <!-- Translators: As in, 'Unban room member'. -->
-                            <property name="content-label" translatable="yes">Unban</property>
-                            <signal name="clicked" handler="unban_user" swapped="yes"/>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkListBox" id="remove_messages_box">
-                            <style>
-                              <class name="boxed-list" />
-                            </style>
-                            <property name="accessible-role">group</property>
                             <child>
-                              <object class="ButtonRow" id="remove_messages_button">
+                              <object class="LoadingButtonRow" id="unban_button">
+                                <!-- Translators: As in, 'Unan room member'. -->
+                                <property name="title" translatable="yes">Unban</property>
+                                <signal name="activated" handler="unban_user" swapped="yes"/>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="LoadingButtonRow" id="remove_messages_button">
                                 <style>
-                                  <class name="error"/>
+                                  <class name="destructive-action"/>
                                 </style>
                                 <property name="title" translatable="yes">Remove Messages</property>
                                 <signal name="activated" handler="remove_messages" swapped="yes"/>

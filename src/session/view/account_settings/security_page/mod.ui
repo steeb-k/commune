@@ -162,19 +162,21 @@
               <class name="boxed-list" />
             </style>
             <child>
-              <object class="ButtonRow">
+              <object class="AdwButtonRow">
+                <property name="selectable">False</property>
                 <!-- Translators: 'Room encryption keys' are encryption keys for all rooms. -->
                 <property name="title" translatable="yes">Export Room Encryption Keys</property>
-                <property name="to-subpage">true</property>
+                <property name="end-icon-name">go-next-symbolic</property>
                 <property name="action-name">account-settings.show-subpage</property>
                 <property name="action-target">'export-keys'</property>
               </object>
             </child>
             <child>
-              <object class="ButtonRow">
+              <object class="AdwButtonRow">
+                <property name="selectable">False</property>
                 <!-- Translators: 'Room encryption keys' are encryption keys for all rooms. -->
                 <property name="title" translatable="yes">Import Room Encryption Keys</property>
-                <property name="to-subpage">true</property>
+                <property name="end-icon-name">go-next-symbolic</property>
                 <property name="action-name">account-settings.show-subpage</property>
                 <property name="action-target">'import-keys'</property>
               </object>

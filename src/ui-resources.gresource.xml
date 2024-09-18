@@ -30,11 +30,11 @@
     <file compressed="true" preprocess="xml-stripblanks">components/power_level_selection/row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/reaction_chooser.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/button_count_row.ui</file>
-    <file compressed="true" preprocess="xml-stripblanks">components/rows/button_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/check_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/combo_loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/copyable_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/entry_add_row.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">components/rows/loading_button_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/loading_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/removable_row.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">components/rows/substring_entry_row.ui</file>

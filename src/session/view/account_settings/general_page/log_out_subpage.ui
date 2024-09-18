@@ -57,25 +57,37 @@
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="warning_button">
+                                  <object class="GtkListBox">
                                     <style>
-                                      <class name="row"/>
+                                      <class name="boxed-list"/>
                                     </style>
-                                    <property name="can-shrink">True</property>
-                                    <property name="label" translatable="yes">Review Account Security</property>
-                                    <signal name="clicked" handler="view_security" swapped="yes"/>
+                                    <property name="accessible-role">group</property>
+                                    <child>
+                                      <object class="AdwButtonRow" id="warning_button">
+                                        <property name="selectable">False</property>
+                                        <property name="title" translatable="yes">Review Account Security</property>
+                                        <signal name="activated" handler="view_security" swapped="yes"/>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
                               </object>
                             </child>
                             <child>
-                              <object class="LoadingButton" id="logout_button">
+                              <object class="GtkListBox">
                                 <style>
-                                  <class name="row"/>
-                                  <class name="destructive-action"/>
+                                  <class name="boxed-list"/>
                                 </style>
-                                <property name="content-label" translatable="yes">Continue</property>
-                                <signal name="clicked" handler="logout" swapped="yes"/>
+                                <property name="accessible-role">group</property>
+                                <child>
+                                  <object class="LoadingButtonRow" id="logout_button">
+                                    <style>
+                                      <class name="destructive-action"/>
+                                    </style>
+                                    <property name="title" translatable="yes">Continue</property>
+                                    <signal name="activated" handler="logout" swapped="yes"/>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                           </object>
@@ -117,13 +129,20 @@
                               </object>
                             </child>
                             <child>
-                              <object class="LoadingButton" id="try_again_button">
+                              <object class="GtkListBox">
                                 <style>
-                                  <class name="row"/>
-                                  <class name="destructive-action"/>
+                                  <class name="boxed-list"/>
                                 </style>
-                                <property name="content-label" translatable="yes">Try Again</property>
-                                <signal name="clicked" handler="logout" swapped="yes"/>
+                                <property name="accessible-role">group</property>
+                                <child>
+                                  <object class="LoadingButtonRow" id="try_again_button">
+                                    <style>
+                                      <class name="destructive-action"/>
+                                    </style>
+                                    <property name="title" translatable="yes">Try Again</property>
+                                    <signal name="activated" handler="logout" swapped="yes"/>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                             <child>
@@ -135,13 +154,20 @@
                               </object>
                             </child>
                             <child>
-                              <object class="LoadingButton" id="remove_button">
+                              <object class="GtkListBox">
                                 <style>
-                                  <class name="row"/>
-                                  <class name="destructive-action"/>
+                                  <class name="boxed-list"/>
                                 </style>
-                                <property name="content-label" translatable="yes">Remove Session</property>
-                                <signal name="clicked" handler="remove" swapped="yes"/>
+                                <property name="accessible-role">group</property>
+                                <child>
+                                  <object class="LoadingButtonRow" id="remove_button">
+                                    <style>
+                                      <class name="destructive-action"/>
+                                    </style>
+                                    <property name="title" translatable="yes">Remove Session</property>
+                                    <signal name="activated" handler="remove" swapped="yes"/>
+                                  </object>
+                                </child>
                               </object>
                             </child>
                           </object>

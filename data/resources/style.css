@@ -29,15 +29,6 @@ headerbar .suggested-action, .standalone-button {
   -gtk-icon-size: 128px;
 }
 
-.extra-large-icon.error {
-  color: var(--error-bg-color);
-}
-
-button.row {
-  min-height: 34px;
-  border-radius: 12px;
-}
-
 .round-corners {
   border-radius: 6px;
 }
@@ -303,10 +294,9 @@ editable-avatar .cutout {
   padding: 7px;
 }
 
-row.button-row box.header {
+row.button loading-bin label.title {
   margin-left: 12px;
   margin-right: 12px;
-  border-spacing: 6px;
   min-height: 40px;
 }
 

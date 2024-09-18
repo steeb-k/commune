@@ -10,7 +10,7 @@ pub use self::{
     import_export_keys_subpage::{ImportExportKeysSubpage, ImportExportKeysSubpageMode},
 };
 use crate::{
-    components::{ButtonCountRow, ButtonRow},
+    components::ButtonCountRow,
     session::model::{CryptoIdentityState, RecoveryState, Session, SessionVerificationState},
     utils::BoundObjectWeakRef,
 };
@@ -64,8 +64,6 @@ mod imp {
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
-            ButtonRow::ensure_type();
-
             Self::bind_template(klass);
         }
 

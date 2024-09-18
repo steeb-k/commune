@@ -54,9 +54,10 @@
     <child>
       <object class="AdwPreferencesGroup" id="change_password_group">
         <child>
-          <object class="ButtonRow">
+          <object class="AdwButtonRow">
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Change Password</property>
-            <property name="to-subpage">true</property>
+            <property name="end-icon-name">go-next-symbolic</property>
             <property name="action-name">account-settings.show-subpage</property>
             <property name="action-target">'change-password'</property>
           </object>
@@ -94,29 +95,28 @@
     </child>
     <child>
       <object class="AdwPreferencesGroup">
+        <property name="separate-rows">True</property>
         <child>
-          <object class="ButtonRow">
+          <object class="AdwButtonRow">
             <style>
-              <class name="error"/>
+              <class name="destructive-action"/>
             </style>
+            <property name="selectable">False</property>
             <property name="title" translatable="yes">Log Out</property>
-            <property name="to-subpage">true</property>
+            <property name="end-icon-name">go-next-symbolic</property>
             <property name="action-name">account-settings.show-subpage</property>
             <property name="action-target">'log-out'</property>
           </object>
         </child>
-      </object>
-    </child>
-    <child>
-      <object class="AdwPreferencesGroup">
         <child>
-          <object class="ButtonRow">
+          <object class="AdwButtonRow">
             <style>
-              <class name="error"/>
+              <class name="destructive-action"/>
             </style>
+            <property name="selectable">False</property>
             <!-- Translators: Deactivation is a permanent action that occurs on the server. -->
             <property name="title" translatable="yes">Deactivate Account</property>
-            <property name="to-subpage">true</property>
+            <property name="end-icon-name">go-next-symbolic</property>
             <property name="action-name">account-settings.show-subpage</property>
             <property name="action-target">'deactivate-account'</property>
           </object>

@@ -17,7 +17,7 @@ pub use self::{
     deactivate_account_subpage::DeactivateAccountSubpage, log_out_subpage::LogOutSubpage,
 };
 use crate::{
-    components::{ActionButton, ActionState, ButtonRow, CopyableRow, EditableAvatar},
+    components::{ActionButton, ActionState, CopyableRow, EditableAvatar},
     prelude::*,
     session::model::Session,
     spawn, spawn_tokio, toast,
@@ -67,8 +67,6 @@ mod imp {
         type ParentType = adw::PreferencesPage;
 
         fn class_init(klass: &mut Self::Class) {
-            ButtonRow::ensure_type();
-
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
             TemplateCallbacks::bind_template_callbacks(klass);

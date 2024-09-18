@@ -4,7 +4,7 @@ use gtk::{glib, CompositeTemplate};
 use sourceview::prelude::*;
 
 use crate::{
-    components::{ButtonRow, CopyableRow, ToastableDialog},
+    components::{CopyableRow, ToastableDialog},
     prelude::*,
     session::model::Event,
     toast, utils,
@@ -39,7 +39,6 @@ mod imp {
         type ParentType = ToastableDialog;
 
         fn class_init(klass: &mut Self::Class) {
-            ButtonRow::ensure_type();
             CopyableRow::ensure_type();
 
             Self::bind_template(klass);

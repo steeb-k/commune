@@ -1,17 +1,14 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
-use gtk::{
-    glib::{self, clone},
-    CompositeTemplate,
-};
+use gtk::{glib, CompositeTemplate};
 use matrix_sdk::ruma::{api::client::account::deactivate, assign};
 use tracing::error;
 
 use crate::{
-    components::{AuthDialog, LoadingButton},
+    components::{AuthDialog, LoadingButtonRow},
     prelude::*,
     session::model::Session,
-    spawn, toast,
+    toast,
 };
 
 mod imp {
@@ -31,7 +28,7 @@ mod imp {
         #[template_child]
         pub confirmation: TemplateChild<adw::EntryRow>,
         #[template_child]
-        pub button: TemplateChild<LoadingButton>,
+        pub button: TemplateChild<LoadingButtonRow>,
     }
 
     #[glib::object_subclass]
@@ -42,6 +39,7 @@ mod imp {
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+            Self::Type::bind_template_callbacks(klass);
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -50,39 +48,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for DeactivateAccountSubpage {
-        fn constructed(&self) {
-            self.parent_constructed();
-            let obj = self.obj();
-
-            self.confirmation.connect_entry_activated(clone!(
-                #[weak]
-                obj,
-                move |_| {
-                    spawn!(async move {
-                        obj.deactivate_account().await;
-                    });
-                }
-            ));
-            self.confirmation.connect_changed(clone!(
-                #[weak]
-                obj,
-                move |_| {
-                    obj.update_button();
-                }
-            ));
-
-            self.button.connect_clicked(clone!(
-                #[weak]
-                obj,
-                move |_| {
-                    spawn!(async move {
-                        obj.deactivate_account().await;
-                    });
-                }
-            ));
-        }
-    }
+    impl ObjectImpl for DeactivateAccountSubpage {}
 
     impl WidgetImpl for DeactivateAccountSubpage {}
     impl NavigationPageImpl for DeactivateAccountSubpage {}
@@ -104,11 +70,14 @@ glib::wrapper! {
         @extends gtk::Widget, adw::NavigationPage, @implements gtk::Accessible;
 }
 
+#[gtk::template_callbacks]
 impl DeactivateAccountSubpage {
     pub fn new(session: &Session) -> Self {
         glib::Object::builder().property("session", session).build()
     }
 
+    /// Update the state of the button.
+    #[template_callback]
     fn update_button(&self) {
         self.imp()
             .button
@@ -120,6 +89,8 @@ impl DeactivateAccountSubpage {
         confirmation.text() == confirmation.title()
     }
 
+    /// Deactivate the account of the current session.
+    #[template_callback]
     async fn deactivate_account(&self) {
         let Some(session) = self.session() else {
             return;

@@ -4,7 +4,9 @@ use gtk::{gio, glib, CompositeTemplate};
 use matrix_sdk::encryption::{KeyExportError, RoomKeyImportError};
 use tracing::{debug, error};
 
-use crate::{components::LoadingButton, ngettext_f, session::model::Session, spawn_tokio, toast};
+use crate::{
+    components::LoadingButtonRow, ngettext_f, session::model::Session, spawn_tokio, toast,
+};
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
@@ -53,7 +55,7 @@ mod imp {
         #[template_child]
         pub file_button: TemplateChild<gtk::Button>,
         #[template_child]
-        pub proceed_button: TemplateChild<LoadingButton>,
+        pub proceed_button: TemplateChild<LoadingButtonRow>,
         /// The path of the file for the encryption keys.
         #[property(get)]
         pub file_path: RefCell<Option<gio::File>>,
@@ -174,7 +176,7 @@ impl ImportExportKeysSubpage {
                 "The backup must be stored in a safe place and must be protected with a strong passphrase that will be used to encrypt the data.",
             ));
             imp.confirm_passphrase_box.set_visible(true);
-            imp.proceed_button.set_content_label(gettext("Export Keys"));
+            imp.proceed_button.set_title(&gettext("Export Keys"));
         } else {
             // Translators: 'Room encryption keys' are encryption keys for all rooms.
             self.set_title(&gettext("Import Room Encryption Keys"));
@@ -186,7 +188,7 @@ impl ImportExportKeysSubpage {
                 "Enter the passphrase provided when the backup file was created.",
             ));
             imp.confirm_passphrase_box.set_visible(false);
-            imp.proceed_button.set_content_label(gettext("Import Keys"));
+            imp.proceed_button.set_title(&gettext("Import Keys"));
         }
 
         self.update_button();

@@ -127,13 +127,20 @@
                       </object>
                     </child>
                     <child>
-                      <object class="LoadingButton" id="proceed_button">
+                      <object class="GtkListBox">
                         <style>
-                          <class name="row"/>
-                          <class name="suggested-action"/>
+                          <class name="boxed-list"/>
                         </style>
-                        <property name="sensitive">false</property>
-                        <signal name="clicked" handler="proceed" swapped="yes"/>
+                        <property name="accessible-role">group</property>
+                        <child>
+                          <object class="LoadingButtonRow" id="proceed_button">
+                            <style>
+                              <class name="suggested-action"/>
+                            </style>
+                            <property name="sensitive">false</property>
+                            <signal name="activated" handler="proceed" swapped="yes"/>
+                          </object>
+                        </child>
                       </object>
                     </child>
                   </object>

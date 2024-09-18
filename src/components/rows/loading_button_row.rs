@@ -9,7 +9,7 @@ use gtk::{
 use crate::components::LoadingBin;
 
 mod imp {
-    use std::{cell::Cell, marker::PhantomData};
+    use std::marker::PhantomData;
 
     use glib::subclass::{InitializingObject, Signal};
     use once_cell::sync::Lazy;
@@ -17,27 +17,26 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
-    #[template(resource = "/org/gnome/Fractal/ui/components/rows/button_row.ui")]
-    #[properties(wrapper_type = super::ButtonRow)]
-    pub struct ButtonRow {
+    #[template(resource = "/org/gnome/Fractal/ui/components/rows/loading_button_row.ui")]
+    #[properties(wrapper_type = super::LoadingButtonRow)]
+    pub struct LoadingButtonRow {
         #[template_child]
         pub loading_bin: TemplateChild<LoadingBin>,
         /// Whether the button row is loading.
         #[property(get = Self::is_loading, set = Self::set_is_loading)]
         pub is_loading: PhantomData<bool>,
-        /// Whether activating this button opens a subpage.
-        #[property(get, set = Self::set_to_subpage, explicit_notify)]
-        pub to_subpage: Cell<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for ButtonRow {
-        const NAME: &'static str = "ButtonRow";
-        type Type = super::ButtonRow;
+    impl ObjectSubclass for LoadingButtonRow {
+        const NAME: &'static str = "LoadingButtonRow";
+        type Type = super::LoadingButtonRow;
         type ParentType = adw::PreferencesRow;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
+
+            klass.set_css_name("row");
         }
 
         fn instance_init(obj: &InitializingObject<Self>) {
@@ -46,7 +45,7 @@ mod imp {
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for ButtonRow {
+    impl ObjectImpl for LoadingButtonRow {
         fn signals() -> &'static [Signal] {
             static SIGNALS: Lazy<Vec<Signal>> =
                 Lazy::new(|| vec![Signal::builder("activated").build()]);
@@ -72,11 +71,11 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for ButtonRow {}
-    impl ListBoxRowImpl for ButtonRow {}
-    impl PreferencesRowImpl for ButtonRow {}
+    impl WidgetImpl for LoadingButtonRow {}
+    impl ListBoxRowImpl for LoadingButtonRow {}
+    impl PreferencesRowImpl for LoadingButtonRow {}
 
-    impl ButtonRow {
+    impl LoadingButtonRow {
         /// Whether the row is loading.
         fn is_loading(&self) -> bool {
             self.loading_bin.is_loading()
@@ -91,30 +90,21 @@ mod imp {
             self.loading_bin.set_is_loading(loading);
             self.obj().notify_is_loading();
         }
-
-        /// Set whether activating this button opens a subpage.
-        fn set_to_subpage(&self, to_subpage: bool) {
-            if self.to_subpage.get() == to_subpage {
-                return;
-            }
-
-            self.to_subpage.replace(to_subpage);
-            self.obj().notify_to_subpage();
-        }
     }
 }
 
 glib::wrapper! {
-    /// An `AdwPreferencesRow` usable as a button.
-    pub struct ButtonRow(ObjectSubclass<imp::ButtonRow>)
+    /// An `AdwPreferencesRow` usable as a button with a loading state.
+    pub struct LoadingButtonRow(ObjectSubclass<imp::LoadingButtonRow>)
         @extends gtk::Widget, gtk::ListBoxRow, adw::PreferencesRow, @implements gtk::Accessible;
 }
 
-impl ButtonRow {
+impl LoadingButtonRow {
     pub fn new() -> Self {
         glib::Object::new()
     }
 
+    /// Connect to the signal emitted when the row is activated.
     pub fn connect_activated<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "activated",
