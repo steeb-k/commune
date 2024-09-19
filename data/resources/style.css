@@ -374,6 +374,11 @@ sidebar .collapse-spacing {
   padding: 0;
 }
 
+sidebar searchbar > revealer > box {
+  padding-top: 0;
+  padding-bottom: 6px;
+}
+
 .sidebar-list row {
   margin: 0;
   padding: 0;
