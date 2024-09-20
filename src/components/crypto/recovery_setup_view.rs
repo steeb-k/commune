@@ -151,10 +151,14 @@ mod imp {
 
             let recovery_state = session.recovery_state();
             let initial_page = match recovery_state {
-                RecoveryState::Unknown | RecoveryState::Disabled => {
+                RecoveryState::Unknown | RecoveryState::Disabled
+                    if !session.backup_exists_on_server() =>
+                {
                     CryptoRecoverySetupInitialPage::Enable
                 }
-                RecoveryState::Enabled => CryptoRecoverySetupInitialPage::Reset,
+                RecoveryState::Unknown | RecoveryState::Disabled | RecoveryState::Enabled => {
+                    CryptoRecoverySetupInitialPage::Reset
+                }
                 RecoveryState::Incomplete => CryptoRecoverySetupInitialPage::Recover,
             };
 

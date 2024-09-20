@@ -28,7 +28,7 @@ use ruma::{
     events::{direct::DirectEventContent, GlobalAccountDataEvent},
 };
 use tokio::task::AbortHandle;
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 use url::Url;
 
 use super::{
@@ -189,6 +189,9 @@ mod imp {
         /// Whether the room keys backup is enabled.
         #[property(get)]
         pub backup_enabled: Cell<bool>,
+        /// Whether the room keys backup exists on the homeserver.
+        #[property(get)]
+        pub backup_exists_on_server: Cell<bool>,
         pub sync_handle: RefCell<Option<AbortHandle>>,
         pub abort_handles: RefCell<Vec<AbortHandle>>,
         pub network_monitor_handler_id: RefCell<Option<SignalHandlerId>>,
@@ -324,6 +327,16 @@ mod imp {
 
             self.backup_enabled.set(enabled);
             self.obj().notify_backup_enabled();
+        }
+
+        /// Set whether the room keys backup existson the homeserver.
+        pub(super) fn set_backup_exists_on_server(&self, exists: bool) {
+            if self.backup_exists_on_server.get() == exists {
+                return;
+            }
+
+            self.backup_exists_on_server.set(exists);
+            self.obj().notify_backup_exists_on_server();
         }
 
         /// Update whether the homeserver is reachable.
@@ -723,25 +736,45 @@ impl Session {
     async fn update_recovery_state(&self, state: RecoveryState) {
         let imp = self.imp();
 
-        match state {
-            RecoveryState::Enabled => {
-                imp.set_cross_signing_keys_available(true);
-                imp.set_backup_enabled(true);
-            }
-            _ => {
-                let encryption = self.client().encryption();
-                let backups = encryption.backups();
+        let (cross_signing_keys_available, backup_enabled, backup_exists_on_server) = if matches!(
+            state,
+            RecoveryState::Enabled
+        ) {
+            (true, true, true)
+        } else {
+            let encryption = self.client().encryption();
+            let backups = encryption.backups();
 
-                let handle = spawn_tokio!(async move { encryption.cross_signing_status().await });
-                let cross_signing_keys_available =
-                    handle.await.unwrap().is_some_and(|s| s.is_complete());
-                imp.set_cross_signing_keys_available(cross_signing_keys_available);
+            let handle = spawn_tokio!(async move { encryption.cross_signing_status().await });
+            let cross_signing_keys_available =
+                handle.await.unwrap().is_some_and(|s| s.is_complete());
 
-                let handle = spawn_tokio!(async move { backups.are_enabled().await });
-                let backup_enabled = handle.await.unwrap();
-                imp.set_backup_enabled(backup_enabled);
-            }
-        }
+            let handle = spawn_tokio!(async move {
+                if backups.are_enabled().await {
+                    (true, true)
+                } else {
+                    let backup_exists_on_server = match backups.exists_on_server().await {
+                        Ok(exists) => exists,
+                        Err(error) => {
+                            warn!("Could not request if recovery backup exists on homeserver: {error}");
+                            false
+                        }
+                    };
+                    (false, backup_exists_on_server)
+                }
+            });
+            let (backup_enabled, backup_exists_on_server) = handle.await.unwrap();
+
+            (
+                cross_signing_keys_available,
+                backup_enabled,
+                backup_exists_on_server,
+            )
+        };
+
+        imp.set_cross_signing_keys_available(cross_signing_keys_available);
+        imp.set_backup_enabled(backup_enabled);
+        imp.set_backup_exists_on_server(backup_exists_on_server);
 
         imp.set_recovery_state(state);
     }
