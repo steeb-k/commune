@@ -17,7 +17,7 @@
         <child>
           <object class="GtkButton" id="open_browser_btn">
             <property name="can-shrink">true</property>
-            <property name="label" translatable="yes">Authenticate via Browser</property>
+            <property name="label" translatable="yes">Authenticate</property>
             <property name="halign">center</property>
             <style>
               <class name="suggested-action"/>
