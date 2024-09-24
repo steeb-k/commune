@@ -28,7 +28,7 @@ use ruma::{
     events::{direct::DirectEventContent, GlobalAccountDataEvent},
 };
 use tokio::task::AbortHandle;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 use url::Url;
 
 use super::{
@@ -356,6 +356,7 @@ mod imp {
                     }
                 }
             } else {
+                info!("Network is not available");
                 false
             };
 
@@ -385,11 +386,7 @@ mod imp {
                 return;
             }
 
-            if is_offline {
-                debug!("This session is now offline");
-            } else {
-                debug!("This session is now online");
-
+            if !is_offline {
                 // Restart the send queues, in case they were stopped.
                 let client = self.client().clone();
                 spawn_tokio!(async move {
