@@ -102,54 +102,11 @@ mod imp {
                     let key_events = gtk::EventControllerKey::new();
                     key_events.connect_key_pressed(clone!(
                         #[weak]
-                        obj,
+                        imp,
                         #[upgrade_or]
                         glib::Propagation::Proceed,
-                        move |_, key, _, modifier| {
-                            if modifier.is_empty() {
-                                if obj.is_visible() {
-                                    let imp = obj.imp();
-                                    if matches!(
-                                        key,
-                                        gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::Tab
-                                    ) {
-                                        // Activate completion.
-                                        obj.activate_selected_row();
-                                        return glib::Propagation::Stop;
-                                    } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
-                                        // Move up, if possible.
-                                        let idx = obj.selected_row_index().unwrap_or_default();
-                                        if idx > 0 {
-                                            obj.select_row_at_index(Some(idx - 1));
-                                        }
-                                        return glib::Propagation::Stop;
-                                    } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
-                                        // Move down, if possible.
-                                        let new_idx = if let Some(idx) = obj.selected_row_index() {
-                                            idx + 1
-                                        } else {
-                                            0
-                                        };
-                                        let n_members = imp.member_list.list().n_items() as usize;
-                                        let max = MAX_ROWS.min(n_members);
-                                        if new_idx < max {
-                                            obj.select_row_at_index(Some(new_idx));
-                                        }
-                                        return glib::Propagation::Stop;
-                                    } else if matches!(key, gdk::Key::Escape) {
-                                        // Close.
-                                        obj.inhibit();
-                                        return glib::Propagation::Stop;
-                                    }
-                                } else if matches!(key, gdk::Key::Tab) {
-                                    obj.update_completion(true);
-                                    return glib::Propagation::Stop;
-                                }
-                            }
-                            glib::Propagation::Proceed
-                        }
+                        move |_, key, _, modifier| imp.handle_key_pressed(key, modifier)
                     ));
-
                     view.add_controller(key_events);
 
                     // Close popup when the entry is not focused.
@@ -227,6 +184,69 @@ mod imp {
                 obj.update_completion(false);
             }
         }
+
+        /// The number of visible rows.
+        pub(super) fn visible_rows_count(&self) -> usize {
+            self.rows
+                .iter()
+                .filter(|row| row.get_visible())
+                .fuse()
+                .count()
+        }
+
+        /// Handle when a key was pressed.
+        fn handle_key_pressed(
+            &self,
+            key: gdk::Key,
+            modifier: gdk::ModifierType,
+        ) -> glib::Propagation {
+            if !modifier.is_empty() {
+                return glib::Propagation::Proceed;
+            }
+            let obj = self.obj();
+
+            if !obj.is_visible() {
+                if matches!(key, gdk::Key::Tab) {
+                    obj.update_completion(true);
+                    return glib::Propagation::Stop;
+                } else {
+                    return glib::Propagation::Proceed;
+                }
+            }
+
+            if matches!(key, gdk::Key::Return | gdk::Key::KP_Enter | gdk::Key::Tab) {
+                // Activate completion.
+                obj.activate_selected_row();
+                return glib::Propagation::Stop;
+            } else if matches!(key, gdk::Key::Up | gdk::Key::KP_Up) {
+                // Move up, if possible.
+                let idx = obj.selected_row_index().unwrap_or_default();
+                if idx > 0 {
+                    obj.select_row_at_index(Some(idx - 1));
+                }
+                return glib::Propagation::Stop;
+            } else if matches!(key, gdk::Key::Down | gdk::Key::KP_Down) {
+                // Move down, if possible.
+                let new_idx = if let Some(idx) = obj.selected_row_index() {
+                    idx + 1
+                } else {
+                    0
+                };
+
+                let max = self.visible_rows_count();
+
+                if new_idx < max {
+                    obj.select_row_at_index(Some(new_idx));
+                }
+                return glib::Propagation::Stop;
+            } else if matches!(key, gdk::Key::Escape) {
+                // Close.
+                obj.inhibit();
+                return glib::Propagation::Stop;
+            }
+
+            glib::Propagation::Proceed
+        }
     }
 }
 
@@ -241,10 +261,15 @@ impl CompletionPopover {
         glib::Object::new()
     }
 
+    /// The word that is currently used for filtering.
+    ///
+    /// Returns the start and end position of the word, as well as the search
+    /// term.
     fn current_word(&self) -> Option<(gtk::TextIter, gtk::TextIter, SearchTerm)> {
         self.imp().current_word.borrow().clone()
     }
 
+    /// Set the word that is currently used for filtering.
     fn set_current_word(&self, word: Option<(gtk::TextIter, gtk::TextIter, SearchTerm)>) {
         if self.current_word() == word {
             return;
@@ -567,26 +592,18 @@ impl CompletionPopover {
         }
     }
 
-    fn count_visible_rows(&self) -> usize {
-        self.imp()
-            .rows
-            .iter()
-            .filter(|row| row.get_visible())
-            .fuse()
-            .count()
-    }
-
+    /// Show the popover.
     fn popup(&self) {
-        if self
+        if !self
             .selected_row_index()
-            .filter(|index| *index < self.count_visible_rows())
-            .is_none()
+            .is_some_and(|index| index < self.imp().visible_rows_count())
         {
             self.select_row_at_index(Some(0));
         }
         <Self as PopoverExt>::popup(self)
     }
 
+    /// Update the location where the popover is pointing to.
     fn update_pointing_to(&self) {
         let view = self.view();
         let (start, ..) = self.current_word().unwrap();
@@ -596,16 +613,18 @@ impl CompletionPopover {
         self.set_pointing_to(Some(&gdk::Rectangle::new(x - 6, y - 2, 0, 0)));
     }
 
+    /// The index of the selected row.
     fn selected_row_index(&self) -> Option<usize> {
         self.imp().selected.get()
     }
 
+    /// Select the row at the given index.
     fn select_row_at_index(&self, idx: Option<usize>) {
-        if self.selected_row_index() == idx || idx >= Some(self.count_visible_rows()) {
+        let imp = self.imp();
+
+        if self.selected_row_index() == idx || idx >= Some(imp.visible_rows_count()) {
             return;
         }
-
-        let imp = self.imp();
 
         if let Some(row) = idx.map(|idx| &imp.rows[idx]) {
             // Make sure the row is visible.
@@ -621,6 +640,7 @@ impl CompletionPopover {
         imp.selected.set(idx);
     }
 
+    /// Activate the row that is currently selected.
     fn activate_selected_row(&self) {
         if let Some(idx) = self.selected_row_index() {
             self.imp().rows[idx].activate();
@@ -655,10 +675,12 @@ impl CompletionPopover {
         view.grab_focus();
     }
 
+    /// Whether the completion is inhibited.
     fn is_inhibited(&self) -> bool {
         self.imp().inhibit.get()
     }
 
+    /// Inhibit the completion.
     fn inhibit(&self) {
         if !self.is_inhibited() {
             self.imp().inhibit.set(true);
