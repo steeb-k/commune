@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <menu id="media-menu-model">
+  <menu id="media-secondary-menu-model">
     <section>
       <item>
         <attribute name="label" translatable="yes">_Copy Image</attribute>
@@ -20,6 +20,25 @@
       <item>
         <attribute name="label" translatable="yes">Copy Message _Link</attribute>
         <attribute name="action">media-viewer.permalink</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="media-context-menu-model">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Copy Image</attribute>
+        <attribute name="action">media-viewer.copy-image</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">S_ave Image</attribute>
+        <attribute name="action">media-viewer.save-image</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">S_ave Video</attribute>
+        <attribute name="action">media-viewer.save-video</attribute>
         <attribute name="hidden-when">action-disabled</attribute>
       </item>
     </section>
@@ -57,7 +76,7 @@
             <child type="end">
               <object class="GtkMenuButton" id="menu">
                 <property name="icon-name">menu-secondary-symbolic</property>
-                <property name="menu-model">media-menu-model</property>
+                <property name="menu-model">media-secondary-menu-model</property>
                 <property name="tooltip-text" translatable="yes">Media Menu</property>
                 <accessibility>
                   <property name="label" translatable="yes">Media Menu</property>
@@ -97,6 +116,12 @@
             <property name="child">
               <object class="MediaContentViewer" id="media">
                 <property name="autoplay">true</property>
+                <property name="popover">
+                  <object class="GtkPopoverMenu">
+                    <property name="menu-model">media-context-menu-model</property>
+                  </object>
+                </property>
+                <property name="has-context-menu">True</property>
               </object>
             </property>
           </object>

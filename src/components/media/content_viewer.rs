@@ -6,6 +6,8 @@ use tracing::warn;
 
 use super::{AnimatedImagePaintable, AudioPlayer, LocationViewer};
 use crate::{
+    components::ContextMenuBin,
+    prelude::*,
     spawn,
     utils::{media::image::load_image, CountedRef},
 };
@@ -68,7 +70,7 @@ mod imp {
     impl ObjectSubclass for MediaContentViewer {
         const NAME: &'static str = "MediaContentViewer";
         type Type = super::MediaContentViewer;
-        type ParentType = adw::Bin;
+        type ParentType = ContextMenuBin;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -103,7 +105,7 @@ mod imp {
     }
 
     impl WidgetImpl for MediaContentViewer {}
-    impl BinImpl for MediaContentViewer {}
+    impl ContextMenuBinImpl for MediaContentViewer {}
 
     impl MediaContentViewer {
         /// Update the state of the animated paintable, if any.
@@ -131,7 +133,7 @@ mod imp {
 glib::wrapper! {
     /// Widget to view any media file.
     pub struct MediaContentViewer(ObjectSubclass<imp::MediaContentViewer>)
-        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+        @extends gtk::Widget, ContextMenuBin, @implements gtk::Accessible;
 }
 
 impl MediaContentViewer {
