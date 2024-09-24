@@ -8,7 +8,7 @@ use gtk::{
     prelude::*,
     CompositeTemplate,
 };
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 use super::{AvatarData, AvatarImage};
 use crate::{
@@ -16,7 +16,7 @@ use crate::{
     toast,
     utils::{
         expression,
-        media::image::{load_image, ImageDimensions},
+        media::image::{load_image, ImageDimensions, ImageError},
         CountedRef,
     },
 };
@@ -74,11 +74,16 @@ mod imp {
         /// A temporary paintable to show instead of the avatar.
         #[property(get)]
         pub temp_paintable: RefCell<Option<gdk::Paintable>>,
+        /// The error encountered when loading the temporary avatar, if any.
+        #[property(get, builder(ImageError::default()))]
+        pub temp_error: Cell<ImageError>,
         temp_paintable_animation_ref: RefCell<Option<CountedRef>>,
         #[template_child]
         pub stack: TemplateChild<gtk::Stack>,
         #[template_child]
         pub temp_avatar: TemplateChild<adw::Avatar>,
+        #[template_child]
+        pub error_img: TemplateChild<gtk::Image>,
         #[template_child]
         pub button_remove: TemplateChild<ActionButton>,
         #[template_child]
@@ -128,17 +133,19 @@ mod imp {
 
         fn constructed(&self) {
             self.parent_constructed();
-
-            self.button_remove.set_extra_classes(&["error"]);
-
             let obj = self.obj();
+
+            self.button_remove
+                .set_extra_classes(&["destructive-action"]);
+
+            // Watch whether we can remove the avatar.
             let image_present_expr = obj
                 .property_expression("data")
                 .chain_property::<AvatarData>("image")
-                .chain_property::<AvatarImage>("paintable")
-                .chain_closure::<bool>(closure!(
-                    |_: Option<glib::Object>, image: Option<gdk::Paintable>| { image.is_some() }
-                ));
+                .chain_property::<AvatarImage>("uri-string")
+                .chain_closure::<bool>(closure!(|_: Option<glib::Object>, uri: Option<String>| {
+                    uri.is_some()
+                }));
 
             let editable_expr = obj.property_expression("editable");
             let remove_not_inhibited_expr =
@@ -148,6 +155,7 @@ mod imp {
             let button_remove_visible = expression::and(can_remove_expr, image_present_expr);
             button_remove_visible.bind(&*self.button_remove, "visible", glib::Object::NONE);
 
+            // Watch whether the temp avatar is mapped for animations.
             self.temp_avatar.connect_map(clone!(
                 #[weak(rename_to = imp)]
                 self,
@@ -162,6 +170,21 @@ mod imp {
                     imp.update_temp_paintable_state();
                 }
             ));
+
+            // Watch errors for the avatar data.
+            obj.property_expression("data")
+                .chain_property::<AvatarData>("image")
+                .chain_property::<AvatarImage>("error")
+                .watch(
+                    None::<&glib::Object>,
+                    clone!(
+                        #[weak(rename_to = imp)]
+                        self,
+                        move || {
+                            imp.update_error();
+                        }
+                    ),
+                );
         }
     }
 
@@ -176,6 +199,7 @@ mod imp {
             }
 
             self.data.replace(data);
+            self.update_error();
             self.obj().notify_data();
         }
 
@@ -214,7 +238,7 @@ mod imp {
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(true);
 
-                    self.set_temp_paintable(None);
+                    self.set_temp_paintable(Ok(None));
                 }
                 EditableAvatarState::EditInProgress => {
                     self.show_temp_paintable(true);
@@ -229,7 +253,7 @@ mod imp {
                     obj.set_remove_state(ActionState::Default);
                     obj.set_remove_sensitive(true);
 
-                    self.set_temp_paintable(None);
+                    self.set_temp_paintable(Ok(None));
 
                     // Animation for success.
                     obj.set_edit_state(ActionState::Success);
@@ -271,12 +295,23 @@ mod imp {
 
         /// Load the temporary paintable from the given file.
         pub(super) async fn set_temp_paintable_from_file(&self, file: gio::File) {
-            let paintable = load_image(file, Some(self.avatar_dimensions())).await.ok();
+            let paintable = load_image(file, Some(self.avatar_dimensions()))
+                .await
+                .map(Some)
+                .map_err(|error| {
+                    warn!("Could not load avatar: {error}");
+                    error.into()
+                });
             self.set_temp_paintable(paintable);
         }
 
         /// Set the temporary paintable.
-        fn set_temp_paintable(&self, paintable: Option<gdk::Paintable>) {
+        fn set_temp_paintable(&self, paintable: Result<Option<gdk::Paintable>, ImageError>) {
+            let (paintable, error) = match paintable {
+                Ok(paintable) => (paintable, ImageError::None),
+                Err(error) => (None, error),
+            };
+
             if *self.temp_paintable.borrow() == paintable {
                 return;
             }
@@ -284,17 +319,15 @@ mod imp {
             self.temp_paintable.replace(paintable);
 
             self.update_temp_paintable_state();
+            self.set_temp_error(error);
             self.obj().notify_temp_paintable();
         }
 
         /// Show the temporary paintable instead of the current avatar.
         fn show_temp_paintable(&self, show: bool) {
-            let stack = &self.stack;
-            if show {
-                stack.set_visible_child_name("temp");
-            } else {
-                stack.set_visible_child_name("default");
-            }
+            let child_name = if show { "temp" } else { "default" };
+            self.stack.set_visible_child_name(child_name);
+            self.update_error();
         }
 
         /// Update the state of the temp paintable.
@@ -314,6 +347,41 @@ mod imp {
                 self.temp_paintable_animation_ref
                     .replace(Some(paintable.animation_ref()));
             }
+        }
+
+        /// Set the error encountered when loading the temporary avatar, if any.
+        fn set_temp_error(&self, error: ImageError) {
+            if self.temp_error.get() == error {
+                return;
+            }
+
+            self.temp_error.set(error);
+
+            self.update_error();
+            self.obj().notify_temp_error();
+        }
+
+        /// Update the error that is displayed.
+        fn update_error(&self) {
+            let error = if self
+                .stack
+                .visible_child_name()
+                .is_some_and(|name| name == "default")
+            {
+                self.data
+                    .borrow()
+                    .as_ref()
+                    .and_then(|data| data.image())
+                    .map(|image| image.error())
+                    .unwrap_or_default()
+            } else {
+                self.temp_error.get()
+            };
+
+            if error.is_error() {
+                self.error_img.set_tooltip_text(Some(&error.to_string()));
+            }
+            self.error_img.set_visible(error.is_error());
         }
     }
 }
@@ -413,6 +481,7 @@ impl EditableAvatar {
         self.imp().remove_sensitive.set(sensitive);
     }
 
+    /// Choose a new avatar.
     async fn choose_avatar(&self) {
         let filters = gio::ListStore::new::<gtk::FileFilter>();
 
@@ -470,6 +539,7 @@ impl EditableAvatar {
         }
     }
 
+    /// Connect to the signal emitted when a new avatar is selected.
     pub fn connect_edit_avatar<F: Fn(&Self, gio::File) + 'static>(
         &self,
         f: F,
@@ -483,6 +553,7 @@ impl EditableAvatar {
         )
     }
 
+    /// Connect to the signal emitted when the avatar is removed.
     pub fn connect_remove_avatar<F: Fn(&Self) + 'static>(&self, f: F) -> glib::SignalHandlerId {
         self.connect_closure(
             "remove-avatar",

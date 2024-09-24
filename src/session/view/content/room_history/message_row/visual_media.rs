@@ -17,7 +17,7 @@ use crate::{
     spawn,
     utils::{
         matrix::VisualMediaMessage,
-        media::image::{load_image, ImageDimensions, ThumbnailSettings},
+        media::image::{load_image, ImageDimensions, ImageError, ThumbnailSettings},
         CountedRef, LoadingState,
     },
 };
@@ -358,7 +358,7 @@ impl MessageVisualMedia {
                     Err(error) => {
                         warn!("Could not retrieve media file: {error}");
                         imp.overlay_error
-                            .set_tooltip_text(Some(&gettext("Could not retrieve media")));
+                            .set_tooltip_text(Some(&ImageError::Download.to_string()));
                         imp.set_state(LoadingState::Error);
 
                         return;
@@ -387,9 +387,10 @@ impl MessageVisualMedia {
                         }
                     }
                     Err(error) => {
-                        warn!("Image file not supported: {error}");
+                        warn!("Could not load image: {error}");
+                        let image_error = ImageError::from(error);
                         imp.overlay_error
-                            .set_tooltip_text(Some(&gettext("Image file not supported")));
+                            .set_tooltip_text(Some(&image_error.to_string()));
                         imp.set_state(LoadingState::Error);
                     }
                 }

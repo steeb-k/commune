@@ -41,6 +41,22 @@
           </object>
         </child>
         <child type="overlay">
+          <object class="GtkImage" id="error_img">
+            <style>
+              <class name="osd"/>
+              <class name="circular"/>
+            </style>
+            <property name="visible">False</property>
+            <property name="halign">center</property>
+            <property name="valign">center</property>
+            <property name="icon-name">error-symbolic</property>
+            <property name="icon-size">large</property>
+            <layout>
+              <property name="measure">true</property>
+            </layout>
+          </object>
+        </child>
+        <child type="overlay">
           <object class="AdwBin" id="button_remove_bin">
             <style>
               <class name="cutout" />

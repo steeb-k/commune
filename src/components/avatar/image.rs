@@ -3,13 +3,14 @@ use ruma::{
     api::client::media::get_content_thumbnail::v3::Method, events::room::avatar::ImageInfo,
     OwnedMxcUri,
 };
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::{
     session::model::Session,
     spawn,
     utils::media::image::{
-        load_image, ImageDimensions, ImageSource, ThumbnailDownloader, ThumbnailSettings,
+        load_image, ImageDimensions, ImageError, ImageSource, ThumbnailDownloader,
+        ThumbnailSettings,
     },
 };
 
@@ -57,6 +58,9 @@ mod imp {
         /// The current session.
         #[property(get, construct_only)]
         pub session: OnceCell<Session>,
+        /// The error encountered when loading the avatar, if any.
+        #[property(get, builder(ImageError::default()))]
+        pub error: Cell<ImageError>,
     }
 
     #[glib::object_subclass]
@@ -117,10 +121,30 @@ mod imp {
             self.info.replace(info);
         }
 
-        /// Set the image content as a paintable
-        pub(super) fn set_paintable(&self, paintable: Option<gdk::Paintable>) {
-            self.paintable.replace(paintable);
-            self.obj().notify_paintable();
+        /// Set the image content as a paintable or the error encountered when
+        /// loading the avatar.
+        pub(super) fn set_paintable(&self, paintable: Result<Option<gdk::Paintable>, ImageError>) {
+            let (paintable, error) = match paintable {
+                Ok(paintable) => (paintable, ImageError::None),
+                Err(error) => (None, error),
+            };
+
+            if *self.paintable.borrow() != paintable {
+                self.paintable.replace(paintable);
+                self.obj().notify_paintable();
+            }
+
+            self.set_error(error);
+        }
+
+        /// Set the error encountered when loading the avatar, if any.
+        fn set_error(&self, error: ImageError) {
+            if self.error.get() == error {
+                return;
+            }
+
+            self.error.set(error);
+            self.obj().notify_error();
         }
     }
 }
@@ -174,13 +198,13 @@ impl AvatarImage {
     fn load(&self) {
         if self.needed_size() == 0 {
             // We do not need the avatar.
-            self.imp().set_paintable(None);
+            self.imp().set_paintable(Ok(None));
             return;
         }
 
         let Some(uri) = self.uri() else {
             // We do not have an avatar.
-            self.imp().set_paintable(None);
+            self.imp().set_paintable(Ok(None));
             return;
         };
 
@@ -197,6 +221,7 @@ impl AvatarImage {
     }
 
     async fn load_inner(&self, uri: OwnedMxcUri) {
+        let imp = self.imp();
         let client = self.session().client();
         let info = self.info();
 
@@ -223,10 +248,21 @@ impl AvatarImage {
 
         match downloader.download_to_file(&client, settings).await {
             Ok(file) => {
-                let paintable = load_image(file, Some(dimensions)).await.ok();
-                self.imp().set_paintable(paintable);
+                let paintable =
+                    load_image(file, Some(dimensions))
+                        .await
+                        .map(Some)
+                        .map_err(|error| {
+                            warn!("Could not load avatar: {error}");
+                            error.into()
+                        });
+
+                imp.set_paintable(paintable);
             }
-            Err(error) => error!("Could not fetch avatar: {error}"),
+            Err(error) => {
+                error!("Could not retrieve avatar: {error}");
+                imp.set_paintable(Err(ImageError::Download));
+            }
         };
     }
 }

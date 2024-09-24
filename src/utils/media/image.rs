@@ -1,8 +1,9 @@
 //! Collection of methods for images.
 
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 
-use gtk::{gdk, gio, prelude::*};
+use gettextrs::gettext;
+use gtk::{gdk, gio, glib, prelude::*};
 use image::{ColorType, DynamicImage, ImageDecoder, ImageResult};
 use matrix_sdk::{
     attachment::{BaseImageInfo, BaseThumbnailInfo, Thumbnail},
@@ -762,6 +763,55 @@ impl From<ThumbnailSettings> for MediaThumbnailSettings {
                 height: dimensions.height.into(),
             },
             animated,
+        }
+    }
+}
+
+/// An error encountered when loading an image.
+///
+/// This type implements `Display` with localized messages for the actual
+/// errors, but the implementation crashes if it is called for the `None`
+/// variant.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, glib::Enum)]
+#[enum_type(name = "ImageError")]
+pub enum ImageError {
+    /// There is no error.
+    #[default]
+    None,
+    /// Could not download the image.
+    Download,
+    /// The image uses an unsupported format.
+    Unsupported,
+    /// An unexpected error occurred.
+    Unknown,
+}
+
+impl ImageError {
+    /// Whether this is an actual error.
+    pub fn is_error(&self) -> bool {
+        !matches!(self, Self::None)
+    }
+}
+
+impl fmt::Display for ImageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::None => unimplemented!(),
+            Self::Download => gettext("Could not retrieve media"),
+            Self::Unsupported => gettext("Image format not supported"),
+            Self::Unknown => gettext("An unexpected error occurred"),
+        };
+
+        f.write_str(&s)
+    }
+}
+
+impl From<glycin::ErrorCtx> for ImageError {
+    fn from(value: glycin::ErrorCtx) -> Self {
+        if value.unsupported_format().is_some() {
+            Self::Unsupported
+        } else {
+            Self::Unknown
         }
     }
 }
