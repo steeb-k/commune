@@ -458,13 +458,13 @@ impl UserFacingError for oo7::portal::Error {
                 "Could not access the secret storage file location.",
             ),
             Error::Io(_) => gettext(
-                "An unknown error occurred when accessing the secret storage file.",
+                "An unexpected error occurred when accessing the secret storage file.",
             ),
             Error::TargetFileChanged(_) => gettext(
                 "The secret storage file has been changed by another process.",
             ),
             Error::PortalBus(_) => gettext(
-                "An unknown error occurred when interacting with the D-Bus Secret Portal backend.",
+                "An unexpected error occurred when interacting with the D-Bus Secret Portal backend.",
             ),
             Error::CancelledPortalRequest => gettext(
                 "The request to the Flatpak Secret Portal was cancelled. Make sure to accept any prompt asking to access it.",
@@ -491,7 +491,7 @@ impl UserFacingError for oo7::dbus::Error {
             ),
             Error::Service(s) => match s {
                 ServiceError::ZBus(_) => gettext(
-                    "An unknown error occurred when interacting with the D-Bus Secret Service.",
+                    "An unexpected error occurred when interacting with the D-Bus Secret Service.",
                 ),
                 ServiceError::IsLocked => gettext(
                     "The collection or item is locked.",
@@ -511,7 +511,7 @@ impl UserFacingError for oo7::dbus::Error {
             ),
             Error::Zbus(_) |
             Error::IO(_) => gettext(
-                "An unknown error occurred when interacting with the D-Bus Secret Service.",
+                "An unexpected error occurred when interacting with the D-Bus Secret Service.",
             ),
         }
     }

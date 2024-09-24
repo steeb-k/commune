@@ -68,7 +68,7 @@ impl UserFacingError for HttpError {
                     }
                 }
             }
-            _ => gettext("An unknown connection error occurred."),
+            _ => gettext("An unexpected connection error occurred."),
         }
     }
 }
@@ -78,7 +78,7 @@ impl UserFacingError for Error {
         match self {
             Error::DecryptorError(_) => gettext("Could not decrypt the event."),
             Error::Http(http_error) => http_error.to_user_facing(),
-            _ => gettext("An unknown error occurred."),
+            _ => gettext("An unexpected error occurred."),
         }
     }
 }
@@ -92,7 +92,7 @@ impl UserFacingError for ClientBuildError {
             }
             ClientBuildError::Http(err) => err.to_user_facing(),
             ClientBuildError::SqliteStore(_) => gettext("Could not open the store."),
-            _ => gettext("An unknown error occurred."),
+            _ => gettext("An unexpected error occurred."),
         }
     }
 }
