@@ -5,7 +5,7 @@ use gtk::{
     glib::{self, clone},
     CompositeTemplate,
 };
-use ruma::OwnedMxcUri;
+use ruma::{api::client::discovery::get_capabilities::Capabilities, OwnedMxcUri};
 use tracing::error;
 
 mod change_password_subpage;
@@ -144,30 +144,34 @@ mod imp {
                     #[weak(rename_to = imp)]
                     self,
                     async move {
-                        imp.load_can_change_password().await;
+                        imp.load_capabilities().await;
                     }
                 )
             );
         }
 
-        /// Load whether the user can change their password.
-        async fn load_can_change_password(&self) {
+        /// Load the possible changes on the user account.
+        async fn load_capabilities(&self) {
             let Some(session) = self.session.upgrade() else {
                 return;
             };
             let client = session.client();
 
-            // Check whether the user can change their password.
             let handle = spawn_tokio!(async move { client.get_capabilities().await });
-            let can_change_password = match handle.await.unwrap() {
-                Ok(capabilities) => capabilities.change_password.enabled,
+            let capabilities = match handle.await.unwrap() {
+                Ok(capabilities) => capabilities,
                 Err(error) => {
                     error!("Could not get server capabilities: {error}");
-                    false
+                    Capabilities::default()
                 }
             };
 
-            self.change_password_group.set_visible(can_change_password);
+            self.change_password_group
+                .set_visible(capabilities.change_password.enabled);
+            self.avatar
+                .set_editable(capabilities.set_avatar_url.enabled);
+            self.display_name
+                .set_editable(capabilities.set_displayname.enabled);
         }
     }
 }

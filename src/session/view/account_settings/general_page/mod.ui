@@ -18,7 +18,6 @@
                 </lookup>
               </lookup>
             </binding>
-            <property name="editable">true</property>
             <signal name="edit-avatar" handler="change_avatar" swapped="yes" />
             <signal name="remove-avatar" handler="remove_avatar" swapped="yes" />
           </object>
