@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-20 10:42+0000\n"
-"PO-Revision-Date: 2024-09-20 21:56+0300\n"
+"POT-Creation-Date: 2024-09-24 15:06+0000\n"
+"PO-Revision-Date: 2024-09-24 19:23+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -232,36 +232,36 @@ msgstr "Попередження"
 msgid "Error"
 msgstr "Помилка"
 
-#: src/components/avatar/editable.rs:420
+#: src/components/avatar/editable.rs:489
 msgid "Images"
 msgstr "Зображення"
 
-#: src/components/avatar/editable.rs:425
+#: src/components/avatar/editable.rs:494
 msgid "Choose Avatar"
 msgstr "Виберіть аватар"
 
-#: src/components/avatar/editable.rs:427
+#: src/components/avatar/editable.rs:496
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr "Вибрати"
 
-#: src/components/avatar/editable.rs:441
+#: src/components/avatar/editable.rs:510
 msgid "Could not open avatar file"
 msgstr "Не вдалося відкрити файл аватара"
 
-#: src/components/avatar/editable.rs:462
+#: src/components/avatar/editable.rs:531
 msgid "The chosen file is not an image"
 msgstr "Вибраний файл не є файлом зображення"
 
-#: src/components/avatar/editable.rs:468
+#: src/components/avatar/editable.rs:537
 msgid "Could not determine the type of the chosen file"
 msgstr "Не вдалося визначити тип вибраного файла"
 
-#: src/components/avatar/editable.ui:54
+#: src/components/avatar/editable.ui:70
 msgid "Remove Avatar"
 msgstr "Вилучити аватар"
 
-#: src/components/avatar/editable.ui:71
+#: src/components/avatar/editable.ui:87
 msgid "Select New Avatar"
 msgstr "Виберіть новий аватар"
 
@@ -582,7 +582,6 @@ msgid "Authentication"
 msgstr "Розпізнавання"
 
 #: src/components/dialogs/auth.ui:20
-#| msgid "Authentication"
 msgid "Authenticate"
 msgstr "Розпізнавання"
 
@@ -639,7 +638,7 @@ msgstr "Увійти до кімнати"
 #: src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:51 src/session/view/media_viewer.ui:53
+#: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
 msgid "Back"
 msgstr "Назад"
 
@@ -710,7 +709,7 @@ msgstr "Полишити"
 #: src/components/dialogs/message_dialogs.rs:369
 #: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:292
+#: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
 #: src/session/view/content/room_details/general_page.rs:1021
@@ -872,7 +871,7 @@ msgstr[3] ""
 "може бути скасовано."
 
 #: src/components/dialogs/message_dialogs.rs:230
-#: src/session/view/account_settings/general_page/mod.rs:293
+#: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
 #: src/session/view/content/room_history/item_row.rs:897
 msgid "Remove"
@@ -955,31 +954,31 @@ msgstr "Розширити повноваження"
 msgid "User Profile"
 msgstr "Профіль користувача"
 
-#: src/components/offline_banner.rs:102
+#: src/components/offline_banner.rs:103
 msgid "Offline"
 msgstr "Поза мережею"
 
-#: src/components/offline_banner.rs:109
+#: src/components/offline_banner.rs:111
 msgid "No network connection"
 msgstr "Немає з'єднання з мережею"
 
-#: src/components/offline_banner.rs:112
+#: src/components/offline_banner.rs:115
 msgid "No Internet connection"
 msgstr "Відсутнє з'єднання з інтернетом"
 
-#: src/components/media/content_viewer.rs:175
+#: src/components/media/content_viewer.rs:177
 msgid "Image not Viewable"
 msgstr "Зображення не придатне до перегляду"
 
-#: src/components/media/content_viewer.rs:176
+#: src/components/media/content_viewer.rs:178
 msgid "Audio Clip not Playable"
 msgstr "Звуковий кліп не придатний до відтворення"
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:179
 msgid "Video not Playable"
 msgstr "Відео не придатне до відтворення"
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:180
 msgid "File not Viewable"
 msgstr "Файл не придатний до перегляду"
 
@@ -1011,7 +1010,7 @@ msgid "Confirm Custom Role"
 msgstr "Підтвердження нетипової ролі"
 
 #: src/components/user_page.rs:277
-#: src/session/view/account_settings/general_page/mod.ui:75
+#: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Ідентифікатор користувача Matrix скопійовано до буфера обміну"
@@ -1149,7 +1148,7 @@ msgid "Could not ignore user"
 msgstr "Не вдалося почати ігнорувати користувача"
 
 #: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:74
+#: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
 msgid "Copy Matrix User ID"
 msgstr "Скопіювати ідентифікатор користувача Matrix"
@@ -1729,7 +1728,7 @@ msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "Адреса вашого домашнього сервера Matrix, наприклад {address}"
 
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
-#: src/session/view/account_settings/general_page/mod.ui:80
+#: src/session/view/account_settings/general_page/mod.ui:79
 msgid "Homeserver"
 msgstr "Домашній сервер"
 
@@ -1833,9 +1832,11 @@ msgstr ""
 "даних."
 
 #: src/secret/linux.rs:461
-msgid "An unknown error occurred when accessing the secret storage file."
+#| msgid "An unknown error occurred when accessing the secret storage file."
+msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
-"Під час спроби доступу до файла сховища реєстраційних даних сталася невідома "
+"Під час спроби доступу до файла сховища реєстраційних даних сталася"
+" неочікувана "
 "помилка"
 
 #: src/secret/linux.rs:464
@@ -1844,12 +1845,15 @@ msgstr ""
 "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
 #: src/secret/linux.rs:467
+#| msgid ""
+#| "An unknown error occurred when interacting with the D-Bus Secret Portal "
+#| "backend."
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Portal "
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 "Під час роботи із модулем порталу реєстраційних даних за допомогою D-Bus "
-"сталася невідома помилка"
+"сталася неочікувана помилка"
 
 #: src/secret/linux.rs:470
 msgid ""
@@ -1879,11 +1883,13 @@ msgid "The item was deleted."
 msgstr "Запис було вилучено."
 
 #: src/secret/linux.rs:494 src/secret/linux.rs:514
+#| msgid ""
+#| "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Service."
+"An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
 "Під час роботи із службою реєстраційних даних за допомогою D-Bus сталася "
-"невідома помилка"
+"неочікувана помилка"
 
 #: src/secret/linux.rs:497
 msgid "The collection or item is locked."
@@ -1914,7 +1920,7 @@ msgstr ""
 "Не вдалося отримати доступу до типової збірки. Переконайтеся, що в'язку "
 "ключів було створено і зроблено типовою."
 
-#: src/session/model/session.rs:985
+#: src/session/model/session.rs:982
 msgid "Could not log the session out"
 msgstr "Не вдалося вийти з сеансу"
 
@@ -2069,7 +2075,7 @@ msgid "Could not change password"
 msgstr "Не вдалося змінити пароль"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:59
+#: src/session/view/account_settings/general_page/mod.ui:58
 msgid "Change Password"
 msgstr "Зміна пароля"
 
@@ -2102,7 +2108,7 @@ msgstr "Не вдалося вимкнути обліковий запис"
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
-#: src/session/view/account_settings/general_page/mod.ui:118
+#: src/session/view/account_settings/general_page/mod.ui:117
 msgid "Deactivate Account"
 msgstr "Деактивувати обліковий запис"
 
@@ -2145,7 +2151,7 @@ msgstr ""
 "ключів шифрування до виходу з облікового запису."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:105
+#: src/session/view/account_settings/general_page/mod.ui:104
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
 msgid "Log Out"
 msgstr "Вийти"
@@ -2187,50 +2193,50 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Вилучити сеанс"
 
-#: src/session/view/account_settings/general_page/mod.rs:206
+#: src/session/view/account_settings/general_page/mod.rs:210
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "Аватар успішно вилучено"
 
-#: src/session/view/account_settings/general_page/mod.rs:208
+#: src/session/view/account_settings/general_page/mod.rs:212
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "Аватар успішно змінено"
 
-#: src/session/view/account_settings/general_page/mod.rs:227
+#: src/session/view/account_settings/general_page/mod.rs:231
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 msgid "Could not load file"
 msgstr "Не вдалось завантажити файл"
 
-#: src/session/view/account_settings/general_page/mod.rs:242
+#: src/session/view/account_settings/general_page/mod.rs:246
 #: src/session/view/content/room_details/edit_details_subpage.rs:204
 msgid "Could not upload avatar"
 msgstr "Не вдалося вивантажити аватар"
 
-#: src/session/view/account_settings/general_page/mod.rs:271
+#: src/session/view/account_settings/general_page/mod.rs:275
 #: src/session/view/content/room_details/edit_details_subpage.rs:227
 msgid "Could not change avatar"
 msgstr "Не вдалося змінити аватар"
 
-#: src/session/view/account_settings/general_page/mod.rs:288
+#: src/session/view/account_settings/general_page/mod.rs:292
 #: src/session/view/content/room_details/edit_details_subpage.rs:252
 msgid "Remove Avatar?"
 msgstr "Вилучити аватар?"
 
-#: src/session/view/account_settings/general_page/mod.rs:289
+#: src/session/view/account_settings/general_page/mod.rs:293
 msgid "Do you really want to remove your avatar?"
 msgstr "Ви дійсно хочете вилучити ваш аватар?"
 
-#: src/session/view/account_settings/general_page/mod.rs:327
+#: src/session/view/account_settings/general_page/mod.rs:331
 #: src/session/view/content/room_details/edit_details_subpage.rs:284
 msgid "Could not remove avatar"
 msgstr "Не вдалося вилучити аватар"
 
-#: src/session/view/account_settings/general_page/mod.rs:379
+#: src/session/view/account_settings/general_page/mod.rs:383
 msgid "Name changed successfully"
 msgstr "Ім'я успішно змінено"
 
-#: src/session/view/account_settings/general_page/mod.rs:430
+#: src/session/view/account_settings/general_page/mod.rs:434
 msgid "Could not change display name"
 msgstr "Не вдалося змінити показане ім'я"
 
@@ -2242,39 +2248,39 @@ msgstr "Загальні"
 msgid "Account Avatar"
 msgstr "Аватар облікового запису"
 
-#: src/session/view/account_settings/general_page/mod.ui:32
+#: src/session/view/account_settings/general_page/mod.ui:31
 #: src/session/view/content/room_details/edit_details_subpage.ui:58
 #: src/session/view/content/room_details/edit_details_subpage.ui:68
 #: src/session/view/room_creation.ui:47 src/session/view/room_creation.ui:50
 msgid "Name"
 msgstr "Ім'я"
 
-#: src/session/view/account_settings/general_page/mod.ui:69
+#: src/session/view/account_settings/general_page/mod.ui:68
 #: src/session/view/content/room_details/general_page.ui:244
 msgid "Advanced Information"
 msgstr "Додаткова інформація"
 
-#: src/session/view/account_settings/general_page/mod.ui:72
+#: src/session/view/account_settings/general_page/mod.ui:71
 msgid "Matrix User ID"
 msgstr "Ідентифікатор користувача Matrix"
 
-#: src/session/view/account_settings/general_page/mod.ui:82
+#: src/session/view/account_settings/general_page/mod.ui:81
 msgid "Copy Homeserver Address"
 msgstr "Скопіювати адресу домашнього сервера"
 
-#: src/session/view/account_settings/general_page/mod.ui:83
+#: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver address copied to clipboard"
 msgstr "Адресу домашнього сервера скопійовано до буфера обміну"
 
-#: src/session/view/account_settings/general_page/mod.ui:88
+#: src/session/view/account_settings/general_page/mod.ui:87
 msgid "Session ID"
 msgstr "Ідентифікатор сеансу"
 
-#: src/session/view/account_settings/general_page/mod.ui:90
+#: src/session/view/account_settings/general_page/mod.ui:89
 msgid "Copy Session ID"
 msgstr "Скопіювати ідентифікатор сеансу"
 
-#: src/session/view/account_settings/general_page/mod.ui:91
+#: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
 msgstr "Ідентифікатор сеансу скопійовано до буфера обміну"
 
@@ -3712,13 +3718,13 @@ msgstr "Копіювати _мініатюру"
 
 #: src/session/view/content/room_history/event_actions.ui:49
 #: src/session/view/content/room_history/event_actions.ui:135
-#: src/session/view/media_viewer.ui:11
+#: src/session/view/media_viewer.ui:11 src/session/view/media_viewer.ui:35
 msgid "S_ave Image"
 msgstr "З_берегти зображення"
 
 #: src/session/view/content/room_history/event_actions.ui:54
 #: src/session/view/content/room_history/event_actions.ui:140
-#: src/session/view/media_viewer.ui:16
+#: src/session/view/media_viewer.ui:16 src/session/view/media_viewer.ui:40
 msgid "S_ave Video"
 msgstr "З_берегти відео"
 
@@ -3972,24 +3978,20 @@ msgstr "Наліпка"
 msgid "Video"
 msgstr "Відео"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:361
-#: src/session/view/content/room_history/message_row/visual_media.rs:403
+#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/utils/media/image.rs:800
 msgid "Could not retrieve media"
 msgstr "Не вдалося отримати мультимедійні дані"
-
-#: src/session/view/content/room_history/message_row/visual_media.rs:392
-msgid "Image file not supported"
-msgstr "Підтримки файла зображення не передбачено"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
 msgstr "_Надіслати"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:677
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:699
 msgid "Public Room Mention Auto-completion"
 msgstr "Автодоповнення згадки відкритої кімнати"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:679
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:701
 msgid "Room Member Mention Auto-completion"
 msgstr "Автодоповнення згадки учасника кімнати"
 
@@ -4659,19 +4661,19 @@ msgstr "Скопіювати джерело"
 msgid "Image copied to clipboard"
 msgstr "Зображення скопійовано до буфера обміну"
 
-#: src/session/view/media_viewer.ui:6
+#: src/session/view/media_viewer.ui:6 src/session/view/media_viewer.ui:30
 msgid "_Copy Image"
 msgstr "_Копіювати зображення"
 
-#: src/session/view/media_viewer.ui:61 src/session/view/media_viewer.ui:63
+#: src/session/view/media_viewer.ui:80 src/session/view/media_viewer.ui:82
 msgid "Media Menu"
 msgstr "Меню дисків"
 
-#: src/session/view/media_viewer.ui:73 src/session/view/media_viewer.ui:75
+#: src/session/view/media_viewer.ui:92 src/session/view/media_viewer.ui:94
 msgid "Fullscreen"
 msgstr "На весь екран"
 
-#: src/session/view/media_viewer.ui:84 src/session/view/media_viewer.ui:86
+#: src/session/view/media_viewer.ui:103 src/session/view/media_viewer.ui:105
 msgid "Exit Fullscreen"
 msgstr "Вийти з повноекранного режиму"
 
@@ -4988,16 +4990,18 @@ msgstr ""
 "Повторіть спробу пізніше."
 
 #: src/user_facing_error.rs:71
-msgid "An unknown connection error occurred."
-msgstr "Сталася невідома помилка з'єднання."
+#| msgid "An unknown connection error occurred."
+msgid "An unexpected connection error occurred."
+msgstr "Сталася неочікувана помилка з'єднання."
 
 #: src/user_facing_error.rs:79
 msgid "Could not decrypt the event."
 msgstr "Не вдалося розшифрувати подію."
 
 #: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-msgid "An unknown error occurred."
-msgstr "Сталася невідома помилка."
+#| msgid "An unknown error occurred."
+msgid "An unexpected error occurred."
+msgstr "Сталася неочікувана помилка."
 
 #: src/user_facing_error.rs:89
 msgid "This is not a valid URL."
@@ -5054,6 +5058,16 @@ msgstr "{user} запросив/запросила вас"
 #: src/utils/matrix/mod.rs:275
 msgid "Could not generate unique session ID"
 msgstr "Не вдалося створити унікальний ідентифікатор сеансу"
+
+#: src/utils/media/image.rs:801
+#| msgid "Image file not supported"
+msgid "Image format not supported"
+msgstr "Підтримки формату зображення не передбачено"
+
+#: src/utils/media/image.rs:802
+#| msgid "An unknown error occurred."
+msgid "An unexpected error occurred"
+msgstr "Сталася неочікувана помилка."
 
 #. Translators: Default name for image files.
 #: src/utils/media/mod.rs:33
