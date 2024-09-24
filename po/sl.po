@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-24 11:56+0000\n"
-"PO-Revision-Date: 2024-09-24 15:36+0200\n"
+"POT-Creation-Date: 2024-09-24 15:06+0000\n"
+"PO-Revision-Date: 2024-09-24 21:35+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -1806,10 +1806,10 @@ msgid "Could not access the secret storage file location."
 msgstr "Ni bilo mogoče dostopati do skrivnega mesta za shranjevanje datoteke."
 
 #: src/secret/linux.rs:461
-msgid "An unknown error occurred when accessing the secret storage file."
+msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
-"Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do neznane "
-"napake."
+"Pri dostopu do datoteke za shranjevanje skrivnosti je prišlo do "
+"nepričakovane napake."
 
 #: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
@@ -1818,11 +1818,11 @@ msgstr ""
 
 #: src/secret/linux.rs:467
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Portal "
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 "Pri interakciji z zaledjem D-Bus portala skrivnih storitev je prišlo do "
-"neznane napake."
+"nepričakovane napake."
 
 #: src/secret/linux.rs:470
 msgid ""
@@ -1852,8 +1852,9 @@ msgstr "Element je bil izbrisan."
 
 #: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Service."
-msgstr "Pri interakciji s tajno storitvijo D-Bus je prišlo do neznane napake."
+"An unexpected error occurred when interacting with the D-Bus Secret Service."
+msgstr ""
+"Pri interakciji s tajno storitvijo D-Bus je prišlo do nepričakovane napake."
 
 #: src/secret/linux.rs:497
 msgid "The collection or item is locked."
@@ -4934,16 +4935,16 @@ msgstr ""
 "Presegli ste omejitev hitrosti domačega strežnika, poskusite znova pozneje."
 
 #: src/user_facing_error.rs:71
-msgid "An unknown connection error occurred."
-msgstr "Prišlo je do neznane napake povezave."
+msgid "An unexpected connection error occurred."
+msgstr "Prišlo je do nepričakovane napake povezave."
 
 #: src/user_facing_error.rs:79
 msgid "Could not decrypt the event."
 msgstr "Dogodka ni bilo mogoče dešifrirati."
 
 #: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-msgid "An unknown error occurred."
-msgstr "Prišlo je do neznane napake."
+msgid "An unexpected error occurred."
+msgstr "Prišlo je do nepričakovane napake."
 
 #: src/user_facing_error.rs:89
 msgid "This is not a valid URL."
