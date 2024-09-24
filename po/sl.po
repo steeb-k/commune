@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-20 10:42+0000\n"
-"PO-Revision-Date: 2024-09-20 19:19+0200\n"
+"POT-Creation-Date: 2024-09-24 11:56+0000\n"
+"PO-Revision-Date: 2024-09-24 15:36+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -226,36 +226,36 @@ msgstr "Opozorilo"
 msgid "Error"
 msgstr "Napaka"
 
-#: src/components/avatar/editable.rs:420
+#: src/components/avatar/editable.rs:489
 msgid "Images"
 msgstr "Slike"
 
-#: src/components/avatar/editable.rs:425
+#: src/components/avatar/editable.rs:494
 msgid "Choose Avatar"
 msgstr "Izberite podobo"
 
-#: src/components/avatar/editable.rs:427
+#: src/components/avatar/editable.rs:496
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr "Izberite"
 
-#: src/components/avatar/editable.rs:441
+#: src/components/avatar/editable.rs:510
 msgid "Could not open avatar file"
 msgstr "Datoteke podobe ni bilo mogoče odpreti"
 
-#: src/components/avatar/editable.rs:462
+#: src/components/avatar/editable.rs:531
 msgid "The chosen file is not an image"
 msgstr "Izbrana datoteka ni slika"
 
-#: src/components/avatar/editable.rs:468
+#: src/components/avatar/editable.rs:537
 msgid "Could not determine the type of the chosen file"
 msgstr "Vrste izbrane datoteke ni bilo mogoče določiti"
 
-#: src/components/avatar/editable.ui:54
+#: src/components/avatar/editable.ui:70
 msgid "Remove Avatar"
 msgstr "Odstrani podobo"
 
-#: src/components/avatar/editable.ui:71
+#: src/components/avatar/editable.ui:87
 msgid "Select New Avatar"
 msgstr "Izberite novo sliko podobe"
 
@@ -623,7 +623,7 @@ msgstr "Pridruži se klepetalnici"
 #: src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:51 src/session/view/media_viewer.ui:53
+#: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
 msgid "Back"
 msgstr "Nazaj"
 
@@ -693,7 +693,7 @@ msgstr "Zapusti"
 #: src/components/dialogs/message_dialogs.rs:369
 #: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:292
+#: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
 #: src/session/view/content/room_details/general_page.rs:1021
@@ -853,7 +853,7 @@ msgstr[3] ""
 "Tega ni mogoče razveljaviti."
 
 #: src/components/dialogs/message_dialogs.rs:230
-#: src/session/view/account_settings/general_page/mod.rs:293
+#: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
 #: src/session/view/content/room_history/item_row.rs:897
 msgid "Remove"
@@ -935,31 +935,31 @@ msgstr "Povišaj"
 msgid "User Profile"
 msgstr "Profil uporabnika"
 
-#: src/components/offline_banner.rs:102
+#: src/components/offline_banner.rs:103
 msgid "Offline"
 msgstr "Nepovezani"
 
-#: src/components/offline_banner.rs:109
+#: src/components/offline_banner.rs:111
 msgid "No network connection"
 msgstr "Brez omrežne povezave"
 
-#: src/components/offline_banner.rs:112
+#: src/components/offline_banner.rs:115
 msgid "No Internet connection"
 msgstr "Brez internetne povezave"
 
-#: src/components/media/content_viewer.rs:175
+#: src/components/media/content_viewer.rs:177
 msgid "Image not Viewable"
 msgstr "Slike ni mogoče pokazati"
 
-#: src/components/media/content_viewer.rs:176
+#: src/components/media/content_viewer.rs:178
 msgid "Audio Clip not Playable"
 msgstr "Zvočnega posnetka ni mogoče predvajati"
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:179
 msgid "Video not Playable"
 msgstr "Videoposnetka ni mogoče predvajati"
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:180
 msgid "File not Viewable"
 msgstr "Datoteka ni mogoče pokazati"
 
@@ -991,7 +991,7 @@ msgid "Confirm Custom Role"
 msgstr "Potrdi vlogo po meri"
 
 #: src/components/user_page.rs:277
-#: src/session/view/account_settings/general_page/mod.ui:75
+#: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID uporabnika Matrix je kopiran v odložišče"
@@ -1129,7 +1129,7 @@ msgid "Could not ignore user"
 msgstr "Uporabnika ni bilo mogoče prezreti"
 
 #: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:74
+#: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
 msgid "Copy Matrix User ID"
 msgstr "Kopiraj ID uporabnika Matrix"
@@ -1704,7 +1704,7 @@ msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "URL vašega domačega strežnika Matrix, npr. {address}"
 
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
-#: src/session/view/account_settings/general_page/mod.ui:80
+#: src/session/view/account_settings/general_page/mod.ui:79
 msgid "Homeserver"
 msgstr "Osnovni strežnik"
 
@@ -1883,7 +1883,7 @@ msgstr ""
 "Ni bilo mogoče dostopati do privzete zbirke. Preverite, ali je bila zbirka "
 "ključev ustvarjena in nastavljena kot privzeta."
 
-#: src/session/model/session.rs:985
+#: src/session/model/session.rs:982
 msgid "Could not log the session out"
 msgstr "Seje ni bilo mogoče odjaviti"
 
@@ -2038,7 +2038,7 @@ msgid "Could not change password"
 msgstr "Gesla ni mogoče spremeniti"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:59
+#: src/session/view/account_settings/general_page/mod.ui:58
 msgid "Change Password"
 msgstr "Spremeni geslo"
 
@@ -2071,7 +2071,7 @@ msgstr "Računa ni mogoče deaktivirati"
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
-#: src/session/view/account_settings/general_page/mod.ui:118
+#: src/session/view/account_settings/general_page/mod.ui:117
 msgid "Deactivate Account"
 msgstr "Deaktiviraj račun"
 
@@ -2113,7 +2113,7 @@ msgstr ""
 "šifrirne ključe."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:105
+#: src/session/view/account_settings/general_page/mod.ui:104
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
 msgid "Log Out"
 msgstr "Odjava"
@@ -2155,50 +2155,50 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Odstrani sejo"
 
-#: src/session/view/account_settings/general_page/mod.rs:206
+#: src/session/view/account_settings/general_page/mod.rs:210
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "Avatar uspešno odstranjen"
 
-#: src/session/view/account_settings/general_page/mod.rs:208
+#: src/session/view/account_settings/general_page/mod.rs:212
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "Avatar se je uspešno spremenil"
 
-#: src/session/view/account_settings/general_page/mod.rs:227
+#: src/session/view/account_settings/general_page/mod.rs:231
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 msgid "Could not load file"
 msgstr "Napaka pri odpiranju datoteke: »%s«"
 
-#: src/session/view/account_settings/general_page/mod.rs:242
+#: src/session/view/account_settings/general_page/mod.rs:246
 #: src/session/view/content/room_details/edit_details_subpage.rs:204
 msgid "Could not upload avatar"
 msgstr "Avatarja ni bilo mogoče naložiti"
 
-#: src/session/view/account_settings/general_page/mod.rs:271
+#: src/session/view/account_settings/general_page/mod.rs:275
 #: src/session/view/content/room_details/edit_details_subpage.rs:227
 msgid "Could not change avatar"
 msgstr "Avatarja ni bilo mogoče spremeniti"
 
-#: src/session/view/account_settings/general_page/mod.rs:288
+#: src/session/view/account_settings/general_page/mod.rs:292
 #: src/session/view/content/room_details/edit_details_subpage.rs:252
 msgid "Remove Avatar?"
 msgstr "Želite odstraniti avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:289
+#: src/session/view/account_settings/general_page/mod.rs:293
 msgid "Do you really want to remove your avatar?"
 msgstr "Ali res želite odstraniti svoj avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:327
+#: src/session/view/account_settings/general_page/mod.rs:331
 #: src/session/view/content/room_details/edit_details_subpage.rs:284
 msgid "Could not remove avatar"
 msgstr "Avatarja ni bilo mogoče odstraniti"
 
-#: src/session/view/account_settings/general_page/mod.rs:379
+#: src/session/view/account_settings/general_page/mod.rs:383
 msgid "Name changed successfully"
 msgstr "Ime je uspešno spremenjeno"
 
-#: src/session/view/account_settings/general_page/mod.rs:430
+#: src/session/view/account_settings/general_page/mod.rs:434
 msgid "Could not change display name"
 msgstr "Prikaznega imena ni bilo mogoče spremeniti"
 
@@ -2210,39 +2210,39 @@ msgstr "Splošno"
 msgid "Account Avatar"
 msgstr "Avatar računa"
 
-#: src/session/view/account_settings/general_page/mod.ui:32
+#: src/session/view/account_settings/general_page/mod.ui:31
 #: src/session/view/content/room_details/edit_details_subpage.ui:58
 #: src/session/view/content/room_details/edit_details_subpage.ui:68
 #: src/session/view/room_creation.ui:47 src/session/view/room_creation.ui:50
 msgid "Name"
 msgstr "Ime"
 
-#: src/session/view/account_settings/general_page/mod.ui:69
+#: src/session/view/account_settings/general_page/mod.ui:68
 #: src/session/view/content/room_details/general_page.ui:244
 msgid "Advanced Information"
 msgstr "Napredne podrobnosti"
 
-#: src/session/view/account_settings/general_page/mod.ui:72
+#: src/session/view/account_settings/general_page/mod.ui:71
 msgid "Matrix User ID"
 msgstr "ID uporabnika Matrix"
 
-#: src/session/view/account_settings/general_page/mod.ui:82
+#: src/session/view/account_settings/general_page/mod.ui:81
 msgid "Copy Homeserver Address"
 msgstr "Kopiraj naslov domačega strežnika"
 
-#: src/session/view/account_settings/general_page/mod.ui:83
+#: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver address copied to clipboard"
 msgstr "Naslov domačega strežnika je kopiran v odložišče"
 
-#: src/session/view/account_settings/general_page/mod.ui:88
+#: src/session/view/account_settings/general_page/mod.ui:87
 msgid "Session ID"
 msgstr "ID seje"
 
-#: src/session/view/account_settings/general_page/mod.ui:90
+#: src/session/view/account_settings/general_page/mod.ui:89
 msgid "Copy Session ID"
 msgstr "Kopiraj ID seje"
 
-#: src/session/view/account_settings/general_page/mod.ui:91
+#: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
 msgstr "ID seje je kopiran v odložišče"
 
@@ -3669,13 +3669,13 @@ msgstr "Kopiraj s_ličico"
 
 #: src/session/view/content/room_history/event_actions.ui:49
 #: src/session/view/content/room_history/event_actions.ui:135
-#: src/session/view/media_viewer.ui:11
+#: src/session/view/media_viewer.ui:11 src/session/view/media_viewer.ui:35
 msgid "S_ave Image"
 msgstr "S_hrani sliko"
 
 #: src/session/view/content/room_history/event_actions.ui:54
 #: src/session/view/content/room_history/event_actions.ui:140
-#: src/session/view/media_viewer.ui:16
+#: src/session/view/media_viewer.ui:16 src/session/view/media_viewer.ui:40
 msgid "S_ave Video"
 msgstr "S_hrani video"
 
@@ -3926,24 +3926,20 @@ msgstr "Nalepka"
 msgid "Video"
 msgstr "Video"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:361
-#: src/session/view/content/room_history/message_row/visual_media.rs:403
+#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/utils/media/image.rs:800
 msgid "Could not retrieve media"
 msgstr "Medija ni mogoče pridobiti"
-
-#: src/session/view/content/room_history/message_row/visual_media.rs:392
-msgid "Image file not supported"
-msgstr "Slikovna datoteka ni podprta"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
 msgstr "_Pošlji"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:677
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:699
 msgid "Public Room Mention Auto-completion"
 msgstr "Samodokončanje omembe javne klepetalnice"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:679
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:701
 msgid "Room Member Mention Auto-completion"
 msgstr "Samodokončanje omemba člana klepetalnice"
 
@@ -4615,19 +4611,19 @@ msgstr "Kopiraj vir"
 msgid "Image copied to clipboard"
 msgstr "Slika, kopirana na odložišče"
 
-#: src/session/view/media_viewer.ui:6
+#: src/session/view/media_viewer.ui:6 src/session/view/media_viewer.ui:30
 msgid "_Copy Image"
 msgstr "_Kopiraj sliko"
 
-#: src/session/view/media_viewer.ui:61 src/session/view/media_viewer.ui:63
+#: src/session/view/media_viewer.ui:80 src/session/view/media_viewer.ui:82
 msgid "Media Menu"
 msgstr "Meni z mediji"
 
-#: src/session/view/media_viewer.ui:73 src/session/view/media_viewer.ui:75
+#: src/session/view/media_viewer.ui:92 src/session/view/media_viewer.ui:94
 msgid "Fullscreen"
 msgstr "Celozaslonski način"
 
-#: src/session/view/media_viewer.ui:84 src/session/view/media_viewer.ui:86
+#: src/session/view/media_viewer.ui:103 src/session/view/media_viewer.ui:105
 msgid "Exit Fullscreen"
 msgstr "Izhod iz celozaslonskega načina"
 
@@ -5004,6 +5000,14 @@ msgstr "{user} vas je povabil/a"
 #: src/utils/matrix/mod.rs:275
 msgid "Could not generate unique session ID"
 msgstr "Ni bilo mogoče ustvariti enoličnega ID-ja seje"
+
+#: src/utils/media/image.rs:801
+msgid "Image format not supported"
+msgstr "Vrsta slikovnih datotek ni podprta"
+
+#: src/utils/media/image.rs:802
+msgid "An unexpected error occurred"
+msgstr "Prišlo je do nepričakovane napake"
 
 #. Translators: Default name for image files.
 #: src/utils/media/mod.rs:33
