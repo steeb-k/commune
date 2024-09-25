@@ -1254,11 +1254,9 @@ impl Room {
 
     /// Set how this room is highlighted.
     fn set_highlight(&self, highlight: HighlightFlags) {
-        tracing::trace!("{}::set_highlight: {highlight:?}", self.human_readable_id());
         if self.highlight() == highlight {
             return;
         }
-        tracing::trace!("{}: highlight changed", self.human_readable_id());
 
         self.imp().highlight.set(highlight);
         self.notify_highlight();
@@ -1266,7 +1264,6 @@ impl Room {
 
     /// Handle the trigger emitted when a read change might have occurred.
     async fn handle_read_change_trigger(&self) {
-        tracing::trace!("{}::handle_read_change_trigger", self.human_readable_id());
         if let Some(has_unread) = self.timeline().has_unread_messages().await {
             self.set_is_read(!has_unread);
         }
@@ -1276,12 +1273,10 @@ impl Room {
 
     /// Set whether all messages of this room are read.
     fn set_is_read(&self, is_read: bool) {
-        tracing::trace!("{}::set_is_read: {is_read:?}", self.human_readable_id());
         if is_read == self.is_read() {
             return;
         }
 
-        tracing::trace!("{}: is_read changed", self.human_readable_id());
         self.imp().is_read.set(is_read);
         self.notify_is_read();
     }
@@ -1291,10 +1286,6 @@ impl Room {
         let Some(session) = self.session() else {
             return;
         };
-        tracing::trace!(
-            "{}::send_receipt: {receipt_type:?} at {position:?}",
-            self.human_readable_id()
-        );
         let send_public_receipt = session.settings().public_read_receipts_enabled();
 
         let receipt_type = match receipt_type {
