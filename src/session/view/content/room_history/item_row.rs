@@ -14,7 +14,7 @@ use crate::{
         model::{Event, EventKey, MessageState, TimelineItem, VirtualItem, VirtualItemKind},
         view::{content::room_history::message_toolbar::ComposerState, EventDetailsDialog},
     },
-    spawn, toast,
+    spawn, spawn_tokio, toast,
     utils::{matrix::MediaMessage, BoundObjectWeakRef},
 };
 
@@ -977,13 +977,11 @@ impl ItemRow {
             return;
         };
 
-        if let Err(error) = event
-            .room()
-            .timeline()
-            .matrix_timeline()
-            .redact(&event.item(), None)
-            .await
-        {
+        let matrix_timeline = event.room().timeline().matrix_timeline();
+        let event_item = event.item();
+        let handle = spawn_tokio!(async move { matrix_timeline.redact(&event_item, None).await });
+
+        if let Err(error) = handle.await.unwrap() {
             error!("Could not discard local event: {error}");
             toast!(self, gettext("Could not discard message"));
         }
