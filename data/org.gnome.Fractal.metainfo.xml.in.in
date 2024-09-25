@@ -35,15 +35,15 @@
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/main/screenshots/main.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-8/screenshots/main.png</image>
       <caption>Fractal’s main window</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/main/screenshots/media-history.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-8/screenshots/media-history.png</image>
       <caption>View the media history of a Matrix room</caption>
     </screenshot>
     <screenshot>
-      <image type="source">https://gitlab.gnome.org/World/fractal/raw/main/screenshots/adaptive.png</image>
+      <image type="source">https://gitlab.gnome.org/World/fractal/raw/fractal-8/screenshots/adaptive.png</image>
       <caption>Fractal’s interface adapts to small screens</caption>
     </screenshot>
   </screenshots>
