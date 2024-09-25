@@ -28,7 +28,7 @@ use ruma::{
     events::{direct::DirectEventContent, GlobalAccountDataEvent},
 };
 use tokio::task::AbortHandle;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 use url::Url;
 
 use super::{
@@ -356,7 +356,6 @@ mod imp {
                     }
                 }
             } else {
-                info!("Network is not available");
                 false
             };
 

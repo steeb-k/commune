@@ -1,6 +1,5 @@
 use adw::{prelude::*, subclass::prelude::*};
 use gtk::{gio, glib, glib::clone};
-use tracing::info;
 
 use crate::{session::model::Session, utils::BoundObjectWeakRef};
 
@@ -107,11 +106,9 @@ mod imp {
                 let monitor = gio::NetworkMonitor::default();
 
                 if !monitor.is_network_available() {
-                    info!("Network is not available");
                     self.banner.set_title(&gettext("No network connection"));
                     self.banner.set_revealed(true);
                 } else if monitor.connectivity() != gio::NetworkConnectivity::Full {
-                    info!("Network connectivity is limited");
                     self.banner.set_title(&gettext("No Internet connection"));
                     self.banner.set_revealed(true);
                 } else {

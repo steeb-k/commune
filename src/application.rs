@@ -19,7 +19,47 @@ use crate::{
 /// The key for the current session setting.
 pub const SETTINGS_KEY_CURRENT_SESSION: &str = "current-session";
 
+/// The state of the network.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum NetworkState {
+    /// The network is available.
+    Unavailable,
+    /// The network is available with the given connectivity.
+    Available(gio::NetworkConnectivity),
+}
+
+impl NetworkState {
+    /// Construct the network state with the given network monitor.
+    fn with_monitor(monitor: &gio::NetworkMonitor) -> Self {
+        if !monitor.is_network_available() {
+            Self::Unavailable
+        } else {
+            Self::Available(monitor.connectivity())
+        }
+    }
+
+    /// Log this network state.
+    fn log(&self) {
+        match self {
+            Self::Unavailable => {
+                info!("Network is unavailable");
+            }
+            Self::Available(connectivity) => {
+                info!("Network connectivity is {connectivity:?}");
+            }
+        }
+    }
+}
+
+impl Default for NetworkState {
+    fn default() -> Self {
+        Self::Available(gio::NetworkConnectivity::Full)
+    }
+}
+
 mod imp {
+    use std::cell::Cell;
+
     use super::*;
 
     #[derive(Debug)]
@@ -31,6 +71,7 @@ mod imp {
         /// The list of logged-in sessions.
         pub session_list: SessionList,
         pub intent_handler: BoundObjectWeakRef<glib::Object>,
+        last_network_state: Cell<NetworkState>,
     }
 
     impl Default for Application {
@@ -40,6 +81,7 @@ mod imp {
                 system_settings: Default::default(),
                 session_list: Default::default(),
                 intent_handler: Default::default(),
+                last_network_state: Default::default(),
             }
         }
     }
@@ -54,11 +96,13 @@ mod imp {
     impl ObjectImpl for Application {
         fn constructed(&self) {
             self.parent_constructed();
-
             let app = self.obj();
+
+            // Initialize actions and accelerators.
             app.set_up_gactions();
             app.set_up_accels();
 
+            // Listen to errors in the session list.
             self.session_list.connect_error_notify(clone!(
                 #[weak]
                 app,
@@ -69,11 +113,30 @@ mod imp {
                     }
                 }
             ));
+
+            // Restore the sessions.
             spawn!(clone!(
                 #[weak(rename_to = session_list)]
                 self.session_list,
                 async move {
                     session_list.restore_sessions().await;
+                }
+            ));
+
+            // Watch the network to log its state.
+            let network_monitor = gio::NetworkMonitor::default();
+            network_monitor.connect_network_changed(clone!(
+                #[weak(rename_to = imp)]
+                self,
+                move |network_monitor, _| {
+                    let network_state = NetworkState::with_monitor(network_monitor);
+
+                    if imp.last_network_state.get() == network_state {
+                        return;
+                    }
+
+                    network_state.log();
+                    imp.last_network_state.set(network_state);
                 }
             ));
         }
