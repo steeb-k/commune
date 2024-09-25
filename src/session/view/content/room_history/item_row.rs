@@ -371,6 +371,8 @@ mod imp {
                                     child
                                 };
 
+                            let date = date.to_local().unwrap_or(date.clone());
+
                             let fmt = if date.year() == glib::DateTime::now_local().unwrap().year()
                             {
                                 // Translators: This is a date format in the day divider without the

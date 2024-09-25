@@ -6,13 +6,21 @@ use ruma::MilliSecondsSinceUnixEpoch;
 
 use super::{TimelineItem, TimelineItemImpl};
 
+/// The kind of virtual item.
 #[derive(Debug, Default, Eq, PartialEq, Clone)]
 pub enum VirtualItemKind {
+    /// A spinner, when the timeline is loading.
     #[default]
     Spinner,
+    /// The typing status.
     Typing,
+    /// The start of the timeline.
     TimelineStart,
+    /// A day separator.
+    ///
+    /// The date is in UTC.
     DayDivider(glib::DateTime),
+    /// A separator for the read marker.
     NewMessages,
 }
 
@@ -126,7 +134,7 @@ impl VirtualItem {
     /// Panics if an error occurred when accessing the current local time.
     pub fn day_divider_with_timestamp(timestamp: MilliSecondsSinceUnixEpoch) -> Self {
         let date = glib::DateTime::from_unix_utc(timestamp.as_secs().into())
-            .or_else(|_| glib::DateTime::now_local())
+            .or_else(|_| glib::DateTime::now_utc())
             .expect("We should be able to get the current time");
 
         glib::Object::builder()
