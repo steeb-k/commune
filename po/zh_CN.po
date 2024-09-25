@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-24 15:06+0000\n"
-"PO-Revision-Date: 2024-09-25 09:13+0800\n"
+"POT-Creation-Date: 2024-09-25 07:47+0000\n"
+"PO-Revision-Date: 2024-09-25 21:15+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -419,7 +419,7 @@ msgstr "恢复口令或密钥"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Recover"
 msgstr "恢复"
 
@@ -1091,7 +1091,7 @@ msgstr "安全"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:268
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Verify"
 msgstr "验证"
 
@@ -2342,7 +2342,7 @@ msgstr "无法认证您自己的设备或别的用户"
 #: src/session/view/account_settings/security_page/mod.rs:225
 #: src/session/view/account_settings/security_page/mod.rs:298
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
 msgid "Enable"
 msgstr "启用"
 
@@ -3911,7 +3911,7 @@ msgid "Could not forget {room}"
 msgstr "无法忘记 {room}"
 
 #: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:430
+#: src/session/view/sidebar/mod.rs:434
 msgid "Context Menu"
 msgstr "上下文菜单"
 
@@ -4548,19 +4548,19 @@ msgstr "重新加入聊天室"
 msgid "Rejoin Room as Low Priority"
 msgstr "重新加入聊天室并设为低优先级"
 
-#: src/session/view/sidebar/mod.rs:318
+#: src/session/view/sidebar/mod.rs:322
 msgid "No crypto identity"
 msgstr "没有加密身份"
 
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Crypto identity incomplete"
 msgstr "加密身份不完整"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:328
 msgid "Account recovery disabled"
 msgstr "账号恢复已禁用"
 
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Account recovery incomplete"
 msgstr "账号恢复不完全"
 
@@ -4698,6 +4698,11 @@ msgid "Search Room List"
 msgstr "搜索聊天室列表"
 
 #: src/shortcuts.ui:33
+msgctxt "shortcut window"
+msgid "Open Room With Unread Messages"
+msgstr "打开有未读消息的聊天室"
+
+#: src/shortcuts.ui:39
 msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "关闭聊天室"
@@ -5335,10 +5340,6 @@ msgstr "会话"
 #~ msgctxt "shortcut window"
 #~ msgid "Open the previous room with unread messages in the list"
 #~ msgstr "在列表中打开上一个带有未读消息的聊天室"
-
-#~ msgctxt "shortcut window"
-#~ msgid "Open the next room with unread messages in the list"
-#~ msgstr "在列表中打开下一个带有未读消息的聊天室"
 
 #~ msgctxt "shortcut window"
 #~ msgid "Open the first room of the list"
