@@ -29,9 +29,9 @@ build@aarch64:
 .build-stable:
   image: 'quay.io/gnome_infrastructure/gnome-runtime-images:gnome-${GNOME_STABLE_VERSION}'
   variables:
-    GNOME_STABLE_VERSION: "46"
+    GNOME_STABLE_VERSION: "47"
     LLVM_NIGHTLY_VERSION: "18"
-    LLVM_STABLE_VERSION: "16"
+    LLVM_STABLE_VERSION: "18"
     RUNTIME_REPO: "https://flathub.org/repo/flathub.flatpakrepo"
     RUN_TESTS: 0
   before_script:
