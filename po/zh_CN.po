@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-20 18:57+0000\n"
-"PO-Revision-Date: 2024-09-21 20:10+0800\n"
+"POT-Creation-Date: 2024-09-24 15:06+0000\n"
+"PO-Revision-Date: 2024-09-25 09:13+0800\n"
 "Last-Translator: lumingzh <lumingzh@qq.com>\n"
 "Language-Team: Chinese (China) <i18n-zh@googlegroups.com>\n"
 "Language: zh_CN\n"
@@ -222,36 +222,36 @@ msgstr "警告"
 msgid "Error"
 msgstr "错误"
 
-#: src/components/avatar/editable.rs:420
+#: src/components/avatar/editable.rs:489
 msgid "Images"
 msgstr "图像"
 
-#: src/components/avatar/editable.rs:425
+#: src/components/avatar/editable.rs:494
 msgid "Choose Avatar"
 msgstr "选择头像"
 
-#: src/components/avatar/editable.rs:427
+#: src/components/avatar/editable.rs:496
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr "选择"
 
-#: src/components/avatar/editable.rs:441
+#: src/components/avatar/editable.rs:510
 msgid "Could not open avatar file"
 msgstr "无法打开头像文件"
 
-#: src/components/avatar/editable.rs:462
+#: src/components/avatar/editable.rs:531
 msgid "The chosen file is not an image"
 msgstr "选择的文件不是图像"
 
-#: src/components/avatar/editable.rs:468
+#: src/components/avatar/editable.rs:537
 msgid "Could not determine the type of the chosen file"
 msgstr "无法判断选择文件的类型"
 
-#: src/components/avatar/editable.ui:54
+#: src/components/avatar/editable.ui:70
 msgid "Remove Avatar"
 msgstr "移除头像"
 
-#: src/components/avatar/editable.ui:71
+#: src/components/avatar/editable.ui:87
 msgid "Select New Avatar"
 msgstr "选择新头像"
 
@@ -592,7 +592,7 @@ msgstr "加入聊天室"
 #: src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:51 src/session/view/media_viewer.ui:53
+#: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
 msgid "Back"
 msgstr "返回"
 
@@ -654,7 +654,7 @@ msgstr "离开"
 #: src/components/dialogs/message_dialogs.rs:369
 #: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:292
+#: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
 #: src/session/view/content/room_details/general_page.rs:1021
@@ -793,7 +793,7 @@ msgstr[0] ""
 "消息吗？该操作无法撤消。"
 
 #: src/components/dialogs/message_dialogs.rs:230
-#: src/session/view/account_settings/general_page/mod.rs:293
+#: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
 #: src/session/view/content/room_history/item_row.rs:897
 msgid "Remove"
@@ -868,31 +868,31 @@ msgstr "晋升"
 msgid "User Profile"
 msgstr "用户配置"
 
-#: src/components/offline_banner.rs:102
+#: src/components/offline_banner.rs:103
 msgid "Offline"
 msgstr "离线"
 
-#: src/components/offline_banner.rs:109
+#: src/components/offline_banner.rs:111
 msgid "No network connection"
 msgstr "无网络连接"
 
-#: src/components/offline_banner.rs:112
+#: src/components/offline_banner.rs:115
 msgid "No Internet connection"
 msgstr "没有互联网连接"
 
-#: src/components/media/content_viewer.rs:175
+#: src/components/media/content_viewer.rs:177
 msgid "Image not Viewable"
 msgstr "图像无法查看"
 
-#: src/components/media/content_viewer.rs:176
+#: src/components/media/content_viewer.rs:178
 msgid "Audio Clip not Playable"
 msgstr "音频片段无法播放"
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:179
 msgid "Video not Playable"
 msgstr "视频无法播放"
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:180
 msgid "File not Viewable"
 msgstr "文件无法查看"
 
@@ -924,7 +924,7 @@ msgid "Confirm Custom Role"
 msgstr "确认自定义角色"
 
 #: src/components/user_page.rs:277
-#: src/session/view/account_settings/general_page/mod.ui:75
+#: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "Matrix 用户标识已复制到剪贴板"
@@ -1059,7 +1059,7 @@ msgid "Could not ignore user"
 msgstr "无法忽略用户"
 
 #: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:74
+#: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
 msgid "Copy Matrix User ID"
 msgstr "复制 Matrix 用户标识"
@@ -1602,7 +1602,7 @@ msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "您的 Matrix 主服务器网址，比如 {address}"
 
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
-#: src/session/view/account_settings/general_page/mod.ui:80
+#: src/session/view/account_settings/general_page/mod.ui:79
 msgid "Homeserver"
 msgstr "主服务器"
 
@@ -1704,8 +1704,8 @@ msgid "Could not access the secret storage file location."
 msgstr "无法访问保密存储文件位置。"
 
 #: src/secret/linux.rs:461
-msgid "An unknown error occurred when accessing the secret storage file."
-msgstr "访问保密存储文件时发生未知错误。"
+msgid "An unexpected error occurred when accessing the secret storage file."
+msgstr "访问保密存储文件时发生意外错误。"
 
 #: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
@@ -1713,9 +1713,9 @@ msgstr "保密存储文件已被其它进程修改。"
 
 #: src/secret/linux.rs:467
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Portal "
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
-msgstr "与 D-Bus 保密服务门户后端交互时发生未知错误。"
+msgstr "与 D-Bus 保密服务门户后端交互时发生意外错误。"
 
 #: src/secret/linux.rs:470
 msgid ""
@@ -1741,8 +1741,8 @@ msgstr "该项目已删除。"
 
 #: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Service."
-msgstr "与 D-Bus 保密服务交互时发生未知错误。"
+"An unexpected error occurred when interacting with the D-Bus Secret Service."
+msgstr "与 D-Bus 保密服务交互时发生意外错误。"
 
 #: src/secret/linux.rs:497
 msgid "The collection or item is locked."
@@ -1768,7 +1768,7 @@ msgid ""
 "set as default."
 msgstr "无法访问默认集合。请确保已创建一个密钥串并设为默认。"
 
-#: src/session/model/session.rs:985
+#: src/session/model/session.rs:982
 msgid "Could not log the session out"
 msgstr "无法登出该会话"
 
@@ -1922,7 +1922,7 @@ msgid "Could not change password"
 msgstr "无法修改密码"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:59
+#: src/session/view/account_settings/general_page/mod.ui:58
 msgid "Change Password"
 msgstr "更改密码"
 
@@ -1955,7 +1955,7 @@ msgstr "无法停用账号"
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
-#: src/session/view/account_settings/general_page/mod.ui:118
+#: src/session/view/account_settings/general_page/mod.ui:117
 msgid "Deactivate Account"
 msgstr "停用账号"
 
@@ -1992,7 +1992,7 @@ msgstr ""
 "份加密密钥。"
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:105
+#: src/session/view/account_settings/general_page/mod.ui:104
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
 msgid "Log Out"
 msgstr "登出"
@@ -2033,50 +2033,50 @@ msgstr ""
 msgid "Remove Session"
 msgstr "移除会话"
 
-#: src/session/view/account_settings/general_page/mod.rs:206
+#: src/session/view/account_settings/general_page/mod.rs:210
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "头像已成功移除"
 
-#: src/session/view/account_settings/general_page/mod.rs:208
+#: src/session/view/account_settings/general_page/mod.rs:212
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "头像已成功更改"
 
-#: src/session/view/account_settings/general_page/mod.rs:227
+#: src/session/view/account_settings/general_page/mod.rs:231
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 msgid "Could not load file"
 msgstr "无法加载文件"
 
-#: src/session/view/account_settings/general_page/mod.rs:242
+#: src/session/view/account_settings/general_page/mod.rs:246
 #: src/session/view/content/room_details/edit_details_subpage.rs:204
 msgid "Could not upload avatar"
 msgstr "无法上传头像"
 
-#: src/session/view/account_settings/general_page/mod.rs:271
+#: src/session/view/account_settings/general_page/mod.rs:275
 #: src/session/view/content/room_details/edit_details_subpage.rs:227
 msgid "Could not change avatar"
 msgstr "无法更改头像"
 
-#: src/session/view/account_settings/general_page/mod.rs:288
+#: src/session/view/account_settings/general_page/mod.rs:292
 #: src/session/view/content/room_details/edit_details_subpage.rs:252
 msgid "Remove Avatar?"
 msgstr "移除头像吗？"
 
-#: src/session/view/account_settings/general_page/mod.rs:289
+#: src/session/view/account_settings/general_page/mod.rs:293
 msgid "Do you really want to remove your avatar?"
 msgstr "您确定想要移除您的头像吗？"
 
-#: src/session/view/account_settings/general_page/mod.rs:327
+#: src/session/view/account_settings/general_page/mod.rs:331
 #: src/session/view/content/room_details/edit_details_subpage.rs:284
 msgid "Could not remove avatar"
 msgstr "无法移除头像"
 
-#: src/session/view/account_settings/general_page/mod.rs:379
+#: src/session/view/account_settings/general_page/mod.rs:383
 msgid "Name changed successfully"
 msgstr "名字已成功更改"
 
-#: src/session/view/account_settings/general_page/mod.rs:430
+#: src/session/view/account_settings/general_page/mod.rs:434
 msgid "Could not change display name"
 msgstr "无法更改展示名字"
 
@@ -2088,39 +2088,39 @@ msgstr "常规"
 msgid "Account Avatar"
 msgstr "账号头像"
 
-#: src/session/view/account_settings/general_page/mod.ui:32
+#: src/session/view/account_settings/general_page/mod.ui:31
 #: src/session/view/content/room_details/edit_details_subpage.ui:58
 #: src/session/view/content/room_details/edit_details_subpage.ui:68
 #: src/session/view/room_creation.ui:47 src/session/view/room_creation.ui:50
 msgid "Name"
 msgstr "名字"
 
-#: src/session/view/account_settings/general_page/mod.ui:69
+#: src/session/view/account_settings/general_page/mod.ui:68
 #: src/session/view/content/room_details/general_page.ui:244
 msgid "Advanced Information"
 msgstr "高级信息"
 
-#: src/session/view/account_settings/general_page/mod.ui:72
+#: src/session/view/account_settings/general_page/mod.ui:71
 msgid "Matrix User ID"
 msgstr "Matrix 用户标识"
 
-#: src/session/view/account_settings/general_page/mod.ui:82
+#: src/session/view/account_settings/general_page/mod.ui:81
 msgid "Copy Homeserver Address"
 msgstr "复制主服务器地址"
 
-#: src/session/view/account_settings/general_page/mod.ui:83
+#: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver address copied to clipboard"
 msgstr "主服务器地址已复制到剪贴板"
 
-#: src/session/view/account_settings/general_page/mod.ui:88
+#: src/session/view/account_settings/general_page/mod.ui:87
 msgid "Session ID"
 msgstr "会话标识"
 
-#: src/session/view/account_settings/general_page/mod.ui:90
+#: src/session/view/account_settings/general_page/mod.ui:89
 msgid "Copy Session ID"
 msgstr "复制会话标识"
 
-#: src/session/view/account_settings/general_page/mod.ui:91
+#: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
 msgstr "会话标识已复制到剪贴板"
 
@@ -3493,13 +3493,13 @@ msgstr "复制缩略图(_H)"
 
 #: src/session/view/content/room_history/event_actions.ui:49
 #: src/session/view/content/room_history/event_actions.ui:135
-#: src/session/view/media_viewer.ui:11
+#: src/session/view/media_viewer.ui:11 src/session/view/media_viewer.ui:35
 msgid "S_ave Image"
 msgstr "保存图像(_A)"
 
 #: src/session/view/content/room_history/event_actions.ui:54
 #: src/session/view/content/room_history/event_actions.ui:140
-#: src/session/view/media_viewer.ui:16
+#: src/session/view/media_viewer.ui:16 src/session/view/media_viewer.ui:40
 msgid "S_ave Video"
 msgstr "保存视频(_A)"
 
@@ -3745,24 +3745,20 @@ msgstr "贴纸"
 msgid "Video"
 msgstr "视频"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:361
-#: src/session/view/content/room_history/message_row/visual_media.rs:403
+#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/utils/media/image.rs:800
 msgid "Could not retrieve media"
 msgstr "无法找回媒体文件"
-
-#: src/session/view/content/room_history/message_row/visual_media.rs:392
-msgid "Image file not supported"
-msgstr "不支持该图像文件"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
 msgstr "发送(_S)"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:677
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:699
 msgid "Public Room Mention Auto-completion"
 msgstr "公开聊天室提到自动补全"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:679
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:701
 msgid "Room Member Mention Auto-completion"
 msgstr "聊天室成员提到自动补全"
 
@@ -4423,19 +4419,19 @@ msgstr "复制来源"
 msgid "Image copied to clipboard"
 msgstr "图像已复制到剪贴板"
 
-#: src/session/view/media_viewer.ui:6
+#: src/session/view/media_viewer.ui:6 src/session/view/media_viewer.ui:30
 msgid "_Copy Image"
 msgstr "复制图像(_C)"
 
-#: src/session/view/media_viewer.ui:61 src/session/view/media_viewer.ui:63
+#: src/session/view/media_viewer.ui:80 src/session/view/media_viewer.ui:82
 msgid "Media Menu"
 msgstr "媒体菜单"
 
-#: src/session/view/media_viewer.ui:73 src/session/view/media_viewer.ui:75
+#: src/session/view/media_viewer.ui:92 src/session/view/media_viewer.ui:94
 msgid "Fullscreen"
 msgstr "全屏"
 
-#: src/session/view/media_viewer.ui:84 src/session/view/media_viewer.ui:86
+#: src/session/view/media_viewer.ui:103 src/session/view/media_viewer.ui:105
 msgid "Exit Fullscreen"
 msgstr "退出全屏"
 
@@ -4734,16 +4730,16 @@ msgid "You exceeded the homeserver’s rate limit, try again later."
 msgstr "您已超出该主服务器的流量限制，请稍后重试。"
 
 #: src/user_facing_error.rs:71
-msgid "An unknown connection error occurred."
-msgstr "发生了未知连接错误。"
+msgid "An unexpected connection error occurred."
+msgstr "发生了意外连接错误。"
 
 #: src/user_facing_error.rs:79
 msgid "Could not decrypt the event."
 msgstr "无法解密该事件。"
 
 #: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-msgid "An unknown error occurred."
-msgstr "发生了未知错误。"
+msgid "An unexpected error occurred."
+msgstr "发生了意外错误。"
 
 #: src/user_facing_error.rs:89
 msgid "This is not a valid URL."
@@ -4798,6 +4794,14 @@ msgstr "{user} 邀请了您"
 #: src/utils/matrix/mod.rs:275
 msgid "Could not generate unique session ID"
 msgstr "无法生成唯一会话标识"
+
+#: src/utils/media/image.rs:801
+msgid "Image format not supported"
+msgstr "不支持该图像格式"
+
+#: src/utils/media/image.rs:802
+msgid "An unexpected error occurred"
+msgstr "发生了意外错误"
 
 #. Translators: Default name for image files.
 #: src/utils/media/mod.rs:33
