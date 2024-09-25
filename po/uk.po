@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-24 15:06+0000\n"
-"PO-Revision-Date: 2024-09-24 19:23+0300\n"
+"POT-Creation-Date: 2024-09-25 07:47+0000\n"
+"PO-Revision-Date: 2024-09-25 19:36+0300\n"
 "Last-Translator: Yuri Chornoivan <yurchor@ukr.net>\n"
 "Language-Team: Ukrainian <trans-uk@lists.fedoraproject.org>\n"
 "Language: uk\n"
@@ -450,7 +450,7 @@ msgstr "Ключ або пароль для відновлення"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Recover"
 msgstr "Відновити"
 
@@ -1180,7 +1180,7 @@ msgstr "Безпека"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:268
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Verify"
 msgstr "Перевірити"
 
@@ -1832,12 +1832,10 @@ msgstr ""
 "даних."
 
 #: src/secret/linux.rs:461
-#| msgid "An unknown error occurred when accessing the secret storage file."
 msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
-"Під час спроби доступу до файла сховища реєстраційних даних сталася"
-" неочікувана "
-"помилка"
+"Під час спроби доступу до файла сховища реєстраційних даних сталася "
+"неочікувана помилка"
 
 #: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
@@ -1845,9 +1843,6 @@ msgstr ""
 "До файла сховища реєстраційних даних внесено зміни стороннім процесом."
 
 #: src/secret/linux.rs:467
-#| msgid ""
-#| "An unknown error occurred when interacting with the D-Bus Secret Portal "
-#| "backend."
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
@@ -1883,8 +1878,6 @@ msgid "The item was deleted."
 msgstr "Запис було вилучено."
 
 #: src/secret/linux.rs:494 src/secret/linux.rs:514
-#| msgid ""
-#| "An unknown error occurred when interacting with the D-Bus Secret Service."
 msgid ""
 "An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr ""
@@ -2520,7 +2513,7 @@ msgstr "Засвідчення ваших власних пристроїв аб
 #: src/session/view/account_settings/security_page/mod.rs:225
 #: src/session/view/account_settings/security_page/mod.rs:298
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
 msgid "Enable"
 msgstr "Увімкнути"
 
@@ -4144,7 +4137,7 @@ msgid "Could not forget {room}"
 msgstr "Не вдалося забути про {room}"
 
 #: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:430
+#: src/session/view/sidebar/mod.rs:434
 msgid "Context Menu"
 msgstr "Контекстне меню"
 
@@ -4790,19 +4783,19 @@ msgstr "Повторно увійти до кімнати"
 msgid "Rejoin Room as Low Priority"
 msgstr "Повторно увійти як до низькопріоритетної кімнати"
 
-#: src/session/view/sidebar/mod.rs:318
+#: src/session/view/sidebar/mod.rs:322
 msgid "No crypto identity"
 msgstr "Немає криптопрофілю"
 
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Crypto identity incomplete"
 msgstr "Криптопрофіль є неповним"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:328
 msgid "Account recovery disabled"
 msgstr "Відновлення облікового запису вимкнено"
 
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Account recovery incomplete"
 msgstr "Відновлення облікового запису є неповним"
 
@@ -4944,6 +4937,11 @@ msgstr "Шукати у списку кімнат"
 
 #: src/shortcuts.ui:33
 msgctxt "shortcut window"
+msgid "Open Room With Unread Messages"
+msgstr "Відкрити кімнату із непрочитаними повідомленнями"
+
+#: src/shortcuts.ui:39
+msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Закрити кімнату"
 
@@ -4990,7 +4988,6 @@ msgstr ""
 "Повторіть спробу пізніше."
 
 #: src/user_facing_error.rs:71
-#| msgid "An unknown connection error occurred."
 msgid "An unexpected connection error occurred."
 msgstr "Сталася неочікувана помилка з'єднання."
 
@@ -4999,7 +4996,6 @@ msgid "Could not decrypt the event."
 msgstr "Не вдалося розшифрувати подію."
 
 #: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-#| msgid "An unknown error occurred."
 msgid "An unexpected error occurred."
 msgstr "Сталася неочікувана помилка."
 
@@ -5060,12 +5056,10 @@ msgid "Could not generate unique session ID"
 msgstr "Не вдалося створити унікальний ідентифікатор сеансу"
 
 #: src/utils/media/image.rs:801
-#| msgid "Image file not supported"
 msgid "Image format not supported"
 msgstr "Підтримки формату зображення не передбачено"
 
 #: src/utils/media/image.rs:802
-#| msgid "An unknown error occurred."
 msgid "An unexpected error occurred"
 msgstr "Сталася неочікувана помилка."
 
@@ -5711,10 +5705,6 @@ msgstr "Сеанс"
 #, fuzzy
 #~ msgid "Account settings can be accessed again"
 #~ msgstr "Вибачте, не вдалося завантажити параметри облікового запису."
-
-#, fuzzy
-#~ msgid "Opening a room jumps to first unread message"
-#~ msgstr "Відкрити попередню кімнату із непрочитаними повідомленнями у списку"
 
 #~ msgctxt "shortcut window"
 #~ msgid "Close the active room"
