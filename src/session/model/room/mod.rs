@@ -1242,6 +1242,10 @@ impl Room {
         }
 
         let counts = self.matrix_room().unread_notification_counts();
+        tracing::trace!(
+            "{}::update_highlight::unread_notifications: {counts:?}",
+            self.human_readable_id()
+        );
 
         if counts.highlight_count > 0 {
             highlight = HighlightFlags::all();
@@ -1646,12 +1650,20 @@ impl Room {
         ));
     }
 
+    /// Handle an update as a left room.
     pub fn handle_left_update(&self, update: LeftRoomUpdate) {
         self.update_for_events(update.timeline.events);
         self.handle_ambiguity_changes(update.ambiguity_changes.values());
     }
 
+    /// Handle an update as a joined room.
     pub fn handle_joined_update(&self, update: JoinedRoomUpdate) {
+        tracing::trace!(
+            "{}::handle_joined_update::unread_notifications: {:?}",
+            self.human_readable_id(),
+            update.unread_notifications
+        );
+
         if update
             .account_data
             .iter()
