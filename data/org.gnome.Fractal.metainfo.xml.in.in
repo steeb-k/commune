@@ -71,6 +71,45 @@
   </content_rating>
 
   <releases>@development-release@
+    <release version="9~beta" type="development" date="2024-09-26">
+      <description>
+        <p>
+          Back to school, and Fractal is back too! The leaves are starting to cover the floor in our
+          part of the globe, but you don’t have to shake a tree to get our goodness:
+        </p>
+        <ul>
+          <li>
+            We switched to the glycin library (the same one used by GNOME Image Viewer) to load
+            images, allowing us to fix several issues, like supporting more animated formats and
+            SVGs and respecting EXIF orientation.
+          </li>
+          <li>
+            The annoying bug where some rooms would stay as unread even after opening them is now a
+            distant memory.
+          </li>
+          <li>
+            The media cache uses its own database that you can delete if you want to free some space
+            on your system. It will also soon be able to clean up unused media files to prevent it
+            from growing indefinitely.
+          </li>
+          <li>
+            Sometimes the day separators would show up with the wrong date, not anymore!
+          </li>
+          <li>
+            We migrated to the new GTK 4.16 and libadwaita 1.6 APIs, including CSS variables,
+            AdwButtonRow and AdwSpinner.
+          </li>
+        </ul>
+        <p>
+          As usual, this release includes other improvements, fixes and new translations thanks to
+          all our contributors, and our upstream projects.
+        </p>
+        <p>
+          As the version implies, there might be a slight risk of regressions, but it should be
+          mostly stable. If all goes well the next step is the release candidate!
+        </p>
+      </description>
+    </release>
     <release version="8" type="stable" date="2024-08-01">
       <description>
         <p>
