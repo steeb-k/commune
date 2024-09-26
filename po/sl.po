@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-24 15:06+0000\n"
-"PO-Revision-Date: 2024-09-24 21:35+0200\n"
+"POT-Creation-Date: 2024-09-25 07:47+0000\n"
+"PO-Revision-Date: 2024-09-26 11:42+0200\n"
 "Last-Translator: Martin Srebotnjak <miles@filmsi.net>\n"
 "Language-Team: Slovenian GNOME Translation Team <gnome-si@googlegroups.com>\n"
 "Language: sl_SI\n"
@@ -439,7 +439,7 @@ msgstr "Obnovitveno geslo ali ključ"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Recover"
 msgstr "Obnovi"
 
@@ -1161,7 +1161,7 @@ msgstr "Varnost"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:268
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Verify"
 msgstr "Preveri"
 
@@ -2480,7 +2480,7 @@ msgstr "Preverjanje lastnih naprav ali drugih uporabnikov ni mogoče"
 #: src/session/view/account_settings/security_page/mod.rs:225
 #: src/session/view/account_settings/security_page/mod.rs:298
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
 msgid "Enable"
 msgstr "Omogoči"
 
@@ -4093,7 +4093,7 @@ msgid "Could not forget {room}"
 msgstr "Ni možno pozabiti {room}"
 
 #: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:430
+#: src/session/view/sidebar/mod.rs:434
 msgid "Context Menu"
 msgstr "Kontekstni meni"
 
@@ -4741,19 +4741,19 @@ msgstr "Znova se pridruži klepetalnici"
 msgid "Rejoin Room as Low Priority"
 msgstr "Znova se pridružite klepetalnici z nizko prioriteto"
 
-#: src/session/view/sidebar/mod.rs:318
+#: src/session/view/sidebar/mod.rs:322
 msgid "No crypto identity"
 msgstr "Brez kripto identitete"
 
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Crypto identity incomplete"
 msgstr "Kripto identiteta ni popolna"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:328
 msgid "Account recovery disabled"
 msgstr "Obnovitev računa je onemogočena"
 
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Account recovery incomplete"
 msgstr "Obnovitev računa ni dokončana"
 
@@ -4895,6 +4895,11 @@ msgid "Search Room List"
 msgstr "Išči na seznamu klepetalnic"
 
 #: src/shortcuts.ui:33
+msgctxt "shortcut window"
+msgid "Open Room With Unread Messages"
+msgstr "Odpri klepetalnico z neprebranimi sporočili"
+
+#: src/shortcuts.ui:39
 msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Zapre klepetalnico"
