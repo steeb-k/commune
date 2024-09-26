@@ -4,22 +4,22 @@
 # Bruno Lopes da Silva <brunolopesbldsb@gmail.com>, 2018.
 # Enrico Nicoletto <liverig@gmail.com>, 2020, 2021.
 # Samuel Schlemper <samuelschlemper2006@gmail.com>, 2024.
-# Juliano de Souza Camargo <julianosc@pm.me>, 2024.
 # Rafael Fontenelle <rafaelff@gnome.org>, 2018-2024.
+# Juliano de Souza Camargo <julianosc@pm.me>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2024-09-20 18:57+0000\n"
-"PO-Revision-Date: 2024-09-20 23:41-0300\n"
-"Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
-"Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>\n"
+"POT-Creation-Date: 2024-09-25 07:47+0000\n"
+"PO-Revision-Date: 2024-09-26 09:39-0300\n"
+"Last-Translator: Juliano de Souza Camargo <julianosc@pm.me>\n"
+"Language-Team: Brazilian Portuguese <https://br.gnome.org/traducao>>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1)\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Gtranslator 46.1\n"
 
 #: data/org.gnome.Fractal.desktop.in.in:3
@@ -229,36 +229,36 @@ msgstr "Aviso"
 msgid "Error"
 msgstr "Erro"
 
-#: src/components/avatar/editable.rs:420
+#: src/components/avatar/editable.rs:489
 msgid "Images"
 msgstr "Imagens"
 
-#: src/components/avatar/editable.rs:425
+#: src/components/avatar/editable.rs:494
 msgid "Choose Avatar"
 msgstr "Escolha o provedor"
 
-#: src/components/avatar/editable.rs:427
+#: src/components/avatar/editable.rs:496
 #: src/session/view/account_settings/security_page/import_export_keys_subpage.rs:204
 msgid "Choose"
 msgstr "Escolher"
 
-#: src/components/avatar/editable.rs:441
+#: src/components/avatar/editable.rs:510
 msgid "Could not open avatar file"
 msgstr "Falha ao abrir o avatar"
 
-#: src/components/avatar/editable.rs:462
+#: src/components/avatar/editable.rs:531
 msgid "The chosen file is not an image"
 msgstr "O arquivo escolhido não é uma imagem"
 
-#: src/components/avatar/editable.rs:468
+#: src/components/avatar/editable.rs:537
 msgid "Could not determine the type of the chosen file"
 msgstr "Falha ao determinar o tipo do arquivo escolhido"
 
-#: src/components/avatar/editable.ui:54
+#: src/components/avatar/editable.ui:70
 msgid "Remove Avatar"
 msgstr "Remover o Avatar"
 
-#: src/components/avatar/editable.ui:71
+#: src/components/avatar/editable.ui:87
 msgid "Select New Avatar"
 msgstr "Selecione um novo avatar"
 
@@ -445,7 +445,7 @@ msgstr "Senha de recuperação ou chave"
 
 #: src/components/crypto/recovery_setup_view.ui:77
 #: src/session/view/account_settings/security_page/mod.rs:337
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Recover"
 msgstr "Recuperação"
 
@@ -633,7 +633,7 @@ msgstr "Entrar na sala"
 #: src/login/greeter.ui:18
 #: src/session/view/content/room_details/edit_details_subpage.ui:13
 #: src/session/view/content/room_details/permissions/permissions_subpage.ui:19
-#: src/session/view/media_viewer.ui:51 src/session/view/media_viewer.ui:53
+#: src/session/view/media_viewer.ui:70 src/session/view/media_viewer.ui:72
 msgid "Back"
 msgstr "Voltar"
 
@@ -701,7 +701,7 @@ msgstr "Sair"
 #: src/components/dialogs/message_dialogs.rs:369
 #: src/components/dialogs/message_dialogs.rs:404
 #: src/identity_verification_view/confirm_qr_code_page.ui:61
-#: src/session/view/account_settings/general_page/mod.rs:292
+#: src/session/view/account_settings/general_page/mod.rs:296
 #: src/session/view/content/room_details/edit_details_subpage.rs:258
 #: src/session/view/content/room_details/edit_details_subpage.rs:537
 #: src/session/view/content/room_details/general_page.rs:1021
@@ -852,7 +852,7 @@ msgstr[1] ""
 "desfeito."
 
 #: src/components/dialogs/message_dialogs.rs:230
-#: src/session/view/account_settings/general_page/mod.rs:293
+#: src/session/view/account_settings/general_page/mod.rs:297
 #: src/session/view/content/room_details/edit_details_subpage.rs:259
 #: src/session/view/content/room_history/item_row.rs:897
 msgid "Remove"
@@ -932,31 +932,31 @@ msgstr "Promover"
 msgid "User Profile"
 msgstr "Perfil do usuário "
 
-#: src/components/offline_banner.rs:102
+#: src/components/offline_banner.rs:103
 msgid "Offline"
 msgstr "Sem internet"
 
-#: src/components/offline_banner.rs:109
+#: src/components/offline_banner.rs:111
 msgid "No network connection"
 msgstr "Sem conexão de rede"
 
-#: src/components/offline_banner.rs:112
+#: src/components/offline_banner.rs:115
 msgid "No Internet connection"
 msgstr "Sem conexão de internet"
 
-#: src/components/media/content_viewer.rs:175
+#: src/components/media/content_viewer.rs:177
 msgid "Image not Viewable"
 msgstr "Imagem não visualisável"
 
-#: src/components/media/content_viewer.rs:176
+#: src/components/media/content_viewer.rs:178
 msgid "Audio Clip not Playable"
 msgstr "Áudio não reproduzível"
 
-#: src/components/media/content_viewer.rs:177
+#: src/components/media/content_viewer.rs:179
 msgid "Video not Playable"
 msgstr "Vídeo não reproduzível"
 
-#: src/components/media/content_viewer.rs:178
+#: src/components/media/content_viewer.rs:180
 msgid "File not Viewable"
 msgstr "Arquivo não visível "
 
@@ -988,7 +988,7 @@ msgid "Confirm Custom Role"
 msgstr "Confirmar regra customisada"
 
 #: src/components/user_page.rs:277
-#: src/session/view/account_settings/general_page/mod.ui:75
+#: src/session/view/account_settings/general_page/mod.ui:74
 #: src/session/view/content/room_history/sender_avatar/mod.rs:76
 msgid "Matrix user ID copied to clipboard"
 msgstr "ID do usuário Matrix copiado para a área de transferência"
@@ -1125,7 +1125,7 @@ msgid "Could not ignore user"
 msgstr "Falha ao ignorar o usuário"
 
 #: src/components/user_page.ui:66
-#: src/session/view/account_settings/general_page/mod.ui:74
+#: src/session/view/account_settings/general_page/mod.ui:73
 #: src/session/view/content/room_history/sender_avatar/mod.ui:27
 msgid "Copy Matrix User ID"
 msgstr "Copiar ID de usuário Matrix"
@@ -1157,7 +1157,7 @@ msgstr "Segurança"
 #: src/identity_verification_view/accept_request_page.ui:57
 #: src/session/view/account_settings/security_page/mod.rs:268
 #: src/session/view/content/room_history/verification_info_bar.rs:172
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Verify"
 msgstr "Verificar"
 
@@ -1703,7 +1703,7 @@ msgid "The URL of your Matrix homeserver, for example {address}"
 msgstr "A URL do seu homeserver Matrix, por exemplo {address}"
 
 #: src/login/homeserver_page.ui:5 src/login/homeserver_page.ui:42
-#: src/session/view/account_settings/general_page/mod.ui:80
+#: src/session/view/account_settings/general_page/mod.ui:79
 msgid "Homeserver"
 msgstr "Servidor base"
 
@@ -1806,9 +1806,9 @@ msgid "Could not access the secret storage file location."
 msgstr "Falha ao acessar o armazenamento de segredos"
 
 #: src/secret/linux.rs:461
-msgid "An unknown error occurred when accessing the secret storage file."
+msgid "An unexpected error occurred when accessing the secret storage file."
 msgstr ""
-"Ocorreu um erro desconhecido ao interagir com o armazenamento de segredos"
+"Ocorreu um erro desconhecido ao interagir com o armazenamento de segredos."
 
 #: src/secret/linux.rs:464
 msgid "The secret storage file has been changed by another process."
@@ -1816,7 +1816,7 @@ msgstr "O armazenamento de segredos foi mudado por outro processo."
 
 #: src/secret/linux.rs:467
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Portal "
+"An unexpected error occurred when interacting with the D-Bus Secret Portal "
 "backend."
 msgstr ""
 "Ocorreu um erro desconhecido ao interagir com o backend do D-Bus Secret "
@@ -1851,7 +1851,7 @@ msgstr "O item foi excluído."
 
 #: src/secret/linux.rs:494 src/secret/linux.rs:514
 msgid ""
-"An unknown error occurred when interacting with the D-Bus Secret Service."
+"An unexpected error occurred when interacting with the D-Bus Secret Service."
 msgstr "Ocorreu um erro desconhecido ao interagir com o D-Bus Secret Service."
 
 #: src/secret/linux.rs:497
@@ -1882,7 +1882,7 @@ msgstr ""
 "Falha ao acessar a coleção padrão. Tenha certeza que um chaveiro foi criado "
 "e definido como padrão."
 
-#: src/session/model/session.rs:985
+#: src/session/model/session.rs:982
 msgid "Could not log the session out"
 msgstr "Falha ao encerrar a sessão"
 
@@ -2037,7 +2037,7 @@ msgid "Could not change password"
 msgstr "Falha ao alterar a senha"
 
 #: src/session/view/account_settings/general_page/change_password_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:59
+#: src/session/view/account_settings/general_page/mod.ui:58
 msgid "Change Password"
 msgstr "Alterar senha"
 
@@ -2070,7 +2070,7 @@ msgstr "Falha ao desativar a conta"
 
 #. Translators: Deactivation is a permanent action that occurs on the server.
 #: src/session/view/account_settings/general_page/deactivate_account_subpage.ui:8
-#: src/session/view/account_settings/general_page/mod.ui:118
+#: src/session/view/account_settings/general_page/mod.ui:117
 msgid "Deactivate Account"
 msgstr "Desativar conta"
 
@@ -2114,7 +2114,7 @@ msgstr ""
 "suas chaves de criptografia antes de sair."
 
 #: src/session/view/account_settings/general_page/log_out_subpage.ui:7
-#: src/session/view/account_settings/general_page/mod.ui:105
+#: src/session/view/account_settings/general_page/mod.ui:104
 #: src/session/view/account_settings/user_sessions_page/user_session_row.rs:111
 msgid "Log Out"
 msgstr "Encerrar sessão"
@@ -2156,50 +2156,50 @@ msgstr ""
 msgid "Remove Session"
 msgstr "Remover sessão"
 
-#: src/session/view/account_settings/general_page/mod.rs:206
+#: src/session/view/account_settings/general_page/mod.rs:210
 #: src/session/view/content/room_details/edit_details_subpage.rs:153
 msgid "Avatar removed successfully"
 msgstr "Avatar removido com sucesso"
 
-#: src/session/view/account_settings/general_page/mod.rs:208
+#: src/session/view/account_settings/general_page/mod.rs:212
 #: src/session/view/content/room_details/edit_details_subpage.rs:155
 msgid "Avatar changed successfully"
 msgstr "Avatar alterado com sucesso"
 
-#: src/session/view/account_settings/general_page/mod.rs:227
+#: src/session/view/account_settings/general_page/mod.rs:231
 #: src/session/view/content/room_details/edit_details_subpage.rs:180
 msgid "Could not load file"
 msgstr "Falha ao carregar arquivo"
 
-#: src/session/view/account_settings/general_page/mod.rs:242
+#: src/session/view/account_settings/general_page/mod.rs:246
 #: src/session/view/content/room_details/edit_details_subpage.rs:204
 msgid "Could not upload avatar"
 msgstr "Falha ao carregar o avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:271
+#: src/session/view/account_settings/general_page/mod.rs:275
 #: src/session/view/content/room_details/edit_details_subpage.rs:227
 msgid "Could not change avatar"
 msgstr "Falha ao alterar o avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:288
+#: src/session/view/account_settings/general_page/mod.rs:292
 #: src/session/view/content/room_details/edit_details_subpage.rs:252
 msgid "Remove Avatar?"
 msgstr "Remover Avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:289
+#: src/session/view/account_settings/general_page/mod.rs:293
 msgid "Do you really want to remove your avatar?"
 msgstr "Tem certeza que deseja remover seu avatar?"
 
-#: src/session/view/account_settings/general_page/mod.rs:327
+#: src/session/view/account_settings/general_page/mod.rs:331
 #: src/session/view/content/room_details/edit_details_subpage.rs:284
 msgid "Could not remove avatar"
 msgstr "Falha ao remover o avatar"
 
-#: src/session/view/account_settings/general_page/mod.rs:379
+#: src/session/view/account_settings/general_page/mod.rs:383
 msgid "Name changed successfully"
 msgstr "Nome alterado com sucesso"
 
-#: src/session/view/account_settings/general_page/mod.rs:430
+#: src/session/view/account_settings/general_page/mod.rs:434
 msgid "Could not change display name"
 msgstr "Falha ao exibir o nome"
 
@@ -2211,39 +2211,39 @@ msgstr "Geral"
 msgid "Account Avatar"
 msgstr "Avatar da Conta"
 
-#: src/session/view/account_settings/general_page/mod.ui:32
+#: src/session/view/account_settings/general_page/mod.ui:31
 #: src/session/view/content/room_details/edit_details_subpage.ui:58
 #: src/session/view/content/room_details/edit_details_subpage.ui:68
 #: src/session/view/room_creation.ui:47 src/session/view/room_creation.ui:50
 msgid "Name"
 msgstr "Nome"
 
-#: src/session/view/account_settings/general_page/mod.ui:69
+#: src/session/view/account_settings/general_page/mod.ui:68
 #: src/session/view/content/room_details/general_page.ui:244
 msgid "Advanced Information"
 msgstr "Informações avançadas"
 
-#: src/session/view/account_settings/general_page/mod.ui:72
+#: src/session/view/account_settings/general_page/mod.ui:71
 msgid "Matrix User ID"
 msgstr "ID de usuário Matrix"
 
-#: src/session/view/account_settings/general_page/mod.ui:82
+#: src/session/view/account_settings/general_page/mod.ui:81
 msgid "Copy Homeserver Address"
 msgstr "Copiar endereço da sala"
 
-#: src/session/view/account_settings/general_page/mod.ui:83
+#: src/session/view/account_settings/general_page/mod.ui:82
 msgid "Homeserver address copied to clipboard"
 msgstr "Endereço da sala copiado para a área de transferência"
 
-#: src/session/view/account_settings/general_page/mod.ui:88
+#: src/session/view/account_settings/general_page/mod.ui:87
 msgid "Session ID"
 msgstr "ID de sessão"
 
-#: src/session/view/account_settings/general_page/mod.ui:90
+#: src/session/view/account_settings/general_page/mod.ui:89
 msgid "Copy Session ID"
 msgstr "Copiar ID de sessão"
 
-#: src/session/view/account_settings/general_page/mod.ui:91
+#: src/session/view/account_settings/general_page/mod.ui:90
 msgid "Session ID copied to clipboard"
 msgstr "ID da sessão copiado para a área de transferência"
 
@@ -2479,7 +2479,7 @@ msgstr "Verificar seus próprios dispositivos ou outros usuários não é possí
 #: src/session/view/account_settings/security_page/mod.rs:225
 #: src/session/view/account_settings/security_page/mod.rs:298
 #: src/session/view/content/room_details/general_page.rs:1022
-#: src/session/view/sidebar/mod.rs:318 src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:322 src/session/view/sidebar/mod.rs:328
 msgid "Enable"
 msgstr "Habilitar"
 
@@ -3662,13 +3662,13 @@ msgstr "Copiar m_iniatura"
 
 #: src/session/view/content/room_history/event_actions.ui:49
 #: src/session/view/content/room_history/event_actions.ui:135
-#: src/session/view/media_viewer.ui:11
+#: src/session/view/media_viewer.ui:11 src/session/view/media_viewer.ui:35
 msgid "S_ave Image"
 msgstr "S_alvar imagem"
 
 #: src/session/view/content/room_history/event_actions.ui:54
 #: src/session/view/content/room_history/event_actions.ui:140
-#: src/session/view/media_viewer.ui:16
+#: src/session/view/media_viewer.ui:16 src/session/view/media_viewer.ui:40
 msgid "S_ave Video"
 msgstr "S_alvar vídeo"
 
@@ -3920,25 +3920,21 @@ msgstr "Adesivo"
 msgid "Video"
 msgstr "Vídeo"
 
-#: src/session/view/content/room_history/message_row/visual_media.rs:361
-#: src/session/view/content/room_history/message_row/visual_media.rs:403
+#: src/session/view/content/room_history/message_row/visual_media.rs:404
+#: src/utils/media/image.rs:800
 msgid "Could not retrieve media"
 msgstr "Falha ao recuperar a mídia"
-
-#: src/session/view/content/room_history/message_row/visual_media.rs:392
-msgid "Image file not supported"
-msgstr "Arquivo de imagem não suportado"
 
 #: src/session/view/content/room_history/message_toolbar/attachment_dialog.ui:21
 msgid "_Send"
 msgstr "_Enviar"
 
 # Desconheço se essa seria a tradução correta
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:677
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:699
 msgid "Public Room Mention Auto-completion"
 msgstr "Preenchimento automático de menção da sala pública"
 
-#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:679
+#: src/session/view/content/room_history/message_toolbar/completion/completion_popover.rs:701
 msgid "Room Member Mention Auto-completion"
 msgstr "Preenchimento automático de menção do membro da sala"
 
@@ -4091,7 +4087,7 @@ msgid "Could not forget {room}"
 msgstr "Falha em esquecer {room}"
 
 #: src/session/view/content/room_history/mod.rs:803
-#: src/session/view/sidebar/mod.rs:430
+#: src/session/view/sidebar/mod.rs:434
 msgid "Context Menu"
 msgstr "Menu de contexto"
 
@@ -4605,19 +4601,19 @@ msgstr "Copiar fonte"
 msgid "Image copied to clipboard"
 msgstr "Imagem copiada para a área de transferência"
 
-#: src/session/view/media_viewer.ui:6
+#: src/session/view/media_viewer.ui:6 src/session/view/media_viewer.ui:30
 msgid "_Copy Image"
 msgstr "_Copiar imagem"
 
-#: src/session/view/media_viewer.ui:61 src/session/view/media_viewer.ui:63
+#: src/session/view/media_viewer.ui:80 src/session/view/media_viewer.ui:82
 msgid "Media Menu"
 msgstr "Menu de mídia"
 
-#: src/session/view/media_viewer.ui:73 src/session/view/media_viewer.ui:75
+#: src/session/view/media_viewer.ui:92 src/session/view/media_viewer.ui:94
 msgid "Fullscreen"
 msgstr "Tela cheia"
 
-#: src/session/view/media_viewer.ui:84 src/session/view/media_viewer.ui:86
+#: src/session/view/media_viewer.ui:103 src/session/view/media_viewer.ui:105
 msgid "Exit Fullscreen"
 msgstr "Sair da tela cheia"
 
@@ -4734,19 +4730,19 @@ msgstr "Entrar novamente na sala"
 msgid "Rejoin Room as Low Priority"
 msgstr "Entrar novamente na sala como baixa prioridade"
 
-#: src/session/view/sidebar/mod.rs:318
+#: src/session/view/sidebar/mod.rs:322
 msgid "No crypto identity"
 msgstr "Nenhuma identidade criptográfica"
 
-#: src/session/view/sidebar/mod.rs:320
+#: src/session/view/sidebar/mod.rs:324
 msgid "Crypto identity incomplete"
 msgstr "Identidade criptográfica incompleta"
 
-#: src/session/view/sidebar/mod.rs:324
+#: src/session/view/sidebar/mod.rs:328
 msgid "Account recovery disabled"
 msgstr "Recuperação de conta desativada"
 
-#: src/session/view/sidebar/mod.rs:327
+#: src/session/view/sidebar/mod.rs:331
 msgid "Account recovery incomplete"
 msgstr "Recuperação de conta incompleta"
 
@@ -4886,6 +4882,11 @@ msgstr "Pesquisa na lista de salas"
 
 #: src/shortcuts.ui:33
 msgctxt "shortcut window"
+msgid "Open Room With Unread Messages"
+msgstr "Abrir sala com mensagens não lidas"
+
+#: src/shortcuts.ui:39
+msgctxt "shortcut window"
 msgid "Close Room"
 msgstr "Fecha a sala"
 
@@ -4922,7 +4923,7 @@ msgstr ""
 "Você excedeu a taxa limite do homeserver, tente novamente em mais tarde."
 
 #: src/user_facing_error.rs:71
-msgid "An unknown connection error occurred."
+msgid "An unexpected connection error occurred."
 msgstr "Ocorreu um erro de conexão desconhecido."
 
 #: src/user_facing_error.rs:79
@@ -4930,7 +4931,7 @@ msgid "Could not decrypt the event."
 msgstr "Falha ao descriptografar o evento"
 
 #: src/user_facing_error.rs:81 src/user_facing_error.rs:95
-msgid "An unknown error occurred."
+msgid "An unexpected error occurred."
 msgstr "Ocorreu um erro desconhecido."
 
 #: src/user_facing_error.rs:89
@@ -4988,6 +4989,14 @@ msgstr "{user} convidou você"
 #: src/utils/matrix/mod.rs:275
 msgid "Could not generate unique session ID"
 msgstr "Não foi possível gerar um ID de sessão única"
+
+#: src/utils/media/image.rs:801
+msgid "Image format not supported"
+msgstr "Arquivo de imagem não suportado"
+
+#: src/utils/media/image.rs:802
+msgid "An unexpected error occurred"
+msgstr "Ocorreu um erro desconhecido"
 
 #. Translators: Default name for image files.
 #: src/utils/media/mod.rs:33
