@@ -35,7 +35,7 @@ if profile == 'Devel'
   appstream_version += '-' + devel_version
 
   development_release = '''
-    <release version="@0@" type="development" date="@1@">
+    <release version="@0@" type="snapshot" date="@1@">
       <description>
         <p>Development release.</p>
       </description>
