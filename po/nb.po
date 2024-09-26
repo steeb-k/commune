@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: fractal main\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
 "POT-Creation-Date: 2024-09-25 07:47+0000\n"
-"PO-Revision-Date: 2024-09-26 21:30+0200\n"
+"PO-Revision-Date: 2024-09-26 21:33+0200\n"
 "Last-Translator: Brage <bragefuglseth@gnome.org>\n"
 "Language-Team: Norwegian Bokmål <nb@li.org>\n"
 "Language: nb\n"
@@ -2555,7 +2555,7 @@ msgstr "Økter"
 #: src/session/view/account_settings/user_sessions_page/mod.ui:36
 #: src/session/view/account_settings/user_sessions_page/mod.ui:40
 msgid "Current Session"
-msgstr "Nåværende økt"
+msgstr "Denne økten"
 
 #: src/session/view/account_settings/user_sessions_page/mod.ui:51
 #: src/session/view/account_settings/user_sessions_page/mod.ui:55
