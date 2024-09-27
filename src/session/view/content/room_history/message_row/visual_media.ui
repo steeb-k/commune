@@ -6,7 +6,8 @@
     <child>
       <object class="GtkOverlay" id="media">
         <style>
-          <class name="content-thumbnail"/>
+          <class name="visual-content"/>
+          <class name="opaque-bg"/>
         </style>
         <property name="overflow">hidden</property>
         <child>
@@ -16,6 +17,8 @@
         </child>
         <child type="overlay">
           <object class="AdwSpinner" id="overlay_spinner">
+            <property name="halign">center</property>
+            <property name="valign">center</property>
             <layout>
               <property name="measure">true</property>
             </layout>
@@ -30,7 +33,6 @@
             <property name="halign">center</property>
             <property name="valign">center</property>
             <property name="icon-name">error-symbolic</property>
-            <property name="icon-size">large</property>
             <layout>
               <property name="measure">true</property>
             </layout>

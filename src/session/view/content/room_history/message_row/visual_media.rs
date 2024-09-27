@@ -49,10 +49,10 @@ mod imp {
         #[template_child]
         pub overlay_spinner: TemplateChild<adw::Spinner>,
         /// The intended display width of the media.
-        #[property(get, set = Self::set_width, explicit_notify, default = -1, minimum = -1)]
+        #[property(get, default = -1, minimum = -1)]
         pub width: Cell<i32>,
         /// The intended display height of the media.
-        #[property(get, set = Self::set_height, explicit_notify, default = -1, minimum = -1)]
+        #[property(get, default = -1, minimum = -1)]
         pub height: Cell<i32>,
         /// The loading state of the media.
         #[property(get, builder(LoadingState::default()))]
@@ -73,6 +73,7 @@ mod imp {
             Self::bind_template(klass);
             Self::Type::bind_template_callbacks(klass);
 
+            klass.set_css_name("message-visual-media");
             klass.set_accessible_role(gtk::AccessibleRole::Group);
         }
 
@@ -184,7 +185,7 @@ mod imp {
 
     impl MessageVisualMedia {
         /// Set the intended display width of the media.
-        fn set_width(&self, width: i32) {
+        pub(super) fn set_width(&self, width: i32) {
             if self.width.get() == width {
                 return;
             }
@@ -194,7 +195,7 @@ mod imp {
         }
 
         /// Set the intended display height of the media.
-        fn set_height(&self, height: i32) {
+        pub(super) fn set_height(&self, height: i32) {
             if self.height.get() == height {
                 return;
             }
@@ -247,6 +248,23 @@ mod imp {
                     .replace(Some(paintable.animation_ref()));
             }
         }
+
+        /// Set whether to display this media in a compact format.
+        pub(super) fn set_compact(&self, compact: bool) {
+            if self.compact.get() == compact {
+                return;
+            }
+
+            self.compact.set(compact);
+
+            if compact {
+                self.media.add_css_class("compact");
+            } else {
+                self.media.remove_css_class("compact");
+            }
+
+            self.obj().notify_compact();
+        }
     }
 }
 
@@ -269,12 +287,6 @@ impl MessageVisualMedia {
             .unwrap();
     }
 
-    /// Set whether to display this media in a compact format.
-    fn set_compact(&self, compact: bool) {
-        self.imp().compact.set(compact);
-        self.notify_compact();
-    }
-
     /// Display the given visual media message.
     pub fn set_media_message(
         &self,
@@ -285,9 +297,10 @@ impl MessageVisualMedia {
         let (width, height) = media_message.dimensions().unzip();
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
 
-        self.set_width(width.and_then(|w| w.try_into().ok()).unwrap_or(-1));
-        self.set_height(height.and_then(|h| h.try_into().ok()).unwrap_or(-1));
-        self.set_compact(compact);
+        let imp = self.imp();
+        imp.set_width(width.and_then(|w| w.try_into().ok()).unwrap_or(-1));
+        imp.set_height(height.and_then(|h| h.try_into().ok()).unwrap_or(-1));
+        imp.set_compact(compact);
 
         self.build(media_message, session);
     }
@@ -379,11 +392,9 @@ impl MessageVisualMedia {
 
                         child.set_tooltip_text(Some(&filename));
                         if is_sticker {
-                            if imp.media.has_css_class("content-thumbnail") {
-                                imp.media.remove_css_class("content-thumbnail");
-                            }
-                        } else if !imp.media.has_css_class("content-thumbnail") {
-                            imp.media.add_css_class("content-thumbnail");
+                            imp.media.remove_css_class("opaque-bg");
+                        } else {
+                            imp.media.add_css_class("opaque-bg");
                         }
                     }
                     Err(error) => {

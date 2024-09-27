@@ -5,7 +5,8 @@
       <property name="label" translatable="yes">User Location</property>
     </accessibility>
     <style>
-      <class name="content-thumbnail"/>
+      <class name="visual-content"/>
+      <class name="opaque-bg"/>
     </style>
     <property name="overflow">hidden</property>
     <child>
@@ -22,7 +23,6 @@
             <property name="halign">center</property>
             <property name="valign">center</property>
             <property name="icon-name">error-symbolic</property>
-            <property name="icon-size">large</property>
             <layout>
               <property name="measure">true</property>
             </layout>

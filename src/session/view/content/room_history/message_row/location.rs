@@ -85,6 +85,7 @@ impl MessageLocation {
         glib::Object::new()
     }
 
+    /// Set the `geo:` URI to display.
     pub fn set_geo_uri(&self, uri: &str, format: ContentFormat) {
         let imp = self.imp();
         let compact = matches!(format, ContentFormat::Compact | ContentFormat::Ellipsized);
@@ -107,8 +108,10 @@ impl MessageLocation {
 
         if compact {
             self.set_halign(gtk::Align::Start);
+            self.add_css_class("compact");
         } else {
             self.set_halign(gtk::Align::Fill);
+            self.remove_css_class("compact");
         }
     }
 }

@@ -595,18 +595,35 @@ room-history-row .event-content .emote {
   color: var(--accent-color);
 }
 
-.content-thumbnail {
+.visual-content.opaque-bg {
   border-radius: 6px;
   background-color: var(--border-color);
 }
 
-.content-thumbnail .osd.circular {
+.visual-content .spinner {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.visual-content.compact .spinner {
+  min-width: 16px;
+  min-height: 16px;
+}
+
+.visual-content image.osd.circular {
   min-width: 64px;
   min-height: 64px;
   border-radius: 32px;
+  -gtk-icon-size: 32px;
 }
 
-.content-thumbnail .timestamp {
+.visual-content.compact image.osd.circular {
+  min-width: 32px;
+  min-height: 32px;
+  -gtk-icon-size: 16px;
+}
+
+.visual-content .timestamp {
   border-radius: 4px;
   padding: 2px 5px;
 }
