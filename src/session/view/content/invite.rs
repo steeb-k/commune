@@ -239,8 +239,7 @@ impl Invite {
         imp.accept_button.set_is_loading(true);
         imp.accept_requests.borrow_mut().insert(room.clone());
 
-        let result = room.accept_invite().await;
-        if result.is_err() {
+        if room.set_category(RoomCategory::Normal).await.is_err() {
             toast!(
                 self,
                 gettext(
@@ -274,7 +273,7 @@ impl Invite {
 
         let ignored_inviter = response.ignore_inviter.then(|| room.inviter()).flatten();
 
-        let closed = match room.decline_invite().await {
+        let closed = match room.set_category(RoomCategory::Left).await {
             Ok(_) => {
                 // A room where we were invited is usually empty so just close it.
                 let _ = self.activate_action("session.close-room", None);

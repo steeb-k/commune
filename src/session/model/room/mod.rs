@@ -2089,47 +2089,6 @@ impl Room {
         }
     }
 
-    /// Accept the invitation to this room.
-    pub async fn accept_invite(&self) -> MatrixResult<()> {
-        let matrix_room = self.matrix_room();
-
-        if matrix_room.state() != RoomState::Invited {
-            error!("Can’t accept invite, because this room isn’t an invited room");
-            return Ok(());
-        }
-
-        let matrix_room = matrix_room.clone();
-        let handle = spawn_tokio!(async move { matrix_room.join().await });
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Accepting invitation failed: {error}");
-                Err(error)
-            }
-        }
-    }
-
-    /// Decline the invitation to this room.
-    pub async fn decline_invite(&self) -> MatrixResult<()> {
-        let matrix_room = self.matrix_room();
-
-        if matrix_room.state() != RoomState::Invited {
-            error!("Cannot decline invite, because this room is not an invited room");
-            return Ok(());
-        }
-
-        let matrix_room = matrix_room.clone();
-        let handle = spawn_tokio!(async move { matrix_room.leave().await });
-        match handle.await.expect("task was not aborted") {
-            Ok(_) => Ok(()),
-            Err(error) => {
-                error!("Declining invitation failed: {error}");
-
-                Err(error)
-            }
-        }
-    }
-
     /// Forget a room that is left.
     pub async fn forget(&self) -> MatrixResult<()> {
         if self.category() != RoomCategory::Left {
