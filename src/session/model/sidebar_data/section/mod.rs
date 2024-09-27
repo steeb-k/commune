@@ -1,15 +1,10 @@
-use gtk::{
-    gio, glib,
-    glib::{clone, closure},
-    prelude::*,
-    subclass::prelude::*,
-};
+use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-mod category_filter;
-mod category_type;
+mod name;
+mod room_category_filter;
 
-use self::category_filter::CategoryFilter;
-pub use self::category_type::CategoryType;
+pub use self::name::SidebarSectionName;
+use self::room_category_filter::RoomCategoryFilter;
 use crate::{
     session::model::{Room, RoomCategory, RoomList, SessionSettings, VerificationList},
     utils::ExpressionListModel,
@@ -24,38 +19,38 @@ mod imp {
     use super::*;
 
     #[derive(Debug, Default, glib::Properties)]
-    #[properties(wrapper_type = super::Category)]
-    pub struct Category {
-        /// The source model of this category.
+    #[properties(wrapper_type = super::SidebarSection)]
+    pub struct SidebarSection {
+        /// The source model of this section.
         #[property(get, set = Self::set_model, construct_only)]
         pub model: OnceCell<gio::ListModel>,
-        /// The inner model of this category.
+        /// The inner model of this section.
         inner_model: OnceCell<gio::ListModel>,
-        /// The filter of this category.
-        pub filter: CategoryFilter,
-        /// The type of this category.
-        #[property(get = Self::category_type, set = Self::set_category_type, construct_only, builder(CategoryType::default()))]
-        pub category_type: PhantomData<CategoryType>,
-        /// Whether this category is empty.
-        #[property(get)]
-        pub empty: Cell<bool>,
-        /// The display name of this category.
+        /// The filter of this section.
+        pub filter: RoomCategoryFilter,
+        /// The name of this section.
+        #[property(get, set = Self::set_name, construct_only, builder(SidebarSectionName::default()))]
+        pub name: Cell<SidebarSectionName>,
+        /// The display name of this section.
         #[property(get = Self::display_name)]
         pub display_name: PhantomData<String>,
-        /// Whether this category is expanded.
+        /// Whether this section is empty.
+        #[property(get)]
+        pub is_empty: Cell<bool>,
+        /// Whether this section is expanded.
         #[property(get, set = Self::set_is_expanded, explicit_notify)]
         pub is_expanded: Cell<bool>,
     }
 
     #[glib::object_subclass]
-    impl ObjectSubclass for Category {
-        const NAME: &'static str = "Category";
-        type Type = super::Category;
+    impl ObjectSubclass for SidebarSection {
+        const NAME: &'static str = "SidebarSection";
+        type Type = super::SidebarSection;
         type Interfaces = (gio::ListModel,);
     }
 
     #[glib::derived_properties]
-    impl ObjectImpl for Category {
+    impl ObjectImpl for SidebarSection {
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -63,12 +58,12 @@ mod imp {
                 return;
             };
 
-            let is_expanded = settings.is_category_expanded(self.category_type());
+            let is_expanded = settings.is_section_expanded(self.name.get());
             self.set_is_expanded(is_expanded);
         }
     }
 
-    impl ListModelImpl for Category {
+    impl ListModelImpl for SidebarSection {
         fn item_type(&self) -> glib::Type {
             glib::Object::static_type()
         }
@@ -82,34 +77,29 @@ mod imp {
         }
     }
 
-    impl Category {
-        /// The source model of this category.
+    impl SidebarSection {
+        /// The source model of this section.
         fn model(&self) -> &gio::ListModel {
             self.model.get().unwrap()
         }
 
-        /// Set the source model of this category.
+        /// Set the source model of this section.
         fn set_model(&self, model: gio::ListModel) {
             let model = self.model.get_or_init(|| model).clone();
             let obj = self.obj();
 
-            // Special-case room lists so that they are sorted and in the right category.
+            // Special-case room lists so that they are sorted and in the right section.
             let inner_model = if model.is::<RoomList>() {
-                let room_category_type = Room::this_expression("category")
-                    .chain_closure::<CategoryType>(closure!(
-                        |_: Option<glib::Object>, category: RoomCategory| {
-                            CategoryType::from(category)
-                        }
-                    ));
+                let room_category = Room::this_expression("category");
                 self.filter
-                    .set_expression(Some(room_category_type.clone().upcast()));
+                    .set_expression(Some(room_category.clone().upcast()));
 
-                let category_type_expr_model = ExpressionListModel::new();
-                category_type_expr_model.set_expressions(vec![room_category_type.upcast()]);
-                category_type_expr_model.set_model(Some(model));
+                let section_name_expr_model = ExpressionListModel::new();
+                section_name_expr_model.set_expressions(vec![room_category.upcast()]);
+                section_name_expr_model.set_model(Some(model));
 
                 let filter_model = gtk::FilterListModel::new(
-                    Some(category_type_expr_model),
+                    Some(section_name_expr_model),
                     Some(self.filter.clone()),
                 );
 
@@ -135,45 +125,45 @@ mod imp {
                 obj,
                 move |model, pos, removed, added| {
                     obj.items_changed(pos, removed, added);
-                    obj.imp().set_empty(model.n_items() == 0);
+                    obj.imp().set_is_empty(model.n_items() == 0);
                 }
             ));
 
-            self.set_empty(inner_model.n_items() == 0);
+            self.set_is_empty(inner_model.n_items() == 0);
             self.inner_model.set(inner_model).unwrap();
         }
 
-        /// The inner model of this category.
+        /// The inner model of this section.
         fn inner_model(&self) -> &gio::ListModel {
             self.inner_model.get().unwrap()
         }
 
-        /// The type of this category.
-        fn category_type(&self) -> CategoryType {
-            self.filter.category_type()
+        /// Set the name of this section.
+        fn set_name(&self, name: SidebarSectionName) {
+            if let Some(room_category) = name.as_room_category() {
+                self.filter.set_room_category(room_category);
+            }
+
+            self.name.set(name);
+            self.obj().notify_name();
         }
 
-        /// Set the type of this category.
-        fn set_category_type(&self, type_: CategoryType) {
-            self.filter.set_category_type(type_);
+        /// The display name of this section.
+        fn display_name(&self) -> String {
+            self.name.get().to_string()
         }
 
-        /// Set whether this category is empty.
-        fn set_empty(&self, empty: bool) {
-            if empty == self.empty.get() {
+        /// Set whether this section is empty.
+        fn set_is_empty(&self, is_empty: bool) {
+            if is_empty == self.is_empty.get() {
                 return;
             }
 
-            self.empty.set(empty);
-            self.obj().notify_empty();
+            self.is_empty.set(is_empty);
+            self.obj().notify_is_empty();
         }
 
-        /// The display name of this category.
-        fn display_name(&self) -> String {
-            self.category_type().to_string()
-        }
-
-        /// Set whether this category is expanded.
+        /// Set whether this section is expanded.
         fn set_is_expanded(&self, expanded: bool) {
             if self.is_expanded.get() == expanded {
                 return;
@@ -183,7 +173,7 @@ mod imp {
             self.obj().notify_is_expanded();
 
             if let Some(settings) = self.session_settings() {
-                settings.set_category_expanded(self.category_type(), expanded);
+                settings.set_section_expanded(self.name.get(), expanded);
             }
         }
 
@@ -204,34 +194,31 @@ mod imp {
 }
 
 glib::wrapper! {
-    /// A list of items in the same category.
-    pub struct Category(ObjectSubclass<imp::Category>)
+    /// A list of items in the same section of the sidebar.
+    pub struct SidebarSection(ObjectSubclass<imp::SidebarSection>)
         @implements gio::ListModel;
 }
 
-impl Category {
-    /// Constructs a new `Category` with the given category type and source
-    /// model.
-    pub fn new(category_type: CategoryType, model: &impl IsA<gio::ListModel>) -> Self {
+impl SidebarSection {
+    /// Constructs a new `SidebarSection` with the given name and source model.
+    pub fn new(name: SidebarSectionName, model: &impl IsA<gio::ListModel>) -> Self {
         glib::Object::builder()
-            .property("category-type", category_type)
+            .property("name", name)
             .property("model", model)
             .build()
     }
 
-    /// Whether this category should be shown for a drag-n-drop from the given
-    /// category.
-    pub fn visible_for_category(&self, for_category: CategoryType) -> bool {
-        if !self.empty() {
+    /// Whether this section should be shown for the drag-n-drop of a room with
+    /// the given category.
+    pub fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
+        if !self.is_empty() {
             return true;
         }
 
-        let room_categories = RoomCategory::try_from(for_category)
-            .ok()
-            .zip(RoomCategory::try_from(self.category_type()).ok());
-
-        room_categories.is_some_and(|(source_category, target_category)| {
-            source_category.can_change_to(target_category)
-        })
+        source_category
+            .zip(self.name().as_room_category())
+            .is_some_and(|(source_category, target_category)| {
+                source_category.can_change_to(target_category)
+            })
     }
 }

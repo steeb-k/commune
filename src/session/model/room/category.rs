@@ -3,7 +3,7 @@ use std::fmt;
 use gtk::glib;
 use matrix_sdk::RoomState;
 
-use crate::session::model::CategoryType;
+use crate::session::model::SidebarSectionName;
 
 /// The category of a room.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
@@ -73,35 +73,10 @@ impl RoomCategory {
 
 impl fmt::Display for RoomCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        CategoryType::from(self).fmt(f)
-    }
-}
+        let Some(section_name) = SidebarSectionName::from_room_category(*self) else {
+            unimplemented!();
+        };
 
-impl TryFrom<CategoryType> for RoomCategory {
-    type Error = &'static str;
-
-    fn try_from(category_type: CategoryType) -> Result<Self, Self::Error> {
-        Self::try_from(&category_type)
-    }
-}
-
-impl TryFrom<&CategoryType> for RoomCategory {
-    type Error = &'static str;
-
-    fn try_from(category_type: &CategoryType) -> Result<Self, Self::Error> {
-        match category_type {
-            CategoryType::None => Err("CategoryType::None cannot be a RoomCategory"),
-            CategoryType::Invited => Ok(Self::Invited),
-            CategoryType::Favorite => Ok(Self::Favorite),
-            CategoryType::Normal => Ok(Self::Normal),
-            CategoryType::LowPriority => Ok(Self::LowPriority),
-            CategoryType::Left => Ok(Self::Left),
-            CategoryType::Outdated => Ok(Self::Outdated),
-            CategoryType::VerificationRequest => {
-                Err("CategoryType::VerificationRequest cannot be a RoomCategory")
-            }
-            CategoryType::Space => Ok(Self::Space),
-            CategoryType::Ignored => Ok(Self::Ignored),
-        }
+        section_name.fmt(f)
     }
 }

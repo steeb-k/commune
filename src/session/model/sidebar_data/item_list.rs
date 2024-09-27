@@ -2,8 +2,10 @@ use std::cell::Cell;
 
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{Category, CategoryType, SidebarIconItem, SidebarIconItemType, SidebarItem};
-use crate::session::model::{RoomList, VerificationList};
+use super::{
+    SidebarIconItem, SidebarIconItemType, SidebarItem, SidebarSection, SidebarSectionName,
+};
+use crate::session::model::{RoomCategory, RoomList, VerificationList};
 
 /// The number of top-level items in the sidebar.
 const TOP_LEVEL_ITEMS_COUNT: usize = 8;
@@ -20,16 +22,16 @@ mod imp {
         list: OnceCell<[SidebarItem; TOP_LEVEL_ITEMS_COUNT]>,
         /// The list of rooms.
         #[property(get, construct_only)]
-        pub room_list: OnceCell<RoomList>,
+        room_list: OnceCell<RoomList>,
         /// The list of verification requests.
         #[property(get, construct_only)]
-        pub verification_list: OnceCell<VerificationList>,
-        /// The `CategoryType` to show all compatible categories for.
+        verification_list: OnceCell<VerificationList>,
+        /// The room category to show all compatible sections and icon items
+        /// for.
         ///
-        /// The UI is updated to show possible actions for the list items
-        /// according to the `CategoryType`.
-        #[property(get, set = Self::set_show_all_for_category, explicit_notify, builder(CategoryType::default()))]
-        pub show_all_for_category: Cell<CategoryType>,
+        /// The UI is updated to show possible drop actions for a room with the
+        /// given category.
+        show_all_for_room_category: Cell<Option<RoomCategory>>,
     }
 
     #[glib::object_subclass]
@@ -51,22 +53,28 @@ mod imp {
             let list = self.list.get_or_init(|| {
                 [
                     SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Explore)),
-                    SidebarItem::new(Category::new(
-                        CategoryType::VerificationRequest,
+                    SidebarItem::new(SidebarSection::new(
+                        SidebarSectionName::VerificationRequest,
                         &verification_list,
                     )),
-                    SidebarItem::new(Category::new(CategoryType::Invited, &room_list)),
-                    SidebarItem::new(Category::new(CategoryType::Favorite, &room_list)),
-                    SidebarItem::new(Category::new(CategoryType::Normal, &room_list)),
-                    SidebarItem::new(Category::new(CategoryType::LowPriority, &room_list)),
-                    SidebarItem::new(Category::new(CategoryType::Left, &room_list)),
+                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Invited, &room_list)),
+                    SidebarItem::new(SidebarSection::new(
+                        SidebarSectionName::Favorite,
+                        &room_list,
+                    )),
+                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Normal, &room_list)),
+                    SidebarItem::new(SidebarSection::new(
+                        SidebarSectionName::LowPriority,
+                        &room_list,
+                    )),
+                    SidebarItem::new(SidebarSection::new(SidebarSectionName::Left, &room_list)),
                     SidebarItem::new(SidebarIconItem::new(SidebarIconItemType::Forget)),
                 ]
             });
 
             for item in list {
-                if let Some(category) = item.inner_item().downcast_ref::<Category>() {
-                    category.connect_empty_notify(clone!(
+                if let Some(section) = item.inner_item().downcast_ref::<SidebarSection>() {
+                    section.connect_is_empty_notify(clone!(
                         #[weak(rename_to = imp)]
                         self,
                         #[weak]
@@ -101,28 +109,27 @@ mod imp {
             self.list.get().unwrap()
         }
 
-        /// Set the `CategoryType` to show all compatible categories for.
-        fn set_show_all_for_category(&self, category: CategoryType) {
-            if category == self.show_all_for_category.get() {
+        /// Set the room category to show all compatible sections and icon items
+        /// for.
+        pub(super) fn set_show_all_for_room_category(&self, category: Option<RoomCategory>) {
+            if self.show_all_for_room_category.get() == category {
                 return;
             }
 
-            self.show_all_for_category.set(category);
+            self.show_all_for_room_category.set(category);
             for item in self.list() {
                 self.update_item_visibility(item);
             }
-
-            self.obj().notify_show_all_for_category();
         }
 
         /// Update the visibility of the given item.
         fn update_item_visibility(&self, item: &SidebarItem) {
-            item.update_visibility_for_category(self.show_all_for_category.get());
+            item.update_visibility_for_room_category(self.show_all_for_room_category.get());
         }
 
-        /// Set whether to inhibit the expanded state of the categories.
+        /// Set whether to inhibit the expanded state of the sections.
         ///
-        /// It means that all the categories will be expanded regardless of
+        /// It means that all the sections will be expanded regardless of
         /// their "is-expanded" property.
         pub(super) fn inhibit_expanded(&self, inhibit: bool) {
             for item in self.list() {
@@ -151,26 +158,35 @@ impl SidebarItemList {
             .build()
     }
 
-    /// Set whether to inhibit the expanded state of the categories.
+    /// Set the room category to show all compatible sections and icon items
+    /// for.
+    pub fn set_show_all_for_room_category(&self, category: Option<RoomCategory>) {
+        self.imp().set_show_all_for_room_category(category);
+    }
+
+    /// Set whether to inhibit the expanded state of the sections.
     ///
-    /// It means that all the categories will be expanded regardless of their
+    /// It means that all the sections will be expanded regardless of their
     /// "is-expanded" property.
     pub fn inhibit_expanded(&self, inhibit: bool) {
         self.imp().inhibit_expanded(inhibit);
     }
 
-    /// Returns the `Category` object representing the item that a user can
-    /// toggle to show or hide the given room `CategoryType`
-    pub fn category_from_type(&self, category_type: CategoryType) -> Option<Category> {
-        let list = self.imp().list();
-        match category_type {
-            CategoryType::VerificationRequest => list[1].inner_item().downcast().ok(),
-            CategoryType::Invited => list[2].inner_item().downcast().ok(),
-            CategoryType::Favorite => list[3].inner_item().downcast().ok(),
-            CategoryType::Normal => list[4].inner_item().downcast().ok(),
-            CategoryType::LowPriority => list[5].inner_item().downcast().ok(),
-            CategoryType::Left => list[6].inner_item().downcast().ok(),
-            _ => None,
-        }
+    /// Returns the [`SidebarSection`] for the given room category.
+    pub fn section_from_room_category(&self, category: RoomCategory) -> Option<SidebarSection> {
+        let index = match category {
+            RoomCategory::Invited => 2,
+            RoomCategory::Favorite => 3,
+            RoomCategory::Normal => 4,
+            RoomCategory::LowPriority => 5,
+            RoomCategory::Left => 6,
+            _ => return None,
+        };
+
+        self.imp()
+            .list()
+            .get(index)
+            .map(|item| item.inner_item())
+            .and_downcast()
     }
 }

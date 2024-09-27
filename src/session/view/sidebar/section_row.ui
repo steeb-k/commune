@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-  <template class="SidebarCategoryRow" parent="AdwBin">
+  <template class="SidebarSectionRow" parent="AdwBin">
     <child>
       <object class="GtkBox">
         <property name="spacing">12</property>
@@ -9,7 +9,7 @@
             <property name="halign">start</property>
             <property name="hexpand">True</property>
             <property name="ellipsize">end</property>
-            <property name="label" bind-source="SidebarCategoryRow" bind-property="label" bind-flags="sync-create"/>
+            <property name="label" bind-source="SidebarSectionRow" bind-property="label" bind-flags="sync-create"/>
             <style>
               <class name="dim-label"/>
             </style>

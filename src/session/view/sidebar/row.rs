@@ -4,14 +4,14 @@ use gtk::{accessible::Relation, gdk, gio, glib, glib::clone};
 use ruma::api::client::receipt::create_receipt::v3::ReceiptType;
 use tracing::error;
 
-use super::{CategoryRow, IconItemRow, RoomRow, Sidebar, VerificationRow};
+use super::{IconItemRow, RoomRow, Sidebar, SidebarSectionRow, VerificationRow};
 use crate::{
     components::{
         confirm_leave_room_dialog, ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl,
     },
     session::model::{
-        Category, CategoryType, IdentityVerification, ReceiptPosition, Room, RoomCategory,
-        SidebarIconItem, SidebarIconItemType, User,
+        IdentityVerification, ReceiptPosition, Room, RoomCategory, SidebarIconItem,
+        SidebarIconItemType, SidebarSection, User,
     },
     spawn, spawn_tokio, toast,
     utils::BoundObjectWeakRef,
@@ -27,10 +27,10 @@ mod imp {
     pub struct Row {
         /// The ancestor sidebar of this row.
         #[property(get, set = Self::set_sidebar, construct_only)]
-        pub sidebar: BoundObjectWeakRef<Sidebar>,
+        sidebar: BoundObjectWeakRef<Sidebar>,
         /// The item of this row.
         #[property(get, set = Self::set_item, explicit_notify, nullable)]
-        pub item: RefCell<Option<glib::Object>>,
+        item: RefCell<Option<glib::Object>>,
         room_handler: RefCell<Option<glib::SignalHandlerId>>,
         room_join_rule_handler: RefCell<Option<glib::SignalHandlerId>>,
         room_is_read_handler: RefCell<Option<glib::SignalHandlerId>>,
@@ -114,30 +114,31 @@ mod imp {
 
     impl Row {
         /// Set the ancestor sidebar of this row.
-        fn set_sidebar(&self, sidebar: Sidebar) {
-            let obj = self.obj();
-
-            let drop_source_type_handler =
-                sidebar.connect_drop_source_category_type_notify(clone!(
-                    #[weak]
-                    obj,
+        fn set_sidebar(&self, sidebar: &Sidebar) {
+            let drop_source_category_handler =
+                sidebar.connect_drop_source_category_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_for_drop_source_type();
+                        imp.update_for_drop_source_category();
                     }
                 ));
 
-            let drop_active_target_type_handler = sidebar
-                .connect_drop_active_target_category_type_notify(clone!(
-                    #[weak]
-                    obj,
+            let drop_active_target_category_handler = sidebar
+                .connect_drop_active_target_category_changed(clone!(
+                    #[weak(rename_to = imp)]
+                    self,
                     move |_| {
-                        obj.update_for_drop_active_target_type();
+                        imp.update_for_drop_active_target_category();
                     }
                 ));
 
             self.sidebar.set(
-                &sidebar,
-                vec![drop_source_type_handler, drop_active_target_type_handler],
+                sidebar,
+                vec![
+                    drop_source_category_handler,
+                    drop_active_target_category_handler,
+                ],
             );
         }
 
@@ -165,16 +166,17 @@ mod imp {
             self.update_context_menu();
 
             if let Some(item) = item {
-                if let Some(category) = item.downcast_ref::<Category>() {
-                    let child = if let Some(child) = obj.child().and_downcast::<CategoryRow>() {
+                if let Some(section) = item.downcast_ref::<SidebarSection>() {
+                    let child = if let Some(child) = obj.child().and_downcast::<SidebarSectionRow>()
+                    {
                         child
                     } else {
-                        let child = CategoryRow::new();
+                        let child = SidebarSectionRow::new();
                         obj.set_child(Some(&child));
                         obj.update_relation(&[Relation::LabelledBy(&[child.labelled_by()])]);
                         child
                     };
-                    child.set_category(Some(category.clone()));
+                    child.set_section(Some(section.clone()));
                 } else if let Some(room) = item.downcast_ref::<Room>() {
                     let child = if let Some(child) = obj.child().and_downcast::<RoomRow>() {
                         child
@@ -238,7 +240,7 @@ mod imp {
                     panic!("Wrong row item: {item:?}");
                 }
 
-                obj.update_for_drop_source_type();
+                self.update_for_drop_source_category();
             }
 
             self.update_context_menu();
@@ -248,6 +250,31 @@ mod imp {
         /// Get the `Room` of this item, if this is a room row.
         pub(super) fn room(&self) -> Option<Room> {
             self.item.borrow().clone().and_downcast()
+        }
+
+        /// Get the `RoomCategory` of this row, if any.
+        ///
+        /// If this does not display a room or a section containing rooms,
+        /// returns `None`.
+        pub(super) fn room_category(&self) -> Option<RoomCategory> {
+            let borrowed_item = self.item.borrow();
+            let item = borrowed_item.as_ref()?;
+
+            if let Some(room) = item.downcast_ref::<Room>() {
+                Some(room.category())
+            } else {
+                item.downcast_ref::<SidebarSection>()
+                    .and_then(|section| section.name().as_room_category())
+            }
+        }
+
+        /// Get the [`SidebarIconItemType`] of the icon item displayed by this
+        /// row, if any.
+        pub(super) fn item_type(&self) -> Option<SidebarIconItemType> {
+            let borrowed_item = self.item.borrow();
+            let item = borrowed_item.as_ref()?;
+            item.downcast_ref::<SidebarIconItem>()
+                .map(|i| i.item_type())
         }
 
         /// Whether this has a room context menu.
@@ -481,6 +508,73 @@ mod imp {
 
             Some(action_group)
         }
+
+        /// Update the disabled or empty state of this drop target.
+        fn update_for_drop_source_category(&self) {
+            let obj = self.obj();
+            let source_category = self.sidebar.obj().and_then(|s| s.drop_source_category());
+
+            if let Some(source_category) = source_category {
+                if self
+                    .room_category()
+                    .is_some_and(|row_category| source_category.can_change_to(row_category))
+                {
+                    obj.remove_css_class("drop-disabled");
+
+                    if self
+                        .item
+                        .borrow()
+                        .as_ref()
+                        .and_then(|o| o.downcast_ref::<SidebarSection>())
+                        .is_some_and(|section| section.is_empty())
+                    {
+                        obj.add_css_class("drop-empty");
+                    } else {
+                        obj.remove_css_class("drop-empty");
+                    }
+                } else {
+                    let is_forget_item = self
+                        .item_type()
+                        .is_some_and(|item_type| item_type == SidebarIconItemType::Forget);
+                    if is_forget_item && source_category == RoomCategory::Left {
+                        obj.remove_css_class("drop-disabled");
+                    } else {
+                        obj.add_css_class("drop-disabled");
+                        obj.remove_css_class("drop-empty");
+                    }
+                }
+            } else {
+                // Clear style
+                obj.remove_css_class("drop-disabled");
+                obj.remove_css_class("drop-empty");
+                obj.remove_css_class("drop-active");
+            };
+
+            if let Some(section_row) = obj.child().and_downcast::<SidebarSectionRow>() {
+                section_row.set_show_label_for_room_category(source_category);
+            }
+        }
+
+        /// Update the active state of this drop target.
+        fn update_for_drop_active_target_category(&self) {
+            let obj = self.obj();
+
+            let Some(room_category) = self.room_category() else {
+                obj.remove_css_class("drop-active");
+                return;
+            };
+
+            let target_category = self
+                .sidebar
+                .obj()
+                .and_then(|s| s.drop_active_target_category());
+
+            if target_category.is_some_and(|target_category| target_category == room_category) {
+                obj.add_css_class("drop-active");
+            } else {
+                obj.remove_css_class("drop-active");
+            }
+        }
     }
 }
 
@@ -495,32 +589,23 @@ impl Row {
         glib::Object::builder().property("sidebar", sidebar).build()
     }
 
-    /// Get the `Room` of this item, if this is a room row.
+    /// Get the `Room` displayed by this row, if any.
     pub fn room(&self) -> Option<Room> {
         self.imp().room()
     }
 
-    /// Get the `RoomCategory` of this item.
+    /// Get the `RoomCategory` of this row, if any.
     ///
-    /// If this is not a `Category` containing rooms or a room, returns `None`.
+    /// If this does not display a room or a section containing rooms, returns
+    /// `None`.
     pub fn room_category(&self) -> Option<RoomCategory> {
-        let item = self.item()?;
-
-        if let Some(room) = item.downcast_ref::<Room>() {
-            Some(room.category())
-        } else {
-            item.downcast_ref::<Category>()
-                .and_then(|category| RoomCategory::try_from(category.category_type()).ok())
-        }
+        self.imp().room_category()
     }
 
-    /// Get the [`SidebarIconItemType`] of this item.
-    ///
-    /// If this is not a [`SidebarIconItem`], returns `None`.
+    /// Get the [`SidebarIconItemType`] of the icon item displayed by this row,
+    /// if any.
     pub fn item_type(&self) -> Option<SidebarIconItemType> {
-        self.item()
-            .and_downcast_ref::<SidebarIconItem>()
-            .map(|i| i.item_type())
+        self.imp().item_type()
     }
 
     /// Handle the drag-n-drop hovering this row.
@@ -657,65 +742,6 @@ impl Row {
                 // variable name.
                 toast!(self, gettext("Could not unmark {room} as direct chat"), @room,);
             }
-        }
-    }
-
-    /// Update the disabled or empty state of this drop target.
-    fn update_for_drop_source_type(&self) {
-        let source_type = self.sidebar().and_then(|s| s.drop_source_category());
-
-        if let Some(source_type) = source_type {
-            if self
-                .room_category()
-                .is_some_and(|row_type| source_type.can_change_to(row_type))
-            {
-                self.remove_css_class("drop-disabled");
-
-                if self
-                    .item()
-                    .and_downcast::<Category>()
-                    .is_some_and(|category| category.empty())
-                {
-                    self.add_css_class("drop-empty");
-                } else {
-                    self.remove_css_class("drop-empty");
-                }
-            } else {
-                let is_forget_item = self
-                    .item_type()
-                    .is_some_and(|item_type| item_type == SidebarIconItemType::Forget);
-                if is_forget_item && source_type == RoomCategory::Left {
-                    self.remove_css_class("drop-disabled");
-                } else {
-                    self.add_css_class("drop-disabled");
-                    self.remove_css_class("drop-empty");
-                }
-            }
-        } else {
-            // Clear style
-            self.remove_css_class("drop-disabled");
-            self.remove_css_class("drop-empty");
-            self.remove_css_class("drop-active");
-        };
-
-        if let Some(category_row) = self.child().and_downcast::<CategoryRow>() {
-            category_row.set_show_label_for_category(
-                source_type.map(CategoryType::from).unwrap_or_default(),
-            );
-        }
-    }
-
-    /// Update the active state of this drop target.
-    fn update_for_drop_active_target_type(&self) {
-        let Some(room_category) = self.room_category() else {
-            return;
-        };
-        let target_category = self.sidebar().and_then(|s| s.drop_active_target_category());
-
-        if target_category.is_some_and(|target_category| target_category == room_category) {
-            self.add_css_class("drop-active");
-        } else {
-            self.remove_css_class("drop-active");
         }
     }
 }

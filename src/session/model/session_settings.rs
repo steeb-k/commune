@@ -1,7 +1,9 @@
+use std::collections::BTreeSet;
+
 use gtk::{glib, prelude::*, subclass::prelude::*};
 use serde::{Deserialize, Serialize};
 
-use super::CategoryType;
+use super::SidebarSectionName;
 use crate::Application;
 
 #[derive(Debug, Clone, Serialize, Deserialize, glib::Boxed)]
@@ -32,9 +34,9 @@ pub struct StoredSessionSettings {
     )]
     typing_enabled: bool,
 
-    /// Which categories are expanded.
+    /// The sections that are expanded.
     #[serde(default)]
-    categories_expanded: CategoriesExpanded,
+    sections_expanded: SectionsExpanded,
 }
 
 impl Default for StoredSessionSettings {
@@ -44,7 +46,7 @@ impl Default for StoredSessionSettings {
             notifications_enabled: true,
             public_read_receipts_enabled: true,
             typing_enabled: true,
-            categories_expanded: Default::default(),
+            sections_expanded: Default::default(),
         }
     }
 }
@@ -200,76 +202,54 @@ impl SessionSettings {
         self.save();
     }
 
-    /// Whether the given category is expanded.
-    pub fn is_category_expanded(&self, category: CategoryType) -> bool {
+    /// Whether the section with the given name is expanded.
+    pub fn is_section_expanded(&self, section_name: SidebarSectionName) -> bool {
         self.imp()
             .stored_settings
             .borrow()
-            .categories_expanded
-            .is_category_expanded(category)
+            .sections_expanded
+            .is_section_expanded(section_name)
     }
 
-    /// Set whether the given category is expanded.
-    pub fn set_category_expanded(&self, category: CategoryType, expanded: bool) {
+    /// Set whether the section with the given name is expanded.
+    pub fn set_section_expanded(&self, section_name: SidebarSectionName, expanded: bool) {
         self.imp()
             .stored_settings
             .borrow_mut()
-            .categories_expanded
-            .set_category_expanded(category, expanded);
+            .sections_expanded
+            .set_section_expanded(section_name, expanded);
         self.save();
     }
 }
 
-/// Whether the categories are expanded.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-pub struct CategoriesExpanded {
-    verification_request: bool,
-    invited: bool,
-    favorite: bool,
-    normal: bool,
-    low_priority: bool,
-    left: bool,
-}
+/// The sections that are expanded.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct SectionsExpanded(BTreeSet<SidebarSectionName>);
 
-impl CategoriesExpanded {
-    /// Whether the given category is expanded.
-    pub fn is_category_expanded(&self, category: CategoryType) -> bool {
-        match category {
-            CategoryType::VerificationRequest => self.verification_request,
-            CategoryType::Invited => self.invited,
-            CategoryType::Favorite => self.favorite,
-            CategoryType::Normal => self.normal,
-            CategoryType::LowPriority => self.low_priority,
-            CategoryType::Left => self.left,
-            _ => false,
+impl SectionsExpanded {
+    /// Whether the section with the given name is expanded.
+    pub fn is_section_expanded(&self, section_name: SidebarSectionName) -> bool {
+        self.0.contains(&section_name)
+    }
+
+    /// Set whether the section with the given name is expanded.
+    pub fn set_section_expanded(&mut self, section_name: SidebarSectionName, expanded: bool) {
+        if expanded {
+            self.0.insert(section_name);
+        } else {
+            self.0.remove(&section_name);
         }
     }
-
-    /// Set whether the given category is expanded.
-    pub fn set_category_expanded(&mut self, category: CategoryType, expanded: bool) {
-        let field = match category {
-            CategoryType::VerificationRequest => &mut self.verification_request,
-            CategoryType::Invited => &mut self.invited,
-            CategoryType::Favorite => &mut self.favorite,
-            CategoryType::Normal => &mut self.normal,
-            CategoryType::LowPriority => &mut self.low_priority,
-            CategoryType::Left => &mut self.left,
-            _ => return,
-        };
-
-        *field = expanded;
-    }
 }
 
-impl Default for CategoriesExpanded {
+impl Default for SectionsExpanded {
     fn default() -> Self {
-        Self {
-            verification_request: true,
-            invited: true,
-            favorite: true,
-            normal: true,
-            low_priority: true,
-            left: false,
-        }
+        Self(BTreeSet::from([
+            SidebarSectionName::VerificationRequest,
+            SidebarSectionName::Invited,
+            SidebarSectionName::Favorite,
+            SidebarSectionName::Normal,
+            SidebarSectionName::LowPriority,
+        ]))
     }
 }

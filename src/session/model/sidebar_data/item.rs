@@ -1,7 +1,10 @@
 use gtk::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
-use super::{Category, CategoryType, SidebarIconItem};
-use crate::utils::{BoundConstructOnlyObject, SingleItemListModel};
+use super::{SidebarIconItem, SidebarSection};
+use crate::{
+    session::model::RoomCategory,
+    utils::{BoundConstructOnlyObject, SingleItemListModel},
+};
 
 mod imp {
     use std::cell::{Cell, OnceCell};
@@ -19,7 +22,7 @@ mod imp {
         pub is_visible: Cell<bool>,
         /// Whether to inhibit the expanded state.
         ///
-        /// It means that all the categories will be expanded regardless of
+        /// It means that all the sections will be expanded regardless of
         /// their "is-expanded" property.
         #[property(get, set = Self::set_inhibit_expanded, explicit_notify)]
         pub inhibit_expanded: Cell<bool>,
@@ -71,26 +74,26 @@ mod imp {
         fn set_inner_item(&self, item: glib::Object) {
             let mut handlers = Vec::new();
 
-            let inner_model = if let Some(category) = item.downcast_ref::<Category>() {
-                // Create a list model to have an item for the category itself.
-                let category_model = SingleItemListModel::new(category);
+            let inner_model = if let Some(section) = item.downcast_ref::<SidebarSection>() {
+                // Create a list model to have an item for the section itself.
+                let section_model = SingleItemListModel::new(section);
 
-                // Filter the children depending on whether the category is expanded or not.
+                // Filter the children depending on whether the section is expanded or not.
                 self.is_expanded_filter.set_filter_func(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     #[weak]
-                    category,
+                    section,
                     #[upgrade_or]
                     false,
-                    move |_| imp.inhibit_expanded.get() || category.is_expanded()
+                    move |_| imp.inhibit_expanded.get() || section.is_expanded()
                 ));
                 let children_model = gtk::FilterListModel::new(
-                    Some(category.clone()),
+                    Some(section.clone()),
                     Some(self.is_expanded_filter.clone()),
                 );
 
-                let is_expanded_handler = category.connect_is_expanded_notify(clone!(
+                let is_expanded_handler = section.connect_is_expanded_notify(clone!(
                     #[weak(rename_to = imp)]
                     self,
                     move |_| {
@@ -101,7 +104,7 @@ mod imp {
 
                 // Merge the models for the category and its children.
                 let wrapper_model = gio::ListStore::new::<glib::Object>();
-                wrapper_model.append(&category_model);
+                wrapper_model.append(&section_model);
                 wrapper_model.append(&children_model);
 
                 gtk::FlattenListModel::new(Some(wrapper_model)).upcast::<gio::ListModel>()
@@ -178,14 +181,14 @@ impl SidebarItem {
             .build()
     }
 
-    /// Update the visibility of this item for a drag-n-drop from the given
-    /// category.
-    pub fn update_visibility_for_category(&self, category_type: CategoryType) {
+    /// Update the visibility of this item for the drag-n-drop of a room with
+    /// the given category.
+    pub fn update_visibility_for_room_category(&self, source_category: Option<RoomCategory>) {
         let inner_item = self.inner_item();
-        let visible = if let Some(category) = inner_item.downcast_ref::<Category>() {
-            category.visible_for_category(category_type)
+        let visible = if let Some(section) = inner_item.downcast_ref::<SidebarSection>() {
+            section.visible_for_room_category(source_category)
         } else if let Some(icon_item) = inner_item.downcast_ref::<SidebarIconItem>() {
-            icon_item.visible_for_category(category_type)
+            icon_item.visible_for_room_category(source_category)
         } else {
             true
         };

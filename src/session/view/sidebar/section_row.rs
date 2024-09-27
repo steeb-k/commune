@@ -1,0 +1,213 @@
+use adw::subclass::prelude::BinImpl;
+use gettextrs::gettext;
+use gtk::{glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+
+use crate::session::model::{RoomCategory, SidebarSection, SidebarSectionName};
+
+mod imp {
+    use std::{
+        cell::{Cell, RefCell},
+        marker::PhantomData,
+    };
+
+    use glib::subclass::InitializingObject;
+
+    use super::*;
+
+    #[derive(Debug, Default, CompositeTemplate, glib::Properties)]
+    #[template(resource = "/org/gnome/Fractal/ui/session/view/sidebar/section_row.ui")]
+    #[properties(wrapper_type = super::SidebarSectionRow)]
+    pub struct SidebarSectionRow {
+        /// The section of this row.
+        #[property(get, set = Self::set_section, explicit_notify, nullable)]
+        section: RefCell<Option<SidebarSection>>,
+        section_binding: RefCell<Option<glib::Binding>>,
+        /// Whether this row is expanded.
+        #[property(get, set = Self::set_is_expanded, explicit_notify, construct, default = true)]
+        is_expanded: Cell<bool>,
+        /// The label to show for this row.
+        #[property(get = Self::label)]
+        label: PhantomData<Option<String>>,
+        /// The room category to show a label for during a drag-and-drop
+        /// operation.
+        ///
+        /// This will change the label according to the action that can be
+        /// performed when dropping a room with the given category.
+        show_label_for_room_category: Cell<Option<RoomCategory>>,
+        /// The label showing the category name.
+        #[template_child]
+        pub(super) display_name: TemplateChild<gtk::Label>,
+    }
+
+    #[glib::object_subclass]
+    impl ObjectSubclass for SidebarSectionRow {
+        const NAME: &'static str = "SidebarSectionRow";
+        type Type = super::SidebarSectionRow;
+        type ParentType = adw::Bin;
+
+        fn class_init(klass: &mut Self::Class) {
+            Self::bind_template(klass);
+            klass.set_css_name("sidebar-section");
+        }
+
+        fn instance_init(obj: &InitializingObject<Self>) {
+            obj.init_template();
+        }
+    }
+
+    #[glib::derived_properties]
+    impl ObjectImpl for SidebarSectionRow {
+        fn constructed(&self) {
+            self.parent_constructed();
+
+            self.obj().connect_parent_notify(|obj| {
+                obj.set_expanded_accessibility_state(obj.is_expanded());
+            });
+        }
+
+        fn dispose(&self) {
+            if let Some(binding) = self.section_binding.take() {
+                binding.unbind();
+            }
+        }
+    }
+
+    impl WidgetImpl for SidebarSectionRow {}
+    impl BinImpl for SidebarSectionRow {}
+
+    impl SidebarSectionRow {
+        /// Set the section represented by this row.
+        fn set_section(&self, section: Option<SidebarSection>) {
+            if *self.section.borrow() == section {
+                return;
+            }
+
+            if let Some(binding) = self.section_binding.take() {
+                binding.unbind();
+            }
+            let obj = self.obj();
+
+            if let Some(section) = &section {
+                let section_binding = section
+                    .bind_property("is-expanded", &*obj, "is-expanded")
+                    .sync_create()
+                    .build();
+                self.section_binding.replace(Some(section_binding));
+            }
+
+            self.section.replace(section);
+
+            obj.notify_section();
+            obj.notify_label();
+        }
+
+        /// The label to show for this row.
+        fn label(&self) -> Option<String> {
+            let target_section_name = self.section.borrow().as_ref()?.name();
+            let source_room_category = self.show_label_for_room_category.get();
+
+            let label = match source_room_category {
+                Some(RoomCategory::Invited) => match target_section_name {
+                    // Translators: This is an action to join a room and put it in the "Favorites"
+                    // section.
+                    SidebarSectionName::Favorite => gettext("Join Room as Favorite"),
+                    SidebarSectionName::Normal => gettext("Join Room"),
+                    // Translators: This is an action to join a room and put it in the "Low
+                    // Priority" section.
+                    SidebarSectionName::LowPriority => gettext("Join Room as Low Priority"),
+                    SidebarSectionName::Left => gettext("Reject Invite"),
+                    _ => target_section_name.to_string(),
+                },
+                Some(RoomCategory::Favorite) => match target_section_name {
+                    SidebarSectionName::Normal => gettext("Move to Rooms"),
+                    SidebarSectionName::LowPriority => gettext("Move to Low Priority"),
+                    SidebarSectionName::Left => gettext("Leave Room"),
+                    _ => target_section_name.to_string(),
+                },
+                Some(RoomCategory::Normal) => match target_section_name {
+                    SidebarSectionName::Favorite => gettext("Move to Favorites"),
+                    SidebarSectionName::LowPriority => gettext("Move to Low Priority"),
+                    SidebarSectionName::Left => gettext("Leave Room"),
+                    _ => target_section_name.to_string(),
+                },
+                Some(RoomCategory::LowPriority) => match target_section_name {
+                    SidebarSectionName::Favorite => gettext("Move to Favorites"),
+                    SidebarSectionName::Normal => gettext("Move to Rooms"),
+                    SidebarSectionName::Left => gettext("Leave Room"),
+                    _ => target_section_name.to_string(),
+                },
+                Some(RoomCategory::Left) => match target_section_name {
+                    // Translators: This is an action to rejoin a room and put it in the "Favorites"
+                    // section.
+                    SidebarSectionName::Favorite => gettext("Rejoin Room as Favorite"),
+                    SidebarSectionName::Normal => gettext("Rejoin Room"),
+                    // Translators: This is an action to rejoin a room and put it in the "Low
+                    // Priority" section.
+                    SidebarSectionName::LowPriority => gettext("Rejoin Room as Low Priority"),
+                    _ => target_section_name.to_string(),
+                },
+                _ => target_section_name.to_string(),
+            };
+
+            Some(label)
+        }
+
+        /// Set whether this row is expanded.
+        fn set_is_expanded(&self, is_expanded: bool) {
+            if self.is_expanded.get() == is_expanded {
+                return;
+            }
+            let obj = self.obj();
+
+            if is_expanded {
+                obj.set_state_flags(gtk::StateFlags::CHECKED, false);
+            } else {
+                obj.unset_state_flags(gtk::StateFlags::CHECKED);
+            }
+
+            self.is_expanded.set(is_expanded);
+            obj.set_expanded_accessibility_state(is_expanded);
+            obj.notify_is_expanded();
+        }
+
+        /// Set the room category to show the label for.
+        pub(super) fn set_show_label_for_room_category(&self, category: Option<RoomCategory>) {
+            if self.show_label_for_room_category.get() == category {
+                return;
+            }
+
+            self.show_label_for_room_category.set(category);
+
+            self.obj().notify_label();
+        }
+    }
+}
+
+glib::wrapper! {
+    /// A sidebar row representing a category.
+    pub struct SidebarSectionRow(ObjectSubclass<imp::SidebarSectionRow>)
+        @extends gtk::Widget, adw::Bin, @implements gtk::Accessible;
+}
+
+impl SidebarSectionRow {
+    pub fn new() -> Self {
+        glib::Object::new()
+    }
+
+    /// Set the room category to show the label for.
+    pub fn set_show_label_for_room_category(&self, category: Option<RoomCategory>) {
+        self.imp().set_show_label_for_room_category(category);
+    }
+
+    /// Set the expanded state of this row for a11y.
+    fn set_expanded_accessibility_state(&self, is_expanded: bool) {
+        if let Some(row) = self.parent() {
+            row.update_state(&[gtk::accessible::State::Expanded(Some(is_expanded))]);
+        }
+    }
+
+    /// The descendant that labels this row for a11y.
+    pub fn labelled_by(&self) -> &gtk::Accessible {
+        self.imp().display_name.upcast_ref()
+    }
+}

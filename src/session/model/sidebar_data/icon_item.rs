@@ -3,14 +3,16 @@ use std::fmt;
 use gettextrs::gettext;
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
-use super::CategoryType;
+use crate::session::model::RoomCategory;
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(u32)]
 #[enum_type(name = "SidebarIconItemType")]
 pub enum SidebarIconItemType {
+    /// The explore view.
     #[default]
     Explore = 0,
+    /// An action to forget a room.
     Forget = 1,
 }
 
@@ -88,12 +90,12 @@ impl SidebarIconItem {
             .build()
     }
 
-    /// Whether this item should be shown for a drag-n-drop from the given
-    /// category.
-    pub fn visible_for_category(&self, for_category: CategoryType) -> bool {
+    /// Whether this item should be shown for the drag-n-drop of a room with the
+    /// given category.
+    pub fn visible_for_room_category(&self, source_category: Option<RoomCategory>) -> bool {
         match self.item_type() {
             SidebarIconItemType::Explore => true,
-            SidebarIconItemType::Forget => for_category == CategoryType::Left,
+            SidebarIconItemType::Forget => source_category == Some(RoomCategory::Left),
         }
     }
 }

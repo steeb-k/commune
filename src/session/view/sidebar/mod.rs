@@ -2,19 +2,19 @@ use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
 use gtk::{
     gio,
-    glib::{self, clone},
+    glib::{self, clone, closure_local},
     CompositeTemplate, ListScrollFlags,
 };
 use tracing::error;
 
-mod category_row;
 mod icon_item_row;
 mod room_row;
 mod row;
+mod section_row;
 mod verification_row;
 
 use self::{
-    category_row::CategoryRow, icon_item_row::IconItemRow, room_row::RoomRow, row::Row,
+    icon_item_row::IconItemRow, room_row::RoomRow, row::Row, section_row::SidebarSectionRow,
     verification_row::VerificationRow,
 };
 use super::{account_settings::AccountSettingsSubpage, AccountSettings};
@@ -22,19 +22,17 @@ use crate::{
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
     session::model::{
-        Category, CategoryType, CryptoIdentityState, RecoveryState, RoomCategory, Selection,
-        SessionVerificationState, SidebarListModel, User,
+        CryptoIdentityState, RecoveryState, RoomCategory, Selection, SessionVerificationState,
+        SidebarListModel, SidebarSection, User,
     },
     utils::expression,
 };
 
 mod imp {
-    use std::{
-        cell::{Cell, OnceCell, RefCell},
-        marker::PhantomData,
-    };
+    use std::cell::{Cell, OnceCell, RefCell};
 
-    use glib::subclass::InitializingObject;
+    use glib::subclass::{InitializingObject, Signal};
+    use once_cell::sync::Lazy;
 
     use super::*;
 
@@ -62,18 +60,11 @@ mod imp {
         pub user: RefCell<Option<User>>,
         /// The category of the source that activated drop mode.
         pub drop_source_category: Cell<Option<RoomCategory>>,
-        /// The `CategoryType` of the source that activated drop mode.
-        #[property(get = Self::drop_source_category_type, builder(CategoryType::default()))]
-        pub drop_source_category_type: PhantomData<CategoryType>,
         /// The category of the drop target that is currently hovered.
         pub drop_active_target_category: Cell<Option<RoomCategory>>,
-        /// The `CategoryType` of the drop target that is currently hovered.
-        #[property(get = Self::drop_active_target_category_type, builder(CategoryType::default()))]
-        pub drop_active_target_category_type: PhantomData<CategoryType>,
         /// The list model of this sidebar.
         #[property(get, set = Self::set_list_model, explicit_notify, nullable)]
         pub list_model: glib::WeakRef<SidebarListModel>,
-        pub binding: RefCell<Option<glib::Binding>>,
         pub expr_watch: RefCell<Option<gtk::ExpressionWatch>>,
         session_handlers: RefCell<Vec<glib::SignalHandlerId>>,
     }
@@ -101,6 +92,16 @@ mod imp {
 
     #[glib::derived_properties]
     impl ObjectImpl for Sidebar {
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: Lazy<Vec<Signal>> = Lazy::new(|| {
+                vec![
+                    Signal::builder("drop-source-category-changed").build(),
+                    Signal::builder("drop-active-target-category-changed").build(),
+                ]
+            });
+            SIGNALS.as_ref()
+        }
+
         fn constructed(&self) {
             self.parent_constructed();
             let obj = self.obj();
@@ -132,8 +133,8 @@ mod imp {
                     return;
                 };
 
-                if let Some(category) = item.downcast_ref::<Category>() {
-                    category.set_is_expanded(!category.is_expanded());
+                if let Some(section) = item.downcast_ref::<SidebarSection>() {
+                    section.set_is_expanded(!section.is_expanded());
                 } else {
                     model.set_selected(pos);
                 }
@@ -152,9 +153,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
             if let Some(expr_watch) = self.expr_watch.take() {
                 expr_watch.unwatch();
             }
@@ -239,24 +237,11 @@ mod imp {
             }
             let obj = self.obj();
 
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
             if let Some(expr_watch) = self.expr_watch.take() {
                 expr_watch.unwatch();
             }
 
             if let Some(list_model) = &list_model {
-                let binding = obj
-                    .bind_property(
-                        "drop-source-category-type",
-                        &list_model.item_list(),
-                        "show-all-for-category",
-                    )
-                    .sync_create()
-                    .build();
-                self.binding.replace(Some(binding));
-
                 let expr_watch = expression::normalize_string(
                     self.room_search_entry.property_expression("text"),
                 )
@@ -266,22 +251,6 @@ mod imp {
 
             self.list_model.set(list_model.as_ref());
             obj.notify_list_model();
-        }
-
-        /// The `CategoryType` of the source that activated drop mode.
-        fn drop_source_category_type(&self) -> CategoryType {
-            self.drop_source_category
-                .get()
-                .map(Into::into)
-                .unwrap_or_default()
-        }
-
-        /// The `CategoryType` of the drop target that is currently hovered.
-        fn drop_active_target_category_type(&self) -> CategoryType {
-            self.drop_active_target_category
-                .get()
-                .map(Into::into)
-                .unwrap_or_default()
         }
 
         /// Update the security banner.
@@ -404,7 +373,12 @@ impl Sidebar {
             imp.listview.remove_css_class("drop-mode");
         }
 
-        self.notify_drop_source_category_type();
+        let Some(item_list) = self.list_model().map(|model| model.item_list()) else {
+            return;
+        };
+
+        item_list.set_show_all_for_room_category(source_category);
+        self.emit_by_name::<()>("drop-source-category-changed", &[]);
     }
 
     /// The category of the drop target that is currently hovered.
@@ -419,7 +393,7 @@ impl Sidebar {
         }
 
         self.imp().drop_active_target_category.set(target_category);
-        self.notify_drop_active_target_category_type();
+        self.emit_by_name::<()>("drop-active-target-category-changed", &[]);
     }
 
     /// The shared popover for a room row in the sidebar.
@@ -455,5 +429,34 @@ impl Sidebar {
             imp.listview
                 .scroll_to(selected, ListScrollFlags::FOCUS, None);
         }
+    }
+
+    /// Connect to the signal emitted when the drop source category changed.
+    pub fn connect_drop_source_category_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "drop-source-category-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
+    }
+
+    /// Connect to the signal emitted when the drop active target category
+    /// changed.
+    pub fn connect_drop_active_target_category_changed<F: Fn(&Self) + 'static>(
+        &self,
+        f: F,
+    ) -> glib::SignalHandlerId {
+        self.connect_closure(
+            "drop-active-target-category-changed",
+            true,
+            closure_local!(move |obj: Self| {
+                f(&obj);
+            }),
+        )
     }
 }

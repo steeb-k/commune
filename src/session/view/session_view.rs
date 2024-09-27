@@ -273,22 +273,22 @@ impl SessionView {
 
         self.select_item(room.clone());
 
-        // if we selected a room, it might not currently be visible
-        // we now make it visible
-        let Some(room) = room else { return };
-
-        // ensure the category of the room is expanded
-        let category_type = room.category().into();
-        if let Some(category) = imp
-            .sidebar
-            .list_model()
-            .and_then(|list_model| list_model.item_list().category_from_type(category_type))
-        {
-            category.set_is_expanded(true);
+        // If we selected a room, make sure it is visible in the sidebar.
+        let Some(room) = room else {
+            return;
         };
 
-        // now the room should be in the sidebar, but we still need to scroll to it to
-        // make it visible
+        // First, ensure that the section containing the room is expanded.
+        if let Some(section) = imp.sidebar.list_model().and_then(|list_model| {
+            list_model
+                .item_list()
+                .section_from_room_category(room.category())
+        }) {
+            section.set_is_expanded(true);
+        };
+
+        // Now scroll to the room to make sure that it is in the viewport, and that it
+        // is focused in the list for users using keyboard navigation.
         imp.sidebar.scroll_to_selection();
     }
 

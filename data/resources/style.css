@@ -447,21 +447,21 @@ sidebar-row icon-item image {
   min-width: 24px; /* Same width as avatars, so the text is aligned */
 }
 
-sidebar-row category {
+sidebar-row sidebar-section {
   margin-top: 6px;
   font-size: 0.8em;
   font-weight: bold;
 }
 
-sidebar-row category image.arrow {
+sidebar-row sidebar-section image.arrow {
   transition: 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-sidebar-row category:not(:checked) image.arrow:dir(ltr) {
+sidebar-row sidebar-section:not(:checked) image.arrow:dir(ltr) {
   transform: rotate(-0.5turn);
 }
 
-sidebar-row category:not(:checked) image.arrow:dir(rtl) {
+sidebar-row sidebar-section:not(:checked) image.arrow:dir(rtl) {
   transform: rotate(0.5turn);
 }
 

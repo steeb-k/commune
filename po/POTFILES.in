@@ -75,7 +75,7 @@ src/session/model/room/join_rule.rs
 src/session/model/room/mod.rs
 src/session/model/room/permissions.rs
 src/session/model/room_list/mod.rs
-src/session/model/sidebar_data/category/category_type.rs
+src/session/model/sidebar_data/section/name.rs
 src/session/model/sidebar_data/icon_item.rs
 src/session/view/account_settings/general_page/change_password_subpage.rs
 src/session/view/account_settings/general_page/change_password_subpage.ui
@@ -175,11 +175,11 @@ src/session/view/media_viewer.rs
 src/session/view/media_viewer.ui
 src/session/view/room_creation.rs
 src/session/view/room_creation.ui
-src/session/view/sidebar/category_row.rs
 src/session/view/sidebar/mod.rs
 src/session/view/sidebar/mod.ui
 src/session/view/sidebar/room_row.rs
 src/session/view/sidebar/row.rs
+src/session/view/sidebar/section_row.rs
 src/session_list/mod.rs
 src/shortcuts.ui
 src/user_facing_error.rs
