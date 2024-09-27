@@ -34,8 +34,8 @@
         <attribute name="hidden-when">action-missing</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">_Reject</attribute>
-        <attribute name="action">room-row.reject-invite</attribute>
+        <attribute name="label" translatable="yes">Dec_line</attribute>
+        <attribute name="action">room-row.decline-invite</attribute>
         <attribute name="hidden-when">action-missing</attribute>
       </item>
     </section>

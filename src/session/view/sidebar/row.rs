@@ -330,7 +330,7 @@ mod imp {
                                 }
                             ))
                             .build(),
-                        gio::ActionEntry::builder("reject-invite")
+                        gio::ActionEntry::builder("decline-invite")
                             .activate(clone!(
                                 #[weak]
                                 obj,
