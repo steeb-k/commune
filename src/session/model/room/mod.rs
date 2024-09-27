@@ -1265,7 +1265,7 @@ impl Room {
         if !self.is_read() {
             if counts.highlight_count > 0 {
                 highlight = HighlightFlags::all();
-            } else if counts.notification_count > 0 {
+            } else {
                 highlight = HighlightFlags::BOLD;
             }
             imp.set_notification_count(counts.notification_count);
