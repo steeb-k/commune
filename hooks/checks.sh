@@ -294,6 +294,65 @@ run_typos() {
     fi
 }
 
+# Install machete with cargo.
+install_machete() {
+    echo -e "$Installing cargo-machete…"
+    cargo install cargo-machete
+    if ! cargo machete --version>/dev/null 2>&1; then
+        echo -e "$Could not install cargo-machete"
+        exit 2
+    fi
+}
+
+# Run machete to check for unused dependencies.
+run_machete() {
+    if ! cargo machete --version >/dev/null 2>&1; then
+        if [[ $force_install -eq 1 ]]; then
+            install_machete
+        elif [ ! -t 1 ]; then
+            echo "Could not check for unused dependencies, because cargo-machete could not be run"
+            exit 2
+        else
+            echo "cargo-machete is needed to check for unused dependencies, but it isn’t available"
+            echo ""
+            echo "y: Install cargo-machete via cargo"
+            echo "N: Don't install cargo-machete and abort checks"
+            echo ""
+            while true; do
+                echo -n "Install cargo-machete? [y/N]: "; read yn < /dev/tty
+                case $yn in
+                    [Yy]* )
+                        install_machete
+                        break
+                        ;;
+                    [Nn]* | "" )
+                        exit 2
+                        ;;
+                    * )
+                        echo $invalid
+                        ;;
+                esac
+            done
+        fi
+    fi
+
+    echo -e "$Checking for unused dependencies…"
+
+    if [[ $verbose -eq 1 ]]; then
+        echo ""
+        cargo machete --version
+        echo ""
+    fi
+
+    if ! cargo machete --with-metadata; then
+        echo -e "  Checking for unused dependencies result: $fail"
+        echo "Please fix the above issues, either by removing the dependencies, or by adding the necessary configuration option in Cargo.toml (see cargo-machete documentation)"
+        exit 1
+    else
+        echo -e "  Checking for unused dependencies result: $ok"
+    fi
+}
+
 # Check if files in POTFILES.in are correct.
 #
 # This checks, in that order:
@@ -594,6 +653,8 @@ echo ""
 run_rustfmt
 echo ""
 run_typos
+echo ""
+run_machete
 echo ""
 check_potfiles
 echo ""
