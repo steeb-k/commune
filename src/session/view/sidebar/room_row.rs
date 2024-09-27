@@ -23,7 +23,6 @@ mod imp {
         /// The room represented by this row.
         #[property(get, set = Self::set_room, explicit_notify, nullable)]
         pub room: BoundObject<Room>,
-        pub binding: RefCell<Option<glib::Binding>>,
         #[template_child]
         pub display_name_box: TemplateChild<gtk::Box>,
         #[template_child]
@@ -84,12 +83,6 @@ mod imp {
             ));
             obj.add_controller(drag);
         }
-
-        fn dispose(&self) {
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
-        }
     }
 
     impl WidgetImpl for RoomRow {}
@@ -104,23 +97,9 @@ mod imp {
             let obj = self.obj();
 
             self.room.disconnect_signals();
-            if let Some(binding) = self.binding.take() {
-                binding.unbind();
-            }
             self.display_name.remove_css_class("dim-label");
 
             if let Some(room) = room {
-                self.binding.replace(Some(
-                    room.bind_property(
-                        "notification-count",
-                        &self.notification_count.get(),
-                        "visible",
-                    )
-                    .sync_create()
-                    .transform_from(|_, count: u64| Some(count > 0))
-                    .build(),
-                ));
-
                 let highlight_handler = room.connect_highlight_notify(clone!(
                     #[weak]
                     obj,
@@ -185,6 +164,7 @@ impl RoomRow {
         glib::Object::new()
     }
 
+    /// Update how this row is highlighted according to the current state.
     fn update_highlight(&self) {
         let imp = self.imp();
         if let Some(room) = self.room() {

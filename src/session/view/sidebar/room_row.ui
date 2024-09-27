@@ -41,6 +41,11 @@
             <property name="halign">end</property>
             <property name="valign">center</property>
             <property name="yalign">1.0</property>
+            <binding name="visible">
+              <lookup name="has-notifications">
+                <lookup name="room">SidebarRoomRow</lookup>
+              </lookup>
+            </binding>
             <binding name="label">
               <lookup name="notification-count">
                 <lookup name="room">SidebarRoomRow</lookup>

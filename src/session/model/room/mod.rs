@@ -193,8 +193,11 @@ mod imp {
         #[property(get)]
         pub direct_member: RefCell<Option<Member>>,
         /// The number of unread notifications of this room.
-        #[property(get = Self::notification_count)]
-        pub notification_count: PhantomData<u64>,
+        #[property(get)]
+        pub notification_count: Cell<u64>,
+        /// whether this room has unread notifications.
+        #[property(get)]
+        pub has_notifications: Cell<bool>,
         /// The topic of this room.
         #[property(get = Self::topic)]
         pub topic: PhantomData<Option<String>>,
@@ -299,11 +302,25 @@ mod imp {
             self.obj().notify_has_avatar();
         }
 
-        /// The number of unread notifications of this room.
-        fn notification_count(&self) -> u64 {
-            self.matrix_room()
-                .unread_notification_counts()
-                .notification_count
+        /// Set the number of unread notifications of this room.
+        pub(super) fn set_notification_count(&self, count: u64) {
+            if self.notification_count.get() == count {
+                return;
+            }
+
+            self.notification_count.set(count);
+            self.set_has_notifications(count > 0);
+            self.obj().notify_notification_count();
+        }
+
+        /// Set whether this room has unread notifications.
+        fn set_has_notifications(&self, has_notifications: bool) {
+            if self.has_notifications.get() == has_notifications {
+                return;
+            }
+
+            self.has_notifications.set(has_notifications);
+            self.obj().notify_has_notifications();
         }
 
         /// The topic of this room.
@@ -1233,24 +1250,27 @@ impl Room {
     }
 
     fn update_highlight(&self) {
+        let imp = self.imp();
         let mut highlight = HighlightFlags::empty();
 
         if matches!(self.category(), RoomType::Left) {
             // Consider that all left rooms are read.
             self.set_highlight(highlight);
+            imp.set_notification_count(0);
             return;
         }
 
         let counts = self.matrix_room().unread_notification_counts();
-        tracing::trace!(
-            "{}::update_highlight::unread_notifications: {counts:?}",
-            self.human_readable_id()
-        );
 
-        if counts.highlight_count > 0 {
-            highlight = HighlightFlags::all();
-        } else if counts.notification_count > 0 || !self.is_read() {
-            highlight = HighlightFlags::BOLD;
+        if !self.is_read() {
+            if counts.highlight_count > 0 {
+                highlight = HighlightFlags::all();
+            } else if counts.notification_count > 0 {
+                highlight = HighlightFlags::BOLD;
+            }
+            imp.set_notification_count(counts.notification_count);
+        } else {
+            imp.set_notification_count(0);
         }
 
         self.set_highlight(highlight);
@@ -1414,9 +1434,6 @@ impl Room {
     /// Update the room state based on the new sync response
     /// FIXME: We should use the sdk's event handler to get updates
     pub fn update_for_events(&self, batch: Vec<SyncTimelineEvent>) {
-        // FIXME: notify only when the count has changed
-        self.notify_notification_count();
-
         let events: Vec<_> = batch
             .iter()
             .flat_map(|e| e.event.deserialize().ok())
@@ -1658,12 +1675,6 @@ impl Room {
 
     /// Handle an update as a joined room.
     pub fn handle_joined_update(&self, update: JoinedRoomUpdate) {
-        tracing::trace!(
-            "{}::handle_joined_update::unread_notifications: {:?}",
-            self.human_readable_id(),
-            update.unread_notifications
-        );
-
         if update
             .account_data
             .iter()
