@@ -694,16 +694,65 @@ impl Row {
 
         let previous_category = room.category();
         if room.set_category(category).await.is_err() {
-            toast!(
-                self,
-                gettext(
-                    // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
-                    "Could not move {room} from {previous_category} to {new_category}",
-                ),
-                @room,
-                previous_category = previous_category.to_string(),
-                new_category = category.to_string(),
-            );
+            match previous_category {
+                RoomCategory::Invited => {
+                    if category == RoomCategory::Left {
+                        toast!(
+                            self,
+                            gettext(
+                                // Translators: Do NOT translate the content between '{' and '}', this
+                                // is a variable name.
+                                "Could not decline invitation for {room}. Try again later.",
+                            ),
+                            @room,
+                        );
+                    } else {
+                        toast!(
+                            self,
+                            gettext(
+                                // Translators: Do NOT translate the content between '{' and '}', this
+                                // is a variable name.
+                                "Could not accept invitation for {room}. Try again later.",
+                            ),
+                            @room,
+                        );
+                    }
+                }
+                RoomCategory::Left => {
+                    toast!(
+                        self,
+                        gettext(
+                            // Translators: Do NOT translate the content between '{' and '}', this is a
+                            // variable name.
+                            "Could not join {room}. Try again later.",
+                        ),
+                        @room,
+                    );
+                }
+                _ => {
+                    if category == RoomCategory::Left {
+                        toast!(
+                            self,
+                            gettext(
+                                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                                "Could not leave {room}",
+                            ),
+                            @room,
+                        );
+                    } else {
+                        toast!(
+                            self,
+                            gettext(
+                                // Translators: Do NOT translate the content between '{' and '}', this is a variable name.
+                                "Could not move {room} from {previous_category} to {new_category}",
+                            ),
+                            @room,
+                            previous_category = previous_category.to_string(),
+                            new_category = category.to_string(),
+                        );
+                    }
+                }
+            }
         }
 
         if let Some(inviter) = ignored_inviter {

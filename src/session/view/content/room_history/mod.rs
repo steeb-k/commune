@@ -28,7 +28,6 @@ use self::{
 use super::{room_details, RoomDetails};
 use crate::{
     components::{confirm_leave_room_dialog, DragOverlay, ReactionChooser},
-    i18n::gettext_f,
     prelude::*,
     session::model::{
         Event, EventKey, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline,
@@ -608,12 +607,12 @@ impl RoomHistory {
         if room.set_category(RoomCategory::Normal).await.is_err() {
             toast!(
                 self,
-                gettext_f(
+                gettext(
                     // Translators: Do NOT translate the content between '{' and '}', this is a
                     // variable name.
-                    "Could not join room {room_name}. Try again later.",
-                    &[("room_name", &room.display_name())],
-                )
+                    "Could not join {room}. Try again later.",
+                ),
+                @room,
             );
         }
     }
