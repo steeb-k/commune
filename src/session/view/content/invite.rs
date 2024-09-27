@@ -6,7 +6,7 @@ use crate::{
     components::{confirm_leave_room_dialog, Avatar, LabelWithWidgets, LoadingButton, Pill},
     gettext_f,
     prelude::*,
-    session::model::{MemberList, Room, RoomType, User},
+    session::model::{MemberList, Room, RoomCategory, User},
     toast,
     utils::matrix::MatrixIdUri,
 };
@@ -151,7 +151,7 @@ mod imp {
                     move |room| {
                         let category = room.category();
 
-                        if category == RoomType::Left {
+                        if category == RoomCategory::Left {
                             // We declined the invite or the invite was retracted, we should close
                             // the room if it is opened.
                             let Some(session) = room.session() else {
@@ -167,7 +167,7 @@ mod imp {
                             }
                         }
 
-                        if category != RoomType::Invited {
+                        if category != RoomCategory::Invited {
                             let imp = obj.imp();
                             imp.decline_requests.borrow_mut().remove(room);
                             imp.accept_requests.borrow_mut().remove(room);

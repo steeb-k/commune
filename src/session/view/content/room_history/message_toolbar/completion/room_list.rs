@@ -1,7 +1,7 @@
 use gtk::{glib, glib::closure, prelude::*, subclass::prelude::*};
 
 use crate::{
-    session::model::{JoinRule, Member, Membership, Room, RoomAliases, RoomList, RoomType},
+    session::model::{JoinRule, Member, Membership, Room, RoomAliases, RoomCategory, RoomList},
     utils::{expression, ExpressionListModel},
 };
 
@@ -42,8 +42,8 @@ mod imp {
             // - anyone can join
 
             let category_expr = Room::this_expression("category").chain_closure::<bool>(closure!(
-                |_obj: Option<glib::Object>, category: RoomType| {
-                    !matches!(category, RoomType::Space | RoomType::Outdated)
+                |_obj: Option<glib::Object>, category: RoomCategory| {
+                    !matches!(category, RoomCategory::Space | RoomCategory::Outdated)
                 }
             ));
             let category_filter = gtk::BoolFilter::new(Some(&category_expr));

@@ -31,7 +31,7 @@ use crate::{
     i18n::gettext_f,
     prelude::*,
     session::model::{
-        Event, EventKey, MemberList, Membership, ReceiptPosition, Room, RoomType, Timeline,
+        Event, EventKey, MemberList, Membership, ReceiptPosition, Room, RoomCategory, Timeline,
         TimelineState,
     },
     spawn, toast,
@@ -587,7 +587,7 @@ impl RoomHistory {
             return;
         }
 
-        if room.set_category(RoomType::Left).await.is_err() {
+        if room.set_category(RoomCategory::Left).await.is_err() {
             toast!(
                 self,
                 gettext(
@@ -605,7 +605,7 @@ impl RoomHistory {
             return;
         };
 
-        if room.set_category(RoomType::Normal).await.is_err() {
+        if room.set_category(RoomCategory::Normal).await.is_err() {
             toast!(
                 self,
                 gettext_f(

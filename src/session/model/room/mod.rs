@@ -40,25 +40,25 @@ use tokio_stream::wrappers::BroadcastStream;
 use tracing::{debug, error, warn};
 
 mod aliases;
+mod category;
 mod event;
 mod highlight_flags;
 mod join_rule;
 mod member;
 mod member_list;
 mod permissions;
-mod room_type;
 mod timeline;
 mod typing_list;
 
 pub use self::{
     aliases::{AddAltAliasError, RegisterLocalAliasError, RoomAliases},
+    category::RoomCategory,
     event::*,
     highlight_flags::HighlightFlags,
     join_rule::{JoinRule, JoinRuleValue},
     member::{Member, Membership},
     member_list::MemberList,
     permissions::*,
-    room_type::RoomType,
     timeline::*,
     typing_list::TypingList,
 };
@@ -126,8 +126,8 @@ mod imp {
         #[property(get)]
         topic_linkified: RefCell<Option<String>>,
         /// The category of this room.
-        #[property(get, builder(RoomType::default()))]
-        category: Cell<RoomType>,
+        #[property(get, builder(RoomCategory::default()))]
+        category: Cell<RoomCategory>,
         /// Whether this room is a direct chat.
         #[property(get)]
         is_direct: Cell<bool>,
@@ -567,10 +567,10 @@ mod imp {
         }
 
         /// Set the category of this room.
-        pub(super) fn set_category(&self, category: RoomType) {
+        pub(super) fn set_category(&self, category: RoomCategory) {
             let old_category = self.category.get();
 
-            if old_category == RoomType::Outdated || old_category == category {
+            if old_category == RoomCategory::Outdated || old_category == category {
                 return;
             }
 
@@ -581,7 +581,7 @@ mod imp {
         /// Load the category from the SDK.
         pub(super) fn load_category(&self) {
             // Don't load the category if this room was upgraded
-            if self.category.get() == RoomType::Outdated {
+            if self.category.get() == RoomCategory::Outdated {
                 return;
             }
 
@@ -591,7 +591,7 @@ mod imp {
                 .as_ref()
                 .is_some_and(|i| i.is_ignored())
             {
-                self.set_category(RoomType::Ignored);
+                self.set_category(RoomCategory::Ignored);
                 return;
             }
 
@@ -599,7 +599,7 @@ mod imp {
             match matrix_room.state() {
                 RoomState::Joined => {
                     if matrix_room.is_space() {
-                        self.set_category(RoomType::Space);
+                        self.set_category(RoomCategory::Space);
                     } else {
                         let matrix_room = matrix_room.clone();
                         let tags = spawn_tokio!(async move { matrix_room.tags().await });
@@ -610,15 +610,15 @@ mod imp {
                                 #[weak(rename_to = imp)]
                                 self,
                                 async move {
-                                    let mut category = RoomType::Normal;
+                                    let mut category = RoomCategory::Normal;
 
                                     if let Ok(Some(tags)) =
                                         tags.await.expect("task was not aborted")
                                     {
                                         if tags.contains_key(&TagName::Favorite) {
-                                            category = RoomType::Favorite;
+                                            category = RoomCategory::Favorite;
                                         } else if tags.contains_key(&TagName::LowPriority) {
-                                            category = RoomType::LowPriority;
+                                            category = RoomCategory::LowPriority;
                                         }
                                     }
 
@@ -628,8 +628,8 @@ mod imp {
                         );
                     }
                 }
-                RoomState::Invited => self.set_category(RoomType::Invited),
-                RoomState::Left => self.set_category(RoomType::Left),
+                RoomState::Invited => self.set_category(RoomCategory::Invited),
+                RoomState::Left => self.set_category(RoomCategory::Left),
             };
         }
 
@@ -704,7 +704,7 @@ mod imp {
         ///
         /// Returns `true` if the `Room` was set as outdated, `false` otherwise.
         pub(super) fn update_outdated(&self) -> bool {
-            if self.category.get() == RoomType::Outdated {
+            if self.category.get() == RoomCategory::Outdated {
                 return true;
             }
 
@@ -721,7 +721,7 @@ mod imp {
                     if let Some(predecessor_id) = successor.predecessor_id() {
                         if predecessor_id == self.room_id() {
                             self.set_successor(&successor);
-                            self.set_category(RoomType::Outdated);
+                            self.set_category(RoomCategory::Outdated);
                             return true;
                         }
                     }
@@ -738,7 +738,7 @@ mod imp {
                 if let Some(predecessor_id) = room.predecessor_id() {
                     if predecessor_id == self.room_id() {
                         self.set_successor(&room);
-                        self.set_category(RoomType::Outdated);
+                        self.set_category(RoomCategory::Outdated);
                         return true;
                     }
                 }
@@ -1026,7 +1026,10 @@ mod imp {
                 }
             ));
 
-            if !matches!(self.category.get(), RoomType::Left | RoomType::Outdated) {
+            if !matches!(
+                self.category.get(),
+                RoomCategory::Left | RoomCategory::Outdated
+            ) {
                 // Load the room history when idle.
                 spawn!(
                     glib::source::Priority::LOW,
@@ -1086,7 +1089,7 @@ mod imp {
         fn update_highlight(&self) {
             let mut highlight = HighlightFlags::empty();
 
-            if matches!(self.category.get(), RoomType::Left) {
+            if matches!(self.category.get(), RoomCategory::Left) {
                 // Consider that all left rooms are read.
                 self.set_highlight(highlight);
                 self.set_notification_count(0);
@@ -1730,24 +1733,24 @@ impl Room {
     ///
     /// Note: Rooms can't be moved to the invite category and they can't be
     /// moved once they are upgraded.
-    pub async fn set_category(&self, category: RoomType) -> MatrixResult<()> {
+    pub async fn set_category(&self, category: RoomCategory) -> MatrixResult<()> {
         let previous_category = self.category();
 
         if previous_category == category {
             return Ok(());
         }
 
-        if previous_category == RoomType::Outdated {
+        if previous_category == RoomCategory::Outdated {
             warn!("Can't set the category of an upgraded room");
             return Ok(());
         }
 
         match category {
-            RoomType::Invited => {
+            RoomCategory::Invited => {
                 warn!("Rooms can’t be moved to the invite Category");
                 return Ok(());
             }
-            RoomType::Outdated => {
+            RoomCategory::Outdated => {
                 // Outdated rooms don't need to propagate anything to the server
                 self.imp().set_category(category);
                 return Ok(());
@@ -1761,8 +1764,8 @@ impl Room {
         let handle = spawn_tokio!(async move {
             match matrix_room.state() {
                 RoomState::Invited => match category {
-                    RoomType::Invited => {}
-                    RoomType::Favorite => {
+                    RoomCategory::Invited => {}
+                    RoomCategory::Favorite => {
                         if let Some(tags) = matrix_room.tags().await? {
                             if !tags.contains_key(&TagName::Favorite) {
                                 matrix_room
@@ -1775,7 +1778,7 @@ impl Room {
                         }
                         matrix_room.join().await?;
                     }
-                    RoomType::Normal => {
+                    RoomCategory::Normal => {
                         if let Some(tags) = matrix_room.tags().await? {
                             if tags.contains_key(&TagName::Favorite) {
                                 matrix_room.remove_tag(TagName::Favorite).await?;
@@ -1791,7 +1794,7 @@ impl Room {
 
                         matrix_room.join().await?;
                     }
-                    RoomType::LowPriority => {
+                    RoomCategory::LowPriority => {
                         if let Some(tags) = matrix_room.tags().await? {
                             if tags.contains_key(&TagName::Favorite) {
                                 matrix_room.remove_tag(TagName::Favorite).await?;
@@ -1804,46 +1807,50 @@ impl Room {
                         }
                         matrix_room.join().await?;
                     }
-                    RoomType::Left => {
+                    RoomCategory::Left => {
                         matrix_room.leave().await?;
                     }
-                    RoomType::Outdated | RoomType::Space | RoomType::Ignored => unimplemented!(),
+                    RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {
+                        unimplemented!()
+                    }
                 },
                 RoomState::Joined => match category {
-                    RoomType::Invited => {}
-                    RoomType::Favorite => {
+                    RoomCategory::Invited => {}
+                    RoomCategory::Favorite => {
                         matrix_room
                             .set_tag(TagName::Favorite, TagInfo::new())
                             .await?;
-                        if previous_category == RoomType::LowPriority {
+                        if previous_category == RoomCategory::LowPriority {
                             matrix_room.remove_tag(TagName::LowPriority).await?;
                         }
                     }
-                    RoomType::Normal => match previous_category {
-                        RoomType::Favorite => {
+                    RoomCategory::Normal => match previous_category {
+                        RoomCategory::Favorite => {
                             matrix_room.remove_tag(TagName::Favorite).await?;
                         }
-                        RoomType::LowPriority => {
+                        RoomCategory::LowPriority => {
                             matrix_room.remove_tag(TagName::LowPriority).await?;
                         }
                         _ => {}
                     },
-                    RoomType::LowPriority => {
+                    RoomCategory::LowPriority => {
                         matrix_room
                             .set_tag(TagName::LowPriority, TagInfo::new())
                             .await?;
-                        if previous_category == RoomType::Favorite {
+                        if previous_category == RoomCategory::Favorite {
                             matrix_room.remove_tag(TagName::Favorite).await?;
                         }
                     }
-                    RoomType::Left => {
+                    RoomCategory::Left => {
                         matrix_room.leave().await?;
                     }
-                    RoomType::Outdated | RoomType::Space | RoomType::Ignored => unimplemented!(),
+                    RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {
+                        unimplemented!()
+                    }
                 },
                 RoomState::Left => match category {
-                    RoomType::Invited => {}
-                    RoomType::Favorite => {
+                    RoomCategory::Invited => {}
+                    RoomCategory::Favorite => {
                         if let Some(tags) = matrix_room.tags().await? {
                             if !tags.contains_key(&TagName::Favorite) {
                                 matrix_room
@@ -1856,7 +1863,7 @@ impl Room {
                         }
                         matrix_room.join().await?;
                     }
-                    RoomType::Normal => {
+                    RoomCategory::Normal => {
                         if let Some(tags) = matrix_room.tags().await? {
                             if tags.contains_key(&TagName::Favorite) {
                                 matrix_room.remove_tag(TagName::Favorite).await?;
@@ -1867,7 +1874,7 @@ impl Room {
                         }
                         matrix_room.join().await?;
                     }
-                    RoomType::LowPriority => {
+                    RoomCategory::LowPriority => {
                         if let Some(tags) = matrix_room.tags().await? {
                             if tags.contains_key(&TagName::Favorite) {
                                 matrix_room.remove_tag(TagName::Favorite).await?;
@@ -1880,8 +1887,10 @@ impl Room {
                         }
                         matrix_room.join().await?;
                     }
-                    RoomType::Left => {}
-                    RoomType::Outdated | RoomType::Space | RoomType::Ignored => unimplemented!(),
+                    RoomCategory::Left => {}
+                    RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {
+                        unimplemented!()
+                    }
                 },
             }
 
@@ -2285,7 +2294,7 @@ impl Room {
 
     /// Forget a room that is left.
     pub async fn forget(&self) -> MatrixResult<()> {
-        if self.category() != RoomType::Left {
+        if self.category() != RoomCategory::Left {
             warn!("Cannot forget a room that is not left");
             return Ok(());
         }

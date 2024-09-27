@@ -11,7 +11,7 @@ use super::{Content, CreateDmDialog, MediaViewer, RoomCreation, Sidebar};
 use crate::{
     components::{JoinRoomDialog, UserProfileDialog},
     session::model::{
-        Event, IdentityVerification, Room, RoomType, Selection, Session, SidebarListModel,
+        Event, IdentityVerification, Room, RoomCategory, Selection, Session, SidebarListModel,
         VerificationKey,
     },
     toast,
@@ -335,12 +335,14 @@ impl SessionView {
                 return None;
             }
             let category = match room.category() {
-                RoomType::Invited => 5,
-                RoomType::Favorite => 4,
-                RoomType::Normal => 3,
-                RoomType::LowPriority => 2,
-                RoomType::Left => 1,
-                RoomType::Ignored | RoomType::Outdated | RoomType::Space => return None,
+                RoomCategory::Invited => 5,
+                RoomCategory::Favorite => 4,
+                RoomCategory::Normal => 3,
+                RoomCategory::LowPriority => 2,
+                RoomCategory::Left => 1,
+                RoomCategory::Ignored | RoomCategory::Outdated | RoomCategory::Space => {
+                    return None
+                }
             };
             Some((category, room.notification_count(), room.latest_activity()))
         }

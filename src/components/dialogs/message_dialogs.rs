@@ -7,7 +7,7 @@ use crate::{
     i18n::gettext_f,
     ngettext_f,
     prelude::*,
-    session::model::{Member, Membership, Room, RoomType},
+    session::model::{Member, Membership, Room, RoomCategory},
 };
 
 /// Show a dialog to confirm leaving a room.
@@ -19,7 +19,7 @@ pub async fn confirm_leave_room_dialog(
     room: &Room,
     parent: &impl IsA<gtk::Widget>,
 ) -> Option<ConfirmLeaveRoomResponse> {
-    let (heading, body, response) = if room.category() == RoomType::Invited {
+    let (heading, body, response) = if room.category() == RoomCategory::Invited {
         // We are rejecting an invite.
         let heading = gettext("Decline Invite?");
         let body = if room.join_rule().we_can_join() {
@@ -58,7 +58,7 @@ pub async fn confirm_leave_room_dialog(
 
     let ignore_inviter_switch = if let Some(inviter) = room
         .inviter()
-        .filter(|_| room.category() == RoomType::Invited)
+        .filter(|_| room.category() == RoomCategory::Invited)
     {
         let switch = adw::SwitchRow::builder()
             .title(gettext_f(

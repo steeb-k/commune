@@ -11,7 +11,7 @@ mod category_type;
 use self::category_filter::CategoryFilter;
 pub use self::category_type::CategoryType;
 use crate::{
-    session::model::{Room, RoomList, RoomType, SessionSettings, VerificationList},
+    session::model::{Room, RoomCategory, RoomList, SessionSettings, VerificationList},
     utils::ExpressionListModel,
 };
 
@@ -97,8 +97,8 @@ mod imp {
             let inner_model = if model.is::<RoomList>() {
                 let room_category_type = Room::this_expression("category")
                     .chain_closure::<CategoryType>(closure!(
-                        |_: Option<glib::Object>, room_type: RoomType| {
-                            CategoryType::from(room_type)
+                        |_: Option<glib::Object>, category: RoomCategory| {
+                            CategoryType::from(category)
                         }
                     ));
                 self.filter
@@ -226,12 +226,12 @@ impl Category {
             return true;
         }
 
-        let room_types = RoomType::try_from(for_category)
+        let room_categories = RoomCategory::try_from(for_category)
             .ok()
-            .zip(RoomType::try_from(self.category_type()).ok());
+            .zip(RoomCategory::try_from(self.category_type()).ok());
 
-        room_types.is_some_and(|(source_room_type, target_room_type)| {
-            source_room_type.can_change_to(target_room_type)
+        room_categories.is_some_and(|(source_category, target_category)| {
+            source_category.can_change_to(target_category)
         })
     }
 }

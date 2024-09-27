@@ -5,37 +5,35 @@ use matrix_sdk::RoomState;
 
 use crate::session::model::CategoryType;
 
-// TODO: do we also want custom tags support?
-// See https://spec.matrix.org/v1.2/client-server-api/#room-tagging
+/// The category of a room.
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
-#[repr(u32)]
-#[enum_type(name = "RoomType")]
-pub enum RoomType {
+#[enum_type(name = "RoomCategory")]
+pub enum RoomCategory {
     /// The user was invited to the room.
-    Invited = 0,
+    Invited,
     /// The room is joined and has the `m.favourite` tag.
-    Favorite = 1,
+    Favorite,
     /// The room is joined and has no known tag.
     #[default]
-    Normal = 2,
+    Normal,
     /// The room is joined and has the `m.lowpriority` tag.
-    LowPriority = 3,
+    LowPriority,
     /// The room was left by the user, or they were kicked or banned.
-    Left = 4,
+    Left,
     /// The room was upgraded and their successor was joined.
-    Outdated = 5,
+    Outdated,
     /// The room is a space.
-    Space = 6,
+    Space,
     /// The room should be ignored.
     ///
     /// According to the Matrix specification, invites from ignored users
     /// should be ignored.
-    Ignored = 7,
+    Ignored,
 }
 
-impl RoomType {
-    /// Check whether this `RoomType` can be changed to `category`.
-    pub fn can_change_to(&self, category: RoomType) -> bool {
+impl RoomCategory {
+    /// Check whether this `RoomCategory` can be changed to the given category.
+    pub fn can_change_to(&self, category: Self) -> bool {
         match self {
             Self::Invited => {
                 matches!(
@@ -59,27 +57,27 @@ impl RoomType {
         }
     }
 
-    /// Whether this `RoomType` corresponds to the given state.
+    /// Whether this `RoomCategory` corresponds to the given state.
     pub fn is_state(&self, state: RoomState) -> bool {
         match self {
-            RoomType::Invited | RoomType::Ignored => state == RoomState::Invited,
-            RoomType::Favorite
-            | RoomType::Normal
-            | RoomType::LowPriority
-            | RoomType::Outdated
-            | RoomType::Space => state == RoomState::Joined,
-            RoomType::Left => state == RoomState::Left,
+            RoomCategory::Invited | RoomCategory::Ignored => state == RoomState::Invited,
+            RoomCategory::Favorite
+            | RoomCategory::Normal
+            | RoomCategory::LowPriority
+            | RoomCategory::Outdated
+            | RoomCategory::Space => state == RoomState::Joined,
+            RoomCategory::Left => state == RoomState::Left,
         }
     }
 }
 
-impl fmt::Display for RoomType {
+impl fmt::Display for RoomCategory {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         CategoryType::from(self).fmt(f)
     }
 }
 
-impl TryFrom<CategoryType> for RoomType {
+impl TryFrom<CategoryType> for RoomCategory {
     type Error = &'static str;
 
     fn try_from(category_type: CategoryType) -> Result<Self, Self::Error> {
@@ -87,12 +85,12 @@ impl TryFrom<CategoryType> for RoomType {
     }
 }
 
-impl TryFrom<&CategoryType> for RoomType {
+impl TryFrom<&CategoryType> for RoomCategory {
     type Error = &'static str;
 
     fn try_from(category_type: &CategoryType) -> Result<Self, Self::Error> {
         match category_type {
-            CategoryType::None => Err("CategoryType::None cannot be a RoomType"),
+            CategoryType::None => Err("CategoryType::None cannot be a RoomCategory"),
             CategoryType::Invited => Ok(Self::Invited),
             CategoryType::Favorite => Ok(Self::Favorite),
             CategoryType::Normal => Ok(Self::Normal),
@@ -100,7 +98,7 @@ impl TryFrom<&CategoryType> for RoomType {
             CategoryType::Left => Ok(Self::Left),
             CategoryType::Outdated => Ok(Self::Outdated),
             CategoryType::VerificationRequest => {
-                Err("CategoryType::VerificationRequest cannot be a RoomType")
+                Err("CategoryType::VerificationRequest cannot be a RoomCategory")
             }
             CategoryType::Space => Ok(Self::Space),
             CategoryType::Ignored => Ok(Self::Ignored),

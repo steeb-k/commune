@@ -3,7 +3,7 @@ use std::fmt;
 use gettextrs::gettext;
 use gtk::glib;
 
-use crate::session::model::RoomType;
+use crate::session::model::RoomCategory;
 
 #[derive(Debug, Default, Hash, Eq, PartialEq, Clone, Copy, glib::Enum)]
 #[repr(i32)]
@@ -41,23 +41,23 @@ impl fmt::Display for CategoryType {
     }
 }
 
-impl From<RoomType> for CategoryType {
-    fn from(room_type: RoomType) -> Self {
-        Self::from(&room_type)
+impl From<RoomCategory> for CategoryType {
+    fn from(category: RoomCategory) -> Self {
+        Self::from(&category)
     }
 }
 
-impl From<&RoomType> for CategoryType {
-    fn from(room_type: &RoomType) -> Self {
-        match room_type {
-            RoomType::Invited => Self::Invited,
-            RoomType::Favorite => Self::Favorite,
-            RoomType::Normal => Self::Normal,
-            RoomType::LowPriority => Self::LowPriority,
-            RoomType::Left => Self::Left,
-            RoomType::Outdated => Self::Outdated,
-            RoomType::Space => Self::Space,
-            RoomType::Ignored => Self::Ignored,
+impl From<&RoomCategory> for CategoryType {
+    fn from(category: &RoomCategory) -> Self {
+        match category {
+            RoomCategory::Invited => Self::Invited,
+            RoomCategory::Favorite => Self::Favorite,
+            RoomCategory::Normal => Self::Normal,
+            RoomCategory::LowPriority => Self::LowPriority,
+            RoomCategory::Left => Self::Left,
+            RoomCategory::Outdated => Self::Outdated,
+            RoomCategory::Space => Self::Space,
+            RoomCategory::Ignored => Self::Ignored,
         }
     }
 }

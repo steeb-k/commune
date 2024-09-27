@@ -12,7 +12,7 @@ use self::{
 use crate::{
     identity_verification_view::IdentityVerificationView,
     session::model::{
-        IdentityVerification, Room, RoomType, Session, SidebarIconItem, SidebarIconItemType,
+        IdentityVerification, Room, RoomCategory, Session, SidebarIconItem, SidebarIconItemType,
     },
 };
 
@@ -233,7 +233,7 @@ impl Content {
             }
             Some(o) if o.is::<Room>() => {
                 if let Ok(room) = o.downcast::<Room>() {
-                    if room.category() == RoomType::Invited {
+                    if room.category() == RoomCategory::Invited {
                         imp.invite.set_room(Some(room));
                         self.set_visible_page(ContentPage::Invite);
                     } else {

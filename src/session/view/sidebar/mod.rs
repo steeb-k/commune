@@ -22,7 +22,7 @@ use crate::{
     account_switcher::AccountSwitcherButton,
     components::OfflineBanner,
     session::model::{
-        Category, CategoryType, CryptoIdentityState, RecoveryState, RoomType, Selection,
+        Category, CategoryType, CryptoIdentityState, RecoveryState, RoomCategory, Selection,
         SessionVerificationState, SidebarListModel, User,
     },
     utils::expression,
@@ -60,13 +60,13 @@ mod imp {
         /// The logged-in user.
         #[property(get, set = Self::set_user, explicit_notify, nullable)]
         pub user: RefCell<Option<User>>,
-        /// The type of the source that activated drop mode.
-        pub drop_source_type: Cell<Option<RoomType>>,
+        /// The category of the source that activated drop mode.
+        pub drop_source_category: Cell<Option<RoomCategory>>,
         /// The `CategoryType` of the source that activated drop mode.
         #[property(get = Self::drop_source_category_type, builder(CategoryType::default()))]
         pub drop_source_category_type: PhantomData<CategoryType>,
-        /// The type of the drop target that is currently hovered.
-        pub drop_active_target_type: Cell<Option<RoomType>>,
+        /// The category of the drop target that is currently hovered.
+        pub drop_active_target_category: Cell<Option<RoomCategory>>,
         /// The `CategoryType` of the drop target that is currently hovered.
         #[property(get = Self::drop_active_target_category_type, builder(CategoryType::default()))]
         pub drop_active_target_category_type: PhantomData<CategoryType>,
@@ -270,7 +270,7 @@ mod imp {
 
         /// The `CategoryType` of the source that activated drop mode.
         fn drop_source_category_type(&self) -> CategoryType {
-            self.drop_source_type
+            self.drop_source_category
                 .get()
                 .map(Into::into)
                 .unwrap_or_default()
@@ -278,7 +278,7 @@ mod imp {
 
         /// The `CategoryType` of the drop target that is currently hovered.
         fn drop_active_target_category_type(&self) -> CategoryType {
-            self.drop_active_target_type
+            self.drop_active_target_category
                 .get()
                 .map(Into::into)
                 .unwrap_or_default()
@@ -383,22 +383,22 @@ impl Sidebar {
         dialog.present(Some(self));
     }
 
-    /// The type of the source that activated drop mode.
-    pub fn drop_source_type(&self) -> Option<RoomType> {
-        self.imp().drop_source_type.get()
+    /// The category of the source that activated drop mode.
+    pub fn drop_source_category(&self) -> Option<RoomCategory> {
+        self.imp().drop_source_category.get()
     }
 
-    /// Set the type of the source that activated drop mode.
-    fn set_drop_source_type(&self, source_type: Option<RoomType>) {
+    /// Set the category of the source that activated drop mode.
+    fn set_drop_source_category(&self, source_category: Option<RoomCategory>) {
         let imp = self.imp();
 
-        if self.drop_source_type() == source_type {
+        if self.drop_source_category() == source_category {
             return;
         }
 
-        imp.drop_source_type.set(source_type);
+        imp.drop_source_category.set(source_category);
 
-        if source_type.is_some() {
+        if source_category.is_some() {
             imp.listview.add_css_class("drop-mode");
         } else {
             imp.listview.remove_css_class("drop-mode");
@@ -407,18 +407,18 @@ impl Sidebar {
         self.notify_drop_source_category_type();
     }
 
-    /// The type of the drop target that is currently hovered.
-    pub fn drop_active_target_type(&self) -> Option<RoomType> {
-        self.imp().drop_active_target_type.get()
+    /// The category of the drop target that is currently hovered.
+    pub fn drop_active_target_category(&self) -> Option<RoomCategory> {
+        self.imp().drop_active_target_category.get()
     }
 
-    /// Set the type of the drop target that is currently hovered.
-    fn set_drop_active_target_type(&self, target_type: Option<RoomType>) {
-        if self.drop_active_target_type() == target_type {
+    /// Set the category of the drop target that is currently hovered.
+    fn set_drop_active_target_category(&self, target_category: Option<RoomCategory>) {
+        if self.drop_active_target_category() == target_category {
             return;
         }
 
-        self.imp().drop_active_target_type.set(target_type);
+        self.imp().drop_active_target_category.set(target_category);
         self.notify_drop_active_target_category_type();
     }
 

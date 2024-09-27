@@ -10,7 +10,7 @@ use crate::{
         confirm_leave_room_dialog, ContextMenuBin, ContextMenuBinExt, ContextMenuBinImpl,
     },
     session::model::{
-        Category, CategoryType, IdentityVerification, ReceiptPosition, Room, RoomType,
+        Category, CategoryType, IdentityVerification, ReceiptPosition, Room, RoomCategory,
         SidebarIconItem, SidebarIconItemType, User,
     },
     spawn, spawn_tokio, toast,
@@ -255,11 +255,11 @@ mod imp {
             self.room().is_some_and(|r| {
                 matches!(
                     r.category(),
-                    RoomType::Invited
-                        | RoomType::Favorite
-                        | RoomType::Normal
-                        | RoomType::LowPriority
-                        | RoomType::Left
+                    RoomCategory::Invited
+                        | RoomCategory::Favorite
+                        | RoomCategory::Normal
+                        | RoomCategory::LowPriority
+                        | RoomCategory::Left
                 )
             })
         }
@@ -287,7 +287,7 @@ mod imp {
             let category = room.category();
 
             match category {
-                RoomType::Invited => {
+                RoomCategory::Invited => {
                     action_group.add_action_entries([
                         gio::ActionEntry::builder("accept-invite")
                             .activate(clone!(
@@ -296,7 +296,8 @@ mod imp {
                                 move |_, _, _| {
                                     if let Some(room) = obj.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomType::Normal).await;
+                                            obj.set_room_category(&room, RoomCategory::Normal)
+                                                .await;
                                         });
                                     }
                                 }
@@ -309,7 +310,7 @@ mod imp {
                                 move |_, _, _| {
                                     if let Some(room) = obj.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomType::Left).await;
+                                            obj.set_room_category(&room, RoomCategory::Left).await;
                                         });
                                     }
                                 }
@@ -317,8 +318,8 @@ mod imp {
                             .build(),
                     ]);
                 }
-                RoomType::Favorite | RoomType::Normal | RoomType::LowPriority => {
-                    if matches!(category, RoomType::Favorite | RoomType::LowPriority) {
+                RoomCategory::Favorite | RoomCategory::Normal | RoomCategory::LowPriority => {
+                    if matches!(category, RoomCategory::Favorite | RoomCategory::LowPriority) {
                         action_group.add_action_entries([gio::ActionEntry::builder("set-normal")
                             .activate(clone!(
                                 #[weak]
@@ -326,7 +327,8 @@ mod imp {
                                 move |_, _, _| {
                                     if let Some(room) = obj.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomType::Normal).await;
+                                            obj.set_room_category(&room, RoomCategory::Normal)
+                                                .await;
                                         });
                                     }
                                 }
@@ -334,7 +336,7 @@ mod imp {
                             .build()]);
                     }
 
-                    if matches!(category, RoomType::Normal | RoomType::LowPriority) {
+                    if matches!(category, RoomCategory::Normal | RoomCategory::LowPriority) {
                         action_group.add_action_entries([gio::ActionEntry::builder(
                             "set-favorite",
                         )
@@ -344,7 +346,7 @@ mod imp {
                             move |_, _, _| {
                                 if let Some(room) = obj.room() {
                                     spawn!(async move {
-                                        obj.set_room_category(&room, RoomType::Favorite).await;
+                                        obj.set_room_category(&room, RoomCategory::Favorite).await;
                                     });
                                 }
                             }
@@ -352,7 +354,7 @@ mod imp {
                         .build()]);
                     }
 
-                    if matches!(category, RoomType::Favorite | RoomType::Normal) {
+                    if matches!(category, RoomCategory::Favorite | RoomCategory::Normal) {
                         action_group.add_action_entries([gio::ActionEntry::builder(
                             "set-lowpriority",
                         )
@@ -362,7 +364,8 @@ mod imp {
                             move |_, _, _| {
                                 if let Some(room) = obj.room() {
                                     spawn!(async move {
-                                        obj.set_room_category(&room, RoomType::LowPriority).await;
+                                        obj.set_room_category(&room, RoomCategory::LowPriority)
+                                            .await;
                                     });
                                 }
                             }
@@ -377,7 +380,7 @@ mod imp {
                             move |_, _, _| {
                                 if let Some(room) = obj.room() {
                                     spawn!(async move {
-                                        obj.set_room_category(&room, RoomType::Left).await;
+                                        obj.set_room_category(&room, RoomCategory::Left).await;
                                     });
                                 }
                             }
@@ -401,7 +404,7 @@ mod imp {
                         .build()]);
                     }
                 }
-                RoomType::Left => {
+                RoomCategory::Left => {
                     if room.join_rule().we_can_join() {
                         action_group.add_action_entries([gio::ActionEntry::builder("join")
                             .activate(clone!(
@@ -410,7 +413,8 @@ mod imp {
                                 move |_, _, _| {
                                     if let Some(room) = obj.room() {
                                         spawn!(async move {
-                                            obj.set_room_category(&room, RoomType::Normal).await;
+                                            obj.set_room_category(&room, RoomCategory::Normal)
+                                                .await;
                                         });
                                     }
                                 }
@@ -432,12 +436,15 @@ mod imp {
                         ))
                         .build()]);
                 }
-                RoomType::Outdated | RoomType::Space | RoomType::Ignored => {}
+                RoomCategory::Outdated | RoomCategory::Space | RoomCategory::Ignored => {}
             }
 
             if matches!(
                 category,
-                RoomType::Favorite | RoomType::Normal | RoomType::LowPriority | RoomType::Left
+                RoomCategory::Favorite
+                    | RoomCategory::Normal
+                    | RoomCategory::LowPriority
+                    | RoomCategory::Left
             ) {
                 if room.is_direct() {
                     action_group.add_action_entries([gio::ActionEntry::builder(
@@ -493,17 +500,17 @@ impl Row {
         self.imp().room()
     }
 
-    /// Get the `RoomType` of this item.
+    /// Get the `RoomCategory` of this item.
     ///
-    /// If this is not a `Category` or one of its children, returns `None`.
-    pub fn room_type(&self) -> Option<RoomType> {
+    /// If this is not a `Category` containing rooms or a room, returns `None`.
+    pub fn room_category(&self) -> Option<RoomCategory> {
         let item = self.item()?;
 
         if let Some(room) = item.downcast_ref::<Room>() {
             Some(room.category())
         } else {
             item.downcast_ref::<Category>()
-                .and_then(|category| RoomType::try_from(category.category_type()).ok())
+                .and_then(|category| RoomCategory::try_from(category.category_type()).ok())
         }
     }
 
@@ -528,15 +535,16 @@ impl Row {
             .and_then(|content| content.value(Room::static_type()).ok())
             .and_then(|value| value.get::<Room>().ok());
         if let Some(room) = room {
-            if let Some(target_type) = self.room_type() {
-                if room.category().can_change_to(target_type) {
-                    sidebar.set_drop_active_target_type(Some(target_type));
+            if let Some(target_category) = self.room_category() {
+                if room.category().can_change_to(target_category) {
+                    sidebar.set_drop_active_target_category(Some(target_category));
                     return true;
                 }
             } else if let Some(item_type) = self.item_type() {
-                if room.category() == RoomType::Left && item_type == SidebarIconItemType::Forget {
+                if room.category() == RoomCategory::Left && item_type == SidebarIconItemType::Forget
+                {
                     self.add_css_class("drop-active");
-                    sidebar.set_drop_active_target_type(None);
+                    sidebar.set_drop_active_target_category(None);
                     return true;
                 }
             }
@@ -548,7 +556,7 @@ impl Row {
     fn drop_leave(&self) {
         self.remove_css_class("drop-active");
         if let Some(sidebar) = self.sidebar() {
-            sidebar.set_drop_active_target_type(None);
+            sidebar.set_drop_active_target_category(None);
         }
     }
 
@@ -556,19 +564,20 @@ impl Row {
     fn drop_end(&self, value: &glib::Value) -> bool {
         let mut ret = false;
         if let Ok(room) = value.get::<Room>() {
-            if let Some(target_type) = self.room_type() {
-                if room.category().can_change_to(target_type) {
+            if let Some(target_category) = self.room_category() {
+                if room.category().can_change_to(target_category) {
                     spawn!(clone!(
                         #[weak(rename_to = obj)]
                         self,
                         async move {
-                            obj.set_room_category(&room, target_type).await;
+                            obj.set_room_category(&room, target_category).await;
                         }
                     ));
                     ret = true;
                 }
             } else if let Some(item_type) = self.item_type() {
-                if room.category() == RoomType::Left && item_type == SidebarIconItemType::Forget {
+                if room.category() == RoomCategory::Left && item_type == SidebarIconItemType::Forget
+                {
                     spawn!(clone!(
                         #[strong(rename_to = obj)]
                         self,
@@ -581,14 +590,14 @@ impl Row {
             }
         }
         if let Some(sidebar) = self.sidebar() {
-            sidebar.set_drop_source_type(None);
+            sidebar.set_drop_source_category(None);
         }
         ret
     }
 
-    /// Change the category of the given room room.
-    async fn set_room_category(&self, room: &Room, category: RoomType) {
-        let ignored_inviter = if category == RoomType::Left {
+    /// Change the category of the given room.
+    async fn set_room_category(&self, room: &Room, category: RoomCategory) {
+        let ignored_inviter = if category == RoomCategory::Left {
             let Some(response) = confirm_leave_room_dialog(room, self).await else {
                 return;
             };
@@ -653,11 +662,11 @@ impl Row {
 
     /// Update the disabled or empty state of this drop target.
     fn update_for_drop_source_type(&self) {
-        let source_type = self.sidebar().and_then(|s| s.drop_source_type());
+        let source_type = self.sidebar().and_then(|s| s.drop_source_category());
 
         if let Some(source_type) = source_type {
             if self
-                .room_type()
+                .room_category()
                 .is_some_and(|row_type| source_type.can_change_to(row_type))
             {
                 self.remove_css_class("drop-disabled");
@@ -675,7 +684,7 @@ impl Row {
                 let is_forget_item = self
                     .item_type()
                     .is_some_and(|item_type| item_type == SidebarIconItemType::Forget);
-                if is_forget_item && source_type == RoomType::Left {
+                if is_forget_item && source_type == RoomCategory::Left {
                     self.remove_css_class("drop-disabled");
                 } else {
                     self.add_css_class("drop-disabled");
@@ -698,12 +707,12 @@ impl Row {
 
     /// Update the active state of this drop target.
     fn update_for_drop_active_target_type(&self) {
-        let Some(room_type) = self.room_type() else {
+        let Some(room_category) = self.room_category() else {
             return;
         };
-        let target_type = self.sidebar().and_then(|s| s.drop_active_target_type());
+        let target_category = self.sidebar().and_then(|s| s.drop_active_target_category());
 
-        if target_type.is_some_and(|target_type| target_type == room_type) {
+        if target_category.is_some_and(|target_category| target_category == room_category) {
             self.add_css_class("drop-active");
         } else {
             self.remove_css_class("drop-active");

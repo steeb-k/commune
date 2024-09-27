@@ -5,7 +5,7 @@ use super::Row;
 use crate::{
     i18n::{gettext_f, ngettext_f},
     prelude::*,
-    session::model::{HighlightFlags, Room, RoomType},
+    session::model::{HighlightFlags, Room, RoomCategory},
     utils::BoundObject,
 };
 
@@ -129,7 +129,7 @@ mod imp {
                     }
                 ));
 
-                if room.category() == RoomType::Left {
+                if room.category() == RoomCategory::Left {
                     self.display_name.add_css_class("dim-label");
                 }
 
@@ -212,7 +212,7 @@ impl RoomRow {
         };
         row.add_css_class("drag");
 
-        sidebar.set_drop_source_type(Some(room.category()));
+        sidebar.set_drop_source_category(Some(room.category()));
     }
 
     fn drag_end(&self) {
@@ -222,7 +222,7 @@ impl RoomRow {
         let Some(sidebar) = row.sidebar() else {
             return;
         };
-        sidebar.set_drop_source_type(None);
+        sidebar.set_drop_source_category(None);
         row.remove_css_class("drag");
     }
 
